@@ -331,3 +331,7 @@ func (ai *EnemyAI) NewTurn(player *playerlib.Player) {
         log.Printf("ai %v city %v farmer=%v worker=%v rebel=%v", player.Wizard.Name, city.Name, city.Farmers, city.Workers, city.Rebels)
     }
 }
+
+func (ai *EnemyAI) ConfirmRazeTown(city *citylib.City) bool {
+    return false
+}

@@ -1719,6 +1719,7 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
     city2.Wall = false
     city2.Buildings.Insert(buildinglib.BuildingSmithy)
     city2.Buildings.Insert(buildinglib.BuildingOracle)
+    city2.Buildings.Insert(buildinglib.BuildingFortress)
 
     // cant use brown banner because neutral cities will never cast a city enchantment
     city2.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)

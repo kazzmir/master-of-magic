@@ -81,6 +81,9 @@ type AIBehavior interface {
 
     // called when a new unit is produced in the city
     ProducedUnit(*citylib.City, *Player)
+
+    // true to raze, false to occupy
+    ConfirmRazeTown(*citylib.City) bool
 }
 
 type Relationship struct {
@@ -121,6 +124,9 @@ type Player struct {
     StrategicCombat bool
     // godmode that lets the player interact with enemy cities/units
     Admin bool
+
+    // true if the wizard is currently banished
+    Banished bool
 
     // known spells
     KnownSpells spellbook.Spells
