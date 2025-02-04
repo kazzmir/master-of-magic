@@ -3805,7 +3805,10 @@ func (game *Game) confirmRazeTown(yield coroutine.YieldFunc, city *citylib.City)
         quit = true
     }
 
-    game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you with to raze this town?", true, yes, no))
+    yesImages, _ := game.ImageCache.GetImages("compix.lbx", 82)
+    noImages, _ := game.ImageCache.GetImages("compix.lbx", 81)
+
+    game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayerFull(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you wish to completely destroy this city?", true, no, yes, noImages, yesImages))
 
     yield()
     for !quit {
