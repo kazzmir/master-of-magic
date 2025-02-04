@@ -357,38 +357,14 @@ func (enchantment CityEnchantment) UpkeepMana() int {
     return 0
 }
 
-func (enchantment CityEnchantment) LbxIndex(plane Plane) int {
+func (enchantment CityEnchantment) LbxIndex() int {
     switch enchantment {
         case CityEnchantmentAltarOfBattle: return 12
         case CityEnchantmentAstralGate: return 85
-        case CityEnchantmentChaosRift:
-            if plane == PlaneMyrror {
-                return 112
-            }
-            return 92
-        // case CityEnchantmentCloudOfShadow: return // FIXME: Some sort of dark icon
         case CityEnchantmentConsecration: return 102
-        case CityEnchantmentCursedLands:
-            if plane == PlaneMyrror {
-                return 8
-            }
-            return 0
         case CityEnchantmentDarkRituals: return 81
         case CityEnchantmentEarthGate: return 83
         case CityEnchantmentEvilPresence: return 82
-        case CityEnchantmentFamine:
-            if plane == PlaneMyrror {
-                return 8
-            }
-            return 0
-        // case CityEnchantmentFlyingFortress: FIXME: Clouds city background
-        // case CityEnchantmentGaiasBlessing: FIXME: Green city background
-        case CityEnchantmentHeavenlyLight:
-            // FIXME: is this right?
-            if plane == PlaneMyrror {
-                return 112
-            }
-            return 93
         case CityEnchantmentInspirations: return 100
         case CityEnchantmentNaturesEye: return 99
         // case CityEnchantmentPestilence: FIXME: How is this displayed?
@@ -409,10 +385,13 @@ func (enchantment CityEnchantment) LbxIndex(plane Plane) int {
 func (enchantment CityEnchantment) SoundIndex() int {
     // FIXME: Add other sound indexes
     switch enchantment {
-        case CityEnchantmentAltarOfBattle: return 31
+        case CityEnchantmentAltarOfBattle, CityEnchantmentHeavenlyLight, CityEnchantmentInspirations,
+            CityEnchantmentProsperity, CityEnchantmentStreamOfLife:
+            return 31
         // case CityEnchantmentAstralGate: return 0
         // case CityEnchantmentChaosRift: return 0
-        // case CityEnchantmentCloudOfShadow: return 0
+        case CityEnchantmentCloudOfShadow, CityEnchantmentWallOfDarkness:
+            return 32
         // case CityEnchantmentConsecration: return 0
         // case CityEnchantmentCursedLands: return 0
         // case CityEnchantmentDarkRituals: return 0
@@ -421,18 +400,13 @@ func (enchantment CityEnchantment) SoundIndex() int {
         // case CityEnchantmentFamine: return 0
         // case CityEnchantmentFlyingFortress: return 0
         // case CityEnchantmentGaiasBlessing: return 0
-        case CityEnchantmentHeavenlyLight: return 31
-        case CityEnchantmentInspirations: return 31
         case CityEnchantmentNaturesEye: return 28
         // case CityEnchantmentPestilence: return 0
-        case CityEnchantmentProsperity: return 31
         // case CityEnchantmentLifeWard: return 0
         // case CityEnchantmentSorceryWard: return 0
         // case CityEnchantmentNatureWard: return 0
         // case CityEnchantmentDeathWard: return 0
         // case CityEnchantmentChaosWard: return 0
-        case CityEnchantmentStreamOfLife: return 31
-        case CityEnchantmentWallOfDarkness: return 32
         case CityEnchantmentWallOfFire: return 30
     }
 

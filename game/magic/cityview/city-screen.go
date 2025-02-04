@@ -456,7 +456,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var geom ebiten.GeoM
             geom.Translate(float64(x1), float64(y1))
-            drawCityScape(screen, buildings, buildingLook, newBuilding, ui.Counter / 8, imageCache, fonts, city.BuildingInfo, player, city.Enchantments.Values(), geom, (*getAlpha)())
+            drawCityScape(screen, city, buildings, buildingLook, newBuilding, ui.Counter / 8, imageCache, fonts, player, geom, (*getAlpha)())
             // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
         },
         RightClick: func(element *uilib.UIElement) {
@@ -1015,10 +1015,25 @@ func getRaceRebelIndex(race data.Race) int {
     return -1
 }
 
-func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook buildinglib.Building, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, buildingInfo buildinglib.BuildingInfos, player *playerlib.Player, enchantments []citylib.Enchantment, baseGeoM ebiten.GeoM, alphaScale float32) {
-    // 5 is grasslands
-    // FIXME: make the land type and sky configurable
-    landBackground, err := imageCache.GetImage("cityscap.lbx", 0, 4)
+func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []BuildingSlot, buildingLook buildinglib.Building, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
+    onMyrror := city.Plane == data.PlaneMyrror
+
+    // background
+    spriteIndex := 0
+    if onMyrror {
+        spriteIndex = 8
+    }
+
+    animationIndex := 4
+    hasFlyingFortress := city.HasEnchantment(data.CityEnchantmentFlyingFortress)
+    switch {
+        case hasFlyingFortress: animationIndex = 1
+        case city.HasEnchantment(data.CityEnchantmentFamine): animationIndex = 2
+        case city.HasEnchantment(data.CityEnchantmentCursedLands): animationIndex = 0
+        case city.HasEnchantment(data.CityEnchantmentGaiasBlessing): animationIndex = 3
+    }
+
+    landBackground, err := imageCache.GetImage("cityscap.lbx", spriteIndex, animationIndex)
     if err == nil {
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(alphaScale)
@@ -1026,19 +1041,48 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         screen.DrawImage(landBackground, &options)
     }
 
-    hills1, err := imageCache.GetImage("cityscap.lbx", 7, 0)
-    if err == nil {
-        var options ebiten.DrawImageOptions
-        options.ColorScale.ScaleAlpha(alphaScale)
-        options.GeoM = baseGeoM
-        options.GeoM.Translate(0, -1)
-        screen.DrawImage(hills1, &options)
+    // horizon
+    spriteIndex = 7
+    hasChaosRift := city.HasEnchantment(data.CityEnchantmentChaosRift)
+    hasHeavenlyLight := city.HasEnchantment(data.CityEnchantmentHeavenlyLight)
+    hasCloudOfShadow := city.HasEnchantment(data.CityEnchantmentCloudOfShadow)
+    switch {
+        case hasFlyingFortress: spriteIndex = -1
+        case hasChaosRift && onMyrror: spriteIndex = 112
+        case hasChaosRift: spriteIndex = 92
+        case hasHeavenlyLight && onMyrror: spriteIndex = 113
+        case hasHeavenlyLight: spriteIndex = 93
+        case hasCloudOfShadow && onMyrror: spriteIndex = 111
+        case hasCloudOfShadow: spriteIndex = 91
+        // FIXME: hills and mountains seem to depend on the tiles north of the town
+        //      hills && onMyrror: 9
+        //      hills: 1
+        //      mountains && onMyrror: 10
+        //      mountains: 2
+        case onMyrror: spriteIndex = 11
     }
 
+    if spriteIndex > 0 {
+        horizon, err := imageCache.GetImage("cityscap.lbx", spriteIndex, 0)
+        if err == nil {
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(alphaScale)
+            options.GeoM = baseGeoM
+            options.GeoM.Translate(0, -1)
+            screen.DrawImage(horizon, &options)
+        }
+    }
+
+    // roads
     roadX := float64(0.0 * data.ScreenScale)
     roadY := float64(18.0 * data.ScreenScale)
 
-    normalRoad, err := imageCache.GetImage("cityscap.lbx", 5, 0)
+    animationIndex = 0
+    if onMyrror {
+        animationIndex = 4
+    }
+
+    normalRoad, err := imageCache.GetImage("cityscap.lbx", 5, animationIndex)
     if err == nil {
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(alphaScale)
@@ -1050,6 +1094,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
     drawName := func(){
     }
 
+    // buildings
     for _, building := range buildings {
 
         index := GetBuildingIndex(building.Building)
@@ -1082,7 +1127,7 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
             if buildingLook == building.Building {
                 drawName = func(){
                     useFont := fonts.SmallFont
-                    text := buildingInfo.Name(building.Building)
+                    text := city.BuildingInfo.Name(building.Building)
                     if building.IsRubble {
                         text = "Destroyed " + text
                         useFont = fonts.RubbleFont
@@ -1100,8 +1145,15 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         }
     }
 
+    // river / shore
     // FIXME: make this configurable
-    river, err := imageCache.GetImages("cityscap.lbx", 3)
+    // FIXME: 4/116 is shore
+    spriteIndex = 4
+    if onMyrror {
+        spriteIndex = 115
+    }
+
+    river, err := imageCache.GetImages("cityscap.lbx", spriteIndex)
     if err == nil {
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(alphaScale)
@@ -1111,6 +1163,8 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
         screen.DrawImage(river[index], &options)
     }
 
+    // magic walls and enchantment icons
+    enchantments := city.Enchantments.Values()
     for _, enchantment := range slices.SortedFunc(slices.Values(enchantments), func (a citylib.Enchantment, b citylib.Enchantment) int {
         return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
     }) {
@@ -1120,17 +1174,15 @@ func drawCityScape(screen *ebiten.Image, buildings []BuildingSlot, buildingLook 
                 options.ColorScale.ScaleAlpha(alphaScale)
                 options.GeoM = baseGeoM
                 options.GeoM.Translate(0, float64(85 * data.ScreenScale))
-                // FIXME: Consider plane
-                images, _ := imageCache.GetImages("cityscap.lbx", enchantment.Enchantment.LbxIndex(data.PlaneArcanus))
+                images, _ := imageCache.GetImages("cityscap.lbx", enchantment.Enchantment.LbxIndex())
                 index := animationCounter % uint64(len(images))
                 screen.DrawImage(images[index], &options)
-            case data.CityEnchantmentNaturesEye, data.CityEnchantmentProsperity, data.CityEnchantmentInspirations:
+            case data.CityEnchantmentNaturesEye, data.CityEnchantmentProsperity:
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(alphaScale)
                 options.GeoM = baseGeoM
                 options.GeoM.Translate(float64(enchantment.Enchantment.IconOffset() * data.ScreenScale), float64(82 * data.ScreenScale))
-                // FIXME: Consider plane
-                image, _ := imageCache.GetImage("cityscap.lbx", enchantment.Enchantment.LbxIndex(data.PlaneArcanus), 0)
+                image, _ := imageCache.GetImage("cityscap.lbx", enchantment.Enchantment.LbxIndex(), 0)
                 screen.DrawImage(image, &options)
         }
     }
