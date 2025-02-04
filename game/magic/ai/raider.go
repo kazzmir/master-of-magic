@@ -116,3 +116,7 @@ func (raider *RaiderAI) PostUpdate(self *playerlib.Player, enemies []*playerlib.
 
 func (raider *RaiderAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
 }
+
+func (raider *RaiderAI) ConfirmRazeTown(city *citylib.City) bool {
+    return true
+}

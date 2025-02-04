@@ -18,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/mirror"
     "github.com/kazzmir/master-of-magic/game/magic/camera"
+    "github.com/kazzmir/master-of-magic/game/magic/banish"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
@@ -164,6 +165,11 @@ type GameEventSummonArtifact struct {
 type GameEventSummonHero struct {
     Wizard data.WizardBase
     Champion bool
+}
+
+type GameEventShowBanish struct {
+    Attacker *playerlib.Player
+    Defender *playerlib.Player
 }
 
 type GameEventNewBuilding struct {
@@ -2659,6 +2665,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.ShowApprenticeUI(yield, game.Players[0])
                     case *GameEventArmyView:
                         game.doArmyView(yield)
+                    case *GameEventShowBanish:
+                        banishEvent := event.(*GameEventShowBanish)
+                        game.doBanish(yield, banishEvent.Attacker, banishEvent.Defender)
                     case *GameEventNotice:
                         notice := event.(*GameEventNotice)
                         game.doNotice(yield, notice.Message)
@@ -3116,6 +3125,60 @@ func (game *Game) doMoveFleeingDefender(player *playerlib.Player, stack *playerl
     }
 }
 
+// returns true if the city was razed, and the amount of gold plundered from the city
+func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, city *citylib.City) (bool, int) {
+    raze := false
+    gold := defender.ComputePlunderedGold(city)
+
+    if attacker.IsHuman() {
+        raze = game.confirmRazeTown(yield, city)
+    } else {
+        raze = attacker.AIBehavior.ConfirmRazeTown(city)
+    }
+
+    containedFortress := city.Buildings.Contains(buildinglib.BuildingFortress)
+
+    if raze {
+        defender.RemoveCity(city)
+    } else {
+        defender.RemoveCity(city)
+        attacker.AddCity(city)
+        city.Banner = attacker.Wizard.Banner
+        city.RulingRace = attacker.Wizard.Race
+        city.UpdateTaxRate(attacker.TaxRate, attackerStack.Units())
+
+        city.Buildings.Remove(buildinglib.BuildingFortress)
+        city.Buildings.Remove(buildinglib.BuildingSummoningCircle)
+    }
+
+    if containedFortress {
+        defender.Banished = true
+
+        if attacker.IsHuman() || defender.IsHuman() {
+            game.Events <- &GameEventShowBanish{Attacker: attacker, Defender: defender}
+        }
+    }
+
+    return raze, gold
+}
+
+func (game *Game) doBanish(yield coroutine.YieldFunc, attacker *playerlib.Player, defender *playerlib.Player) {
+    banishLogic, banishDraw := banish.ShowBanishAnimation(game.Cache, attacker, defender)
+
+    oldDrawer := game.Drawer
+    defer func() {
+        game.Drawer = oldDrawer
+    }()
+
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        banishDraw(screen)
+    }
+
+    banishLogic(yield)
+
+    yield()
+}
+
 func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerlib.Player) {
     stack := player.SelectedStack
     if stack == nil || len(stack.ActiveUnits()) == 0 {
@@ -3175,8 +3238,9 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                 // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
                 otherStack := otherPlayer.FindStack(stack.X(), stack.Y(), stack.Plane())
                 if otherStack != nil {
+                    otherCity := otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane())
                     zone := combat.ZoneType{
-                        City: otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane()),
+                        City: otherCity,
                     }
 
                     state := game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
@@ -3187,20 +3251,32 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                         game.doMoveFleeingDefender(otherPlayer, otherStack)
                     }
 
-                    // FIXME: if there was a city here and the attacker won then the attacker
-                    // should be able to raze or occupy the city
-
-                    // FIXME: loose fame if razing
-
                     stack.ExhaustMoves()
                     game.RefreshUI()
 
                     stopMoving = true
                     break quitMoving
                 }
-            }
 
-            // FIXME: if there is an unguarded city at the destination then defeat it immediately
+                // defeat any unguarded cities immediately
+                otherCity := otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane())
+                if otherCity != nil {
+                    raze, gold := game.defeatCity(yield, player, stack, otherPlayer, otherCity)
+
+                    // FIXME: show a notice about any fame won
+                    player.Fame += otherCity.FameForCaptureOrRaze(!raze)
+                    otherPlayer.Fame += otherCity.FameForCaptureOrRaze(false)
+                    player.Gold += gold
+                    otherPlayer.Gold -= gold
+
+                    stack.ExhaustMoves()
+                    game.RefreshUI()
+
+                    stopMoving = true
+                    break quitMoving
+
+                }
+            }
 
             // some units in the stack might not have any moves left
             beforeActive := len(stack.ActiveUnits())
@@ -3481,6 +3557,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
         if game.Players[0].IsVisible(oldX, oldY, stack.Plane()) {
             game.showMovement(yield, oldX, oldY, stack, false)
         }
+
         player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
         if encounter != nil {
@@ -3492,8 +3569,9 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
             // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
             enemyStack := enemy.FindStack(stack.X(), stack.Y(), stack.Plane())
             if enemyStack != nil {
+                city := enemy.FindCity(stack.X(), stack.Y(), stack.Plane())
                 zone := combat.ZoneType{
-                    City: enemy.FindCity(stack.X(), stack.Y(), stack.Plane()),
+                    City: city,
                 }
                 state := game.doCombat(yield, player, stack, enemy, enemyStack, zone)
 
@@ -3504,7 +3582,22 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
                     game.doMoveFleeingDefender(enemy, enemyStack)
                 }
 
-                // FIXME: loose fame if razing
+                return
+            }
+
+            city := enemy.FindCity(stack.X(), stack.Y(), stack.Plane())
+            if city != nil {
+                raze, gold := game.defeatCity(yield, player, stack, enemy, city)
+
+                player.Fame += city.FameForCaptureOrRaze(!raze)
+                enemy.Fame += city.FameForCaptureOrRaze(false)
+                player.Gold += gold
+                enemy.Gold -= gold
+
+                // FIXME: if the wizard is neutral and decides to raze the town, then the town could become
+                // an encounter zone
+
+                return
             }
         }
     } else if move.Invalid != nil {
@@ -3719,6 +3812,59 @@ func (game *Game) confirmEncounter(yield coroutine.YieldFunc, message string, an
     }
 
     return result
+}
+
+// returns true to raze the town, false to occupy it
+func (game *Game) confirmRazeTown(yield coroutine.YieldFunc, city *citylib.City) bool {
+    raze := false
+    quit := false
+    yes := func(){
+        raze = true
+        quit = true
+    }
+
+    no := func(){
+        raze = false
+        quit = true
+    }
+
+    yesImages, _ := game.ImageCache.GetImages("compix.lbx", 82)
+    noImages, _ := game.ImageCache.GetImages("compix.lbx", 81)
+
+    ui := &uilib.UI{
+        Cache: game.Cache,
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+
+    ui.SetElementsFromArray(nil)
+
+    ui.AddElements(uilib.MakeConfirmDialogWithLayerFull(ui, game.Cache, &game.ImageCache, 1, "Do you wish to completely destroy this city?", true, no, yes, noImages, yesImages))
+
+    oldDrawer := game.Drawer
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        oldDrawer(screen, game)
+        ui.Draw(ui, screen)
+    }
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    yield()
+    for !quit {
+        game.Counter += 1
+        ui.StandardUpdate()
+        yield()
+    }
+
+    yield()
+
+    return raze
 }
 
 func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *maplib.ExtraEncounter) bool {
@@ -4023,6 +4169,7 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
 }
 
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
+ * this also shows the raze city ui so that fame can be incorporated based on whether the city is razed or not
  */
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
     attackingArmy := combat.Army{
@@ -4123,6 +4270,17 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
         distributeFame(attacker, defender, defenderStack, defeatedDefenders)
+
+        if zone.City != nil {
+            razeCity, gold := game.defeatCity(yield, attacker, attackerStack, defender, zone.City)
+            // if razeCity is true then we pass in false to get the fame for capturing the city
+            winnerFame += zone.City.FameForCaptureOrRaze(!razeCity)
+            loserFame += zone.City.FameForCaptureOrRaze(false)
+
+            attacker.Gold += gold
+            defender.Gold -= gold
+        }
+
     } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee {
         distributeFame(defender, attacker, attackerStack, defeatedAttackers)
     }
@@ -4142,6 +4300,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
                 result = combat.CombatEndScreenResultRetreat
         }
 
+        // FIXME: show how much gold was plundered (or lost)
         endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result, combatScreen.Model.DiedWhileFleeing, fame)
         game.Drawer = func (screen *ebiten.Image, game *Game){
             endScreen.Draw(screen)
@@ -4527,6 +4686,7 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
 
     newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()), game)
     newCity.Plane = settlers.GetPlane()
+    newCity.RulingRace = player.Wizard.Race
     newCity.Population = 300
     newCity.Outpost = true
     newCity.Banner = player.Wizard.Banner
