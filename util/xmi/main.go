@@ -10,11 +10,16 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/xmi"
 
-    "gitlab.com/gomidi/midi/v2/smf"
-    midiDrivers "gitlab.com/gomidi/midi/v2/drivers"
+    // "gitlab.com/gomidi/midi/v2/smf"
+    // midiDrivers "gitlab.com/gomidi/midi/v2/drivers"
     // sudo apt install libportmidi-dev
-    _ "gitlab.com/gomidi/midi/v2/drivers/portmididrv"
-    "gitlab.com/gomidi/midi/v2"
+    // _ "gitlab.com/gomidi/midi/v2/drivers/portmididrv"
+
+    "github.com/kazzmir/master-of-magic/lib/midi/smf"
+    "github.com/kazzmir/master-of-magic/lib/midi"
+    midiDrivers "github.com/kazzmir/master-of-magic/lib/midi/drivers"
+    _ "github.com/kazzmir/master-of-magic/lib/midi/drivers/rtmididrv"
+    // "gitlab.com/gomidi/midi/v2"
 )
 
 /* first run in a terminal
@@ -115,9 +120,10 @@ func main(){
             end := time.Now()
 
             log.Printf("Wrote to %v in %v", outputName, end.Sub(start))
+
+            playMidi(midi)
         } else {
             // dumpMidi(midi)
-            // playMidi(midi)
         }
     }
 }

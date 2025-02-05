@@ -6,7 +6,7 @@ import (
     "log"
     "reflect"
 
-    "gitlab.com/gomidi/midi/v2/smf"
+    "github.com/kazzmir/master-of-magic/lib/midi/smf"
 )
 
 func main() {

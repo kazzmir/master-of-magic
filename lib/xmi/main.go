@@ -13,8 +13,8 @@ import (
     "cmp"
     "slices"
 
-    "gitlab.com/gomidi/midi/v2/smf"
-    "gitlab.com/gomidi/midi/v2"
+    "github.com/kazzmir/master-of-magic/lib/midi/smf"
+    "github.com/kazzmir/master-of-magic/lib/midi"
 )
 
 const debug = false
