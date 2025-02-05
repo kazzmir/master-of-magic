@@ -117,13 +117,18 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
             if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
                 quit = true
             }
-            yield()
+
+            if yield() != nil {
+                return
+            }
         }
 
         getAlpha = util.MakeFadeOut(7, &counter)
         for i := 0; i < 7; i++ {
             counter += 1
-            yield()
+            if yield() != nil {
+                return
+            }
         }
     }
 
@@ -438,7 +443,9 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                 default:
             }
 
-            yield()
+            if yield() != nil {
+                return
+            }
         }
     }
 
