@@ -180,11 +180,6 @@ type NoteOffDuration struct {
     index int
 }
 
-type ByDuration []NoteOffDuration
-func (a ByDuration) Len() int           { return len(a) }
-func (a ByDuration) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a ByDuration) Less(i, j int) bool { return a[i].Duration < a[j].Duration }
-
 // convert from an XMI midi event to a standard midi event by keeping track of note on durations
 func (event *MidiEvent) ConvertToSMF() *smf.SMF {
     object := smf.New()
