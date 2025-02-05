@@ -1549,7 +1549,9 @@ func distanceAboveRange(x1 float64, y1 float64, x2 float64, y2 float64, r float6
 func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
     for combat.Model.UpdateProjectiles(combat.Counter) {
         combat.Counter += 1
-        yield()
+        if yield() != nil {
+            return
+        }
     }
 }
 
@@ -1754,7 +1756,9 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
             }
         }
 
-        yield()
+        if yield() != nil {
+            return
+        }
     }
 }
 
@@ -1851,7 +1855,9 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
             }
         }
 
-        yield()
+        if yield() != nil {
+            return
+        }
     }
 }
 
@@ -1989,7 +1995,9 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
                 reached = true
             }
 
-            yield()
+            if yield() != nil {
+                return
+            }
         }
     }
 
@@ -2060,7 +2068,9 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
             combat.Model.meleeAttack(combat.Model.SelectedUnit, defender)
         }
 
-        yield()
+        if yield() != nil {
+            return
+        }
     }
 }
 
