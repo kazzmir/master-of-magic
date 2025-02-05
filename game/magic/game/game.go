@@ -617,7 +617,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         game.DrawGame(screen)
     }
 
-    game.Music.PlaySong(music.SongOverworld)
+    game.Music.PushSong(music.SongOverworld)
 
     return game
 }
@@ -2727,9 +2727,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
                         game.Camera.Center(buildingEvent.City.X, buildingEvent.City.Y)
-                        game.Music.PlaySong(music.SongBuildingFinished)
+                        game.Music.PushSong(music.SongBuildingFinished)
                         game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building, buildingEvent.Player)
-                        game.Music.PlaySong(music.SongOverworld)
+                        game.Music.PopSong()
                         game.doCityScreen(yield, buildingEvent.City, buildingEvent.Player, buildingEvent.Building)
                     case *GameEventCityName:
                         cityEvent := event.(*GameEventCityName)
@@ -3934,6 +3934,9 @@ func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *map
         animation = util.MakePaletteRotateAnimation(reloadLbx, &game.ImageCache, lairIndex, rotateIndexLow, rotateIndexHigh)
     }
 
+    game.Music.PushSong(music.SongSiteDiscovery)
+    defer game.Music.PopSong()
+
     if len(encounter.Units) == 0 {
         game.showEncounter(yield, fmt.Sprintf("You have found %v %v.", article, encounter.Type.Name()), animation)
         return true
@@ -4228,7 +4231,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             combatScreen.Draw(screen)
         }
 
-        game.Music.PlaySong(music.SongCombat1)
+        game.Music.PushSong(music.SongCombat1)
 
         state = combat.CombatStateRunning
         for state == combat.CombatStateRunning {
@@ -4236,7 +4239,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             yield()
         }
 
-        game.Music.PlaySong(music.SongOverworld)
+        game.Music.PopSong()
 
         defeatedDefenders = combatScreen.Model.DefeatedDefenders
         defeatedAttackers = combatScreen.Model.DefeatedAttackers

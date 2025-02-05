@@ -37,6 +37,9 @@ type Music struct {
     done context.Context
     cancel context.CancelFunc
     wait sync.WaitGroup
+
+    // queue of songs being played. a new song can be pushed on top, or popped off
+    songQueue []Song
 }
 
 func MakeMusic(cache *lbx.LbxCache) *Music {
@@ -44,7 +47,24 @@ func MakeMusic(cache *lbx.LbxCache) *Music {
     return &Music{done: ctx, cancel: cancel, Cache: cache}
 }
 
+func (music *Music) PushSong(index Song){
+    music.songQueue = append(music.songQueue, index)
+    music.Stop()
+    music.PlaySong(index)
+}
+
+func (music *Music) PopSong(){
+    if len(music.songQueue) > 0 {
+        music.songQueue = music.songQueue[:len(music.songQueue)-1]
+        music.Stop()
+        if len(music.songQueue) > 0 {
+            music.PlaySong(music.songQueue[len(music.songQueue)-1])
+        }
+    }
+}
+
 func (music *Music) PlaySong(index Song){
+    log.Printf("Playing song %v", index)
     music.cancel()
 
     music.done, music.cancel = context.WithCancel(context.Background())
