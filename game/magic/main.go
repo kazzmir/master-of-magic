@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     introlib "github.com/kazzmir/master-of-magic/game/magic/intro"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
+    musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -362,9 +363,15 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
         return runGameInstance(yield, game, settings, wizard)
     }
 
+    music := musiclib.MakeMusic(game.Cache)
+    defer music.Stop()
+
+    music.PlaySong(musiclib.SongIntro)
     runIntro(yield, game)
 
     yield()
+
+    music.PlaySong(musiclib.SongTitle)
 
     for {
         state := runMainMenu(yield, game)
@@ -392,6 +399,9 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                 if cancel {
                     break
                 }
+
+                music.Stop()
+
                 err := runGameInstance(yield, game, settings, wizard)
 
                 if err != nil {
@@ -399,6 +409,8 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                     yield()
                     return err
                 }
+
+                music.PlaySong(musiclib.SongTitle)
         }
     }
 }

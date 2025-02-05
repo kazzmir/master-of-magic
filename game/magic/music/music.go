@@ -22,9 +22,12 @@ import (
 type Song int
 
 const (
-    SongOverworld Song = 100
+    SongOverworld Song = 99
     SongBuildingFinished Song = 113
     SongCombat1 Song = 102
+    SongLearnSpell Song = 40
+    SongIntro Song = 112
+    SongTitle Song = 110
 )
 
 type Music struct {
