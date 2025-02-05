@@ -1437,7 +1437,7 @@ func (cityScreen *CityScreen) WorkProducers() []ResourceUsage {
         }
     }
 
-    add(int(cityScreen.City.Workers), "Workers")
+    add(int(cityScreen.City.ProductionWorkers()), "Workers")
     add(int(cityScreen.City.ProductionFarmers()), "Farmers")
     add(int(cityScreen.City.ProductionTerrain()), "Terrain")
     add(int(cityScreen.City.ProductionSawmill()), "Sawmill")
@@ -1445,6 +1445,7 @@ func (cityScreen *CityScreen) WorkProducers() []ResourceUsage {
     add(int(cityScreen.City.ProductionMinersGuild()), "Miner's Guild")
     add(int(cityScreen.City.ProductionMechaniciansGuild()), "Mechanician's Guild")
     add(int(cityScreen.City.ProductionInspirations()), "Inspirations")
+    // FIXME: should this show halfed production in case of cursed lands?
 
     return usage
 }

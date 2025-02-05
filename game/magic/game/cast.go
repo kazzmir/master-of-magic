@@ -101,6 +101,12 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
+        case "Cursed Lands":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentCursedLands)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyCity, SelectedFunc: selected}
         case "Change Terrain":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeChangeTerrain, SelectedFunc: game.doCastChangeTerrain}
         case "Transmute":
@@ -286,6 +292,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
         case LocationTypeEnemyMeldedNode:
             selectMessage = fmt.Sprintf("Select a magic node as the target for a %v spell.", spell.Name)
+        case LocationTypeEnemyCity:
+            selectMessage = fmt.Sprintf("Select an enemy city as the target for a %v spell.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
     }
@@ -480,7 +488,12 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         }
 
                     case LocationTypeEnemyCity:
-                        // TODO
+                        for _, enemy := range game.GetEnemies(player) {
+                            city := enemy.FindCity(tileX, tileY, game.Plane)
+                            if city != nil {
+                                return tileX, tileY, false
+                            }
+                        }
 
                     case LocationTypeFriendlyUnit:
                         // TODO
@@ -500,7 +513,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
 func (game *Game) doCastCityEnchantment(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player, enchantment data.CityEnchantment) {
     game.doMoveCamera(yield, tileX, tileY)
-    chosenCity := player.FindCity(tileX, tileY, game.Plane)
+    chosenCity := game.FindCity(tileX, tileY, game.Plane)
     if chosenCity == nil {
         return
     }

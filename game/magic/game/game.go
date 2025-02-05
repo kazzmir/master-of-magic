@@ -631,15 +631,19 @@ func (game *Game) UpdateImages() {
     }
 }
 
-func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
+func (game *Game) FindCity(x int, y int, plane data.Plane) *citylib.City {
     for _, player := range game.Players {
         city := player.FindCity(x, y, plane)
         if city != nil {
-            return true
+            return city
         }
     }
 
-    return false
+    return nil
+}
+
+func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
+    return game.FindCity(x, y, plane) != nil
 }
 
 func (game *Game) NearCity(point image.Point, squares int, plane data.Plane) bool {

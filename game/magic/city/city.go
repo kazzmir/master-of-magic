@@ -831,6 +831,12 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
         unrestPercent += 0.25
     }
 
+    unrestAbsolute := float64(0)
+
+    if city.HasEnchantment(data.CityEnchantmentCursedLands) {
+        unrestAbsolute += 1
+    }
+
     // capital race vs town race modifier
     // unrest from spells
     // supression from units
@@ -872,7 +878,7 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
         pacification += float64(oraclePacification(city.Race))
     }
 
-    total := unrestPercent * float64(city.Citizens()) - pacification - garrisonSupression / 2
+    total := unrestPercent * float64(city.Citizens()) + unrestAbsolute - pacification - garrisonSupression / 2
 
     return int(math.Max(0, total))
 }
@@ -1247,18 +1253,28 @@ func (city *City) ProductionTerrain() float32 {
 }
 
 func (city *City) ProductionInspirations() float32 {
-    return city.ProductionWorkers() + city.ProductionFarmers()
+    if city.HasEnchantment(data.CityEnchantmentInspirations) {
+        return city.ProductionWorkers() + city.ProductionFarmers()
+    }
+
+    return 0
 }
 
 func (city *City) WorkProductionRate() float32 {
-    return city.ProductionWorkers() +
-           city.ProductionFarmers() +
-           city.ProductionMinersGuild() +
-           city.ProductionMechaniciansGuild() +
-           city.ProductionTerrain() +
-           city.ProductionSawmill() +
-           city.ProductionForestersGuild() +
-           city.ProductionInspirations()
+    result := city.ProductionWorkers() +
+              city.ProductionFarmers() +
+              city.ProductionMinersGuild() +
+              city.ProductionMechaniciansGuild() +
+              city.ProductionTerrain() +
+              city.ProductionSawmill() +
+              city.ProductionForestersGuild() +
+              city.ProductionInspirations()
+
+    if city.HasEnchantment(data.CityEnchantmentCursedLands) {
+        result /= 2
+    }
+
+    return result
 }
 
 func (city *City) GrowOutpost() CityEvent {
