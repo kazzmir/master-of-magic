@@ -804,8 +804,9 @@ func ConvertToMidi(data io.Reader) (*smf.SMF, error) {
                 } else if next.IsEvent() {
                     event, err := next.ReadEvent()
                     if err != nil {
-                        fmt.Printf("Error reading event: %v\n", err)
-                        continue
+                        return nil, err
+                        // fmt.Printf("Error reading event: %v\n", err)
+                        // continue
                     }
 
                     smfObject := event.ConvertToSMF()

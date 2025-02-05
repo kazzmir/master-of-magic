@@ -83,36 +83,41 @@ func main(){
     if len(os.Args) < 2 {
         return
     }
-    file := os.Args[1]
 
-    if isXmi(file) {
-        data, err := os.Open(file)
-        if err != nil {
-            fmt.Printf("Error: %s\n", err)
-            return
+    for _, file := range os.Args {
+        if isXmi(file) {
+            data, err := os.Open(file)
+            if err != nil {
+                fmt.Printf("Error: %s\n", err)
+                return
+            }
+            defer data.Close()
+
+            start := time.Now()
+
+            midi, err := xmi.ConvertToMidi(data)
+
+            if err != nil {
+                log.Printf("Error converting %v: %v", file, err)
+                continue
+            }
+
+            outputName := replaceExtension(file, "cmid")
+
+            out, err := os.Create(outputName)
+            if err != nil {
+                log.Printf("Error: %v", err)
+                continue
+            }
+            midi.WriteTo(out)
+            out.Close()
+
+            end := time.Now()
+
+            log.Printf("Wrote to %v in %v", outputName, end.Sub(start))
+        } else {
+            // dumpMidi(midi)
+            // playMidi(midi)
         }
-        defer data.Close()
-
-        midi, err := xmi.ConvertToMidi(data)
-
-        if err != nil {
-            log.Printf("Error: %v", err)
-            return
-        }
-
-        outputName := replaceExtension(file, "cmid")
-
-        out, err := os.Create(outputName)
-        if err != nil {
-            log.Printf("Error: %v", err)
-            return
-        }
-        midi.WriteTo(out)
-        out.Close()
-
-        log.Printf("Wrote to %v", outputName)
-    } else {
-        // dumpMidi(midi)
-        // playMidi(midi)
     }
 }
