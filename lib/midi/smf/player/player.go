@@ -39,10 +39,11 @@ type (
 )
 
 // New returns a Player that plays on the given output port
-func New(outPort drivers.Out) *Player {
+func New(outPort drivers.Out, stop context.Context) *Player {
+    ctx, cancelFn := context.WithCancelCause(stop)
 	return &Player{
-		ctx:      UnavailableContext(),
-		cancelFn: func(cause error) {},
+		ctx:      ctx,
+		cancelFn: cancelFn,
 		outPort:  outPort,
 	}
 }
@@ -79,6 +80,28 @@ func (p *Player) SetSMF(smfdata io.Reader, tracks ...int) error {
 	return nil
 }
 
+func (p *Player) SetSMFObj(song *smf.SMF) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
+
+	if p.isPlaying {
+		return ErrIsPlaying
+	}
+
+	p.currentMsg = 0
+	p.currentDur = 0
+	p.messages = nil
+
+	var events smfReader
+    // events.trackEvents = song.Tracks[0]
+    tracksReader := smf.MakeTracksFrom(song)
+    tracksReader.Do(func (event smf.TrackEvent) {
+        events.trackEvents = append(events.trackEvents, event)
+    })
+	p.messages, p.totalDur = events.getMessages()
+	return nil
+}
+
 // Start starts playing. It is non-blocking. Call wait to wait until it is finished.
 func (p *Player) Start() error {
 	p.mutex.Lock()
@@ -93,7 +116,7 @@ func (p *Player) Start() error {
 	}
 
 	p.isPlaying = true
-	p.ctx, p.cancelFn = context.WithCancelCause(context.Background())
+	// p.ctx, p.cancelFn = context.WithCancelCause(context.Background())
 
 	go p.playOn(p.outPort)
 	return nil
@@ -231,9 +254,25 @@ func (p *Player) cleanupAfterPlaying() {
 	p.isPlaying = false
 }
 
-func Play(out drivers.Out, smfdata io.Reader, tracks ...int) (*Player, error) {
-	player := New(out)
+func Play(out drivers.Out, smfdata io.Reader, done context.Context, tracks ...int) (*Player, error) {
+	player := New(out, done)
 	err := player.SetSMF(smfdata, tracks...)
+	if err != nil {
+		return nil, err
+	}
+
+	err = player.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	player.Wait()
+	return player, nil
+}
+
+func PlaySMF(out drivers.Out, song *smf.SMF, done context.Context) (*Player, error) {
+	player := New(out, done)
+	err := player.SetSMFObj(song)
 	if err != nil {
 		return nil, err
 	}

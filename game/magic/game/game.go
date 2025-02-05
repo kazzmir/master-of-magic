@@ -617,7 +617,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         game.DrawGame(screen)
     }
 
-    game.Music.PlaySong(0)
+    game.Music.PlaySong(music.SongOverworld)
 
     return game
 }
@@ -2727,7 +2727,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
                         game.Camera.Center(buildingEvent.City.X, buildingEvent.City.Y)
+                        game.Music.PlaySong(music.SongBuildingFinished)
                         game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building, buildingEvent.Player)
+                        game.Music.PlaySong(music.SongOverworld)
                         game.doCityScreen(yield, buildingEvent.City, buildingEvent.Player, buildingEvent.Building)
                     case *GameEventCityName:
                         cityEvent := event.(*GameEventCityName)

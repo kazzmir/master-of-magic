@@ -106,6 +106,23 @@ func (t *TracksReader) doTrack(tr int) bool {
 	return t.tracks[tr]
 }
 
+func MakeTracksFrom(smf *SMF) *TracksReader {
+    t := &TracksReader{}
+	t.tracks = map[int]bool{}
+	for tr := range smf.Tracks {
+		t.tracks[tr] = true
+	}
+
+	t.smf = smf
+
+	if _, ok := t.smf.TimeFormat.(MetricTicks); !ok {
+		t.err = fmt.Errorf("SMF time format is not metric ticks, but %s (currently not supported)", t.smf.TimeFormat.String())
+		return t
+	}
+
+    return t
+}
+
 func ReadTracks(filepath string, tracks ...int) *TracksReader {
 	t := &TracksReader{}
 	t.tracks = map[int]bool{}
