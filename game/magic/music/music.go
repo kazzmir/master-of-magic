@@ -24,6 +24,7 @@ type Song int
 const (
     SongOverworld Song = 100
     SongBuildingFinished Song = 113
+    SongCombat1 Song = 102
 )
 
 type Music struct {

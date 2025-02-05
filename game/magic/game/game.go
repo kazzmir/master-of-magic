@@ -4228,11 +4228,15 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             combatScreen.Draw(screen)
         }
 
+        game.Music.PlaySong(music.SongCombat1)
+
         state = combat.CombatStateRunning
         for state == combat.CombatStateRunning {
             state = combatScreen.Update(yield)
             yield()
         }
+
+        game.Music.PlaySong(music.SongOverworld)
 
         defeatedDefenders = combatScreen.Model.DefeatedDefenders
         defeatedAttackers = combatScreen.Model.DefeatedAttackers
