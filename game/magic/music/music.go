@@ -65,7 +65,7 @@ func (music *Music) PopSong(){
 
 func (music *Music) PlaySong(index Song){
     log.Printf("Playing song %v", index)
-    music.cancel()
+    music.Stop()
 
     music.done, music.cancel = context.WithCancel(context.Background())
 
