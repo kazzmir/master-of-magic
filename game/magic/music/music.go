@@ -109,8 +109,6 @@ func playMidi(song *smf.SMF, done context.Context) {
                         }
                     }
                 }
-
-                return
             }
 
             fmt.Printf("No playable output ports available!\n")
