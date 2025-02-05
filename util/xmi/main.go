@@ -107,7 +107,7 @@ func main(){
                 continue
             }
 
-            outputName := replaceExtension(file, "cmid")
+            outputName := replaceExtension(file, "mid")
 
             out, err := os.Create(outputName)
             if err != nil {
@@ -121,7 +121,7 @@ func main(){
 
             log.Printf("Wrote to %v in %v", outputName, end.Sub(start))
 
-            playMidi(midi)
+            // playMidi(midi)
         } else {
             // dumpMidi(midi)
         }
