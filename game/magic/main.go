@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     introlib "github.com/kazzmir/master-of-magic/game/magic/intro"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
+    musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -68,7 +69,9 @@ func runIntro(yield coroutine.YieldFunc, game *MagicGame) {
     }
 
     for intro.Update() == introlib.IntroStateRunning {
-        yield()
+        if yield() != nil {
+            return
+        }
 
         if inputmanager.LeftClick() ||
            inpututil.IsKeyJustPressed(ebiten.KeySpace) ||
@@ -123,7 +126,9 @@ func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreen
             return mainview.MainScreenStateQuit
         }
 
-        yield()
+        if yield() != nil {
+            return mainview.MainScreenStateQuit
+        }
     }
 
     return menu.State
@@ -258,6 +263,7 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
 
 func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) error {
     game := gamelib.MakeGame(magic.Cache, settings)
+    defer game.Shutdown()
 
     magic.Drawer = func(screen *ebiten.Image) {
         game.Draw(screen)
@@ -361,9 +367,15 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
         return runGameInstance(yield, game, settings, wizard)
     }
 
+    music := musiclib.MakeMusic(game.Cache)
+    defer music.Stop()
+
+    music.PlaySong(musiclib.SongIntro)
     runIntro(yield, game)
 
     yield()
+
+    music.PlaySong(musiclib.SongTitle)
 
     for {
         state := runMainMenu(yield, game)
@@ -391,6 +403,9 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                 if cancel {
                     break
                 }
+
+                music.Stop()
+
                 err := runGameInstance(yield, game, settings, wizard)
 
                 if err != nil {
@@ -398,6 +413,8 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                     yield()
                     return err
                 }
+
+                music.PlaySong(musiclib.SongTitle)
         }
     }
 }
@@ -420,9 +437,13 @@ func NewMagicGame(dataPath string, startGame bool) (*MagicGame, error) {
 func (game *MagicGame) Update() error {
     inputmanager.Update()
 
+    if ebiten.IsWindowBeingClosed() {
+        game.MainCoroutine.Stop()
+    }
+
     err := game.MainCoroutine.Run()
     if err != nil {
-        if errors.Is(err, coroutine.CoroutineFinished) {
+        if errors.Is(err, coroutine.CoroutineFinished) || errors.Is(err, coroutine.CoroutineCancelled) {
             return ebiten.Termination
         }
 
@@ -458,6 +479,7 @@ func main() {
     ebiten.SetWindowSize(data.ScreenWidth * 2, data.ScreenHeight * 2)
     ebiten.SetWindowTitle("magic")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+    ebiten.SetWindowClosingHandled(true)
 
     audio.Initialize()
     mouse.Initialize()

@@ -11,6 +11,7 @@ type Coroutine struct {
     yieldFrom chan struct{}
     yieldTo chan struct{}
     errorOut *error
+    stopped bool
 }
 
 type YieldFunc func() error
@@ -18,6 +19,7 @@ type YieldFunc func() error
 type AcceptYieldFunc func(yield YieldFunc) error
 
 var CoroutineFinished = fmt.Errorf("coroutine finished")
+var CoroutineCancelled = fmt.Errorf("coroutine cancelled")
 
 func MakeCoroutine(user AcceptYieldFunc) *Coroutine {
     yieldTo := make(chan struct{})
@@ -33,7 +35,7 @@ func MakeCoroutine(user AcceptYieldFunc) *Coroutine {
             _, ok := <-yieldFrom
 
             if !ok {
-                return fmt.Errorf("coroutine cancelled")
+                return CoroutineCancelled
             }
 
             return nil
@@ -50,11 +52,21 @@ func MakeCoroutine(user AcceptYieldFunc) *Coroutine {
     }
 }
 
+func (coro *Coroutine) Stop() {
+    close(coro.yieldFrom)
+    coro.stopped = true
+}
+
 /* nil return means the coroutine is still running.
  * CoroutineFinished means the coroutine has finished.
  * any other non-nil error is an error from the user's function
  */
 func (coro *Coroutine) Run() error {
+    if coro.stopped {
+        // wait for yieldTo to be closed
+        <-coro.yieldTo
+        return CoroutineCancelled
+    }
     coro.yieldFrom <- struct{}{}
     _, ok := <-coro.yieldTo
     if !ok {

@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/music"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -18,6 +19,9 @@ func (game *Game) wizlabAnimation(yield coroutine.YieldFunc, wizard setup.Wizard
     defer func(){
         game.Drawer = oldDrawer
     }()
+
+    game.Music.PushSong(music.SongLearnSpell)
+    defer game.Music.PopSong()
 
     var fade util.AlphaFadeFunc
 
@@ -86,7 +90,7 @@ func (game *Game) wizlabAnimation(yield coroutine.YieldFunc, wizard setup.Wizard
 
     yield()
 
-    for counter = 0; counter < 100; counter++ {
+    for counter = 0; counter < 60 * 4; counter++ {
         if counter % 5 == 0 {
             sparkles.Next()
         }

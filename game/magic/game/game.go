@@ -35,6 +35,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
@@ -226,6 +227,8 @@ type Game struct {
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
     WhiteFont *font.Font
+
+    Music *music.Music
 
     Settings setup.NewGameSettings
 
@@ -582,6 +585,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     game := &Game{
         Cache: lbxCache,
         Help: help,
+        Music: music.MakeMusic(lbxCache),
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
         Plane: data.PlaneArcanus,
@@ -613,7 +617,13 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         game.DrawGame(screen)
     }
 
+    game.Music.PushSong(music.SongOverworld)
+
     return game
+}
+
+func (game *Game) Shutdown() {
+    game.Music.Stop()
 }
 
 func (game *Game) UpdateImages() {
@@ -2726,7 +2736,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
                         game.Camera.Center(buildingEvent.City.X, buildingEvent.City.Y)
+                        game.Music.PushSong(music.SongBuildingFinished)
                         game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building, buildingEvent.Player)
+                        game.Music.PopSong()
                         game.doCityScreen(yield, buildingEvent.City, buildingEvent.Player, buildingEvent.Building)
                     case *GameEventCityName:
                         cityEvent := event.(*GameEventCityName)
@@ -3931,6 +3943,9 @@ func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *map
         animation = util.MakePaletteRotateAnimation(reloadLbx, &game.ImageCache, lairIndex, rotateIndexLow, rotateIndexHigh)
     }
 
+    game.Music.PushSong(music.SongSiteDiscovery)
+    defer game.Music.PopSong()
+
     if len(encounter.Units) == 0 {
         game.showEncounter(yield, fmt.Sprintf("You have found %v %v.", article, encounter.Type.Name()), animation)
         return true
@@ -4225,11 +4240,15 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             combatScreen.Draw(screen)
         }
 
+        game.Music.PushSong(music.SongCombat1)
+
         state = combat.CombatStateRunning
         for state == combat.CombatStateRunning {
             state = combatScreen.Update(yield)
             yield()
         }
+
+        game.Music.PopSong()
 
         defeatedDefenders = combatScreen.Model.DefeatedDefenders
         defeatedAttackers = combatScreen.Model.DefeatedAttackers
