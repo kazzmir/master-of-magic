@@ -69,7 +69,9 @@ func runIntro(yield coroutine.YieldFunc, game *MagicGame) {
     }
 
     for intro.Update() == introlib.IntroStateRunning {
-        yield()
+        if yield() != nil {
+            return
+        }
 
         if inputmanager.LeftClick() ||
            inpututil.IsKeyJustPressed(ebiten.KeySpace) ||
@@ -124,7 +126,9 @@ func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreen
             return mainview.MainScreenStateQuit
         }
 
-        yield()
+        if yield() != nil {
+            return mainview.MainScreenStateQuit
+        }
     }
 
     return menu.State
@@ -433,9 +437,13 @@ func NewMagicGame(dataPath string, startGame bool) (*MagicGame, error) {
 func (game *MagicGame) Update() error {
     inputmanager.Update()
 
+    if ebiten.IsWindowBeingClosed() {
+        game.MainCoroutine.Stop()
+    }
+
     err := game.MainCoroutine.Run()
     if err != nil {
-        if errors.Is(err, coroutine.CoroutineFinished) {
+        if errors.Is(err, coroutine.CoroutineFinished) || errors.Is(err, coroutine.CoroutineCancelled) {
             return ebiten.Termination
         }
 
@@ -471,6 +479,7 @@ func main() {
     ebiten.SetWindowSize(data.ScreenWidth * 2, data.ScreenHeight * 2)
     ebiten.SetWindowTitle("magic")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+    ebiten.SetWindowClosingHandled(true)
 
     audio.Initialize()
     mouse.Initialize()
