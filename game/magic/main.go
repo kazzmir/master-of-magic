@@ -258,6 +258,7 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
 
 func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) error {
     game := gamelib.MakeGame(magic.Cache, settings)
+    defer game.Shutdown()
 
     magic.Drawer = func(screen *ebiten.Image) {
         game.Draw(screen)
