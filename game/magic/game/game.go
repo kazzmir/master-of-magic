@@ -3473,7 +3473,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                 if player.Admin {
                                     game.doCityScreen(yield, city, otherPlayer, buildinglib.BuildingNone)
                                 } else {
-                                    game.doEnemyCityView(yield, city, otherPlayer)
+                                    game.doEnemyCityView(yield, city, player, otherPlayer)
                                 }
                             } else {
                                 enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
@@ -3688,13 +3688,13 @@ func (game *Game) GetEnemies(player *playerlib.Player) []*playerlib.Player {
     return out
 }
 
-func (game *Game) doEnemyCityView(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player){
+func (game *Game) doEnemyCityView(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, otherPlayer *playerlib.Player){
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
     }()
 
-    logic, draw := cityview.SimplifiedView(game.Cache, city, player)
+    logic, draw := cityview.SimplifiedView(game.Cache, city, player, otherPlayer)
 
     game.Drawer = func(screen *ebiten.Image, game *Game){
         drawer(screen, game)

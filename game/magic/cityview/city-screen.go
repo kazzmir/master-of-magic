@@ -1874,7 +1874,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 }
 
 // when right clicking on an enemy city, this just shows the population, garrison, and city scape for that city
-func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) (func(coroutine.YieldFunc, func()), func(*ebiten.Image)) {
+func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player, otherPlayer *playerlib.Player) (func(coroutine.YieldFunc, func()), func(*ebiten.Image)) {
     imageCache := util.MakeImageCache(cache)
 
     fonts, err := makeFonts(cache)
@@ -1934,7 +1934,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
 
     x1, y1 := options.GeoM.Apply(float64(5 * data.ScreenScale), float64(102 * data.ScreenScale))
 
-    cityScapeElement := makeCityScapeElement(cache, ui, city, &help, &imageCache, func(buildinglib.Building){}, buildings, buildinglib.BuildingNone, int(x1), int(y1), fonts, player, &getAlpha)
+    cityScapeElement := makeCityScapeElement(cache, ui, city, &help, &imageCache, func(buildinglib.Building){}, buildings, buildinglib.BuildingNone, int(x1), int(y1), fonts, otherPlayer, &getAlpha)
 
     ui.AddElement(cityScapeElement)
 
@@ -1976,7 +1976,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
     })
 
     // FIXME: only show the stack if the player looking has a unit nearby (within 3 tiles or so)
-    stack := player.FindStack(city.X, city.Y, city.Plane)
+    stack := otherPlayer.FindStack(city.X, city.Y, city.Plane)
     if stack != nil {
         inside := 0
         for i, unit := range stack.Units() {
@@ -2017,11 +2017,33 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
             continue
         }
         x, y := options.GeoM.Apply(float64(142 * data.ScreenScale), float64((51 + i * useFont.Height()) * data.ScreenScale))
+        rect := image.Rect(int(x), int(y), int(x + useFont.MeasureTextWidth(enchantment.Enchantment.Name(), float64(data.ScreenScale))), int(y) + useFont.Height() * data.ScreenScale)
         ui.AddElement(&uilib.UIElement{
+            Rect: rect,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var scale ebiten.ColorScale
                 scale.ScaleAlpha(getAlpha())
                 useFont.Print(screen, x, y, float64(data.ScreenScale), scale, enchantment.Enchantment.Name())
+            },
+            LeftClick: func(element *uilib.UIElement) {
+                if enchantment.Owner == player.GetBanner() {
+                    yes := func(){
+                        city.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
+                        // FIXME: how to refresh similar to  cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)?
+                    }
+
+                    no := func(){
+                    }
+
+                    confirmElements := uilib.MakeConfirmDialog(ui, cache, &imageCache, fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Enchantment.Name()), true, yes, no)
+                    ui.AddElements(confirmElements)
+                }
+            },
+            RightClick: func(element *uilib.UIElement){
+                helpEntries := help.GetEntriesByName(enchantment.Enchantment.Name())
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                }
             },
         })
     }
@@ -2035,7 +2057,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         for countdown != 1 {
             update()
             ui.StandardUpdate()
-
+            // FIXME: how to ignore clicks on the enchantments?
             if countdown == 0 && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
                 countdown = 8
                 getAlpha = ui.MakeFadeOut(7)
