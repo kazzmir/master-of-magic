@@ -23,11 +23,13 @@ type Song int
 
 const (
     SongOverworld Song = 99
-    SongBuildingFinished Song = 113
+    SongBuildingFinished Song = 108
     SongCombat1 Song = 102
     SongLearnSpell Song = 40
     SongIntro Song = 112
-    SongTitle Song = 110
+    SongTitle Song = 104
+    SongEvents Song = 106
+    SongSiteDiscovery Song = 105
 )
 
 type Music struct {
@@ -89,7 +91,7 @@ func playMidi(song *smf.SMF, done context.Context) {
         if len(outs) > 0 {
             for _, out := range outs {
 
-                if strings.Contains(out.String(), "Through"){
+                if strings.Contains(strings.ToLower(out.String()), "through"){
                     continue
                 }
 
