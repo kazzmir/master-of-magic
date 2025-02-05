@@ -35,6 +35,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
@@ -226,6 +227,8 @@ type Game struct {
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
     WhiteFont *font.Font
+
+    Music *music.Music
 
     Settings setup.NewGameSettings
 
@@ -582,6 +585,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     game := &Game{
         Cache: lbxCache,
         Help: help,
+        Music: music.MakeMusic(lbxCache),
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
         Plane: data.PlaneArcanus,
@@ -613,7 +617,13 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         game.DrawGame(screen)
     }
 
+    game.Music.PlaySong(0)
+
     return game
+}
+
+func (game *Game) Shutdown() {
+    game.Music.Stop()
 }
 
 func (game *Game) UpdateImages() {

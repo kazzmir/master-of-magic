@@ -4,8 +4,11 @@ import (
     "context"
     "log"
     "fmt"
+    "sync"
     "strings"
     "time"
+
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/xmi"
@@ -13,16 +16,16 @@ import (
     "github.com/kazzmir/master-of-magic/lib/midi"
     "github.com/kazzmir/master-of-magic/lib/midi/smf"
     midiDrivers "github.com/kazzmir/master-of-magic/lib/midi/drivers"
-    _ "github.com/kazzmir/master-of-magic/lib/midi/drivers/rtmididrv"
 )
 
 type Music struct {
     Cache *lbx.LbxCache
     done context.Context
     cancel context.CancelFunc
+    wait sync.WaitGroup
 }
 
-func NewMusic(cache *lbx.LbxCache) *Music {
+func MakeMusic(cache *lbx.LbxCache) *Music {
     ctx, cancel := context.WithCancel(context.Background())
     return &Music{done: ctx, cancel: cancel, Cache: cache}
 }
@@ -38,15 +41,33 @@ func (music *Music) PlaySong(index int){
         return
     }
 
-    go playMidi(song, music.done)
+    music.wait.Add(1)
+    go func(){
+        defer music.wait.Done()
+
+        for !audio.IsReady() {
+            select {
+                case <-music.done.Done():
+                    return
+                case <-time.After(time.Millisecond * 100):
+            }
+        }
+
+        playMidi(song, music.done)
+    }()
 }
 
 func (music *Music) Stop() {
     music.cancel()
+    music.wait.Wait()
 }
 
 func playMidi(song *smf.SMF, done context.Context) {
     driver := midiDrivers.Get()
+    if driver == nil {
+        fmt.Printf("No midi driver available!\n")
+        return
+    }
     fmt.Printf("Got driver: %v\n", driver)
     outs, err := driver.Outs()
     if err != nil {
@@ -68,17 +89,24 @@ func playMidi(song *smf.SMF, done context.Context) {
 
                 defer out.Close()
 
-                for _, event := range song.Tracks[0] {
-                    // fmt.Printf("Sending event: %v\n", event)
-                    err := send(event.Message.Bytes())
-                    if err != nil {
-                        fmt.Printf("Error: %v\n", err)
-                    }
+                // play forever
+                for {
+                    for _, event := range song.Tracks[0] {
+                        // fmt.Printf("Sending event: %v\n", event)
+                        err := send(event.Message.Bytes())
+                        if err != nil {
+                            fmt.Printf("Error: %v\n", err)
+                        }
 
-                    select {
-                        case <-done.Done(): return
-                        // FIXME: use proper delay
-                        case <-time.After(time.Millisecond * time.Duration(event.Delta) * 10):
+                        select {
+                            case <-done.Done():
+                                for _, message := range midi.SilenceChannel(-1) {
+                                    send(message.Bytes())
+                                }
+                                return
+                            // FIXME: use proper delay
+                            case <-time.After(time.Millisecond * time.Duration(event.Delta) * 10):
+                        }
                     }
                 }
 
