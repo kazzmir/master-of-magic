@@ -147,6 +147,7 @@ const (
     MidiEventCuePoint MidiMetaEventKind = 0x07
 
     MidiEventChannelPrefix MidiMetaEventKind = 0x20
+    MidiEventPortPrefix MidiMetaEventKind = 0x21
     MidiEventEndOfTrack MidiMetaEventKind = 0x2f
     MidiEventTempoSetting MidiMetaEventKind = 0x51
     MidiEventSMPTEOffset MidiMetaEventKind = 0x54
@@ -184,6 +185,7 @@ func (a ByDuration) Len() int           { return len(a) }
 func (a ByDuration) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByDuration) Less(i, j int) bool { return a[i].Duration < a[j].Duration }
 
+// convert from an XMI midi event to a standard midi event by keeping track of note on durations
 func (event *MidiEvent) ConvertToSMF() *smf.SMF {
     object := smf.New()
 
@@ -238,6 +240,10 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
             case *MidiMessageChannelPrefix:
                 prefix := message.(*MidiMessageChannelPrefix)
                 track.Add(currentDelay, smf.MetaChannel(prefix.Channel).Bytes())
+                currentDelay = 0
+            case *MidiMessagePortPrefix:
+                prefix := message.(*MidiMessagePortPrefix)
+                track.Add(currentDelay, smf.MetaPort(prefix.Port).Bytes())
                 currentDelay = 0
             case *MidiMessageTempoSetting:
                 tempo := message.(*MidiMessageTempoSetting)
@@ -337,6 +343,7 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
     return object
 }
 
+// midi message events that XMI supports. Notably there is no note off
 type MidiMessage interface {
 }
 
@@ -367,6 +374,10 @@ type MidiMessageTempoSetting struct {
 
 type MidiMessageChannelPrefix struct {
     Channel uint8
+}
+
+type MidiMessagePortPrefix struct {
+    Port uint8
 }
 
 type MidiMessageEndOfTrack struct {
@@ -525,6 +536,14 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
 
                         messages = append(messages, &MidiMessageChannelPrefix{
                             Channel: data[0],
+                        })
+                    case MidiEventPortPrefix:
+                        if len(data) != 1 {
+                            return MidiEvent{}, fmt.Errorf("Port prefix event type has invalid length: %v", len(data))
+                        }
+
+                        messages = append(messages, &MidiMessagePortPrefix{
+                            Port: data[0],
                         })
                     case MidiEventEndOfTrack:
                         messages = append(messages, &MidiMessageEndOfTrack{
