@@ -1937,121 +1937,127 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
 
     ui.SetElementsFromArray(nil)
 
-    x1, y1 := options.GeoM.Apply(float64(5 * data.ScreenScale), float64(102 * data.ScreenScale))
+    var setupUI func()
+    setupUI = func(){
+        ui.SetElementsFromArray(nil)
+        x1, y1 := options.GeoM.Apply(float64(5 * data.ScreenScale), float64(102 * data.ScreenScale))
 
-    cityScapeElement := makeCityScapeElement(cache, ui, city, &help, &imageCache, func(buildinglib.Building){}, buildings, buildinglib.BuildingNone, int(x1), int(y1), fonts, otherPlayer, &getAlpha)
+        cityScapeElement := makeCityScapeElement(cache, ui, city, &help, &imageCache, func(buildinglib.Building){}, buildings, buildinglib.BuildingNone, int(x1), int(y1), fonts, otherPlayer, &getAlpha)
 
-    ui.AddElement(cityScapeElement)
+        ui.AddElement(cityScapeElement)
 
-    // draw all farmers/workers/rebels
-    ui.AddElement(&uilib.UIElement{
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            localOptions := options
-            localOptions.ColorScale.ScaleAlpha(getAlpha())
-            localOptions.GeoM.Translate(float64(6 * data.ScreenScale), float64(27 * data.ScreenScale))
-            farmer, _ := imageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(city.Race), 0)
-            worker, _ := imageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(city.Race), 0)
-            rebel, _ := imageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(city.Race), 0)
-            subsistenceFarmers := city.ComputeSubsistenceFarmers()
+        // draw all farmers/workers/rebels
+        ui.AddElement(&uilib.UIElement{
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                localOptions := options
+                localOptions.ColorScale.ScaleAlpha(getAlpha())
+                localOptions.GeoM.Translate(float64(6 * data.ScreenScale), float64(27 * data.ScreenScale))
+                farmer, _ := imageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(city.Race), 0)
+                worker, _ := imageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(city.Race), 0)
+                rebel, _ := imageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(city.Race), 0)
+                subsistenceFarmers := city.ComputeSubsistenceFarmers()
 
-            for range subsistenceFarmers {
-                screen.DrawImage(farmer, &localOptions)
-                localOptions.GeoM.Translate(float64(farmer.Bounds().Dx()), 0)
+                for range subsistenceFarmers {
+                    screen.DrawImage(farmer, &localOptions)
+                    localOptions.GeoM.Translate(float64(farmer.Bounds().Dx()), 0)
+                }
+
+                localOptions.GeoM.Translate(float64(3 * data.ScreenScale), 0)
+
+                for range city.Farmers - subsistenceFarmers {
+                    screen.DrawImage(farmer, &localOptions)
+                    localOptions.GeoM.Translate(float64(farmer.Bounds().Dx()), 0)
+                }
+
+                for range city.Workers {
+                    screen.DrawImage(worker, &localOptions)
+                    localOptions.GeoM.Translate(float64(worker.Bounds().Dx()), 0)
+                }
+
+                localOptions.GeoM.Translate(float64(3 * data.ScreenScale), float64(-2 * data.ScreenScale))
+
+                for range city.Rebels {
+                    screen.DrawImage(rebel, &localOptions)
+                    localOptions.GeoM.Translate(float64(rebel.Bounds().Dx()), 0)
+                }
+            },
+        })
+
+        // FIXME: only show the stack if the player looking has a unit nearby (within 3 tiles or so)
+        stack := otherPlayer.FindStack(city.X, city.Y, city.Plane)
+        if stack != nil {
+            inside := 0
+            for i, unit := range stack.Units() {
+                x, y := options.GeoM.Apply(float64(8 * data.ScreenScale), float64(52 * data.ScreenScale))
+
+                x += float64((i % 6) * 20 * data.ScreenScale)
+                y += float64((i / 6) * 20 * data.ScreenScale)
+
+                pic, _ := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
+                rect := image.Rect(int(x), int(y), int(x) + pic.Bounds().Dx(), int(y) + pic.Bounds().Dy())
+                ui.AddElement(&uilib.UIElement{
+                    Rect: rect,
+                    Inside: func(element *uilib.UIElement, x int, y int){
+                        currentUnitName = unit.GetName()
+                        inside = i
+                    },
+                    NotInside: func(element *uilib.UIElement){
+                        if inside == i {
+                            currentUnitName = ""
+                        }
+                    },
+                    Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                        var localOptions ebiten.DrawImageOptions
+                        localOptions.ColorScale.ScaleAlpha(getAlpha())
+                        localOptions.GeoM.Translate(x, y)
+                        screen.DrawImage(pic, &localOptions)
+                    },
+                })
             }
+        }
 
-            localOptions.GeoM.Translate(float64(3 * data.ScreenScale), 0)
-
-            for range city.Farmers - subsistenceFarmers {
-                screen.DrawImage(farmer, &localOptions)
-                localOptions.GeoM.Translate(float64(farmer.Bounds().Dx()), 0)
+        for i, enchantment := range slices.SortedFunc(slices.Values(city.Enchantments.Values()), func (a citylib.Enchantment, b citylib.Enchantment) int {
+            return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
+        }) {
+            useFont := fonts.BannerFonts[enchantment.Owner]
+            // failsafe, but should never happen
+            if useFont == nil {
+                continue
             }
-
-            for range city.Workers {
-                screen.DrawImage(worker, &localOptions)
-                localOptions.GeoM.Translate(float64(worker.Bounds().Dx()), 0)
-            }
-
-            localOptions.GeoM.Translate(float64(3 * data.ScreenScale), float64(-2 * data.ScreenScale))
-
-            for range city.Rebels {
-                screen.DrawImage(rebel, &localOptions)
-                localOptions.GeoM.Translate(float64(rebel.Bounds().Dx()), 0)
-            }
-        },
-    })
-
-    // FIXME: only show the stack if the player looking has a unit nearby (within 3 tiles or so)
-    stack := otherPlayer.FindStack(city.X, city.Y, city.Plane)
-    if stack != nil {
-        inside := 0
-        for i, unit := range stack.Units() {
-            x, y := options.GeoM.Apply(float64(8 * data.ScreenScale), float64(52 * data.ScreenScale))
-
-            x += float64((i % 6) * 20 * data.ScreenScale)
-            y += float64((i / 6) * 20 * data.ScreenScale)
-
-            pic, _ := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
-            rect := image.Rect(int(x), int(y), int(x) + pic.Bounds().Dx(), int(y) + pic.Bounds().Dy())
+            x, y := options.GeoM.Apply(float64(142 * data.ScreenScale), float64((51 + i * useFont.Height()) * data.ScreenScale))
+            rect := image.Rect(int(x), int(y), int(x + useFont.MeasureTextWidth(enchantment.Enchantment.Name(), float64(data.ScreenScale))), int(y) + useFont.Height() * data.ScreenScale)
             ui.AddElement(&uilib.UIElement{
                 Rect: rect,
-                Inside: func(element *uilib.UIElement, x int, y int){
-                    currentUnitName = unit.GetName()
-                    inside = i
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    var scale ebiten.ColorScale
+                    scale.ScaleAlpha(getAlpha())
+                    useFont.Print(screen, x, y, float64(data.ScreenScale), scale, enchantment.Enchantment.Name())
                 },
-                NotInside: func(element *uilib.UIElement){
-                    if inside == i {
-                        currentUnitName = ""
+                LeftClick: func(element *uilib.UIElement) {
+                    if enchantment.Owner == player.GetBanner() {
+                        yes := func(){
+                            city.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
+                            setupUI()
+                        }
+
+                        no := func(){
+                        }
+
+                        confirmElements := uilib.MakeConfirmDialog(ui, cache, &imageCache, fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Enchantment.Name()), true, yes, no)
+                        ui.AddElements(confirmElements)
                     }
                 },
-                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    var localOptions ebiten.DrawImageOptions
-                    localOptions.ColorScale.ScaleAlpha(getAlpha())
-                    localOptions.GeoM.Translate(x, y)
-                    screen.DrawImage(pic, &localOptions)
+                RightClick: func(element *uilib.UIElement){
+                    helpEntries := help.GetEntriesByName(enchantment.Enchantment.Name())
+                    if helpEntries != nil {
+                        ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                    }
                 },
             })
         }
     }
 
-    for i, enchantment := range slices.SortedFunc(slices.Values(city.Enchantments.Values()), func (a citylib.Enchantment, b citylib.Enchantment) int {
-        return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
-    }) {
-        useFont := fonts.BannerFonts[enchantment.Owner]
-        // failsafe, but should never happen
-        if useFont == nil {
-            continue
-        }
-        x, y := options.GeoM.Apply(float64(142 * data.ScreenScale), float64((51 + i * useFont.Height()) * data.ScreenScale))
-        rect := image.Rect(int(x), int(y), int(x + useFont.MeasureTextWidth(enchantment.Enchantment.Name(), float64(data.ScreenScale))), int(y) + useFont.Height() * data.ScreenScale)
-        ui.AddElement(&uilib.UIElement{
-            Rect: rect,
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                var scale ebiten.ColorScale
-                scale.ScaleAlpha(getAlpha())
-                useFont.Print(screen, x, y, float64(data.ScreenScale), scale, enchantment.Enchantment.Name())
-            },
-            LeftClick: func(element *uilib.UIElement) {
-                if enchantment.Owner == player.GetBanner() {
-                    yes := func(){
-                        city.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
-                        // FIXME: how to refresh similar to  cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)?
-                    }
-
-                    no := func(){
-                    }
-
-                    confirmElements := uilib.MakeConfirmDialog(ui, cache, &imageCache, fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Enchantment.Name()), true, yes, no)
-                    ui.AddElements(confirmElements)
-                }
-            },
-            RightClick: func(element *uilib.UIElement){
-                helpEntries := help.GetEntriesByName(enchantment.Enchantment.Name())
-                if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
-                }
-            },
-        })
-    }
+    setupUI()
 
     draw := func(screen *ebiten.Image){
         ui.Draw(ui, screen)
