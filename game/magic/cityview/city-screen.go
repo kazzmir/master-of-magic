@@ -26,7 +26,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
-    "github.com/hajimehoshi/ebiten/v2/inpututil"
+    // "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -1895,6 +1895,8 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         return func(yield coroutine.YieldFunc, update func()){}, func(*ebiten.Image){}
     }
 
+    quit := false
+
     buildings := makeBuildingSlots(city)
 
     background, _ := imageCache.GetImage("reload.lbx", 26, 0)
@@ -1906,6 +1908,9 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
     currentUnitName := ""
 
     ui := &uilib.UI{
+        LeftClick: func(){
+            quit = true
+        },
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             useOptions := options
             useOptions.ColorScale.ScaleAlpha(getAlpha())
@@ -2057,8 +2062,8 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         for countdown != 1 {
             update()
             ui.StandardUpdate()
-            // FIXME: how to ignore clicks on the enchantments?
-            if countdown == 0 && inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
+
+            if countdown == 0 && quit {
                 countdown = 8
                 getAlpha = ui.MakeFadeOut(7)
             }

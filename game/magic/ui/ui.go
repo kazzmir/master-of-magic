@@ -538,7 +538,7 @@ func (ui *UI) StandardUpdate() {
         }
     }
 
-    if leftClick && ui.LeftClick != nil {
+    if leftClick && !elementLeftClicked && ui.LeftClick != nil {
         ui.LeftClick()
     }
 }
