@@ -66,13 +66,17 @@ func playMidi(smfObject *smf.SMF){
 }
 
 func dumpMidi(smfObject *smf.SMF){
-    for _, event := range smfObject.Tracks[0] {
-        fmt.Printf("Sending event: %v\n", event)
+    for i, event := range smfObject.Tracks[0] {
+        fmt.Printf("[%d] Sending event: %v\n", i, event)
     }
 }
 
 func replaceExtension(file string, ext string) string {
     return strings.TrimSuffix(file, filepath.Ext(file)) + "." + ext
+}
+
+func isXmi(file string) bool {
+    return strings.HasSuffix(strings.ToLower(file), ".xmi")
 }
 
 func main(){
@@ -81,33 +85,34 @@ func main(){
     }
     file := os.Args[1]
 
-    data, err := os.Open(file)
-    if err != nil {
-        fmt.Printf("Error: %s\n", err)
-        return
+    if isXmi(file) {
+        data, err := os.Open(file)
+        if err != nil {
+            fmt.Printf("Error: %s\n", err)
+            return
+        }
+        defer data.Close()
+
+        midi, err := xmi.ConvertToMidi(data)
+
+        if err != nil {
+            log.Printf("Error: %v", err)
+            return
+        }
+
+        outputName := replaceExtension(file, "cmid")
+
+        out, err := os.Create(outputName)
+        if err != nil {
+            log.Printf("Error: %v", err)
+            return
+        }
+        midi.WriteTo(out)
+        out.Close()
+
+        log.Printf("Wrote to %v", outputName)
+    } else {
+        // dumpMidi(midi)
+        // playMidi(midi)
     }
-    defer data.Close()
-
-    midi, err := xmi.ConvertToMidi(data)
-    
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return
-    }
-
-    outputName := replaceExtension(file, "cmid")
-
-    out, err := os.Create(outputName)
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return
-    }
-    midi.WriteTo(out)
-    out.Close()
-
-    log.Printf("Wrote to %v", outputName)
-
-    dumpMidi(midi)
-
-    // playMidi(smfObject)
 }

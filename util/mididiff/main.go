@@ -40,19 +40,24 @@ func main() {
     }
 
     for i := range midi1.Tracks[0] {
+        event1 := midi1.Tracks[0][i]
         if i >= len(midi2.Tracks[0]) {
             fmt.Printf("End of track for %v\n", file2)
+            // fmt.Printf("[%d] Event1: %v\n", i, event1)
             break
         }
-        event1 := midi1.Tracks[0][i]
         event2 := midi2.Tracks[0][i]
 
         fmt.Printf("[%d] Event1: %v\n", i, event1)
         fmt.Printf("[%d] Event2: %v\n", i, event2)
         if !reflect.DeepEqual(event1, event2) {
             fmt.Printf("  not equal!\n")
-            break
+            // break
         }
+    }
+
+    if len(midi1.Tracks[0]) != len(midi2.Tracks[0]) {
+        fmt.Printf("Error: Tracks are not equal length!\n")
     }
 
 }

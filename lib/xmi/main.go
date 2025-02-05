@@ -9,11 +9,15 @@ import (
     "bytes"
     "bufio"
     "encoding/binary"
-    "sort"
+    "math"
+    "cmp"
+    "slices"
 
     "gitlab.com/gomidi/midi/v2/smf"
     "gitlab.com/gomidi/midi/v2"
 )
+
+const debug = false
 
 func readUint16LE(reader io.Reader) (uint16, error) {
     var value uint16
@@ -121,6 +125,7 @@ func readMidiLength(reader *bufio.Reader) (int64, error) {
         }
 
         length = (length << 7) | (int64(b) & 0x7f)
+
         if b & 0x80 == 0 {
             break
         }
@@ -132,6 +137,15 @@ func readMidiLength(reader *bufio.Reader) (int64, error) {
 // https://www.ccarh.org/courses/253/handout/smf/
 type MidiMetaEventKind uint8
 const (
+    MidiEventSequenceNumber MidiMetaEventKind = 0x00
+    MidiEventTextEvent MidiMetaEventKind = 0x01
+    MidiEventCopyrightNotice MidiMetaEventKind = 0x02
+    MidiEventSequenceTrackName MidiMetaEventKind = 0x03
+    MidiEventInstrumentName MidiMetaEventKind = 0x04
+    MidiEventLyric MidiMetaEventKind = 0x05
+    MidiEventMarker MidiMetaEventKind = 0x06
+    MidiEventCuePoint MidiMetaEventKind = 0x07
+
     MidiEventChannelPrefix MidiMetaEventKind = 0x20
     MidiEventEndOfTrack MidiMetaEventKind = 0x2f
     MidiEventTempoSetting MidiMetaEventKind = 0x51
@@ -161,6 +175,8 @@ type NoteOffDuration struct {
     Channel uint8
     Note uint8
     Duration int64
+    // used for sorting
+    index int
 }
 
 type ByDuration []NoteOffDuration
@@ -178,6 +194,7 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
 
     var future []NoteOffDuration
 
+    // this value will get adjusted once we see a tempo setting (MidiMessageTempoSetting)
     trueTempo := 80.0
 
     /* tempo setting hex value: 19 f3 8d
@@ -192,24 +209,29 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
       delay 50 -> delta 58
       delay 66 -> delta 76
 
-      it looks like the formula is delay * (temp/80)
+      it looks like the formula is delay * (tempo/80)
     */
     adjustDelay := func(delay int64) int64 {
-        return int64(float64(delay) * (float64(trueTempo) / 80.0))
+        // return int64(math.Round(float64(delay) * (float64(trueTempo) / 80.0)))
+        return int64(math.Round(float64(delay) * (float64(trueTempo) / 80.0)))
     }
 
     currentDelay := uint32(0)
-    for _, message := range event.Messages {
+    for messageIndex, message := range event.Messages {
         switch message.(type) {
             case *MidiMessageSMPTEOffset:
                 offset := message.(*MidiMessageSMPTEOffset)
                 // FIXME: what to do with fps?
-                fmt.Printf(" emit smpte hour: %v\n", offset.Hour)
+                if debug {
+                    fmt.Printf(" emit smpte hour: %v\n", offset.Hour)
+                }
                 track.Add(currentDelay, smf.MetaSMPTE(offset.Hour, offset.Minute, offset.Second, offset.Frame, offset.SubFrame).Bytes())
                 currentDelay = 0
             case *MidiMessageTimeSignature:
                 signature := message.(*MidiMessageTimeSignature)
-                fmt.Printf("Set time signature to %+v\n", signature)
+                if debug {
+                    fmt.Printf("Set time signature to %+v\n", signature)
+                }
                 track.Add(currentDelay, smf.MetaTimeSig(signature.Numerator, 1<<signature.Denominator, signature.Metronome, signature.DemiSemiQuaverPerQuarter).Bytes())
                 // track.Add(currentDelay, smf.MetaTimeSig(4, 4, signature.Metronome, signature.DemiSemiQuaverPerQuarter).Bytes())
                 currentDelay = 0
@@ -244,9 +266,11 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
                 currentDelay = 0
             case *MidiMessageNoteOn:
                 note := message.(*MidiMessageNoteOn)
-                // fmt.Printf("Note on: %v %v %v %v\n", note.Channel, note.Note, note.Velocity, note.Duration)
+                if debug {
+                    fmt.Printf("[%d] Note on: channel=%v note=%v velocity=%v duration=%v\n", messageIndex, note.Channel, note.Note, note.Velocity, adjustDelay(note.Duration))
+                }
                 track.Add(currentDelay, midi.NoteOn(note.Channel, note.Note, note.Velocity).Bytes())
-                future = append(future, NoteOffDuration{Channel: note.Channel, Note: note.Note, Duration: adjustDelay(note.Duration)})
+                future = append(future, NoteOffDuration{Channel: note.Channel, Note: note.Note, Duration: adjustDelay(note.Duration), index: messageIndex})
                 // track.Add(uint32(note.Duration), midi.NoteOffVelocity(note.Channel, note.Note, 127).Bytes())
                 currentDelay = 0
             case *MidiMessageChannelPressure:
@@ -261,7 +285,15 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
                 delay := message.(*MidiMessageDelay)
                 currentDelay = uint32(adjustDelay(delay.Delay))
 
-                sort.Sort(ByDuration(future))
+                // sort by duration so we emit a note off for the shortest duration first
+                slices.SortFunc(future, func (a, b NoteOffDuration) int {
+                    if a.Duration == b.Duration {
+                        // this sort of matches what xmi2mid does
+                        // reverse order for some reason, I don't know why
+                        return cmp.Compare(b.index, a.index)
+                    }
+                    return cmp.Compare(a.Duration, b.Duration)
+                })
 
                 /* compute which notes to turn off */
                 sofar := int64(0)
@@ -273,7 +305,9 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
                     }
                     if note.Duration - int64(currentDelay) <= 0 {
                         track.Add(uint32(note.Duration), midi.NoteOffVelocity(note.Channel, note.Note, 127).Bytes())
-                        fmt.Printf("emit note off: delta=%v channel=%v note=%v\n", note.Duration, note.Channel, note.Note)
+                        if debug {
+                            fmt.Printf("[%d] emit note off: delta=%v channel=%v note=%v\n", messageIndex, note.Duration, note.Channel, note.Note)
+                        }
                         sofar += note.Duration
                         currentDelay -= uint32(note.Duration)
                     } else {
@@ -282,11 +316,16 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
                     }
                 }
                 future = more
-                if len(future) > 0 {
-                    fmt.Printf("future notes: %+v\n", future)
+                if debug {
+                    if len(future) > 0 {
+                        fmt.Printf("future notes: %+v\n", future)
+                    }
                 }
 
             case *MidiMessageEndOfTrack:
+                if debug {
+                    fmt.Printf("[%d] End of track\n", messageIndex)
+                }
                 track.Close(currentDelay)
             default:
                 fmt.Printf("Unhandled midi message in conversion: %T\n", message)
@@ -505,6 +544,7 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                             if err != nil {
                                 return MidiEvent{}, err
                             }
+
                             velocity, err := reader.ReadByte()
                             if err != nil {
                                 return MidiEvent{}, err
@@ -524,7 +564,9 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                                 Duration: duration,
                             })
 
-                            fmt.Printf("Note on: channel=%v note=%v velocity=%v duration=%v\n", channel, note, velocity, duration)
+                            if debug {
+                                fmt.Printf("[%d] Note on: channel=%v note=%v velocity=%v duration=%v\n", len(messages), channel, note, velocity, duration)
+                            }
 
                         case MidiMessageControlChangeValue:
                             controller, err := reader.ReadByte()
@@ -541,6 +583,11 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                                 Controller: controller,
                                 Value: newValue,
                             })
+
+                            if debug {
+                                fmt.Printf("[%d] Control change: channel=%v controller=%v value=%v\n", len(messages), channel, controller, newValue)
+                            }
+
                         case MidiMessageProgramChangeValue:
                             program, err := reader.ReadByte()
                             if err != nil {
@@ -580,6 +627,18 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                                 Channel: channel,
                                 Value: int16(total),
                             })
+
+                            /*
+                        case MidiEventSequenceNumber:
+                        case MidiEventTextEvent:
+                        case MidiEventCopyrightNotice:
+                        case MidiEventSequenceTrackName:
+                        case MidiEventInstrumentName:
+                        case MidiEventLyric:
+                        case MidiEventMarker:
+                        case MidiEventCuePoint:
+                            */
+
                         default:
                             return MidiEvent{}, fmt.Errorf("Unknown midi event type: 0x%x", value)
                     }
@@ -594,11 +653,14 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                 delay += int64(value)
             }
 
-            fmt.Printf("Delay of %v\n", delay)
 
             messages = append(messages, &MidiMessageDelay{
                 Delay: delay,
             })
+
+            if debug {
+                fmt.Printf("[%d] Delay of %v\n", len(messages), delay)
+            }
         }
     }
 
@@ -651,9 +713,13 @@ func (reader *IFFReader) ReadChunk() (IFFChunk, error) {
     }
 
     data := make([]byte, size)
-    _, err = reader.reader.Read(data)
+    n, err := io.ReadFull(reader.reader, data)
     if err != nil {
         return IFFChunk{}, err
+    }
+
+    if n != int(size) {
+        return IFFChunk{}, fmt.Errorf("Expected %v bytes, got %v", size, n)
     }
 
     if size % 2 != 0 {
@@ -685,18 +751,26 @@ func ConvertToMidi(data io.Reader) (*smf.SMF, error) {
         if err != nil {
             return nil, err
         }
-        fmt.Printf("Chunk name=%v size=%v\n", chunk.Name(), chunk.Size())
+        if debug {
+            fmt.Printf("Chunk name=%v size=%v\n", chunk.Name(), chunk.Size())
+        }
         if chunk.IsForm() && chunk.GetFormType() == "XDIR" {
             subChunk := chunk.SubChunk()
-            if subChunk.IsInfo() {
-                fmt.Printf("  sequences: %v\n", subChunk.GetInfoSequence())
+            if debug {
+                if subChunk.IsInfo() {
+                    fmt.Printf("  sequences: %v\n", subChunk.GetInfoSequence())
+                }
             }
             // fmt.Printf("  %v\n", string(chunk.RawData()))
         } else if chunk.IsCat() {
             subChunk := chunk.SubChunk()
-            fmt.Printf("Cat subchunk name=%v size=%v form type=%v\n", subChunk.Name(), subChunk.Size(), subChunk.GetFormType())
+            if debug {
+                fmt.Printf("Cat subchunk name=%v size=%v form type=%v\n", subChunk.Name(), subChunk.Size(), subChunk.GetFormType())
+            }
             sub2 := subChunk.SubChunk()
-            fmt.Printf("Cat sub2 name=%v size=%v\n", sub2.Name(), sub2.Size())
+            if debug {
+                fmt.Printf("Cat sub2 name=%v size=%v\n", sub2.Name(), sub2.Size())
+            }
 
             subChunkReader := sub2.SubChunkReader()
 
@@ -714,14 +788,18 @@ func ConvertToMidi(data io.Reader) (*smf.SMF, error) {
                 }
                 */
 
-                fmt.Printf("  next subchunk name=%v size=%v\n", next.Name(), next.Size())
+                if debug {
+                    fmt.Printf("  next subchunk name=%v size=%v\n", next.Name(), next.Size())
+                }
 
                 if next.IsTimbre() {
                     timbre, err := next.ReadTimbre()
                     if err != nil {
                         fmt.Printf("Error reading timbre: %v\n", err)
                     } else {
-                        fmt.Printf("  timbre entries: %v\n", len(timbre.Entries))
+                        if debug {
+                            fmt.Printf("  timbre entries: %v\n", len(timbre.Entries))
+                        }
                     }
                 } else if next.IsEvent() {
                     event, err := next.ReadEvent()
@@ -732,22 +810,6 @@ func ConvertToMidi(data io.Reader) (*smf.SMF, error) {
 
                     smfObject := event.ConvertToSMF()
                     return smfObject, nil
-                    /*
-                    out, err := os.Create("output.mid")
-                    if err != nil {
-                        fmt.Printf("Error creating output file: %v\n", err)
-                    } else {
-                        defer out.Close()
-
-                        fmt.Printf("Tracks: %v\n", smfObject.NumTracks())
-
-                        smfObject.WriteTo(out)
-                        fmt.Printf("Wrote to output.mid\n")
-
-                        playMidi(smfObject)
-
-                    }
-                    */
                 } else {
                     fmt.Printf("  unknown subchunk\n")
                 }
