@@ -1,5 +1,5 @@
-//go:build js && wasm && !windows && !linux && !darwin
-// +build js,wasm,!windows,!linux,!darwin
+//go:build js && wasm && !windows && !linux && !darwin && midi
+// +build js,wasm,!windows,!linux,!darwin,midi
 
 package webmididrv
 

@@ -1,3 +1,4 @@
+//go:build midi
 package midi
 
 import (
