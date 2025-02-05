@@ -212,7 +212,9 @@ func (game *Game) showCityEnchantment(yield coroutine.YieldFunc, city *citylib.C
     for quit.Err() == nil {
         game.Counter += 1
         ui.StandardUpdate()
-        yield()
+        if yield() != nil {
+            return
+        }
     }
 
     // absorb left click
@@ -505,7 +507,9 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             }
         }
 
-        yield()
+        if yield() != nil {
+            break
+        }
     }
 
     return 0, 0, true
@@ -577,7 +581,9 @@ func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, a
             quit = !animation.Next()
         }
 
-        yield()
+        if yield() != nil {
+            return
+        }
     }
 }
 
@@ -840,7 +846,9 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
             quit = true
         }
 
-        yield()
+        if yield() != nil {
+            return
+        }
     }
 
     fader = util.MakeFadeOut(uint64(fadeSpeed), &game.Counter)
@@ -865,7 +873,9 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
         if leftClick {
             quit = true
         }
-        yield()
+        if yield() != nil {
+            return
+        }
     }
 
     fader = util.MakeFadeOut(uint64(fadeSpeed), &game.Counter)

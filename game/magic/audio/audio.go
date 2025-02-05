@@ -20,6 +20,10 @@ func Initialize(){
     Context = audiolib.NewContext(SampleRate)
 }
 
+func IsReady() bool {
+    return Context != nil && Context.IsReady()
+}
+
 func convertToS16(u8samples []byte) []byte {
     var out bytes.Buffer
 
