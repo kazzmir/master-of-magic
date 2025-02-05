@@ -3532,6 +3532,8 @@ func main(){
         log.Printf("Error: %v", err)
     }
 
+    engine.Game.Shutdown()
+
     memoryProfile, err := os.Create("profile.mem.overworld")
     if err != nil {
         log.Printf("Error creating memory profile: %v", err)
