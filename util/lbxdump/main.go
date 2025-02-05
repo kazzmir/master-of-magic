@@ -105,6 +105,22 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool, 
         for _, artifact := range artifacts {
             fmt.Printf("Power: %+v Cost: %v Artifact Types: %+v\n", artifact, costs[artifact], compatibilities[artifact])
         }
+    } else if lbxName == "music.lbx" && !rawDump {
+
+        for i, entry := range file.Data {
+            (func(){
+                name := fmt.Sprintf("music_%v.xmi", i)
+                out, err := os.Create(filepath.Join(dir, name))
+                if err != nil {
+                    fmt.Printf("Error creating music file: %v\n", err)
+                    return
+                }
+                defer out.Close()
+
+                out.Write(entry[16:])
+                fmt.Printf("Saved music %v to %v\n", i, name)
+            })()
+        }
 
     } else if lbxName == "help.lbx" && !rawDump {
         // uint16 number of entries
