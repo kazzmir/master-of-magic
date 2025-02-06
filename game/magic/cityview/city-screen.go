@@ -1983,9 +1983,8 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
             },
         })
 
-        // FIXME: only show the stack if the player looking has a unit nearby (within 3 tiles or so)
         stack := otherPlayer.FindStack(city.X, city.Y, city.Plane)
-        if stack != nil {
+        if stack != nil && player.IsVisible(city.X, city.Y, city.Plane) {
             inside := 0
             for i, unit := range stack.Units() {
                 x, y := options.GeoM.Apply(float64(8 * data.ScreenScale), float64(52 * data.ScreenScale))
