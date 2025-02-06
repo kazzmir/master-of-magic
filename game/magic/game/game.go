@@ -617,7 +617,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         game.DrawGame(screen)
     }
 
-    game.Music.PushSong(music.SongOverworld)
+    game.Music.PushSong(music.SongBackground1)
 
     return game
 }
@@ -2740,19 +2740,27 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         player := summonUnit.Player
 
                         if player.IsHuman() {
+                            game.Music.PushSong(music.SongCommonSummoningSpell)
                             game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, player.Wizard.Base))
+                            game.Music.PopSong()
                         }
                     case *GameEventSummonArtifact:
                         summonArtifact := event.(*GameEventSummonArtifact)
+                        game.Music.PushSong(music.SongVeryRareSummoningSpell)
                         game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, summonArtifact.Wizard))
+                        game.Music.PopSong()
                     case *GameEventSummonHero:
                         summonHero := event.(*GameEventSummonHero)
+                        game.Music.PushSong(music.SongVeryRareSummoningSpell)
                         game.doSummon(yield, summon.MakeSummonHero(game.Cache, summonHero.Wizard, summonHero.Champion))
+                        game.Music.PopSong()
                     case *GameEventGameMenu:
                         game.doGameMenu(yield)
                     case *GameEventHeroLevelUp:
                         levelEvent := event.(*GameEventHeroLevelUp)
+                        game.Music.PushSong(music.SongHeroGainedALevel)
                         game.showHeroLevelUpPopup(yield, levelEvent.Hero)
+                        game.Music.PopSong()
                     case *GameEventMoveCamera:
                         moveCamera := event.(*GameEventMoveCamera)
                         game.Plane = moveCamera.Plane
