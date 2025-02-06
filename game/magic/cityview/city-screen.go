@@ -1984,7 +1984,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         })
 
         stack := otherPlayer.FindStack(city.X, city.Y, city.Plane)
-        if stack != nil && player.GetFog(city.Plane)[city.X][city.Y] == data.FogTypeVisible {
+        if stack != nil && player.IsVisible(city.X, city.Y, city.Plane) {
             inside := 0
             for i, unit := range stack.Units() {
                 x, y := options.GeoM.Apply(float64(8 * data.ScreenScale), float64(52 * data.ScreenScale))
