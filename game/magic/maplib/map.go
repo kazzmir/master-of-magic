@@ -617,27 +617,20 @@ func (tile *FullTile) GoldBonus(mapObject *Map) int {
 }
 
 // percent bonus increase, 3 = 3%
-func (tile *FullTile) ProductionBonus() int {
+func (tile *FullTile) ProductionBonus(hasGaiasBlessing bool) int {
     if tile.Corrupted() {
         return 0
     }
 
-    switch tile.Tile.TerrainType() {
-        case terrain.Ocean: return 0
-        case terrain.Grass: return 0
-        case terrain.Forest: return 3
-        case terrain.Mountain: return 5
-        case terrain.Desert: return 3
-        case terrain.Swamp: return 0
-        case terrain.Tundra: return 0
-        case terrain.SorceryNode: return 0
-        case terrain.NatureNode: return 3
-        case terrain.ChaosNode: return 5
-        case terrain.Hill: return 3
-        case terrain.Volcano: return 0
-        case terrain.Lake: return 0
-        case terrain.River: return 0
-        case terrain.Shore: return 0
+    terrainType := tile.Tile.TerrainType()
+    switch {
+        case terrainType == terrain.Forest && hasGaiasBlessing: return 6
+        case terrainType == terrain.Forest: return 3
+        case terrainType == terrain.Mountain: return 5
+        case terrainType == terrain.Desert: return 3
+        case terrainType == terrain.NatureNode: return 3
+        case terrainType == terrain.ChaosNode: return 5
+        case terrainType == terrain.Hill: return 3
     }
 
     return 0
@@ -1060,6 +1053,11 @@ func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
 func (mapObject *Map) SetVolcano(x int, y int, caster Wizard) {
     mapObject.ExtraMap[image.Pt(x, y)][ExtraKindVolcano] = &ExtraVolcano{CastingWizard: caster}
     mapObject.Map.SetTerrainAt(x, y, terrain.Volcano, mapObject.Data, mapObject.Plane)
+}
+
+func (mapObject *Map) HasVolcano(x int, y int) bool {
+    _, exists := mapObject.ExtraMap[image.Pt(x, y)][ExtraKindVolcano]
+    return exists
 }
 
 func (mapObject *Map) RemoveVolcano(x int, y int) {

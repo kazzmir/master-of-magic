@@ -827,6 +827,7 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
 
     unrestPercent += city.InteracialUnrest()
 
+    // unrest from curses
     if city.HasEnchantment(data.CityEnchantmentFamine) {
         unrestPercent += 0.25
     }
@@ -878,6 +879,11 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
         pacification += float64(oraclePacification(city.Race))
     }
 
+    // pacification from enchantments
+    if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
+        pacification += 2
+    }
+
     total := unrestPercent * float64(city.Citizens()) + unrestAbsolute - pacification - garrisonSupression / 2
 
     return int(math.Max(0, total))
@@ -889,6 +895,10 @@ func (city *City) MaximumCitySize() int {
     foodAvailability := city.BaseFoodLevel()
 
     // TODO: 1/2 if famine is active
+
+    if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
+        foodAvailability += int(0.5 * float32(foodAvailability))
+    }
 
     bonus := 0
 
@@ -928,6 +938,10 @@ func (city *City) PopulationGrowthRate() int {
 
     if city.Buildings.Contains(buildinglib.BuildingFarmersMarket) {
         base += 30
+    }
+
+    if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
+        base += int(2.5 * float32(city.MaximumCitySize()) / 10) * 10
     }
 
     if city.SurplusFood() < 0 {
@@ -987,13 +1001,17 @@ func (city *City) FoodProductionRate() int {
 }
 
 func (city *City) FarmerFoodProduction(farmers int) int {
-    rate := 2
+    food := 2 * farmers
 
-    switch city.Race {
-        case data.RaceHalfling: rate = 3
+    if city.Race == data.RaceHalfling {
+        food += farmers
     }
 
-    return rate * farmers
+    if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
+        food += int(float32(food) * 0.2)
+    }
+
+    return food
 }
 
 func (city *City) foodProductionRate(farmers int) int {
@@ -1233,9 +1251,10 @@ func (city *City) ProductionTerrain() float32 {
     catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
     production := float32(0)
     mineralProduction := float32(0)
+    hasGaiasBlessing := city.HasEnchantment(data.CityEnchantmentGaiasBlessing)
 
     for _, tile := range catchment {
-        production += float32(tile.ProductionBonus()) / 100
+        production += float32(tile.ProductionBonus(hasGaiasBlessing)) / 100
 
         // FIXME: This should be only when producing units
         mineralProduction += float32(tile.GetBonus().UnitReductionBonus()) / 100
