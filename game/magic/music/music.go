@@ -22,14 +22,129 @@ import (
 type Song int
 
 const (
-    SongOverworld Song = 99
-    SongBuildingFinished Song = 108
-    SongCombat1 Song = 102
+
+    // summoning circle, spell of return
+    SongSummoningCircle Song = 0
+    SongWallOfFire Song = 1
+    // dark rituals, wall of darkness, cloud of shadow
+    SongDarkRituals Song = 2
+    // HeavenlyLight-Prosperity-AltarOfBattle-StreamOfLife-Inspirations-AstralGate-Consecration
+    SongHeavenlyLight = 3
+    // WallOfStone-NaturesEye-Earthquake-GaiasBlessing-MoveFortress-EarthGate
+    SongWallOfStone = 4
+    // SpellWard-FlyingFortress
+    SongSpellWard Song = 5
+    SongChaosRift Song = 7
+
+    // evil presence, famine, cursed lands, pestilence
+    SongEvilPresence Song = 8
+
+    // spell of mastery start and end
+    SongSpellOfMastery Song = 12
+
+    SongCommonSummoningSpell Song = 13
+
+    // uncommon summoning spell, planar seal
+    SongUncommonSummoningSpell Song = 14
+
+    SongRareSummoningSpell Song = 15
+
+    // very rare summoning spell, hero, artifact
+    SongVeryRareSummoningSpell Song = 16
+    SongSupressMagicActivating Song = 17
+    SongEternalNight Song = 19
+    SongEvilOmens Song = 20
+    SongZombieMastery Song = 21
+    SongAuraOfMajesty Song = 22
+    SongWindMastery Song = 23
+    SongSuppressMagic Song = 24
+    SongTimeStop Song = 25
+    SongNatureAwareness Song = 26
+    SongNaturesWrath Song = 27
+    SongHerbMastery Song = 28
+    SongChaosSurge Song = 29
+    SongDoomMastery Song = 30
+    SongGreatWasting Song = 31
+    SongMeteorStorm Song = 32
+    SongArmageddon Song = 33
+    SongTranquility Song = 34
+    SongLifeForce Song = 35
+    SongCrusade Song = 36
+    SongJustCause Song = 37
+    SongHolyArms Song = 38
+
+    // researched a spell, detect magic, awareness, great unsummoning, charm of life
     SongLearnSpell Song = 40
-    SongIntro Song = 112
+    SongMerlin Song = 41
+    SongMerlinMad Song = 42
+    SongRaven Song = 43
+    SongRavenMad Song = 44
+    SongSharee Song = 45
+    SongShareeMad Song = 46
+    SongLoPan Song = 47
+    SongLoPanMad Song = 48
+    SongJafar Song = 49
+    SongJafarMad Song = 50
+    SongOberic Song = 51
+    SongObericMad Song = 52
+    SongRjak Song = 53
+    SongRjakMad Song = 54
+    SongSssra Song = 55
+    SongSssraMad Song = 56
+    SongTauron Song = 57
+    SongTauronMad Song = 58
+    SongFreya Song = 59
+    SongFreyaMad Song = 60
+    SongHorus Song = 61
+    SongHorusMad Song = 62
+    SongAriel Song = 63
+    SongArielMad Song = 64
+    SongTlaloc Song = 65
+    SongTlalocMad Song = 66
+    SongKali Song = 67
+    SongKaliMad Song = 68
+    SongCombatMerlin1 Song = 71
+    SongCombatMerlin2 Song = 72
+    SongCombatRaven1 Song = 73
+    SongCombatRaven2 Song = 74
+    SongCombatSharee1 Song = 75
+    SongCombatSharee2 Song = 76
+    SongCombatLoPan1 Song = 77
+    SongCombatLoPan2 Song = 78
+    SongCombatJafar1 Song = 79
+    SongCombatJafar2 Song = 80
+    SongCombatOberic1 Song = 81
+    SongCombatOberic2 Song = 82
+    SongCombatRjak1 Song = 83
+    SongCombatRjak2 Song = 84
+    SongCombatSssra1 Song = 85
+    SongCombatSssra2 Song = 86
+    SongCombatTauron1 Song = 87
+    SongCombatTauron2 Song = 88
+    SongCombatFreya1 Song = 89
+    SongCombatFreya2 Song = 90
+    SongCombatHorus1 Song = 91
+    SongCombatHorus2 Song = 92
+    SongCombatAriel1 Song = 93
+    SongCombatAriel2 Song = 94
+    SongCombatTlaloc1 Song = 95
+    SongCombatTlaloc2 Song = 96
+    SongCombatKali1 Song = 97
+    SongCombatKali2 Song = 98
+    SongBackground1 Song = 99
+    SongBackground2 Song = 100
+    SongBackground3 Song = 101
+    SongCombat1 Song = 102
+    SongCombat2 Song = 103
     SongTitle Song = 104
-    SongEvents Song = 106
     SongSiteDiscovery Song = 105
+    SongGoodEvent Song = 106
+    SongBuildingFinished Song = 108
+    SongYouWin Song = 109
+    SongYouLose Song = 110
+    SongIntro Song = 112
+    SongBadEvent Song = 114
+    SongHeroGainedALevel Song = 115
 )
 
 type Music struct {
@@ -114,6 +229,8 @@ func playMidi(song *smf.SMF, done context.Context) {
                 if strings.Contains(strings.ToLower(out.String()), "through"){
                     continue
                 }
+
+                log.Printf("Using midi output port: %v", out)
 
                 send, err := midi.SendTo(out)
                 if err != nil {
