@@ -59,12 +59,17 @@ func (r *Reader) withinChannelMessage(b byte) {
 		r.issetBf = false
 		r.state = readerStateClean
 		//p.receiver.Receive(Channel(p.channel).Aftertouch(b), p.timestamp)
-		r.OnMsg([]byte{r.statusByte, b, 0}, r.ts_ms)
+
+		// Jon 2/5/2025: web browsers don't like the extra 0 byte due to not being able to send a running status byte
+		// r.OnMsg([]byte{r.statusByte, b, 0}, r.ts_ms)
+		r.OnMsg([]byte{r.statusByte, b}, r.ts_ms)
 	case byteProgramChange:
 		r.issetBf = false // first: is set, second: the byte
 		r.state = readerStateClean
 		//p.receiver.Receive(Channel(p.channel).ProgramChange(b), p.timestamp)
-		r.OnMsg([]byte{r.statusByte, b, 0}, r.ts_ms)
+		// Jon 2/5/2025: see above about running status byte
+		// r.OnMsg([]byte{r.statusByte, b, 0}, r.ts_ms)
+		r.OnMsg([]byte{r.statusByte, b}, r.ts_ms)
 	case byteControlChange:
 		if r.issetBf {
 			r.issetBf = false // first: is set, second: the byte
