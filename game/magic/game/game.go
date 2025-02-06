@@ -4726,7 +4726,7 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
     production := 0
 
     for _, tile := range catchment {
-        production += tile.ProductionBonus()
+        production += tile.ProductionBonus(false)
     }
 
     return production
@@ -5976,6 +5976,46 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
     // FIXME: dissipate unit enchantments
 }
 
+// apply automatic terraforming and purification to all cities of a player with gaias blessing
+func (game *Game) doGaiasBlessing(player *playerlib.Player) {
+    for _, city := range player.Cities {
+        if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
+
+            mapObject := game.GetMap(city.Plane)
+
+            for dx := -2; dx <= 2; dx++ {
+                for dy := -2; dy <= 2; dy++ {
+                    mx := player.WrapX(city.X + dx)
+                    my := city.Y + dy
+
+                    if mx < 0 || mx >= mapObject.Width() || my < 0 || my >= mapObject.Height() {
+                        continue
+                    }
+
+                    tile := mapObject.GetTile(mx, my)
+                    terrainType := tile.Tile.TerrainType()
+
+                    // 10% chance to convert volcanos to hills
+                    if mapObject.HasVolcano(mx, my) && rand.IntN(100) < 10 {
+                        mapObject.RemoveVolcano(mx, my)
+                        mapObject.Map.SetTerrainAt(mx, my, terrain.Hill, mapObject.Data, mapObject.Plane)
+                    }
+
+                    // 10% chance to convert desert to grassland
+                    if terrainType == terrain.Desert && rand.IntN(100) < 10 {
+                        mapObject.Map.SetTerrainAt(mx, mx, terrain.Grass, mapObject.Data, mapObject.Plane)
+                    }
+
+                    // 20% chance to remove corruption
+                    if mapObject.HasCorruption(mx, my) && rand.IntN(100) < 20 {
+                        mapObject.RemoveCorruption(mx, my)
+                    }
+                }
+            }
+        }
+    }
+}
+
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     disbandedMessages := game.DisbandUnits(player)
 
@@ -6184,6 +6224,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     for _, city := range removeCities {
         player.RemoveCity(city)
     }
+
+    game.doGaiasBlessing(player)
 
     game.maybeHireHero(player)
     game.maybeHireMercenaries(player)
