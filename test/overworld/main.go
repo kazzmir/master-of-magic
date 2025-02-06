@@ -993,6 +993,8 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature's Eye"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Prosperity"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Inspirations"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Cursed Lands"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Famine"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
@@ -1033,6 +1035,32 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     game.CurrentMap().SetRoad(x, y+1, false)
     game.CurrentMap().SetRoad(x, y+2, false)
+
+    enemyWizard := setup.WizardCustom{
+        Name: "enemy",
+        Banner: data.BannerGreen,
+        Race: data.RaceDraconian,
+    }
+
+    enemy := game.AddPlayer(enemyWizard, false)
+
+    x, y, _ = game.FindValidCityLocation(game.Plane)
+
+    city2 := citylib.MakeCity("Test City", x, y, enemy.Wizard.Race, enemy.Wizard.Banner, fraction.Make(1, 1), game.BuildingInfo, game.CurrentMap(), game)
+    city2.Population = 14000
+    city2.Plane = data.PlaneArcanus
+    city2.ProducingBuilding = buildinglib.BuildingHousing
+    city2.ProducingUnit = units.UnitNone
+    city2.Farmers = 5
+    city2.Workers = 5
+    city2.Wall = false
+    city2.ResetCitizens(nil)
+    enemy.AddCity(city2)
+
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y, data.PlaneArcanus, wizard.Banner, nil))
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.DragonTurtle, x + 2, y, data.PlaneArcanus, wizard.Banner, nil))
+    player.LiftFog(x, y, 2, data.PlaneArcanus)
 
     return game
 }
