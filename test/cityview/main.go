@@ -29,6 +29,7 @@ type Engine struct {
     CityScreen *cityview.CityScreen
     ImageCache util.ImageCache
     Map *maplib.Map
+    Garrison []units.StackUnit
 }
 
 type NoCityProvider struct {
@@ -123,6 +124,7 @@ func NewEngine() (*Engine, error) {
         CityScreen: cityScreen,
         ImageCache: util.MakeImageCache(cache),
         Map: &gameMap,
+        Garrison: garrison,
     }, nil
 }
 
@@ -140,6 +142,7 @@ func (engine *Engine) toggleEnchantment(enchantment data.CityEnchantment) {
     } else {
         engine.CityScreen.City.AddEnchantment(enchantment, data.BannerBlue)
     }
+    engine.CityScreen.City.UpdateUnrest(engine.Garrison)
     engine.CityScreen.UI = engine.CityScreen.MakeUI(buildinglib.BuildingNone)
 }
 
