@@ -46,13 +46,15 @@ func (o *out) Send(b []byte) error {
 	o.RUnlock()
 
 	o.running.EachMessage(b, 0)
+
 	b = o.bf.Bytes()
-	o.bf.Reset()
 
 	var arr = make([]interface{}, len(b))
 	for i, bt := range b {
 		arr[i] = bt
 	}
+
+	o.bf.Reset()
 
 	o.jsport.Call("send", js.ValueOf(arr))
 	return nil
