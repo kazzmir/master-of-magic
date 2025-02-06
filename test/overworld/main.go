@@ -993,6 +993,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature's Eye"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Prosperity"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Inspirations"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Gaia's Blessing"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Cursed Lands"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Famine"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))

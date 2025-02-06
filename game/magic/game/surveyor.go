@@ -197,7 +197,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         y += float64(whiteFont.Height() * data.ScreenScale)
                     }
 
-                    productionBonus := tile.ProductionBonus()
+                    productionBonus := tile.ProductionBonus(false)
                     if productionBonus != 0 {
                         whiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v%% production", productionBonus))
                         y += float64(whiteFont.Height() * data.ScreenScale)
