@@ -202,9 +202,7 @@ func TestScenario1(test *testing.T) {
     city.AddBuilding(building.BuildingSmithy)
     city.AddBuilding(building.BuildingFortress)
     city.ProducingBuilding = building.BuildingHousing
-    // maybe city.ResetCitizens(nil) maybe enable and add 2 units garrison
-
-    // FIXME: the expected values might be rounded?
+    // maybe add 2 units garrison and call city.ResetCitizens(nil)
 
     // Food
     if city.FarmerFoodProduction(city.Farmers) != 6 {
@@ -225,7 +223,6 @@ func TestScenario1(test *testing.T) {
         test.Errorf("City ProductionWorkers is not correct: %v", city.ProductionWorkers())
     }
     if int(city.ProductionFarmers()) != 2 {
-        // maybe a rounding error?
         test.Errorf("City ProductionFarmers is not correct: %v", city.ProductionFarmers())
     }
     if int(city.ProductionTerrain()) != 1 {
@@ -305,12 +302,7 @@ func TestScenario2(test *testing.T) {
     city.AddBuilding(building.BuildingMarketplace)
     city.AddBuilding(building.BuildingMinersGuild)
     city.ProducingBuilding = building.BuildingTradeGoods
-    // city.ResetCitizens(nil) maybe enable and add 6 units garrison
-
-    // FIXME: Add garrison: 6 units
-    // FIXME: Why are there 2 rebels? there should be 0
-
-    // FIXME: the expected values might be rounded
+    // maybe add 6 units garrison and call city.ResetCitizens(nil)
 
     // Food
     if city.FarmerFoodProduction(city.Farmers) != 14 {
