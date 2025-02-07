@@ -595,6 +595,7 @@ func (city *City) ComputePower() int {
             case buildinglib.BuildingAlchemistsGuild: power += 3
             case buildinglib.BuildingWizardsGuild: power -= 3
             case buildinglib.BuildingFortress:
+                // FIXME: Wizards spell books should be reported in the city with the fortress
                 if city.Plane == data.PlaneMyrror {
                     power += 5
                 }
