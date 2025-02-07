@@ -1223,7 +1223,7 @@ func (city *City) ProductionWorkers() float32 {
 }
 
 func (city *City) ProductionFarmers() float32 {
-    return 0.5 * float32(city.Farmers)
+    return float32(math.Ceil(0.5 * float64(city.Farmers)))
 }
 
 func (city *City) productionBuildingBonus(building buildinglib.Building, percent float32) float32 {
