@@ -12,7 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
-func makeMap() map[image.Point]maplib.FullTile {
+func makeSimpleMap() map[image.Point]maplib.FullTile {
     out := make(map[image.Point]maplib.FullTile)
     for x := -2; x <= 2; x++ {
         for y := -2; y <= 2; y++ {
@@ -44,7 +44,7 @@ func (provider *NoCities) FindRoadConnectedCities(city *City) []*City {
 }
 
 func TestBasicCity(test *testing.T){
-    city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeMap()}, &NoCities{})
+    city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeSimpleMap()}, &NoCities{})
     city.Population = 6000
     city.Farmers = 6
     city.Workers = 0
@@ -116,13 +116,13 @@ func closeFloat(a float64, b float64) bool {
 
 func TestForeignTrade(test *testing.T){
     var connected AllConnected
-    city1 := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeMap()}, &connected)
+    city1 := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeSimpleMap()}, &connected)
     city1.Population = 6000
     city1.Farmers = 6
     city1.Workers = 0
     city1.ResetCitizens(nil)
 
-    city2 := MakeCity("Test City 2", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeMap()}, &connected)
+    city2 := MakeCity("Test City 2", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeSimpleMap()}, &connected)
     city2.Population = 7000
     city2.Farmers = 7
     city2.Workers = 0
@@ -136,7 +136,7 @@ func TestForeignTrade(test *testing.T){
     }
 
     // different race
-    city3 := MakeCity("Test City 3 elf", 10, 10, data.RaceHighElf, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeMap()}, &connected)
+    city3 := MakeCity("Test City 3 elf", 10, 10, data.RaceHighElf, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeSimpleMap()}, &connected)
     city3.Population = 5000
     city3.Farmers = 5
     city3.Workers = 0
@@ -151,49 +151,50 @@ func TestForeignTrade(test *testing.T){
     }
 }
 
+func makeScenarioMap() map[image.Point]maplib.FullTile {
+    out := make(map[image.Point]maplib.FullTile)
+
+    out[image.Point{-2, -2}] = maplib.FullTile{Tile: terrain.TileHills1}
+    out[image.Point{-2, -1}] = maplib.FullTile{Tile: terrain.TileForest1}
+    out[image.Point{-2,  0}] = maplib.FullTile{Tile: terrain.TileHills1, Extras: make(map[maplib.ExtraKind]maplib.ExtraTile)}
+    out[image.Point{-2,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+    out[image.Point{-2,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
+
+    out[image.Point{-1, -2}] = maplib.FullTile{Tile: terrain.TileHills1}
+    out[image.Point{-1, -1}] = maplib.FullTile{Tile: terrain.TileForest1}
+    out[image.Point{-1,  0}] = maplib.FullTile{Tile: terrain.TileHills1, Extras: make(map[maplib.ExtraKind]maplib.ExtraTile)}
+    out[image.Point{-1,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+    out[image.Point{-1,  2}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+
+    out[image.Point{ 0, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    out[image.Point{ 0, -1}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    out[image.Point{ 0,  0}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+    out[image.Point{ 0,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+    out[image.Point{ 0,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
+
+    out[image.Point{ 1, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    out[image.Point{ 1, -1}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    out[image.Point{ 1,  0}] = maplib.FullTile{Tile: terrain.TileForest1}
+    out[image.Point{ 1,  1}] = maplib.FullTile{Tile: terrain.TileForest1}
+    out[image.Point{ 1,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
+
+    out[image.Point{ 2, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    out[image.Point{ 2, -1}] = maplib.FullTile{Tile: terrain.TileGrasslands1}
+    out[image.Point{ 2,  0}] = maplib.FullTile{Tile: terrain.TileTundra}
+    out[image.Point{ 2,  1}] = maplib.FullTile{Tile: terrain.TileHills1}
+    out[image.Point{ 2,  2}] = maplib.FullTile{Tile: terrain.TileHills1}
+
+    out[image.Point{-2,  0}].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusGoldOre}
+    out[image.Point{-1,  0}].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusIronOre}
+
+    return out
+}
 
 func TestScenario1(test *testing.T) {
     // Test against values from a city screen of original MoM v1.60
 
-    // Catchment
-    catchment := Catchment{}
-
-    catchment.Map = make(map[image.Point]maplib.FullTile)
-    catchment.Map[image.Point{-2, -2}] = maplib.FullTile{Tile: terrain.TileHills1}
-    catchment.Map[image.Point{-2, -1}] = maplib.FullTile{Tile: terrain.TileForest1}
-    catchment.Map[image.Point{-2,  0}] = maplib.FullTile{Tile: terrain.TileHills1, Extras: make(map[maplib.ExtraKind]maplib.ExtraTile)}
-    catchment.Map[image.Point{-2,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-    catchment.Map[image.Point{-2,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
-
-    catchment.Map[image.Point{-1, -2}] = maplib.FullTile{Tile: terrain.TileHills1}
-    catchment.Map[image.Point{-1, -1}] = maplib.FullTile{Tile: terrain.TileForest1}
-    catchment.Map[image.Point{-1,  0}] = maplib.FullTile{Tile: terrain.TileHills1, Extras: make(map[maplib.ExtraKind]maplib.ExtraTile)}
-    catchment.Map[image.Point{-1,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-    catchment.Map[image.Point{-1,  2}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-
-    catchment.Map[image.Point{ 0, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    catchment.Map[image.Point{ 0, -1}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    catchment.Map[image.Point{ 0,  0}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-    catchment.Map[image.Point{ 0,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-    catchment.Map[image.Point{ 0,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
-
-    catchment.Map[image.Point{ 1, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    catchment.Map[image.Point{ 1, -1}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    catchment.Map[image.Point{ 1,  0}] = maplib.FullTile{Tile: terrain.TileForest1}
-    catchment.Map[image.Point{ 1,  1}] = maplib.FullTile{Tile: terrain.TileForest1}
-    catchment.Map[image.Point{ 1,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
-
-    catchment.Map[image.Point{ 2, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    catchment.Map[image.Point{ 2, -1}] = maplib.FullTile{Tile: terrain.TileGrasslands1}
-    catchment.Map[image.Point{ 2,  0}] = maplib.FullTile{Tile: terrain.TileTundra}
-    catchment.Map[image.Point{ 2,  1}] = maplib.FullTile{Tile: terrain.TileHills1}
-    catchment.Map[image.Point{ 2,  2}] = maplib.FullTile{Tile: terrain.TileHills1}
-
-    catchment.Map[image.Point{-2,  0}].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusGoldOre}
-    catchment.Map[image.Point{-1,  0}].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusIronOre}
-
     // City
-    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, data.BannerGreen, fraction.FromInt(1), nil, &catchment, &NoCities{})
+    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, data.BannerGreen, fraction.FromInt(1), nil, &Catchment{Map: makeScenarioMap()}, &NoCities{})
     city.Population = 4600
     city.Farmers = 3
     city.Workers = 1
@@ -251,45 +252,8 @@ func TestScenario1(test *testing.T) {
 func TestScenario2(test *testing.T) {
     // Test against values from a city screen of original MoM v1.60
 
-    // Catchment
-    catchment := Catchment{}
-
-    catchment.Map = make(map[image.Point]maplib.FullTile)
-    catchment.Map[image.Point{-2, -2}] = maplib.FullTile{Tile: terrain.TileHills1}
-    catchment.Map[image.Point{-2, -1}] = maplib.FullTile{Tile: terrain.TileForest1}
-    catchment.Map[image.Point{-2,  0}] = maplib.FullTile{Tile: terrain.TileHills1, Extras: make(map[maplib.ExtraKind]maplib.ExtraTile)}
-    catchment.Map[image.Point{-2,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-    catchment.Map[image.Point{-2,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
-
-    catchment.Map[image.Point{-1, -2}] = maplib.FullTile{Tile: terrain.TileHills1}
-    catchment.Map[image.Point{-1, -1}] = maplib.FullTile{Tile: terrain.TileForest1}
-    catchment.Map[image.Point{-1,  0}] = maplib.FullTile{Tile: terrain.TileHills1, Extras: make(map[maplib.ExtraKind]maplib.ExtraTile)}
-    catchment.Map[image.Point{-1,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-    catchment.Map[image.Point{-1,  2}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-
-    catchment.Map[image.Point{ 0, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    catchment.Map[image.Point{ 0, -1}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    catchment.Map[image.Point{ 0,  0}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-    catchment.Map[image.Point{ 0,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-    catchment.Map[image.Point{ 0,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
-
-    catchment.Map[image.Point{ 1, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    catchment.Map[image.Point{ 1, -1}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    catchment.Map[image.Point{ 1,  0}] = maplib.FullTile{Tile: terrain.TileForest1}
-    catchment.Map[image.Point{ 1,  1}] = maplib.FullTile{Tile: terrain.TileForest1}
-    catchment.Map[image.Point{ 1,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
-
-    catchment.Map[image.Point{ 2, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    catchment.Map[image.Point{ 2, -1}] = maplib.FullTile{Tile: terrain.TileGrasslands1}
-    catchment.Map[image.Point{ 2,  0}] = maplib.FullTile{Tile: terrain.TileTundra}
-    catchment.Map[image.Point{ 2,  1}] = maplib.FullTile{Tile: terrain.TileHills1}
-    catchment.Map[image.Point{ 2,  2}] = maplib.FullTile{Tile: terrain.TileHills1}
-
-    catchment.Map[image.Point{-2,  0}].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusGoldOre}
-    catchment.Map[image.Point{-1,  0}].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusIronOre}
-
     // City
-    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, data.BannerGreen, fraction.FromInt(1), nil, &catchment, &NoCities{})
+    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, data.BannerGreen, fraction.FromInt(1), nil, &Catchment{Map: makeScenarioMap()}, &NoCities{})
     city.Population = 10110
     city.Farmers = 7
     city.Workers = 3
