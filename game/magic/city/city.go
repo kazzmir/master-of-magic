@@ -903,7 +903,7 @@ func (city *City) MaximumCitySize() int {
     bonus := 0
 
     if city.Buildings.Contains(buildinglib.BuildingGranary) {
-        bonus += 1
+        bonus += 2
     }
 
     if city.Buildings.Contains(buildinglib.BuildingFarmersMarket) {
