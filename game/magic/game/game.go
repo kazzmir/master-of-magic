@@ -701,6 +701,48 @@ func (game *Game) FindValidCityLocation(plane data.Plane) (int, int, bool) {
     return 0, 0, false
 }
 
+func (game *Game) FindValidCityLocationOnShore(plane data.Plane) (int, int, bool) {
+    mapUse := game.GetMap(plane)
+    continents := mapUse.Map.FindContinents()
+
+    for i := 0; i < 10; i++ {
+        continentIndex := rand.N(len(continents))
+        continent := continents[continentIndex]
+        if len(continent) > 100 {
+
+            var candidates []image.Point
+            for _, point := range continent {
+                x := point.X
+                y := point.Y
+                tile := terrain.GetTile(mapUse.Map.Terrain[x][y])
+                if y > 3 && y < mapUse.Map.Columns() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
+
+                    found := false
+                    for dx := -1; dx <= 1; dx++ {
+                        for dy := -1; dy <= 1; dy++ {
+                            maybe := terrain.GetTile(mapUse.Map.Terrain[mapUse.WrapX(x+dx)][y+dy])
+                            if maybe.TerrainType() == terrain.Shore {
+                                found = true
+                            }
+                        }
+                    }
+
+                    if found {
+                        candidates = append(candidates, point)
+                    }
+                }
+            }
+
+            if len(candidates) > 0 {
+                choice := rand.N(len(candidates))
+                return candidates[choice].X, candidates[choice].Y, true
+            }
+        }
+    }
+
+    return 0, 0, false
+}
+
 func (game *Game) FindValidCityLocationOnContinent(plane data.Plane, x int, y int) (int, int) {
     mapUse := game.GetMap(plane)
     continents := mapUse.Map.FindContinents()
@@ -1797,6 +1839,17 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
 
     if newY < 0 || newY >= useMap.Height() {
         return nil
+    }
+
+    if fog[newX][newY] != data.FogTypeUnexplored {
+        tileTo := useMap.GetTile(newX, newY)
+        if tileTo.Tile.IsLand() {
+            for _, unit := range stack.ActiveUnits() {
+                if unit.GetRawUnit().Sailing {
+                    return nil
+                }
+            }
+        }
     }
 
     normalized := func (a image.Point) image.Point {
