@@ -94,6 +94,16 @@ func (stack *UnitStack) InactiveUnits() []units.StackUnit {
     return inactive
 }
 
+func (stack *UnitStack) HasSailingUnits() bool {
+    for _, unit := range stack.ActiveUnits() {
+        if unit.GetRawUnit().Sailing {
+            return true
+        }
+    }
+
+    return false
+}
+
 func (stack *UnitStack) AllFlyers() bool {
     for _, unit := range stack.ActiveUnits() {
         if !unit.IsFlying() {

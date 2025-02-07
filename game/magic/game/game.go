@@ -1841,12 +1841,8 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
 
     if fog[newX][newY] != data.FogTypeUnexplored {
         tileTo := useMap.GetTile(newX, newY)
-        if tileTo.Tile.IsLand() {
-            for _, unit := range stack.ActiveUnits() {
-                if unit.GetRawUnit().Sailing {
-                    return nil
-                }
-            }
+        if tileTo.Tile.IsLand() && stack.HasSailingUnits() {
+            return nil
         }
     }
 
