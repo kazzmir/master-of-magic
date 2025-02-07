@@ -948,10 +948,8 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
     power := float64(0)
 
     for _, city := range player.Cities {
-        power += float64(city.ComputePower())
+        power += float64(city.ComputePower(player.Wizard.TotalBooks()))
     }
-
-    power += float64(player.Wizard.TotalBooks())
 
     magicBonus := float64(1)
 

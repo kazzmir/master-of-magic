@@ -46,6 +46,9 @@ func NewEngine() (*Engine, error) {
         Wizard: setup.WizardCustom{
             Name: "Billy",
             Banner: data.BannerRed,
+            Books: []data.WizardBook{
+                {Magic: data.ChaosMagic, Count: 11},
+            },
         },
     }
 
@@ -76,6 +79,7 @@ func NewEngine() (*Engine, error) {
     city.Production = 18
     city.ProducingBuilding = buildinglib.BuildingNone
     city.Banner = data.BannerBlue
+    city.Buildings.Insert(buildinglib.BuildingFortress)
     city.Buildings.Insert(buildinglib.BuildingGranary)
     city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
     city.Buildings.Insert(buildinglib.BuildingMarketplace)

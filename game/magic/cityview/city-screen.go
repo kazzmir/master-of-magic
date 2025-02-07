@@ -1502,6 +1502,17 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
         })
     }
 
+    if cityScreen.City.Buildings.Contains(buildinglib.BuildingFortress) {
+        power := cityScreen.Player.Wizard.TotalBooks()
+        if cityScreen.City.Plane == data.PlaneMyrror {
+            power += 5
+        }
+        usage = append(usage, ResourceUsage{
+            Count: power,
+            Name: "Fortress",
+        })
+    }
+
     if cityScreen.City.Buildings.Contains(buildinglib.BuildingShrine) {
         usage = append(usage, ResourceUsage{
             Count: 1,
@@ -1686,7 +1697,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(powerRect.Min.X), float64(powerRect.Min.Y))
-            cityScreen.drawIcons(cityScreen.City.ComputePower(), smallMagic, bigMagic, options, screen)
+            cityScreen.drawIcons(cityScreen.City.ComputePower(cityScreen.Player.Wizard.TotalBooks()), smallMagic, bigMagic, options, screen)
         },
     })
 
