@@ -896,10 +896,6 @@ func (city *City) MaximumCitySize() int {
 
     // TODO: 1/2 if famine is active
 
-    if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
-        foodAvailability += int(0.5 * float32(foodAvailability))
-    }
-
     bonus := 0
 
     if city.Buildings.Contains(buildinglib.BuildingGranary) {
@@ -979,6 +975,13 @@ func (city *City) BaseFoodLevel() int {
 
     for _, tile := range catchment {
         food = food.Add(tile.FoodBonus())
+    }
+
+    if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
+        food = food.Add(food.Divide(fraction.FromInt(2)))
+    }
+
+    for _, tile := range catchment {
         food = food.Add(fraction.FromInt(tile.GetBonus().FoodBonus()))
     }
 
