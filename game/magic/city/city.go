@@ -941,6 +941,9 @@ func (city *City) PopulationGrowthRate() int {
         base += int(2.5 * float32(city.MaximumCitySize()) / 10) * 10
     }
 
+    // FIXME: Add Famine, Stream of Life, Dark Rituals and Population Boom event
+
+
     if city.SurplusFood() < 0 {
         base = 50 * city.SurplusFood()
     }
@@ -1135,6 +1138,7 @@ func (city *City) ComputeTotalBonusPercent() float64 {
         percent += 50
     }
 
+    // FIXME: add river/shore bonus
     // +10 if adjacent to a shore
     // +20 if on a river
     // +30 if on a river and adjacent to a shore, or on a river mouth
