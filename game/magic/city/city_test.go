@@ -151,6 +151,86 @@ func TestForeignTrade(test *testing.T){
     }
 }
 
+func TestEnchantments(test *testing.T){
+    banner := data.BannerBlue
+
+    map_ := make(map[image.Point]maplib.FullTile)
+    for x := -2; x <= 2; x++ {
+        for y := -2; y <= 2; y++ {
+            map_[image.Point{x, y}] = maplib.FullTile{
+                Tile: terrain.TileForest1,
+            }
+        }
+    }
+    catchment := Catchment{Map: map_}
+
+    city := MakeCity("Test City", 10, 10, data.RaceHighMen, banner, fraction.FromInt(1), nil, &catchment, &NoCities{})
+    city.Population = 10100
+    city.Farmers = 5
+    city.Workers = 3
+    city.Rebels = 2
+    city.ProducingBuilding = building.BuildingTradeGoods
+
+    if int(city.WorkProductionRate()) != int(math.Floor(15.75)) {
+        // 3 x 2 worker + 5 x 0.5 farmer + 6.75 terrain
+        test.Errorf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
+    }
+
+    if city.GoldSurplus() != 15 {
+        // 8 taxation + 15.75 / 2 trade goods
+        test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
+    }
+
+    // Prosperity
+    city.AddEnchantment(data.CityEnchantmentProsperity, banner)
+
+    if city.GoldSurplus() != 23 {
+        // 2 x 8 taxation + 15.75 / 2 trade goods
+        test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
+    }
+
+    // Inspirations
+    city.AddEnchantment(data.CityEnchantmentInspirations, banner)
+
+    if int(city.WorkProductionRate()) != int(math.Floor(24.75)) {
+        // 2 x (3 x 2 worker + 5 x 0.5 farmer) + 6.75 terrain
+        test.Errorf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
+    }
+
+    if city.GoldSurplus() != 28 {
+        // 2 x 8 taxation + 24.75 / 2 trade goods
+        test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
+    }
+
+    // Cursed Lands
+    city.AddEnchantment(data.CityEnchantmentCursedLands, banner)
+    if int(city.WorkProductionRate()) != int(math.Floor(12.375)) {
+        // (2 x (3 x 2 worker + 5 x 0.5 farmer) + 6.75 terrain) / 2
+        test.Errorf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
+    }
+
+    if city.GoldSurplus() != 22 {
+        // 2 x 8 taxation + 12.375/2 trade goods
+        test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
+    }
+
+    // Gaias Blessing
+    city.AddEnchantment(data.CityEnchantmentGaiasBlessing, banner)
+
+    if int(city.WorkProductionRate()) != int(math.Floor(15.75)) {
+        // (2 x (3 x 2 worker + 5 x 0.5 farmer) + 13.5 terrain) / 2 = 12.375
+        test.Errorf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
+    }
+
+    if city.GoldSurplus() != 23 {
+        // 2 x 8 taxation + 15.75/2 trade goods
+        test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
+    }
+
+    // FIXME: Test famine
+}
+
+
 func makeScenarioMap() map[image.Point]maplib.FullTile {
     out := make(map[image.Point]maplib.FullTile)
 
