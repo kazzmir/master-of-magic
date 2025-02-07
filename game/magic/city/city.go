@@ -581,7 +581,7 @@ func (city *City) PowerMinerals() int {
 
 /* power production from buildings and citizens
  */
-func (city *City) ComputePower() int {
+func (city *City) ComputePower(spellBooks int) int {
     power := 0
 
     religiousPower := 0
@@ -595,6 +595,7 @@ func (city *City) ComputePower() int {
             case buildinglib.BuildingAlchemistsGuild: power += 3
             case buildinglib.BuildingWizardsGuild: power -= 3
             case buildinglib.BuildingFortress:
+                power += spellBooks
                 if city.Plane == data.PlaneMyrror {
                     power += 5
                 }
@@ -896,14 +897,10 @@ func (city *City) MaximumCitySize() int {
 
     // TODO: 1/2 if famine is active
 
-    if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
-        foodAvailability += int(0.5 * float32(foodAvailability))
-    }
-
     bonus := 0
 
     if city.Buildings.Contains(buildinglib.BuildingGranary) {
-        bonus += 1
+        bonus += 2
     }
 
     if city.Buildings.Contains(buildinglib.BuildingFarmersMarket) {
@@ -944,6 +941,25 @@ func (city *City) PopulationGrowthRate() int {
         base += int(2.5 * float32(city.MaximumCitySize()) / 10) * 10
     }
 
+    // FIXME: Add Famine, Stream of Life, Dark Rituals and Population Boom event
+
+    if city.ProducingBuilding == buildinglib.BuildingHousing {
+        bonus := 50
+        if city.Population > 1 {
+            bonus = (city.Workers / city.Population) * 100
+        }
+
+        if city.Buildings.Contains(buildinglib.BuildingBuildersHall) {
+            bonus += 15
+        }
+
+        if city.Buildings.Contains(buildinglib.BuildingSawmill) {
+            bonus += 10
+        }
+
+        base += bonus
+    }
+
     if city.SurplusFood() < 0 {
         base = 50 * city.SurplusFood()
     }
@@ -979,6 +995,13 @@ func (city *City) BaseFoodLevel() int {
 
     for _, tile := range catchment {
         food = food.Add(tile.FoodBonus())
+    }
+
+    if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
+        food = food.Add(food.Divide(fraction.FromInt(2)))
+    }
+
+    for _, tile := range catchment {
         food = food.Add(fraction.FromInt(tile.GetBonus().FoodBonus()))
     }
 
@@ -1131,6 +1154,7 @@ func (city *City) ComputeTotalBonusPercent() float64 {
         percent += 50
     }
 
+    // FIXME: add river/shore bonus
     // +10 if adjacent to a shore
     // +20 if on a river
     // +30 if on a river and adjacent to a shore, or on a river mouth
@@ -1220,7 +1244,7 @@ func (city *City) ProductionWorkers() float32 {
 }
 
 func (city *City) ProductionFarmers() float32 {
-    return 0.5 * float32(city.Farmers)
+    return float32(math.Ceil(0.5 * float64(city.Farmers)))
 }
 
 func (city *City) productionBuildingBonus(building buildinglib.Building, percent float32) float32 {
