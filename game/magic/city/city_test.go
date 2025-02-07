@@ -5,16 +5,14 @@ import (
     "image"
     "math"
 
+    "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
-type Catchment struct {
-}
-
-func (catchment *Catchment) GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile {
+func makeMap() map[image.Point]maplib.FullTile {
     out := make(map[image.Point]maplib.FullTile)
     for x := -2; x <= 2; x++ {
         for y := -2; y <= 2; y++ {
@@ -23,8 +21,15 @@ func (catchment *Catchment) GetCatchmentArea(x int, y int) map[image.Point]mapli
             }
         }
     }
-
     return out
+}
+
+type Catchment struct {
+    Map map[image.Point]maplib.FullTile
+}
+
+func (catchment *Catchment) GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile {
+    return catchment.Map
 }
 
 func (catchment *Catchment) OnShore(x int, y int) bool {
@@ -39,7 +44,7 @@ func (provider *NoCities) FindRoadConnectedCities(city *City) []*City {
 }
 
 func TestBasicCity(test *testing.T){
-    city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{}, &NoCities{})
+    city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeMap()}, &NoCities{})
     city.Population = 6000
     city.Farmers = 6
     city.Workers = 0
@@ -111,13 +116,13 @@ func closeFloat(a float64, b float64) bool {
 
 func TestForeignTrade(test *testing.T){
     var connected AllConnected
-    city1 := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{}, &connected)
+    city1 := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeMap()}, &connected)
     city1.Population = 6000
     city1.Farmers = 6
     city1.Workers = 0
     city1.ResetCitizens(nil)
 
-    city2 := MakeCity("Test City 2", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{}, &connected)
+    city2 := MakeCity("Test City 2", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeMap()}, &connected)
     city2.Population = 7000
     city2.Farmers = 7
     city2.Workers = 0
@@ -131,7 +136,7 @@ func TestForeignTrade(test *testing.T){
     }
 
     // different race
-    city3 := MakeCity("Test City 3 elf", 10, 10, data.RaceHighElf, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{}, &connected)
+    city3 := MakeCity("Test City 3 elf", 10, 10, data.RaceHighElf, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeMap()}, &connected)
     city3.Population = 5000
     city3.Farmers = 5
     city3.Workers = 0
@@ -143,5 +148,226 @@ func TestForeignTrade(test *testing.T){
     expected := 7 * 0.5 + 5 * 1
     if !closeFloat(city1Trade, expected) {
         test.Errorf("City1 foreign trade expected %v but was %v", expected, city1Trade)
+    }
+}
+
+
+func TestScenario1(test *testing.T) {
+    // Test against values from a city screen of original MoM v1.60
+
+    // Catchment
+    catchment := Catchment{}
+
+    catchment.Map = make(map[image.Point]maplib.FullTile)
+    catchment.Map[image.Point{-2, -2}] = maplib.FullTile{Tile: terrain.TileHills1}
+    catchment.Map[image.Point{-2, -1}] = maplib.FullTile{Tile: terrain.TileForest1}
+    catchment.Map[image.Point{-2,  0}] = maplib.FullTile{Tile: terrain.TileHills1, Extras: make(map[maplib.ExtraKind]maplib.ExtraTile)}
+    catchment.Map[image.Point{-2,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+    catchment.Map[image.Point{-2,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
+
+    catchment.Map[image.Point{-1, -2}] = maplib.FullTile{Tile: terrain.TileHills1}
+    catchment.Map[image.Point{-1, -1}] = maplib.FullTile{Tile: terrain.TileForest1}
+    catchment.Map[image.Point{-1,  0}] = maplib.FullTile{Tile: terrain.TileHills1, Extras: make(map[maplib.ExtraKind]maplib.ExtraTile)}
+    catchment.Map[image.Point{-1,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+    catchment.Map[image.Point{-1,  2}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+
+    catchment.Map[image.Point{ 0, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    catchment.Map[image.Point{ 0, -1}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    catchment.Map[image.Point{ 0,  0}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+    catchment.Map[image.Point{ 0,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+    catchment.Map[image.Point{ 0,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
+
+    catchment.Map[image.Point{ 1, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    catchment.Map[image.Point{ 1, -1}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    catchment.Map[image.Point{ 1,  0}] = maplib.FullTile{Tile: terrain.TileForest1}
+    catchment.Map[image.Point{ 1,  1}] = maplib.FullTile{Tile: terrain.TileForest1}
+    catchment.Map[image.Point{ 1,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
+
+    catchment.Map[image.Point{ 2, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    catchment.Map[image.Point{ 2, -1}] = maplib.FullTile{Tile: terrain.TileGrasslands1}
+    catchment.Map[image.Point{ 2,  0}] = maplib.FullTile{Tile: terrain.TileTundra}
+    catchment.Map[image.Point{ 2,  1}] = maplib.FullTile{Tile: terrain.TileHills1}
+    catchment.Map[image.Point{ 2,  2}] = maplib.FullTile{Tile: terrain.TileHills1}
+
+    catchment.Map[image.Point{-2,  0}].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusGoldOre}
+    catchment.Map[image.Point{-1,  0}].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusIronOre}
+
+    // City
+    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, data.BannerGreen, fraction.FromInt(1), nil, &catchment, &NoCities{})
+    city.Population = 4600
+    city.Farmers = 3
+    city.Workers = 1
+    city.AddBuilding(building.BuildingBarracks)
+    city.AddBuilding(building.BuildingBuildersHall)
+    city.AddBuilding(building.BuildingSmithy)
+    city.AddBuilding(building.BuildingFortress)
+    city.ProducingBuilding = building.BuildingHousing
+    // maybe city.ResetCitizens(nil) maybe enable and add 2 units garrison
+
+    // FIXME: the expected values might be rounded?
+
+    // Food
+    if city.FarmerFoodProduction(city.Farmers) != 6 {
+        test.Errorf("City FarmerFoodProduction is not correct: %v", city.FarmerFoodProduction(city.Farmers))
+    }
+    if city.RequiredFood() != 4 {
+        test.Errorf("City RequiredFood is not correct: %v", city.RequiredFood())
+    }
+    if city.SurplusFood() != 2 {
+        test.Errorf("City SurplusFood is not correct: %v", city.SurplusFood())
+    }
+
+    // Production
+    if int(city.WorkProductionRate()) != 5 {
+        test.Errorf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
+    }
+    if int(city.ProductionWorkers()) != 2 {
+        test.Errorf("City ProductionWorkers is not correct: %v", city.ProductionWorkers())
+    }
+    if int(city.ProductionFarmers()) != 2 {
+        // maybe a rounding error?
+        test.Errorf("City ProductionFarmers is not correct: %v", city.ProductionFarmers())
+    }
+    if int(city.ProductionTerrain()) != 1 {
+        test.Errorf("City ProductionTerrain is not correct: %v", city.ProductionTerrain())
+    }
+
+    // Gold
+    if city.GoldTaxation() != 4 {
+        test.Errorf("City GoldTaxation is not correct: %v", city.GoldTaxation())
+    }
+    if city.GoldMinerals() != 3 {
+        test.Errorf("City GoldMinerals is not correct: %v", city.GoldMinerals())
+    }
+
+    // Power
+    if city.ComputePower() != 11 {
+        // see "FIXME: Wizards spell books should be reported in the city with the fortress"
+        test.Errorf("City ComputePower is not correct: %v", city.ComputePower())
+    }
+
+    if city.PopulationGrowthRate() != 120 {
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
+    }
+}
+
+func TestScenario2(test *testing.T) {
+    // Test against values from a city screen of original MoM v1.60
+
+    // Catchment
+    catchment := Catchment{}
+
+    catchment.Map = make(map[image.Point]maplib.FullTile)
+    catchment.Map[image.Point{-2, -2}] = maplib.FullTile{Tile: terrain.TileHills1}
+    catchment.Map[image.Point{-2, -1}] = maplib.FullTile{Tile: terrain.TileForest1}
+    catchment.Map[image.Point{-2,  0}] = maplib.FullTile{Tile: terrain.TileHills1, Extras: make(map[maplib.ExtraKind]maplib.ExtraTile)}
+    catchment.Map[image.Point{-2,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+    catchment.Map[image.Point{-2,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
+
+    catchment.Map[image.Point{-1, -2}] = maplib.FullTile{Tile: terrain.TileHills1}
+    catchment.Map[image.Point{-1, -1}] = maplib.FullTile{Tile: terrain.TileForest1}
+    catchment.Map[image.Point{-1,  0}] = maplib.FullTile{Tile: terrain.TileHills1, Extras: make(map[maplib.ExtraKind]maplib.ExtraTile)}
+    catchment.Map[image.Point{-1,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+    catchment.Map[image.Point{-1,  2}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+
+    catchment.Map[image.Point{ 0, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    catchment.Map[image.Point{ 0, -1}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    catchment.Map[image.Point{ 0,  0}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+    catchment.Map[image.Point{ 0,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+    catchment.Map[image.Point{ 0,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
+
+    catchment.Map[image.Point{ 1, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    catchment.Map[image.Point{ 1, -1}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    catchment.Map[image.Point{ 1,  0}] = maplib.FullTile{Tile: terrain.TileForest1}
+    catchment.Map[image.Point{ 1,  1}] = maplib.FullTile{Tile: terrain.TileForest1}
+    catchment.Map[image.Point{ 1,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
+
+    catchment.Map[image.Point{ 2, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
+    catchment.Map[image.Point{ 2, -1}] = maplib.FullTile{Tile: terrain.TileGrasslands1}
+    catchment.Map[image.Point{ 2,  0}] = maplib.FullTile{Tile: terrain.TileTundra}
+    catchment.Map[image.Point{ 2,  1}] = maplib.FullTile{Tile: terrain.TileHills1}
+    catchment.Map[image.Point{ 2,  2}] = maplib.FullTile{Tile: terrain.TileHills1}
+
+    catchment.Map[image.Point{-2,  0}].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusGoldOre}
+    catchment.Map[image.Point{-1,  0}].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusIronOre}
+
+    // City
+    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, data.BannerGreen, fraction.FromInt(1), nil, &catchment, &NoCities{})
+    city.Population = 10110
+    city.Farmers = 7
+    city.Workers = 3
+    city.AddBuilding(building.BuildingBarracks)
+    city.AddBuilding(building.BuildingBuildersHall)
+    city.AddBuilding(building.BuildingSmithy)
+    city.AddBuilding(building.BuildingFortress)
+    city.AddBuilding(building.BuildingCityWalls)
+    city.AddBuilding(building.BuildingGranary)
+    city.AddBuilding(building.BuildingMarketplace)
+    city.AddBuilding(building.BuildingMinersGuild)
+    city.ProducingBuilding = building.BuildingTradeGoods
+    // city.ResetCitizens(nil) maybe enable and add 6 units garrison
+
+    // FIXME: Add garrison: 6 units
+    // FIXME: Why are there 2 rebels? there should be 0
+
+    // FIXME: the expected values might be rounded
+
+    // Food
+    if city.FarmerFoodProduction(city.Farmers) != 14 {
+        test.Errorf("City FarmerFoodProduction is not correct: %v", city.FarmerFoodProduction(city.Farmers))
+    }
+    if city.RequiredFood() != 10 {
+        test.Errorf("City RequiredFood is not correct: %v", city.RequiredFood())
+    }
+    if city.SurplusFood() != 6 {
+        test.Errorf("City SurplusFood is not correct: %v", city.SurplusFood())
+    }
+
+    // Production
+    if int(city.WorkProductionRate()) != 18 {
+        // see "FIXME: This should be only when producing units
+        test.Errorf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
+    }
+    if int(city.ProductionWorkers()) != 6 {
+        test.Errorf("City ProductionWorkers is not correct: %v", city.ProductionWorkers())
+    }
+    if int(city.ProductionFarmers()) != 4 {
+        test.Errorf("City ProductionFarmers is not correct: %v", city.ProductionFarmers())
+    }
+    if int(city.ProductionTerrain()) != 3 {
+        // see "FIXME: This should be only when producing units
+        test.Errorf("City ProductionTerrain is not correct: %v", city.ProductionTerrain())
+    }
+    if int(city.ProductionMinersGuild()) != 5 {
+        test.Errorf("City ProductionTerrain is not correct: %v", city.ProductionTerrain())
+    }
+
+    // Gold
+    if city.GoldTaxation() != 10 {
+        test.Errorf("City GoldTaxation is not correct: %v", city.GoldTaxation())
+    }
+    if city.GoldTradeGoods() != 9 {
+        test.Errorf("City GoldTradeGoods is not correct: %v", city.GoldTradeGoods())
+    }
+    if city.GoldMinerals() != 4 { // Gold Mine + Miner's Guild
+        test.Errorf("City GoldMinerals is not correct: %v", city.GoldMinerals())
+    }
+    if city.GoldBonus(city.ComputeTotalBonusPercent()) != 4 {
+        // see "FIXME: add river/shore bonus"
+        test.Errorf("City GoldBonus is not correct: %v", city.GoldBonus(city.ComputeTotalBonusPercent()))
+    }
+    if city.GoldMarketplace() != 7 {
+        test.Errorf("City GoldMarketplace is not correct: %v", city.GoldMarketplace())
+    }
+
+    // Power
+    if city.ComputePower() != 11 {
+        // see "FIXME: Wizards spell books should be reported in the city with the fortress"
+        test.Errorf("City ComputePower is not correct: %v", city.ComputePower())
+    }
+
+    if city.PopulationGrowthRate() != 90 {
+        // Dos MoM seems to be doing this other than explained in the wiki
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
 }
