@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -171,6 +172,8 @@ func TestEnchantments(test *testing.T){
     city.Rebels = 2
     city.ProducingBuilding = building.BuildingTradeGoods
 
+    stack := []units.StackUnit{}
+
     if int(city.WorkProductionRate()) != int(math.Floor(15.75)) {
         // 3 x 2 worker + 5 x 0.5 farmer + 6.75 terrain
         test.Errorf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
@@ -179,6 +182,10 @@ func TestEnchantments(test *testing.T){
     if city.GoldSurplus() != 15 {
         // 8 taxation + 15.75 / 2 trade goods
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
+    }
+
+    if city.ComputeUnrest(stack) != 2 {
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
     }
 
     // Prosperity
@@ -214,6 +221,10 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
+    if city.ComputeUnrest(stack) != 3 {
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+    }
+
     // Gaias Blessing
     city.AddEnchantment(data.CityEnchantmentGaiasBlessing, banner)
 
@@ -225,6 +236,10 @@ func TestEnchantments(test *testing.T){
     if city.GoldSurplus() != 23 {
         // 2 x 8 taxation + 15.75/2 trade goods
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
+    }
+
+    if city.ComputeUnrest(stack) != 1 {
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
     }
 
     // FIXME: Test famine
