@@ -581,7 +581,7 @@ func (city *City) PowerMinerals() int {
 
 /* power production from buildings and citizens
  */
-func (city *City) ComputePower() int {
+func (city *City) ComputePower(spellBooks int) int {
     power := 0
 
     religiousPower := 0
@@ -595,7 +595,7 @@ func (city *City) ComputePower() int {
             case buildinglib.BuildingAlchemistsGuild: power += 3
             case buildinglib.BuildingWizardsGuild: power -= 3
             case buildinglib.BuildingFortress:
-                // FIXME: Wizards spell books should be reported in the city with the fortress
+                power += spellBooks
                 if city.Plane == data.PlaneMyrror {
                     power += 5
                 }

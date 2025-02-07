@@ -319,9 +319,8 @@ func TestScenario1(test *testing.T) {
     }
 
     // Power
-    if city.ComputePower() != 11 {
-        // see "FIXME: Wizards spell books should be reported in the city with the fortress"
-        test.Logf("City ComputePower is not correct: %v", city.ComputePower())
+    if city.ComputePower(11) != 11 {
+        test.Logf("City ComputePower is not correct: %v", city.ComputePower(11))
     }
 
     if city.PopulationGrowthRate() != 120 {
@@ -397,9 +396,8 @@ func TestScenario2(test *testing.T) {
     }
 
     // Power
-    if city.ComputePower() != 11 {
-        // see "FIXME: Wizards spell books should be reported in the city with the fortress"
-        test.Logf("City ComputePower is not correct: %v", city.ComputePower())
+    if city.ComputePower(11) != 11 {
+        test.Logf("City ComputePower is not correct: %v", city.ComputePower(11))
     }
 
     if city.PopulationGrowthRate() != 90 {

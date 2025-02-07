@@ -906,11 +906,8 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
     power := float64(0)
 
     for _, city := range player.Cities {
-        power += float64(city.ComputePower())
+        power += float64(city.ComputePower(player.Wizard.TotalBooks()))
     }
-
-    // FIXME: Wizards spell books should be reported in the city with the fortress
-    power += float64(player.Wizard.TotalBooks())
 
     magicBonus := float64(1)
 
