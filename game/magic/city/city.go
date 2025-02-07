@@ -943,6 +943,22 @@ func (city *City) PopulationGrowthRate() int {
 
     // FIXME: Add Famine, Stream of Life, Dark Rituals and Population Boom event
 
+    if city.ProducingBuilding == buildinglib.BuildingHousing {
+        bonus := 50
+        if city.Population > 1 {
+            bonus = (city.Workers / city.Population) * 100
+        }
+
+        if city.Buildings.Contains(buildinglib.BuildingBuildersHall) {
+            bonus += 15
+        }
+
+        if city.Buildings.Contains(buildinglib.BuildingSawmill) {
+            bonus += 10
+        }
+
+        base += bonus
+    }
 
     if city.SurplusFood() < 0 {
         base = 50 * city.SurplusFood()
