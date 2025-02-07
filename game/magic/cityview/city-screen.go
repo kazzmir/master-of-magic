@@ -1503,8 +1503,12 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
     }
 
     if cityScreen.City.Buildings.Contains(buildinglib.BuildingFortress) {
+        power := cityScreen.Player.Wizard.TotalBooks()
+        if cityScreen.City.Plane == data.PlaneMyrror {
+            power += 5
+        }
         usage = append(usage, ResourceUsage{
-            Count: cityScreen.Player.Wizard.TotalBooks(),
+            Count: power,
             Name: "Fortress",
         })
     }
