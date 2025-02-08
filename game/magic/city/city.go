@@ -839,6 +839,10 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
         unrestAbsolute += 1
     }
 
+    if city.HasEnchantment(data.CityEnchantmentPestilence) {
+        unrestAbsolute += 2
+    }
+
     // capital race vs town race modifier
     // unrest from spells
     // supression from units

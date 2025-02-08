@@ -367,7 +367,6 @@ func (enchantment CityEnchantment) LbxIndex() int {
         case CityEnchantmentEvilPresence: return 82
         case CityEnchantmentInspirations: return 100
         case CityEnchantmentNaturesEye: return 99
-        // case CityEnchantmentPestilence: FIXME: How is this displayed?
         case CityEnchantmentProsperity: return 101
         case CityEnchantmentLifeWard: return 96
         case CityEnchantmentSorceryWard: return 97
@@ -391,7 +390,7 @@ func (enchantment CityEnchantment) SoundIndex() int {
         // case CityEnchantmentAstralGate: return 0
         // case CityEnchantmentChaosRift: return 0
         case CityEnchantmentCloudOfShadow, CityEnchantmentEvilPresence, CityEnchantmentFamine,
-            CityEnchantmentWallOfDarkness:
+            CityEnchantmentPestilence, CityEnchantmentWallOfDarkness:
             return 32
         // case CityEnchantmentConsecration: return 0
         case CityEnchantmentCursedLands: return 61
@@ -399,7 +398,6 @@ func (enchantment CityEnchantment) SoundIndex() int {
         // case CityEnchantmentEarthGate: return 0
         // case CityEnchantmentFlyingFortress: return 0
         case CityEnchantmentGaiasBlessing, CityEnchantmentNaturesEye: return 28
-        // case CityEnchantmentPestilence: return 0
         // case CityEnchantmentLifeWard: return 0
         // case CityEnchantmentSorceryWard: return 0
         // case CityEnchantmentNatureWard: return 0
@@ -418,7 +416,6 @@ func (enchantment CityEnchantment) IconOffset() int {
         // case CityEnchantmentConsecration: return 0
         case CityEnchantmentInspirations: return 134
         case CityEnchantmentNaturesEye: return 114
-        // case CityEnchantmentPestilence: return 0
         case CityEnchantmentProsperity: return 153
         // case CityEnchantmentLifeWard: return 0
         // case CityEnchantmentSorceryWard: return 0

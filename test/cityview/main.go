@@ -166,6 +166,7 @@ func (engine *Engine) Update() error {
             case ebiten.Key5: engine.toggleEnchantment(data.CityEnchantmentChaosRift)
             case ebiten.Key6: engine.toggleEnchantment(data.CityEnchantmentHeavenlyLight)
             case ebiten.Key7: engine.toggleEnchantment(data.CityEnchantmentCloudOfShadow)
+            case ebiten.Key8: engine.toggleEnchantment(data.CityEnchantmentPestilence)
         }
     }
 

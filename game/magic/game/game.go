@@ -5965,9 +5965,10 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
     // FIXME: dissipate unit enchantments
 }
 
-// apply automatic terraforming and purification to all cities of a player with gaias blessing
-func (game *Game) doGaiasBlessing(player *playerlib.Player) {
+// apply the effects of city enchantments
+func (game *Game) doCityEnchantments(player *playerlib.Player) {
     for _, city := range player.Cities {
+        // apply automatic terraforming and purification to all cities of a player with gaias blessing
         if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
 
             mapObject := game.GetMap(city.Plane)
@@ -6002,6 +6003,21 @@ func (game *Game) doGaiasBlessing(player *playerlib.Player) {
                 }
             }
         }
+
+        // lose city population due to pestilence
+        if city.HasEnchantment(data.CityEnchantmentPestilence) {
+            if city.Citizens() >= 11 || city.Citizens() > (rand.IntN(10) + 1) {
+                city.Population -= 1000
+                var garrison []units.StackUnit
+                stack := player.FindStack(city.X, city.Y, city.Plane)
+                if stack != nil {
+                    garrison = stack.Units()
+                }
+                city.ResetCitizens(garrison)
+            }
+        }
+
+        // FIXME: Add chaos rift etc.
     }
 }
 
@@ -6214,7 +6230,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         player.RemoveCity(city)
     }
 
-    game.doGaiasBlessing(player)
+    game.doCityEnchantments(player)
 
     game.maybeHireHero(player)
     game.maybeHireMercenaries(player)
