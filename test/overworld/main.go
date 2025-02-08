@@ -996,6 +996,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Gaia's Blessing"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Cursed Lands"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Famine"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Pestilence"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
@@ -1052,8 +1053,8 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city2.Plane = data.PlaneArcanus
     city2.ProducingBuilding = buildinglib.BuildingHousing
     city2.ProducingUnit = units.UnitNone
-    city2.Farmers = 5
-    city2.Workers = 5
+    city2.Farmers = 10
+    city2.Workers = 4
     city2.Wall = false
     city2.ResetCitizens(nil)
     enemy.AddCity(city2)
