@@ -194,6 +194,11 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
     }
 
+    if city.PopulationGrowthRate() != 15 {
+        // 10 * (12 - 10 + 1) / 2 max city size and population
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
+    }
+
     // Prosperity
     city.AddEnchantment(data.CityEnchantmentProsperity, banner)
 
@@ -215,6 +220,11 @@ func TestEnchantments(test *testing.T){
     if city.ComputeUnrest(stack) != 2 {
         // 0.2 * 10 race
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+    }
+
+    if city.PopulationGrowthRate() != 15 {
+        // 10 * (12 - 10 + 1) / 2 max city size and population
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
 
     // Inspirations
@@ -240,6 +250,11 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
     }
 
+    if city.PopulationGrowthRate() != 15 {
+        // 10 * (12 - 10 + 1) / 2 max city size and population
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
+    }
+
     // Cursed Lands
     city.AddEnchantment(data.CityEnchantmentCursedLands, banner)
 
@@ -261,6 +276,11 @@ func TestEnchantments(test *testing.T){
     if city.ComputeUnrest(stack) != 3 {
         // 0.2 * 10 race + 1 cursed lands
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+    }
+
+    if city.PopulationGrowthRate() != 15 {
+        // 10 * (12 - 10 + 1) / 2 max city size and population
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
 
     // Gaias Blessing
@@ -286,6 +306,11 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
     }
 
+    if city.PopulationGrowthRate() != 85 {
+        // 10 * (18 - 10 + 1) / 2 max city size and population + (2.5 * 18) rounded to 10s gaias blessing
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
+    }
+
     // Famine
     city.AddEnchantment(data.CityEnchantmentFamine, banner)
 
@@ -307,6 +332,11 @@ func TestEnchantments(test *testing.T){
     if city.ComputeUnrest(stack) != 3 {
         // (0.2 race + 0.25 famine) * 10 + 1 cursed lands - 2 gaias blessing
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+    }
+
+    if city.PopulationGrowthRate() != -250 {
+        // 5 * (5 - 10) food surplus
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
 }
 
