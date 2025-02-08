@@ -1415,7 +1415,7 @@ func (city *City) GetWeaponBonus() data.WeaponBonus {
 
 // do all the stuff needed per turn
 // increase population, add production, add food/money, etc
-func (city *City) DoNextTurn(garrison []units.StackUnit) []CityEvent {
+func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) []CityEvent {
     var cityEvents []CityEvent
     if city.Outpost {
         event := city.GrowOutpost()
@@ -1462,6 +1462,39 @@ func (city *City) DoNextTurn(garrison []units.StackUnit) []CityEvent {
 
                 if city.ProducingUnit.IsSettlers() {
                     city.Population -= 1000
+                }
+            }
+        }
+    }
+
+    if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
+
+        for dx := -2; dx <= 2; dx++ {
+            for dy := -2; dy <= 2; dy++ {
+                mx := mapObject.WrapX(city.X + dx)
+                my := city.Y + dy
+
+                if mx < 0 || mx >= mapObject.Width() || my < 0 || my >= mapObject.Height() {
+                    continue
+                }
+
+                tile := mapObject.GetTile(mx, my)
+                terrainType := tile.Tile.TerrainType()
+
+                // 10% chance to convert volcanos to hills
+                if mapObject.HasVolcano(mx, my) && rand.IntN(100) < 10 {
+                    mapObject.RemoveVolcano(mx, my)
+                    mapObject.Map.SetTerrainAt(mx, my, terrain.Hill, mapObject.Data, mapObject.Plane)
+                }
+
+                // 10% chance to convert desert to grassland
+                if terrainType == terrain.Desert && rand.IntN(100) < 10 {
+                    mapObject.Map.SetTerrainAt(mx, mx, terrain.Grass, mapObject.Data, mapObject.Plane)
+                }
+
+                // 20% chance to remove corruption
+                if mapObject.HasCorruption(mx, my) && rand.IntN(100) < 20 {
+                    mapObject.RemoveCorruption(mx, my)
                 }
             }
         }
