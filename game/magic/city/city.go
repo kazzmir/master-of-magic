@@ -1428,6 +1428,13 @@ func (city *City) DoNextTurn(garrison []units.StackUnit) []CityEvent {
 
         oldPopulation := city.Population
         city.Population += city.PopulationGrowthRate()
+
+        if city.HasEnchantment(data.CityEnchantmentPestilence) {
+            if city.Citizens() >= 11 || city.Citizens() > (rand.IntN(10) + 1) {
+                city.Population -= 1000
+            }
+        }
+
         if city.Population > city.MaximumCitySize() * 1000 {
             city.Population = city.MaximumCitySize() * 1000
         }

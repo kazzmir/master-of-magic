@@ -6004,19 +6004,6 @@ func (game *Game) doCityEnchantments(player *playerlib.Player) {
             }
         }
 
-        // lose city population due to pestilence
-        if city.HasEnchantment(data.CityEnchantmentPestilence) {
-            if city.Citizens() >= 11 || city.Citizens() > (rand.IntN(10) + 1) {
-                city.Population -= 1000
-                var garrison []units.StackUnit
-                stack := player.FindStack(city.X, city.Y, city.Plane)
-                if stack != nil {
-                    garrison = stack.Units()
-                }
-                city.ResetCitizens(garrison)
-            }
-        }
-
         // FIXME: Add chaos rift etc.
     }
 }
