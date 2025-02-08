@@ -174,6 +174,11 @@ func TestEnchantments(test *testing.T){
 
     stack := []units.StackUnit{}
 
+    if city.FoodProductionRate() != 10 {
+        // 5 * 2 farmer
+        test.Errorf("City FoodProductionRate is not correct: %v", city.FoodProductionRate())
+    }
+
     if int(city.WorkProductionRate()) != int(math.Floor(15.75)) {
         // 3 x 2 worker + 5 x 0.5 farmer + 6.75 terrain
         test.Errorf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
@@ -185,19 +190,50 @@ func TestEnchantments(test *testing.T){
     }
 
     if city.ComputeUnrest(stack) != 2 {
+        // 0.2 * 10 race
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+    }
+
+    if city.PopulationGrowthRate() != 15 {
+        // 10 * (12 - 10 + 1) / 2 max city size and population
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
 
     // Prosperity
     city.AddEnchantment(data.CityEnchantmentProsperity, banner)
+
+    if city.FoodProductionRate() != 10 {
+        // 5 * 2 farmer
+        test.Errorf("City FoodProductionRate is not correct: %v", city.FoodProductionRate())
+    }
+
+    if int(city.WorkProductionRate()) != int(math.Floor(15.75)) {
+        // 3 x 2 worker + 5 x 0.5 farmer + 6.75 terrain
+        test.Errorf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
+    }
 
     if city.GoldSurplus() != 23 {
         // 2 x 8 taxation + 15.75 / 2 trade goods
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
+    if city.ComputeUnrest(stack) != 2 {
+        // 0.2 * 10 race
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+    }
+
+    if city.PopulationGrowthRate() != 15 {
+        // 10 * (12 - 10 + 1) / 2 max city size and population
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
+    }
+
     // Inspirations
     city.AddEnchantment(data.CityEnchantmentInspirations, banner)
+
+    if city.FoodProductionRate() != 10 {
+        // 5 * 2 farmer
+        test.Errorf("City FoodProductionRate is not correct: %v", city.FoodProductionRate())
+    }
 
     if int(city.WorkProductionRate()) != int(math.Floor(24.75)) {
         // 2 x (3 x 2 worker + 5 x 0.5 farmer) + 6.75 terrain
@@ -209,8 +245,24 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
+    if city.ComputeUnrest(stack) != 2 {
+        // 0.2 * 10 race
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+    }
+
+    if city.PopulationGrowthRate() != 15 {
+        // 10 * (12 - 10 + 1) / 2 max city size and population
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
+    }
+
     // Cursed Lands
     city.AddEnchantment(data.CityEnchantmentCursedLands, banner)
+
+    if city.FoodProductionRate() != 10 {
+        // 5 * 2 farmer
+        test.Errorf("City FoodProductionRate is not correct: %v", city.FoodProductionRate())
+    }
+
     if int(city.WorkProductionRate()) != int(math.Floor(12.375)) {
         // (2 x (3 x 2 worker + 5 x 0.5 farmer) + 6.75 terrain) / 2
         test.Errorf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
@@ -222,11 +274,22 @@ func TestEnchantments(test *testing.T){
     }
 
     if city.ComputeUnrest(stack) != 3 {
+        // 0.2 * 10 race + 1 cursed lands
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+    }
+
+    if city.PopulationGrowthRate() != 15 {
+        // 10 * (12 - 10 + 1) / 2 max city size and population
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
 
     // Gaias Blessing
     city.AddEnchantment(data.CityEnchantmentGaiasBlessing, banner)
+
+    if city.FoodProductionRate() != 12 {
+        // 5 * 2 farmer + 0.2 * 10
+        test.Errorf("City FoodProductionRate is not correct: %v", city.FoodProductionRate())
+    }
 
     if int(city.WorkProductionRate()) != int(math.Floor(15.75)) {
         // (2 x (3 x 2 worker + 5 x 0.5 farmer) + 13.5 terrain) / 2 = 12.375
@@ -239,10 +302,42 @@ func TestEnchantments(test *testing.T){
     }
 
     if city.ComputeUnrest(stack) != 1 {
+        // 0.2 * 10 race + 1 cursed lands - 2 gaias blessing
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
     }
 
-    // FIXME: Test famine
+    if city.PopulationGrowthRate() != 85 {
+        // 10 * (18 - 10 + 1) / 2 max city size and population + (2.5 * 18) rounded to 10s gaias blessing
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
+    }
+
+    // Famine
+    city.AddEnchantment(data.CityEnchantmentFamine, banner)
+
+    if city.FoodProductionRate() != 5 {
+        // ((5 * 2 farmer + 0.2 * 10) with halved excess) / 2  = 5.25
+        test.Errorf("City FoodProductionRate is not correct: %v", city.FoodProductionRate())
+    }
+
+    if int(city.WorkProductionRate()) != int(math.Floor(15.75)) {
+        // (2 x (3 x 2 worker + 5 x 0.5 farmer) + 13.5 terrain) / 2 = 12.375
+        test.Errorf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
+    }
+
+    if city.GoldSurplus() != 23 {
+        // 2 x 8 taxation + 15.75/2 trade goods
+        test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
+    }
+
+    if city.ComputeUnrest(stack) != 3 {
+        // (0.2 race + 0.25 famine) * 10 + 1 cursed lands - 2 gaias blessing
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+    }
+
+    if city.PopulationGrowthRate() != -250 {
+        // 5 * (5 - 10) food surplus
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
+    }
 }
 
 

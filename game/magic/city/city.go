@@ -895,8 +895,6 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
 func (city *City) MaximumCitySize() int {
     foodAvailability := city.BaseFoodLevel()
 
-    // TODO: 1/2 if famine is active
-
     bonus := 0
 
     if city.Buildings.Contains(buildinglib.BuildingGranary) {
@@ -941,7 +939,7 @@ func (city *City) PopulationGrowthRate() int {
         base += int(2.5 * float32(city.MaximumCitySize()) / 10) * 10
     }
 
-    // FIXME: Add Famine, Stream of Life, Dark Rituals and Population Boom event
+    // FIXME: Add Stream of Life, Dark Rituals and Population Boom event
 
     if city.ProducingBuilding == buildinglib.BuildingHousing {
         bonus := 50
@@ -1001,6 +999,10 @@ func (city *City) BaseFoodLevel() int {
         food = food.Add(food.Divide(fraction.FromInt(2)))
     }
 
+    if city.HasEnchantment(data.CityEnchantmentFamine) {
+        food = food.Divide(fraction.FromInt(2))
+    }
+
     for _, tile := range catchment {
         food = food.Add(fraction.FromInt(tile.GetBonus().FoodBonus()))
     }
@@ -1050,8 +1052,6 @@ func (city *City) foodProductionRate(farmers int) int {
     if city.Buildings.Contains(buildinglib.BuildingAnimistsGuild) {
         baseRate += float32(farmers)
     }
-
-    // TODO: if famine is active then base rate is halved
 
     baseLevel := float32(city.BaseFoodLevel())
     if baseRate > baseLevel {
