@@ -1853,7 +1853,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
             return nil
         }
 
-        if !tileTo.Tile.IsLand() && stack.AllLandWalkers() {
+        if !tileTo.Tile.IsLand() && !stack.AllFlyers() && stack.AllLandWalkers() {
             maybeStack := player.FindStack(newX, newY, stack.Plane())
             if maybeStack != nil && maybeStack.HasSailingUnits(false) {
                 // ok, can move there because there is a ship
@@ -6000,6 +6000,10 @@ func (game *Game) DisbandUnits(player *playerlib.Player) []string {
             // check land walkers on ocean tiles that do not have valid transport
             // FIXME: handle not enough transports
             for _, stack := range player.Stacks {
+                // if the stack can fly for whatever reason then no units will drown
+                if stack.AllFlyers() {
+                    continue
+                }
                 mapUse := game.GetMap(stack.Plane())
                 hasTransport := stack.HasSailingUnits(false)
                 if !hasTransport && !mapUse.GetTile(stack.X(), stack.Y()).Tile.IsLand() {

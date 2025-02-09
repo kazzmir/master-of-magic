@@ -121,6 +121,7 @@ func (stack *UnitStack) AllLandWalkers() bool {
 }
 
 func (stack *UnitStack) AllFlyers() bool {
+    // wind walking gives every unit in the stack the ability to fly
     if stack.ActiveUnitsHasAbility(data.AbilityWindWalking) {
         return true
     }
