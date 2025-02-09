@@ -3471,19 +3471,20 @@ func createScenario41(cache *lbx.LbxCache) *gamelib.Game {
     ex, ey, _ := game.FindValidCityLocation(game.Plane)
 
     city2 := citylib.MakeCity("Test City", ex, ey, data.RaceHighElf, enemy1.Wizard.Banner, enemy1.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
-    city2.Population = 14000
+    city2.Population = 20000
     city2.Plane = data.PlaneArcanus
     city2.Banner = enemy1.Wizard.Banner
     city2.Buildings.Insert(buildinglib.BuildingSummoningCircle)
     city2.ProducingBuilding = buildinglib.BuildingGranary
     city2.ProducingUnit = units.UnitNone
     city2.Race = wizard.Race
-    city2.Farmers = 11
+    city2.Farmers = 17
     city2.Workers = 3
     city2.Wall = false
 
     city2.AddBuilding(buildinglib.BuildingShrine)
     city2.AddBuilding(buildinglib.BuildingGranary)
+    city2.AddBuilding(buildinglib.BuildingFarmersMarket)
 
     city2.ResetCitizens(nil)
 
@@ -3507,10 +3508,9 @@ func createScenario41(cache *lbx.LbxCache) *gamelib.Game {
         return game
     }
 
-    for range 6 {
-        use := candidates[rand.N(len(candidates))]
-        enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, use.X, use.Y, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
-    }
+    use := candidates[rand.N(len(candidates))]
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, use.X, use.Y, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, use.X, use.Y, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
 
     game.Camera.Center(x, y)
 
