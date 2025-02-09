@@ -4278,23 +4278,31 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
  * this also shows the raze city ui so that fame can be incorporated based on whether the city is razed or not
  */
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
-    attackingArmy := combat.Army{
-        Player: attacker,
+    landscape := game.GetCombatLandscape(attackerStack.X(), attackerStack.Y(), attackerStack.Plane())
+
+    createArmy := func (player *playerlib.Player, stack *playerlib.UnitStack) *combat.Army {
+        army := combat.Army{
+            Player: player,
+        }
+
+        for _, unit := range stack.Units() {
+            if landscape == combat.CombatLandscapeWater && unit.IsLandWalker() {
+                continue
+            }
+
+            // dont add sailing units to non-water combat
+            if landscape != combat.CombatLandscapeWater && unit.IsSailing() {
+                continue
+            }
+
+            army.AddUnit(unit)
+        }
+
+        return &army
     }
 
-    // FIXME: if the zone is water then don't add units that cannot move on water
-
-    for _, unit := range attackerStack.Units() {
-        attackingArmy.AddUnit(unit)
-    }
-
-    defendingArmy := combat.Army{
-        Player: defender,
-    }
-
-    for _, unit := range defenderStack.Units() {
-        defendingArmy.AddUnit(unit)
-    }
+    attackingArmy := createArmy(attacker, attackerStack)
+    defendingArmy := createArmy(defender, defenderStack)
 
     attackingArmy.LayoutUnits(combat.TeamAttacker)
     defendingArmy.LayoutUnits(combat.TeamDefender)
@@ -4307,16 +4315,14 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     var combatScreen *combat.CombatScreen
 
     if attacker.StrategicCombat && defender.StrategicCombat {
-        state, defeatedAttackers, defeatedDefenders = combat.DoStrategicCombat(&attackingArmy, &defendingArmy)
+        state, defeatedAttackers, defeatedDefenders = combat.DoStrategicCombat(attackingArmy, defendingArmy)
         log.Printf("Strategic combat result state=%v", state)
     } else {
 
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-        landscape := game.GetCombatLandscape(attackerStack.X(), attackerStack.Y(), attackerStack.Plane())
-
         // FIXME: take plane into account for the landscape/terrain
-        combatScreen = combat.MakeCombatScreen(game.Cache, &defendingArmy, &attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
+        combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
 
         // ebiten.SetCursorMode(ebiten.CursorModeHidden)
 

@@ -163,8 +163,12 @@ func (unit *OverworldUnit) IsFlying() bool {
     return unit.Unit.Flying || unit.HasEnchantment(data.UnitEnchantmentFlight) || unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings)
 }
 
+func (unit *OverworldUnit) IsSailing() bool {
+    return unit.GetRawUnit().Sailing
+}
+
 func (unit *OverworldUnit) IsLandWalker() bool {
-    if unit.IsFlying() || unit.IsSwimmer() || unit.GetRawUnit().Sailing || unit.HasAbility(data.AbilityNonCorporeal) {
+    if unit.IsFlying() || unit.IsSwimmer() || unit.IsSailing() || unit.HasAbility(data.AbilityNonCorporeal) {
         return false
     }
 
