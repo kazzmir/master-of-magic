@@ -1590,7 +1590,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
  * FIXME: some values used by this logic could be precomputed and passed in as an argument. Things like 'containsFriendlyCity' could be a map of all cities
  * on the same plane as the unit, thus avoiding the expensive player.FindCity() call
  */
-func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map) (fraction.Fraction, bool) {
+func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map, getStack func(int, int) *playerlib.UnitStack) (fraction.Fraction, bool) {
     /*
     if stack.OutOfMoves() {
         return fraction.Zero(), false
@@ -1606,9 +1606,19 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
 
     // can't move from land to ocean unless all units are flyers or swimmers
     if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
+        // a land walker can move onto a friendly stack on the ocean if that stack has sailing units
+        if stack.AllLandWalkers() {
+            maybeStack := getStack(destX, destY)
+            if maybeStack != nil && maybeStack.HasSailingUnits(false) {
+                return fraction.FromInt(1), true
+            }
+            return fraction.Zero(), false
+        }
+        /*
         if !stack.AllFlyers() && !stack.AllSwimmers() {
             return fraction.Zero(), false
         }
+        */
     }
 
     // sailing units cannot move onto land
@@ -1831,7 +1841,7 @@ func (game *Game) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.Ci
     return ok
 }
 
-func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *playerlib.UnitStack, fog data.FogMap) pathfinding.Path {
+func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playerlib.Player, stack *playerlib.UnitStack, fog data.FogMap) pathfinding.Path {
 
     useMap := game.GetMap(stack.Plane())
 
@@ -1841,9 +1851,19 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
 
     if fog[newX][newY] != data.FogTypeUnexplored {
         tileTo := useMap.GetTile(newX, newY)
-        if tileTo.Tile.IsLand() && stack.HasSailingUnits() {
+        if tileTo.Tile.IsLand() && stack.HasSailingUnits(true) {
             return nil
         }
+
+        if tileTo.Tile.TerrainType() == terrain.Ocean && stack.AllLandWalkers() {
+            maybeStack := player.FindStack(newX, newY, stack.Plane())
+            if maybeStack != nil && maybeStack.HasSailingUnits(false) {
+                // ok, can move there because there is a ship
+            } else {
+                return nil
+            }
+        }
+
     }
 
     normalized := func (a image.Point) image.Point {
@@ -1855,21 +1875,35 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
         return normalized(a) == normalized(b)
     }
 
+    getStack := func (x int, y int) *playerlib.UnitStack {
+        return player.FindStack(x, y, stack.Plane())
+    }
+
+    // cache locations of enemies
+    enemyStacks := make(map[image.Point]struct{})
+    enemyCities := make(map[image.Point]struct{})
+
+    for _, enemy := range game.Players {
+        if enemy != player {
+            for _, enemyStack := range enemy.Stacks {
+                enemyStacks[image.Pt(enemyStack.X(), enemyStack.Y())] = struct{}{}
+            }
+            for _, enemyCity := range enemy.Cities {
+                enemyCities[image.Pt(enemyCity.X, enemyCity.Y)] = struct{}{}
+            }
+        }
+    }
+
     // cache the containsEnemy result
     // true if the given coordinates contain an enemy unit or city
     containsEnemy := functional.Memoize2(func (x int, y int) bool {
-        for _, player := range game.Players {
-            if player.GetBanner() != stack.GetBanner() {
-                enemyStack := player.FindStack(x, y, stack.Plane())
-                if enemyStack != nil {
-                    return true
-                }
-
-                enemyCity := player.FindCity(x, y, stack.Plane())
-                if enemyCity != nil {
-                    return true
-                }
-            }
+        _, ok := enemyStacks[image.Pt(x, y)]
+        if ok {
+            return true
+        }
+        _, ok = enemyCities[image.Pt(x, y)]
+        if ok {
+            return true
         }
 
         return false
@@ -1902,13 +1936,6 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             return pathfinding.Infinity
         }
 
-        /*
-        tileFrom := useMap.GetTile(x1, y1)
-        tileTo := useMap.GetTile(x2, y2)
-        */
-
-        // FIXME: consider terrain type, roads, and unit abilities
-
         baseCost := float64(1)
 
         if x1 != x2 && y1 != y2 {
@@ -1922,23 +1949,12 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, stack *player
             return baseCost + 0.1
         }
 
-        cost, ok := game.ComputeTerrainCost(stack, x1, y1, x2, y2, useMap)
+        cost, ok := game.ComputeTerrainCost(stack, x1, y1, x2, y2, useMap, getStack)
         if !ok {
             return pathfinding.Infinity
         }
 
         return cost.ToFloat()
-
-        // can't move from land to ocean unless all units are flyers
-        /*
-        if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
-            if !stack.AllFlyers() {
-                return pathfinding.Infinity
-            }
-        }
-
-        return baseCost
-        */
     }
 
     neighbors := func (x int, y int) []image.Point {
@@ -3271,6 +3287,10 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     stopMoving := false
     var mergeStack *playerlib.UnitStack
 
+    getStack := func(x int, y int) *playerlib.UnitStack {
+        return player.FindStack(mapUse.WrapX(x), y, stack.Plane())
+    }
+
     quitMoving:
     for i, step := range stack.CurrentPath {
         if stack.OutOfMoves() {
@@ -3280,7 +3300,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         oldX := stack.X()
         oldY := stack.Y()
 
-        terrainCost, canMove := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), step.X, step.Y, mapUse)
+        terrainCost, canMove := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), step.X, step.Y, mapUse, getStack)
 
         if canMove {
 
@@ -3471,7 +3491,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                             game.RefreshUI()
                         }
 
-                        path := game.FindPath(oldX, oldY, newX, newY, stack, player.GetFog(game.Plane))
+                        path := game.FindPath(oldX, oldY, newX, newY, player, stack, player.GetFog(game.Plane))
                         if path == nil {
                             game.blinkRed(yield)
                             if inactiveStack != nil {
@@ -3492,7 +3512,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                     }
                 } else {
                     // make a copy of the unit stack to activate all units, because path finding only checks active units for terrain constraints
-                    path := game.FindPath(oldX, oldY, newX, newY, playerlib.MakeUnitStackFromUnits(stack.Units()), player.GetFog(game.Plane))
+                    path := game.FindPath(oldX, oldY, newX, newY, player, playerlib.MakeUnitStackFromUnits(stack.Units()), player.GetFog(game.Plane))
                     if path == nil {
                         game.blinkRed(yield)
                     } else {
@@ -3617,7 +3637,10 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
     stack := move.Stack
     to := move.Location
     log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
-    terrainCost, ok := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()))
+    getStack := func(x int, y int) *playerlib.UnitStack {
+        return player.FindStack(x, y, stack.Plane())
+    }
+    terrainCost, ok := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()), getStack)
     if ok {
         oldX := stack.X()
         oldY := stack.Y()

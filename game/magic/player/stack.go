@@ -94,14 +94,30 @@ func (stack *UnitStack) InactiveUnits() []units.StackUnit {
     return inactive
 }
 
-func (stack *UnitStack) HasSailingUnits() bool {
-    for _, unit := range stack.ActiveUnits() {
+// pass in true to only check active units
+func (stack *UnitStack) HasSailingUnits(onlyActive bool) bool {
+    use := stack.units
+    if onlyActive {
+        use = stack.ActiveUnits()
+    }
+    for _, unit := range use {
         if unit.GetRawUnit().Sailing {
             return true
         }
     }
 
     return false
+}
+
+// true if every active unit can only walk on land
+func (stack *UnitStack) AllLandWalkers() bool {
+    for _, unit := range stack.ActiveUnits() {
+        if unit.IsFlying() || unit.IsSwimmer() || unit.GetRawUnit().Sailing || unit.HasAbility(data.AbilityNonCorporeal) {
+            return false
+        }
+    }
+
+    return true
 }
 
 func (stack *UnitStack) AllFlyers() bool {

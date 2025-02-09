@@ -3458,9 +3458,7 @@ func createScenario41(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 200, data.PlaneArcanus)
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, x, y, data.PlaneArcanus, wizard.Banner, nil))
-
-    game.CurrentMap().SetRoad(x, y+1, false)
-    game.CurrentMap().SetRoad(x, y+2, false)
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
 
     game.Camera.Center(x, y)
 

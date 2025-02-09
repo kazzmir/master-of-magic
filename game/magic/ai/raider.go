@@ -47,7 +47,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                         continue
                     }
 
-                    path := pathfinder.FindPath(stack.X(), stack.Y(), city.X, city.Y, stack, fog)
+                    path := pathfinder.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
                     if path != nil {
                         if currentPath == nil {
                             currentPath = path
@@ -64,7 +64,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                 // just move randomly
                 whereX := stack.X() + rand.N(5) - 2
                 whereY := stack.Y() + rand.N(5) - 2
-                currentPath = pathfinder.FindPath(stack.X(), stack.Y(), whereX, whereY, stack, player.GetFog(data.PlaneArcanus))
+                currentPath = pathfinder.FindPath(stack.X(), stack.Y(), whereX, whereY, player, stack, player.GetFog(data.PlaneArcanus))
             }
 
             if len(currentPath) > 0 {
