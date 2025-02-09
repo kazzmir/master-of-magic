@@ -6065,22 +6065,14 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         for _, event := range cityEvents {
             switch event.(type) {
             case *citylib.CityEventPopulationGrowth:
-                growthEvent := event.(*citylib.CityEventPopulationGrowth)
+                if player.IsHuman() {
+                    growthEvent := event.(*citylib.CityEventPopulationGrowth)
 
-                verb := "grown"
-                if !growthEvent.Grow {
-                    verb = "shrunk"
-                }
-
-                if growthEvent.Size == 0 {
-                    removeCities = append(removeCities, city)
-                    if player.IsHuman() {
-                        select {
-                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The city of %v has been abandoned.", city.Name)}:
-                            default:
-                        }
+                    verb := "grown"
+                    if !growthEvent.Grow {
+                        verb = "shrunk"
                     }
-                } else if player.IsHuman() {
+
                     scrollEvent := GameEventScroll{
                         Title: "CITY GROWTH",
                         Text: fmt.Sprintf("%v has %v to a population of %v.", city.Name, verb, city.Citizens()),
@@ -6088,6 +6080,14 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
                     select {
                         case game.Events<- &scrollEvent:
+                        default:
+                    }
+                }
+            case *citylib.CityEventCityAbandoned:
+                removeCities = append(removeCities, city)
+                if player.IsHuman() {
+                    select {
+                        case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The city of %v has been abandoned.", city.Name)}:
                         default:
                     }
                 }
