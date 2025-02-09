@@ -130,3 +130,25 @@ func GetBuildingIndex(building Building) int {
 
     return -1
 }
+
+// the building which is shown in the city scape instead
+func (building Building) ReplacedBy() Building {
+    switch building {
+        case BuildingBarracks: return BuildingArmory
+        case BuildingFightersGuild: return BuildingArmorersGuild
+        case BuildingArmorersGuild: return BuildingWarCollege
+        case BuildingStables: return BuildingFantasticStable
+        case BuildingLibrary: return BuildingUniversity
+        case BuildingAlchemistsGuild: return BuildingWizardsGuild
+        case BuildingShrine: return BuildingTemple
+        case BuildingTemple: return BuildingParthenon
+        case BuildingParthenon: return BuildingCathedral
+        case BuildingMarketplace: return BuildingBank
+        case BuildingBank: return BuildingMerchantsGuild
+        case BuildingGranary: return BuildingFarmersMarket
+        case BuildingShipwrightsGuild: return BuildingShipYard
+        case BuildingShipYard: return BuildingMaritimeGuild
+    }
+
+    return BuildingNone
+}

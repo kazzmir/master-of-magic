@@ -91,6 +91,7 @@ type BuildingSlot struct {
 type ResourceUsage struct {
     Count int // can be negative
     Name string
+    Replaced bool // true if the building has been replaced by another
 }
 
 type CityScreenState int
@@ -306,6 +307,10 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
             continue
         }
 
+        if wasBuildingReplaced(building, city) {
+            continue
+        }
+
         if len(openSlots) == 0 {
             log.Printf("Ran out of open slots in city view for %+v for building %v", city, city.BuildingInfo.Name(building))
             continue
@@ -401,6 +406,15 @@ func sellAmount(city *citylib.City, building buildinglib.Building) int {
     }
 
     return cost
+}
+
+func wasBuildingReplaced(building buildinglib.Building, city *citylib.City) bool {
+    if building == buildinglib.BuildingNone {
+        return false
+    }
+
+    replacedBy := building.ReplacedBy()
+    return replacedBy != buildinglib.BuildingNone && city.Buildings.Contains(replacedBy)
 }
 
 func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
@@ -1285,6 +1299,7 @@ func (cityScreen *CityScreen) FoodProducers() []ResourceUsage {
             usages = append(usages, ResourceUsage{
                 Count: value,
                 Name: cityScreen.City.BuildingInfo.Name(building),
+                Replaced: wasBuildingReplaced(building, cityScreen.City),
             })
         }
     }
@@ -1475,7 +1490,11 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 
                 x, y := options.GeoM.Apply(widestResources + 5, 0)
 
-                helpFont.Print(window, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v (%v)", usage.Name, usage.Count))
+                text := usage.Name
+                if usage.Replaced {
+                    text = fmt.Sprintf("%v (Replaced)", usage.Name)
+                }
+                helpFont.Print(window, x, y, float64(data.ScreenScale), options.ColorScale, text)
                 yPos += (helpFont.Height() + 1) * data.ScreenScale
                 options.GeoM.Translate(0, float64((helpFont.Height() + 1) * data.ScreenScale))
             }
@@ -1496,23 +1515,24 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 func (cityScreen *CityScreen) WorkProducers() []ResourceUsage {
     var usage []ResourceUsage
 
-    add := func(count int, name string){
+    add := func(count int, name string, building buildinglib.Building){
         if count > 0 {
             usage = append(usage, ResourceUsage{
                 Count: count,
                 Name: name,
+                Replaced: wasBuildingReplaced(building, cityScreen.City),
             })
         }
     }
 
-    add(int(cityScreen.City.ProductionWorkers()), "Workers")
-    add(int(cityScreen.City.ProductionFarmers()), "Farmers")
-    add(int(cityScreen.City.ProductionTerrain()), "Terrain")
-    add(int(cityScreen.City.ProductionSawmill()), "Sawmill")
-    add(int(cityScreen.City.ProductionForestersGuild()), "Forester's Guild")
-    add(int(cityScreen.City.ProductionMinersGuild()), "Miner's Guild")
-    add(int(cityScreen.City.ProductionMechaniciansGuild()), "Mechanician's Guild")
-    add(int(cityScreen.City.ProductionInspirations()), "Inspirations")
+    add(int(cityScreen.City.ProductionWorkers()), "Workers", buildinglib.BuildingNone)
+    add(int(cityScreen.City.ProductionFarmers()), "Farmers", buildinglib.BuildingNone)
+    add(int(cityScreen.City.ProductionTerrain()), "Terrain", buildinglib.BuildingNone)
+    add(int(cityScreen.City.ProductionSawmill()), "Sawmill", buildinglib.BuildingSawmill)
+    add(int(cityScreen.City.ProductionForestersGuild()), "Forester's Guild", buildinglib.BuildingForestersGuild)
+    add(int(cityScreen.City.ProductionMinersGuild()), "Miner's Guild", buildinglib.BuildingMinersGuild)
+    add(int(cityScreen.City.ProductionMechaniciansGuild()), "Mechanician's Guild", buildinglib.BuildingMechaniciansGuild)
+    add(int(cityScreen.City.ProductionInspirations()), "Inspirations", buildinglib.BuildingNone)
     // FIXME: should this show halfed production in case of cursed lands?
 
     return usage
@@ -1530,6 +1550,7 @@ func (cityScreen *CityScreen) BuildingMaintenanceResources() []ResourceUsage {
         usage = append(usage, ResourceUsage{
             Count: maintenance,
             Name: cityScreen.City.BuildingInfo.Name(building),
+            Replaced: wasBuildingReplaced(building, cityScreen.City),
         })
     }
 
@@ -1539,23 +1560,24 @@ func (cityScreen *CityScreen) BuildingMaintenanceResources() []ResourceUsage {
 func (cityScreen *CityScreen) GoldProducers() []ResourceUsage {
     var usage []ResourceUsage
 
-    add := func(count int, name string){
+    add := func(count int, name string, building buildinglib.Building){
         if count > 0 {
             usage = append(usage, ResourceUsage{
                 Count: count,
                 Name: name,
+                Replaced: wasBuildingReplaced(building, cityScreen.City),
             })
         }
     }
 
     // FIXME: add tiles (road/river/ocean)
-    add(int(cityScreen.City.GoldTaxation()), "Taxes")
-    add(int(cityScreen.City.GoldTradeGoods()), "Trade Goods")
-    add(int(cityScreen.City.GoldMinerals()), "Minerals")
-    add(int(cityScreen.City.GoldMarketplace()), "Marketplace")
-    add(int(cityScreen.City.GoldBank()), "Bank")
-    add(int(cityScreen.City.GoldMerchantsGuild()), "Merchant's Guild")
-    add(int(cityScreen.City.GoldProsperity()), "Prosperity")
+    add(int(cityScreen.City.GoldTaxation()), "Taxes", buildinglib.BuildingNone)
+    add(int(cityScreen.City.GoldTradeGoods()), "Trade Goods", buildinglib.BuildingTradeGoods)
+    add(int(cityScreen.City.GoldMinerals()), "Minerals", buildinglib.BuildingNone)
+    add(int(cityScreen.City.GoldMarketplace()), "Marketplace", buildinglib.BuildingMarketplace)
+    add(int(cityScreen.City.GoldBank()), "Bank", buildinglib.BuildingBank)
+    add(int(cityScreen.City.GoldMerchantsGuild()), "Merchant's Guild", buildinglib.BuildingMerchantsGuild)
+    add(int(cityScreen.City.GoldProsperity()), "Prosperity", buildinglib.BuildingNone)
 
     return usage
 }
@@ -1563,79 +1585,25 @@ func (cityScreen *CityScreen) GoldProducers() []ResourceUsage {
 func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
     var usage []ResourceUsage
 
-    if int(cityScreen.City.PowerCitizens()) > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.PowerCitizens()),
-            Name: "Townsfolk",
-        })
-    }
-
-    if cityScreen.City.Buildings.Contains(buildinglib.BuildingFortress) {
-        power := cityScreen.Player.Wizard.TotalBooks()
-        if cityScreen.City.Plane == data.PlaneMyrror {
-            power += 5
+    add := func(count int, name string, building buildinglib.Building){
+        if count != 0 && cityScreen.City.Buildings.Contains(building) {
+            usage = append(usage, ResourceUsage{
+                Count: count,
+                Name: name,
+                Replaced: wasBuildingReplaced(building, cityScreen.City),
+            })
         }
-        usage = append(usage, ResourceUsage{
-            Count: power,
-            Name: "Fortress",
-        })
     }
 
-    if cityScreen.City.Buildings.Contains(buildinglib.BuildingShrine) {
-        usage = append(usage, ResourceUsage{
-            Count: 1,
-            Name: "Shrine",
-        })
-    }
-
-    if cityScreen.City.Buildings.Contains(buildinglib.BuildingTemple) {
-        usage = append(usage, ResourceUsage{
-            Count: 2,
-            Name: "Temple",
-        })
-    }
-
-    if cityScreen.City.Buildings.Contains(buildinglib.BuildingParthenon) {
-        usage = append(usage, ResourceUsage{
-            Count: 3,
-            Name: "Parthenon",
-        })
-    }
-
-    if cityScreen.City.Buildings.Contains(buildinglib.BuildingCathedral) {
-        usage = append(usage, ResourceUsage{
-            Count: 4,
-            Name: "Cathedral",
-        })
-    }
-
-    if cityScreen.City.Buildings.Contains(buildinglib.BuildingAlchemistsGuild) {
-        usage = append(usage, ResourceUsage{
-            Count: 3,
-            Name: "Alchemist's Guild",
-        })
-    }
-
-    if cityScreen.City.Buildings.Contains(buildinglib.BuildingWizardsGuild) {
-        usage = append(usage, ResourceUsage{
-            Count: -3,
-            Name: "Wizard's Guild",
-        })
-    }
-
-    if cityScreen.City.Buildings.Contains(buildinglib.BuildingFortress) && cityScreen.City.Plane == data.PlaneMyrror {
-        usage = append(usage, ResourceUsage{
-            Count: 5,
-            Name: "Fortress",
-        })
-    }
-
-    if int(cityScreen.City.PowerMinerals()) > 0 {
-        usage = append(usage, ResourceUsage{
-            Count: int(cityScreen.City.PowerMinerals()),
-            Name: "Minerals",
-        })
-    }
+    add(int(cityScreen.City.PowerCitizens()), "Townsfolk", buildinglib.BuildingNone)
+    add(cityScreen.City.PowerFortress(cityScreen.Player.Wizard.TotalBooks()), "Fortress", buildinglib.BuildingFortress)
+    add(1, "Shrine", buildinglib.BuildingShrine)
+    add(2, "Temple", buildinglib.BuildingTemple)
+    add(3, "Parthenon", buildinglib.BuildingParthenon)
+    add(4, "Cathedral", buildinglib.BuildingCathedral)
+    add(3, "Alchemist's Guild", buildinglib.BuildingAlchemistsGuild)
+    add(-3, "Wizard's Guild", buildinglib.BuildingWizardsGuild)
+    add(cityScreen.City.PowerMinerals(), "Minerals", buildinglib.BuildingNone)
 
     // FIXME: add tiles (adamantium mine) and miner's guild
 
@@ -1652,6 +1620,7 @@ func (cityScreen *CityScreen) ResearchProducers() []ResourceUsage {
             usage = append(usage, ResourceUsage{
                 Count: research,
                 Name: cityScreen.City.BuildingInfo.Name(building),
+                Replaced: wasBuildingReplaced(building, cityScreen.City),
             })
         }
     }
