@@ -605,20 +605,30 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     // true if there is something to buy
     canBuy := buyProduction > 0 && buyAmount <= cityScreen.Player.Gold
 
-    buyButton, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 7, 0)
+    buyButtons, _ := cityScreen.ImageCache.GetImages("backgrnd.lbx", 7)
     if !canBuy {
-        buyButton, _ = cityScreen.ImageCache.GetImage("backgrnd.lbx", 14, 0)
+        buyButtons, _ = cityScreen.ImageCache.GetImages("backgrnd.lbx", 14)
     }
 
+    buyIndex := 0
     buyX := 214 * data.ScreenScale
     buyY := 188 * data.ScreenScale
     elements = append(elements, &uilib.UIElement{
-        Rect: image.Rect(buyX, buyY, buyX + buyButton.Bounds().Dx(), buyY + buyButton.Bounds().Dy()),
+        Rect: image.Rect(buyX, buyY, buyX + buyButtons[0].Bounds().Dx(), buyY + buyButtons[0].Bounds().Dy()),
         PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement) {
             if !canBuy {
                 return
             }
+
+            buyIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement) {
+            if !canBuy {
+                return
+            }
+
+            buyIndex = 0
 
             var elements []*uilib.UIElement
 
@@ -640,6 +650,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             message := fmt.Sprintf("Do you wish to spend %v by purchasing a %v?", buyAmount, name)
             elements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, message, false, yes, no)
             ui.AddElements(elements)
+
         },
         RightClick: func(element *uilib.UIElement) {
             helpEntries := help.GetEntries(305)
@@ -650,7 +661,13 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
-            screen.DrawImage(buyButton, &options)
+
+            use := 0
+            if buyIndex < len(buyButtons) {
+                use = buyIndex
+            }
+
+            screen.DrawImage(buyButtons[use], &options)
         },
     })
 
