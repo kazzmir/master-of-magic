@@ -26,6 +26,9 @@ type CityEventPopulationGrowth struct {
     Grow bool
 }
 
+type CityEventCityAbandoned struct {
+}
+
 type CityEventNewUnit struct {
     Unit units.Unit
     WeaponBonus data.WeaponBonus
@@ -1435,10 +1438,6 @@ func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) 
             }
         }
 
-        if city.Population > city.MaximumCitySize() * 1000 {
-            city.Population = city.MaximumCitySize() * 1000
-        }
-
         if math.Abs(float64(city.Population/1000 - oldPopulation/1000)) > 0 {
             cityEvents = append(cityEvents, &CityEventPopulationGrowth{Size: (city.Population - oldPopulation)/1000, Grow: city.Population > oldPopulation})
         }
@@ -1465,6 +1464,15 @@ func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) 
                 }
             }
         }
+
+        if city.Population > city.MaximumCitySize() * 1000 {
+            city.Population = city.MaximumCitySize() * 1000
+        }
+
+        if city.Population < 1000 {
+            cityEvents = append(cityEvents, &CityEventCityAbandoned{})
+        }
+
     }
 
     if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {

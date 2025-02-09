@@ -566,42 +566,110 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
     elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, newBuilding, 4 * data.ScreenScale, 102 * data.ScreenScale, cityScreen.Fonts, cityScreen.Player, &getAlpha))
 
-    // FIXME: show disabled buy button if the item is not buyable (not enough money, or the item is trade goods/housing)
-    // buy button
-    buyButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 7, 0)
-    if err == nil {
-        buyX := 214 * data.ScreenScale
-        buyY := 188 * data.ScreenScale
-        elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(buyX, buyY, buyX + buyButton.Bounds().Dx(), buyY + buyButton.Bounds().Dy()),
-            PlaySoundLeftClick: true,
-            LeftClick: func(element *uilib.UIElement) {
+    // returns the amount of gold and the amount of production that will be used to buy a building
+    computeBuyAmount := func(cost int) (int, float32) {
+        // FIXME: take terrain/race/buildings into effect, such as the miners guild for dwarves
 
-                var elements []*uilib.UIElement
+        remaining := float32(cost) - cityScreen.City.Production
+        if remaining > 0 {
+            modifier := float32(4)
+            if cityScreen.City.Production == 0 {
+                modifier = 4
+            } else if cityScreen.City.Production / float32(cost) < 1.0/3 {
+                modifier = 3
+            } else {
+                modifier = 2
+            }
 
-                yes := func(){
-                    // FIXME: buy the thing being produced
-                }
+            buyAmount := int(remaining * modifier)
+            buyProduction := remaining
 
-                no := func(){
-                }
+            return buyAmount, buyProduction
+        }
 
-                elements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, "Are you sure you want to buy this building?", true, yes, no)
-                ui.AddElements(elements)
-            },
-            RightClick: func(element *uilib.UIElement) {
-                helpEntries := help.GetEntries(305)
-                if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
-                }
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
-                screen.DrawImage(buyButton, &options)
-            },
-        })
+        return 0, 0
     }
+
+    buyAmount := 0
+    buyProduction := float32(0)
+
+    if cityScreen.City.ProducingBuilding != buildinglib.BuildingNone && cityScreen.City.ProducingBuilding != buildinglib.BuildingTradeGoods && cityScreen.City.ProducingBuilding != buildinglib.BuildingHousing {
+        cost := float32(cityScreen.City.BuildingInfo.ProductionCost(cityScreen.City.ProducingBuilding))
+        buyAmount, buyProduction = computeBuyAmount(int(cost))
+    }
+
+    if !cityScreen.City.ProducingUnit.IsNone() {
+        buyAmount, buyProduction = computeBuyAmount(cityScreen.City.ProducingUnit.ProductionCost)
+    }
+
+    // true if there is something to buy
+    canBuy := buyProduction > 0 && buyAmount <= cityScreen.Player.Gold
+
+    buyButtons, _ := cityScreen.ImageCache.GetImages("backgrnd.lbx", 7)
+    if !canBuy {
+        buyButtons, _ = cityScreen.ImageCache.GetImages("backgrnd.lbx", 14)
+    }
+
+    buyIndex := 0
+    buyX := 214 * data.ScreenScale
+    buyY := 188 * data.ScreenScale
+    elements = append(elements, &uilib.UIElement{
+        Rect: image.Rect(buyX, buyY, buyX + buyButtons[0].Bounds().Dx(), buyY + buyButtons[0].Bounds().Dy()),
+        PlaySoundLeftClick: true,
+        LeftClick: func(element *uilib.UIElement) {
+            if !canBuy {
+                return
+            }
+
+            buyIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement) {
+            if !canBuy {
+                return
+            }
+
+            buyIndex = 0
+
+            var elements []*uilib.UIElement
+
+            yes := func(){
+                cityScreen.City.Production += buyProduction
+                cityScreen.Player.Gold -= buyAmount
+                cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
+            }
+
+            no := func(){
+            }
+
+            var name string
+            if cityScreen.City.ProducingBuilding != buildinglib.BuildingNone {
+                name = cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding)
+            } else {
+                name = cityScreen.City.ProducingUnit.Name
+            }
+            message := fmt.Sprintf("Do you wish to spend %v by purchasing a %v?", buyAmount, name)
+            elements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, message, false, yes, no)
+            ui.AddElements(elements)
+
+        },
+        RightClick: func(element *uilib.UIElement) {
+            helpEntries := help.GetEntries(305)
+            if helpEntries != nil {
+                ui.AddElement(uilib.MakeHelpElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
+            }
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+
+            use := 0
+            if buyIndex < len(buyButtons) {
+                use = buyIndex
+            }
+
+            screen.DrawImage(buyButtons[use], &options)
+        },
+    })
 
     // change button
     changeButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 8, 0)
