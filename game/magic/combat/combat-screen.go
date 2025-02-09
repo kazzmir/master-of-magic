@@ -2856,7 +2856,8 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
         x := point.X
         y := point.Y
 
-        image, _ := combat.ImageCache.GetImage(combat.Model.Tiles[y][x].Lbx, combat.Model.Tiles[y][x].Index, 0)
+        images, _ := combat.ImageCache.GetImages(combat.Model.Tiles[y][x].Lbx, combat.Model.Tiles[y][x].Index)
+        image := images[animationIndex % uint64(len(images))]
         options.GeoM.Reset()
         // tx,ty is the middle of the tile
         tx, ty := tilePosition(float64(x), float64(y))

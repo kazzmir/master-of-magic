@@ -4282,6 +4282,8 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         Player: attacker,
     }
 
+    // FIXME: if the zone is water then don't add units that cannot move on water
+
     for _, unit := range attackerStack.Units() {
         attackingArmy.AddUnit(unit)
     }

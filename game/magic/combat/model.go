@@ -157,6 +157,7 @@ type CombatLandscape int
 
 const (
     CombatLandscapeGrass CombatLandscape = iota
+    CombatLandscapeWater
     CombatLandscapeDesert
     CombatLandscapeMountain
     CombatLandscapeTundra
@@ -168,6 +169,10 @@ const TownCenterY = 10
 func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plane, zone ZoneType) [][]Tile {
 
     baseLbx := "cmbgrass.lbx"
+
+    // most tile sets have 32 possible tiles to choose from
+    tileMax := 32
+    tileStart := 0
 
     switch landscape {
         case CombatLandscapeGrass:
@@ -194,9 +199,24 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             } else {
                 baseLbx = "cmbtundc.lbx"
             }
+        case CombatLandscapeWater:
+            // water only has 4
+            tileMax = 4
+            if plane == data.PlaneArcanus {
+                baseLbx = "cmbtcity.lbx"
+                tileStart = 109
+            } else {
+                baseLbx = "chriver.lbx"
+                tileStart = 12
+            }
     }
 
     maybeExtraTile := func() TileTop {
+        // water never has trees/rocks
+        if landscape == CombatLandscapeWater {
+            return TileTop{Index: -1}
+        }
+
         if rand.N(10) == 0 {
             // trees/rocks
             return TileTop{
@@ -215,7 +235,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             tiles[y][x] = Tile{
                 // Index: rand.N(48),
                 Lbx: baseLbx,
-                Index: rand.N(32),
+                Index: tileStart + rand.N(tileMax),
                 ExtraObject: maybeExtraTile(),
             }
         }
