@@ -52,6 +52,8 @@ func NewEngine() (*Engine, error) {
         },
     }
 
+    player.Gold = 500
+
     buildingInfo, _ := buildinglib.ReadBuildingInfo(cache)
 
     terrainLbx, err := cache.GetLbxFile("terrain.lbx")
