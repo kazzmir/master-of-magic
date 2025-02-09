@@ -312,7 +312,12 @@ func (stack *UnitStack) AnyOutOfMoves() bool {
 func (stack *UnitStack) GetRemainingMoves() fraction.Fraction {
     hasMoves := false
     moves := fraction.Make(10000, 1)
+    transport := stack.HasSailingUnits(true)
     for _, unit := range stack.units {
+        // ignore units being transported
+        if transport && unit.IsLandWalker() {
+            continue
+        }
         if unit.GetBusy() == units.BusyStatusNone && stack.active[unit] && unit.GetMovesLeft().LessThan(moves) {
             moves = unit.GetMovesLeft()
             hasMoves = true
