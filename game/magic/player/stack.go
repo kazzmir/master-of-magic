@@ -94,7 +94,38 @@ func (stack *UnitStack) InactiveUnits() []units.StackUnit {
     return inactive
 }
 
+// pass in true to only check active units
+func (stack *UnitStack) HasSailingUnits(onlyActive bool) bool {
+    use := stack.units
+    if onlyActive {
+        use = stack.ActiveUnits()
+    }
+    for _, unit := range use {
+        if unit.GetRawUnit().Sailing {
+            return true
+        }
+    }
+
+    return false
+}
+
+// true if every active unit can only walk on land
+func (stack *UnitStack) AllLandWalkers() bool {
+    for _, unit := range stack.ActiveUnits() {
+        if !unit.IsLandWalker() {
+            return false
+        }
+    }
+
+    return true
+}
+
 func (stack *UnitStack) AllFlyers() bool {
+    // wind walking gives every unit in the stack the ability to fly
+    if stack.ActiveUnitsHasAbility(data.AbilityWindWalking) {
+        return true
+    }
+
     for _, unit := range stack.ActiveUnits() {
         if !unit.IsFlying() {
             return false
@@ -246,8 +277,15 @@ func (stack *UnitStack) EnableMovers(){
 }
 
 func (stack *UnitStack) Move(dx int, dy int, cost fraction.Fraction, normalize units.NormalizeCoordinateFunc){
+    transport := stack.HasSailingUnits(true)
     for _, unit := range stack.units {
-        unit.Move(dx, dy, cost, normalize)
+        unitCost := cost
+        // land walking units that are being transported do not use up any movement points
+        if unit.IsLandWalker() && transport {
+            unitCost = fraction.Zero()
+        }
+
+        unit.Move(dx, dy, unitCost, normalize)
     }
 }
 
@@ -275,7 +313,12 @@ func (stack *UnitStack) AnyOutOfMoves() bool {
 func (stack *UnitStack) GetRemainingMoves() fraction.Fraction {
     hasMoves := false
     moves := fraction.Make(10000, 1)
+    transport := stack.HasSailingUnits(true)
     for _, unit := range stack.units {
+        // ignore units being transported
+        if transport && unit.IsLandWalker() {
+            continue
+        }
         if unit.GetBusy() == units.BusyStatusNone && stack.active[unit] && unit.GetMovesLeft().LessThan(moves) {
             moves = unit.GetMovesLeft()
             hasMoves = true

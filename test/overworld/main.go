@@ -4,8 +4,9 @@ import (
     "os"
     "log"
     "fmt"
+    "image"
     "strconv"
-    "math/rand"
+    "math/rand/v2"
     "runtime/pprof"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -536,7 +537,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
         player.LiftFog(x, y, 3, data.PlaneArcanus)
 
         introCity := citylib.MakeCity(fmt.Sprintf("city%v", i), x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
-        introCity.Population = rand.Intn(5000) + 5000
+        introCity.Population = rand.N(5000) + 5000
         introCity.Plane = data.PlaneArcanus
         introCity.ProducingBuilding = buildinglib.BuildingHousing
         introCity.ProducingUnit = units.UnitNone
@@ -554,7 +555,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
         player.LiftFog(x, y, 3, data.PlaneMyrror)
 
         introCity := citylib.MakeCity(fmt.Sprintf("city%v myr", i), x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.GetMap(data.PlaneMyrror), game)
-        introCity.Population = rand.Intn(5000) + 5000
+        introCity.Population = rand.N(5000) + 5000
         introCity.Plane = data.PlaneMyrror
         introCity.ProducingBuilding = buildinglib.BuildingHousing
         introCity.ProducingUnit = units.UnitNone
@@ -3440,6 +3441,127 @@ func createScenario41(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// water unit
+func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 41")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.CastingSkillPower += 500000
+
+    x, y, _ := game.FindValidCityLocationOnShore(game.Plane)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 4
+    city.Workers = 2
+    city.Wall = false
+
+    city.AddBuilding(buildinglib.BuildingShrine)
+    city.AddBuilding(buildinglib.BuildingGranary)
+    city.AddBuilding(buildinglib.BuildingOracle)
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 1000
+
+    player.LiftFog(x, y, 200, data.PlaneArcanus)
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, x, y, data.PlaneArcanus, wizard.Banner, nil))
+
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "dingus",
+        Banner: data.BannerGreen,
+    }, false)
+
+    enemy1.AIBehavior = nil
+
+    ex, ey, _ := game.FindValidCityLocation(game.Plane)
+
+    city2 := citylib.MakeCity("Test City", ex, ey, data.RaceHighElf, enemy1.Wizard.Banner, enemy1.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
+    city2.Population = 20000
+    city2.Plane = data.PlaneArcanus
+    city2.Banner = enemy1.Wizard.Banner
+    city2.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city2.ProducingBuilding = buildinglib.BuildingGranary
+    city2.ProducingUnit = units.UnitNone
+    city2.Race = wizard.Race
+    city2.Farmers = 17
+    city2.Workers = 3
+    city2.Wall = false
+
+    city2.AddBuilding(buildinglib.BuildingShrine)
+    city2.AddBuilding(buildinglib.BuildingGranary)
+    city2.AddBuilding(buildinglib.BuildingFarmersMarket)
+
+    city2.ResetCitizens(nil)
+
+    enemy1.AddCity(city2)
+
+    enemy1.Gold = 1000
+
+    // add a water unit to test water combat
+    mapUse := game.GetMap(data.PlaneArcanus)
+    var candidates []image.Point
+    for cx := range mapUse.Width() {
+        for cy := range mapUse.Height() {
+            if mapUse.GetTile(cx, cy).Tile.TerrainType() == terrain.Ocean && mapUse.TileDistance(cx, cy, x, y) < 8 {
+                candidates = append(candidates, image.Pt(cx, cy))
+            }
+        }
+    }
+
+    if len(candidates) == 0 {
+        log.Printf("No water tiles found")
+        return game
+    }
+
+    use := candidates[rand.N(len(candidates))]
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, use.X, use.Y, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, use.X, use.Y, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+
+    game.Camera.Center(x, y)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -3487,6 +3609,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 39: game = createScenario39(cache)
         case 40: game = createScenario40(cache)
         case 41: game = createScenario41(cache)
+        case 42: game = createScenario42(cache)
         default: game = createScenario1(cache)
     }
 

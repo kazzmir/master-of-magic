@@ -147,6 +147,8 @@ const (
     UnitEnchantmentCloakOfFear
     UnitEnchantmentTrueSight
     UnitEnchantmentPathFinding
+    UnitEnchantmentFlight
+    UnitEnchantmentChaosChannelsDemonWings
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -178,7 +180,6 @@ Iron Skin	Nature
 Regeneration	Nature
 Stone Skin	Nature
 Water Walking	Nature
-Flight	Sorcery
 Guardian Wind	Sorcery
 Invisibility	Sorcery
 Magic Immunity	Sorcery
@@ -204,6 +205,8 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentRighteousness: return lifeColor
         case UnitEnchantmentCloakOfFear: return deathColor
         case UnitEnchantmentTrueSight: return lifeColor
+        case UnitEnchantmentFlight: return sorceryColor
+        case UnitEnchantmentChaosChannelsDemonWings: return chaosColor
     }
 
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
@@ -222,6 +225,8 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentRighteousness: return "Righteousness"
         case UnitEnchantmentCloakOfFear: return "Cloak of Fear"
         case UnitEnchantmentTrueSight: return "True Sight"
+        case UnitEnchantmentFlight: return "Flight"
+        case UnitEnchantmentChaosChannelsDemonWings: return "Demon Wings"
     }
 
     return ""
@@ -240,6 +245,8 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentRighteousness: return "special.lbx"
         case UnitEnchantmentCloakOfFear: return "special2.lbx"
         case UnitEnchantmentTrueSight: return "special.lbx"
+        case UnitEnchantmentFlight: return "special.lbx"
+        case UnitEnchantmentChaosChannelsDemonWings: return "special.lbx"
     }
 
     return ""
@@ -258,6 +265,8 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentRighteousness: return 93
         case UnitEnchantmentCloakOfFear: return 21
         case UnitEnchantmentTrueSight: return 85
+        case UnitEnchantmentFlight: return 80
+        case UnitEnchantmentChaosChannelsDemonWings: return 63
     }
 
     return -1

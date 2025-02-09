@@ -813,6 +813,14 @@ func (hero *Hero) IsFlying() bool {
     return hero.Unit.IsFlying()
 }
 
+func (hero *Hero) IsSailing() bool {
+    return false
+}
+
+func (hero *Hero) IsLandWalker() bool {
+    return hero.Unit.IsLandWalker()
+}
+
 func (hero *Hero) IsSwimmer() bool {
     return hero.Unit.IsSwimmer()
 }

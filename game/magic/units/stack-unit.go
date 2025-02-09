@@ -13,6 +13,8 @@ type StackUnit interface {
     NaturalHeal(rate float64)
     IsFlying() bool
     IsSwimmer() bool
+    IsSailing() bool
+    IsLandWalker() bool
     GetName() string
     GetTitle() string
     GetPlane() data.Plane

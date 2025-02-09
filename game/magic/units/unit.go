@@ -131,7 +131,10 @@ type Unit struct {
     Name string
     Race data.Race
     Flying bool
+    // true if the unit can swim, but also be on land (like lizardmen)
     Swimming bool
+    // true for water-only units, such as trieme
+    Sailing bool
     Abilities []data.Ability
 
     // fantastic units belong to a specific magic realm
@@ -3133,6 +3136,7 @@ var Trireme Unit = Unit{
     UpkeepFood: 1,
     Count: 1,
     Swimming: true,
+    Sailing: true,
     MovementSound: MovementSoundBoat, // FIXME
     AttackSound: AttackSoundNormal, // FIXME
     MovementSpeed: 2,
@@ -3156,6 +3160,7 @@ var Galley Unit = Unit{
     Name: "Galley",
     Count: 1,
     Swimming: true,
+    Sailing: true,
     MovementSound: MovementSoundBoat,
     AttackSound: AttackSoundNormal, // FIXME
     RangeAttackSound: RangeAttackSoundArrow,
@@ -3211,6 +3216,7 @@ var Warship Unit = Unit{
     Count: 1,
     MovementSpeed: 4,
     Swimming: true,
+    Sailing: true,
     MovementSound: MovementSoundBoat,
     AttackSound: AttackSoundNormal, // FIXME
     RangeAttackIndex: 32, // FIXME

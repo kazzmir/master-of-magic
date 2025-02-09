@@ -1157,6 +1157,14 @@ func (mapObject *Map) WrapX(x int) int {
     return mapObject.Map.WrapX(x)
 }
 
+// distance in tiles between two points
+func (mapObject *Map) TileDistance(x1 int, y1 int, x2 int, y2 int) int {
+    dx := mapObject.XDistance(x1, x2)
+    dy := y2 - y1
+
+    return int(math.Sqrt(float64(dx * dx + dy * dy)))
+}
+
 // return the shortest x distance between two points, taking into account the map wrapping
 // result: WrapX(x1 + distance) = x2
 func (mapObject *Map) XDistance(x1 int, x2 int) int {
