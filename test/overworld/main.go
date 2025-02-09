@@ -3507,9 +3507,10 @@ func createScenario41(cache *lbx.LbxCache) *gamelib.Game {
         return game
     }
 
-    use := candidates[rand.N(len(candidates))]
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, use.X, use.Y, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
-    log.Printf("Player at %v, %v enemy at %v, %v", x, y, use.X, use.Y)
+    for range 6 {
+        use := candidates[rand.N(len(candidates))]
+        enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, use.X, use.Y, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+    }
 
     game.Camera.Center(x, y)
 

@@ -4263,7 +4263,7 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
         case terrain.Tundra: return combat.CombatLandscapeTundra
 
         // FIXME: these cases are special
-        case terrain.Ocean: return combat.CombatLandscapeGrass
+        case terrain.Ocean: return combat.CombatLandscapeWater
         case terrain.Volcano: return combat.CombatLandscapeGrass
         case terrain.Lake: return combat.CombatLandscapeGrass
         case terrain.NatureNode: return combat.CombatLandscapeGrass
