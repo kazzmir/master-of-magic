@@ -566,33 +566,44 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
     elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, newBuilding, 4 * data.ScreenScale, 102 * data.ScreenScale, cityScreen.Fonts, cityScreen.Player, &getAlpha))
 
-    buyAmount := 0
-    buyProduction := float32(0)
+    // returns the amount of gold and the amount of production that will be used to buy a building
+    computeBuyAmount := func(cost int) (int, float32) {
+        // FIXME: take terrain/race/buildings into effect, such as the miners guild for dwarves
 
-    if cityScreen.City.ProducingBuilding != buildinglib.BuildingNone && cityScreen.City.ProducingBuilding != buildinglib.BuildingTradeGoods && cityScreen.City.ProducingBuilding != buildinglib.BuildingHousing {
-        cost := float32(cityScreen.City.BuildingInfo.ProductionCost(cityScreen.City.ProducingBuilding))
-        remaining := cost - cityScreen.City.Production
+        remaining := float32(cost) - cityScreen.City.Production
         if remaining > 0 {
             modifier := float32(4)
             if cityScreen.City.Production == 0 {
                 modifier = 4
-            } else if cityScreen.City.Production / cost < 1.0/3 {
+            } else if cityScreen.City.Production / float32(cost) < 1.0/3 {
                 modifier = 3
             } else {
                 modifier = 2
             }
 
-            buyAmount = int(remaining * modifier)
-            buyProduction = remaining
+            buyAmount := int(remaining * modifier)
+            buyProduction := remaining
+
+            return buyAmount, buyProduction
         }
+
+        return 0, 0
+    }
+
+    buyAmount := 0
+    buyProduction := float32(0)
+
+    if cityScreen.City.ProducingBuilding != buildinglib.BuildingNone && cityScreen.City.ProducingBuilding != buildinglib.BuildingTradeGoods && cityScreen.City.ProducingBuilding != buildinglib.BuildingHousing {
+        cost := float32(cityScreen.City.BuildingInfo.ProductionCost(cityScreen.City.ProducingBuilding))
+        buyAmount, buyProduction = computeBuyAmount(int(cost))
     }
 
     if !cityScreen.City.ProducingUnit.IsNone() {
-        buyAmount = 1
-        buyProduction = 1
+        buyAmount, buyProduction = computeBuyAmount(cityScreen.City.ProducingUnit.ProductionCost)
     }
 
-    canBuy := buyAmount <= cityScreen.Player.Gold && cityScreen.City.ProducingBuilding != buildinglib.BuildingTradeGoods && cityScreen.City.ProducingBuilding != buildinglib.BuildingHousing
+    // true if there is something to buy
+    canBuy := buyProduction > 0 && buyAmount <= cityScreen.Player.Gold
 
     buyButton, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 7, 0)
     if !canBuy {
@@ -620,7 +631,14 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             no := func(){
             }
 
-            elements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, "Are you sure you want to buy this building?", true, yes, no)
+            var name string
+            if cityScreen.City.ProducingBuilding != buildinglib.BuildingNone {
+                name = cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding)
+            } else {
+                name = cityScreen.City.ProducingUnit.Name
+            }
+            message := fmt.Sprintf("Do you wish to spend %v by purchasing a %v?", buyAmount, name)
+            elements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, message, false, yes, no)
             ui.AddElements(elements)
         },
         RightClick: func(element *uilib.UIElement) {
