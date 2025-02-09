@@ -6065,8 +6065,6 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         for _, event := range cityEvents {
             switch event.(type) {
             case *citylib.CityEventPopulationGrowth:
-                // growth := event.(*citylib.CityEventPopulationGrowth)
-
                 growthEvent := event.(*citylib.CityEventPopulationGrowth)
 
                 verb := "grown"
@@ -6074,14 +6072,20 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     verb = "shrunk"
                 }
 
-                // FIXME: can citizens shrink to 0, in which case the city should be removed?
+                if growthEvent.Size == 0 {
+                    removeCities = append(removeCities, city)
+                    if player.IsHuman() {
+                        select {
+                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The city of %v has been abandoned.", city.Name)}:
+                            default:
+                        }
+                    }
+                } else if player.IsHuman() {
+                    scrollEvent := GameEventScroll{
+                        Title: "CITY GROWTH",
+                        Text: fmt.Sprintf("%v has %v to a population of %v.", city.Name, verb, city.Citizens()),
+                    }
 
-                scrollEvent := GameEventScroll{
-                    Title: "CITY GROWTH",
-                    Text: fmt.Sprintf("%v has %v to a population of %v.", city.Name, verb, city.Citizens()),
-                }
-
-                if player.IsHuman() {
                     select {
                         case game.Events<- &scrollEvent:
                         default:
