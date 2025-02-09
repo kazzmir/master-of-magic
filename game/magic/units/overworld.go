@@ -160,7 +160,15 @@ func (unit *OverworldUnit) SetMovesLeft(moves fraction.Fraction) {
 }
 
 func (unit *OverworldUnit) IsFlying() bool {
-    return unit.Unit.Flying
+    return unit.Unit.Flying || unit.HasEnchantment(data.UnitEnchantmentFlight) || unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings)
+}
+
+func (unit *OverworldUnit) IsLandWalker() bool {
+    if unit.IsFlying() || unit.IsSwimmer() || unit.GetRawUnit().Sailing || unit.HasAbility(data.AbilityNonCorporeal) {
+        return false
+    }
+
+    return true
 }
 
 func (unit *OverworldUnit) IsSwimmer() bool {

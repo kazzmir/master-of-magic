@@ -112,7 +112,7 @@ func (stack *UnitStack) HasSailingUnits(onlyActive bool) bool {
 // true if every active unit can only walk on land
 func (stack *UnitStack) AllLandWalkers() bool {
     for _, unit := range stack.ActiveUnits() {
-        if unit.IsFlying() || unit.IsSwimmer() || unit.GetRawUnit().Sailing || unit.HasAbility(data.AbilityNonCorporeal) {
+        if !unit.IsLandWalker() {
             return false
         }
     }
@@ -121,6 +121,10 @@ func (stack *UnitStack) AllLandWalkers() bool {
 }
 
 func (stack *UnitStack) AllFlyers() bool {
+    if stack.ActiveUnitsHasAbility(data.AbilityWindWalking) {
+        return true
+    }
+
     for _, unit := range stack.ActiveUnits() {
         if !unit.IsFlying() {
             return false
@@ -272,8 +276,15 @@ func (stack *UnitStack) EnableMovers(){
 }
 
 func (stack *UnitStack) Move(dx int, dy int, cost fraction.Fraction, normalize units.NormalizeCoordinateFunc){
+    transport := stack.HasSailingUnits(true)
     for _, unit := range stack.units {
-        unit.Move(dx, dy, cost, normalize)
+        unitCost := cost
+        // land walking units that are being transported do not use up any movement points
+        if unit.IsLandWalker() && transport {
+            unitCost = fraction.Zero()
+        }
+
+        unit.Move(dx, dy, unitCost, normalize)
     }
 }
 

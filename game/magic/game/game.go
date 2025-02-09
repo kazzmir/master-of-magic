@@ -1604,6 +1604,10 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         return fraction.Zero(), false
     }
 
+    if stack.AllFlyers() {
+        return fraction.FromInt(1), true
+    }
+
     // can't move from land to ocean unless all units are flyers or swimmers
     if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
         // a land walker can move onto a friendly stack on the ocean if that stack has sailing units
@@ -1656,10 +1660,6 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
 
     if containsFriendlyCity(destX, destY) {
         return fraction.Make(1, 2), true
-    }
-
-    if stack.AllFlyers() {
-        return fraction.FromInt(1), true
     }
 
     if stack.HasPathfinding() {
