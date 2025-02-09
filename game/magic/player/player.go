@@ -168,7 +168,9 @@ type Player struct {
 
     Wizard setup.WizardCustom
 
+    // FIXME: probably remove Units and just use Stacks to track the units
     Units []units.StackUnit
+
     Stacks []*UnitStack
     Cities []*citylib.City
 

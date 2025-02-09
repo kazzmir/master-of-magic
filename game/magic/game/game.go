@@ -4462,28 +4462,38 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     // ebiten.SetCursorMode(ebiten.CursorModeVisible)
 
     // remove dead units
-    for _, unit := range attackerStack.Units() {
-        if unit.GetHealth() <= 0 {
-            attacker.RemoveUnit(unit)
+    killUnits := func (player *playerlib.Player, stack *playerlib.UnitStack, winner bool, landscape combat.CombatLandscape){
+        // first remove sailing units
+        for _, unit := range stack.Units() {
+            if unit.IsSailing() && unit.GetHealth() <= 0 {
+                player.RemoveUnit(unit)
+            }
+        }
 
-            if unit.IsHero() && attacker.IsHuman() {
-                hero := unit.(*herolib.Hero)
-                distributeEquipment(attacker, hero)
+        transport := stack.HasSailingUnits(false)
+
+        for _, unit := range stack.Units() {
+            dead := unit.GetHealth() <= 0
+
+            // if combat was on water and this player won but there are no sailing ships left then all units should die
+            // FIXME: handle the case that there were originally two ships and one died, thus not being able to transport some units
+            if winner && landscape == combat.CombatLandscapeWater && unit.IsLandWalker() && !transport {
+                dead = true
+            }
+
+            if dead {
+                player.RemoveUnit(unit)
+
+                if unit.IsHero() && player.IsHuman() {
+                    hero := unit.(*herolib.Hero)
+                    distributeEquipment(player, hero)
+                }
             }
         }
     }
 
-    for _, unit := range defenderStack.Units() {
-        if unit.GetHealth() <= 0 {
-            defender.RemoveUnit(unit)
-
-            if unit.IsHero() && defender.IsHuman() {
-                hero := unit.(*herolib.Hero)
-                distributeEquipment(defender, hero)
-            }
-
-        }
-    }
+    killUnits(attacker, attackerStack, state == combat.CombatStateAttackerWin, landscape)
+    killUnits(defender, defenderStack, state == combat.CombatStateDefenderWin, landscape)
 
     if showHeroNotice {
         game.doNotice(yield, "One or more heroes died in combat. You must redistribute their equipment.")
