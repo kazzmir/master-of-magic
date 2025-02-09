@@ -3571,7 +3571,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                 } else {
                                     game.doEnemyCityView(yield, city, player, otherPlayer)
                                 }
-                            } else {
+                            } else if player.IsVisible(tileX, tileY, game.Plane) {
                                 enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
                                 if enemyStack != nil {
                                     quit := false
@@ -4278,7 +4278,7 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
  * this also shows the raze city ui so that fame can be incorporated based on whether the city is razed or not
  */
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
-    landscape := game.GetCombatLandscape(attackerStack.X(), attackerStack.Y(), attackerStack.Plane())
+    landscape := game.GetCombatLandscape(defenderStack.X(), defenderStack.Y(), defenderStack.Plane())
 
     createArmy := func (player *playerlib.Player, stack *playerlib.UnitStack) *combat.Army {
         army := combat.Army{

@@ -347,6 +347,7 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
     rect := util.ImageRect(posX, posY, background)
     element := &uilib.UIElement{
         Rect: rect,
+        Layer: 1,
         LeftClick: func(this *uilib.UIElement){
             getAlpha = ui.MakeFadeOut(7)
             ui.AddDelay(7, func(){
