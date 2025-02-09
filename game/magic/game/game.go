@@ -1347,10 +1347,14 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
         pageOptions.GeoM.Translate(0, float64(middleY - length) + float64(5 * data.ScreenScale))
         screen.DrawImage(pagePart, &pageOptions)
 
+        // make the text fade out a little more than the rest of the scroll
+        textScale := options.ColorScale
+        textScale.ScaleAlpha(getAlpha())
+
         x, y := options.GeoM.Apply(float64(pageBackground.Bounds().Dx()) / 2, float64(middleY) - wrappedText.TotalHeight / 2 - float64(bigFont.Height() * data.ScreenScale) / 2 + 5)
-        bigFont.PrintCenter(screen, x, y, float64(data.ScreenScale), options.ColorScale, title)
+        bigFont.PrintCenter(screen, x, y, float64(data.ScreenScale), textScale, title)
         y += float64(bigFont.Height() * data.ScreenScale) + 1
-        smallFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, true)
+        smallFont.RenderWrapped(screen, x, y, wrappedText, textScale, true)
 
         scrollOptions := options
         scrollOptions.GeoM.Translate(float64(-63 * data.ScreenScale), float64(-20 * data.ScreenScale))
@@ -1398,9 +1402,12 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
         yield()
     }
 
+    // offset because the scroll shrunk too much
+    scrollLength += 10 * data.ScreenScale
+
     // fade out
     getAlpha = util.MakeFadeOut(7, &game.Counter)
-    for i := 0; i < 7; i++ {
+    for range 7 {
         game.Counter += 1
         yield()
     }
