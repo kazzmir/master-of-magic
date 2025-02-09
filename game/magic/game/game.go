@@ -3093,7 +3093,8 @@ func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
     camera := game.Camera
 
     camera.Center(x, y)
-    for camera.GetZoomedY() < -1 {
+    minY := math.Floor(-1 / camera.GetZoom())
+    for camera.GetZoomedY() < minY {
         y += 1
         camera.Center(x, y)
     }
