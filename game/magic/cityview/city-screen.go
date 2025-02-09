@@ -566,6 +566,19 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
     elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, newBuilding, 4 * data.ScreenScale, 102 * data.ScreenScale, cityScreen.Fonts, cityScreen.Player, &getAlpha))
 
+    buyAmount := 0
+    buyProduction := 0
+
+    if cityScreen.City.ProducingBuilding != buildinglib.BuildingNone && cityScreen.City.ProducingBuilding != buildinglib.BuildingTradeGoods && cityScreen.City.ProducingBuilding != buildinglib.BuildingHousing {
+        buyAmount = 1
+        buyProduction = 1
+    }
+
+    if !cityScreen.City.ProducingUnit.IsNone() {
+        buyAmount = 1
+        buyProduction = 1
+    }
+
     // FIXME: show disabled buy button if the item is not buyable (not enough money, or the item is trade goods/housing)
     // buy button
     buyButton, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", 7, 0)
@@ -580,7 +593,9 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                 var elements []*uilib.UIElement
 
                 yes := func(){
-                    // FIXME: buy the thing being produced
+                    cityScreen.City.Production += float32(buyProduction)
+                    cityScreen.Player.Gold -= buyAmount
+                    cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
                 }
 
                 no := func(){
