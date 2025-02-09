@@ -314,3 +314,11 @@ const (
 )
 
 type FogMap [][]FogType
+
+func (fog FogMap) GetFog(x int, y int) FogType {
+    if x < 0 || y < 0 || x >= len(fog) || y >= len(fog[x]) {
+        return FogTypeUnexplored
+    }
+
+    return fog[x][y]
+}

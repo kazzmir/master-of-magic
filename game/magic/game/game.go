@@ -1847,14 +1847,14 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
         return nil
     }
 
-    if fog[newX][newY] != data.FogTypeUnexplored {
+    if fog.GetFog(useMap.WrapX(newX), newY) != data.FogTypeUnexplored {
         tileTo := useMap.GetTile(newX, newY)
         if tileTo.Tile.IsLand() && stack.HasSailingUnits(true) {
             return nil
         }
 
         if !tileTo.Tile.IsLand() && !stack.AllFlyers() && stack.AllLandWalkers() {
-            maybeStack := player.FindStack(newX, newY, stack.Plane())
+            maybeStack := player.FindStack(useMap.WrapX(newX), newY, stack.Plane())
             if maybeStack != nil && maybeStack.HasSailingUnits(false) {
                 // ok, can move there because there is a ship
             } else {
