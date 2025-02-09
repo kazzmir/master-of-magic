@@ -3485,12 +3485,13 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.Race = wizard.Race
-    city.Farmers = 3
-    city.Workers = 3
+    city.Farmers = 4
+    city.Workers = 2
     city.Wall = false
 
     city.AddBuilding(buildinglib.BuildingShrine)
     city.AddBuilding(buildinglib.BuildingGranary)
+    city.AddBuilding(buildinglib.BuildingOracle)
 
     city.ResetCitizens(nil)
 
@@ -3501,8 +3502,9 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 200, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, x, y, data.PlaneArcanus, wizard.Banner, nil))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, x, y, data.PlaneArcanus, wizard.Banner, nil))
 
     enemy1 := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",

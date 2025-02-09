@@ -1627,10 +1627,8 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
 
     // sailing units cannot move onto land
     if tileTo.Tile.IsLand() {
-        for _, unit := range stack.ActiveUnits() {
-            if unit.GetRawUnit().Sailing {
-                return fraction.Zero(), false
-            }
+        if stack.HasSailingUnits(true) {
+            return fraction.Zero(), false
         }
     }
 
@@ -1855,7 +1853,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
             return nil
         }
 
-        if tileTo.Tile.TerrainType() == terrain.Ocean && stack.AllLandWalkers() {
+        if !tileTo.Tile.IsLand() && stack.AllLandWalkers() {
             maybeStack := player.FindStack(newX, newY, stack.Plane())
             if maybeStack != nil && maybeStack.HasSailingUnits(false) {
                 // ok, can move there because there is a ship
@@ -5996,6 +5994,26 @@ func (game *Game) DisbandUnits(player *playerlib.Player) []string {
             if !disbanded {
                 // fail safe to make sure we exit the loop in case somehow a unit was not disbanded
                 break
+            }
+
+            var toRemove []units.StackUnit
+            // check land walkers on ocean tiles that do not have valid transport
+            // FIXME: handle not enough transports
+            for _, stack := range player.Stacks {
+                mapUse := game.GetMap(stack.Plane())
+                hasTransport := stack.HasSailingUnits(false)
+                terrainType := mapUse.GetTile(stack.X(), stack.Y()).Tile.TerrainType()
+                if !hasTransport && (terrainType == terrain.Ocean || terrainType == terrain.Shore) {
+                    for _, unit := range stack.Units() {
+                        if unit.IsLandWalker() {
+                            toRemove = append(toRemove, unit)
+                        }
+                    }
+                }
+            }
+
+            for _, unit := range toRemove {
+                player.RemoveUnit(unit)
             }
         }
     }
