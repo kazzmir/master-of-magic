@@ -6002,8 +6002,7 @@ func (game *Game) DisbandUnits(player *playerlib.Player) []string {
             for _, stack := range player.Stacks {
                 mapUse := game.GetMap(stack.Plane())
                 hasTransport := stack.HasSailingUnits(false)
-                terrainType := mapUse.GetTile(stack.X(), stack.Y()).Tile.TerrainType()
-                if !hasTransport && (terrainType == terrain.Ocean || terrainType == terrain.Shore) {
+                if !hasTransport && !mapUse.GetTile(stack.X(), stack.Y()).Tile.IsLand() {
                     for _, unit := range stack.Units() {
                         if unit.IsLandWalker() {
                             toRemove = append(toRemove, unit)
