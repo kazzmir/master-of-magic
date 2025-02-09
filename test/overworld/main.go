@@ -251,7 +251,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
     player.AddCity(introCity)
 
-    player.Gold = 83
+    player.Gold = 5000
     player.Mana = 26
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index

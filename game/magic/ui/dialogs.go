@@ -264,7 +264,7 @@ func MakeConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Im
 
 func MakeConfirmDialogWithLayerFull(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, message string, center bool, confirm func(), cancel func(), yesButtons []*ebiten.Image, noButtons []*ebiten.Image) []*UIElement {
     confirmX := 67 * data.ScreenScale
-    confirmY := 73 * data.ScreenScale
+    confirmY := 68 * data.ScreenScale
 
     confirmMargin := 15 * data.ScreenScale
     confirmTopMargin := 10 * data.ScreenScale
