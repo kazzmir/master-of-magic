@@ -1216,7 +1216,7 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
     // river / shore
     // FIXME: make this configurable
     // FIXME: 4/116 is shore
-    spriteIndex = 4
+    spriteIndex = 3
     if onMyrror {
         spriteIndex = 115
     }
