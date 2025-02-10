@@ -81,15 +81,22 @@ func NewEngine() (*Engine, error) {
     city.Production = 18
     city.ProducingBuilding = buildinglib.BuildingNone
     city.Banner = data.BannerBlue
-    city.Buildings.Insert(buildinglib.BuildingFortress)
-    city.Buildings.Insert(buildinglib.BuildingGranary)
-    city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
-    city.Buildings.Insert(buildinglib.BuildingMarketplace)
-    city.Buildings.Insert(buildinglib.BuildingMinersGuild)
-    city.Buildings.Insert(buildinglib.BuildingSawmill)
-    city.Buildings.Insert(buildinglib.BuildingMechaniciansGuild)
-    city.Buildings.Insert(buildinglib.BuildingBuildersHall)
-    city.Buildings.Insert(buildinglib.BuildingCityWalls)
+    city.AddBuilding(buildinglib.BuildingFortress)
+    city.AddBuilding(buildinglib.BuildingGranary)
+    city.AddBuilding(buildinglib.BuildingFarmersMarket)
+    city.AddBuilding(buildinglib.BuildingMarketplace)
+    city.AddBuilding(buildinglib.BuildingMinersGuild)
+    city.AddBuilding(buildinglib.BuildingSawmill)
+    city.AddBuilding(buildinglib.BuildingMechaniciansGuild)
+    city.AddBuilding(buildinglib.BuildingBuildersHall)
+    city.AddBuilding(buildinglib.BuildingCityWalls)
+    city.AddBuilding(buildinglib.BuildingWizardsGuild)
+    city.AddBuilding(buildinglib.BuildingSmithy)
+    city.AddBuilding(buildinglib.BuildingSummoningCircle)
+    city.AddBuilding(buildinglib.BuildingOracle)
+    city.AddBuilding(buildinglib.BuildingShrine)
+    city.AddBuilding(buildinglib.BuildingTemple)
+
     city.ProducingBuilding = buildinglib.BuildingHousing
     // city.ProducingUnit = units.HighElfSpearmen
     city.ResetCitizens(nil)
@@ -114,14 +121,6 @@ func NewEngine() (*Engine, error) {
     }
 
     city.UpdateUnrest(garrison)
-
-    city.AddBuilding(buildinglib.BuildingWizardsGuild)
-    city.AddBuilding(buildinglib.BuildingSmithy)
-    city.AddBuilding(buildinglib.BuildingSummoningCircle)
-    city.AddBuilding(buildinglib.BuildingOracle)
-    city.AddBuilding(buildinglib.BuildingFortress)
-    city.AddBuilding(buildinglib.BuildingShrine)
-    city.AddBuilding(buildinglib.BuildingTemple)
 
     cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingShrine)
 
