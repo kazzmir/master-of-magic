@@ -460,8 +460,8 @@ func (unit *OverworldUnit) GetAbilities() []data.Ability {
     return unit.Unit.GetAbilities()
 }
 
-func MakeOverworldUnit(unit Unit) *OverworldUnit {
-    return MakeOverworldUnitFromUnit(unit, 0, 0, data.PlaneArcanus, data.BannerBrown, nil)
+func MakeOverworldUnit(unit Unit, x int, y int, plane data.Plane) *OverworldUnit {
+    return MakeOverworldUnitFromUnit(unit, x, y, plane, data.BannerBrown, nil)
 }
 
 func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType, experienceInfo ExperienceInfo) *OverworldUnit {
