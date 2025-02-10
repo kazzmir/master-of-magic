@@ -9,11 +9,14 @@ import (
     "math/rand/v2"
 )
 
+// a position within some patch of land where this building is located. the Area field
+// implicitly contains the x,y position within the overall patch of land
 type BuildingPosition struct {
     Building Building
     Area image.Rectangle
 }
 
+// represents a patch of land (in between roads) that can have buildings placed on it
 type Rect struct {
     Width int
     Height int
@@ -34,6 +37,7 @@ func (rect *Rect) Remove(building Building) {
     })
 }
 
+// compute how much space is unused in this rectangle
 func (rect *Rect) EmptySpace() int {
     total := rect.Area()
 
@@ -44,6 +48,9 @@ func (rect *Rect) EmptySpace() int {
     return total
 }
 
+// try to add the building to this patch of land. returns true if successful
+// each possible point the new building could be placed is tried in a random order. if the building
+// overlaps with any existing buildings then that point is skipped
 func (rect *Rect) Add(building Building, width, height int, random *rand.Rand) bool {
 
     if rect.EmptySpace() < width * height {
@@ -79,6 +86,9 @@ func (rect *Rect) Area() int {
     return rect.Width * rect.Height
 }
 
+// recursive algorithm that tries to layout each building in some patch of land
+// if a building fails to be placed, then the algorithm backtracks and tries a different rect
+// for the previous building
 func doLayout(buildings []Building, rects []*Rect, random *rand.Rand, count *int) ([]*Rect, bool) {
     *count += 1
     if len(buildings) == 0 {
@@ -104,6 +114,7 @@ func doLayout(buildings []Building, rects []*Rect, random *rand.Rand, count *int
         clone[i] = rect.Clone()
     }
 
+    // the order the patches of land are tried is random
     for _, i := range rand.Perm(len(clone)) {
         rect := clone[i]
         // fmt.Printf("Rect %v empty space %v buildings %v\n", rect.Id, rect.EmptySpace(), len(rect.Buildings))
@@ -133,6 +144,7 @@ func TestLayout2(test *testing.T){
     }
 }
 
+// remove buildings that have been replaced
 func filterReplaced(buildings []Building) []Building {
     var wasBuildingReplaced func (building Building) bool
     wasBuildingReplaced = func (building Building) bool {
@@ -160,6 +172,7 @@ func filterReplaced(buildings []Building) []Building {
 }
 
 func TestLayout(test *testing.T){
+    // these rows represent the sizes of the standard patches of land in a cityscape
     row1 := []*Rect{&Rect{Width: 3, Height: 4, Id: 0}, &Rect{Width: 4, Height: 4, Id: 1}, &Rect{Width: 3, Height: 4, Id: 2}, &Rect{Width: 4, Height: 4, Id: 3}}
     row2 := []*Rect{&Rect{Width: 3, Height: 3, Id: 4}, &Rect{Width: 4, Height: 3, Id: 5}, &Rect{Width: 3, Height: 3, Id: 6}, &Rect{Width: 4, Height: 3, Id: 7}}
     row3 := []*Rect{&Rect{Width: 1, Height: 4, Id: 8}, &Rect{Width: 4, Height: 4, Id: 9}, &Rect{Width: 3, Height: 4, Id: 10}, &Rect{Width: 4, Height: 4, Id: 11}, &Rect{Width: 3, Height: 4, Id: 12}}
