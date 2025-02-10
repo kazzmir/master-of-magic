@@ -5,13 +5,37 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
 )
 
+type EventType int
+
+const (
+    EventDisjunction EventType = iota
+)
+
 /* an event is something shown on screen to the user, like when a new building is created
  */
 type Event struct {
+    Type EventType
+    BirthYear int // year/turn the event started
+    Message string // messages are supposed to come out of eventmsg.lbx, but we mostly just hardcode them
+    LbxIndex int // picture from events.lbx
+    IsConjunction bool // only one conjunction event can be active at a time
+    CityEvent bool // if true, then this event targets a city
+}
+
+func MakeDisjunctionEvent(year int) *Event {
+    return &Event{
+        Type: EventDisjunction,
+        BirthYear: year,
+        Message: "Disjunction! The fabric of magic has been torn asunder destroying all overland enchantments.",
+        LbxIndex: 2,
+        IsConjunction: false,
+        CityEvent: false,
+    }
 }
 
 type EventData struct {
-    Events [][]byte
+    // these strings contain bytes that indicate a placeholder to insert some other value, such as the wizard's name or a city name
+    Events []string
 }
 
 func parseString(s []byte) []byte {
@@ -45,7 +69,7 @@ func ReadEventData(cache *lbx.LbxCache) (*EventData, error) {
         return nil, err
     }
 
-    events := make([][]byte, count)
+    events := make([]string, count)
 
     for i := 0; i < int(count); i++ {
         data := make([]byte, size)
@@ -57,7 +81,7 @@ func ReadEventData(cache *lbx.LbxCache) (*EventData, error) {
             return nil, fmt.Errorf("did not read all %v bytes", size)
         }
 
-        events[i] = parseString(data)
+        events[i] = string(parseString(data))
     }
 
     return &EventData{Events: events}, nil

@@ -253,6 +253,9 @@ type Game struct {
 
     MovingStack *playerlib.UnitStack
 
+    // https://masterofmagic.fandom.com/wiki/Event
+    GameEvents []Event
+
     HudUI *uilib.UI
     Help helplib.Help
 
