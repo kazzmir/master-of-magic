@@ -255,6 +255,7 @@ type Game struct {
 
     // https://masterofmagic.fandom.com/wiki/Event
     GameEvents []Event
+    LastEventTurn uint64
 
     HudUI *uilib.UI
     Help helplib.Help
@@ -6380,6 +6381,26 @@ func (game *Game) EndOfTurn() {
     game.revertVolcanos()
 
     game.TurnNumber += 1
+
+    eventModifier := fraction.FromInt(1)
+    switch game.Settings.Difficulty {
+        case data.DifficultyIntro: eventModifier = fraction.Make(1, 2)
+        case data.DifficultyEasy: eventModifier = fraction.Make(2, 3)
+        case data.DifficultyAverage: eventModifier = fraction.Make(3, 4)
+        case data.DifficultyHard: eventModifier = fraction.Make(4, 5)
+        case data.DifficultyExtreme: eventModifier = fraction.Make(1, 1)
+        case data.DifficultyImpossible: eventModifier = fraction.Make(6, 5)
+    }
+
+    eventProbability := fraction.FromInt(int(game.TurnNumber - game.LastEventTurn)).Multiply(eventModifier)
+    if game.TurnNumber < 50 || game.TurnNumber - game.LastEventTurn < 5 {
+        eventProbability = fraction.Zero()
+    }
+
+    if rand.N(512) < int(eventProbability.ToFloat()) {
+        log.Printf("New event!")
+    }
+
 }
 
 func (game *Game) DoNextTurn(){
