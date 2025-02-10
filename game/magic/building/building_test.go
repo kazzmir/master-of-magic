@@ -79,7 +79,8 @@ func (rect *Rect) Area() int {
     return rect.Width * rect.Height
 }
 
-func doLayout(buildings []Building, rects []*Rect, random *rand.Rand) ([]*Rect, bool) {
+func doLayout(buildings []Building, rects []*Rect, random *rand.Rand, count *int) ([]*Rect, bool) {
+    *count += 1
     if len(buildings) == 0 {
         return rects, true
     }
@@ -103,11 +104,12 @@ func doLayout(buildings []Building, rects []*Rect, random *rand.Rand) ([]*Rect, 
         clone[i] = rect.Clone()
     }
 
-    for _, rect := range clone {
+    for _, i := range rand.Perm(len(clone)) {
+        rect := clone[i]
         // fmt.Printf("Rect %v empty space %v buildings %v\n", rect.Id, rect.EmptySpace(), len(rect.Buildings))
         if rect.Add(building, width, height, random) {
             // fmt.Printf("Added %v (%v,%v) to rect %v\n", building, width, height, rect.Id)
-            solution, ok := doLayout(buildings[1:], clone, random)
+            solution, ok := doLayout(buildings[1:], clone, random, count)
             if ok {
                 return solution, true
             }
@@ -122,7 +124,8 @@ func doLayout(buildings []Building, rects []*Rect, random *rand.Rand) ([]*Rect, 
 
 func TestLayout2(test *testing.T){
     rects := []*Rect{&Rect{Width: 4, Height: 4, Id: 0}}
-    solution, ok := doLayout([]Building{BuildingArmorersGuild}, rects, rand.New(rand.NewPCG(0, 1)))
+    count := 0
+    solution, ok := doLayout([]Building{BuildingArmorersGuild}, rects, rand.New(rand.NewPCG(0, 1)), &count)
     if !ok {
         fmt.Printf("No solution\n")
     } else {
@@ -143,6 +146,11 @@ func filterReplaced(buildings []Building) []Building {
 
     var out []Building
     for _, building := range buildings {
+        width, height := building.Size()
+        if width == 0 && height == 0 {
+            continue
+        }
+
         if !wasBuildingReplaced(building) {
             out = append(out, building)
         }
@@ -220,7 +228,8 @@ func TestLayout(test *testing.T){
 
     fmt.Printf("Layout %v buildings\n", len(filterReplaced(try)))
 
-    solution, ok := doLayout(filterReplaced(try), rects, rand.New(rand.NewPCG(uint64(a.UnixNano()), uint64(b.UnixNano()))))
+    count := 0
+    solution, ok := doLayout(filterReplaced(try), rects, rand.New(rand.NewPCG(uint64(a.UnixNano()), uint64(b.UnixNano()))), &count)
 
     if !ok {
         test.Errorf("No solution found\n")
@@ -230,17 +239,18 @@ func TestLayout(test *testing.T){
             emptySpace += rect.EmptySpace()
         }
 
-        fmt.Printf("Empty space: %v\n", emptySpace)
+        fmt.Printf("Count: %v Empty space: %v\n", count, emptySpace)
     }
 
     for i := range 50 {
         v1 := uint64(i) + uint64(time.Now().UnixNano())
         start := time.Now()
-        _, ok := doLayout(filterReplaced(try), rects, rand.New(rand.NewPCG(v1, v1 + 1)))
+        count := 0
+        _, ok := doLayout(filterReplaced(try), rects, rand.New(rand.NewPCG(v1, v1 + 1)), &count)
         end := time.Now()
         if !ok {
             test.Errorf("[%v] No solution\n", i)
         }
-        fmt.Printf("[%v] Success in %v\n", i, end.Sub(start))
+        fmt.Printf("[%v] Success in %v iterations %v\n", i, end.Sub(start), count)
     }
 }
