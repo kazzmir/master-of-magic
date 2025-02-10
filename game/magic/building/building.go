@@ -152,3 +152,42 @@ func (building Building) ReplacedBy() Building {
 
     return BuildingNone
 }
+
+// the size of the picture for this building (in squares)
+func (building Building) Size() (int, int) {
+    switch building {
+        case BuildingBarracks: return 2, 3
+        case BuildingArmory: return 2, 2
+        case BuildingFightersGuild: return 3, 2
+        case BuildingArmorersGuild: return 4, 2
+        case BuildingWarCollege: return 3, 2
+        case BuildingSmithy: return 2, 2
+        case BuildingStables: return 3, 3
+        case BuildingFantasticStable: return 3, 3
+        case BuildingAnimistsGuild: return 0, 0
+        case BuildingSawmill: return 2, 2
+        case BuildingLibrary: return 3, 2
+        case BuildingUniversity: return 3, 2
+        case BuildingSagesGuild: return 2, 2
+        case BuildingOracle: return 2, 2
+        case BuildingAlchemistsGuild: return 1, 1
+        case BuildingWizardsGuild: return 2, 2
+        case BuildingShrine: return 2, 2
+        case BuildingTemple: return 3, 3
+        case BuildingParthenon: return 3, 3
+        case BuildingCathedral: return 3, 3
+        case BuildingMarketplace: return 2, 2
+        case BuildingBank: return 2, 2
+        case BuildingMerchantsGuild: return 2, 2
+        case BuildingGranary: return 2, 2
+        case BuildingFarmersMarket: return 2, 2
+        case BuildingForestersGuild: return 2, 2
+        case BuildingBuildersHall: return 2, 2
+        case BuildingMechaniciansGuild: return 2, 2
+        case BuildingMinersGuild: return 2, 1
+        case BuildingFortress: return 3, 3
+        case BuildingSummoningCircle: return 3, 2
+    }
+
+    return 0, 0
+}
