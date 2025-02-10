@@ -1194,7 +1194,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
-    buildingPics, err := game.ImageCache.GetImagesTransform("cityscap.lbx", buildinglib.GetBuildingIndex(building), "crop", util.AutoCrop)
+    buildingPics, err := game.ImageCache.GetImagesTransform("cityscap.lbx", building.Index(), "crop", util.AutoCrop)
 
     if err != nil {
         log.Printf("Error: Unable to get building picture for %v: %v", game.BuildingInfo.Name(building), err)

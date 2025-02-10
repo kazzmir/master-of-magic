@@ -89,7 +89,7 @@ func Buildings() []Building {
 }
 
 // the index in cityscap.lbx for the picture of this building
-func GetBuildingIndex(building Building) int {
+func (building Building) Index() int {
     switch building {
         case BuildingBarracks: return 45
         case BuildingArmory: return 46

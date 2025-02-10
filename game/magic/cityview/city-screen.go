@@ -1007,7 +1007,7 @@ func (cityScreen *CityScreen) Update() CityScreenState {
 
 // the index in cityscap.lbx for the picture of this building
 func GetBuildingIndex(building buildinglib.Building) int {
-    index := buildinglib.GetBuildingIndex(building)
+    index := building.Index()
 
     if index != -1 {
         return index
