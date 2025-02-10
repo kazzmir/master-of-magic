@@ -130,8 +130,8 @@ func TestBasicMelee(test *testing.T){
     attackingArmy := &Army{
     }
 
-    defender := units.MakeOverworldUnit(units.LizardSpearmen)
-    attacker := units.MakeOverworldUnit(units.LizardSpearmen)
+    defender := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
+    attacker := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -173,8 +173,8 @@ func TestAttackerHaste(test *testing.T){
     attackingArmy := &Army{
     }
 
-    defender := units.MakeOverworldUnit(units.LizardSpearmen)
-    attacker := units.MakeOverworldUnit(units.LizardSpearmen)
+    defender := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
+    attacker := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -228,8 +228,8 @@ func TestFirstStrike(test *testing.T){
     // ensure attacker can kill the defender in one hit
     attackerUnit.MeleeAttackPower = 10000
 
-    defender := units.MakeOverworldUnit(units.LizardSpearmen)
-    attacker := units.MakeOverworldUnit(attackerUnit)
+    defender := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
+    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -284,8 +284,8 @@ func TestFirstStrikeNegate(test *testing.T){
     defenderUnit := units.LizardSpearmen
     defenderUnit.Abilities = append(defenderUnit.Abilities, data.MakeAbility(data.AbilityNegateFirstStrike))
 
-    defender := units.MakeOverworldUnit(defenderUnit)
-    attacker := units.MakeOverworldUnit(attackerUnit)
+    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
+    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -337,8 +337,8 @@ func TestThrowAttack(test *testing.T){
 
     defenderUnit := units.LizardSpearmen
 
-    defender := units.MakeOverworldUnit(defenderUnit)
-    attacker := units.MakeOverworldUnit(attackerUnit)
+    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
+    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -404,8 +404,8 @@ func TestThrownTouchAttack(test *testing.T){
 
     defenderUnit := units.LizardSpearmen
 
-    defender := units.MakeOverworldUnit(defenderUnit)
-    attacker := units.MakeOverworldUnit(attackerUnit)
+    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
+    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -478,8 +478,8 @@ func TestFear(test *testing.T){
     // ensure all units become afraid
     defenderUnit.Resistance = -100
 
-    defender := units.MakeOverworldUnit(defenderUnit)
-    attacker := units.MakeOverworldUnit(attackerUnit)
+    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
+    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)

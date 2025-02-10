@@ -4097,7 +4097,7 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
     var enemies []units.StackUnit
 
     for _, unit := range encounter.Units {
-        enemies = append(enemies, units.MakeOverworldUnit(unit))
+        enemies = append(enemies, units.MakeOverworldUnit(unit, x, y, mapUse.Plane))
     }
 
     zone := combat.ZoneType{
