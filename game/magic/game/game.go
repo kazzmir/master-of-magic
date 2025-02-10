@@ -3297,6 +3297,35 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         return player.FindStack(mapUse.WrapX(x), y, stack.Plane())
     }
 
+    // represents stacks and cities at a given location
+    type Entity struct {
+        Stack *playerlib.UnitStack
+        City *citylib.City
+        Player *playerlib.Player
+    }
+
+    otherEntities := make(map[image.Point]*Entity)
+
+    for _, otherPlayer := range game.Players[1:] {
+        for _, stack := range otherPlayer.Stacks {
+            otherEntities[image.Pt(stack.X(), stack.Y())] = &Entity{
+                Stack: stack,
+                Player: otherPlayer,
+            }
+        }
+
+        for _, city := range otherPlayer.Cities {
+            entity, ok := otherEntities[image.Pt(city.X, city.Y)]
+            if !ok {
+                otherEntities[image.Pt(city.X, city.Y)] = &Entity{}
+                entity = otherEntities[image.Pt(city.X, city.Y)]
+            }
+
+            entity.City = city
+            entity.Player = otherPlayer
+        }
+    }
+
     quitMoving:
     for i, step := range stack.CurrentPath {
         if stack.OutOfMoves() {
@@ -3340,21 +3369,22 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             game.showMovement(yield, oldX, oldY, stack, true)
             player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
-            for _, otherPlayer := range game.Players[1:] {
+            entity, ok := otherEntities[image.Pt(stack.X(), stack.Y())]
+            if ok {
                 // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
-                otherStack := otherPlayer.FindStack(stack.X(), stack.Y(), stack.Plane())
+                otherStack := entity.Stack
                 if otherStack != nil {
-                    otherCity := otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane())
+                    otherCity := entity.City
                     zone := combat.ZoneType{
                         City: otherCity,
                     }
 
-                    state := game.doCombat(yield, player, stack, otherPlayer, otherStack, zone)
+                    state := game.doCombat(yield, player, stack, entity.Player, otherStack, zone)
                     if state == combat.CombatStateAttackerFlee {
                         stack.SetX(oldX)
                         stack.SetY(oldY)
                     } else if state == combat.CombatStateDefenderFlee {
-                        game.doMoveFleeingDefender(otherPlayer, otherStack)
+                        game.doMoveFleeingDefender(entity.Player, otherStack)
                     }
 
                     stack.ExhaustMoves()
@@ -3365,15 +3395,15 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                 }
 
                 // defeat any unguarded cities immediately
-                otherCity := otherPlayer.FindCity(stack.X(), stack.Y(), stack.Plane())
+                otherCity := entity.City
                 if otherCity != nil {
-                    raze, gold := game.defeatCity(yield, player, stack, otherPlayer, otherCity)
+                    raze, gold := game.defeatCity(yield, player, stack, entity.Player, otherCity)
 
                     // FIXME: show a notice about any fame won
                     player.Fame += otherCity.FameForCaptureOrRaze(!raze)
-                    otherPlayer.Fame += otherCity.FameForCaptureOrRaze(false)
+                    entity.Player.Fame += otherCity.FameForCaptureOrRaze(false)
                     player.Gold += gold
-                    otherPlayer.Gold -= gold
+                    entity.Player.Gold -= gold
 
                     stack.ExhaustMoves()
                     game.RefreshUI()
