@@ -46,6 +46,9 @@ const (
 
 // buildings can appear in certain well-defined places around the city
 func buildingSlots() []image.Point {
+
+    // FIXME: Use a more fine-grained grid and layout buildings according to building.Size()
+
     return []image.Point{
         // row 1
         image.Pt(30, 23),
