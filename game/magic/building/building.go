@@ -164,7 +164,7 @@ func (building Building) Size() (int, int) {
         case BuildingSmithy: return 2, 2
         case BuildingStables: return 3, 3
         case BuildingFantasticStable: return 3, 3
-        case BuildingAnimistsGuild: return 0, 0
+        case BuildingAnimistsGuild: return 2, 2
         case BuildingSawmill: return 2, 2
         case BuildingLibrary: return 3, 2
         case BuildingUniversity: return 3, 2
