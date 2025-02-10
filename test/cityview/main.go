@@ -95,7 +95,9 @@ func NewEngine() (*Engine, error) {
     city.AddBuilding(buildinglib.BuildingSummoningCircle)
     city.AddBuilding(buildinglib.BuildingOracle)
     city.AddBuilding(buildinglib.BuildingShrine)
-    city.AddBuilding(buildinglib.BuildingTemple)
+    // city.AddBuilding(buildinglib.BuildingTemple)
+    // city.AddBuilding(buildinglib.BuildingParthenon)
+    city.AddBuilding(buildinglib.BuildingCathedral)
 
     city.ProducingBuilding = buildinglib.BuildingHousing
     // city.ProducingUnit = units.HighElfSpearmen

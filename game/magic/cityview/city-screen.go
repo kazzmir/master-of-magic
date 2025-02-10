@@ -419,7 +419,7 @@ func wasBuildingReplaced(building buildinglib.Building, city *citylib.City) bool
     }
 
     replacedBy := building.ReplacedBy()
-    return replacedBy != buildinglib.BuildingNone && city.Buildings.Contains(replacedBy)
+    return replacedBy != buildinglib.BuildingNone && (city.Buildings.Contains(replacedBy) || wasBuildingReplaced(replacedBy, city))
 }
 
 func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
