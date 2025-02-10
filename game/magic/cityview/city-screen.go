@@ -557,6 +557,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     var elements []*uilib.UIElement
 
     sellBuilding := func (toSell buildinglib.Building) {
+        // FIXME: Check if building is needed for other building
         if cityScreen.City.SoldBuilding {
             ui.AddElement(uilib.MakeErrorElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, "You can only sell back one building per turn.", func(){}))
         } else {
@@ -1452,6 +1453,7 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
         }
     }
 
+    // FIXME: There can be a second page and a "More" button on the bottom right
     infoElement := &uilib.UIElement{
         // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
