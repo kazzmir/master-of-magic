@@ -3304,25 +3304,30 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         Player *playerlib.Player
     }
 
+    // cache the positions of all enemies and cities
     otherEntities := make(map[image.Point]*Entity)
 
     for _, otherPlayer := range game.Players[1:] {
-        for _, stack := range otherPlayer.Stacks {
-            otherEntities[image.Pt(stack.X(), stack.Y())] = &Entity{
-                Stack: stack,
-                Player: otherPlayer,
+        for _, other := range otherPlayer.Stacks {
+            if stack.Plane() == other.Plane() {
+                otherEntities[image.Pt(stack.X(), stack.Y())] = &Entity{
+                    Stack: stack,
+                    Player: otherPlayer,
+                }
             }
         }
 
         for _, city := range otherPlayer.Cities {
-            entity, ok := otherEntities[image.Pt(city.X, city.Y)]
-            if !ok {
-                otherEntities[image.Pt(city.X, city.Y)] = &Entity{}
-                entity = otherEntities[image.Pt(city.X, city.Y)]
-            }
+            if city.Plane == stack.Plane() {
+                entity, ok := otherEntities[image.Pt(city.X, city.Y)]
+                if !ok {
+                    otherEntities[image.Pt(city.X, city.Y)] = &Entity{}
+                    entity = otherEntities[image.Pt(city.X, city.Y)]
+                }
 
-            entity.City = city
-            entity.Player = otherPlayer
+                entity.City = city
+                entity.Player = otherPlayer
+            }
         }
     }
 
@@ -3379,6 +3384,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                         City: otherCity,
                     }
 
+                    // note: doCombat will already call defeatCity if the attacker wins the battle
                     state := game.doCombat(yield, player, stack, entity.Player, otherStack, zone)
                     if state == combat.CombatStateAttackerFlee {
                         stack.SetX(oldX)
