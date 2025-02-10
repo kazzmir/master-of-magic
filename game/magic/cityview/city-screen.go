@@ -307,6 +307,8 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
             continue
         }
 
+        // FIXME: BuildingShipwrightsGuild, BuildingShipYard and BuildingMaritimeGuild are always at in the middle left
+
         if wasBuildingReplaced(building, city) {
             continue
         }
@@ -1179,6 +1181,8 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
 
     // buildings
     for _, building := range buildings {
+
+        // FIXME: BuildingShipwrightsGuild, BuildingShipYard and BuildingMaritimeGuild are always at in the middle left
 
         index := GetBuildingIndex(building.Building)
 
