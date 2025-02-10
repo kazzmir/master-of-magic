@@ -1552,11 +1552,11 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 3, data.PlaneArcanus)
     player.LiftFog(20, 20, 100, data.PlaneMyrror)
 
-    rakir := hero.MakeHero(units.MakeOverworldUnit(units.HeroRakir), hero.HeroRakir, "bubba")
+    rakir := hero.MakeHero(units.MakeOverworldUnit(units.HeroRakir, 0, 0, data.PlaneArcanus), hero.HeroRakir, "bubba")
     player.AddHero(rakir)
     rakir.AddExperience(528)
 
-    mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX), hero.HeroMysticX, "bubba")
+    mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX, 0, 0, data.PlaneArcanus), hero.HeroMysticX, "bubba")
     player.AddHero(mysticX)
     mysticX.SetExtraAbilities()
     mysticX.AddAbility(data.AbilityArmsmaster)
@@ -2236,7 +2236,7 @@ func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
     city.ResetCitizens(nil)
     player.AddCity(city)
 
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther), hero.HeroGunther, "Gunther"))
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther"))
 
     enemy := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",
@@ -2303,9 +2303,9 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
     city.ResetCitizens(nil)
     player.AddCity(city)
 
-    gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther), hero.HeroGunther, "Gunther")
-    reywind := hero.MakeHero(units.MakeOverworldUnit(units.HeroReywind), hero.HeroReywind, "Reywind")
-    mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX), hero.HeroMysticX, "Mystic X")
+    gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther")
+    reywind := hero.MakeHero(units.MakeOverworldUnit(units.HeroReywind, 0, 0, data.PlaneArcanus), hero.HeroReywind, "Reywind")
+    mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX, 0, 0, data.PlaneArcanus), hero.HeroMysticX, "Mystic X")
     mysticX.SetExtraAbilities()
     player.AddHero(mysticX)
     // player.AddHero(gunther)
@@ -2810,7 +2810,7 @@ func createScenario32(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 30, data.PlaneArcanus)
 
-    gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther), hero.HeroGunther, "Gunther")
+    gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther")
     gunther.Equipment[0] = &artifact.Artifact{
         Name: "Baloney",
         Image: 7,
