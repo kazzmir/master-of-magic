@@ -2062,7 +2062,17 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     workRequired := 0
 
     if cityScreen.City.ProducingBuilding != buildinglib.BuildingNone {
-        producingPics, err := cityScreen.ImageCache.GetImages("cityscap.lbx", GetBuildingIndex(cityScreen.City.ProducingBuilding))
+        lbxIndex := GetBuildingIndex(cityScreen.City.ProducingBuilding)
+
+        if cityScreen.City.ProducingBuilding == buildinglib.BuildingHousing {
+            switch cityScreen.City.Race.HouseType() {
+                case data.HouseTypeTree: lbxIndex = 43
+                case data.HouseTypeHut: lbxIndex = 44
+                case data.HouseTypeNormal: lbxIndex = 42
+            }
+        }
+
+        producingPics, err := cityScreen.ImageCache.GetImages("cityscap.lbx", lbxIndex)
         if err == nil {
             index := animationCounter % uint64(len(producingPics))
 

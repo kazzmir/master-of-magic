@@ -74,7 +74,7 @@ func NewEngine() (*Engine, error) {
         TileCache: make(map[int]*ebiten.Image),
     }
 
-    city := citylib.MakeCity("Boston", rand.N(20), rand.N(13) + 4, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{})
+    city := citylib.MakeCity("Boston", rand.N(20), rand.N(13) + 4, data.RaceKlackon, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{})
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2
