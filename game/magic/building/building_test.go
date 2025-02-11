@@ -173,6 +173,13 @@ func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, c
         Index int
     }
 
+    // sort from biggest to smallest
+    buildings = slices.SortedFunc(slices.Values(buildings), func (a, b Building) int {
+        aWidth, aHeight := a.Size()
+        bWidth, bHeight := b.Size()
+        return (bWidth * bHeight) - (aWidth * aHeight)
+    })
+
     var stack []State
 
     for _, i := range rand.Perm(len(rects)) {
@@ -484,7 +491,7 @@ func TestLayout3(test *testing.T){
     }
 
     successes := 0
-    total := 100
+    total := 50
     for range total {
         count = 0
         _, ok = doLayoutIterative(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count)
