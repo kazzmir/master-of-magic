@@ -100,7 +100,7 @@ const MAX_ITERATIONS = 2000
 // recursive algorithm that tries to layout each building in some patch of land
 // if a building fails to be placed, then the algorithm backtracks and tries a different rect
 // for the previous building
-func doLayout(buildings []Building, rects []*Rect, random *rand.Rand, count *int) ([]*Rect, bool) {
+func doLayoutRecursive(buildings []Building, rects []*Rect, random *rand.Rand, count *int) ([]*Rect, bool) {
     *count += 1
 
     if *count > MAX_ITERATIONS {
@@ -133,7 +133,7 @@ func doLayout(buildings []Building, rects []*Rect, random *rand.Rand, count *int
         // fmt.Printf("Rect %v empty space %v buildings %v\n", rect.Id, rect.EmptySpace(), len(rect.Buildings))
         if rect.Add(building, width, height, random) {
             // fmt.Printf("Added %v (%v,%v) to rect %v\n", building, width, height, rect.Id)
-            solution, ok := doLayout(buildings[1:], clone, random, count)
+            solution, ok := doLayoutRecursive(buildings[1:], clone, random, count)
             if ok {
                 return solution, true
             }
@@ -146,10 +146,79 @@ func doLayout(buildings []Building, rects []*Rect, random *rand.Rand, count *int
     return nil, false
 }
 
+func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, count *int) ([]*Rect, bool) {
+    if len(buildings) == 0 {
+        return rects, true
+    }
+
+    /*
+    building := buildings[0]
+    // fmt.Printf("Check %v\n", building)
+    width, height := building.Size()
+    for width == 0 && height == 0 {
+        buildings = buildings[1:]
+        if len(buildings) == 0 {
+            return rects, true
+        }
+        building = buildings[0]
+        width, height = building.Size()
+    }
+    */
+
+    // fmt.Printf("Trying to add %v (%v,%v)\n", building, width, height)
+
+    type State struct {
+        Buildings []Building
+        Rects []*Rect
+        Index int
+    }
+
+    var stack []State
+
+    for _, i := range rand.Perm(len(rects)) {
+        stack = append(stack, State{Buildings: buildings, Rects: rects, Index: i})
+    }
+
+    for len(stack) > 0 && *count < MAX_ITERATIONS {
+        *count += 1
+
+        // fmt.Printf("Stack length %v count %v\n", len(stack), *count)
+
+        use := stack[len(stack) - 1]
+        stack = stack[:len(stack) - 1]
+
+        // fmt.Printf("Buildings left %v\n", len(use.Buildings))
+
+        if len(use.Buildings) == 0 {
+            return use.Rects, true
+        }
+
+        building := use.Buildings[0]
+        width, height := building.Size()
+
+        moreRects := cloneRects(use.Rects)
+
+        // the order the patches of land are tried is random
+        rect := moreRects[use.Index]
+        // fmt.Printf("Rect %v empty space %v buildings %v\n", rect.Id, rect.EmptySpace(), len(rect.Buildings))
+        if rect.Add(building, width, height, random) {
+            // fmt.Printf("Added %v (%v,%v) to rect %v\n", building, width, height, rect.Id)
+
+            for _, i := range rand.Perm(len(rects)) {
+                stack = append(stack, State{Buildings: use.Buildings[1:], Rects: moreRects, Index: i})
+            }
+
+            // fmt.Printf("Removed %v (%v,%v) from rect %v empty=%v\n", building, width, height, rect.Id, rect.EmptySpace())
+        }
+    }
+
+    return nil, false
+}
+
 func TestLayout2(test *testing.T){
     rects := []*Rect{&Rect{Width: 4, Height: 4, Id: 0}}
     count := 0
-    solution, ok := doLayout([]Building{BuildingArmorersGuild}, rects, rand.New(rand.NewPCG(0, 1)), &count)
+    solution, ok := doLayoutRecursive([]Building{BuildingArmorersGuild}, rects, rand.New(rand.NewPCG(0, 1)), &count)
     if !ok {
         fmt.Printf("No solution\n")
     } else {
@@ -255,7 +324,7 @@ func TestLayout(test *testing.T){
     fmt.Printf("Layout %v buildings\n", len(filterReplaced(try)))
 
     count := 0
-    solution, ok := doLayout(filterReplaced(try), rects, rand.New(rand.NewPCG(uint64(a.UnixNano()), uint64(b.UnixNano()))), &count)
+    solution, ok := doLayoutRecursive(filterReplaced(try), rects, rand.New(rand.NewPCG(uint64(a.UnixNano()), uint64(b.UnixNano()))), &count)
 
     if !ok {
         fmt.Printf("No solution found\n")
@@ -272,7 +341,7 @@ func TestLayout(test *testing.T){
         v1 := uint64(i) + uint64(time.Now().UnixNano())
         start := time.Now()
         count := 0
-        _, ok := doLayout(filterReplaced(try), rects, rand.New(rand.NewPCG(v1, v1 + 1)), &count)
+        _, ok := doLayoutRecursive(filterReplaced(try), rects, rand.New(rand.NewPCG(v1, v1 + 1)), &count)
         end := time.Now()
         if !ok {
             fmt.Printf("[%v] No solution\n", i)
@@ -376,7 +445,7 @@ func TestLayout3(test *testing.T){
     for range 10 {
         tries += 1
         count = 0
-        solution, ok = doLayout(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count)
+        solution, ok = doLayoutRecursive(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count)
         if ok {
             break
         }
@@ -390,14 +459,47 @@ func TestLayout3(test *testing.T){
             emptySpace += rect.EmptySpace()
         }
 
-        fmt.Printf("Tries %v Count: %v Empty space: %v\n", tries, count, emptySpace)
+        fmt.Printf("Recursive: Tries %v Count: %v Empty space: %v\n", tries, count, emptySpace)
     }
 
-    for i := range 50 {
+    tries = 0
+    for range 10 {
+        tries += 1
+        count = 0
+        solution, ok = doLayoutIterative(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count)
+        if ok {
+            break
+        }
+    }
+
+    if !ok {
+        test.Errorf("No solution found in 10 tries\n")
+    } else {
+        emptySpace := 0
+        for _, rect := range solution {
+            emptySpace += rect.EmptySpace()
+        }
+
+        fmt.Printf("Iterative: Tries %v Count: %v Empty space: %v\n", tries, count, emptySpace)
+    }
+
+    successes := 0
+    total := 100
+    for range total {
+        count = 0
+        _, ok = doLayoutIterative(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count)
+        if ok {
+            successes += 1
+        }
+    }
+
+    fmt.Printf("Success rate %v/%v %v%%\n", successes, total, float64(successes) / float64(total) * 100)
+
+    for i := range 5 {
         v1 := uint64(i) + uint64(time.Now().UnixNano())
         start := time.Now()
         count := 0
-        _, ok := doLayout(filterReplaced(buildings), rects, rand.New(rand.NewPCG(v1, v1 + 1)), &count)
+        _, ok := doLayoutRecursive(filterReplaced(buildings), rects, rand.New(rand.NewPCG(v1, v1 + 1)), &count)
         end := time.Now()
         if !ok {
             fmt.Printf("[%v] No solution\n", i)
