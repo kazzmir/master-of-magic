@@ -297,52 +297,105 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
 
     var slots []BuildingSlot
 
-    for rectY := range 3 {
-        start := 15 - rectY * 16
-        for _, rect := range rects {
+    for _, rect := range rects {
 
-            if rect.Y != rectY {
-                continue
-            }
-
-            /*
-            if rect.Y != 1 {
-                continue
-            }
-            */
-
-            /*
-            var geom ebiten.GeoM
-            geom.Rotate(float64(-95 / 180.0) * math.Pi)
-            geom.Scale(2, 2)
-            geom.Translate(10, 5)
-            geom.Translate(float64(rect.X * 10), float64(rect.Y * 8))
-            geom.Scale(3, 3)
-
-            computePoint := func(x int, y int) image.Point {
-                ax, ay := geom.Apply(float64(x), float64(y))
-                return image.Pt(int(ax), int(ay))
-                // return image.Pt(rect.X * 20 + x * 5, rect.Y * 20 + y * 5)
-            }
-            */
-            computePoint := func (x int, y int) image.Point {
-                return image.Pt(start + (x*2+y) * 5, 24 + rect.Y * 20 - y * 5)
-            }
-
-            offsetX := 0
-            if rect.X == 0 && rect.Y == 0 {
-                offsetX += 1
-            }
-
-            for x := range rect.Width {
-                for y := range rect.Height {
-                    slots = append(slots, BuildingSlot{Building: buildinglib.BuildingShrine, Point: computePoint(x + offsetX, y)})
-                }
-            }
-
-            // distance to next plot is based on the current plot's width
-            start += rect.Width * 3 + 40
+        /*
+        if rect.Y != 2 {
+            continue
         }
+        */
+
+        /*
+        var geom ebiten.GeoM
+        geom.Rotate(float64(-95 / 180.0) * math.Pi)
+        geom.Scale(2, 2)
+        geom.Translate(10, 5)
+        geom.Translate(float64(rect.X * 10), float64(rect.Y * 8))
+        geom.Scale(3, 3)
+
+        computePoint := func(x int, y int) image.Point {
+            ax, ay := geom.Apply(float64(x), float64(y))
+            return image.Pt(int(ax), int(ay))
+            // return image.Pt(rect.X * 20 + x * 5, rect.Y * 20 + y * 5)
+        }
+        */
+
+        startX := 0
+        startY := 0
+
+        row0Y := 25
+        row1Y := 42
+        row2Y := 65
+
+        switch {
+            case rect.X == 0 && rect.Y == 0:
+                startX = 15
+                startY = row0Y
+            case rect.X == 1 && rect.Y == 0:
+                startX = 64
+                startY = row0Y
+            case rect.X == 2 && rect.Y == 0:
+                startX = 112
+                startY = row0Y
+            case rect.X == 3 && rect.Y == 0:
+                startX = 149
+                startY = row0Y
+            case rect.X == 4 && rect.Y == 0:
+                startX = 197
+                startY = row0Y
+
+            case rect.X == 0 && rect.Y == 1:
+                startX = 0
+                startY = row1Y
+            case rect.X == 1 && rect.Y == 1:
+                startX = 45
+                startY = row1Y
+            case rect.X == 2 && rect.Y == 1:
+                startX = 95
+                startY = row1Y
+            case rect.X == 3 && rect.Y == 1:
+                startX = 132
+                startY = row1Y
+            case rect.X == 4 && rect.Y == 1:
+                startX = 180
+                startY = row1Y
+
+            case rect.X == 0 && rect.Y == 2:
+                startX = 8
+                startY = row2Y
+            case rect.X == 1 && rect.Y == 2:
+                startX = 23
+                startY = row2Y
+            case rect.X == 2 && rect.Y == 2:
+                startX = 70
+                startY = row2Y
+            case rect.X == 3 && rect.Y == 2:
+                startX = 109
+                startY = row2Y
+            case rect.X == 4 && rect.Y == 2:
+                startX = 157
+                startY = row2Y
+
+        }
+
+        computePoint := func (x int, y int) image.Point {
+            return image.Pt(startX + (x*2+y) * 5, startY - y * 5)
+        }
+
+        offsetX := 0
+        if rect.X == 0 && rect.Y == 0 {
+            offsetX += 1
+        }
+
+        for x := range rect.Width {
+            for y := range rect.Height {
+                slots = append(slots, BuildingSlot{Building: buildinglib.BuildingShrine, Point: computePoint(x + offsetX, y)})
+            }
+        }
+
+        // slots = append(slots, BuildingSlot{Building: buildinglib.BuildingShrine, Point: computePoint(0 + offsetX, 0)})
+
+        // distance to next plot is based on the current plot's width
     }
 
     return slots

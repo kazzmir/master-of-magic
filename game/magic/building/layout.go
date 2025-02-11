@@ -206,7 +206,7 @@ func StandardRects() []*Rect {
         {Width: 4, Height: 4, Id: 10, X: 1, Y: 2},
         {Width: 3, Height: 4, Id: 11, X: 2, Y: 2},
         {Width: 4, Height: 4, Id: 12, X: 3, Y: 2},
-        {Width: 3, Height: 4, Id: 13, X: 4, Y: 2},
+        {Width: 4, Height: 4, Id: 13, X: 4, Y: 2},
     }
 
     return append(append(row1, row2...), row3...)
