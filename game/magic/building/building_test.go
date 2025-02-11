@@ -86,6 +86,15 @@ func (rect *Rect) Area() int {
     return rect.Width * rect.Height
 }
 
+func cloneRects(rects []*Rect) []*Rect {
+    newRects := make([]*Rect, len(rects))
+    for i, rect := range rects {
+        newRects[i] = rect.Clone()
+    }
+
+    return newRects
+}
+
 const MAX_ITERATIONS = 2000
 
 // recursive algorithm that tries to layout each building in some patch of land
@@ -116,10 +125,7 @@ func doLayout(buildings []Building, rects []*Rect, random *rand.Rand, count *int
 
     // fmt.Printf("Trying to add %v (%v,%v)\n", building, width, height)
 
-    clone := make([]*Rect, len(rects))
-    for i, rect := range rects {
-        clone[i] = rect.Clone()
-    }
+    clone := cloneRects(rects)
 
     // the order the patches of land are tried is random
     for _, i := range rand.Perm(len(clone)) {
@@ -361,24 +367,30 @@ func TestLayout3(test *testing.T){
 
     fmt.Printf("Total building space: %d\n", totalBuildings)
 
-    a := time.Now()
-    time.Sleep(1 * time.Millisecond)
-    b := time.Now()
-
     fmt.Printf("Layout %v buildings\n", len(filterReplaced(buildings)))
 
     count := 0
-    solution, ok := doLayout(filterReplaced(buildings), rects, rand.New(rand.NewPCG(uint64(a.UnixNano()), uint64(b.UnixNano()))), &count)
+    var solution []*Rect
+    var ok bool
+    tries := 0
+    for range 10 {
+        tries += 1
+        count = 0
+        solution, ok = doLayout(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count)
+        if ok {
+            break
+        }
+    }
 
     if !ok {
-        fmt.Printf("No solution found\n")
+        test.Errorf("No solution found in 10 tries\n")
     } else {
         emptySpace := 0
         for _, rect := range solution {
             emptySpace += rect.EmptySpace()
         }
 
-        fmt.Printf("Count: %v Empty space: %v\n", count, emptySpace)
+        fmt.Printf("Tries %v Count: %v Empty space: %v\n", tries, count, emptySpace)
     }
 
     for i := range 50 {
