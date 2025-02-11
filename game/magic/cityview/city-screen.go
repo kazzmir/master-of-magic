@@ -12,6 +12,7 @@ import (
     "hash/fnv"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -42,6 +43,18 @@ const (
     BuildingTreeHouse3
     BuildingTreeHouse4
     BuildingTreeHouse5
+
+    BuildingNormalHouse1
+    BuildingNormalHouse2
+    BuildingNormalHouse3
+    BuildingNormalHouse4
+    BuildingNormalHouse5
+
+    BuildingHutHouse1
+    BuildingHutHouse2
+    BuildingHutHouse3
+    BuildingHutHouse4
+    BuildingHutHouse5
 )
 
 // buildings can appear in certain well-defined places around the city
@@ -291,7 +304,260 @@ func hash(str string) uint64 {
     return hasher.Sum64()
 }
 
+func makeRectComputePoint(rect *buildinglib.Rect) func(x int, y int) image.Point {
+    startX := 0
+    startY := 0
+
+    row0Y := 25
+    row1Y := 42
+    row2Y := 65
+
+    // the following equations almost work:
+    // row1: startX = 44.9 * rect.X + 17.6
+    // row2: startX = 44.7 * rect.X + 1.0
+    // row3: startX = 38.4 * rect.X + -3.39
+
+    switch {
+        case rect.X == 0 && rect.Y == 0:
+            startX = 15
+            startY = row0Y
+        case rect.X == 1 && rect.Y == 0:
+            startX = 64
+            startY = row0Y
+        case rect.X == 2 && rect.Y == 0:
+            startX = 112
+            startY = row0Y
+        case rect.X == 3 && rect.Y == 0:
+            startX = 149
+            startY = row0Y
+        case rect.X == 4 && rect.Y == 0:
+            startX = 197
+            startY = row0Y
+
+        case rect.X == 0 && rect.Y == 1:
+            startX = 0
+            startY = row1Y
+        case rect.X == 1 && rect.Y == 1:
+            startX = 45
+            startY = row1Y
+        case rect.X == 2 && rect.Y == 1:
+            startX = 95
+            startY = row1Y
+        case rect.X == 3 && rect.Y == 1:
+            startX = 132
+            startY = row1Y
+        case rect.X == 4 && rect.Y == 1:
+            startX = 180
+            startY = row1Y
+
+        case rect.X == 0 && rect.Y == 2:
+            startX = 8
+            startY = row2Y
+        case rect.X == 1 && rect.Y == 2:
+            startX = 23
+            startY = row2Y
+        case rect.X == 2 && rect.Y == 2:
+            startX = 70
+            startY = row2Y
+        case rect.X == 3 && rect.Y == 2:
+            startX = 109
+            startY = row2Y
+        case rect.X == 4 && rect.Y == 2:
+            startX = 157
+            startY = row2Y
+
+    }
+
+    // the first row and column has to be pushed closer to the right side
+    offsetX := 0
+    if rect.X == 0 && rect.Y == 0 {
+        offsetX += 1
+    }
+
+    computePoint := func (x int, y int) image.Point {
+        x += offsetX
+        return image.Pt(startX + (x*2+y) * 5, startY - y * 5)
+    }
+
+    return computePoint
+}
+
+// for testing the positions of the points in the city view
+func makeBuildingSlots2(city *citylib.City) []BuildingSlot {
+    rects := buildinglib.StandardRects()
+
+    var slots []BuildingSlot
+
+    for _, rect := range rects {
+        computePoint := makeRectComputePoint(rect)
+
+        /*
+        if rect.Y != 2 {
+            continue
+        }
+        */
+
+        /*
+        var geom ebiten.GeoM
+        geom.Rotate(float64(-95 / 180.0) * math.Pi)
+        geom.Scale(2, 2)
+        geom.Translate(10, 5)
+        geom.Translate(float64(rect.X * 10), float64(rect.Y * 8))
+        geom.Scale(3, 3)
+
+        computePoint := func(x int, y int) image.Point {
+            ax, ay := geom.Apply(float64(x), float64(y))
+            return image.Pt(int(ax), int(ay))
+            // return image.Pt(rect.X * 20 + x * 5, rect.Y * 20 + y * 5)
+        }
+        */
+
+        for x := range rect.Width {
+            for y := range rect.Height {
+                slots = append(slots, BuildingSlot{Building: buildinglib.BuildingShrine, Point: computePoint(x, y)})
+            }
+        }
+
+        // slots = append(slots, BuildingSlot{Building: buildinglib.BuildingShrine, Point: computePoint(0 + offsetX, 0)})
+
+        // distance to next plot is based on the current plot's width
+    }
+
+    return slots
+}
+
 func makeBuildingSlots(city *citylib.City) []BuildingSlot {
+    // use a random seed based on the position and name of the city so that each game gets
+    // a different city view, but within the same game the city view is consistent
+    random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
+
+    toLayout := city.Buildings.Clone()
+    toLayout.RemoveMany(buildinglib.BuildingCityWalls, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild)
+
+    for _, building := range toLayout.Values() {
+        width, height := building.Size()
+        if width == 0 || height == 0 || wasBuildingReplaced(building, city) {
+            toLayout.Remove(building)
+        }
+    }
+
+    enchantmentBuildings := make(map[data.CityEnchantment]buildinglib.Building)
+    enchantmentBuildings[data.CityEnchantmentAstralGate] = buildinglib.BuildingAstralGate
+    enchantmentBuildings[data.CityEnchantmentAltarOfBattle] = buildinglib.BuildingAltarOfBattle
+    enchantmentBuildings[data.CityEnchantmentStreamOfLife] = buildinglib.BuildingStreamOfLife
+    enchantmentBuildings[data.CityEnchantmentEarthGate] = buildinglib.BuildingEarthGate
+    enchantmentBuildings[data.CityEnchantmentDarkRituals] = buildinglib.BuildingDarkRituals
+
+    for enchantment, building := range enchantmentBuildings {
+        if city.HasEnchantment(enchantment) {
+            toLayout.Insert(building)
+        }
+    }
+
+    var result []*buildinglib.Rect
+    ok := false
+    // start := time.Now()
+    for range 40 {
+        result, ok = buildinglib.LayoutBuildings(toLayout.Values(), buildinglib.StandardRects(), random)
+        if ok {
+            break
+        }
+    }
+    // end := time.Now()
+
+    if !ok {
+        log.Printf("Warning: could not layout buildings")
+        // FIXME: use some random layout?
+        return nil
+    }
+
+    // log.Printf("Building layout took %v", end.Sub(start))
+
+    getHouseTypes := func() []buildinglib.Building {
+        trees := []buildinglib.Building{BuildingTreeHouse1, BuildingTreeHouse2, BuildingTreeHouse3, BuildingTreeHouse4, BuildingTreeHouse5}
+        huts := []buildinglib.Building{BuildingHutHouse1, BuildingHutHouse2, BuildingHutHouse3, BuildingHutHouse4, BuildingHutHouse5}
+        normal := []buildinglib.Building{BuildingNormalHouse1, BuildingNormalHouse2, BuildingNormalHouse3, BuildingNormalHouse4, BuildingNormalHouse5}
+
+        switch city.Race.HouseType() {
+            case data.HouseTypeTree: return trees
+            case data.HouseTypeHut: return huts
+            case data.HouseTypeNormal: return normal
+        }
+
+        return normal
+    }
+
+    houseTypes := getHouseTypes()
+    treeTypes := []buildinglib.Building{BuildingTree1, BuildingTree2, BuildingTree3}
+
+    var slots []BuildingSlot
+    for _, rect := range result {
+        computePoint := makeRectComputePoint(rect)
+
+        tiles := set.MakeSet[image.Point]()
+        for x := range rect.Width {
+            for y := range rect.Height {
+                tiles.Insert(image.Pt(x, y))
+            }
+        }
+
+        for _, building := range rect.Buildings {
+            point := computePoint(building.Area.Min.X, building.Area.Min.Y)
+            slots = append(slots, BuildingSlot{Building: building.Building, Point: point})
+
+            for x := range building.Area.Dx() {
+                for y := range building.Area.Dy() {
+                    tiles.Remove(image.Pt(x, y))
+                }
+            }
+        }
+
+        // fill in unused tiles with trees and houses
+        for _, tile := range tiles.Values() {
+            switch random.IntN(4) {
+                case 0:
+                    tree := treeTypes[random.IntN(len(treeTypes))]
+                    slots = append(slots, BuildingSlot{Building: tree, Point: computePoint(tile.X, tile.Y)})
+                case 1:
+                    house := houseTypes[random.IntN(len(houseTypes))]
+                    slots = append(slots, BuildingSlot{Building: house, Point: computePoint(tile.X, tile.Y)})
+            }
+        }
+    }
+
+    if city.Buildings.Contains(buildinglib.BuildingCityWalls) {
+        slots = append(slots, BuildingSlot{Building: buildinglib.BuildingCityWalls, Point: image.Pt(0, 75)})
+    }
+
+    // water buildings always go in the same place
+    for _, waterBuilding := range []buildinglib.Building{buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild} {
+        if city.Buildings.Contains(waterBuilding) && !wasBuildingReplaced(waterBuilding, city) {
+            slots = append(slots, BuildingSlot{Building: waterBuilding, Point: image.Pt(12, 45)})
+        }
+    }
+
+    slices.SortFunc(slots, func(a BuildingSlot, b BuildingSlot) int {
+        if a.Point.Y < b.Point.Y {
+            return -1
+        }
+
+        if a.Point.Y == b.Point.Y {
+            if a.Point.X < b.Point.X {
+                return -1
+            }
+
+            if a.Point.X == b.Point.X {
+                return 0
+            }
+        }
+
+        return 1
+    })
+
+    return slots
+}
+
+func makeBuildingSlotsOld(city *citylib.City) []BuildingSlot {
     // use a random seed based on the position and name of the city so that each game gets
     // a different city view, but within the same game the city view is consistent
     random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
@@ -460,7 +726,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
             return nil, err
         }
 
-        rawImageCache[index] = imageCache.ApplyScale(images[0])
+        rawImageCache[index] = imageCache.ApplyScale(util.AutoCrop(images[0]))
 
         return images[0], nil
     }
@@ -469,18 +735,20 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
     roadY := 18.0 * data.ScreenScale
 
     buildingLook := buildinglib.BuildingNone
-    buildingView := image.Rect(x1, y1, x1 + 208 * data.ScreenScale, y1 + 195 * data.ScreenScale)
+    buildingLookTime := uint64(0)
+    buildingView := image.Rect(x1, y1, x1 + 206 * data.ScreenScale, y1 + 96 * data.ScreenScale)
     element := &uilib.UIElement{
         Rect: buildingView,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var geom ebiten.GeoM
             geom.Translate(float64(x1), float64(y1))
-            drawCityScape(screen, city, buildings, buildingLook, newBuilding, ui.Counter / 8, imageCache, fonts, player, geom, (*getAlpha)())
+            cityScapeScreen := screen.SubImage(buildingView).(*ebiten.Image)
+            drawCityScape(cityScapeScreen, city, buildings, buildingLook, buildingLookTime, newBuilding, ui.Counter / 8, imageCache, fonts, player, geom, (*getAlpha)())
             // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
         },
         RightClick: func(element *uilib.UIElement) {
             if buildingLook != buildinglib.BuildingNone {
-                helpEntries := help.GetEntriesByName(city.BuildingInfo.Name(buildingLook))
+                helpEntries := help.GetEntriesByName(getBuildingName(city.BuildingInfo, buildingLook))
                 if helpEntries != nil {
                     ui.AddElement(uilib.MakeHelpElement(ui, cache, imageCache, helpEntries[0]))
                 }
@@ -493,6 +761,8 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
         },
         // if the user hovers over a building then show the name of the building
         Inside: func(element *uilib.UIElement, x int, y int){
+            oldBuildingLook := buildingLook
+
             buildingLook = buildinglib.BuildingNone
             // log.Printf("inside building view: %v, %v", x, y)
 
@@ -500,7 +770,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
             for i := len(buildings) - 1; i >= 0; i-- {
                 slot := buildings[i]
 
-                buildingName := city.BuildingInfo.Name(slot.Building)
+                buildingName := getBuildingName(city.BuildingInfo, slot.Building)
 
                 if buildingName == "?" || buildingName == "" {
                     continue
@@ -531,6 +801,13 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
                     }
                 }
             }
+
+            if oldBuildingLook != buildingLook {
+                buildingLookTime = 0
+            } else {
+                buildingLookTime += 1
+            }
+
         },
     }
 
@@ -584,7 +861,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
     var getAlpha util.AlphaFadeFunc = func() float32 { return 1 }
 
-    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, newBuilding, 4 * data.ScreenScale, 102 * data.ScreenScale, cityScreen.Fonts, cityScreen.Player, &getAlpha))
+    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, newBuilding, 4 * data.ScreenScale, 101 * data.ScreenScale, cityScreen.Fonts, cityScreen.Player, &getAlpha))
 
     // returns the amount of gold and the amount of production that will be used to buy a building
     computeBuyAmount := func(cost int) (int, float32) {
@@ -1023,7 +1300,7 @@ func GetBuildingIndex(building buildinglib.Building) int {
 
         case buildinglib.BuildingTradeGoods: return 41
 
-        // FIXME: housing is indices 42-44, based on the race of the city
+        // race specific housing is handled elsewhere
         case buildinglib.BuildingHousing: return 43
 
         case BuildingTreeHouse1: return 30
@@ -1031,6 +1308,24 @@ func GetBuildingIndex(building buildinglib.Building) int {
         case BuildingTreeHouse3: return 32
         case BuildingTreeHouse4: return 33
         case BuildingTreeHouse5: return 34
+
+        case BuildingNormalHouse1: return 25
+        case BuildingNormalHouse2: return 26
+        case BuildingNormalHouse3: return 27
+        case BuildingNormalHouse4: return 28
+        case BuildingNormalHouse5: return 29
+
+        case BuildingHutHouse1: return 35
+        case BuildingHutHouse2: return 36
+        case BuildingHutHouse3: return 37
+        case BuildingHutHouse4: return 38
+        case BuildingHutHouse5: return 39
+
+        case buildinglib.BuildingAstralGate: return 85
+        case buildinglib.BuildingAltarOfBattle: return 12
+        case buildinglib.BuildingStreamOfLife: return 84
+        case buildinglib.BuildingEarthGate: return 83
+        case buildinglib.BuildingDarkRituals: return 81
     }
 
     return -1
@@ -1103,7 +1398,19 @@ func getRaceRebelIndex(race data.Race) int {
     return -1
 }
 
-func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []BuildingSlot, buildingLook buildinglib.Building, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
+func getBuildingName(info buildinglib.BuildingInfos, building buildinglib.Building) string {
+    switch building {
+        case buildinglib.BuildingAstralGate: return "Astral Gate"
+        case buildinglib.BuildingAltarOfBattle: return "Altar of Battle"
+        case buildinglib.BuildingStreamOfLife: return "Stream of Life"
+        case buildinglib.BuildingEarthGate: return "Earth Gate"
+        case buildinglib.BuildingDarkRituals: return "Dark Rituals"
+    }
+
+    return info.Name(building)
+}
+
+func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []BuildingSlot, buildingLook buildinglib.Building, buildingLookTime uint64, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
     onMyrror := city.Plane == data.PlaneMyrror
 
     // background
@@ -1182,55 +1489,12 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
     drawName := func(){
     }
 
-    // buildings
-    for _, building := range buildings {
-
-        // FIXME: BuildingShipwrightsGuild, BuildingShipYard and BuildingMaritimeGuild are always at in the middle left
-
-        index := GetBuildingIndex(building.Building)
-
-        if building.IsRubble {
-            index = 105 + building.RubbleIndex
-        }
-
-        x, y := building.Point.X * data.ScreenScale, building.Point.Y * data.ScreenScale
-
-        images, err := imageCache.GetImages("cityscap.lbx", index)
-        if err == nil {
-            animationIndex := animationCounter % uint64(len(images))
-            use := images[animationIndex]
-            var options ebiten.DrawImageOptions
-
-            useAlpha := alphaScale
-            if newBuilding == building.Building {
-                if animationCounter < 10 {
-                    useAlpha *= float32(animationCounter) / 10
-                }
-            }
-
-            options.ColorScale.ScaleAlpha(useAlpha)
-            options.GeoM = baseGeoM
-            // x,y position is the bottom left of the sprite
-            options.GeoM.Translate(float64(x) + roadX, float64(y - use.Bounds().Dy()) + roadY)
-            screen.DrawImage(use, &options)
-
-            if buildingLook == building.Building {
-                drawName = func(){
-                    useFont := fonts.SmallFont
-                    text := city.BuildingInfo.Name(building.Building)
-                    if building.IsRubble {
-                        text = "Destroyed " + text
-                        useFont = fonts.RubbleFont
-                    }
-
-                    if building.Building == buildinglib.BuildingFortress {
-                        text = fmt.Sprintf("%v's Fortress", player.Wizard.Name)
-                    }
-
-                    printX, printY := baseGeoM.Apply(float64(x + use.Bounds().Dx() / 2) + roadX, float64(y + 1 * data.ScreenScale) + roadY)
-
-                    useFont.PrintCenter(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, text)
-                }
+    var buildingLookPoint image.Point
+    if buildingLook != buildinglib.BuildingNone {
+        for _, building := range buildings {
+            if building.Building == buildingLook {
+                buildingLookPoint = building.Point
+                break
             }
         }
     }
@@ -1248,9 +1512,84 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(alphaScale)
         options.GeoM = baseGeoM
-        options.GeoM.Translate(float64(1 * data.ScreenScale), float64(-2 * data.ScreenScale))
+        options.GeoM.Translate(float64(0 * data.ScreenScale), float64(-2 * data.ScreenScale))
         index := animationCounter % uint64(len(river))
         screen.DrawImage(river[index], &options)
+    }
+
+    // buildings
+    for _, building := range buildings {
+        index := GetBuildingIndex(building.Building)
+
+        if building.IsRubble {
+            index = 105 + building.RubbleIndex
+        }
+
+        x, y := building.Point.X * data.ScreenScale, building.Point.Y * data.ScreenScale
+
+        images, err := imageCache.GetImagesTransform("cityscap.lbx", index, "crop", util.AutoCrop)
+        // images, err := imageCache.GetImages("cityscap.lbx", index)
+        if err == nil {
+            animationIndex := animationCounter % uint64(len(images))
+            use := images[animationIndex]
+            var options ebiten.DrawImageOptions
+
+            useAlpha := alphaScale
+            if newBuilding == building.Building {
+                if animationCounter < 10 {
+                    useAlpha *= float32(animationCounter) / 10
+                }
+            }
+
+            options.ColorScale.ScaleAlpha(useAlpha)
+            options.GeoM = baseGeoM
+
+            if buildingLook == building.Building && buildingLookTime > 0 {
+                options.ColorScale.Scale(1.1, 1.1, 1, 1)
+            }
+
+            if buildingLook != buildinglib.BuildingNone && buildingLook != building.Building && buildingLookTime > 0 {
+                xDiff := building.Point.X - buildingLookPoint.X
+                yDiff := building.Point.Y - buildingLookPoint.Y
+                if xDiff * xDiff + yDiff * yDiff < 600 {
+                    options.ColorScale.ScaleAlpha(max(1 - float32(buildingLookTime) / 20, 0.5))
+                }
+            }
+
+            /*
+            options.GeoM.Translate(float64(x) + roadX, float64(y) + roadY)
+            dx, dy := options.GeoM.Apply(0, 0)
+            vector.DrawFilledCircle(screen, float32(dx), float32(dy), 2, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
+            */
+
+            // x,y position is the bottom left of the sprite
+            options.GeoM.Translate(float64(x) + roadX, float64(y) + roadY)
+            // dx, dy := options.GeoM.Apply(0, 0)
+            // vector.DrawFilledCircle(screen, float32(dx), float32(dy), 2, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
+            // options.GeoM.Translate(float64(x) + roadX, float64(y - use.Bounds().Dy()) + roadY)
+            options.GeoM.Translate(0, float64(-use.Bounds().Dy()))
+            screen.DrawImage(use, &options)
+
+            if buildingLook == building.Building {
+                drawName = func(){
+                    useFont := fonts.SmallFont
+                    text := getBuildingName(city.BuildingInfo, building.Building)
+
+                    if building.IsRubble {
+                        text = "Destroyed " + text
+                        useFont = fonts.RubbleFont
+                    }
+
+                    if building.Building == buildinglib.BuildingFortress {
+                        text = fmt.Sprintf("%v's Fortress", player.Wizard.Name)
+                    }
+
+                    printX, printY := baseGeoM.Apply(float64(x + use.Bounds().Dx() / 2) + roadX, float64(y + 1 * data.ScreenScale) + roadY)
+
+                    useFont.PrintCenter(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, text)
+                }
+            }
+        }
     }
 
     // magic walls and enchantment icons
@@ -1792,7 +2131,17 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     workRequired := 0
 
     if cityScreen.City.ProducingBuilding != buildinglib.BuildingNone {
-        producingPics, err := cityScreen.ImageCache.GetImages("cityscap.lbx", GetBuildingIndex(cityScreen.City.ProducingBuilding))
+        lbxIndex := GetBuildingIndex(cityScreen.City.ProducingBuilding)
+
+        if cityScreen.City.ProducingBuilding == buildinglib.BuildingHousing {
+            switch cityScreen.City.Race.HouseType() {
+                case data.HouseTypeTree: lbxIndex = 43
+                case data.HouseTypeHut: lbxIndex = 44
+                case data.HouseTypeNormal: lbxIndex = 42
+            }
+        }
+
+        producingPics, err := cityScreen.ImageCache.GetImages("cityscap.lbx", lbxIndex)
         if err == nil {
             index := animationCounter % uint64(len(producingPics))
 

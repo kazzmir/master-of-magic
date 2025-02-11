@@ -2,6 +2,7 @@ package main
 
 import (
     "log"
+    "math/rand/v2"
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -73,7 +74,7 @@ func NewEngine() (*Engine, error) {
         TileCache: make(map[int]*ebiten.Image),
     }
 
-    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{})
+    city := citylib.MakeCity("Boston", rand.N(20), rand.N(13) + 4, data.RaceKlackon, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{})
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2
@@ -81,6 +82,7 @@ func NewEngine() (*Engine, error) {
     city.Production = 18
     city.ProducingBuilding = buildinglib.BuildingNone
     city.Banner = data.BannerBlue
+
     city.AddBuilding(buildinglib.BuildingFortress)
     city.AddBuilding(buildinglib.BuildingGranary)
     city.AddBuilding(buildinglib.BuildingFarmersMarket)
@@ -99,6 +101,10 @@ func NewEngine() (*Engine, error) {
     // city.AddBuilding(buildinglib.BuildingParthenon)
     city.AddBuilding(buildinglib.BuildingCathedral)
 
+    for _, building := range buildinglib.Buildings() {
+        city.AddBuilding(building)
+    }
+
     city.ProducingBuilding = buildinglib.BuildingHousing
     // city.ProducingUnit = units.HighElfSpearmen
     city.ResetCitizens(nil)
@@ -109,6 +115,11 @@ func NewEngine() (*Engine, error) {
     city.AddEnchantment(data.CityEnchantmentNaturesEye, data.BannerRed)
     city.AddEnchantment(data.CityEnchantmentProsperity, data.BannerRed)
     city.AddEnchantment(data.CityEnchantmentInspirations, data.BannerRed)
+    city.AddEnchantment(data.CityEnchantmentAstralGate, data.BannerRed)
+    city.AddEnchantment(data.CityEnchantmentAltarOfBattle, data.BannerRed)
+    city.AddEnchantment(data.CityEnchantmentStreamOfLife, data.BannerRed)
+    city.AddEnchantment(data.CityEnchantmentEarthGate, data.BannerRed)
+    city.AddEnchantment(data.CityEnchantmentDarkRituals, data.BannerRed)
 
     var garrison []units.StackUnit
     for i := 0; i < 2; i++ {
@@ -124,7 +135,7 @@ func NewEngine() (*Engine, error) {
 
     city.UpdateUnrest(garrison)
 
-    cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingShrine)
+    cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingWizardsGuild)
 
     return &Engine{
         LbxCache: cache,
