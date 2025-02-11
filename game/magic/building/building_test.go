@@ -97,7 +97,7 @@ func cloneRects(rects []*Rect) []*Rect {
     return newRects
 }
 
-const MAX_ITERATIONS = 4000
+const MAX_ITERATIONS = 500
 
 // recursive algorithm that tries to layout each building in some patch of land
 // if a building fails to be placed, then the algorithm backtracks and tries a different rect
@@ -148,7 +148,7 @@ func doLayoutRecursive(buildings []Building, rects []*Rect, random *rand.Rand, c
     return nil, false
 }
 
-func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, count *int) ([]*Rect, bool) {
+func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, count *int, maxIterations int) ([]*Rect, bool) {
     if len(buildings) == 0 {
         return rects, true
     }
@@ -195,7 +195,7 @@ func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, c
         stack = append(stack, State{Buildings: buildings, Rects: rects, Index: i})
     }
 
-    for len(stack) > 0 && *count < MAX_ITERATIONS {
+    for len(stack) > 0 && *count < maxIterations {
         *count += 1
 
         // fmt.Printf("Stack length %v count %v\n", len(stack), *count)
@@ -353,7 +353,7 @@ func TestLayout(test *testing.T){
         fmt.Printf("Count: %v Empty space: %v\n", count, emptySpace)
     }
 
-    for i := range 50 {
+    for i := range 5 {
         v1 := uint64(i) + uint64(time.Now().UnixNano())
         start := time.Now()
         count := 0
@@ -477,12 +477,14 @@ func TestLayout3(test *testing.T){
         fmt.Printf("Recursive: Tries %v Count: %v Empty space: %v\n", tries, count, emptySpace)
     }
 
+    maxIterations := 500
+
     start := time.Now()
     tries = 0
     for range 20 {
         tries += 1
         count = 0
-        solution, ok = doLayoutIterative(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count)
+        solution, ok = doLayoutIterative(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count, maxIterations)
         if ok {
             break
         }
@@ -520,7 +522,7 @@ func TestLayout3(test *testing.T){
     total := 50
     for range total {
         count = 0
-        solution, ok = doLayoutIterative(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count)
+        solution, ok = doLayoutIterative(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count, maxIterations)
         if ok {
             successes += 1
 
@@ -552,7 +554,7 @@ func TestLayout3(test *testing.T){
 
     fmt.Printf("Success rate %v/%v %.2f%%\n", successes, total, float64(successes) / float64(total) * 100)
 
-    for i := range 5 {
+    for i := range 10 {
         v1 := uint64(i) + uint64(time.Now().UnixNano())
         start := time.Now()
         count := 0
