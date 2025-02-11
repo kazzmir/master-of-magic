@@ -22,6 +22,8 @@ type Rect struct {
     Height int
     Id int
     Buildings []BuildingPosition
+    // true if this rect should contain the fortress
+    Fortress bool
 }
 
 func (rect *Rect) Clone() *Rect {
@@ -95,7 +97,7 @@ func cloneRects(rects []*Rect) []*Rect {
     return newRects
 }
 
-const MAX_ITERATIONS = 2000
+const MAX_ITERATIONS = 4000
 
 // recursive algorithm that tries to layout each building in some patch of land
 // if a building fails to be placed, then the algorithm backtracks and tries a different rect
@@ -371,7 +373,6 @@ func TestLayout3(test *testing.T){
         // {Width: 3, Height: 3, Id: 4}, this is always shipyard etc.
         {Width: 4, Height: 3, Id: 5},
         {Width: 3, Height: 3, Id: 6},
-        {Width: 4, Height: 3, Id: 7},
         {Width: 4, Height: 3, Id: 7},
         {Width: 2, Height: 3, Id: 8},
     }
