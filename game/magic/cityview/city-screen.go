@@ -516,6 +516,13 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
         slots = append(slots, BuildingSlot{Building: buildinglib.BuildingCityWalls, Point: image.Pt(0, 75)})
     }
 
+    // water buildings always go in the same place
+    for _, waterBuilding := range []buildinglib.Building{buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild} {
+        if city.Buildings.Contains(waterBuilding) && !wasBuildingReplaced(waterBuilding, city) {
+            slots = append(slots, BuildingSlot{Building: waterBuilding, Point: image.Pt(12, 45)})
+        }
+    }
+
     // FIXME: add in special case for water buildings
 
     slices.SortFunc(slots, func(a BuildingSlot, b BuildingSlot) int {
@@ -1463,6 +1470,24 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
         }
     }
 
+    // river / shore
+    // FIXME: make this configurable
+    // FIXME: 4/116 is shore
+    spriteIndex = 3
+    if onMyrror {
+        spriteIndex = 115
+    }
+
+    river, err := imageCache.GetImages("cityscap.lbx", spriteIndex)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options.ColorScale.ScaleAlpha(alphaScale)
+        options.GeoM = baseGeoM
+        options.GeoM.Translate(float64(0 * data.ScreenScale), float64(-2 * data.ScreenScale))
+        index := animationCounter % uint64(len(river))
+        screen.DrawImage(river[index], &options)
+    }
+
     // buildings
     for _, building := range buildings {
         index := GetBuildingIndex(building.Building)
@@ -1535,24 +1560,6 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
                 }
             }
         }
-    }
-
-    // river / shore
-    // FIXME: make this configurable
-    // FIXME: 4/116 is shore
-    spriteIndex = 3
-    if onMyrror {
-        spriteIndex = 115
-    }
-
-    river, err := imageCache.GetImages("cityscap.lbx", spriteIndex)
-    if err == nil {
-        var options ebiten.DrawImageOptions
-        options.ColorScale.ScaleAlpha(alphaScale)
-        options.GeoM = baseGeoM
-        options.GeoM.Translate(float64(0 * data.ScreenScale), float64(-2 * data.ScreenScale))
-        index := animationCounter % uint64(len(river))
-        screen.DrawImage(river[index], &options)
     }
 
     // magic walls and enchantment icons
