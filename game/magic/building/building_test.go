@@ -267,3 +267,121 @@ func TestLayout(test *testing.T){
         fmt.Printf("[%v] Success in %v iterations %v\n", i, end.Sub(start), count)
     }
 }
+
+func TestLayout3(test *testing.T){
+    // these rows represent the sizes of the standard patches of land in a cityscape
+    row1 := []*Rect{
+        {Width: 3, Height: 4, Id: 0},
+        {Width: 4, Height: 4, Id: 1},
+        {Width: 3, Height: 4, Id: 2},
+        {Width: 4, Height: 4, Id: 3},
+        {Width: 1, Height: 1, Id: 4},
+    }
+    row2 := []*Rect{
+        // {Width: 3, Height: 3, Id: 4}, this is always shipyard etc.
+        {Width: 4, Height: 3, Id: 5},
+        {Width: 3, Height: 3, Id: 6},
+        {Width: 4, Height: 3, Id: 7},
+        {Width: 4, Height: 3, Id: 7},
+        {Width: 2, Height: 3, Id: 8},
+    }
+    row3 := []*Rect{
+        {Width: 1, Height: 4, Id: 9},
+        {Width: 4, Height: 4, Id: 10},
+        {Width: 3, Height: 4, Id: 11},
+        {Width: 4, Height: 4, Id: 12},
+        {Width: 3, Height: 4, Id: 13},
+    }
+
+    rects := append(append(row1, row2...), row3...)
+
+    totalSpace := 0
+    for _, rect := range rects {
+        totalSpace += rect.Area()
+    }
+
+    fmt.Printf("Total space: %d\n", totalSpace)
+
+    buildings := []Building{
+        BuildingBarracks,
+        BuildingArmory,
+        BuildingFightersGuild,
+        BuildingArmorersGuild,
+        BuildingWarCollege,
+        BuildingSmithy,
+        BuildingStables,
+        BuildingAnimistsGuild,
+        BuildingFantasticStable,
+        // BuildingShipwrightsGuild,
+        // BuildingShipYard,
+        // BuildingMaritimeGuild,
+        BuildingSawmill,
+        BuildingLibrary,
+        BuildingSagesGuild,
+        BuildingOracle,
+        BuildingAlchemistsGuild,
+        BuildingUniversity,
+        BuildingWizardsGuild,
+        BuildingShrine,
+        BuildingTemple,
+        BuildingParthenon,
+        BuildingCathedral,
+        BuildingMarketplace,
+        BuildingBank,
+        BuildingMerchantsGuild,
+        BuildingGranary,
+        BuildingFarmersMarket,
+        BuildingForestersGuild,
+        BuildingBuildersHall,
+        BuildingMechaniciansGuild,
+        BuildingMinersGuild,
+        BuildingCityWalls,
+        BuildingFortress,
+        BuildingSummoningCircle,
+        BuildingAltarOfBattle,
+        BuildingAstralGate,
+        BuildingStreamOfLife,
+        BuildingEarthGate,
+        // BuildingDarkRituals, // cannot mix death and life
+    }
+
+    totalBuildings := 0
+    for _, building := range buildings {
+        width, height := building.Size()
+        totalBuildings += width * height
+    }
+
+    fmt.Printf("Total building space: %d\n", totalBuildings)
+
+    a := time.Now()
+    time.Sleep(1 * time.Millisecond)
+    b := time.Now()
+
+    fmt.Printf("Layout %v buildings\n", len(filterReplaced(buildings)))
+
+    count := 0
+    solution, ok := doLayout(filterReplaced(buildings), rects, rand.New(rand.NewPCG(uint64(a.UnixNano()), uint64(b.UnixNano()))), &count)
+
+    if !ok {
+        test.Errorf("No solution found\n")
+    } else {
+        emptySpace := 0
+        for _, rect := range solution {
+            emptySpace += rect.EmptySpace()
+        }
+
+        fmt.Printf("Count: %v Empty space: %v\n", count, emptySpace)
+    }
+
+    for i := range 50 {
+        v1 := uint64(i) + uint64(time.Now().UnixNano())
+        start := time.Now()
+        count := 0
+        _, ok := doLayout(filterReplaced(buildings), rects, rand.New(rand.NewPCG(v1, v1 + 1)), &count)
+        end := time.Now()
+        if !ok {
+            test.Errorf("[%v] No solution\n", i)
+        }
+        fmt.Printf("[%v] Success in %v iterations %v\n", i, end.Sub(start), count)
+    }
+}
