@@ -43,6 +43,18 @@ const (
     BuildingTreeHouse3
     BuildingTreeHouse4
     BuildingTreeHouse5
+
+    BuildingNormalHouse1
+    BuildingNormalHouse2
+    BuildingNormalHouse3
+    BuildingNormalHouse4
+    BuildingNormalHouse5
+
+    BuildingHutHouse1
+    BuildingHutHouse2
+    BuildingHutHouse3
+    BuildingHutHouse4
+    BuildingHutHouse5
 )
 
 // buildings can appear in certain well-defined places around the city
@@ -370,6 +382,7 @@ func makeRectComputePoint(rect *buildinglib.Rect) func(x int, y int) image.Point
     return computePoint
 }
 
+// for testing the positions of the points in the city view
 func makeBuildingSlots2(city *citylib.City) []BuildingSlot {
     rects := buildinglib.StandardRects()
 
@@ -447,6 +460,23 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
 
     // log.Printf("Building layout took %v", end.Sub(start))
 
+    getHouseTypes := func() []buildinglib.Building {
+        trees := []buildinglib.Building{BuildingTreeHouse1, BuildingTreeHouse2, BuildingTreeHouse3, BuildingTreeHouse4, BuildingTreeHouse5}
+        huts := []buildinglib.Building{BuildingHutHouse1, BuildingHutHouse2, BuildingHutHouse3, BuildingHutHouse4, BuildingHutHouse5}
+        normal := []buildinglib.Building{BuildingNormalHouse1, BuildingNormalHouse2, BuildingNormalHouse3, BuildingNormalHouse4, BuildingNormalHouse5}
+
+        switch city.Race.HouseType() {
+            case data.HouseTypeTree: return trees
+            case data.HouseTypeHut: return huts
+            case data.HouseTypeNormal: return normal
+        }
+
+        return normal
+    }
+
+    houseTypes := getHouseTypes()
+    treeTypes := []buildinglib.Building{BuildingTree1, BuildingTree2, BuildingTree3}
+
     var slots []BuildingSlot
     for _, rect := range result {
         computePoint := makeRectComputePoint(rect)
@@ -469,13 +499,14 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
             }
         }
 
+        // fill in unused tiles with trees and houses
         for _, tile := range tiles.Values() {
             switch random.IntN(4) {
                 case 0:
-                    tree := []buildinglib.Building{BuildingTree1, BuildingTree2, BuildingTree3}[random.IntN(3)]
+                    tree := treeTypes[random.IntN(len(treeTypes))]
                     slots = append(slots, BuildingSlot{Building: tree, Point: computePoint(tile.X, tile.Y)})
                 case 1:
-                    house := []buildinglib.Building{BuildingTreeHouse1, BuildingTreeHouse2, BuildingTreeHouse3, BuildingTreeHouse4, BuildingTreeHouse5}[random.IntN(5)]
+                    house := houseTypes[random.IntN(len(houseTypes))]
                     slots = append(slots, BuildingSlot{Building: house, Point: computePoint(tile.X, tile.Y)})
             }
         }
@@ -1249,6 +1280,18 @@ func GetBuildingIndex(building buildinglib.Building) int {
         case BuildingTreeHouse3: return 32
         case BuildingTreeHouse4: return 33
         case BuildingTreeHouse5: return 34
+
+        case BuildingNormalHouse1: return 25
+        case BuildingNormalHouse2: return 26
+        case BuildingNormalHouse3: return 27
+        case BuildingNormalHouse4: return 28
+        case BuildingNormalHouse5: return 29
+
+        case BuildingHutHouse1: return 35
+        case BuildingHutHouse2: return 36
+        case BuildingHutHouse3: return 37
+        case BuildingHutHouse4: return 38
+        case BuildingHutHouse5: return 39
     }
 
     return -1
