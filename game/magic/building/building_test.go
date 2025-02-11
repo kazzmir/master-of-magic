@@ -198,30 +198,7 @@ func TestLayout(test *testing.T){
 }
 
 func TestLayout3(test *testing.T){
-    // these rows represent the sizes of the standard patches of land in a cityscape
-    row1 := []*Rect{
-        {Width: 3, Height: 4, Id: 0},
-        {Width: 4, Height: 4, Id: 1},
-        {Width: 3, Height: 4, Id: 2},
-        {Width: 4, Height: 4, Id: 3},
-        {Width: 1, Height: 1, Id: 4},
-    }
-    row2 := []*Rect{
-        // {Width: 3, Height: 3, Id: 4}, this is always shipyard etc.
-        {Width: 4, Height: 3, Id: 5},
-        {Width: 3, Height: 3, Id: 6, Fortress: true},
-        {Width: 4, Height: 3, Id: 7},
-        {Width: 2, Height: 3, Id: 8},
-    }
-    row3 := []*Rect{
-        {Width: 1, Height: 4, Id: 9},
-        {Width: 4, Height: 4, Id: 10},
-        {Width: 3, Height: 4, Id: 11},
-        {Width: 4, Height: 4, Id: 12},
-        {Width: 3, Height: 4, Id: 13},
-    }
-
-    rects := append(append(row1, row2...), row3...)
+    rects := StandardRects()
 
     totalSpace := 0
     for _, rect := range rects {
