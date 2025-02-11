@@ -153,26 +153,30 @@ func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, c
         return rects, true
     }
 
-    /*
-    building := buildings[0]
-    // fmt.Printf("Check %v\n", building)
-    width, height := building.Size()
-    for width == 0 && height == 0 {
-        buildings = buildings[1:]
-        if len(buildings) == 0 {
-            return rects, true
-        }
-        building = buildings[0]
-        width, height = building.Size()
-    }
-    */
-
     // fmt.Printf("Trying to add %v (%v,%v)\n", building, width, height)
 
     type State struct {
         Buildings []Building
         Rects []*Rect
         Index int
+    }
+
+    var buildingsUse []Building
+    for _, building := range buildings {
+        if building == BuildingFortress {
+            rects = cloneRects(rects)
+            // find the rect that should contain the fortress and add it immediately
+            for _, rect := range rects {
+                if rect.Fortress {
+                    width, height := building.Size()
+                    rect.Add(building, width, height, random)
+                    break
+                }
+            }
+
+        } else {
+            buildingsUse = append(buildingsUse, building)
+        }
     }
 
     // sort from biggest to smallest
@@ -372,7 +376,7 @@ func TestLayout3(test *testing.T){
     row2 := []*Rect{
         // {Width: 3, Height: 3, Id: 4}, this is always shipyard etc.
         {Width: 4, Height: 3, Id: 5},
-        {Width: 3, Height: 3, Id: 6},
+        {Width: 3, Height: 3, Id: 6, Fortress: true},
         {Width: 4, Height: 3, Id: 7},
         {Width: 2, Height: 3, Id: 8},
     }
@@ -470,8 +474,9 @@ func TestLayout3(test *testing.T){
         fmt.Printf("Recursive: Tries %v Count: %v Empty space: %v\n", tries, count, emptySpace)
     }
 
+    start := time.Now()
     tries = 0
-    for range 10 {
+    for range 20 {
         tries += 1
         count = 0
         solution, ok = doLayoutIterative(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count)
@@ -479,6 +484,7 @@ func TestLayout3(test *testing.T){
             break
         }
     }
+    end := time.Now()
 
     if !ok {
         test.Errorf("No solution found in 10 tries\n")
@@ -488,7 +494,7 @@ func TestLayout3(test *testing.T){
             emptySpace += rect.EmptySpace()
         }
 
-        fmt.Printf("Iterative: Tries %v Count: %v Empty space: %v\n", tries, count, emptySpace)
+        fmt.Printf("Iterative: Tries %v Count: %v Empty space: %v. Took %v\n", tries, count, emptySpace, end.Sub(start))
     }
 
     successes := 0
