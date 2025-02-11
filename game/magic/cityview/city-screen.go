@@ -536,8 +536,6 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
         }
     }
 
-    // FIXME: add in special case for water buildings
-
     slices.SortFunc(slots, func(a BuildingSlot, b BuildingSlot) int {
         if a.Point.Y < b.Point.Y {
             return -1
