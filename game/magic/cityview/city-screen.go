@@ -292,48 +292,63 @@ func hash(str string) uint64 {
     return hasher.Sum64()
 }
 
-func makeBuildingSlots2(city *citylib.City) []BuildingSlot {
+func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     rects := buildinglib.StandardRects()
 
     var slots []BuildingSlot
 
-    for _, rect := range rects {
+    for rectY := range 3 {
+        start := 15 - rectY * 16
+        for _, rect := range rects {
 
-        /*
-        if rect.Y != 1 {
-            continue
-        }
-        */
-
-        /*
-        var geom ebiten.GeoM
-        geom.Rotate(float64(-95 / 180.0) * math.Pi)
-        geom.Scale(2, 2)
-        geom.Translate(10, 5)
-        geom.Translate(float64(rect.X * 10), float64(rect.Y * 8))
-        geom.Scale(3, 3)
-
-        computePoint := func(x int, y int) image.Point {
-            ax, ay := geom.Apply(float64(x), float64(y))
-            return image.Pt(int(ax), int(ay))
-            // return image.Pt(rect.X * 20 + x * 5, rect.Y * 20 + y * 5)
-        }
-        */
-        computePoint := func (x int, y int) image.Point {
-            return image.Pt(33 + rect.X * 40 - rect.Y * 20 + (x*2+y) * 4, 24 + rect.Y * 20 - y * 5)
-        }
-
-        for x := range rect.Width {
-            for y := range rect.Height {
-                slots = append(slots, BuildingSlot{Building: buildinglib.BuildingShrine, Point: computePoint(x, y)})
+            if rect.Y != rectY {
+                continue
             }
+
+            /*
+            if rect.Y != 1 {
+                continue
+            }
+            */
+
+            /*
+            var geom ebiten.GeoM
+            geom.Rotate(float64(-95 / 180.0) * math.Pi)
+            geom.Scale(2, 2)
+            geom.Translate(10, 5)
+            geom.Translate(float64(rect.X * 10), float64(rect.Y * 8))
+            geom.Scale(3, 3)
+
+            computePoint := func(x int, y int) image.Point {
+                ax, ay := geom.Apply(float64(x), float64(y))
+                return image.Pt(int(ax), int(ay))
+                // return image.Pt(rect.X * 20 + x * 5, rect.Y * 20 + y * 5)
+            }
+            */
+            computePoint := func (x int, y int) image.Point {
+                return image.Pt(start + (x*2+y) * 5, 24 + rect.Y * 20 - y * 5)
+            }
+
+            offsetX := 0
+            if rect.X == 0 && rect.Y == 0 {
+                offsetX += 1
+            }
+
+            for x := range rect.Width {
+                for y := range rect.Height {
+                    slots = append(slots, BuildingSlot{Building: buildinglib.BuildingShrine, Point: computePoint(x + offsetX, y)})
+                }
+            }
+
+            // distance to next plot is based on the current plot's width
+            start += rect.Width * 3 + 40
         }
     }
 
     return slots
 }
 
-func makeBuildingSlots(city *citylib.City) []BuildingSlot {
+func makeBuildingSlots2(city *citylib.City) []BuildingSlot {
     // use a random seed based on the position and name of the city so that each game gets
     // a different city view, but within the same game the city view is consistent
     random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
@@ -1348,7 +1363,7 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
             vector.DrawFilledCircle(screen, float32(dx), float32(dy), 2, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
             // options.GeoM.Translate(float64(x) + roadX, float64(y - use.Bounds().Dy()) + roadY)
             options.GeoM.Translate(0, float64(-use.Bounds().Dy()))
-            screen.DrawImage(use, &options)
+            // screen.DrawImage(use, &options)
 
             if buildingLook == building.Building {
                 drawName = func(){
