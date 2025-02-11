@@ -94,6 +94,7 @@ func cloneRects(rects []*Rect) []*Rect {
     return newRects
 }
 
+// compute the positions of the buildings given a set of rectangles that the buildings could be placed into
 func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, count *int, maxIterations int) ([]*Rect, bool) {
     if len(buildings) == 0 {
         return rects, true
