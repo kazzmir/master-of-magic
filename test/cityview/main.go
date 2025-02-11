@@ -82,6 +82,7 @@ func NewEngine() (*Engine, error) {
     city.Production = 18
     city.ProducingBuilding = buildinglib.BuildingNone
     city.Banner = data.BannerBlue
+
     city.AddBuilding(buildinglib.BuildingFortress)
     city.AddBuilding(buildinglib.BuildingGranary)
     city.AddBuilding(buildinglib.BuildingFarmersMarket)
@@ -114,7 +115,11 @@ func NewEngine() (*Engine, error) {
     city.AddEnchantment(data.CityEnchantmentNaturesEye, data.BannerRed)
     city.AddEnchantment(data.CityEnchantmentProsperity, data.BannerRed)
     city.AddEnchantment(data.CityEnchantmentInspirations, data.BannerRed)
-    // city.AddEnchantment(data.CityEnchantmentAstralGate, data.BannerRed)
+    city.AddEnchantment(data.CityEnchantmentAstralGate, data.BannerRed)
+    city.AddEnchantment(data.CityEnchantmentAltarOfBattle, data.BannerRed)
+    city.AddEnchantment(data.CityEnchantmentStreamOfLife, data.BannerRed)
+    city.AddEnchantment(data.CityEnchantmentEarthGate, data.BannerRed)
+    city.AddEnchantment(data.CityEnchantmentDarkRituals, data.BannerRed)
 
     var garrison []units.StackUnit
     for i := 0; i < 2; i++ {

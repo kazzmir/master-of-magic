@@ -441,6 +441,19 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
         }
     }
 
+    enchantmentBuildings := make(map[data.CityEnchantment]buildinglib.Building)
+    enchantmentBuildings[data.CityEnchantmentAstralGate] = buildinglib.BuildingAstralGate
+    enchantmentBuildings[data.CityEnchantmentAltarOfBattle] = buildinglib.BuildingAltarOfBattle
+    enchantmentBuildings[data.CityEnchantmentStreamOfLife] = buildinglib.BuildingStreamOfLife
+    enchantmentBuildings[data.CityEnchantmentEarthGate] = buildinglib.BuildingEarthGate
+    enchantmentBuildings[data.CityEnchantmentDarkRituals] = buildinglib.BuildingDarkRituals
+
+    for enchantment, building := range enchantmentBuildings {
+        if city.HasEnchantment(enchantment) {
+            toLayout.Insert(building)
+        }
+    }
+
     var result []*buildinglib.Rect
     ok := false
     // start := time.Now()
@@ -737,7 +750,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
         },
         RightClick: func(element *uilib.UIElement) {
             if buildingLook != buildinglib.BuildingNone {
-                helpEntries := help.GetEntriesByName(city.BuildingInfo.Name(buildingLook))
+                helpEntries := help.GetEntriesByName(getBuildingName(city.BuildingInfo, buildingLook))
                 if helpEntries != nil {
                     ui.AddElement(uilib.MakeHelpElement(ui, cache, imageCache, helpEntries[0]))
                 }
@@ -759,7 +772,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
             for i := len(buildings) - 1; i >= 0; i-- {
                 slot := buildings[i]
 
-                buildingName := city.BuildingInfo.Name(slot.Building)
+                buildingName := getBuildingName(city.BuildingInfo, slot.Building)
 
                 if buildingName == "?" || buildingName == "" {
                     continue
@@ -1289,7 +1302,7 @@ func GetBuildingIndex(building buildinglib.Building) int {
 
         case buildinglib.BuildingTradeGoods: return 41
 
-        // FIXME: housing is indices 42-44, based on the race of the city
+        // race specific housing is handled elsewhere
         case buildinglib.BuildingHousing: return 43
 
         case BuildingTreeHouse1: return 30
@@ -1309,6 +1322,12 @@ func GetBuildingIndex(building buildinglib.Building) int {
         case BuildingHutHouse3: return 37
         case BuildingHutHouse4: return 38
         case BuildingHutHouse5: return 39
+
+        case buildinglib.BuildingAstralGate: return 85
+        case buildinglib.BuildingAltarOfBattle: return 12
+        case buildinglib.BuildingStreamOfLife: return 84
+        case buildinglib.BuildingEarthGate: return 83
+        case buildinglib.BuildingDarkRituals: return 81
     }
 
     return -1
@@ -1379,6 +1398,18 @@ func getRaceRebelIndex(race data.Race) int {
     }
 
     return -1
+}
+
+func getBuildingName(info buildinglib.BuildingInfos, building buildinglib.Building) string {
+    switch building {
+        case buildinglib.BuildingAstralGate: return "Astral Gate"
+        case buildinglib.BuildingAltarOfBattle: return "Altar of Battle"
+        case buildinglib.BuildingStreamOfLife: return "Stream of Life"
+        case buildinglib.BuildingEarthGate: return "Earth Gate"
+        case buildinglib.BuildingDarkRituals: return "Dark Rituals"
+    }
+
+    return info.Name(building)
 }
 
 func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []BuildingSlot, buildingLook buildinglib.Building, buildingLookTime int, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
@@ -1544,7 +1575,8 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
             if buildingLook == building.Building {
                 drawName = func(){
                     useFont := fonts.SmallFont
-                    text := city.BuildingInfo.Name(building.Building)
+                    text := getBuildingName(city.BuildingInfo, building.Building)
+
                     if building.IsRubble {
                         text = "Destroyed " + text
                         useFont = fonts.RubbleFont
