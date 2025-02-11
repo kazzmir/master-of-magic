@@ -27,7 +27,7 @@ type Rect struct {
 }
 
 func (rect *Rect) Clone() *Rect {
-    newRect := &Rect{Width: rect.Width, Height: rect.Height, Id: rect.Id}
+    newRect := &Rect{Width: rect.Width, Height: rect.Height, Id: rect.Id, Fortress: rect.Fortress}
     newRect.Buildings = make([]BuildingPosition, len(rect.Buildings))
     copy(newRect.Buildings, rect.Buildings)
     return newRect
@@ -169,7 +169,9 @@ func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, c
             for _, rect := range rects {
                 if rect.Fortress {
                     width, height := building.Size()
-                    rect.Add(building, width, height, random)
+                    if !rect.Add(building, width, height, random) {
+                        return nil, false
+                    }
                     break
                 }
             }
@@ -178,6 +180,7 @@ func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, c
             buildingsUse = append(buildingsUse, building)
         }
     }
+    buildings = buildingsUse
 
     // sort from biggest to smallest
     buildings = slices.SortedFunc(slices.Values(buildings), func (a, b Building) int {
@@ -495,19 +498,59 @@ func TestLayout3(test *testing.T){
         }
 
         fmt.Printf("Iterative: Tries %v Count: %v Empty space: %v. Took %v\n", tries, count, emptySpace, end.Sub(start))
+
+        var foundBuildings []Building
+        for _, rect := range solution {
+            for _, building := range rect.Buildings {
+                if slices.Contains(foundBuildings, building.Building) {
+                    fmt.Printf("Duplicate building %v!\n", building.Building)
+                    break
+                }
+                foundBuildings = append(foundBuildings, building.Building)
+            }
+        }
+
+        if len(foundBuildings) != len(filterReplaced(buildings)) {
+            fmt.Printf("Not all buildings placed!\n")
+        }
+
     }
 
     successes := 0
     total := 50
     for range total {
         count = 0
-        _, ok = doLayoutIterative(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count)
+        solution, ok = doLayoutIterative(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count)
         if ok {
             successes += 1
+
+            var foundBuildings []Building
+            for _, rect := range solution {
+                for _, building := range rect.Buildings {
+                    if slices.Contains(foundBuildings, building.Building) {
+                        fmt.Printf("Duplicate building %v!\n", building.Building)
+                        break
+                    }
+                    foundBuildings = append(foundBuildings, building.Building)
+                }
+            }
+
+            checkBuildings := filterReplaced(buildings)
+
+            if len(foundBuildings) != len(checkBuildings) {
+                fmt.Printf("Not all buildings placed! %v vs %v\n", len(foundBuildings), len(filterReplaced(buildings)))
+
+                for _, building := range checkBuildings {
+                    if !slices.Contains(foundBuildings, building) {
+                        fmt.Printf("Missing building %v (fortress %v)\n", building, BuildingFortress)
+                    }
+                }
+
+            }
         }
     }
 
-    fmt.Printf("Success rate %v/%v %v%%\n", successes, total, float64(successes) / float64(total) * 100)
+    fmt.Printf("Success rate %v/%v %.2f%%\n", successes, total, float64(successes) / float64(total) * 100)
 
     for i := range 5 {
         v1 := uint64(i) + uint64(time.Now().UnixNano())
