@@ -1776,7 +1776,9 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
     helpTextY := infoTopMargin
     helpTextY += helpTitleFont.Height() + 1
 
-    textHeight := (len(resources) + 1) * (helpFont.Height() + 1)
+    maxResources := 14
+
+    textHeight := (min(len(resources), maxResources) + 1) * (helpFont.Height() + 1)
 
     bottom := helpTextY + textHeight
 
@@ -1789,21 +1791,18 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 
     infoY := (data.ScreenHeight - bottom * data.ScreenScale - helpBottom.Bounds().Dy()) / 2
 
-    widestResources := float64(0)
-    for _, usage := range resources {
-        var options ebiten.DrawImageOptions
-        geom := cityScreen.drawIcons(int(math.Abs(float64(usage.Count))), smallIcon, bigIcon, options, nil)
-        x, _ := geom.Apply(0, 0)
-        if x > widestResources {
-            widestResources = x
+    makeRenderPage := func(resources []ResourceUsage) func (screen *ebiten.Image) {
+        widestResources := float64(0)
+        for _, usage := range resources {
+            var options ebiten.DrawImageOptions
+            geom := cityScreen.drawIcons(int(math.Abs(float64(usage.Count))), smallIcon, bigIcon, options, nil)
+            x, _ := geom.Apply(0, 0)
+            if x > widestResources {
+                widestResources = x
+            }
         }
-    }
 
-    // FIXME: There can be a second page and a "More" button on the bottom right
-    infoElement := &uilib.UIElement{
-        // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
-        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
-        Draw: func (infoThis *uilib.UIElement, window *ebiten.Image){
+        return func (window *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(infoX * data.ScreenScale), float64(infoY))
             options.ColorScale.ScaleAlpha(getAlpha())
@@ -1836,7 +1835,7 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 
                 cityScreen.drawIcons(int(math.Abs(float64(usage.Count))), smallIcon, bigIcon, options, window)
 
-                x, y := options.GeoM.Apply(widestResources + 5, 0)
+                x, y := options.GeoM.Apply(widestResources + float64(5 * data.ScreenScale), 0)
 
                 text := usage.Name
                 if usage.Replaced {
@@ -1848,6 +1847,27 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
                 options.GeoM.Translate(0, float64((helpFont.Height() + 1) * data.ScreenScale))
             }
 
+        }
+    }
+
+    renderPage := makeRenderPage(resources[:min(len(resources), maxResources)])
+
+    widestResources := float64(0)
+    for _, usage := range resources {
+        var options ebiten.DrawImageOptions
+        geom := cityScreen.drawIcons(int(math.Abs(float64(usage.Count))), smallIcon, bigIcon, options, nil)
+        x, _ := geom.Apply(0, 0)
+        if x > widestResources {
+            widestResources = x
+        }
+    }
+
+    // FIXME: There can be a second page and a "More" button on the bottom right
+    infoElement := &uilib.UIElement{
+        // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
+        Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
+        Draw: func (infoThis *uilib.UIElement, window *ebiten.Image){
+            renderPage(window)
         },
         LeftClick: func(infoThis *uilib.UIElement){
             getAlpha = ui.MakeFadeOut(fadeSpeed)
@@ -1891,11 +1911,11 @@ func (cityScreen *CityScreen) BuildingMaintenanceResources() []ResourceUsage {
     var usage []ResourceUsage
 
     for _, building := range cityScreen.City.Buildings.Values() {
-        if building == buildinglib.BuildingFortress || building == buildinglib.BuildingSummoningCircle {
+        maintenance := cityScreen.City.BuildingInfo.UpkeepCost(building)
+        if maintenance == 0 {
             continue
         }
 
-        maintenance := cityScreen.City.BuildingInfo.UpkeepCost(building)
         usage = append(usage, ResourceUsage{
             Count: maintenance,
             Name: cityScreen.City.BuildingInfo.Name(building),
