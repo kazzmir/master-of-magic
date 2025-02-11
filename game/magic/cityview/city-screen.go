@@ -735,7 +735,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
     roadY := 18.0 * data.ScreenScale
 
     buildingLook := buildinglib.BuildingNone
-    buildingLookTime := 0
+    buildingLookTime := uint64(0)
     buildingView := image.Rect(x1, y1, x1 + 206 * data.ScreenScale, y1 + 96 * data.ScreenScale)
     element := &uilib.UIElement{
         Rect: buildingView,
@@ -1410,7 +1410,7 @@ func getBuildingName(info buildinglib.BuildingInfos, building buildinglib.Buildi
     return info.Name(building)
 }
 
-func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []BuildingSlot, buildingLook buildinglib.Building, buildingLookTime int, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
+func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []BuildingSlot, buildingLook buildinglib.Building, buildingLookTime uint64, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
     onMyrror := city.Plane == data.PlaneMyrror
 
     // background
