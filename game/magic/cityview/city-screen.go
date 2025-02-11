@@ -717,6 +717,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
     roadY := 18.0 * data.ScreenScale
 
     buildingLook := buildinglib.BuildingNone
+    buildingLookTime := 0
     buildingView := image.Rect(x1, y1, x1 + 206 * data.ScreenScale, y1 + 96 * data.ScreenScale)
     element := &uilib.UIElement{
         Rect: buildingView,
@@ -724,7 +725,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
             var geom ebiten.GeoM
             geom.Translate(float64(x1), float64(y1))
             cityScapeScreen := screen.SubImage(buildingView).(*ebiten.Image)
-            drawCityScape(cityScapeScreen, city, buildings, buildingLook, newBuilding, ui.Counter / 8, imageCache, fonts, player, geom, (*getAlpha)())
+            drawCityScape(cityScapeScreen, city, buildings, buildingLook, buildingLookTime, newBuilding, ui.Counter / 8, imageCache, fonts, player, geom, (*getAlpha)())
             // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
         },
         RightClick: func(element *uilib.UIElement) {
@@ -742,6 +743,8 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
         },
         // if the user hovers over a building then show the name of the building
         Inside: func(element *uilib.UIElement, x int, y int){
+            oldBuildingLook := buildingLook
+
             buildingLook = buildinglib.BuildingNone
             // log.Printf("inside building view: %v, %v", x, y)
 
@@ -780,6 +783,13 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
                     }
                 }
             }
+
+            if oldBuildingLook != buildingLook {
+                buildingLookTime = 0
+            } else {
+                buildingLookTime += 1
+            }
+
         },
     }
 
@@ -1364,7 +1374,7 @@ func getRaceRebelIndex(race data.Race) int {
     return -1
 }
 
-func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []BuildingSlot, buildingLook buildinglib.Building, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
+func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []BuildingSlot, buildingLook buildinglib.Building, buildingLookTime int, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
     onMyrror := city.Plane == data.PlaneMyrror
 
     // background
@@ -1469,6 +1479,10 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
 
             options.ColorScale.ScaleAlpha(useAlpha)
             options.GeoM = baseGeoM
+
+            if buildingLook == building.Building && buildingLookTime > 0 {
+                options.ColorScale.Scale(1.1, 1.1, 1, 1)
+            }
 
             /*
             options.GeoM.Translate(float64(x) + roadX, float64(y) + roadY)
