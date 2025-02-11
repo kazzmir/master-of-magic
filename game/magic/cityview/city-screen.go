@@ -1453,6 +1453,16 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
     drawName := func(){
     }
 
+    var buildingLookPoint image.Point
+    if buildingLook != buildinglib.BuildingNone {
+        for _, building := range buildings {
+            if building.Building == buildingLook {
+                buildingLookPoint = building.Point
+                break
+            }
+        }
+    }
+
     // buildings
     for _, building := range buildings {
         index := GetBuildingIndex(building.Building)
@@ -1482,6 +1492,14 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
 
             if buildingLook == building.Building && buildingLookTime > 0 {
                 options.ColorScale.Scale(1.1, 1.1, 1, 1)
+            }
+
+            if buildingLook != buildinglib.BuildingNone && buildingLook != building.Building && buildingLookTime > 0 {
+                xDiff := building.Point.X - buildingLookPoint.X
+                yDiff := building.Point.Y - buildingLookPoint.Y
+                if xDiff * xDiff + yDiff * yDiff < 600 {
+                    options.ColorScale.ScaleAlpha(max(1 - float32(buildingLookTime) / 20, 0.5))
+                }
             }
 
             /*

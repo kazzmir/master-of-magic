@@ -129,7 +129,7 @@ func NewEngine() (*Engine, error) {
 
     city.UpdateUnrest(garrison)
 
-    cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingShrine)
+    cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingWizardsGuild)
 
     return &Engine{
         LbxCache: cache,
