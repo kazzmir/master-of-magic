@@ -612,13 +612,14 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
     roadY := 18.0 * data.ScreenScale
 
     buildingLook := buildinglib.BuildingNone
-    buildingView := image.Rect(x1, y1, x1 + 208 * data.ScreenScale, y1 + 195 * data.ScreenScale)
+    buildingView := image.Rect(x1, y1, x1 + 206 * data.ScreenScale, y1 + 96 * data.ScreenScale)
     element := &uilib.UIElement{
         Rect: buildingView,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var geom ebiten.GeoM
             geom.Translate(float64(x1), float64(y1))
-            drawCityScape(screen, city, buildings, buildingLook, newBuilding, ui.Counter / 8, imageCache, fonts, player, geom, (*getAlpha)())
+            cityScapeScreen := screen.SubImage(buildingView).(*ebiten.Image)
+            drawCityScape(cityScapeScreen, city, buildings, buildingLook, newBuilding, ui.Counter / 8, imageCache, fonts, player, geom, (*getAlpha)())
             // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
         },
         RightClick: func(element *uilib.UIElement) {
@@ -727,7 +728,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
     var getAlpha util.AlphaFadeFunc = func() float32 { return 1 }
 
-    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, newBuilding, 4 * data.ScreenScale, 102 * data.ScreenScale, cityScreen.Fonts, cityScreen.Player, &getAlpha))
+    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, newBuilding, 4 * data.ScreenScale, 101 * data.ScreenScale, cityScreen.Fonts, cityScreen.Player, &getAlpha))
 
     // returns the amount of gold and the amount of production that will be used to buy a building
     computeBuyAmount := func(cost int) (int, float32) {
@@ -1399,7 +1400,7 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(alphaScale)
         options.GeoM = baseGeoM
-        options.GeoM.Translate(float64(1 * data.ScreenScale), float64(-2 * data.ScreenScale))
+        options.GeoM.Translate(float64(0 * data.ScreenScale), float64(-2 * data.ScreenScale))
         index := animationCounter % uint64(len(river))
         screen.DrawImage(river[index], &options)
     }
