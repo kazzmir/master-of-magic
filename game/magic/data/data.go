@@ -125,6 +125,26 @@ func (race Race) String() string {
     return "?"
 }
 
+type HouseType int
+
+const (
+    HouseTypeTree HouseType = iota
+    HouseTypeHut
+    HouseTypeNormal
+)
+
+func (race Race) HouseType() HouseType {
+    switch race {
+        case RaceDarkElf, RaceHighElf: return HouseTypeTree
+        case RaceTroll, RaceGnoll, RaceKlackon, RaceLizard: return HouseTypeHut
+        case RaceHighMen, RaceHalfling, RaceBarbarian, RaceDwarf,
+             RaceNomad, RaceOrc, RaceDraconian, RaceBeastmen: return HouseTypeNormal
+
+    }
+
+    return HouseTypeNormal
+}
+
 type Plane int
 
 const (
