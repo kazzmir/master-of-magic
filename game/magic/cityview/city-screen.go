@@ -12,6 +12,7 @@ import (
     "hash/fnv"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -291,7 +292,134 @@ func hash(str string) uint64 {
     return hasher.Sum64()
 }
 
+func makeBuildingSlots2(city *citylib.City) []BuildingSlot {
+    rects := buildinglib.StandardRects()
+
+    var slots []BuildingSlot
+
+    for _, rect := range rects {
+
+        /*
+        if rect.Y != 1 {
+            continue
+        }
+        */
+
+        /*
+        var geom ebiten.GeoM
+        geom.Rotate(float64(-95 / 180.0) * math.Pi)
+        geom.Scale(2, 2)
+        geom.Translate(10, 5)
+        geom.Translate(float64(rect.X * 10), float64(rect.Y * 8))
+        geom.Scale(3, 3)
+
+        computePoint := func(x int, y int) image.Point {
+            ax, ay := geom.Apply(float64(x), float64(y))
+            return image.Pt(int(ax), int(ay))
+            // return image.Pt(rect.X * 20 + x * 5, rect.Y * 20 + y * 5)
+        }
+        */
+        computePoint := func (x int, y int) image.Point {
+            return image.Pt(33 + rect.X * 40 - rect.Y * 20 + (x*2+y) * 4, 24 + rect.Y * 20 - y * 5)
+        }
+
+        for x := range rect.Width {
+            for y := range rect.Height {
+                slots = append(slots, BuildingSlot{Building: buildinglib.BuildingShrine, Point: computePoint(x, y)})
+            }
+        }
+    }
+
+    return slots
+}
+
 func makeBuildingSlots(city *citylib.City) []BuildingSlot {
+    // use a random seed based on the position and name of the city so that each game gets
+    // a different city view, but within the same game the city view is consistent
+    random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
+
+    toLayout := city.Buildings.Clone()
+    toLayout.RemoveMany(buildinglib.BuildingCityWalls, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild)
+
+    var result []*buildinglib.Rect
+    ok := false
+    for range 40 {
+        result, ok = buildinglib.LayoutBuildings(toLayout.Values(), buildinglib.StandardRects(), random)
+        if ok {
+            break
+        }
+    }
+
+    if !ok {
+        log.Printf("Warning: could not layout buildings")
+        return nil
+    }
+
+    var slots []BuildingSlot
+    for _, rect := range result {
+
+        computePoint := func (x int, y int) image.Point {
+            return image.Pt(33 + rect.X * 40 - rect.Y * 20 + (x*2+y) * 4, 24 + rect.Y * 20 - y * 5)
+        }
+
+        tiles := set.MakeSet[image.Point]()
+        for x := range rect.Width {
+            for y := range rect.Height {
+                tiles.Insert(image.Pt(x, y))
+            }
+        }
+
+        for _, building := range rect.Buildings {
+            point := computePoint(building.Area.Min.X, building.Area.Min.Y)
+            slots = append(slots, BuildingSlot{Building: building.Building, Point: point})
+
+            for x := range building.Area.Dx() {
+                for y := range building.Area.Dy() {
+                    tiles.Remove(image.Pt(x, y))
+                }
+            }
+        }
+
+        for _, tile := range tiles.Values() {
+            switch random.IntN(4) {
+                case 0:
+                    tree := []buildinglib.Building{BuildingTree1, BuildingTree2, BuildingTree3}[random.IntN(3)]
+                    slots = append(slots, BuildingSlot{Building: tree, Point: computePoint(tile.X, tile.Y)})
+                case 1:
+                    house := []buildinglib.Building{BuildingTreeHouse1, BuildingTreeHouse2, BuildingTreeHouse3, BuildingTreeHouse4, BuildingTreeHouse5}[random.IntN(5)]
+                    slots = append(slots, BuildingSlot{Building: house, Point: computePoint(tile.X, tile.Y)})
+            }
+        }
+    }
+
+    if city.Buildings.Contains(buildinglib.BuildingCityWalls) {
+        slots = append(slots, BuildingSlot{Building: buildinglib.BuildingCityWalls, Point: image.Pt(0, 75)})
+    }
+
+    // FIXME: add in special case for water buildings
+
+    slices.SortFunc(slots, func(a BuildingSlot, b BuildingSlot) int {
+        if a.Point.Y < b.Point.Y {
+            return -1
+        }
+
+        if a.Point.Y == b.Point.Y {
+            if a.Point.X < b.Point.X {
+                return -1
+            }
+
+            if a.Point.X == b.Point.X {
+                return 0
+            }
+        }
+
+        return 1
+    })
+
+    return slots
+}
+
+func makeBuildingSlotsOld(city *citylib.City) []BuildingSlot {
     // use a random seed based on the position and name of the city so that each game gets
     // a different city view, but within the same game the city view is consistent
     random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
@@ -1184,9 +1312,6 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
 
     // buildings
     for _, building := range buildings {
-
-        // FIXME: BuildingShipwrightsGuild, BuildingShipYard and BuildingMaritimeGuild are always at in the middle left
-
         index := GetBuildingIndex(building.Building)
 
         if building.IsRubble {
@@ -1210,8 +1335,19 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
 
             options.ColorScale.ScaleAlpha(useAlpha)
             options.GeoM = baseGeoM
+
+            /*
+            options.GeoM.Translate(float64(x) + roadX, float64(y) + roadY)
+            dx, dy := options.GeoM.Apply(0, 0)
+            vector.DrawFilledCircle(screen, float32(dx), float32(dy), 2, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
+            */
+
             // x,y position is the bottom left of the sprite
-            options.GeoM.Translate(float64(x) + roadX, float64(y - use.Bounds().Dy()) + roadY)
+            options.GeoM.Translate(float64(x) + roadX, float64(y) + roadY)
+            dx, dy := options.GeoM.Apply(0, 0)
+            vector.DrawFilledCircle(screen, float32(dx), float32(dy), 2, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
+            // options.GeoM.Translate(float64(x) + roadX, float64(y - use.Bounds().Dy()) + roadY)
+            options.GeoM.Translate(0, float64(-use.Bounds().Dy()))
             screen.DrawImage(use, &options)
 
             if buildingLook == building.Building {

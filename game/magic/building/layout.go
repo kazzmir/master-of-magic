@@ -18,13 +18,15 @@ type Rect struct {
     Width int
     Height int
     Id int
+    X int
+    Y int
     Buildings []BuildingPosition
     // true if this rect should contain the fortress
     Fortress bool
 }
 
 func (rect *Rect) Clone() *Rect {
-    newRect := &Rect{Width: rect.Width, Height: rect.Height, Id: rect.Id, Fortress: rect.Fortress}
+    newRect := &Rect{Width: rect.Width, Height: rect.Height, Id: rect.Id, Fortress: rect.Fortress, X: rect.X, Y: rect.Y}
     newRect.Buildings = make([]BuildingPosition, len(rect.Buildings))
     copy(newRect.Buildings, rect.Buildings)
     return newRect
@@ -185,26 +187,26 @@ func LayoutBuildings(buildings []Building, rects []*Rect, random *rand.Rand) ([]
 func StandardRects() []*Rect {
     // these rows represent the sizes of the standard patches of land in a cityscape
     row1 := []*Rect{
-        {Width: 3, Height: 4, Id: 0},
-        {Width: 4, Height: 4, Id: 1},
-        {Width: 3, Height: 4, Id: 2},
-        {Width: 4, Height: 4, Id: 3},
+        {Width: 3, Height: 4, Id: 0, X: 0, Y: 0},
+        {Width: 4, Height: 4, Id: 1, X: 1, Y: 0},
+        {Width: 3, Height: 4, Id: 2, X: 2, Y: 0},
+        {Width: 4, Height: 4, Id: 3, X: 3, Y: 0},
         // FIXME: this might be 2x2
-        {Width: 1, Height: 1, Id: 4},
+        {Width: 1, Height: 1, Id: 4, X: 4, Y: 0},
     }
     row2 := []*Rect{
         // {Width: 3, Height: 3, Id: 4}, this is always shipyard etc.
-        {Width: 4, Height: 3, Id: 5},
-        {Width: 3, Height: 3, Id: 6, Fortress: true},
-        {Width: 4, Height: 3, Id: 7},
-        {Width: 2, Height: 3, Id: 8},
+        {Width: 4, Height: 3, Id: 5, X: 1, Y: 1},
+        {Width: 3, Height: 3, Id: 6, Fortress: true, X: 2, Y: 1},
+        {Width: 4, Height: 3, Id: 7, X: 3, Y: 1},
+        {Width: 2, Height: 3, Id: 8, X: 4, Y: 1},
     }
     row3 := []*Rect{
-        {Width: 1, Height: 4, Id: 9},
-        {Width: 4, Height: 4, Id: 10},
-        {Width: 3, Height: 4, Id: 11},
-        {Width: 4, Height: 4, Id: 12},
-        {Width: 3, Height: 4, Id: 13},
+        {Width: 1, Height: 4, Id: 9, X: 0, Y: 2},
+        {Width: 4, Height: 4, Id: 10, X: 1, Y: 2},
+        {Width: 3, Height: 4, Id: 11, X: 2, Y: 2},
+        {Width: 4, Height: 4, Id: 12, X: 3, Y: 2},
+        {Width: 3, Height: 4, Id: 13, X: 4, Y: 2},
     }
 
     return append(append(row1, row2...), row3...)

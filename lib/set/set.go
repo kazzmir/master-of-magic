@@ -18,6 +18,14 @@ func NewSet[T comparable](values ...T) *Set[T] {
     return set
 }
 
+func (set *Set[T]) Clone() *Set[T] {
+    newSet := MakeSet[T]()
+    for k := range set.data {
+        newSet.data[k] = true
+    }
+    return newSet
+}
+
 func (set *Set[T]) Insert(v T){
     set.data[v] = true
 }
