@@ -2,6 +2,7 @@ package main
 
 import (
     "log"
+    "math/rand/v2"
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -73,7 +74,7 @@ func NewEngine() (*Engine, error) {
         TileCache: make(map[int]*ebiten.Image),
     }
 
-    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{})
+    city := citylib.MakeCity("Boston", rand.N(1000), rand.N(1000), data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{})
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2

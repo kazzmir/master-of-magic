@@ -292,12 +292,85 @@ func hash(str string) uint64 {
     return hasher.Sum64()
 }
 
-func makeBuildingSlots(city *citylib.City) []BuildingSlot {
+func makeRectComputePoint(rect *buildinglib.Rect) func(x int, y int) image.Point {
+    startX := 0
+    startY := 0
+
+    row0Y := 25
+    row1Y := 42
+    row2Y := 65
+
+    switch {
+        case rect.X == 0 && rect.Y == 0:
+            startX = 15
+            startY = row0Y
+        case rect.X == 1 && rect.Y == 0:
+            startX = 64
+            startY = row0Y
+        case rect.X == 2 && rect.Y == 0:
+            startX = 112
+            startY = row0Y
+        case rect.X == 3 && rect.Y == 0:
+            startX = 149
+            startY = row0Y
+        case rect.X == 4 && rect.Y == 0:
+            startX = 197
+            startY = row0Y
+
+        case rect.X == 0 && rect.Y == 1:
+            startX = 0
+            startY = row1Y
+        case rect.X == 1 && rect.Y == 1:
+            startX = 45
+            startY = row1Y
+        case rect.X == 2 && rect.Y == 1:
+            startX = 95
+            startY = row1Y
+        case rect.X == 3 && rect.Y == 1:
+            startX = 132
+            startY = row1Y
+        case rect.X == 4 && rect.Y == 1:
+            startX = 180
+            startY = row1Y
+
+        case rect.X == 0 && rect.Y == 2:
+            startX = 8
+            startY = row2Y
+        case rect.X == 1 && rect.Y == 2:
+            startX = 23
+            startY = row2Y
+        case rect.X == 2 && rect.Y == 2:
+            startX = 70
+            startY = row2Y
+        case rect.X == 3 && rect.Y == 2:
+            startX = 109
+            startY = row2Y
+        case rect.X == 4 && rect.Y == 2:
+            startX = 157
+            startY = row2Y
+
+    }
+
+    offsetX := 0
+    if rect.X == 0 && rect.Y == 0 {
+        offsetX += 1
+    }
+
+    computePoint := func (x int, y int) image.Point {
+        x += offsetX
+        return image.Pt(startX + (x*2+y) * 5, startY - y * 5)
+    }
+
+    return computePoint
+}
+
+func makeBuildingSlots2(city *citylib.City) []BuildingSlot {
     rects := buildinglib.StandardRects()
 
     var slots []BuildingSlot
 
     for _, rect := range rects {
+        computePoint := makeRectComputePoint(rect)
 
         /*
         if rect.Y != 2 {
@@ -320,6 +393,7 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
         }
         */
 
+        /*
         startX := 0
         startY := 0
 
@@ -392,6 +466,13 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
                 slots = append(slots, BuildingSlot{Building: buildinglib.BuildingShrine, Point: computePoint(x + offsetX, y)})
             }
         }
+        */
+
+        for x := range rect.Width {
+            for y := range rect.Height {
+                slots = append(slots, BuildingSlot{Building: buildinglib.BuildingShrine, Point: computePoint(x, y)})
+            }
+        }
 
         // slots = append(slots, BuildingSlot{Building: buildinglib.BuildingShrine, Point: computePoint(0 + offsetX, 0)})
 
@@ -401,7 +482,7 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     return slots
 }
 
-func makeBuildingSlots2(city *citylib.City) []BuildingSlot {
+func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     // use a random seed based on the position and name of the city so that each game gets
     // a different city view, but within the same game the city view is consistent
     random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
@@ -425,10 +506,7 @@ func makeBuildingSlots2(city *citylib.City) []BuildingSlot {
 
     var slots []BuildingSlot
     for _, rect := range result {
-
-        computePoint := func (x int, y int) image.Point {
-            return image.Pt(33 + rect.X * 40 - rect.Y * 20 + (x*2+y) * 4, 24 + rect.Y * 20 - y * 5)
-        }
+        computePoint := makeRectComputePoint(rect)
 
         tiles := set.MakeSet[image.Point]()
         for x := range rect.Width {
@@ -656,7 +734,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
             return nil, err
         }
 
-        rawImageCache[index] = imageCache.ApplyScale(images[0])
+        rawImageCache[index] = imageCache.ApplyScale(util.AutoCrop(images[0]))
 
         return images[0], nil
     }
@@ -1389,7 +1467,8 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
 
         x, y := building.Point.X * data.ScreenScale, building.Point.Y * data.ScreenScale
 
-        images, err := imageCache.GetImages("cityscap.lbx", index)
+        images, err := imageCache.GetImagesTransform("cityscap.lbx", index, "crop", util.AutoCrop)
+        // images, err := imageCache.GetImages("cityscap.lbx", index)
         if err == nil {
             animationIndex := animationCounter % uint64(len(images))
             use := images[animationIndex]
@@ -1413,11 +1492,11 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
 
             // x,y position is the bottom left of the sprite
             options.GeoM.Translate(float64(x) + roadX, float64(y) + roadY)
-            dx, dy := options.GeoM.Apply(0, 0)
-            vector.DrawFilledCircle(screen, float32(dx), float32(dy), 2, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
+            // dx, dy := options.GeoM.Apply(0, 0)
+            // vector.DrawFilledCircle(screen, float32(dx), float32(dy), 2, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
             // options.GeoM.Translate(float64(x) + roadX, float64(y - use.Bounds().Dy()) + roadY)
             options.GeoM.Translate(0, float64(-use.Bounds().Dy()))
-            // screen.DrawImage(use, &options)
+            screen.DrawImage(use, &options)
 
             if buildingLook == building.Building {
                 drawName = func(){
