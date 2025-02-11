@@ -300,6 +300,11 @@ func makeRectComputePoint(rect *buildinglib.Rect) func(x int, y int) image.Point
     row1Y := 42
     row2Y := 65
 
+    // the following equations almost work:
+    // row1: startX = 44.9 * rect.X + 17.6
+    // row2: startX = 44.7 * rect.X + 1.0
+    // row3: startX = 38.4 * rect.X + -3.39
+
     switch {
         case rect.X == 0 && rect.Y == 0:
             startX = 15
@@ -351,6 +356,7 @@ func makeRectComputePoint(rect *buildinglib.Rect) func(x int, y int) image.Point
 
     }
 
+    // the first row and column has to be pushed closer to the right side
     offsetX := 0
     if rect.X == 0 && rect.Y == 0 {
         offsetX += 1
@@ -393,81 +399,6 @@ func makeBuildingSlots2(city *citylib.City) []BuildingSlot {
         }
         */
 
-        /*
-        startX := 0
-        startY := 0
-
-        row0Y := 25
-        row1Y := 42
-        row2Y := 65
-
-        switch {
-            case rect.X == 0 && rect.Y == 0:
-                startX = 15
-                startY = row0Y
-            case rect.X == 1 && rect.Y == 0:
-                startX = 64
-                startY = row0Y
-            case rect.X == 2 && rect.Y == 0:
-                startX = 112
-                startY = row0Y
-            case rect.X == 3 && rect.Y == 0:
-                startX = 149
-                startY = row0Y
-            case rect.X == 4 && rect.Y == 0:
-                startX = 197
-                startY = row0Y
-
-            case rect.X == 0 && rect.Y == 1:
-                startX = 0
-                startY = row1Y
-            case rect.X == 1 && rect.Y == 1:
-                startX = 45
-                startY = row1Y
-            case rect.X == 2 && rect.Y == 1:
-                startX = 95
-                startY = row1Y
-            case rect.X == 3 && rect.Y == 1:
-                startX = 132
-                startY = row1Y
-            case rect.X == 4 && rect.Y == 1:
-                startX = 180
-                startY = row1Y
-
-            case rect.X == 0 && rect.Y == 2:
-                startX = 8
-                startY = row2Y
-            case rect.X == 1 && rect.Y == 2:
-                startX = 23
-                startY = row2Y
-            case rect.X == 2 && rect.Y == 2:
-                startX = 70
-                startY = row2Y
-            case rect.X == 3 && rect.Y == 2:
-                startX = 109
-                startY = row2Y
-            case rect.X == 4 && rect.Y == 2:
-                startX = 157
-                startY = row2Y
-
-        }
-
-        computePoint := func (x int, y int) image.Point {
-            return image.Pt(startX + (x*2+y) * 5, startY - y * 5)
-        }
-
-        offsetX := 0
-        if rect.X == 0 && rect.Y == 0 {
-            offsetX += 1
-        }
-
-        for x := range rect.Width {
-            for y := range rect.Height {
-                slots = append(slots, BuildingSlot{Building: buildinglib.BuildingShrine, Point: computePoint(x + offsetX, y)})
-            }
-        }
-        */
-
         for x := range rect.Width {
             for y := range rect.Height {
                 slots = append(slots, BuildingSlot{Building: buildinglib.BuildingShrine, Point: computePoint(x, y)})
@@ -490,19 +421,31 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     toLayout := city.Buildings.Clone()
     toLayout.RemoveMany(buildinglib.BuildingCityWalls, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild)
 
+    for _, building := range toLayout.Values() {
+        width, height := building.Size()
+        if width == 0 || height == 0 || wasBuildingReplaced(building, city) {
+            toLayout.Remove(building)
+        }
+    }
+
     var result []*buildinglib.Rect
     ok := false
+    // start := time.Now()
     for range 40 {
         result, ok = buildinglib.LayoutBuildings(toLayout.Values(), buildinglib.StandardRects(), random)
         if ok {
             break
         }
     }
+    // end := time.Now()
 
     if !ok {
         log.Printf("Warning: could not layout buildings")
+        // FIXME: use some random layout?
         return nil
     }
+
+    // log.Printf("Building layout took %v", end.Sub(start))
 
     var slots []BuildingSlot
     for _, rect := range result {
