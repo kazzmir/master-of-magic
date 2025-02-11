@@ -1678,11 +1678,11 @@ func (cityScreen *CityScreen) drawIcons(total int, small *ebiten.Image, large *e
     }
 
     if total / 10 > 3 {
-        largeGap -= 1
+        largeGap -= 1 * data.ScreenScale
     }
 
     if total / 10 > 6 {
-        largeGap -= 1
+        largeGap -= 5 * data.ScreenScale
     }
 
     for range total / 10 {
@@ -1695,10 +1695,10 @@ func (cityScreen *CityScreen) drawIcons(total int, small *ebiten.Image, large *e
 
     smallGap := small.Bounds().Dx() + 1
     if total % 10 > 3 {
-        smallGap -= 1
+        smallGap -= 1 * data.ScreenScale
     }
     if total % 10 >= 6 {
-        smallGap -= 1
+        smallGap -= 1 * data.ScreenScale
     }
 
     for range total % 10 {
@@ -1842,6 +1842,7 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
                 if usage.Replaced {
                     text = fmt.Sprintf("%v (Replaced)", usage.Name)
                 }
+                text += fmt.Sprintf(" (%v)", usage.Count)
                 helpFont.Print(window, x, y, float64(data.ScreenScale), options.ColorScale, text)
                 yPos += (helpFont.Height() + 1) * data.ScreenScale
                 options.GeoM.Translate(0, float64((helpFont.Height() + 1) * data.ScreenScale))
