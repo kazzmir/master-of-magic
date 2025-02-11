@@ -86,11 +86,18 @@ func (rect *Rect) Area() int {
     return rect.Width * rect.Height
 }
 
+const MAX_ITERATIONS = 2000
+
 // recursive algorithm that tries to layout each building in some patch of land
 // if a building fails to be placed, then the algorithm backtracks and tries a different rect
 // for the previous building
 func doLayout(buildings []Building, rects []*Rect, random *rand.Rand, count *int) ([]*Rect, bool) {
     *count += 1
+
+    if *count > MAX_ITERATIONS {
+        return nil, false
+    }
+
     if len(buildings) == 0 {
         return rects, true
     }
