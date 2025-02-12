@@ -2,9 +2,11 @@ package game
 
 import (
     "fmt"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 )
 
@@ -32,6 +34,35 @@ const (
     RandomEventRebellion
 )
 
+func AllRandomEvents() []RandomEventType {
+    return []RandomEventType{
+        RandomEventBadMoon,
+        RandomEventConjunctionChaos,
+        RandomEventConjunctionNature,
+        RandomEventConjunctionSorcery,
+        RandomEventDepletion,
+        RandomEventDiplomaticMarriage,
+        RandomEventDisjunction,
+        RandomEventDonation,
+        RandomEventEarthquake,
+        RandomEventGift,
+        RandomEventGoodMoon,
+        RandomEventGreatMeteor,
+        RandomEventManaShort,
+        RandomEventNewMinerals,
+        RandomEventPiracy,
+        RandomEventPlague,
+        RandomEventPopulationBoom,
+        RandomEventRebellion,
+    }
+}
+
+func RandomCityEvents() []RandomEventType {
+    return slices.DeleteFunc(AllRandomEvents(), func(event RandomEventType) bool {
+        return event.IsCityEvent()
+    })
+}
+
 func (event RandomEventType) IsGood() bool {
     switch event {
         case RandomEventDiplomaticMarriage, RandomEventDonation, RandomEventGoodMoon,
@@ -43,6 +74,15 @@ func (event RandomEventType) IsGood() bool {
     }
 }
 
+func (event RandomEventType) IsCityEvent() bool {
+    switch event {
+        case RandomEventDepletion, RandomEventDiplomaticMarriage, RandomEventEarthquake,
+             RandomEventGreatMeteor, RandomEventNewMinerals, RandomEventPlague,
+             RandomEventPopulationBoom, RandomEventRebellion: return true
+        default: return false
+    }
+}
+
 /* an event is something shown on screen to the user, like when a new building is created
  */
 type RandomEvent struct {
@@ -51,8 +91,12 @@ type RandomEvent struct {
     Message string // messages are supposed to come out of eventmsg.lbx, but we mostly just hardcode them
     MessageStop string // for events that end after some time
     LbxIndex int // picture from events.lbx
+    Instant bool // true if there is no duration
     IsConjunction bool // only one conjunction event can be active at a time
     CityEvent bool // if true, then this event targets a city
+
+    Gold int
+    Artifact *artifact.Artifact
 }
 
 func MakeDisjunctionEvent(year uint64) *RandomEvent {
@@ -63,6 +107,7 @@ func MakeDisjunctionEvent(year uint64) *RandomEvent {
         LbxIndex: 2,
         IsConjunction: false,
         CityEvent: false,
+        Instant: true,
     }
 }
 
@@ -145,6 +190,7 @@ func MakeDiplomaticMarriageEvent(year uint64, city *citylib.City) *RandomEvent {
         LbxIndex: 3,
         CityEvent: true,
         IsConjunction: false,
+        Instant: true,
     }
 }
 
@@ -156,6 +202,8 @@ func MakeDonationEvent(year uint64, amount int) *RandomEvent {
         LbxIndex: 8,
         CityEvent: false,
         IsConjunction: false,
+        Instant: true,
+        Gold: amount,
     }
 }
 
@@ -167,17 +215,20 @@ func MakeEarthquakeEvent(year uint64, cityName string, people int, units int, bu
         LbxIndex: 4,
         CityEvent: true,
         IsConjunction: false,
+        Instant: true,
     }
 }
 
-func MakeGiftEvent(year uint64, item string) *RandomEvent {
+func MakeGiftEvent(year uint64, item *artifact.Artifact) *RandomEvent {
     return &RandomEvent{
         Type: RandomEventGift,
         BirthYear: year,
-        Message: fmt.Sprintf("The Gift! An ancient God has returned, bearing the relic of %v to aid your cause.", item),
+        Message: fmt.Sprintf("The Gift! An ancient God has returned, bearing the relic of %v to aid your cause.", item.Name),
         LbxIndex: 1,
         CityEvent: false,
         IsConjunction: false,
+        Instant: true,
+        Artifact: item,
     }
 }
 
@@ -189,6 +240,7 @@ func MakeGreatMeteorEvent(year uint64, city string, people int, units int, build
         LbxIndex: 0,
         CityEvent: false,
         IsConjunction: false,
+        Instant: true,
     }
 }
 
@@ -200,7 +252,7 @@ func MakeManaShortEvent(year uint64) *RandomEvent {
         MessageStop: "The mana short has ended and magic has returned to normal.",
         LbxIndex: 17,
         CityEvent: false,
-        IsConjunction: false,
+        IsConjunction: true,
     }
 }
 
@@ -212,6 +264,7 @@ func MakeNewMineralsEvent(year uint64, bonus data.BonusType, city *citylib.City)
         LbxIndex: 10,
         CityEvent: false,
         IsConjunction: false,
+        Instant: true,
     }
 }
 
@@ -223,6 +276,8 @@ func MakePiracyEvent(year uint64, gold int) *RandomEvent {
         LbxIndex: 5,
         CityEvent: false,
         IsConjunction: false,
+        Instant: true,
+        Gold: gold,
     }
 }
 
@@ -256,6 +311,7 @@ func MakeRebellionEvent(year uint64, city *citylib.City) *RandomEvent {
         LbxIndex: 7,
         CityEvent: true,
         IsConjunction: false,
+        Instant: true,
     }
 }
 

@@ -204,27 +204,6 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
         return spellbook.Spell{}, false
     }
 
-    // to be able to use the artifact, the wizard must have enough magic books to satisfy the artifact's requirements
-    canUseArtifact := func (check *artifact.Artifact) bool {
-        // all artifact requirements must be satisfied
-        for _, requirement := range check.Requirements {
-            if wizard.MagicLevel(requirement.MagicType) < requirement.Amount {
-                return false
-            }
-        }
-
-        // and all ability requirements must be satisfied
-        for _, power := range check.Powers {
-            if power.Type == artifact.PowerTypeAbility1 || power.Type == artifact.PowerTypeAbility2 || power.Type == artifact.PowerTypeAbility3 {
-                if wizard.MagicLevel(power.Magic) < power.Amount {
-                    return false
-                }
-            }
-        }
-
-        return true
-    }
-
     // treasure cannot contain more than these values of each type
     spellsRemaining := 1
     // specials are spellbooks and retorts
@@ -317,7 +296,7 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
 
                     for _, choice := range rand.Perm(len(artifacts)) {
                         use := artifacts[choice]
-                        if budget >= use.Cost && canUseArtifact(use) {
+                        if budget >= use.Cost && canUseArtifact(use, wizard) {
                             magicItemRemaining -= 1
                             budget -= use.Cost
                             items = append(items, &TreasureMagicalItem{Artifact: use})
@@ -325,7 +304,7 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
                     }
                 } else {
                     randomArtifact := artifact.MakeRandomArtifact(cache)
-                    if budget >= randomArtifact.Cost && canUseArtifact(&randomArtifact) {
+                    if budget >= randomArtifact.Cost && canUseArtifact(&randomArtifact, wizard) {
                         magicItemRemaining -= 1
                         budget -= randomArtifact.Cost
                         items = append(items, &TreasureMagicalItem{Artifact: &randomArtifact})

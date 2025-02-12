@@ -118,6 +118,7 @@ type GameEventMerchant struct {
 
 type GameEventVault struct {
     CreatedArtifact *artifact.Artifact
+    Player *playerlib.Player
 }
 
 type GameEventNewOutpost struct {
@@ -305,6 +306,27 @@ type UnitBuildPowers struct {
     Meld bool
     BuildRoad bool
     Purify bool
+}
+
+// to be able to use the artifact, the wizard must have enough magic books to satisfy the artifact's requirements
+func canUseArtifact(check *artifact.Artifact, wizard setup.WizardCustom) bool {
+    // all artifact requirements must be satisfied
+    for _, requirement := range check.Requirements {
+        if wizard.MagicLevel(requirement.MagicType) < requirement.Amount {
+            return false
+        }
+    }
+
+    // and all ability requirements must be satisfied
+    for _, power := range check.Powers {
+        if power.Type == artifact.PowerTypeAbility1 || power.Type == artifact.PowerTypeAbility2 || power.Type == artifact.PowerTypeAbility3 {
+            if wizard.MagicLevel(power.Magic) < power.Amount {
+                return false
+            }
+        }
+    }
+
+    return true
 }
 
 func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
@@ -2904,7 +2926,11 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         }
                     case *GameEventVault:
                         vaultEvent := event.(*GameEventVault)
-                        game.doVault(yield, vaultEvent.CreatedArtifact)
+                        if vaultEvent.Player.IsHuman() {
+                            game.doVault(yield, vaultEvent.CreatedArtifact)
+                        } else {
+                            // FIXME: give item to AI
+                        }
                     case *GameEventShowRandomEvent:
                         randomEvent := event.(*GameEventShowRandomEvent)
                         game.doRandomEvent(yield, randomEvent.Event, game.Players[0].Wizard)
@@ -6506,6 +6532,29 @@ func (game *Game) revertVolcanos() {
     }
 }
 
+// for instant random events (not conjunctions or long lasting city events)
+func (game *Game) ApplyRandomEvent(event *RandomEvent, player *playerlib.Player) {
+    switch event.Type {
+        case RandomEventDepletion:
+            // FIXME: need a tile that is not depleted
+        case RandomEventDiplomaticMarriage:
+            // FIXME: need a neutral city
+        case RandomEventDonation:
+            // FIXME: what are the bounds here?
+            player.Gold += event.Gold
+        case RandomEventEarthquake:
+            // FIXME: need a city to target
+        case RandomEventGift:
+            game.Events <- &GameEventVault{CreatedArtifact: event.Artifact, Player: player}
+        case RandomEventGreatMeteor:
+        case RandomEventNewMinerals:
+        case RandomEventPiracy:
+            player.Gold = max(0, player.Gold - event.Gold)
+        case RandomEventRebellion:
+
+    }
+}
+
 func (game *Game) DoRandomEvents() {
     // maybe create a new event
     eventModifier := fraction.FromInt(1)
@@ -6556,8 +6605,67 @@ func (game *Game) DoRandomEvents() {
                 choices.Remove(RandomEventConjunctionChaos)
                 choices.Remove(RandomEventConjunctionNature)
                 choices.Remove(RandomEventConjunctionSorcery)
+                choices.Remove(RandomEventManaShort)
             }
         }
+
+        // remove city events for now
+        for _, event := range RandomCityEvents() {
+            choices.Remove(event)
+        }
+
+        if choices.Size() > 0 {
+            choice := choices.Values()[rand.N(choices.Size())]
+            game.LastEventTurn = game.TurnNumber
+
+            makeEvent := func (choice RandomEventType) *RandomEvent {
+                switch choice {
+                    case RandomEventBadMoon: return MakeBadMoonEvent(game.TurnNumber)
+                    case RandomEventConjunctionChaos: return MakeConjunctionChaosEvent(game.TurnNumber)
+                    case RandomEventConjunctionNature: return MakeConjunctionNatureEvent(game.TurnNumber)
+                    case RandomEventConjunctionSorcery: return MakeConjunctionSorceryEvent(game.TurnNumber)
+                    /*
+                    case RandomEventDepletion:
+                    case RandomEventDiplomaticMarriage:
+                    case RandomEventDisjunction:
+                    case RandomEventDonation:
+                    case RandomEventEarthquake:
+                    case RandomEventGift:
+                        var out []*artifact.Artifact
+                        for _, artifact := range game.ArtifactPool {
+                            out = append(out, artifact)
+                        }
+                        return out
+
+
+                    case RandomEventGoodMoon:
+                    case RandomEventGreatMeteor:
+                    case RandomEventManaShort:
+                    case RandomEventNewMinerals:
+                    case RandomEventPiracy:
+                    case RandomEventPlague:
+                    case RandomEventPopulationBoom:
+                    case RandomEventRebellion:
+                    */
+                }
+
+                return nil
+            }
+
+            newEvent := makeEvent(choice)
+            if newEvent != nil {
+                targetWizard := game.Players[rand.N(len(game.Players))]
+                if !newEvent.Instant {
+                    game.RandomEvents = append(game.RandomEvents, makeEvent(choice))
+                } else {
+                    game.ApplyRandomEvent(newEvent, targetWizard)
+                }
+
+                // FIXME: if the event is targeting an AI wizard then the event message should change slightly
+                game.Events <- &GameEventShowRandomEvent{Event: newEvent}
+            }
+        }
+
     }
 
     var keep []*RandomEvent
