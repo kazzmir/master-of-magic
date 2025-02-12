@@ -78,6 +78,18 @@ func MakeBadMoonEvent(year int) *Event {
     }
 }
 
+func MakeGoodMoonEvent(year int) *Event {
+    return &Event{
+        Type: EventGoodMoon,
+        BirthYear: year,
+        Message: "Good Moon! The moon controlling the powers over good waxes, doubling the power of good temples.",
+        MessageStop: "The good moon has waned.",
+        LbxIndex: 12,
+        CityEvent: false,
+        IsConjunction: true,
+    }
+}
+
 func MakeConjunctionChaosEvent(year int) *Event {
     return &Event{
         Type: EventConjunctionChaos,
@@ -158,11 +170,41 @@ func MakeEarthquakeEvent(year int, cityName string, people int, units int, build
     }
 }
 
+func MakeGiftEvent(year int, item string) *Event {
+    return &Event{
+        Type: EventGift,
+        BirthYear: year,
+        Message: fmt.Sprintf("The Gift! An ancient God has returned, bearing the relic of %v to aid your cause.", item),
+        LbxIndex: 1,
+        CityEvent: false,
+        IsConjunction: false,
+    }
+}
+
+func MakeGreatMeteorEvent(year int, city string, people int, units int, buildings int) *Event {
+    return &Event{
+        Type: EventGreatMeteor,
+        BirthYear: year,
+        Message: fmt.Sprintf("A meteor has hit %v killing %v townsfolk and %v units, and destroying %v buildings.", city, people, units, buildings),
+        LbxIndex: 0,
+        CityEvent: false,
+        IsConjunction: false,
+    }
+}
+
+func MakeManaShortEvent(year int) *Event {
+    return &Event{
+        Type: EventManaShort,
+        BirthYear: year,
+        Message: "Magic Short! All sources of magical power have been shorted out.",
+        MessageStop: "The mana short has ended and magic has returned to normal.",
+        LbxIndex: 17,
+        CityEvent: false,
+        IsConjunction: false,
+    }
+}
+
 /*
-    EventGift
-    EventGoodMoon
-    EventGreatMeteor
-    EventManaShort
     EventNewMinerals
     EventPiracy
     EventPlague
