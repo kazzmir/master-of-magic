@@ -2001,7 +2001,7 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
     var usage []ResourceUsage
 
     add := func(count int, name string, building buildinglib.Building){
-        if count != 0 && cityScreen.City.Buildings.Contains(building) {
+        if count != 0 && (building == buildinglib.BuildingNone || cityScreen.City.Buildings.Contains(building)) {
             usage = append(usage, ResourceUsage{
                 Count: count,
                 Name: name,
@@ -2019,6 +2019,10 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
     add(3, "Alchemist's Guild", buildinglib.BuildingAlchemistsGuild)
     add(-3, "Wizard's Guild", buildinglib.BuildingWizardsGuild)
     add(cityScreen.City.PowerMinerals(), "Minerals", buildinglib.BuildingNone)
+
+    if cityScreen.City.HasEnchantment(data.CityEnchantmentDarkRituals) {
+        add(cityScreen.City.PowerDarkRituals(), "Dark Rituals", buildinglib.BuildingNone)
+    }
 
     // FIXME: add tiles (adamantium mine) and miner's guild
 
@@ -2449,6 +2453,8 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
 
                 localOptions.GeoM.Translate(float64(3 * data.ScreenScale), float64(-2 * data.ScreenScale))
 
+                // FIXME: Unrest is currently only updated at the start of the turn, not when selling
+                //        buildings or adding/removing enchantments
                 for range city.Rebels {
                     screen.DrawImage(rebel, &localOptions)
                     localOptions.GeoM.Translate(float64(rebel.Bounds().Dx()), 0)

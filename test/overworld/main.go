@@ -1031,7 +1031,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player.AddCity(city)
 
-    player.Gold = 83
+    player.Gold = 1000
     player.Mana = 1000
 
     player.LiftFog(x, y, 4, data.PlaneArcanus)
