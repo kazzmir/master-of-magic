@@ -1713,7 +1713,7 @@ func (cityScreen *CityScreen) drawIcons(total int, small *ebiten.Image, large *e
 }
 
 // copied heavily from ui/dialogs.go:MakeHelpElementWithLayer
-func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten.Image, bigIcon *ebiten.Image, ui *uilib.UI, resources []ResourceUsage) *uilib.UIElement {
+func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten.Image, bigIcon *ebiten.Image, ui *uilib.UI, resources []ResourceUsage) []*uilib.UIElement {
     helpTop, err := cityScreen.ImageCache.GetImage("help.lbx", 0, 0)
     if err != nil {
         return nil
@@ -1810,7 +1810,6 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(infoX * data.ScreenScale), float64(bottom * data.ScreenScale + infoY))
-            options.ColorScale.ScaleAlpha(getAlpha())
             window.DrawImage(helpBottom, &options)
 
             // for debugging
@@ -1846,39 +1845,71 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
                 yPos += (helpFont.Height() + 1) * data.ScreenScale
                 options.GeoM.Translate(0, float64((helpFont.Height() + 1) * data.ScreenScale))
             }
-
         }
     }
 
-    renderPage := makeRenderPage(resources[:min(len(resources), maxResources)])
+    var renderPages []func (screen *ebiten.Image)
+    for page := 0; page < len(resources) / maxResources + 1; page++ {
+        start := page * maxResources
+        end := min(len(resources), (page + 1) * maxResources)
 
-    widestResources := float64(0)
-    for _, usage := range resources {
-        var options ebiten.DrawImageOptions
-        geom := cityScreen.drawIcons(int(math.Abs(float64(usage.Count))), smallIcon, bigIcon, options, nil)
-        x, _ := geom.Apply(0, 0)
-        if x > widestResources {
-            widestResources = x
-        }
+        renderPages = append(renderPages, makeRenderPage(resources[start: end]))
     }
+    // renderPage := makeRenderPage(resources[:min(len(resources), maxResources)])
 
-    // FIXME: There can be a second page and a "More" button on the bottom right
-    infoElement := &uilib.UIElement{
+    currentPage := 0
+
+    var elements []*uilib.UIElement
+
+    elements = append(elements, &uilib.UIElement{
         // Rect: image.Rect(infoX, infoY, infoX + infoWidth, infoY + infoHeight),
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
         Draw: func (infoThis *uilib.UIElement, window *ebiten.Image){
-            renderPage(window)
+            renderPages[currentPage](window)
         },
         LeftClick: func(infoThis *uilib.UIElement){
             getAlpha = ui.MakeFadeOut(fadeSpeed)
             ui.AddDelay(fadeSpeed, func(){
-                ui.RemoveElement(infoThis)
+                ui.RemoveElements(elements)
             })
         },
         Layer: 1,
+    })
+
+    if len(renderPages) > 1 {
+        width := helpFont.MeasureTextWidth("More", float64(data.ScreenScale))
+        height := float64(helpFont.Height() * data.ScreenScale)
+
+        var geom ebiten.GeoM
+        geom.Translate(float64(infoX * data.ScreenScale), float64(bottom * data.ScreenScale + infoY))
+        geom.Translate(float64(infoWidth) - width - float64(18 * data.ScreenScale), -height)
+        x1, y1 := geom.Apply(0, 0)
+        x2, y2 := geom.Apply(width, height)
+
+        moreRect := image.Rect(int(x1), int(y1), int(x2), int(y2))
+        elements = append(elements, &uilib.UIElement{
+            Rect: moreRect,
+            Draw: func (this *uilib.UIElement, window *ebiten.Image){
+                // vector.StrokeRect(window, float32(moreRect.Min.X), float32(moreRect.Min.Y), float32(moreRect.Bounds().Dx()), float32(moreRect.Bounds().Dy()), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
+
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(getAlpha())
+                options.GeoM.Reset()
+                options.GeoM.Translate(float64(infoX * data.ScreenScale), float64(bottom * data.ScreenScale + infoY))
+                options.GeoM.Translate(float64(infoWidth) - helpFont.MeasureTextWidth("More", float64(data.ScreenScale)) - float64(18 * data.ScreenScale), -float64(helpFont.Height() * data.ScreenScale))
+                x, y := options.GeoM.Apply(0, 0)
+
+                helpFont.Print(window, x, y, float64(data.ScreenScale), options.ColorScale, "More")
+            },
+            LeftClick: func(this *uilib.UIElement){
+                currentPage = (currentPage + 1) % len(renderPages)
+            },
+            Order: 1,
+            Layer: 1,
+        })
     }
 
-    return infoElement
+    return elements
 }
 
 func (cityScreen *CityScreen) WorkProducers() []ResourceUsage {
@@ -2025,7 +2056,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Rect: foodRect,
         LeftClick: func(element *uilib.UIElement) {
             foodProducers := cityScreen.FoodProducers()
-            ui.AddElement(cityScreen.MakeResourceDialog("Food", smallFood, bigFood, ui, foodProducers))
+            ui.AddElements(cityScreen.MakeResourceDialog("Food", smallFood, bigFood, ui, foodProducers))
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
@@ -2042,7 +2073,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Rect: workRect,
         LeftClick: func(element *uilib.UIElement) {
             workProducers := cityScreen.WorkProducers()
-            ui.AddElement(cityScreen.MakeResourceDialog("Production", smallHammer, bigHammer, ui, workProducers))
+            ui.AddElements(cityScreen.MakeResourceDialog("Production", smallHammer, bigHammer, ui, workProducers))
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
@@ -2063,7 +2094,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Rect: goldMaintenanceRect,
         LeftClick: func(element *uilib.UIElement) {
             maintenance := cityScreen.BuildingMaintenanceResources()
-            ui.AddElement(cityScreen.MakeResourceDialog("Building Maintenance", smallCoin, bigCoin, ui, maintenance))
+            ui.AddElements(cityScreen.MakeResourceDialog("Building Maintenance", smallCoin, bigCoin, ui, maintenance))
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
@@ -2083,7 +2114,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Rect: goldSurplusRect,
         LeftClick: func(element *uilib.UIElement) {
             gold := cityScreen.GoldProducers()
-            ui.AddElement(cityScreen.MakeResourceDialog("Gold", smallCoin, bigCoin, ui, gold))
+            ui.AddElements(cityScreen.MakeResourceDialog("Gold", smallCoin, bigCoin, ui, gold))
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
@@ -2098,7 +2129,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Rect: powerRect,
         LeftClick: func(element *uilib.UIElement) {
             power := cityScreen.PowerProducers()
-            ui.AddElement(cityScreen.MakeResourceDialog("Power", smallMagic, bigMagic, ui, power))
+            ui.AddElements(cityScreen.MakeResourceDialog("Power", smallMagic, bigMagic, ui, power))
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
@@ -2112,7 +2143,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Rect: researchRect,
         LeftClick: func(element *uilib.UIElement) {
             research := cityScreen.ResearchProducers()
-            ui.AddElement(cityScreen.MakeResourceDialog("Spell Research", smallResearch, bigResearch, ui, research))
+            ui.AddElements(cityScreen.MakeResourceDialog("Spell Research", smallResearch, bigResearch, ui, research))
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions

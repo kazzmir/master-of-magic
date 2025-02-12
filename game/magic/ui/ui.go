@@ -3,6 +3,7 @@ package ui
 import (
     "log"
     "image"
+    "cmp"
     "slices"
     "strings"
     "sync"
@@ -60,6 +61,9 @@ type UIElement struct {
 
     Draw UIDrawFunc
     Layer UILayer
+
+    // for specifying which element is drawn first
+    Order int
 
     // if true, the standard ui sound will play when this element is left clicked
     PlaySoundLeftClick bool
@@ -151,7 +155,9 @@ func (ui *UI) AddElement(element *UIElement){
         ui.maxLayer = element.Layer
     }
 
-    ui.Elements[element.Layer] = append(ui.Elements[element.Layer], element)
+    ui.Elements[element.Layer] = slices.SortedFunc(slices.Values(append(ui.Elements[element.Layer], element)), func (a, b *UIElement) int {
+        return cmp.Compare(a.Order, b.Order)
+    })
 }
 
 func (ui *UI) RemoveElements(toRemove []*UIElement){
@@ -388,7 +394,7 @@ func (ui *UI) StandardUpdate() {
 
     wheelX, wheelY := inputmanager.Wheel()
 
-    for _, element := range ui.GetHighestLayer() {
+    for _, element := range slices.Backward(ui.GetHighestLayer()) {
         if image.Pt(mouseX, mouseY).In(element.Rect) {
             if element.Inside != nil {
                 element.Inside(element, mouseX - element.Rect.Min.X, mouseY - element.Rect.Min.Y)
@@ -398,7 +404,7 @@ func (ui *UI) StandardUpdate() {
                 element.Scroll(element, wheelX, wheelY)
             }
 
-            if !ui.Disabled && leftClick {
+            if !ui.Disabled && leftClick && !elementLeftClicked {
                 elementLeftClicked = true
                 if element.LeftClick != nil {
                     if element.PlaySoundLeftClick {
