@@ -1041,12 +1041,9 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                         if ok {
                             cityScreen.City.Buildings.Remove(building)
 
-                            for index, slot := range cityScreen.Buildings {
-                                if slot.Building == building {
-                                    cityScreen.Buildings = append(cityScreen.Buildings[:index], cityScreen.Buildings[index+1:]...)
-                                    break
-                                }
-                            }
+                            cityScreen.Buildings = slices.DeleteFunc(cityScreen.Buildings, func(slot BuildingSlot) bool {
+                                return slot.Building == building
+                            })
                         }
 
                         cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
