@@ -3619,7 +3619,12 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
         // Event: gamelib.MakeGiftEvent(0, "frisbee"),
         // Event: gamelib.MakeGoodMoonEvent(0),
         // Event: gamelib.MakeGreatMeteorEvent(0, "nyc", 2, 4, 6),
-        Event: gamelib.MakeManaShortEvent(0),
+        // Event: gamelib.MakeManaShortEvent(0),
+        // Event: gamelib.MakeNewMineralsEvent(0, data.BonusMithrilOre, city),
+        // Event: gamelib.MakePiracyEvent(0, 456),
+        // Event: gamelib.MakePlagueEvent(0, city),
+        // Event: gamelib.MakePopulationBoomEvent(0, city),
+        Event: gamelib.MakeRebellionEvent(0, city),
     }
 
     return game

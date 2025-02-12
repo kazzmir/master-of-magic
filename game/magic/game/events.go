@@ -204,14 +204,60 @@ func MakeManaShortEvent(year int) *Event {
     }
 }
 
-/*
-    EventNewMinerals
-    EventPiracy
-    EventPlague
-    EventPopulationBoom
-    EventRebellion
-    */
+func MakeNewMineralsEvent(year int, bonus data.BonusType, city *citylib.City) *Event {
+    return &Event{
+        Type: EventNewMinerals,
+        BirthYear: year,
+        Message: fmt.Sprintf("New Mine! Surveyors find a %v deposit near the %v of %v.", bonus, city.GetSize(), city.Name),
+        LbxIndex: 10,
+        CityEvent: false,
+        IsConjunction: false,
+    }
+}
 
+func MakePiracyEvent(year int, gold int) *Event {
+    return &Event{
+        Type: EventPiracy,
+        BirthYear: year,
+        Message: fmt.Sprintf("Pirates! Pirates have plundered your gold reserve, looting and stealing %v gold.", gold),
+        LbxIndex: 5,
+        CityEvent: false,
+        IsConjunction: false,
+    }
+}
+
+func MakePlagueEvent(year int, city *citylib.City) *Event {
+    return &Event{
+        Type: EventPlague,
+        BirthYear: year,
+        Message: fmt.Sprintf("PLAGUE! A virulent plague has broken out in the %v of %v.", city.GetSize(), city.Name),
+        LbxIndex: 6,
+        CityEvent: true,
+        IsConjunction: false,
+    }
+}
+
+func MakePopulationBoomEvent(year int, city *citylib.City) *Event {
+    return &Event{
+        Type: EventPopulationBoom,
+        BirthYear: year,
+        Message: fmt.Sprintf("Population Boom! A sudden population boom doubles the population growth rate of the %v of %v.", city.GetSize(), city.Name),
+        LbxIndex: 11,
+        CityEvent: true,
+        IsConjunction: false,
+    }
+}
+
+func MakeRebellionEvent(year int, city *citylib.City) *Event {
+    return &Event{
+        Type: EventRebellion,
+        BirthYear: year,
+        Message: fmt.Sprintf("Rebellion! The %v of %v has rebelled and become a netural city.", city.GetSize(), city.Name),
+        LbxIndex: 7,
+        CityEvent: true,
+        IsConjunction: false,
+    }
+}
 
 type EventData struct {
     // these strings contain bytes that indicate a placeholder to insert some other value, such as the wizard's name or a city name
