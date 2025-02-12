@@ -296,6 +296,16 @@ func sortBuildings(buildings []buildinglib.Building) []buildinglib.Building {
     return buildings
 }
 
+func enchantmentBuildings() map[data.CityEnchantment]buildinglib.Building {
+    buildings := make(map[data.CityEnchantment]buildinglib.Building)
+    buildings[data.CityEnchantmentAstralGate] = buildinglib.BuildingAstralGate
+    buildings[data.CityEnchantmentAltarOfBattle] = buildinglib.BuildingAltarOfBattle
+    buildings[data.CityEnchantmentStreamOfLife] = buildinglib.BuildingStreamOfLife
+    buildings[data.CityEnchantmentEarthGate] = buildinglib.BuildingEarthGate
+    buildings[data.CityEnchantmentDarkRituals] = buildinglib.BuildingDarkRituals
+    return buildings
+}
+
 func hash(str string) uint64 {
     hasher := fnv.New64a()
     hasher.Write([]byte(str))
@@ -439,12 +449,7 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
         }
     }
 
-    enchantmentBuildings := make(map[data.CityEnchantment]buildinglib.Building)
-    enchantmentBuildings[data.CityEnchantmentAstralGate] = buildinglib.BuildingAstralGate
-    enchantmentBuildings[data.CityEnchantmentAltarOfBattle] = buildinglib.BuildingAltarOfBattle
-    enchantmentBuildings[data.CityEnchantmentStreamOfLife] = buildinglib.BuildingStreamOfLife
-    enchantmentBuildings[data.CityEnchantmentEarthGate] = buildinglib.BuildingEarthGate
-    enchantmentBuildings[data.CityEnchantmentDarkRituals] = buildinglib.BuildingDarkRituals
+    enchantmentBuildings := enchantmentBuildings()
 
     for enchantment, building := range enchantmentBuildings {
         if city.HasEnchantment(enchantment) {
@@ -1030,6 +1035,17 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                 if enchantment.Owner == cityScreen.Player.GetBanner() {
                     yes := func(){
                         cityScreen.City.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
+
+                        enchantmentBuildings := enchantmentBuildings()
+                        building, ok := enchantmentBuildings[enchantment.Enchantment]
+                        if ok {
+                            cityScreen.City.Buildings.Remove(building)
+
+                            cityScreen.Buildings = slices.DeleteFunc(cityScreen.Buildings, func(slot BuildingSlot) bool {
+                                return slot.Building == building
+                            })
+                        }
+
                         cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
                     }
 
@@ -1982,13 +1998,17 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
     var usage []ResourceUsage
 
     add := func(count int, name string, building buildinglib.Building){
-        if count != 0 && cityScreen.City.Buildings.Contains(building) {
+        if count != 0 && (building == buildinglib.BuildingNone || cityScreen.City.Buildings.Contains(building)) {
             usage = append(usage, ResourceUsage{
                 Count: count,
                 Name: name,
                 Replaced: wasBuildingReplaced(building, cityScreen.City),
             })
         }
+    }
+
+    addEnchantment := func (count int, name string){
+        add(count, name, buildinglib.BuildingNone)
     }
 
     add(int(cityScreen.City.PowerCitizens()), "Townsfolk", buildinglib.BuildingNone)
@@ -2000,6 +2020,10 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
     add(3, "Alchemist's Guild", buildinglib.BuildingAlchemistsGuild)
     add(-3, "Wizard's Guild", buildinglib.BuildingWizardsGuild)
     add(cityScreen.City.PowerMinerals(), "Minerals", buildinglib.BuildingNone)
+
+    if cityScreen.City.HasEnchantment(data.CityEnchantmentDarkRituals) {
+        addEnchantment(cityScreen.City.PowerDarkRituals(), "Dark Rituals")
+    }
 
     // FIXME: add tiles (adamantium mine) and miner's guild
 
@@ -2430,6 +2454,8 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
 
                 localOptions.GeoM.Translate(float64(3 * data.ScreenScale), float64(-2 * data.ScreenScale))
 
+                // FIXME: Unrest is currently only updated at the start of the turn, not when selling
+                //        buildings or adding/removing enchantments
                 for range city.Rebels {
                     screen.DrawImage(rebel, &localOptions)
                     localOptions.GeoM.Translate(float64(rebel.Bounds().Dx()), 0)

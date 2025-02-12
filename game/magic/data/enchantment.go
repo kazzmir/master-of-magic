@@ -368,11 +368,7 @@ func (enchantment CityEnchantment) UpkeepMana() int {
 
 func (enchantment CityEnchantment) LbxIndex() int {
     switch enchantment {
-        case CityEnchantmentAltarOfBattle: return 12
-        case CityEnchantmentAstralGate: return 85
         case CityEnchantmentConsecration: return 102
-        case CityEnchantmentDarkRituals: return 81
-        case CityEnchantmentEarthGate: return 83
         case CityEnchantmentEvilPresence: return 82
         case CityEnchantmentInspirations: return 100
         case CityEnchantmentNaturesEye: return 99
@@ -382,7 +378,6 @@ func (enchantment CityEnchantment) LbxIndex() int {
         case CityEnchantmentNatureWard: return 98
         case CityEnchantmentDeathWard: return 94
         case CityEnchantmentChaosWard: return 95
-        case CityEnchantmentStreamOfLife: return 84
         case CityEnchantmentWallOfDarkness: return 79
         case CityEnchantmentWallOfFire: return 77
     }

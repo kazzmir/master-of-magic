@@ -22,9 +22,6 @@ import (
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-const ScreenWidth = 320
-const ScreenHeight = 200
-
 type Engine struct {
     Counter uint64
     UI *uilib.UI
@@ -95,7 +92,7 @@ func (engine *Engine) MakeUI() (*uilib.UI, context.Context, error) {
 
     city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
 
-    return cityview.MakeEnchantmentView(engine.Cache, city, player, "Wall of Fire")
+    return cityview.MakeEnchantmentView(engine.Cache, city, player, data.CityEnchantmentWallOfFire)
 
     /*
     allSpells, err := spellbook.ReadSpellsFromCache(engine.Cache)
@@ -164,13 +161,13 @@ func (engine *Engine) Draw(screen *ebiten.Image){
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return ScreenWidth, ScreenHeight
+    return data.ScreenWidth, data.ScreenHeight
 }
 
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(ScreenWidth * 5, ScreenHeight * 5)
+    ebiten.SetWindowSize(data.ScreenWidth * 2, data.ScreenHeight * 2)
     ebiten.SetWindowTitle("city enchantment")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 

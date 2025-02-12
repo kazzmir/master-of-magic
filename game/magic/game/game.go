@@ -3384,6 +3384,7 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
 
         city.Buildings.Remove(buildinglib.BuildingFortress)
         city.Buildings.Remove(buildinglib.BuildingSummoningCircle)
+        // FIXME: remove enchantments (and their buildings)?
     }
 
     if containedFortress {

@@ -591,6 +591,23 @@ func (city *City) PowerFortress(spellBooks int) int {
     return power
 }
 
+func (city *City) PowerDarkRituals() int {
+    power := 0
+    if city.Buildings.Contains(buildinglib.BuildingShrine) {
+        power += 1
+    }
+    if city.Buildings.Contains(buildinglib.BuildingTemple) {
+        power += 2
+    }
+    if city.Buildings.Contains(buildinglib.BuildingParthenon) {
+        power += 3
+    }
+    if city.Buildings.Contains(buildinglib.BuildingCathedral) {
+        power += 4
+    }
+    return power
+}
+
 
 /* power production from buildings and citizens
  */
@@ -611,7 +628,11 @@ func (city *City) ComputePower(spellBooks int) int {
         }
     }
 
-    // FIXME: take enchantments and bonuses for religious power into account
+    if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
+        religiousPower += city.PowerDarkRituals()
+    }
+
+    // FIXME: take bonuses for religious power into account (infernal power, bad/good moon, etc.)
 
     return power + religiousPower + city.PowerCitizens() + city.PowerMinerals()
 }
@@ -852,6 +873,10 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
         unrestAbsolute += 2
     }
 
+    if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
+        unrestAbsolute += 1
+    }
+
     // capital race vs town race modifier
     // unrest from spells
     // supression from units
@@ -952,7 +977,7 @@ func (city *City) PopulationGrowthRate() int {
         base += int(2.5 * float32(city.MaximumCitySize()) / 10) * 10
     }
 
-    // FIXME: Add Stream of Life, Dark Rituals and Population Boom event
+    // FIXME: Add Stream of Life and Population Boom event
 
     if city.ProducingBuilding == buildinglib.BuildingHousing {
         bonus := 50
@@ -969,6 +994,10 @@ func (city *City) PopulationGrowthRate() int {
         }
 
         base += bonus
+    }
+
+    if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
+        base = int(0.75 * float32(base))
     }
 
     if city.SurplusFood() < 0 {
