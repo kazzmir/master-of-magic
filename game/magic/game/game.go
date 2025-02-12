@@ -203,6 +203,11 @@ type GameEventMoveCamera struct {
     Instant bool // set to true to have the camera move instantly, rather than smoothly scroll
 }
 
+// https://masterofmagic.fandom.com/wiki/Event
+type GameEventShowRandomEvent struct {
+    Event *Event
+}
+
 type GameEventMoveUnit struct {
     Player *playerlib.Player
 }
@@ -2727,6 +2732,118 @@ func (game *Game) AddExperience(player *playerlib.Player, unit units.StackUnit, 
     }
 }
 
+func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *Event, wizard setup.WizardCustom) {
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return
+    }
+
+    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+
+    background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
+
+    // devil: 51
+    // cat: 52
+    // bird: 53
+    // snake: 54
+    // beetle: 55
+    animalIndex := 51
+    switch wizard.MostBooks() {
+        case data.NatureMagic: animalIndex = 54
+        case data.SorceryMagic: animalIndex = 55
+        case data.ChaosMagic: animalIndex = 51
+        case data.LifeMagic: animalIndex = 53
+        case data.DeathMagic: animalIndex = 52
+    }
+    animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
+
+    wrappedText := bigFont.CreateWrappedText(float64(170 * data.ScreenScale), float64(1 * data.ScreenScale), event.Message)
+
+    rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
+
+    getAlpha := util.MakeFadeIn(7, &game.Counter)
+
+    eventPic, err := game.ImageCache.GetImage("events.lbx", event.LbxIndex, 0)
+
+    if err != nil {
+        log.Printf("Error: Unable to get event picture for %v: %v", event.Type, err)
+        return
+    }
+
+    if event.Type.IsGood() {
+        game.Music.PushSong(music.SongGoodEvent)
+    } else {
+        game.Music.PushSong(music.SongBadEvent)
+    }
+
+    defer game.Music.PopSong()
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+
+        var options ebiten.DrawImageOptions
+        options.ColorScale.ScaleAlpha(getAlpha())
+        options.GeoM.Translate(float64(8 * data.ScreenScale), float64(60 * data.ScreenScale))
+        screen.DrawImage(background, &options)
+        iconOptions := options
+        iconOptions.GeoM.Translate(float64(34 * data.ScreenScale), float64(28 * data.ScreenScale))
+        iconOptions.GeoM.Translate(float64(-animal.Bounds().Dx() / 2), float64(-animal.Bounds().Dy() / 2))
+        screen.DrawImage(animal, &iconOptions)
+
+        x, y := options.GeoM.Apply(float64(80 * data.ScreenScale), float64(9 * data.ScreenScale))
+        bigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
+
+        options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
+
+        shiftX := float64(6 * data.ScreenScale)
+        shiftY := float64(8 * data.ScreenScale)
+        options.GeoM.Translate(shiftX, shiftY)
+        screen.DrawImage(eventPic, &options)
+        options.GeoM.Translate(-shiftX, -shiftY)
+        screen.DrawImage(rightSide, &options)
+
+        /*
+        x, y = options.GeoM.Apply(float64(4 * data.ScreenScale), float64(6 * data.ScreenScale))
+        buildingSpace := screen.SubImage(image.Rect(int(x), int(y), int(x) + 45 * data.ScreenScale, int(y) + 47 * data.ScreenScale)).(*ebiten.Image)
+
+        // buildingSpace.Fill(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+        // vector.DrawFilledRect(buildingSpace, float32(x), float32(y), float32(buildingSpace.Bounds().Dx()), float32(buildingSpace.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
+        */
+    }
+
+    quit := false
+
+    for !quit {
+        game.Counter += 1
+        if inputmanager.LeftClick() {
+            quit = true
+        }
+        yield()
+    }
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -2778,6 +2895,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventVault:
                         vaultEvent := event.(*GameEventVault)
                         game.doVault(yield, vaultEvent.CreatedArtifact)
+                    case *GameEventShowRandomEvent:
+                        randomEvent := event.(*GameEventShowRandomEvent)
+                        game.doRandomEvent(yield, randomEvent.Event, game.Players[0].Wizard)
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)

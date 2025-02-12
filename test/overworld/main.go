@@ -3562,6 +3562,57 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// show random event
+func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 43")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{},
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.DeathMagic,
+                Count: 5,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("Erfurt", x, y, player.Wizard.Race, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
+    city.Population = 1000
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingUnit = units.UnitNone
+    city.Production = float32(city.ProducingUnit.ProductionCost)
+    city.Farmers = 1
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+    player.Gold = 1000
+    player.Mana = 1000
+
+    player.LiftFog(x, y, 4, data.PlaneArcanus)
+
+    game.Camera.Center(x, y)
+
+    game.Events <- &gamelib.GameEventShowRandomEvent{
+        Event: gamelib.MakeBadMoonEvent(0),
+    }
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -3610,6 +3661,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 40: game = createScenario40(cache)
         case 41: game = createScenario41(cache)
         case 42: game = createScenario42(cache)
+        case 43: game = createScenario43(cache)
         default: game = createScenario1(cache)
     }
 
