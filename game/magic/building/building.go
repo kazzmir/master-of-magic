@@ -194,10 +194,10 @@ func (building Building) Size() (int, int) {
         case BuildingFortress: return 3, 3
         case BuildingSummoningCircle: return 3, 2
         case BuildingAltarOfBattle: return 2, 2
-        case BuildingAstralGate: return 2, 2  // not sure
-        case BuildingStreamOfLife: return 2, 2  // not sure
-        case BuildingEarthGate: return 2, 2  // not sure
-        case BuildingDarkRituals: return 2, 2
+        case BuildingAstralGate: return 2, 2
+        case BuildingStreamOfLife: return 2, 2
+        case BuildingEarthGate: return 2, 2
+        case BuildingDarkRituals: return 3, 2
     }
 
     return 0, 0

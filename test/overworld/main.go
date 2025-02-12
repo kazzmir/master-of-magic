@@ -999,6 +999,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Cursed Lands"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Famine"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Pestilence"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
@@ -1030,7 +1031,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player.AddCity(city)
 
-    player.Gold = 83
+    player.Gold = 1000
     player.Mana = 1000
 
     player.LiftFog(x, y, 4, data.PlaneArcanus)
