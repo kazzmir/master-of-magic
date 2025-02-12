@@ -8,8 +8,37 @@ import (
 type EventType int
 
 const (
-    EventDisjunction EventType = iota
+    EventNone EventType = iota
+    EventBadMoon
+    EventConjunctionChaos
+    EventConjunctionNature
+    EventConjunctionSorcery
+    EventDepletion
+    EventDiplomaticMarriage
+    EventDisjunction
+    EventDonation
+    EventEarthquake
+    EventGift
+    EventGoodMoon
+    EventGreatMeteor
+    EventManaShort
+    EventNewMinerals
+    EventPiracy
+    EventPlague
+    EventPopulationBoom
+    EventRebellion
 )
+
+func (event EventType) IsGood() bool {
+    switch event {
+        case EventDiplomaticMarriage, EventDonation, EventGoodMoon,
+             EventGift, EventNewMinerals, EventPopulationBoom,
+             // FIXME: double check on the conjunction events
+             EventConjunctionChaos, EventConjunctionNature, EventConjunctionSorcery:
+             return true
+         default: return false
+    }
+}
 
 /* an event is something shown on screen to the user, like when a new building is created
  */
@@ -17,6 +46,7 @@ type Event struct {
     Type EventType
     BirthYear int // year/turn the event started
     Message string // messages are supposed to come out of eventmsg.lbx, but we mostly just hardcode them
+    MessageStop string // for events that end after some time
     LbxIndex int // picture from events.lbx
     IsConjunction bool // only one conjunction event can be active at a time
     CityEvent bool // if true, then this event targets a city
@@ -30,6 +60,18 @@ func MakeDisjunctionEvent(year int) *Event {
         LbxIndex: 2,
         IsConjunction: false,
         CityEvent: false,
+    }
+}
+
+func MakeBadMoonEvent(year int) *Event {
+    return &Event{
+        Type: EventBadMoon,
+        BirthYear: year,
+        Message: "Bad Moon! The moon controlling the powers over evil waxes, doubling the power from evil temples.",
+        MessageStop: "The bad moon has waned.",
+        LbxIndex: 13,
+        CityEvent: false,
+        IsConjunction: true,
     }
 }
 
