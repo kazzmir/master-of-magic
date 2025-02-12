@@ -15,7 +15,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player, spellName string) (*uilib.UI, context.Context, error) {
+func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player, enchantment data.CityEnchantment) (*uilib.UI, context.Context, error) {
     imageCache := util.MakeImageCache(cache)
 
     background, _ := imageCache.GetImage("spellscr.lbx", 73, 0)
@@ -34,6 +34,11 @@ func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *player
     quit, cancel := context.WithCancel(context.Background())
 
     var ui *uilib.UI
+
+    enchantmentBuilding, ok := enchantmentBuildings()[enchantment]
+    if !ok {
+        enchantmentBuilding = buildinglib.BuildingNone
+    }
 
     ui = &uilib.UI{
         LeftClick: func() {
@@ -55,11 +60,11 @@ func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *player
             fonts.BigFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
 
             descriptionX, descriptionY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(background.Bounds().Dy() - fonts.CastFont.Height() * data.ScreenScale - 2 * data.ScreenScale))
-            fonts.CastFont.PrintCenter(screen, descriptionX, descriptionY, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("You cast %v", spellName))
+            fonts.CastFont.PrintCenter(screen, descriptionX, descriptionY, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("You cast %v", enchantment.Name()))
 
             geom2 := geom
             geom2.Translate(float64(5 * data.ScreenScale), float64(28 * data.ScreenScale))
-            drawCityScape(screen, city, buildingSlots, buildinglib.BuildingNone, 0, buildinglib.BuildingNone, ui.Counter / 8, &imageCache, fonts, player, geom2, getAlpha())
+            drawCityScape(screen, city, buildingSlots, buildinglib.BuildingNone, 0, enchantmentBuilding, ui.Counter / 8, &imageCache, fonts, player, geom2, getAlpha())
         },
     }
 

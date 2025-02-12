@@ -216,8 +216,8 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
     }
 }
 
-func (game *Game) showCityEnchantment(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, spellName string) {
-    ui, quit, err := cityview.MakeEnchantmentView(game.Cache, city, player, spellName)
+func (game *Game) showCityEnchantment(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, enchantment data.CityEnchantment) {
+    ui, quit, err := cityview.MakeEnchantmentView(game.Cache, city, player, enchantment)
     if err != nil {
         log.Printf("Error making enchantment view: %v", err)
         return
@@ -555,7 +555,7 @@ func (game *Game) doCastCityEnchantment(yield coroutine.YieldFunc, tileX int, ti
         sound.Play()
     }
 
-    game.showCityEnchantment(yield, chosenCity, player, enchantment.Name())
+    game.showCityEnchantment(yield, chosenCity, player, enchantment)
 }
 
 type UpdateMapFunction func (tileX int, tileY int, animationFrame int)

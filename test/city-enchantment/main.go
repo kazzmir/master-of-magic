@@ -95,7 +95,7 @@ func (engine *Engine) MakeUI() (*uilib.UI, context.Context, error) {
 
     city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
 
-    return cityview.MakeEnchantmentView(engine.Cache, city, player, "Wall of Fire")
+    return cityview.MakeEnchantmentView(engine.Cache, city, player, data.CityEnchantmentWallOfFire)
 
     /*
     allSpells, err := spellbook.ReadSpellsFromCache(engine.Cache)
