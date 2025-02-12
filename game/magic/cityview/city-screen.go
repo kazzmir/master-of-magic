@@ -60,8 +60,6 @@ const (
 // buildings can appear in certain well-defined places around the city
 func buildingSlots() []image.Point {
 
-    // FIXME: Use a more fine-grained grid and layout buildings according to building.Size()
-
     return []image.Point{
         // row 1
         image.Pt(30, 23),
@@ -575,8 +573,6 @@ func makeBuildingSlotsOld(city *citylib.City) []BuildingSlot {
             buildings = append(buildings, BuildingSlot{Building: building, Point: image.Pt(0, 75)})
             continue
         }
-
-        // FIXME: BuildingShipwrightsGuild, BuildingShipYard and BuildingMaritimeGuild are always at in the middle left
 
         if wasBuildingReplaced(building, city) {
             continue
