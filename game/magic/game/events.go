@@ -75,6 +75,38 @@ func MakeBadMoonEvent(year int) *Event {
     }
 }
 
+func MakeConjunctionChaosEvent(year int) *Event {
+    return &Event{
+        Type: EventConjunctionChaos,
+        BirthYear: year,
+        Message: "The rising triad of red stars come together, doubling all power gained from red nodes and halving all others.",
+        MessageStop: "The conjunction of chaos has ended.",
+        LbxIndex: 14,
+        CityEvent: false,
+        IsConjunction: true,
+    }
+}
+
+/*
+    EventConjunctionNature
+    EventConjunctionSorcery
+    EventDepletion
+    EventDiplomaticMarriage
+    EventDisjunction
+    EventDonation
+    EventEarthquake
+    EventGift
+    EventGoodMoon
+    EventGreatMeteor
+    EventManaShort
+    EventNewMinerals
+    EventPiracy
+    EventPlague
+    EventPopulationBoom
+    EventRebellion
+    */
+
+
 type EventData struct {
     // these strings contain bytes that indicate a placeholder to insert some other value, such as the wizard's name or a city name
     Events []string
