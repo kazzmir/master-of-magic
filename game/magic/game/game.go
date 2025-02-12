@@ -2750,14 +2750,14 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *Event, wizard 
         return
     }
 
-    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
+    yellow := util.RotateHue(color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}, -0.1)
     yellowPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
+        yellow,
+        util.Lighten(yellow, -5),
+        util.Lighten(yellow, -15),
+        util.Lighten(yellow, -25),
     }
 
     bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
