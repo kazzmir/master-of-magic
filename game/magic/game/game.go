@@ -2840,6 +2840,15 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *Event, wizard 
         if inputmanager.LeftClick() {
             quit = true
         }
+        if yield() != nil {
+            return
+        }
+    }
+
+    getAlpha = util.MakeFadeOut(7, &game.Counter)
+
+    for range 7 {
+        game.Counter += 1
         yield()
     }
 }
