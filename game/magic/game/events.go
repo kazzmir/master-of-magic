@@ -2,7 +2,10 @@ package game
 
 import (
     "fmt"
+
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 )
 
 type EventType int
@@ -111,13 +114,51 @@ func MakeConjunctionSorceryEvent(year int) *Event {
     }
 }
 
+func MakeDepletionEvent(year int, bonus data.BonusType, cityName string) *Event {
+    return &Event{
+        Type: EventDepletion,
+        BirthYear: year,
+        Message: fmt.Sprintf("Depletion! A %v mine within %v has become depleted and can no longer be mined.", bonus, cityName),
+        LbxIndex: 9,
+        CityEvent: false,
+        IsConjunction: false,
+    }
+}
+
+func MakeDiplomaticMarriageEvent(year int, city *citylib.City) *Event {
+    return &Event{
+        Type: EventDiplomaticMarriage,
+        BirthYear: year,
+        Message: fmt.Sprintf("Diplomatic Marriage! The neutral %v of %v has offered to join your cause.", city.GetSize(), city.Name),
+        LbxIndex: 3,
+        CityEvent: true,
+        IsConjunction: false,
+    }
+}
+
+func MakeDonationEvent(year int, amount int) *Event {
+    return &Event{
+        Type: EventDonation,
+        BirthYear: year,
+        Message: fmt.Sprintf("Donation! A wealthy merchant has decided to support your cause with a contribution of %v gold.", amount),
+        LbxIndex: 8,
+        CityEvent: false,
+        IsConjunction: false,
+    }
+}
+
+func MakeEarthquakeEvent(year int, cityName string, people int, units int, buildings int) *Event {
+    return &Event{
+        Type: EventEarthquake,
+        BirthYear: year,
+        Message: fmt.Sprintf("Earthquake! A violent quake struck %v, killing %v people and %v units, and destroying %v buildings.", cityName, people, units, buildings),
+        LbxIndex: 4,
+        CityEvent: true,
+        IsConjunction: false,
+    }
+}
+
 /*
-    EventConjunctionSorcery
-    EventDepletion
-    EventDiplomaticMarriage
-    EventDisjunction
-    EventDonation
-    EventEarthquake
     EventGift
     EventGoodMoon
     EventGreatMeteor
