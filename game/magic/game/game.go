@@ -45,6 +45,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/functional"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -205,7 +206,7 @@ type GameEventMoveCamera struct {
 
 // https://masterofmagic.fandom.com/wiki/Event
 type GameEventShowRandomEvent struct {
-    Event *Event
+    Event *RandomEvent
 }
 
 type GameEventMoveUnit struct {
@@ -259,7 +260,7 @@ type Game struct {
     MovingStack *playerlib.UnitStack
 
     // https://masterofmagic.fandom.com/wiki/Event
-    GameEvents []Event
+    RandomEvents []*RandomEvent
     LastEventTurn uint64
 
     HudUI *uilib.UI
@@ -2732,7 +2733,7 @@ func (game *Game) AddExperience(player *playerlib.Player, unit units.StackUnit, 
     }
 }
 
-func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *Event, wizard setup.WizardCustom) {
+func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, wizard setup.WizardCustom) {
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
@@ -6505,13 +6506,8 @@ func (game *Game) revertVolcanos() {
     }
 }
 
-func (game *Game) EndOfTurn() {
-    // put stuff here that should happen when all players have taken their turn
-
-    game.revertVolcanos()
-
-    game.TurnNumber += 1
-
+func (game *Game) DoRandomEvents() {
+    // maybe create a new event
     eventModifier := fraction.FromInt(1)
     switch game.Settings.Difficulty {
         case data.DifficultyIntro: eventModifier = fraction.Make(1, 2)
@@ -6528,9 +6524,75 @@ func (game *Game) EndOfTurn() {
     }
 
     if rand.N(512) < int(eventProbability.ToFloat()) {
-        log.Printf("New event!")
+        choices := set.NewSet[RandomEventType](
+            RandomEventBadMoon,
+            RandomEventConjunctionChaos,
+            RandomEventConjunctionNature,
+            RandomEventConjunctionSorcery,
+            RandomEventDepletion,
+            RandomEventDiplomaticMarriage,
+            RandomEventDisjunction,
+            RandomEventDonation,
+            RandomEventEarthquake,
+            RandomEventGift,
+            RandomEventGoodMoon,
+            RandomEventGreatMeteor,
+            RandomEventManaShort,
+            RandomEventNewMinerals,
+            RandomEventPiracy,
+            RandomEventPlague,
+            RandomEventPopulationBoom,
+            RandomEventRebellion,
+        )
+
+        // remove events that can't occur because they are already occurring or
+        // there is some mutually exclusive other event
+        for _, event := range game.RandomEvents {
+            choices.Remove(event.Type)
+            // remove all conjunctions because only one conjunction can be active at a time
+            if event.IsConjunction {
+                choices.Remove(RandomEventBadMoon)
+                choices.Remove(RandomEventGoodMoon)
+                choices.Remove(RandomEventConjunctionChaos)
+                choices.Remove(RandomEventConjunctionNature)
+                choices.Remove(RandomEventConjunctionSorcery)
+            }
+        }
     }
 
+    var keep []*RandomEvent
+    for _, event := range game.RandomEvents {
+        // a random event can end after 5 turns, and the chances of it ending are 5% per turn
+        turns := game.TurnNumber - event.BirthYear
+        if turns < 5 {
+            keep = append(keep, event)
+            continue
+        }
+        step := uint64(5)
+        if event.IsConjunction {
+            step = 10
+        }
+
+        chance := (turns - 5) * step
+
+        if uint64(rand.N(100)) < chance {
+            // don't keep
+        } else {
+            keep = append(keep, event)
+        }
+    }
+
+    game.RandomEvents = keep
+}
+
+func (game *Game) EndOfTurn() {
+    // put stuff here that should happen when all players have taken their turn
+
+    game.revertVolcanos()
+
+    game.TurnNumber += 1
+
+    game.DoRandomEvents()
 }
 
 func (game *Game) DoNextTurn(){
