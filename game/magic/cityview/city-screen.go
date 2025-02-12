@@ -2007,6 +2007,10 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
         }
     }
 
+    addEnchantment := func (count int, name string){
+        add(count, name, buildinglib.BuildingNone)
+    }
+
     add(int(cityScreen.City.PowerCitizens()), "Townsfolk", buildinglib.BuildingNone)
     add(cityScreen.City.PowerFortress(cityScreen.Player.Wizard.TotalBooks()), "Fortress", buildinglib.BuildingFortress)
     add(1, "Shrine", buildinglib.BuildingShrine)
@@ -2018,7 +2022,7 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
     add(cityScreen.City.PowerMinerals(), "Minerals", buildinglib.BuildingNone)
 
     if cityScreen.City.HasEnchantment(data.CityEnchantmentDarkRituals) {
-        add(cityScreen.City.PowerDarkRituals(), "Dark Rituals", buildinglib.BuildingNone)
+        addEnchantment(cityScreen.City.PowerDarkRituals(), "Dark Rituals")
     }
 
     // FIXME: add tiles (adamantium mine) and miner's guild
