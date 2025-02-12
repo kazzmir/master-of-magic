@@ -87,8 +87,31 @@ func MakeConjunctionChaosEvent(year int) *Event {
     }
 }
 
+func MakeConjunctionNatureEvent(year int) *Event {
+    return &Event{
+        Type: EventConjunctionNature,
+        BirthYear: year,
+        Message: "The rising triad of green stars come together, doubling all power gained from green nodes and halving all others.",
+        MessageStop: "The conjunction of nature has ended.",
+        LbxIndex: 15,
+        CityEvent: false,
+        IsConjunction: true,
+    }
+}
+
+func MakeConjunctionSorceryEvent(year int) *Event {
+    return &Event{
+        Type: EventConjunctionSorcery,
+        BirthYear: year,
+        Message: "The rising triad of blue stars come together, doubling all power gained from blue nodes and halving all others.",
+        MessageStop: "The conjunction of sorcery has ended.",
+        LbxIndex: 16,
+        CityEvent: false,
+        IsConjunction: true,
+    }
+}
+
 /*
-    EventConjunctionNature
     EventConjunctionSorcery
     EventDepletion
     EventDiplomaticMarriage

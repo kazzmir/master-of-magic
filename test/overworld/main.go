@@ -3607,7 +3607,11 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
     game.Camera.Center(x, y)
 
     game.Events <- &gamelib.GameEventShowRandomEvent{
-        Event: gamelib.MakeBadMoonEvent(0),
+        // Event: gamelib.MakeDisjunctionEvent(0),
+        // Event: gamelib.MakeBadMoonEvent(0),
+        // Event: gamelib.MakeConjunctionChaosEvent(0),
+        // Event: gamelib.MakeConjunctionNatureEvent(0),
+        Event: gamelib.MakeConjunctionSorceryEvent(0),
     }
 
     return game

@@ -2779,7 +2779,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *Event, wizard 
     }
     animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
 
-    wrappedText := bigFont.CreateWrappedText(float64(170 * data.ScreenScale), float64(1 * data.ScreenScale), event.Message)
+    wrappedText := bigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), event.Message)
 
     rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
 
@@ -2812,7 +2812,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *Event, wizard 
         iconOptions.GeoM.Translate(float64(-animal.Bounds().Dx() / 2), float64(-animal.Bounds().Dy() / 2))
         screen.DrawImage(animal, &iconOptions)
 
-        x, y := options.GeoM.Apply(float64(80 * data.ScreenScale), float64(9 * data.ScreenScale))
+        x, y := options.GeoM.Apply(float64(75 * data.ScreenScale), float64(9 * data.ScreenScale))
         bigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
