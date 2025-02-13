@@ -6604,6 +6604,28 @@ func (game *Game) DoRandomEvents() {
                     case RandomEventConjunctionChaos: return MakeConjunctionChaosEvent(game.TurnNumber), nil
                     case RandomEventConjunctionNature: return MakeConjunctionNatureEvent(game.TurnNumber), nil
                     case RandomEventConjunctionSorcery: return MakeConjunctionSorceryEvent(game.TurnNumber), nil
+                    case RandomEventManaShort: return MakeManaShortEvent(game.TurnNumber), nil
+                    case RandomEventDisjunction:
+                        // there must be at least one global enchantment for this event to occur
+                        hasGlobalEnchantment := false
+
+                        for _, player := range game.Players {
+                            if player.GlobalEnchantments.Size() > 0 {
+                                hasGlobalEnchantment = true
+                                break
+                            }
+                        }
+
+                        if !hasGlobalEnchantment {
+                            return nil, nil
+                        }
+
+                        return MakeDisjunctionEvent(game.TurnNumber), func (){
+                            // remove all global enchantments
+                            for _, player := range game.Players {
+                                player.GlobalEnchantments.Clear()
+                            }
+                        }
                     case RandomEventDonation:
                         // FIXME: what are the bounds here?
                         gold := rand.N(2000) + 100
@@ -6640,13 +6662,11 @@ func (game *Game) DoRandomEvents() {
                         // FIXME: need a tile that is not depleted
                     case RandomEventDiplomaticMarriage:
                         // FIXME: need a neutral city
-                    case RandomEventDisjunction:
                     case RandomEventEarthquake:
                         // FIXME: need a city to target
 
                     case RandomEventGreatMeteor:
                         // FIXME: need a city to target
-                    case RandomEventManaShort:
                     case RandomEventNewMinerals:
                     case RandomEventPlague:
                     case RandomEventPopulationBoom:
