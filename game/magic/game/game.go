@@ -6958,7 +6958,14 @@ func (game *Game) DoRandomEvents() {
     }
 
     var keep []*RandomEvent
+    // add events to the 'keep' array to keep them for the next turn
     for _, event := range game.RandomEvents {
+
+        // once citizens has reached 2, plague will dissipate automatically
+        if event.Type == RandomEventPlague && event.TargetCity.Citizens() <= 2 {
+            continue
+        }
+
         // a random event can end after 5 turns, and the chances of it ending are 5% per turn
         turns := game.TurnNumber - event.BirthYear
         if turns < 5 {
