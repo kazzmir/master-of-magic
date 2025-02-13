@@ -6617,6 +6617,18 @@ func (game *Game) ManaShortActive() bool {
     })
 }
 
+func (game *Game) GoodMoonActive() bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventGoodMoon
+    })
+}
+
+func (game *Game) BadMoonActive() bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventBadMoon
+    })
+}
+
 func (game *Game) ConjunctionChaosActive() bool {
     return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
         return event.Type == RandomEventConjunctionChaos

@@ -44,6 +44,14 @@ func (provider *NoCities) FindRoadConnectedCities(city *City) []*City {
     return nil
 }
 
+func (provider *NoCities) GoodMoonActive() bool {
+    return false
+}
+
+func (provider *NoCities) BadMoonActive() bool {
+    return false
+}
+
 func TestBasicCity(test *testing.T){
     city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeSimpleMap()}, &NoCities{})
     city.Population = 6000
@@ -109,6 +117,14 @@ func (provider *AllConnected) FindRoadConnectedCities(city *City) []*City {
     }
 
     return out
+}
+
+func (provider *AllConnected) GoodMoonActive() bool {
+    return false
+}
+
+func (provider *AllConnected) BadMoonActive() bool {
+    return false
 }
 
 func closeFloat(a float64, b float64) bool {

@@ -75,8 +75,10 @@ type CatchmentProvider interface {
     OnShore(x int, y int) bool
 }
 
-type ConnectedCityProvider interface {
+type CityServicesProvider interface {
     FindRoadConnectedCities(city *City) []*City
+    GoodMoonActive() bool
+    BadMoonActive() bool
 }
 
 const MAX_CITY_CITIZENS = 25
@@ -108,7 +110,7 @@ type City struct {
     Enchantments *set.Set[Enchantment]
 
     CatchmentProvider CatchmentProvider
-    ConnectedProvider ConnectedCityProvider
+    CityServices CityServicesProvider
 
     TaxRate fraction.Fraction
 
@@ -124,7 +126,7 @@ type City struct {
 }
 
 // FIXME: Add plane?
-func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider, connectedProvider ConnectedCityProvider) *City {
+func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider, cityServices CityServicesProvider) *City {
     city := City{
         Name: name,
         X: x,
@@ -136,7 +138,7 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
         Enchantments: set.MakeSet[Enchantment](),
         TaxRate: taxRate,
         CatchmentProvider: catchmentProvider,
-        ConnectedProvider: connectedProvider,
+        CityServices: cityServices,
         BuildingInfo: buildingInfo,
     }
 
@@ -1175,7 +1177,7 @@ func (city *City) GoldMinerals() int {
 //   population of other city * 0.5% if same race
 //   population of other city * 1% if different
 func (city *City) ComputeForeignTrade() float64 {
-    connected := city.ConnectedProvider.FindRoadConnectedCities(city)
+    connected := city.CityServices.FindRoadConnectedCities(city)
     percent := float64(0)
 
     for _, other := range connected {

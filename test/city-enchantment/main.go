@@ -36,6 +36,14 @@ func (provider *NoCityProvider) FindRoadConnectedCities(city *citylib.City) []*c
     return nil
 }
 
+func (provider *NoCityProvider) GoodMoonActive() bool {
+    return false
+}
+
+func (provider *NoCityProvider) BadMoonActive() bool {
+    return false
+}
+
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
     engine := &Engine{
