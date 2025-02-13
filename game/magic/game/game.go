@@ -2837,7 +2837,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
     animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
 
     message := event.Message
-    if !starting {
+    if !start {
         message = event.MessageStop
     }
     wrappedText := bigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), message)
