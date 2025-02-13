@@ -6535,11 +6535,43 @@ func (game *Game) revertVolcanos() {
 }
 
 // returns the number of people, units, buildings that were lost
-func (game *Game) doEarthquake(city *citylib.City) (int, int, int) {
+func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (int, int, int) {
     // FIXME: destroy buildings with 15% chance and non-flying units with 25% chance
     // https://masterofmagic.fandom.com/wiki/Earthquake
 
-    return 0, 0, 0
+    // earthquake never kills any citizens
+    people := 0
+
+    var killedUnits []units.StackUnit
+
+    stack := player.FindStack(city.X, city.Y, city.Plane)
+    if stack != nil {
+        for _, unit := range stack.Units() {
+            if unit.IsFlying() || unit.HasAbility(data.AbilityNonCorporeal) {
+                continue
+            }
+
+            roll := rand.N(100)
+            if roll < 25 {
+                killedUnits = append(killedUnits, unit)
+            }
+        }
+    }
+
+    for _, unit := range killedUnits {
+        player.RemoveUnit(unit)
+    }
+
+    var destroyedBuildings []buildinglib.Building
+    for _, building := range city.Buildings.Values() {
+        roll := rand.N(100)
+        if roll < 15 {
+            destroyedBuildings = append(destroyedBuildings, building)
+            city.Buildings.Remove(building)
+        }
+    }
+
+    return people, len(killedUnits), len(destroyedBuildings)
 }
 
 func (game *Game) doCallTheVoid(city *citylib.City) (int, int, int) {
@@ -6727,7 +6759,7 @@ func (game *Game) DoRandomEvents() {
 
                         city := choices[rand.N(len(choices))]
 
-                        people, units, buildings := game.doEarthquake(city)
+                        people, units, buildings := game.doEarthquake(city, target)
 
                         return MakeEarthquakeEvent(game.TurnNumber, city.Name, people, units, buildings)
 
