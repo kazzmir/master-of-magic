@@ -6713,11 +6713,6 @@ func (game *Game) DoRandomEvents() {
             }
         }
 
-        // remove city events for now
-        for _, event := range RandomCityEvents() {
-            choices.Remove(event)
-        }
-
         if choices.Size() > 0 {
             choice := choices.Values()[rand.N(choices.Size())]
 
@@ -6765,6 +6760,10 @@ func (game *Game) DoRandomEvents() {
 
                         return MakeDonationEvent(game.TurnNumber, gold)
                     case RandomEventPiracy:
+                        if target.Gold < 100 {
+                            return nil
+                        }
+
                         gold := rand.N(2000) + 100
                         target.Gold = max(0, target.Gold - gold)
 
@@ -6936,13 +6935,12 @@ func (game *Game) DoRandomEvents() {
                             if len(choices) > 0 {
                                 city := choices[rand.N(len(choices))]
 
-                                // disband any stack garrisoned at the city
+                                // disband any fantastic units garrisoned at the city, and convert to neutral all other normal units
                                 stack := target.FindStack(city.X, city.Y, city.Plane)
                                 if stack != nil {
                                     for _, unit := range stack.Units() {
-                                        if unit.GetRace() == data.RaceFantastic {
-                                            target.RemoveUnit(unit)
-                                        } else {
+                                        target.RemoveUnit(unit)
+                                        if unit.GetRace() != data.RaceFantastic {
                                             unit.SetBanner(neutralPlayer.GetBanner())
                                             neutralPlayer.AddUnit(unit)
                                         }
