@@ -208,6 +208,8 @@ type GameEventMoveCamera struct {
 // https://masterofmagic.fandom.com/wiki/Event
 type GameEventShowRandomEvent struct {
     Event *RandomEvent
+    // true if the event is just starting, or false if it is ending
+    Starting bool
 }
 
 type GameEventMoveUnit struct {
@@ -2787,7 +2789,7 @@ func (game *Game) AddExperience(player *playerlib.Player, unit units.StackUnit, 
     }
 }
 
-func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, wizard setup.WizardCustom) {
+func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, start bool, wizard setup.WizardCustom) {
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
@@ -2834,7 +2836,11 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, w
     }
     animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
 
-    wrappedText := bigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), event.Message)
+    message := event.Message
+    if !starting {
+        message = event.MessageStop
+    }
+    wrappedText := bigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), message)
 
     rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
 
@@ -2965,7 +2971,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         }
                     case *GameEventShowRandomEvent:
                         randomEvent := event.(*GameEventShowRandomEvent)
-                        game.doRandomEvent(yield, randomEvent.Event, game.Players[0].Wizard)
+                        game.doRandomEvent(yield, randomEvent.Event, randomEvent.Starting, game.Players[0].Wizard)
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)
@@ -6989,6 +6995,7 @@ func (game *Game) DoRandomEvents() {
 
         // once citizens has reached 2, plague will dissipate automatically
         if event.Type == RandomEventPlague && event.TargetCity.Citizens() <= 2 {
+            game.Events <- &GameEventShowRandomEvent{Event: event, Starting: false}
             continue
         }
 
@@ -7007,6 +7014,7 @@ func (game *Game) DoRandomEvents() {
 
         if uint64(rand.N(100)) < chance {
             // don't keep
+            game.Events <- &GameEventShowRandomEvent{Event: event, Starting: false}
         } else {
             keep = append(keep, event)
         }
