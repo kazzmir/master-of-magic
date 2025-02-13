@@ -39,6 +39,8 @@ const (
     MagicNodeNature MagicNode = iota
     MagicNodeSorcery
     MagicNodeChaos
+
+    MagicNodeNone
 )
 
 func (magicNode MagicNode) Name() string {

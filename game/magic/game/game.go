@@ -995,14 +995,40 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
         case data.MagicSettingPowerful: magicBonus = 1.5
     }
 
-    // FIXME: take conjunction's into account when computing melded node power
+    // the active conjunction type
+    magicConjunction := maplib.MagicNodeNone
+
+    if game.ConjunctionChaosActive() {
+        magicConjunction = maplib.MagicNodeChaos
+    }
+    if game.ConjunctionNatureActive() {
+        magicConjunction = maplib.MagicNodeNature
+    }
+    if game.ConjunctionSorceryActive() {
+        magicConjunction = maplib.MagicNodeSorcery
+    }
+
+    // compute the power a node gives off taking active conjunctions into account
+    applyConjunction := func (node *maplib.ExtraMagicNode) float64 {
+        nodePower := node.GetPower(magicBonus)
+
+        if magicConjunction != maplib.MagicNodeNone {
+            if magicConjunction != node.Kind {
+                return nodePower * 0.5
+            }
+
+            return nodePower * 2
+        }
+
+        return nodePower
+    }
 
     for _, node := range game.ArcanusMap.GetMeldedNodes(player) {
-        power += node.GetPower(magicBonus)
+        power += applyConjunction(node)
     }
 
     for _, node := range game.MyrrorMap.GetMeldedNodes(player) {
-        power += node.GetPower(magicBonus)
+        power += applyConjunction(node)
     }
 
     power += float64(len(game.ArcanusMap.GetCastedVolcanoes(player)))
@@ -6588,6 +6614,24 @@ func (game *Game) doCallTheVoid(city *citylib.City) (int, int, int) {
 func (game *Game) ManaShortActive() bool {
     return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
         return event.Type == RandomEventManaShort
+    })
+}
+
+func (game *Game) ConjunctionChaosActive() bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventConjunctionChaos
+    })
+}
+
+func (game *Game) ConjunctionNatureActive() bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventConjunctionNature
+    })
+}
+
+func (game *Game) ConjunctionSorceryActive() bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventConjunctionSorcery
     })
 }
 
