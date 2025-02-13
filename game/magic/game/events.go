@@ -92,7 +92,7 @@ type RandomEvent struct {
     LbxIndex int // picture from events.lbx
     Instant bool // true if there is no duration
     IsConjunction bool // only one conjunction event can be active at a time
-    CityEvent bool // if true, then this event targets a city
+    TargetCity *citylib.City // if true, then this event targets a city
 }
 
 func MakeDisjunctionEvent(year uint64) *RandomEvent {
@@ -102,7 +102,6 @@ func MakeDisjunctionEvent(year uint64) *RandomEvent {
         Message: "Disjunction! The fabric of magic has been torn asunder destroying all overland enchantments.",
         LbxIndex: 2,
         IsConjunction: false,
-        CityEvent: false,
         Instant: true,
     }
 }
@@ -114,7 +113,6 @@ func MakeBadMoonEvent(year uint64) *RandomEvent {
         Message: "Bad Moon! The moon controlling the powers over evil waxes, doubling the power from evil temples.",
         MessageStop: "The bad moon has waned.",
         LbxIndex: 13,
-        CityEvent: false,
         IsConjunction: true,
     }
 }
@@ -126,7 +124,6 @@ func MakeGoodMoonEvent(year uint64) *RandomEvent {
         Message: "Good Moon! The moon controlling the powers over good waxes, doubling the power of good temples.",
         MessageStop: "The good moon has waned.",
         LbxIndex: 12,
-        CityEvent: false,
         IsConjunction: true,
     }
 }
@@ -138,7 +135,6 @@ func MakeConjunctionChaosEvent(year uint64) *RandomEvent {
         Message: "The rising triad of red stars come together, doubling all power gained from red nodes and halving all others.",
         MessageStop: "The conjunction of chaos has ended.",
         LbxIndex: 14,
-        CityEvent: false,
         IsConjunction: true,
     }
 }
@@ -150,7 +146,6 @@ func MakeConjunctionNatureEvent(year uint64) *RandomEvent {
         Message: "The rising triad of green stars come together, doubling all power gained from green nodes and halving all others.",
         MessageStop: "The conjunction of nature has ended.",
         LbxIndex: 15,
-        CityEvent: false,
         IsConjunction: true,
     }
 }
@@ -162,7 +157,6 @@ func MakeConjunctionSorceryEvent(year uint64) *RandomEvent {
         Message: "The rising triad of blue stars come together, doubling all power gained from blue nodes and halving all others.",
         MessageStop: "The conjunction of sorcery has ended.",
         LbxIndex: 16,
-        CityEvent: false,
         IsConjunction: true,
     }
 }
@@ -173,7 +167,6 @@ func MakeDepletionEvent(year uint64, bonus data.BonusType, cityName string) *Ran
         BirthYear: year,
         Message: fmt.Sprintf("Depletion! A %v mine within %v has become depleted and can no longer be mined.", bonus, cityName),
         LbxIndex: 9,
-        CityEvent: false,
         IsConjunction: false,
     }
 }
@@ -184,7 +177,6 @@ func MakeDiplomaticMarriageEvent(year uint64, city *citylib.City) *RandomEvent {
         BirthYear: year,
         Message: fmt.Sprintf("Diplomatic Marriage! The neutral %v of %v has offered to join your cause.", city.GetSize(), city.Name),
         LbxIndex: 3,
-        CityEvent: true,
         IsConjunction: false,
         Instant: true,
     }
@@ -196,7 +188,6 @@ func MakeDonationEvent(year uint64, amount int) *RandomEvent {
         BirthYear: year,
         Message: fmt.Sprintf("Donation! A wealthy merchant has decided to support your cause with a contribution of %v gold.", amount),
         LbxIndex: 8,
-        CityEvent: false,
         IsConjunction: false,
         Instant: true,
     }
@@ -208,7 +199,6 @@ func MakeEarthquakeEvent(year uint64, cityName string, people int, units int, bu
         BirthYear: year,
         Message: fmt.Sprintf("Earthquake! A violent quake struck %v, killing %v people and %v units, and destroying %v buildings.", cityName, people, units, buildings),
         LbxIndex: 4,
-        CityEvent: true,
         IsConjunction: false,
         Instant: true,
     }
@@ -220,7 +210,6 @@ func MakeGiftEvent(year uint64, name string) *RandomEvent {
         BirthYear: year,
         Message: fmt.Sprintf("The Gift! An ancient God has returned, bearing the relic of %v to aid your cause.", name),
         LbxIndex: 1,
-        CityEvent: false,
         IsConjunction: false,
         Instant: true,
     }
@@ -232,7 +221,6 @@ func MakeGreatMeteorEvent(year uint64, city string, people int, units int, build
         BirthYear: year,
         Message: fmt.Sprintf("A meteor has hit %v killing %v townsfolk and %v units, and destroying %v buildings.", city, people, units, buildings),
         LbxIndex: 0,
-        CityEvent: false,
         IsConjunction: false,
         Instant: true,
     }
@@ -245,7 +233,6 @@ func MakeManaShortEvent(year uint64) *RandomEvent {
         Message: "Magic Short! All sources of magical power have been shorted out.",
         MessageStop: "The mana short has ended and magic has returned to normal.",
         LbxIndex: 17,
-        CityEvent: false,
         IsConjunction: true,
     }
 }
@@ -256,7 +243,6 @@ func MakeNewMineralsEvent(year uint64, bonus data.BonusType, city *citylib.City)
         BirthYear: year,
         Message: fmt.Sprintf("New Mine! Surveyors find a %v deposit near the %v of %v.", bonus, city.GetSize(), city.Name),
         LbxIndex: 10,
-        CityEvent: false,
         IsConjunction: false,
         Instant: true,
     }
@@ -268,7 +254,6 @@ func MakePiracyEvent(year uint64, gold int) *RandomEvent {
         BirthYear: year,
         Message: fmt.Sprintf("Pirates! Pirates have plundered your gold reserve, looting and stealing %v gold.", gold),
         LbxIndex: 5,
-        CityEvent: false,
         IsConjunction: false,
         Instant: true,
     }
@@ -280,8 +265,8 @@ func MakePlagueEvent(year uint64, city *citylib.City) *RandomEvent {
         BirthYear: year,
         Message: fmt.Sprintf("PLAGUE! A virulent plague has broken out in the %v of %v.", city.GetSize(), city.Name),
         LbxIndex: 6,
-        CityEvent: true,
         IsConjunction: false,
+        TargetCity: city,
     }
 }
 
@@ -291,8 +276,8 @@ func MakePopulationBoomEvent(year uint64, city *citylib.City) *RandomEvent {
         BirthYear: year,
         Message: fmt.Sprintf("Population Boom! A sudden population boom doubles the population growth rate of the %v of %v.", city.GetSize(), city.Name),
         LbxIndex: 11,
-        CityEvent: true,
         IsConjunction: false,
+        TargetCity: city,
     }
 }
 
@@ -302,7 +287,6 @@ func MakeRebellionEvent(year uint64, city *citylib.City) *RandomEvent {
         BirthYear: year,
         Message: fmt.Sprintf("Rebellion! The %v of %v has rebelled and become a netural city.", city.GetSize(), city.Name),
         LbxIndex: 7,
-        CityEvent: true,
         IsConjunction: false,
         Instant: true,
     }

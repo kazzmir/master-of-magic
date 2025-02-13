@@ -991,6 +991,8 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
         case data.MagicSettingPowerful: magicBonus = 1.5
     }
 
+    // FIXME: take conjunction's into account when computing melded node power
+
     for _, node := range game.ArcanusMap.GetMeldedNodes(player) {
         power += node.GetPower(magicBonus)
     }
@@ -6612,6 +6614,13 @@ func (game *Game) DoRandomEvents() {
 
             // return a RandomEvent object to show, and also cause the event to occur (if instant)
             makeEvent := func (choice RandomEventType, target *playerlib.Player) *RandomEvent {
+                usedCities := set.NewSet[*citylib.City]()
+                for _, event := range game.RandomEvents {
+                    if event.TargetCity != nil {
+                        usedCities.Insert(event.TargetCity)
+                    }
+                }
+
                 switch choice {
                     case RandomEventBadMoon: return MakeBadMoonEvent(game.TurnNumber)
                     case RandomEventGoodMoon: return MakeGoodMoonEvent(game.TurnNumber)
@@ -6734,13 +6743,67 @@ func (game *Game) DoRandomEvents() {
 
                         return MakeGreatMeteorEvent(game.TurnNumber, city.Name, people, units, buildings)
 
-                    /*
                     case RandomEventNewMinerals:
+                        for _, cityIndex := range rand.Perm(len(target.Cities)) {
+                            city := target.Cities[cityIndex]
+                            mapUse := game.GetMap(city.Plane)
+                            catchment := mapUse.GetCatchmentArea(city.X, city.Y)
+                            var choices []maplib.FullTile
+                            for _, tile := range catchment {
+                                terrainType := tile.Tile.TerrainType()
+                                if tile.GetBonus() == data.BonusNone && (terrainType == terrain.Hill || terrainType == terrain.Mountain) {
+                                    choices = append(choices, tile)
+                                }
+                            }
+
+                            if len(choices) > 0 {
+                                tile := choices[rand.N(len(choices))]
+
+                                bonusChoices := []data.BonusType{data.BonusGoldOre, data.BonusCoal, data.BonusMithrilOre, data.BonusAdamantiumOre, data.BonusGem}
+                                bonus := bonusChoices[rand.N(len(bonusChoices))]
+
+                                mapUse.SetBonus(tile.X, tile.Y, bonus)
+                                return MakeNewMineralsEvent(game.TurnNumber, bonus, city)
+                            }
+                        }
+
                     case RandomEventPlague:
+                        for _, cityIndex := range rand.Perm(len(target.Cities)) {
+                            city := target.Cities[cityIndex]
+                            if !usedCities.Contains(city) {
+                                return MakePlagueEvent(game.TurnNumber, city)
+                            }
+                        }
+
+                        return nil
+
                     case RandomEventPopulationBoom:
+                        for _, cityIndex := range rand.Perm(len(target.Cities)) {
+                            city := target.Cities[cityIndex]
+                            if !usedCities.Contains(city) {
+                                return MakePopulationBoomEvent(game.TurnNumber, city)
+                            }
+                        }
+
+                        return nil
+
                     case RandomEventRebellion:
-                        // FIXME: need a city to target
-                    */
+                        if len(target.Cities) == 0 {
+                            return nil
+                        }
+
+                        for _, neutral := range game.Players {
+                            if neutral.GetBanner() == data.BannerBrown {
+                                city := target.Cities[rand.N(len(target.Cities))]
+                                target.RemoveCity(city)
+                                neutral.AddCity(city)
+                                city.Banner = neutral.Wizard.Banner
+                                city.RulingRace = neutral.Wizard.Race
+                                return MakeRebellionEvent(game.TurnNumber, city)
+                            }
+                        }
+
+                        return nil
                 }
 
                 return nil
