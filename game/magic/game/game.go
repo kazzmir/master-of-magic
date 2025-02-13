@@ -977,6 +977,10 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
  * add up all melded node tiles, all buildings that produce power, etc
  */
 func (game *Game) ComputePower(player *playerlib.Player) int {
+    if game.ManaShortActive() {
+        return 0
+    }
+
     power := float64(0)
 
     for _, city := range player.Cities {
@@ -6579,6 +6583,12 @@ func (game *Game) doCallTheVoid(city *citylib.City) (int, int, int) {
     // https://masterofmagic.fandom.com/wiki/Call_the_Void
 
     return 0, 0, 0
+}
+
+func (game *Game) ManaShortActive() bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventManaShort
+    })
 }
 
 func (game *Game) DoRandomEvents() {
