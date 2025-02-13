@@ -6600,6 +6600,7 @@ func (game *Game) DoRandomEvents() {
             makeEvent := func (choice RandomEventType, target *playerlib.Player) (*RandomEvent, Action) {
                 switch choice {
                     case RandomEventBadMoon: return MakeBadMoonEvent(game.TurnNumber), nil
+                    case RandomEventGoodMoon: return MakeGoodMoonEvent(game.TurnNumber), nil
                     case RandomEventConjunctionChaos: return MakeConjunctionChaosEvent(game.TurnNumber), nil
                     case RandomEventConjunctionNature: return MakeConjunctionNatureEvent(game.TurnNumber), nil
                     case RandomEventConjunctionSorcery: return MakeConjunctionSorceryEvent(game.TurnNumber), nil
@@ -6615,6 +6616,24 @@ func (game *Game) DoRandomEvents() {
                         return MakePiracyEvent(game.TurnNumber, gold), func() {
                             target.Gold = max(0, target.Gold - gold)
                         }
+                    case RandomEventGift:
+                        var out []*artifact.Artifact
+                        for _, artifact := range game.ArtifactPool {
+                            if canUseArtifact(artifact, target.Wizard) {
+                                out = append(out, artifact)
+                            }
+                        }
+
+                        // couldn't find a valid artifact
+                        if len(out) == 0 {
+                            return nil, nil
+                        }
+
+                        use := out[rand.N(len(out))]
+
+                        return MakeGiftEvent(game.TurnNumber, use.Name), func() {
+                            game.Events <- &GameEventVault{CreatedArtifact: use, Player: target}
+                        }
 
                     /*
                     case RandomEventDepletion:
@@ -6624,15 +6643,7 @@ func (game *Game) DoRandomEvents() {
                     case RandomEventDisjunction:
                     case RandomEventEarthquake:
                         // FIXME: need a city to target
-                    case RandomEventGift:
-                        var out []*artifact.Artifact
-                        for _, artifact := range game.ArtifactPool {
-                            out = append(out, artifact)
-                        }
-                        return out
 
-
-                    case RandomEventGoodMoon:
                     case RandomEventGreatMeteor:
                         // FIXME: need a city to target
                     case RandomEventManaShort:
