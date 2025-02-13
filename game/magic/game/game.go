@@ -6540,6 +6540,13 @@ func (game *Game) doEarthquake(city *citylib.City) (int, int, int) {
     return 0, 0, 0
 }
 
+func (game *Game) doCallTheVoid(city *citylib.City) (int, int, int) {
+    // FIXME: destroy buildings with 15% chance and non-flying units with 25% chance
+    // https://masterofmagic.fandom.com/wiki/Call_the_Void
+
+    return 0, 0, 0
+}
+
 func (game *Game) DoRandomEvents() {
     // maybe create a new event
     eventModifier := fraction.FromInt(1)
@@ -6715,9 +6722,19 @@ func (game *Game) DoRandomEvents() {
 
                         return MakeEarthquakeEvent(game.TurnNumber, city.Name, people, units, buildings)
 
-                        /*
                     case RandomEventGreatMeteor:
-                        // FIXME: need a city to target
+                        choices := game.AllCities()
+                        if len(choices) == 0 {
+                            return nil
+                        }
+
+                        city := choices[rand.N(len(choices))]
+
+                        people, units, buildings := game.doCallTheVoid(city)
+
+                        return MakeGreatMeteorEvent(game.TurnNumber, city.Name, people, units, buildings)
+
+                    /*
                     case RandomEventNewMinerals:
                     case RandomEventPlague:
                     case RandomEventPopulationBoom:
