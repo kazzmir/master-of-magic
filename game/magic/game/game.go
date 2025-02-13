@@ -6532,6 +6532,14 @@ func (game *Game) revertVolcanos() {
     }
 }
 
+// returns the number of people, units, buildings that were lost
+func (game *Game) doEarthquake(city *citylib.City) (int, int, int) {
+    // FIXME: destroy buildings with 15% chance and non-flying units with 25% chance
+    // https://masterofmagic.fandom.com/wiki/Earthquake
+
+    return 0, 0, 0
+}
+
 func (game *Game) DoRandomEvents() {
     // maybe create a new event
     eventModifier := fraction.FromInt(1)
@@ -6595,16 +6603,15 @@ func (game *Game) DoRandomEvents() {
             choice := choices.Values()[rand.N(choices.Size())]
             game.LastEventTurn = game.TurnNumber
 
-            type Action func()
-
-            makeEvent := func (choice RandomEventType, target *playerlib.Player) (*RandomEvent, Action) {
+            // return a RandomEvent object to show, and also cause the event to occur (if instant)
+            makeEvent := func (choice RandomEventType, target *playerlib.Player) *RandomEvent {
                 switch choice {
-                    case RandomEventBadMoon: return MakeBadMoonEvent(game.TurnNumber), nil
-                    case RandomEventGoodMoon: return MakeGoodMoonEvent(game.TurnNumber), nil
-                    case RandomEventConjunctionChaos: return MakeConjunctionChaosEvent(game.TurnNumber), nil
-                    case RandomEventConjunctionNature: return MakeConjunctionNatureEvent(game.TurnNumber), nil
-                    case RandomEventConjunctionSorcery: return MakeConjunctionSorceryEvent(game.TurnNumber), nil
-                    case RandomEventManaShort: return MakeManaShortEvent(game.TurnNumber), nil
+                    case RandomEventBadMoon: return MakeBadMoonEvent(game.TurnNumber)
+                    case RandomEventGoodMoon: return MakeGoodMoonEvent(game.TurnNumber)
+                    case RandomEventConjunctionChaos: return MakeConjunctionChaosEvent(game.TurnNumber)
+                    case RandomEventConjunctionNature: return MakeConjunctionNatureEvent(game.TurnNumber)
+                    case RandomEventConjunctionSorcery: return MakeConjunctionSorceryEvent(game.TurnNumber)
+                    case RandomEventManaShort: return MakeManaShortEvent(game.TurnNumber)
                     case RandomEventDisjunction:
                         // there must be at least one global enchantment for this event to occur
                         hasGlobalEnchantment := false
@@ -6617,27 +6624,26 @@ func (game *Game) DoRandomEvents() {
                         }
 
                         if !hasGlobalEnchantment {
-                            return nil, nil
+                            return nil
                         }
 
-                        return MakeDisjunctionEvent(game.TurnNumber), func (){
-                            // remove all global enchantments
-                            for _, player := range game.Players {
-                                player.GlobalEnchantments.Clear()
-                            }
+                        // remove all global enchantments
+                        for _, player := range game.Players {
+                            player.GlobalEnchantments.Clear()
                         }
+
+                        return MakeDisjunctionEvent(game.TurnNumber)
                     case RandomEventDonation:
                         // FIXME: what are the bounds here?
                         gold := rand.N(2000) + 100
+                        target.Gold += gold
 
-                        return MakeDonationEvent(game.TurnNumber, gold), func() {
-                            target.Gold += gold
-                        }
+                        return MakeDonationEvent(game.TurnNumber, gold)
                     case RandomEventPiracy:
                         gold := rand.N(2000) + 100
-                        return MakePiracyEvent(game.TurnNumber, gold), func() {
-                            target.Gold = max(0, target.Gold - gold)
-                        }
+                        target.Gold = max(0, target.Gold - gold)
+
+                        return MakePiracyEvent(game.TurnNumber, gold)
                     case RandomEventGift:
                         var out []*artifact.Artifact
                         for _, artifact := range game.ArtifactPool {
@@ -6648,14 +6654,13 @@ func (game *Game) DoRandomEvents() {
 
                         // couldn't find a valid artifact
                         if len(out) == 0 {
-                            return nil, nil
+                            return nil
                         }
 
                         use := out[rand.N(len(out))]
+                        game.Events <- &GameEventVault{CreatedArtifact: use, Player: target}
 
-                        return MakeGiftEvent(game.TurnNumber, use.Name), func() {
-                            game.Events <- &GameEventVault{CreatedArtifact: use, Player: target}
-                        }
+                        return MakeGiftEvent(game.TurnNumber, use.Name)
                     case RandomEventDepletion:
                         // choose a random town that has a mineral bonus in its catchment area,
                         // and then remove the bonus from the map
@@ -6674,20 +6679,43 @@ func (game *Game) DoRandomEvents() {
 
                             if len(choices) > 0 {
                                 tile := choices[rand.N(len(choices))]
-                                return MakeDepletionEvent(game.TurnNumber, tile.GetBonus(), city.Name), func() {
-                                    mapUse.RemoveBonus(tile.X, tile.Y)
+                                mapUse.RemoveBonus(tile.X, tile.Y)
+                                return MakeDepletionEvent(game.TurnNumber, tile.GetBonus(), city.Name)
+                            }
+                        }
+
+                        return nil
+
+                    case RandomEventDiplomaticMarriage:
+                        for _, player := range game.Players {
+                            if player.GetBanner() == data.BannerBrown {
+                                if len(player.Cities) > 0 {
+                                    city := player.Cities[rand.N(len(player.Cities))]
+                                    player.RemoveCity(city)
+                                    target.AddCity(city)
+                                    city.Banner = target.Wizard.Banner
+                                    city.RulingRace = target.Wizard.Race
+
+                                    return MakeDiplomaticMarriageEvent(game.TurnNumber, city)
                                 }
                             }
                         }
 
-                        return nil, nil
+                        return nil
 
-                    /*
-                    case RandomEventDiplomaticMarriage:
-                        // FIXME: need a neutral city
                     case RandomEventEarthquake:
-                        // FIXME: need a city to target
+                        choices := game.AllCities()
+                        if len(choices) == 0 {
+                            return nil
+                        }
 
+                        city := choices[rand.N(len(choices))]
+
+                        people, units, buildings := game.doEarthquake(city)
+
+                        return MakeEarthquakeEvent(game.TurnNumber, city.Name, people, units, buildings)
+
+                        /*
                     case RandomEventGreatMeteor:
                         // FIXME: need a city to target
                     case RandomEventNewMinerals:
@@ -6698,18 +6726,14 @@ func (game *Game) DoRandomEvents() {
                     */
                 }
 
-                return nil, nil
+                return nil
             }
 
             targetWizard := game.Players[rand.N(len(game.Players))]
-            newEvent, action := makeEvent(choice, targetWizard)
+            newEvent := makeEvent(choice, targetWizard)
             if newEvent != nil {
                 if !newEvent.Instant {
                     game.RandomEvents = append(game.RandomEvents, newEvent)
-                }
-
-                if action != nil {
-                    action()
                 }
 
                 // FIXME: if the event is targeting an AI wizard then the event message should change slightly
