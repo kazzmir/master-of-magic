@@ -52,6 +52,14 @@ func (provider *NoCities) BadMoonActive() bool {
     return false
 }
 
+func (provider *NoCities) PopulationBoomActive(city *City) bool {
+    return false
+}
+
+func (provider *NoCities) PlagueActive(city *City) bool {
+    return false
+}
+
 func TestBasicCity(test *testing.T){
     city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeSimpleMap()}, &NoCities{})
     city.Population = 6000
@@ -124,6 +132,14 @@ func (provider *AllConnected) GoodMoonActive() bool {
 }
 
 func (provider *AllConnected) BadMoonActive() bool {
+    return false
+}
+
+func (provider *AllConnected) PopulationBoomActive(city *City) bool {
+    return false
+}
+
+func (provider *AllConnected) PlagueActive(city *City) bool {
     return false
 }
 

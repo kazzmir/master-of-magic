@@ -48,6 +48,14 @@ func (provider *NoCityProvider) BadMoonActive() bool {
     return false
 }
 
+func (provider *NoCityProvider) PopulationBoomActive(city *citylib.City) bool {
+    return false
+}
+
+func (provider *NoCityProvider) PlagueActive(city *citylib.City) bool {
+    return false
+}
+
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 

@@ -6617,6 +6617,18 @@ func (game *Game) ManaShortActive() bool {
     })
 }
 
+func (game *Game) PopulationBoomActive(city *citylib.City) bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventPopulationBoom && event.TargetCity == city
+    })
+}
+
+func (game *Game) PlagueActive(city *citylib.City) bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventPlague && event.TargetCity == city
+    })
+}
+
 func (game *Game) GoodMoonActive() bool {
     return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
         return event.Type == RandomEventGoodMoon

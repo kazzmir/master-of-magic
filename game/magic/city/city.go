@@ -79,6 +79,8 @@ type CityServicesProvider interface {
     FindRoadConnectedCities(city *City) []*City
     GoodMoonActive() bool
     BadMoonActive() bool
+    PopulationBoomActive(city *City) bool
+    PlagueActive(city *City) bool
 }
 
 const MAX_CITY_CITIZENS = 25
@@ -1029,6 +1031,12 @@ func (city *City) PopulationGrowthRate() int {
         base = int(0.75 * float32(base))
     }
 
+    if city.CityServices.PopulationBoomActive(city) {
+        base *= 2
+    }
+
+    // how does population boom interact with starving?
+
     if city.SurplusFood() < 0 {
         base = 50 * city.SurplusFood()
     }
@@ -1498,6 +1506,13 @@ func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) 
 
         if city.HasEnchantment(data.CityEnchantmentPestilence) {
             if city.Citizens() >= 11 || city.Citizens() > (rand.IntN(10) + 1) {
+                city.Population -= 1000
+            }
+        }
+
+        if city.CityServices.PlagueActive(city) {
+            // plague cannot reduce population below 1000
+            if city.Citizens() >= 3 {
                 city.Population -= 1000
             }
         }
