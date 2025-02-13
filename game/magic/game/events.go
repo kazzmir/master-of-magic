@@ -167,7 +167,7 @@ func MakeConjunctionSorceryEvent(year uint64) *RandomEvent {
     }
 }
 
-func MakeDepletionEvent(year uint64, x int, y int, bonus data.BonusType, cityName string) *RandomEvent {
+func MakeDepletionEvent(year uint64, bonus data.BonusType, cityName string) *RandomEvent {
     return &RandomEvent{
         Type: RandomEventDepletion,
         BirthYear: year,

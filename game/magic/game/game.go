@@ -6656,10 +6656,33 @@ func (game *Game) DoRandomEvents() {
                         return MakeGiftEvent(game.TurnNumber, use.Name), func() {
                             game.Events <- &GameEventVault{CreatedArtifact: use, Player: target}
                         }
+                    case RandomEventDepletion:
+                        // choose a random town that has a mineral bonus in its catchment area,
+                        // and then remove the bonus from the map
+                        for _, cityIndex := range rand.Perm(len(target.Cities)) {
+                            city := target.Cities[cityIndex]
+                            mapUse := game.GetMap(city.Plane)
+                            catchment := mapUse.GetCatchmentArea(city.X, city.Y)
+                            var choices []maplib.FullTile
+                            for _, tile := range catchment {
+                                switch tile.GetBonus() {
+                                    case data.BonusSilverOre, data.BonusGoldOre, data.BonusIronOre, data.BonusCoal,
+                                         data.BonusMithrilOre, data.BonusAdamantiumOre, data.BonusGem:
+                                        choices = append(choices, tile)
+                                }
+                            }
+
+                            if len(choices) > 0 {
+                                tile := choices[rand.N(len(choices))]
+                                return MakeDepletionEvent(game.TurnNumber, tile.GetBonus(), city.Name), func() {
+                                    mapUse.RemoveBonus(tile.X, tile.Y)
+                                }
+                            }
+                        }
+
+                        return nil, nil
 
                     /*
-                    case RandomEventDepletion:
-                        // FIXME: need a tile that is not depleted
                     case RandomEventDiplomaticMarriage:
                         // FIXME: need a neutral city
                     case RandomEventEarthquake:
