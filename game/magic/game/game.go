@@ -6532,29 +6532,6 @@ func (game *Game) revertVolcanos() {
     }
 }
 
-// for instant random events (not conjunctions or long lasting city events)
-func (game *Game) ApplyRandomEvent(event *RandomEvent, player *playerlib.Player) {
-    switch event.Type {
-        case RandomEventDepletion:
-            // FIXME: need a tile that is not depleted
-        case RandomEventDiplomaticMarriage:
-            // FIXME: need a neutral city
-        case RandomEventDonation:
-            // FIXME: what are the bounds here?
-            player.Gold += event.Gold
-        case RandomEventEarthquake:
-            // FIXME: need a city to target
-        case RandomEventGift:
-            game.Events <- &GameEventVault{CreatedArtifact: event.Artifact, Player: player}
-        case RandomEventGreatMeteor:
-        case RandomEventNewMinerals:
-        case RandomEventPiracy:
-            player.Gold = max(0, player.Gold - event.Gold)
-        case RandomEventRebellion:
-
-    }
-}
-
 func (game *Game) DoRandomEvents() {
     // maybe create a new event
     eventModifier := fraction.FromInt(1)
@@ -6618,18 +6595,35 @@ func (game *Game) DoRandomEvents() {
             choice := choices.Values()[rand.N(choices.Size())]
             game.LastEventTurn = game.TurnNumber
 
-            makeEvent := func (choice RandomEventType) *RandomEvent {
+            type Action func()
+
+            makeEvent := func (choice RandomEventType, target *playerlib.Player) (*RandomEvent, Action) {
                 switch choice {
-                    case RandomEventBadMoon: return MakeBadMoonEvent(game.TurnNumber)
-                    case RandomEventConjunctionChaos: return MakeConjunctionChaosEvent(game.TurnNumber)
-                    case RandomEventConjunctionNature: return MakeConjunctionNatureEvent(game.TurnNumber)
-                    case RandomEventConjunctionSorcery: return MakeConjunctionSorceryEvent(game.TurnNumber)
+                    case RandomEventBadMoon: return MakeBadMoonEvent(game.TurnNumber), nil
+                    case RandomEventConjunctionChaos: return MakeConjunctionChaosEvent(game.TurnNumber), nil
+                    case RandomEventConjunctionNature: return MakeConjunctionNatureEvent(game.TurnNumber), nil
+                    case RandomEventConjunctionSorcery: return MakeConjunctionSorceryEvent(game.TurnNumber), nil
+                    case RandomEventDonation:
+                        // FIXME: what are the bounds here?
+                        gold := rand.N(2000) + 100
+
+                        return MakeDonationEvent(game.TurnNumber, gold), func() {
+                            target.Gold += gold
+                        }
+                    case RandomEventPiracy:
+                        gold := rand.N(2000) + 100
+                        return MakePiracyEvent(game.TurnNumber, gold), func() {
+                            target.Gold = max(0, target.Gold - gold)
+                        }
+
                     /*
                     case RandomEventDepletion:
+                        // FIXME: need a tile that is not depleted
                     case RandomEventDiplomaticMarriage:
+                        // FIXME: need a neutral city
                     case RandomEventDisjunction:
-                    case RandomEventDonation:
                     case RandomEventEarthquake:
+                        // FIXME: need a city to target
                     case RandomEventGift:
                         var out []*artifact.Artifact
                         for _, artifact := range game.ArtifactPool {
@@ -6640,25 +6634,28 @@ func (game *Game) DoRandomEvents() {
 
                     case RandomEventGoodMoon:
                     case RandomEventGreatMeteor:
+                        // FIXME: need a city to target
                     case RandomEventManaShort:
                     case RandomEventNewMinerals:
-                    case RandomEventPiracy:
                     case RandomEventPlague:
                     case RandomEventPopulationBoom:
                     case RandomEventRebellion:
+                        // FIXME: need a city to target
                     */
                 }
 
-                return nil
+                return nil, nil
             }
 
-            newEvent := makeEvent(choice)
+            targetWizard := game.Players[rand.N(len(game.Players))]
+            newEvent, action := makeEvent(choice, targetWizard)
             if newEvent != nil {
-                targetWizard := game.Players[rand.N(len(game.Players))]
                 if !newEvent.Instant {
-                    game.RandomEvents = append(game.RandomEvents, makeEvent(choice))
-                } else {
-                    game.ApplyRandomEvent(newEvent, targetWizard)
+                    game.RandomEvents = append(game.RandomEvents, newEvent)
+                }
+
+                if action != nil {
+                    action()
                 }
 
                 // FIXME: if the event is targeting an AI wizard then the event message should change slightly

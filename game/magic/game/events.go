@@ -6,7 +6,6 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/data"
-    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 )
 
@@ -94,9 +93,6 @@ type RandomEvent struct {
     Instant bool // true if there is no duration
     IsConjunction bool // only one conjunction event can be active at a time
     CityEvent bool // if true, then this event targets a city
-
-    Gold int
-    Artifact *artifact.Artifact
 }
 
 func MakeDisjunctionEvent(year uint64) *RandomEvent {
@@ -171,7 +167,7 @@ func MakeConjunctionSorceryEvent(year uint64) *RandomEvent {
     }
 }
 
-func MakeDepletionEvent(year uint64, bonus data.BonusType, cityName string) *RandomEvent {
+func MakeDepletionEvent(year uint64, x int, y int, bonus data.BonusType, cityName string) *RandomEvent {
     return &RandomEvent{
         Type: RandomEventDepletion,
         BirthYear: year,
@@ -203,7 +199,6 @@ func MakeDonationEvent(year uint64, amount int) *RandomEvent {
         CityEvent: false,
         IsConjunction: false,
         Instant: true,
-        Gold: amount,
     }
 }
 
@@ -219,16 +214,15 @@ func MakeEarthquakeEvent(year uint64, cityName string, people int, units int, bu
     }
 }
 
-func MakeGiftEvent(year uint64, item *artifact.Artifact) *RandomEvent {
+func MakeGiftEvent(year uint64, name string) *RandomEvent {
     return &RandomEvent{
         Type: RandomEventGift,
         BirthYear: year,
-        Message: fmt.Sprintf("The Gift! An ancient God has returned, bearing the relic of %v to aid your cause.", item.Name),
+        Message: fmt.Sprintf("The Gift! An ancient God has returned, bearing the relic of %v to aid your cause.", name),
         LbxIndex: 1,
         CityEvent: false,
         IsConjunction: false,
         Instant: true,
-        Artifact: item,
     }
 }
 
@@ -277,7 +271,6 @@ func MakePiracyEvent(year uint64, gold int) *RandomEvent {
         CityEvent: false,
         IsConjunction: false,
         Instant: true,
-        Gold: gold,
     }
 }
 
