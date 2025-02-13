@@ -6642,7 +6642,6 @@ func (game *Game) DoRandomEvents() {
 
         if choices.Size() > 0 {
             choice := choices.Values()[rand.N(choices.Size())]
-            game.LastEventTurn = game.TurnNumber
 
             // return a RandomEvent object to show, and also cause the event to occur (if instant)
             makeEvent := func (choice RandomEventType, target *playerlib.Player) *RandomEvent {
@@ -6739,6 +6738,14 @@ func (game *Game) DoRandomEvents() {
                             if player.GetBanner() == data.BannerBrown {
                                 if len(player.Cities) > 0 {
                                     city := player.Cities[rand.N(len(player.Cities))]
+                                    // if the owner of the city has a stack garrisoned there then the garrison is disbanded
+                                    stack := player.FindStack(city.X, city.Y, city.Plane)
+                                    if stack != nil {
+                                        for _, unit := range stack.Units() {
+                                            player.RemoveUnit(unit)
+                                        }
+                                    }
+
                                     player.RemoveCity(city)
                                     target.AddCity(city)
                                     city.Banner = target.Wizard.Banner
@@ -6827,10 +6834,25 @@ func (game *Game) DoRandomEvents() {
                         for _, neutral := range game.Players {
                             if neutral.GetBanner() == data.BannerBrown {
                                 city := target.Cities[rand.N(len(target.Cities))]
+
+                                // disband any stack garrisoned at the city
+                                stack := target.FindStack(city.X, city.Y, city.Plane)
+                                if stack != nil {
+                                    for _, unit := range stack.Units() {
+                                        target.RemoveUnit(unit)
+                                    }
+                                }
+
                                 target.RemoveCity(city)
                                 neutral.AddCity(city)
                                 city.Banner = neutral.Wizard.Banner
                                 city.RulingRace = neutral.Wizard.Race
+
+                                // remove all enchantments on the city
+                                city.Enchantments.Clear()
+
+                                // plague/population boom might still be active for the city. just leave them for now
+
                                 return MakeRebellionEvent(game.TurnNumber, city)
                             }
                         }
@@ -6844,6 +6866,8 @@ func (game *Game) DoRandomEvents() {
             targetWizard := game.Players[rand.N(len(game.Players))]
             newEvent := makeEvent(choice, targetWizard)
             if newEvent != nil {
+                game.LastEventTurn = game.TurnNumber
+
                 if !newEvent.Instant {
                     game.RandomEvents = append(game.RandomEvents, newEvent)
                 }
