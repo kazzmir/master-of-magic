@@ -613,10 +613,15 @@ func (city *City) PowerDarkRituals() int {
 
 /* power production from buildings and citizens
  */
-func (city *City) ComputePower(spellBooks int) int {
+func (city *City) ComputePower(spellBooks []data.WizardBook) int {
     power := 0
 
     religiousPower := 0
+
+    totalBooks := 0
+    for _, book := range spellBooks {
+        totalBooks += book.Count
+    }
 
     for _, buildingValue := range city.Buildings.Values() {
         switch buildingValue {
@@ -626,7 +631,7 @@ func (city *City) ComputePower(spellBooks int) int {
             case buildinglib.BuildingCathedral: religiousPower += 4
             case buildinglib.BuildingAlchemistsGuild: power += 3
             case buildinglib.BuildingWizardsGuild: power -= 3
-            case buildinglib.BuildingFortress: power += city.PowerFortress(spellBooks)
+            case buildinglib.BuildingFortress: power += city.PowerFortress(totalBooks)
         }
     }
 
@@ -634,9 +639,31 @@ func (city *City) ComputePower(spellBooks int) int {
         religiousPower += city.PowerDarkRituals()
     }
 
-    // FIXME: take bonuses for religious power into account (infernal power, bad/good moon, etc.)
+    // FIXME: take bonuses for religious power into account (infernal power, etc.)
 
-    return power + religiousPower + city.PowerCitizens() + city.PowerMinerals()
+    moonBonus := 1.0
+
+    if city.CityServices.GoodMoonActive() {
+        for _, book := range spellBooks {
+            if book.Magic == data.LifeMagic {
+                moonBonus *= 2
+            } else if book.Magic == data.DeathMagic {
+                moonBonus /= 2
+            }
+        }
+    }
+
+    if city.CityServices.BadMoonActive() {
+        for _, book := range spellBooks {
+            if book.Magic == data.LifeMagic {
+                moonBonus /= 2
+            } else if book.Magic == data.DeathMagic {
+                moonBonus *= 2
+            }
+        }
+    }
+
+    return power + int(float64(religiousPower) * moonBonus) + city.PowerCitizens() + city.PowerMinerals()
 }
 
 func (city *City) UpdateUnrest(garrison []units.StackUnit) {
