@@ -6909,22 +6909,50 @@ func (game *Game) DoRandomEvents() {
                             return nil
                         }
 
+                        var neutralPlayer *playerlib.Player
                         for _, neutral := range game.Players {
                             if neutral.GetBanner() == data.BannerBrown {
-                                city := target.Cities[rand.N(len(target.Cities))]
+                                neutralPlayer = neutral
+                                break
+                            }
+                        }
+
+                        if neutralPlayer != nil {
+                            var choices []*citylib.City
+                            for _, city := range target.Cities {
+                                if city.HasFortress() {
+                                    continue
+                                }
+
+                                // cannot target a city with a hero in it
+                                stack := target.FindStack(city.X, city.Y, city.Plane)
+                                if stack != nil && stack.HasHero() {
+                                    continue
+                                }
+
+                                choices = append(choices, city)
+                            }
+
+                            if len(choices) > 0 {
+                                city := choices[rand.N(len(choices))]
 
                                 // disband any stack garrisoned at the city
                                 stack := target.FindStack(city.X, city.Y, city.Plane)
                                 if stack != nil {
                                     for _, unit := range stack.Units() {
-                                        target.RemoveUnit(unit)
+                                        if unit.GetRace() == data.RaceFantastic {
+                                            target.RemoveUnit(unit)
+                                        } else {
+                                            unit.SetBanner(neutralPlayer.GetBanner())
+                                            neutralPlayer.AddUnit(unit)
+                                        }
                                     }
                                 }
 
                                 target.RemoveCity(city)
-                                neutral.AddCity(city)
-                                city.Banner = neutral.Wizard.Banner
-                                city.RulingRace = neutral.Wizard.Race
+                                neutralPlayer.AddCity(city)
+                                city.Banner = neutralPlayer.Wizard.Banner
+                                city.RulingRace = neutralPlayer.Wizard.Race
 
                                 // remove all enchantments on the city
                                 city.Enchantments.Clear()

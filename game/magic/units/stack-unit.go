@@ -32,6 +32,7 @@ type StackUnit interface {
     RemoveEnchantment(data.UnitEnchantment)
     IsUndead() bool
     GetBanner() data.BannerType
+    SetBanner(data.BannerType)
     SetWeaponBonus(data.WeaponBonus)
     GetWeaponBonus() data.WeaponBonus
     GetX() int
