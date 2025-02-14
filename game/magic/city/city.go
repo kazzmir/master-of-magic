@@ -75,8 +75,12 @@ type CatchmentProvider interface {
     OnShore(x int, y int) bool
 }
 
-type ConnectedCityProvider interface {
+type CityServicesProvider interface {
     FindRoadConnectedCities(city *City) []*City
+    GoodMoonActive() bool
+    BadMoonActive() bool
+    PopulationBoomActive(city *City) bool
+    PlagueActive(city *City) bool
 }
 
 const MAX_CITY_CITIZENS = 25
@@ -108,7 +112,7 @@ type City struct {
     Enchantments *set.Set[Enchantment]
 
     CatchmentProvider CatchmentProvider
-    ConnectedProvider ConnectedCityProvider
+    CityServices CityServicesProvider
 
     TaxRate fraction.Fraction
 
@@ -124,7 +128,7 @@ type City struct {
 }
 
 // FIXME: Add plane?
-func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider, connectedProvider ConnectedCityProvider) *City {
+func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider, cityServices CityServicesProvider) *City {
     city := City{
         Name: name,
         X: x,
@@ -136,7 +140,7 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
         Enchantments: set.MakeSet[Enchantment](),
         TaxRate: taxRate,
         CatchmentProvider: catchmentProvider,
-        ConnectedProvider: connectedProvider,
+        CityServices: cityServices,
         BuildingInfo: buildingInfo,
     }
 
@@ -611,10 +615,15 @@ func (city *City) PowerDarkRituals() int {
 
 /* power production from buildings and citizens
  */
-func (city *City) ComputePower(spellBooks int) int {
+func (city *City) ComputePower(spellBooks []data.WizardBook) int {
     power := 0
 
     religiousPower := 0
+
+    totalBooks := 0
+    for _, book := range spellBooks {
+        totalBooks += book.Count
+    }
 
     for _, buildingValue := range city.Buildings.Values() {
         switch buildingValue {
@@ -624,7 +633,7 @@ func (city *City) ComputePower(spellBooks int) int {
             case buildinglib.BuildingCathedral: religiousPower += 4
             case buildinglib.BuildingAlchemistsGuild: power += 3
             case buildinglib.BuildingWizardsGuild: power -= 3
-            case buildinglib.BuildingFortress: power += city.PowerFortress(spellBooks)
+            case buildinglib.BuildingFortress: power += city.PowerFortress(totalBooks)
         }
     }
 
@@ -632,9 +641,31 @@ func (city *City) ComputePower(spellBooks int) int {
         religiousPower += city.PowerDarkRituals()
     }
 
-    // FIXME: take bonuses for religious power into account (infernal power, bad/good moon, etc.)
+    // FIXME: take bonuses for religious power into account (infernal power, etc.)
 
-    return power + religiousPower + city.PowerCitizens() + city.PowerMinerals()
+    moonBonus := 1.0
+
+    if city.CityServices.GoodMoonActive() {
+        for _, book := range spellBooks {
+            if book.Magic == data.LifeMagic {
+                moonBonus *= 2
+            } else if book.Magic == data.DeathMagic {
+                moonBonus /= 2
+            }
+        }
+    }
+
+    if city.CityServices.BadMoonActive() {
+        for _, book := range spellBooks {
+            if book.Magic == data.LifeMagic {
+                moonBonus /= 2
+            } else if book.Magic == data.DeathMagic {
+                moonBonus *= 2
+            }
+        }
+    }
+
+    return power + int(float64(religiousPower) * moonBonus) + city.PowerCitizens() + city.PowerMinerals()
 }
 
 func (city *City) UpdateUnrest(garrison []units.StackUnit) {
@@ -977,7 +1008,7 @@ func (city *City) PopulationGrowthRate() int {
         base += int(2.5 * float32(city.MaximumCitySize()) / 10) * 10
     }
 
-    // FIXME: Add Stream of Life and Population Boom event
+    // FIXME: Add Stream of Life
 
     if city.ProducingBuilding == buildinglib.BuildingHousing {
         bonus := 50
@@ -999,6 +1030,13 @@ func (city *City) PopulationGrowthRate() int {
     if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
         base = int(0.75 * float32(base))
     }
+
+    // if the base is negative, this can actually make the population shrink even faster
+    if city.CityServices.PopulationBoomActive(city) {
+        base *= 2
+    }
+
+    // how does population boom interact with starving?
 
     if city.SurplusFood() < 0 {
         base = 50 * city.SurplusFood()
@@ -1175,7 +1213,7 @@ func (city *City) GoldMinerals() int {
 //   population of other city * 0.5% if same race
 //   population of other city * 1% if different
 func (city *City) ComputeForeignTrade() float64 {
-    connected := city.ConnectedProvider.FindRoadConnectedCities(city)
+    connected := city.CityServices.FindRoadConnectedCities(city)
     percent := float64(0)
 
     for _, other := range connected {
@@ -1469,6 +1507,13 @@ func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) 
 
         if city.HasEnchantment(data.CityEnchantmentPestilence) {
             if city.Citizens() >= 11 || city.Citizens() > (rand.IntN(10) + 1) {
+                city.Population -= 1000
+            }
+        }
+
+        if city.CityServices.PlagueActive(city) {
+            // plague cannot reduce population below 2000
+            if city.Citizens() >= 3 {
                 city.Population -= 1000
             }
         }

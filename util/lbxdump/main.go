@@ -18,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/game/magic/game"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
 )
 
@@ -76,6 +77,18 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool, 
 
         for i, spell := range spells.Spells {
             fmt.Printf("Spell %v: %+v\n", i, spell)
+        }
+    } else if lbxName == "eventmsg.lbx" && !rawDump {
+        files := make(map[string]*lbx.LbxFile)
+        files["eventmsg.lbx"] = &file
+        cache := lbx.MakeCacheFromLbxFiles(files)
+        events, err := game.ReadEventData(cache)
+        if err != nil {
+            return err
+        }
+
+        for i, event := range events.Events {
+            fmt.Printf("Event %v: %+v\n", i, event)
         }
 
     } else if lbxName == "itemdata.lbx" && !rawDump {

@@ -829,6 +829,10 @@ func (hero *Hero) GetBanner() data.BannerType {
     return hero.Unit.GetBanner()
 }
 
+func (hero *Hero) SetBanner(banner data.BannerType) {
+    hero.Unit.SetBanner(banner)
+}
+
 func (hero *Hero) GetCombatLbxFile() string {
     return hero.Unit.GetCombatLbxFile()
 }

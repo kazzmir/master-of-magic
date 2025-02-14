@@ -39,6 +39,8 @@ const (
     MagicNodeNature MagicNode = iota
     MagicNodeSorcery
     MagicNodeChaos
+
+    MagicNodeNone
 )
 
 func (magicNode MagicNode) Name() string {
@@ -998,6 +1000,10 @@ func (mapObject *Map) GetCastedVolcanoes(caster Wizard) []*ExtraVolcano {
     }
 
     return out
+}
+
+func (mapObject *Map) RemoveBonus(x int, y int) {
+    delete(mapObject.ExtraMap[image.Pt(x, y)], ExtraKindBonus)
 }
 
 func (mapObject *Map) SetBonus(x int, y int, bonus data.BonusType) {

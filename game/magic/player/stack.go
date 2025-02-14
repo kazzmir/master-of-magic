@@ -145,6 +145,9 @@ func (stack *UnitStack) AllSwimmers() bool {
     return true
 }
 
+func (stack *UnitStack) HasHero() bool {
+    return slices.ContainsFunc(stack.units, units.StackUnit.IsHero)
+}
 
 // returns true if any of the active units in the stack have the given ability
 func (stack *UnitStack) ActiveUnitsHasAbility(ability data.AbilityType) bool {

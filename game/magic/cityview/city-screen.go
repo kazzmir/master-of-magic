@@ -2154,7 +2154,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(powerRect.Min.X), float64(powerRect.Min.Y))
-            cityScreen.drawIcons(cityScreen.City.ComputePower(cityScreen.Player.Wizard.TotalBooks()), smallMagic, bigMagic, options, screen)
+            cityScreen.drawIcons(cityScreen.City.ComputePower(cityScreen.Player.Wizard.Books), smallMagic, bigMagic, options, screen)
         },
     })
 

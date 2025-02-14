@@ -45,6 +45,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/functional"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -117,6 +118,7 @@ type GameEventMerchant struct {
 
 type GameEventVault struct {
     CreatedArtifact *artifact.Artifact
+    Player *playerlib.Player
 }
 
 type GameEventNewOutpost struct {
@@ -203,6 +205,13 @@ type GameEventMoveCamera struct {
     Instant bool // set to true to have the camera move instantly, rather than smoothly scroll
 }
 
+// https://masterofmagic.fandom.com/wiki/Event
+type GameEventShowRandomEvent struct {
+    Event *RandomEvent
+    // true if the event is just starting, or false if it is ending
+    Starting bool
+}
+
 type GameEventMoveUnit struct {
     Player *playerlib.Player
 }
@@ -253,6 +262,10 @@ type Game struct {
 
     MovingStack *playerlib.UnitStack
 
+    // https://masterofmagic.fandom.com/wiki/Event
+    RandomEvents []*RandomEvent
+    LastEventTurn uint64
+
     HudUI *uilib.UI
     Help helplib.Help
 
@@ -295,6 +308,27 @@ type UnitBuildPowers struct {
     Meld bool
     BuildRoad bool
     Purify bool
+}
+
+// to be able to use the artifact, the wizard must have enough magic books to satisfy the artifact's requirements
+func canUseArtifact(check *artifact.Artifact, wizard setup.WizardCustom) bool {
+    // all artifact requirements must be satisfied
+    for _, requirement := range check.Requirements {
+        if wizard.MagicLevel(requirement.MagicType) < requirement.Amount {
+            return false
+        }
+    }
+
+    // and all ability requirements must be satisfied
+    for _, power := range check.Powers {
+        if power.Type == artifact.PowerTypeAbility1 || power.Type == artifact.PowerTypeAbility2 || power.Type == artifact.PowerTypeAbility3 {
+            if wizard.MagicLevel(power.Magic) < power.Amount {
+                return false
+            }
+        }
+    }
+
+    return true
 }
 
 func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
@@ -945,10 +979,14 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
  * add up all melded node tiles, all buildings that produce power, etc
  */
 func (game *Game) ComputePower(player *playerlib.Player) int {
+    if game.ManaShortActive() {
+        return 0
+    }
+
     power := float64(0)
 
     for _, city := range player.Cities {
-        power += float64(city.ComputePower(player.Wizard.TotalBooks()))
+        power += float64(city.ComputePower(player.Wizard.Books))
     }
 
     magicBonus := float64(1)
@@ -959,12 +997,40 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
         case data.MagicSettingPowerful: magicBonus = 1.5
     }
 
+    // the active conjunction type
+    magicConjunction := maplib.MagicNodeNone
+
+    if game.ConjunctionChaosActive() {
+        magicConjunction = maplib.MagicNodeChaos
+    }
+    if game.ConjunctionNatureActive() {
+        magicConjunction = maplib.MagicNodeNature
+    }
+    if game.ConjunctionSorceryActive() {
+        magicConjunction = maplib.MagicNodeSorcery
+    }
+
+    // compute the power a node gives off taking active conjunctions into account
+    applyConjunction := func (node *maplib.ExtraMagicNode) float64 {
+        nodePower := node.GetPower(magicBonus)
+
+        if magicConjunction != maplib.MagicNodeNone {
+            if magicConjunction != node.Kind {
+                return nodePower * 0.5
+            }
+
+            return nodePower * 2
+        }
+
+        return nodePower
+    }
+
     for _, node := range game.ArcanusMap.GetMeldedNodes(player) {
-        power += node.GetPower(magicBonus)
+        power += applyConjunction(node)
     }
 
     for _, node := range game.MyrrorMap.GetMeldedNodes(player) {
-        power += node.GetPower(magicBonus)
+        power += applyConjunction(node)
     }
 
     power += float64(len(game.ArcanusMap.GetCastedVolcanoes(player)))
@@ -2424,7 +2490,8 @@ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
     if chance > 10 {
         chance = 10
     }
-    if rand.N(100) >= 10 {
+
+    if rand.N(100) >= chance {
         return
     }
 
@@ -2571,7 +2638,8 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     if chance > 10 {
         chance = 10
     }
-    if rand.N(100) >= 10 {
+
+    if rand.N(100) >= chance {
         return
     }
 
@@ -2723,6 +2791,131 @@ func (game *Game) AddExperience(player *playerlib.Player, unit units.StackUnit, 
     }
 }
 
+func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, start bool, wizard setup.WizardCustom) {
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return
+    }
+
+    yellow := util.RotateHue(color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}, -0.1)
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow,
+        util.Lighten(yellow, -5),
+        util.Lighten(yellow, -15),
+        util.Lighten(yellow, -25),
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+
+    background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
+
+    // devil: 51
+    // cat: 52
+    // bird: 53
+    // snake: 54
+    // beetle: 55
+    animalIndex := 51
+    switch wizard.MostBooks() {
+        case data.NatureMagic: animalIndex = 54
+        case data.SorceryMagic: animalIndex = 55
+        case data.ChaosMagic: animalIndex = 51
+        case data.LifeMagic: animalIndex = 53
+        case data.DeathMagic: animalIndex = 52
+    }
+    animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
+
+    message := event.Message
+    if !start {
+        message = event.MessageStop
+    }
+    wrappedText := bigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), message)
+
+    rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
+
+    getAlpha := util.MakeFadeIn(7, &game.Counter)
+
+    eventPic, err := game.ImageCache.GetImage("events.lbx", event.LbxIndex, 0)
+
+    if err != nil {
+        log.Printf("Error: Unable to get event picture for %v: %v", event.Type, err)
+        return
+    }
+
+    if event.Type.IsGood() {
+        game.Music.PushSong(music.SongGoodEvent)
+    } else {
+        game.Music.PushSong(music.SongBadEvent)
+    }
+
+    defer game.Music.PopSong()
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+
+        var options ebiten.DrawImageOptions
+        options.ColorScale.ScaleAlpha(getAlpha())
+        options.GeoM.Translate(float64(8 * data.ScreenScale), float64(60 * data.ScreenScale))
+        screen.DrawImage(background, &options)
+        iconOptions := options
+        iconOptions.GeoM.Translate(float64(34 * data.ScreenScale), float64(28 * data.ScreenScale))
+        iconOptions.GeoM.Translate(float64(-animal.Bounds().Dx() / 2), float64(-animal.Bounds().Dy() / 2))
+        screen.DrawImage(animal, &iconOptions)
+
+        x, y := options.GeoM.Apply(float64(75 * data.ScreenScale), float64(9 * data.ScreenScale))
+        bigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
+
+        options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
+
+        shiftX := float64(6 * data.ScreenScale)
+        shiftY := float64(8 * data.ScreenScale)
+        options.GeoM.Translate(shiftX, shiftY)
+        screen.DrawImage(eventPic, &options)
+        options.GeoM.Translate(-shiftX, -shiftY)
+        screen.DrawImage(rightSide, &options)
+
+        /*
+        x, y = options.GeoM.Apply(float64(4 * data.ScreenScale), float64(6 * data.ScreenScale))
+        buildingSpace := screen.SubImage(image.Rect(int(x), int(y), int(x) + 45 * data.ScreenScale, int(y) + 47 * data.ScreenScale)).(*ebiten.Image)
+
+        // buildingSpace.Fill(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+        // vector.DrawFilledRect(buildingSpace, float32(x), float32(y), float32(buildingSpace.Bounds().Dx()), float32(buildingSpace.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
+        */
+    }
+
+    quit := false
+
+    for !quit {
+        game.Counter += 1
+        if inputmanager.LeftClick() {
+            quit = true
+        }
+        if yield() != nil {
+            return
+        }
+    }
+
+    getAlpha = util.MakeFadeOut(7, &game.Counter)
+
+    for range 7 {
+        game.Counter += 1
+        yield()
+    }
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     for {
@@ -2773,7 +2966,14 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         }
                     case *GameEventVault:
                         vaultEvent := event.(*GameEventVault)
-                        game.doVault(yield, vaultEvent.CreatedArtifact)
+                        if vaultEvent.Player.IsHuman() {
+                            game.doVault(yield, vaultEvent.CreatedArtifact)
+                        } else {
+                            // FIXME: give item to AI
+                        }
+                    case *GameEventShowRandomEvent:
+                        randomEvent := event.(*GameEventShowRandomEvent)
+                        game.doRandomEvent(yield, randomEvent.Event, randomEvent.Starting, game.Players[0].Wizard)
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)
@@ -5852,6 +6052,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
             foodPerTurn := player.FoodPerTurn()
             manaPerTurn := player.ManaPerTurn(game.ComputePower(player), game)
 
+            conjunction, conjunctionColor := game.ActiveConjunctionName()
+
             elements = append(elements, &uilib.UIElement{
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
@@ -5881,6 +6083,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         game.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Mana", manaPerTurn))
                     } else {
                         game.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
+                    }
+
+                    if conjunction != "" {
+                        var scale ebiten.ColorScale
+                        scale.ScaleWithColor(conjunctionColor)
+                        game.WhiteFont.PrintCenter(screen, float64(278 * data.ScreenScale), float64(155 * data.ScreenScale), float64(data.ScreenScale), scale, conjunction)
                     }
                 },
             })
@@ -6372,12 +6580,501 @@ func (game *Game) revertVolcanos() {
     }
 }
 
+// returns the number of people, units, buildings that were lost
+func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (int, int, int) {
+    // FIXME: destroy buildings with 15% chance and non-flying units with 25% chance
+    // https://masterofmagic.fandom.com/wiki/Earthquake
+
+    // earthquake never kills any citizens
+    people := 0
+
+    var killedUnits []units.StackUnit
+
+    stack := player.FindStack(city.X, city.Y, city.Plane)
+    if stack != nil {
+        for _, unit := range stack.Units() {
+            if unit.IsFlying() || unit.HasAbility(data.AbilityNonCorporeal) {
+                continue
+            }
+
+            roll := rand.N(100)
+            if roll < 25 {
+                killedUnits = append(killedUnits, unit)
+            }
+        }
+    }
+
+    for _, unit := range killedUnits {
+        player.RemoveUnit(unit)
+    }
+
+    var destroyedBuildings []buildinglib.Building
+    for _, building := range city.Buildings.Values() {
+        roll := rand.N(100)
+        if roll < 15 {
+            destroyedBuildings = append(destroyedBuildings, building)
+            city.Buildings.Remove(building)
+        }
+    }
+
+    return people, len(killedUnits), len(destroyedBuildings)
+}
+
+func (game *Game) doCallTheVoid(city *citylib.City) (int, int, int) {
+    // FIXME: destroy buildings with 50% chance, and a bunch of other effects
+    // https://masterofmagic.fandom.com/wiki/Call_the_Void
+
+    return 0, 0, 0
+}
+
+func (game *Game) ManaShortActive() bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventManaShort
+    })
+}
+
+func (game *Game) PopulationBoomActive(city *citylib.City) bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventPopulationBoom && event.TargetCity == city
+    })
+}
+
+func (game *Game) PlagueActive(city *citylib.City) bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventPlague && event.TargetCity == city
+    })
+}
+
+func (game *Game) GoodMoonActive() bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventGoodMoon
+    })
+}
+
+func (game *Game) BadMoonActive() bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventBadMoon
+    })
+}
+
+func (game *Game) ConjunctionChaosActive() bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventConjunctionChaos
+    })
+}
+
+func (game *Game) ConjunctionNatureActive() bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventConjunctionNature
+    })
+}
+
+func (game *Game) ConjunctionSorceryActive() bool {
+    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventConjunctionSorcery
+    })
+}
+
+func (game *Game) ActiveConjunctionName() (string, color.Color) {
+
+    for _, event := range game.RandomEvents {
+        switch event.Type {
+            case RandomEventConjunctionChaos: return "Conjunction", color.RGBA{R: 255, G: 0, B: 0, A: 255}
+            case RandomEventConjunctionNature: return "Conjunction", color.RGBA{R: 0, G: 255, B: 0, A: 255}
+            case RandomEventConjunctionSorcery: return "Conjunction", color.RGBA{R: 0, G: 0, B: 255, A: 255}
+            case RandomEventManaShort: return "Mana Short", color.RGBA{R: 0, G: 255, B: 0, A: 255}
+            case RandomEventGoodMoon: return "Good Moon", color.RGBA{R: 255, G: 255, B: 255, A: 255}
+            case RandomEventBadMoon: return "Bad Moon", color.RGBA{R: 0, G: 0, B: 0, A: 255}
+        }
+    }
+
+    return "", color.RGBA{}
+}
+
+func (game *Game) DoRandomEvents() {
+    // maybe create a new event
+    eventModifier := fraction.FromInt(1)
+    switch game.Settings.Difficulty {
+        case data.DifficultyIntro: eventModifier = fraction.Make(1, 2)
+        case data.DifficultyEasy: eventModifier = fraction.Make(2, 3)
+        case data.DifficultyAverage: eventModifier = fraction.Make(3, 4)
+        case data.DifficultyHard: eventModifier = fraction.Make(4, 5)
+        case data.DifficultyExtreme: eventModifier = fraction.Make(1, 1)
+        case data.DifficultyImpossible: eventModifier = fraction.Make(6, 5)
+    }
+
+    // for testing purposes
+    // eventModifier = fraction.FromInt(10)
+
+    eventProbability := fraction.FromInt(int(game.TurnNumber - game.LastEventTurn)).Multiply(eventModifier)
+    if game.TurnNumber < 50 || game.TurnNumber - game.LastEventTurn < 5 {
+        eventProbability = fraction.Zero()
+    }
+
+    if rand.N(512) < int(eventProbability.ToFloat()) {
+        choices := set.NewSet[RandomEventType](
+            RandomEventBadMoon,
+            RandomEventConjunctionChaos,
+            RandomEventConjunctionNature,
+            RandomEventConjunctionSorcery,
+            RandomEventDepletion,
+            RandomEventDiplomaticMarriage,
+            RandomEventDisjunction,
+            RandomEventDonation,
+            RandomEventEarthquake,
+            RandomEventGift,
+            RandomEventGoodMoon,
+            RandomEventGreatMeteor,
+            RandomEventManaShort,
+            RandomEventNewMinerals,
+            RandomEventPiracy,
+            RandomEventPlague,
+            RandomEventPopulationBoom,
+            RandomEventRebellion,
+        )
+
+        // remove events that can't occur because they are already occurring or
+        // there is some mutually exclusive other event
+        for _, event := range game.RandomEvents {
+            choices.Remove(event.Type)
+            // remove all conjunctions because only one conjunction can be active at a time
+            if event.IsConjunction {
+                choices.Remove(RandomEventBadMoon)
+                choices.Remove(RandomEventGoodMoon)
+                choices.Remove(RandomEventConjunctionChaos)
+                choices.Remove(RandomEventConjunctionNature)
+                choices.Remove(RandomEventConjunctionSorcery)
+                choices.Remove(RandomEventManaShort)
+            }
+        }
+
+        if game.TurnNumber < 150 {
+            choices.Remove(RandomEventDiplomaticMarriage)
+            choices.Remove(RandomEventGreatMeteor)
+        }
+
+        if choices.Size() > 0 {
+            choice := choices.Values()[rand.N(choices.Size())]
+
+            // return a RandomEvent object to show, and also cause the event to occur (if instant)
+            makeEvent := func (choice RandomEventType, target *playerlib.Player) (*RandomEvent, GameEvent) {
+                usedCities := set.NewSet[*citylib.City]()
+                for _, event := range game.RandomEvents {
+                    if event.TargetCity != nil {
+                        usedCities.Insert(event.TargetCity)
+                    }
+                }
+
+                switch choice {
+                    case RandomEventBadMoon: return MakeBadMoonEvent(game.TurnNumber), nil
+                    case RandomEventGoodMoon: return MakeGoodMoonEvent(game.TurnNumber), nil
+                    case RandomEventConjunctionChaos: return MakeConjunctionChaosEvent(game.TurnNumber), nil
+                    case RandomEventConjunctionNature: return MakeConjunctionNatureEvent(game.TurnNumber), nil
+                    case RandomEventConjunctionSorcery: return MakeConjunctionSorceryEvent(game.TurnNumber), nil
+                    case RandomEventManaShort: return MakeManaShortEvent(game.TurnNumber), nil
+                    case RandomEventDisjunction:
+                        // there must be at least one global enchantment for this event to occur
+                        hasGlobalEnchantment := false
+
+                        for _, player := range game.Players {
+                            if player.GlobalEnchantments.Size() > 0 {
+                                hasGlobalEnchantment = true
+                                break
+                            }
+                        }
+
+                        if !hasGlobalEnchantment {
+                            return nil, nil
+                        }
+
+                        // remove all global enchantments
+                        for _, player := range game.Players {
+                            player.GlobalEnchantments.Clear()
+                        }
+
+                        return MakeDisjunctionEvent(game.TurnNumber), nil
+                    case RandomEventDonation:
+                        // FIXME: what are the bounds here?
+                        gold := rand.N(2000) + 100
+                        target.Gold += gold
+
+                        return MakeDonationEvent(game.TurnNumber, gold), nil
+                    case RandomEventPiracy:
+                        if target.Gold < 100 {
+                            return nil, nil
+                        }
+
+                        // between 30-50%, compute random number between 0-20%, add 30%
+                        gold := rand.N(target.Gold / 5) + target.Gold * 3 / 10
+                        target.Gold = max(0, target.Gold - gold)
+
+                        return MakePiracyEvent(game.TurnNumber, gold), nil
+                    case RandomEventGift:
+                        var out []*artifact.Artifact
+                        for _, artifact := range game.ArtifactPool {
+                            if canUseArtifact(artifact, target.Wizard) {
+                                out = append(out, artifact)
+                            }
+                        }
+
+                        // couldn't find a valid artifact
+                        if len(out) == 0 {
+                            return nil, nil
+                        }
+
+                        use := out[rand.N(len(out))]
+
+                        delete(game.ArtifactPool, use.Name)
+
+                        // returning GameEventVault here is ugly but we need a way to have the vault event
+                        // be added to game.Events after the random event
+                        return MakeGiftEvent(game.TurnNumber, use.Name), &GameEventVault{CreatedArtifact: use, Player: target}
+                    case RandomEventDepletion:
+                        // choose a random town that has a mineral bonus in its catchment area,
+                        // and then remove the bonus from the map
+                        for _, cityIndex := range rand.Perm(len(target.Cities)) {
+                            city := target.Cities[cityIndex]
+                            mapUse := game.GetMap(city.Plane)
+                            catchment := mapUse.GetCatchmentArea(city.X, city.Y)
+                            var choices []maplib.FullTile
+                            for _, tile := range catchment {
+                                switch tile.GetBonus() {
+                                    case data.BonusSilverOre, data.BonusGoldOre, data.BonusIronOre, data.BonusCoal,
+                                         data.BonusMithrilOre, data.BonusAdamantiumOre, data.BonusGem:
+                                        choices = append(choices, tile)
+                                }
+                            }
+
+                            if len(choices) > 0 {
+                                tile := choices[rand.N(len(choices))]
+                                mapUse.RemoveBonus(tile.X, tile.Y)
+                                return MakeDepletionEvent(game.TurnNumber, tile.GetBonus(), city.Name), nil
+                            }
+                        }
+
+                        return nil, nil
+
+                    case RandomEventDiplomaticMarriage:
+                        for _, player := range game.Players {
+                            if player.GetBanner() == data.BannerBrown {
+                                if len(player.Cities) > 0 {
+                                    city := player.Cities[rand.N(len(player.Cities))]
+                                    // if the owner of the city has a stack garrisoned there then the garrison is disbanded
+                                    stack := player.FindStack(city.X, city.Y, city.Plane)
+                                    if stack != nil {
+                                        for _, unit := range stack.Units() {
+                                            player.RemoveUnit(unit)
+                                        }
+                                    }
+
+                                    player.RemoveCity(city)
+                                    target.AddCity(city)
+                                    city.Banner = target.Wizard.Banner
+                                    city.RulingRace = target.Wizard.Race
+
+                                    return MakeDiplomaticMarriageEvent(game.TurnNumber, city), nil
+                                }
+                            }
+                        }
+
+                        return nil, nil
+
+                    case RandomEventEarthquake:
+                        choices := game.AllCities()
+                        if len(choices) == 0 {
+                            return nil, nil
+                        }
+
+                        city := choices[rand.N(len(choices))]
+
+                        people, units, buildings := game.doEarthquake(city, target)
+
+                        return MakeEarthquakeEvent(game.TurnNumber, city.Name, people, units, buildings), nil
+
+                    case RandomEventGreatMeteor:
+                        choices := game.AllCities()
+                        if len(choices) == 0 {
+                            return nil, nil
+                        }
+
+                        city := choices[rand.N(len(choices))]
+
+                        people, units, buildings := game.doCallTheVoid(city)
+
+                        return MakeGreatMeteorEvent(game.TurnNumber, city.Name, people, units, buildings), nil
+
+                    case RandomEventNewMinerals:
+                        for _, cityIndex := range rand.Perm(len(target.Cities)) {
+                            city := target.Cities[cityIndex]
+                            mapUse := game.GetMap(city.Plane)
+                            catchment := mapUse.GetCatchmentArea(city.X, city.Y)
+                            var choices []maplib.FullTile
+                            for _, tile := range catchment {
+                                terrainType := tile.Tile.TerrainType()
+                                if tile.GetBonus() == data.BonusNone && (terrainType == terrain.Hill || terrainType == terrain.Mountain) {
+                                    choices = append(choices, tile)
+                                }
+                            }
+
+                            if len(choices) > 0 {
+                                tile := choices[rand.N(len(choices))]
+
+                                bonusChoices := []data.BonusType{data.BonusGoldOre, data.BonusCoal, data.BonusMithrilOre, data.BonusAdamantiumOre, data.BonusGem}
+                                bonus := bonusChoices[rand.N(len(bonusChoices))]
+
+                                mapUse.SetBonus(tile.X, tile.Y, bonus)
+                                return MakeNewMineralsEvent(game.TurnNumber, bonus, city), nil
+                            }
+                        }
+
+                    case RandomEventPlague:
+                        for _, cityIndex := range rand.Perm(len(target.Cities)) {
+                            city := target.Cities[cityIndex]
+                            if !usedCities.Contains(city) {
+                                return MakePlagueEvent(game.TurnNumber, city), nil
+                            }
+                        }
+
+                        return nil, nil
+
+                    case RandomEventPopulationBoom:
+                        for _, cityIndex := range rand.Perm(len(target.Cities)) {
+                            city := target.Cities[cityIndex]
+                            if !usedCities.Contains(city) {
+                                return MakePopulationBoomEvent(game.TurnNumber, city), nil
+                            }
+                        }
+
+                        return nil, nil
+
+                    case RandomEventRebellion:
+                        if len(target.Cities) == 0 {
+                            return nil, nil
+                        }
+
+                        var neutralPlayer *playerlib.Player
+                        for _, neutral := range game.Players {
+                            if neutral.GetBanner() == data.BannerBrown {
+                                neutralPlayer = neutral
+                                break
+                            }
+                        }
+
+                        if neutralPlayer != nil {
+                            var choices []*citylib.City
+                            for _, city := range target.Cities {
+                                if city.HasFortress() {
+                                    continue
+                                }
+
+                                // cannot target a city with a hero in it
+                                stack := target.FindStack(city.X, city.Y, city.Plane)
+                                if stack != nil && stack.HasHero() {
+                                    continue
+                                }
+
+                                choices = append(choices, city)
+                            }
+
+                            if len(choices) > 0 {
+                                city := choices[rand.N(len(choices))]
+
+                                // disband any fantastic units garrisoned at the city, and convert to neutral all other normal units
+                                stack := target.FindStack(city.X, city.Y, city.Plane)
+                                if stack != nil {
+                                    for _, unit := range stack.Units() {
+                                        target.RemoveUnit(unit)
+                                        if unit.GetRace() != data.RaceFantastic {
+                                            unit.SetBanner(neutralPlayer.GetBanner())
+                                            neutralPlayer.AddUnit(unit)
+                                        }
+                                    }
+                                }
+
+                                target.RemoveCity(city)
+                                neutralPlayer.AddCity(city)
+                                city.Banner = neutralPlayer.Wizard.Banner
+                                city.RulingRace = neutralPlayer.Wizard.Race
+
+                                // remove all enchantments on the city
+                                city.Enchantments.Clear()
+
+                                // plague/population boom might still be active for the city. just leave them for now
+
+                                return MakeRebellionEvent(game.TurnNumber, city), nil
+                            }
+                        }
+
+                        return nil, nil
+                }
+
+                return nil, nil
+            }
+
+            targetWizard := game.Players[rand.N(len(game.Players))]
+            newEvent, extraEvent := makeEvent(choice, targetWizard)
+            if newEvent != nil {
+                game.LastEventTurn = game.TurnNumber
+
+                if !newEvent.Instant {
+                    game.RandomEvents = append(game.RandomEvents, newEvent)
+                }
+
+                // FIXME: if the event is targeting an AI wizard then the event message should change slightly
+                game.Events <- &GameEventShowRandomEvent{Event: newEvent, Starting: true}
+
+                if extraEvent != nil {
+                    game.Events <- extraEvent
+                }
+
+                game.RefreshUI()
+            }
+        }
+
+    }
+
+    var keep []*RandomEvent
+    // add events to the 'keep' array to keep them for the next turn
+    for _, event := range game.RandomEvents {
+
+        // once citizens has reached 2, plague will dissipate automatically
+        if event.Type == RandomEventPlague && event.TargetCity.Citizens() <= 2 {
+            game.Events <- &GameEventShowRandomEvent{Event: event, Starting: false}
+            continue
+        }
+
+        // a random event can end after 5 turns, and the chances of it ending are 5% per turn
+        turns := game.TurnNumber - event.BirthYear
+        if turns < 5 {
+            keep = append(keep, event)
+            continue
+        }
+        step := uint64(5)
+        if event.IsConjunction {
+            step = 10
+        }
+
+        chance := (turns - 5) * step
+
+        if uint64(rand.N(100)) < chance {
+            // don't keep
+            game.Events <- &GameEventShowRandomEvent{Event: event, Starting: false}
+        } else {
+            keep = append(keep, event)
+        }
+    }
+
+    game.RandomEvents = keep
+}
+
 func (game *Game) EndOfTurn() {
     // put stuff here that should happen when all players have taken their turn
 
     game.revertVolcanos()
 
     game.TurnNumber += 1
+
+    game.DoRandomEvents()
 }
 
 func (game *Game) DoNextTurn(){

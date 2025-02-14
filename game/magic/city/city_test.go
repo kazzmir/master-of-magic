@@ -44,6 +44,22 @@ func (provider *NoCities) FindRoadConnectedCities(city *City) []*City {
     return nil
 }
 
+func (provider *NoCities) GoodMoonActive() bool {
+    return false
+}
+
+func (provider *NoCities) BadMoonActive() bool {
+    return false
+}
+
+func (provider *NoCities) PopulationBoomActive(city *City) bool {
+    return false
+}
+
+func (provider *NoCities) PlagueActive(city *City) bool {
+    return false
+}
+
 func TestBasicCity(test *testing.T){
     city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeSimpleMap()}, &NoCities{})
     city.Population = 6000
@@ -109,6 +125,22 @@ func (provider *AllConnected) FindRoadConnectedCities(city *City) []*City {
     }
 
     return out
+}
+
+func (provider *AllConnected) GoodMoonActive() bool {
+    return false
+}
+
+func (provider *AllConnected) BadMoonActive() bool {
+    return false
+}
+
+func (provider *AllConnected) PopulationBoomActive(city *City) bool {
+    return false
+}
+
+func (provider *AllConnected) PlagueActive(city *City) bool {
+    return false
 }
 
 func closeFloat(a float64, b float64) bool {
@@ -488,8 +520,9 @@ func TestScenario1(test *testing.T) {
     }
 
     // Power
-    if city.ComputePower(11) != 11 {
-        test.Logf("City ComputePower is not correct: %v", city.ComputePower(11))
+    books := []data.WizardBook{data.WizardBook{Magic: data.LifeMagic, Count: 11}}
+    if city.ComputePower(books) != 11 {
+        test.Logf("City ComputePower is not correct: %v", city.ComputePower(books))
     }
 
     if city.PopulationGrowthRate() != 120 {
@@ -565,8 +598,9 @@ func TestScenario2(test *testing.T) {
     }
 
     // Power
-    if city.ComputePower(11) != 11 {
-        test.Logf("City ComputePower is not correct: %v", city.ComputePower(11))
+    books := []data.WizardBook{data.WizardBook{Magic: data.LifeMagic, Count: 11}}
+    if city.ComputePower(books) != 11 {
+        test.Logf("City ComputePower is not correct: %v", city.ComputePower(books))
     }
 
     if city.PopulationGrowthRate() != 90 {

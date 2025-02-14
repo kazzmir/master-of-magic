@@ -3563,6 +3563,81 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// show random event
+func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 43")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{},
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.DeathMagic,
+                Count: 5,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("Erfurt", x, y, player.Wizard.Race, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
+    city.Population = 10000
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.ProducingUnit = units.UnitNone
+    city.Production = float32(city.ProducingUnit.ProductionCost)
+    city.AddBuilding(buildinglib.BuildingFortress)
+    city.AddBuilding(buildinglib.BuildingShrine)
+    city.AddBuilding(buildinglib.BuildingTemple)
+    city.Farmers = 1
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+    player.Gold = 1000
+    player.Mana = 1000
+
+    player.LiftFog(x, y, 4, data.PlaneArcanus)
+
+    game.Camera.Center(x, y)
+
+    game.TurnNumber = 300
+
+    /*
+    game.Events <- &gamelib.GameEventShowRandomEvent{
+        // Event: gamelib.MakeDisjunctionEvent(0),
+        // Event: gamelib.MakeBadMoonEvent(0),
+        // Event: gamelib.MakeConjunctionChaosEvent(0),
+        // Event: gamelib.MakeConjunctionNatureEvent(0),
+        // Event: gamelib.MakeConjunctionSorceryEvent(0),
+        // Event: gamelib.MakeDepletionEvent(0, data.BonusMithrilOre, "nyc"),
+        // Event: gamelib.MakeDiplomaticMarriageEvent(0, city),
+        // Event: gamelib.MakeDonationEvent(0, 123),
+        // Event: gamelib.MakeEarthquakeEvent(0, "nyc", 4, 8, 12),
+        // Event: gamelib.MakeGiftEvent(0, "frisbee"),
+        // Event: gamelib.MakeGoodMoonEvent(0),
+        // Event: gamelib.MakeGreatMeteorEvent(0, "nyc", 2, 4, 6),
+        // Event: gamelib.MakeManaShortEvent(0),
+        // Event: gamelib.MakeNewMineralsEvent(0, data.BonusMithrilOre, city),
+        // Event: gamelib.MakePiracyEvent(0, 456),
+        // Event: gamelib.MakePlagueEvent(0, city),
+        // Event: gamelib.MakePopulationBoomEvent(0, city),
+        Event: gamelib.MakeRebellionEvent(0, city),
+    }
+    */
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -3611,6 +3686,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 40: game = createScenario40(cache)
         case 41: game = createScenario41(cache)
         case 42: game = createScenario42(cache)
+        case 43: game = createScenario43(cache)
         default: game = createScenario1(cache)
     }
 
