@@ -3591,11 +3591,14 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
     x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Erfurt", x, y, player.Wizard.Race, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
-    city.Population = 1000
+    city.Population = 10000
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
     city.ProducingUnit = units.UnitNone
     city.Production = float32(city.ProducingUnit.ProductionCost)
+    city.AddBuilding(buildinglib.BuildingFortress)
+    city.AddBuilding(buildinglib.BuildingShrine)
+    city.AddBuilding(buildinglib.BuildingTemple)
     city.Farmers = 1
     city.ResetCitizens(nil)
 
@@ -3607,6 +3610,9 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Camera.Center(x, y)
 
+    game.TurnNumber = 300
+
+    /*
     game.Events <- &gamelib.GameEventShowRandomEvent{
         // Event: gamelib.MakeDisjunctionEvent(0),
         // Event: gamelib.MakeBadMoonEvent(0),
@@ -3627,6 +3633,7 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
         // Event: gamelib.MakePopulationBoomEvent(0, city),
         Event: gamelib.MakeRebellionEvent(0, city),
     }
+    */
 
     return game
 }

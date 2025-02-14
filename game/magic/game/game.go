@@ -6677,6 +6677,8 @@ func (game *Game) DoRandomEvents() {
         case data.DifficultyImpossible: eventModifier = fraction.Make(6, 5)
     }
 
+    eventModifier = fraction.FromInt(10)
+
     eventProbability := fraction.FromInt(int(game.TurnNumber - game.LastEventTurn)).Multiply(eventModifier)
     if game.TurnNumber < 50 || game.TurnNumber - game.LastEventTurn < 5 {
         eventProbability = fraction.Zero()
@@ -6723,7 +6725,7 @@ func (game *Game) DoRandomEvents() {
             choice := choices.Values()[rand.N(choices.Size())]
 
             // return a RandomEvent object to show, and also cause the event to occur (if instant)
-            makeEvent := func (choice RandomEventType, target *playerlib.Player) *RandomEvent {
+            makeEvent := func (choice RandomEventType, target *playerlib.Player) (*RandomEvent, GameEvent) {
                 usedCities := set.NewSet[*citylib.City]()
                 for _, event := range game.RandomEvents {
                     if event.TargetCity != nil {
@@ -6732,12 +6734,12 @@ func (game *Game) DoRandomEvents() {
                 }
 
                 switch choice {
-                    case RandomEventBadMoon: return MakeBadMoonEvent(game.TurnNumber)
-                    case RandomEventGoodMoon: return MakeGoodMoonEvent(game.TurnNumber)
-                    case RandomEventConjunctionChaos: return MakeConjunctionChaosEvent(game.TurnNumber)
-                    case RandomEventConjunctionNature: return MakeConjunctionNatureEvent(game.TurnNumber)
-                    case RandomEventConjunctionSorcery: return MakeConjunctionSorceryEvent(game.TurnNumber)
-                    case RandomEventManaShort: return MakeManaShortEvent(game.TurnNumber)
+                    case RandomEventBadMoon: return MakeBadMoonEvent(game.TurnNumber), nil
+                    case RandomEventGoodMoon: return MakeGoodMoonEvent(game.TurnNumber), nil
+                    case RandomEventConjunctionChaos: return MakeConjunctionChaosEvent(game.TurnNumber), nil
+                    case RandomEventConjunctionNature: return MakeConjunctionNatureEvent(game.TurnNumber), nil
+                    case RandomEventConjunctionSorcery: return MakeConjunctionSorceryEvent(game.TurnNumber), nil
+                    case RandomEventManaShort: return MakeManaShortEvent(game.TurnNumber), nil
                     case RandomEventDisjunction:
                         // there must be at least one global enchantment for this event to occur
                         hasGlobalEnchantment := false
@@ -6750,7 +6752,7 @@ func (game *Game) DoRandomEvents() {
                         }
 
                         if !hasGlobalEnchantment {
-                            return nil
+                            return nil, nil
                         }
 
                         // remove all global enchantments
@@ -6758,22 +6760,22 @@ func (game *Game) DoRandomEvents() {
                             player.GlobalEnchantments.Clear()
                         }
 
-                        return MakeDisjunctionEvent(game.TurnNumber)
+                        return MakeDisjunctionEvent(game.TurnNumber), nil
                     case RandomEventDonation:
                         // FIXME: what are the bounds here?
                         gold := rand.N(2000) + 100
                         target.Gold += gold
 
-                        return MakeDonationEvent(game.TurnNumber, gold)
+                        return MakeDonationEvent(game.TurnNumber, gold), nil
                     case RandomEventPiracy:
                         if target.Gold < 100 {
-                            return nil
+                            return nil, nil
                         }
 
                         gold := rand.N(2000) + 100
                         target.Gold = max(0, target.Gold - gold)
 
-                        return MakePiracyEvent(game.TurnNumber, gold)
+                        return MakePiracyEvent(game.TurnNumber, gold), nil
                     case RandomEventGift:
                         var out []*artifact.Artifact
                         for _, artifact := range game.ArtifactPool {
@@ -6784,13 +6786,16 @@ func (game *Game) DoRandomEvents() {
 
                         // couldn't find a valid artifact
                         if len(out) == 0 {
-                            return nil
+                            return nil, nil
                         }
 
                         use := out[rand.N(len(out))]
-                        game.Events <- &GameEventVault{CreatedArtifact: use, Player: target}
 
-                        return MakeGiftEvent(game.TurnNumber, use.Name)
+                        delete(game.ArtifactPool, use.Name)
+
+                        // returning GameEventVault here is ugly but we need a way to have the vault event
+                        // be added to game.Events after the random event
+                        return MakeGiftEvent(game.TurnNumber, use.Name), &GameEventVault{CreatedArtifact: use, Player: target}
                     case RandomEventDepletion:
                         // choose a random town that has a mineral bonus in its catchment area,
                         // and then remove the bonus from the map
@@ -6810,11 +6815,11 @@ func (game *Game) DoRandomEvents() {
                             if len(choices) > 0 {
                                 tile := choices[rand.N(len(choices))]
                                 mapUse.RemoveBonus(tile.X, tile.Y)
-                                return MakeDepletionEvent(game.TurnNumber, tile.GetBonus(), city.Name)
+                                return MakeDepletionEvent(game.TurnNumber, tile.GetBonus(), city.Name), nil
                             }
                         }
 
-                        return nil
+                        return nil, nil
 
                     case RandomEventDiplomaticMarriage:
                         for _, player := range game.Players {
@@ -6834,36 +6839,36 @@ func (game *Game) DoRandomEvents() {
                                     city.Banner = target.Wizard.Banner
                                     city.RulingRace = target.Wizard.Race
 
-                                    return MakeDiplomaticMarriageEvent(game.TurnNumber, city)
+                                    return MakeDiplomaticMarriageEvent(game.TurnNumber, city), nil
                                 }
                             }
                         }
 
-                        return nil
+                        return nil, nil
 
                     case RandomEventEarthquake:
                         choices := game.AllCities()
                         if len(choices) == 0 {
-                            return nil
+                            return nil, nil
                         }
 
                         city := choices[rand.N(len(choices))]
 
                         people, units, buildings := game.doEarthquake(city, target)
 
-                        return MakeEarthquakeEvent(game.TurnNumber, city.Name, people, units, buildings)
+                        return MakeEarthquakeEvent(game.TurnNumber, city.Name, people, units, buildings), nil
 
                     case RandomEventGreatMeteor:
                         choices := game.AllCities()
                         if len(choices) == 0 {
-                            return nil
+                            return nil, nil
                         }
 
                         city := choices[rand.N(len(choices))]
 
                         people, units, buildings := game.doCallTheVoid(city)
 
-                        return MakeGreatMeteorEvent(game.TurnNumber, city.Name, people, units, buildings)
+                        return MakeGreatMeteorEvent(game.TurnNumber, city.Name, people, units, buildings), nil
 
                     case RandomEventNewMinerals:
                         for _, cityIndex := range rand.Perm(len(target.Cities)) {
@@ -6885,7 +6890,7 @@ func (game *Game) DoRandomEvents() {
                                 bonus := bonusChoices[rand.N(len(bonusChoices))]
 
                                 mapUse.SetBonus(tile.X, tile.Y, bonus)
-                                return MakeNewMineralsEvent(game.TurnNumber, bonus, city)
+                                return MakeNewMineralsEvent(game.TurnNumber, bonus, city), nil
                             }
                         }
 
@@ -6893,25 +6898,25 @@ func (game *Game) DoRandomEvents() {
                         for _, cityIndex := range rand.Perm(len(target.Cities)) {
                             city := target.Cities[cityIndex]
                             if !usedCities.Contains(city) {
-                                return MakePlagueEvent(game.TurnNumber, city)
+                                return MakePlagueEvent(game.TurnNumber, city), nil
                             }
                         }
 
-                        return nil
+                        return nil, nil
 
                     case RandomEventPopulationBoom:
                         for _, cityIndex := range rand.Perm(len(target.Cities)) {
                             city := target.Cities[cityIndex]
                             if !usedCities.Contains(city) {
-                                return MakePopulationBoomEvent(game.TurnNumber, city)
+                                return MakePopulationBoomEvent(game.TurnNumber, city), nil
                             }
                         }
 
-                        return nil
+                        return nil, nil
 
                     case RandomEventRebellion:
                         if len(target.Cities) == 0 {
-                            return nil
+                            return nil, nil
                         }
 
                         var neutralPlayer *playerlib.Player
@@ -6963,18 +6968,18 @@ func (game *Game) DoRandomEvents() {
 
                                 // plague/population boom might still be active for the city. just leave them for now
 
-                                return MakeRebellionEvent(game.TurnNumber, city)
+                                return MakeRebellionEvent(game.TurnNumber, city), nil
                             }
                         }
 
-                        return nil
+                        return nil, nil
                 }
 
-                return nil
+                return nil, nil
             }
 
             targetWizard := game.Players[rand.N(len(game.Players))]
-            newEvent := makeEvent(choice, targetWizard)
+            newEvent, extraEvent := makeEvent(choice, targetWizard)
             if newEvent != nil {
                 game.LastEventTurn = game.TurnNumber
 
@@ -6983,7 +6988,11 @@ func (game *Game) DoRandomEvents() {
                 }
 
                 // FIXME: if the event is targeting an AI wizard then the event message should change slightly
-                game.Events <- &GameEventShowRandomEvent{Event: newEvent}
+                game.Events <- &GameEventShowRandomEvent{Event: newEvent, Starting: true}
+
+                if extraEvent != nil {
+                    game.Events <- extraEvent
+                }
             }
         }
 

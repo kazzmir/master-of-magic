@@ -168,6 +168,7 @@ func MakeDepletionEvent(year uint64, bonus data.BonusType, cityName string) *Ran
         Message: fmt.Sprintf("Depletion! A %v mine within %v has become depleted and can no longer be mined.", bonus, cityName),
         LbxIndex: 9,
         IsConjunction: false,
+        Instant: true,
     }
 }
 

@@ -1008,7 +1008,7 @@ func (city *City) PopulationGrowthRate() int {
         base += int(2.5 * float32(city.MaximumCitySize()) / 10) * 10
     }
 
-    // FIXME: Add Stream of Life and Population Boom event
+    // FIXME: Add Stream of Life
 
     if city.ProducingBuilding == buildinglib.BuildingHousing {
         bonus := 50
@@ -1031,6 +1031,7 @@ func (city *City) PopulationGrowthRate() int {
         base = int(0.75 * float32(base))
     }
 
+    // if the base is negative, this can actually make the population shrink even faster
     if city.CityServices.PopulationBoomActive(city) {
         base *= 2
     }
