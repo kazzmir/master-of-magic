@@ -6621,7 +6621,7 @@ func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (in
 }
 
 func (game *Game) doCallTheVoid(city *citylib.City) (int, int, int) {
-    // FIXME: destroy buildings with 15% chance and non-flying units with 25% chance
+    // FIXME: destroy buildings with 50% chance, and a bunch of other effects
     // https://masterofmagic.fandom.com/wiki/Call_the_Void
 
     return 0, 0, 0
@@ -6703,7 +6703,8 @@ func (game *Game) DoRandomEvents() {
         case data.DifficultyImpossible: eventModifier = fraction.Make(6, 5)
     }
 
-    eventModifier = fraction.FromInt(10)
+    // for testing purposes
+    // eventModifier = fraction.FromInt(10)
 
     eventProbability := fraction.FromInt(int(game.TurnNumber - game.LastEventTurn)).Multiply(eventModifier)
     if game.TurnNumber < 50 || game.TurnNumber - game.LastEventTurn < 5 {
@@ -6745,6 +6746,11 @@ func (game *Game) DoRandomEvents() {
                 choices.Remove(RandomEventConjunctionSorcery)
                 choices.Remove(RandomEventManaShort)
             }
+        }
+
+        if game.TurnNumber < 150 {
+            choices.Remove(RandomEventDiplomaticMarriage)
+            choices.Remove(RandomEventGreatMeteor)
         }
 
         if choices.Size() > 0 {
@@ -6798,7 +6804,8 @@ func (game *Game) DoRandomEvents() {
                             return nil, nil
                         }
 
-                        gold := rand.N(2000) + 100
+                        // between 30-50%, compute random number between 0-20%, add 30%
+                        gold := rand.N(target.Gold / 5) + target.Gold * 3 / 10
                         target.Gold = max(0, target.Gold - gold)
 
                         return MakePiracyEvent(game.TurnNumber, gold), nil
