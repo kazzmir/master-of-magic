@@ -6620,11 +6620,50 @@ func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (in
     return people, len(killedUnits), len(destroyedBuildings)
 }
 
-func (game *Game) doCallTheVoid(city *citylib.City) (int, int, int) {
-    // FIXME: destroy buildings with 50% chance, and a bunch of other effects
+// returns number of citizens killed, units killed, and buildings destroyed
+func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (int, int, int) {
     // https://masterofmagic.fandom.com/wiki/Call_the_Void
 
-    return 0, 0, 0
+    var destroyedBuildings []buildinglib.Building
+
+    for _, building := range city.Buildings.Values() {
+        if rand.N(2) == 0 {
+            destroyedBuildings = append(destroyedBuildings, building)
+            city.Buildings.Remove(building)
+        }
+    }
+
+    killedCitizens := 0
+    for range city.Citizens() - 1 {
+        if rand.N(2) == 0 {
+            killedCitizens += 1
+        }
+    }
+
+    city.Population -= killedCitizens * 1000
+
+    stack := player.FindStack(city.X, city.Y, city.Plane)
+    killedUnits := 0
+    if stack != nil {
+        for _, unit := range stack.Units() {
+            // some units are immune
+            if unit.HasAbility(data.AbilityMagicImmunity) || unit.HasAbility(data.AbilityRegeneration) || unit.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                continue
+            }
+
+            if rand.N(2) == 0 {
+                unit.AdjustHealth(-10)
+                if unit.GetHealth() <= 0 {
+                    player.RemoveUnit(unit)
+                    killedUnits += 1
+                }
+            }
+        }
+
+        city.UpdateUnrest(stack.Units())
+    }
+
+    return killedCitizens, killedUnits, len(destroyedBuildings)
 }
 
 func (game *Game) ManaShortActive() bool {
@@ -6899,7 +6938,7 @@ func (game *Game) DoRandomEvents() {
 
                         city := choices[rand.N(len(choices))]
 
-                        people, units, buildings := game.doCallTheVoid(city)
+                        people, units, buildings := game.doCallTheVoid(city, target)
 
                         return MakeGreatMeteorEvent(game.TurnNumber, city.Name, people, units, buildings), nil
 
