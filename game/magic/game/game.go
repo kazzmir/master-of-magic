@@ -6050,6 +6050,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
             foodPerTurn := player.FoodPerTurn()
             manaPerTurn := player.ManaPerTurn(game.ComputePower(player), game)
 
+            conjunction := game.ActiveConjunctionName()
+
             elements = append(elements, &uilib.UIElement{
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
@@ -6079,6 +6081,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         game.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Mana", manaPerTurn))
                     } else {
                         game.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
+                    }
+
+                    if conjunction != "" {
+                        game.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(155 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, conjunction)
                     }
                 },
             })
@@ -6665,6 +6671,22 @@ func (game *Game) ConjunctionSorceryActive() bool {
     })
 }
 
+func (game *Game) ActiveConjunctionName() string {
+
+    for _, event := range game.RandomEvents {
+        switch event.Type {
+            case RandomEventConjunctionChaos: return "Conjunction"
+            case RandomEventConjunctionNature: return "Conjunction"
+            case RandomEventConjunctionSorcery: return "Conjunction"
+            case RandomEventManaShort: return "Mana Short"
+            case RandomEventGoodMoon: return "Good Moon"
+            case RandomEventBadMoon: return "Bad Moon"
+        }
+    }
+
+    return ""
+}
+
 func (game *Game) DoRandomEvents() {
     // maybe create a new event
     eventModifier := fraction.FromInt(1)
@@ -6993,6 +7015,8 @@ func (game *Game) DoRandomEvents() {
                 if extraEvent != nil {
                     game.Events <- extraEvent
                 }
+
+                game.RefreshUI()
             }
         }
 
