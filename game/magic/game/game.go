@@ -675,19 +675,21 @@ func (game *Game) UpdateImages() {
     }
 }
 
-func (game *Game) FindCity(x int, y int, plane data.Plane) *citylib.City {
+// return the city and its owner
+func (game *Game) FindCity(x int, y int, plane data.Plane) (*citylib.City, *playerlib.Player) {
     for _, player := range game.Players {
         city := player.FindCity(x, y, plane)
         if city != nil {
-            return city
+            return city, player
         }
     }
 
-    return nil
+    return nil, nil
 }
 
 func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
-    return game.FindCity(x, y, plane) != nil
+    city, _ := game.FindCity(x, y, plane)
+    return city != nil
 }
 
 func (game *Game) NearCity(point image.Point, squares int, plane data.Plane) bool {
@@ -6620,11 +6622,70 @@ func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (in
     return people, len(killedUnits), len(destroyedBuildings)
 }
 
-func (game *Game) doCallTheVoid(city *citylib.City) (int, int, int) {
-    // FIXME: destroy buildings with 50% chance, and a bunch of other effects
+// returns number of citizens killed, units killed, and buildings destroyed
+func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (int, int, int) {
     // https://masterofmagic.fandom.com/wiki/Call_the_Void
 
-    return 0, 0, 0
+    var destroyedBuildings []buildinglib.Building
+
+    for _, building := range city.Buildings.Values() {
+        if rand.N(2) == 0 {
+            destroyedBuildings = append(destroyedBuildings, building)
+            city.Buildings.Remove(building)
+        }
+    }
+
+    killedCitizens := 0
+    for range city.Citizens() - 1 {
+        if rand.N(2) == 0 {
+            killedCitizens += 1
+        }
+    }
+
+    city.Population -= killedCitizens * 1000
+
+    stack := player.FindStack(city.X, city.Y, city.Plane)
+    var garrison []units.StackUnit
+    killedUnits := 0
+    if stack != nil {
+        for _, unit := range stack.Units() {
+            // some units are immune
+            if unit.HasAbility(data.AbilityMagicImmunity) || unit.HasAbility(data.AbilityRegeneration) || unit.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                continue
+            }
+
+            if rand.N(2) == 0 {
+                unit.AdjustHealth(-10)
+                if unit.GetHealth() <= 0 {
+                    player.RemoveUnit(unit)
+                    killedUnits += 1
+                }
+            }
+        }
+
+        garrison = stack.Units()
+    }
+
+    city.ResetCitizens(garrison)
+
+    mapUse := game.GetMap(city.Plane)
+
+    // corrupt surrouding tiles
+    for dx := -2; dx <= 2; dx++ {
+        for dy := -2; dy <= 2; dy++ {
+            cx := mapUse.WrapX(city.X + dx)
+            cy := city.Y + dy
+            if cy < 0 || cy >= mapUse.Height() {
+                continue
+            }
+
+            if mapUse.GetTile(cx, cy).Tile.IsLand() && rand.N(2) == 0 {
+                mapUse.SetCorruption(cx, cy)
+            }
+        }
+    }
+
+    return killedCitizens, killedUnits, len(destroyedBuildings)
 }
 
 func (game *Game) ManaShortActive() bool {
@@ -6899,7 +6960,7 @@ func (game *Game) DoRandomEvents() {
 
                         city := choices[rand.N(len(choices))]
 
-                        people, units, buildings := game.doCallTheVoid(city)
+                        people, units, buildings := game.doCallTheVoid(city, target)
 
                         return MakeGreatMeteorEvent(game.TurnNumber, city.Name, people, units, buildings), nil
 

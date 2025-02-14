@@ -1564,7 +1564,6 @@ func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) 
         if city.Population < 1000 {
             cityEvents = append(cityEvents, &CityEventCityAbandoned{})
         }
-
     }
 
     if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {

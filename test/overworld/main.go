@@ -1014,6 +1014,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Raise Volcano"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Corruption"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Warp Node"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Call The Void"))
 
     x, y, _ := game.FindValidCityLocation(game.Plane)
 
@@ -1061,6 +1062,9 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city2.Plane = data.PlaneArcanus
     city2.ProducingBuilding = buildinglib.BuildingHousing
     city2.ProducingUnit = units.UnitNone
+    city2.AddBuilding(buildinglib.BuildingShrine)
+    city2.AddBuilding(buildinglib.BuildingGranary)
+    city2.AddBuilding(buildinglib.BuildingBank)
     city2.Farmers = 10
     city2.Workers = 4
     city2.Wall = false
