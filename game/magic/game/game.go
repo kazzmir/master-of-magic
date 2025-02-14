@@ -6663,6 +6663,23 @@ func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (i
         city.UpdateUnrest(stack.Units())
     }
 
+    mapUse := game.GetMap(city.Plane)
+
+    // corrupt surrouding tiles
+    for dx := -2; dx <= 2; dx++ {
+        for dy := -2; dy <= 2; dy++ {
+            cx := mapUse.WrapX(city.X + dx)
+            cy := city.Y + dy
+            if cy < 0 || cy >= mapUse.Height() {
+                continue
+            }
+
+            if mapUse.GetTile(cx, cy).Tile.IsLand() && rand.N(2) == 0 {
+                mapUse.SetCorruption(cx, cy)
+            }
+        }
+    }
+
     return killedCitizens, killedUnits, len(destroyedBuildings)
 }
 
