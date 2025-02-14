@@ -1304,8 +1304,8 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         // by -width/2, -height/2
         buildingOptions.GeoM.Reset()
         buildingOptions.GeoM.Translate(x, y)
-        buildingOptions.GeoM.Translate(float64(buildingSpace.Bounds().Dx()/2), float64(buildingSpace.Bounds().Dy()) / 2)
-        buildingOptions.GeoM.Translate(float64(buildingPicsAnimation.Frame().Bounds().Dx()) / -2, float64(buildingPicsAnimation.Frame().Bounds().Dy()) / -2)
+        buildingOptions.GeoM.Translate(float64(buildingSpace.Bounds().Dx()/2), float64(buildingSpace.Bounds().Dy() - 10 * data.ScreenScale))
+        buildingOptions.GeoM.Translate(float64(buildingPicsAnimation.Frame().Bounds().Dx()) / -2, -float64(buildingPicsAnimation.Frame().Bounds().Dy()))
         buildingSpace.DrawImage(buildingPicsAnimation.Frame(), &buildingOptions)
     }
 

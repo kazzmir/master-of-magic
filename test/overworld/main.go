@@ -349,7 +349,11 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
     game.Events <- &gamelib.GameEventNewBuilding{
         City: introCity,
         Player: player,
-        Building: buildinglib.BuildingSmithy,
+        // Building: buildinglib.BuildingSmithy,
+        // Building: buildinglib.BuildingFantasticStable,
+        // Building: buildinglib.BuildingWizardsGuild,
+        Building: buildinglib.BuildingMaritimeGuild,
+        // Building: buildinglib.BuildingArmorersGuild,
     }
 
     return game
