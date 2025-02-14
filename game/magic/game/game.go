@@ -6645,6 +6645,7 @@ func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (i
     city.Population -= killedCitizens * 1000
 
     stack := player.FindStack(city.X, city.Y, city.Plane)
+    var garrison []units.StackUnit
     killedUnits := 0
     if stack != nil {
         for _, unit := range stack.Units() {
@@ -6662,8 +6663,10 @@ func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (i
             }
         }
 
-        city.UpdateUnrest(stack.Units())
+        garrison = stack.Units()
     }
+
+    city.ResetCitizens(garrison)
 
     mapUse := game.GetMap(city.Plane)
 
