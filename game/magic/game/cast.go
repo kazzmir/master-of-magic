@@ -137,6 +137,15 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
+
+        case "Call the Void":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                chosenCity, owner := game.FindCity(tileX, tileY, game.Plane)
+                game.doCastOnMap(yield, tileX, tileY, 12, false, 72, func (x int, y int, animationFrame int) {})
+                game.doCallTheVoid(chosenCity, owner)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyCity, SelectedFunc: selected}
         case "Change Terrain":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeChangeTerrain, SelectedFunc: game.doCastChangeTerrain}
         case "Transmute":
@@ -547,7 +556,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
 func (game *Game) doCastCityEnchantment(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player, enchantment data.CityEnchantment) {
     game.doMoveCamera(yield, tileX, tileY)
-    chosenCity := game.FindCity(tileX, tileY, game.Plane)
+    chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
     if chosenCity == nil {
         return
     }
