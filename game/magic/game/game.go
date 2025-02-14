@@ -2490,7 +2490,8 @@ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
     if chance > 10 {
         chance = 10
     }
-    if rand.N(100) >= 10 {
+
+    if rand.N(100) >= chance {
         return
     }
 
@@ -2637,7 +2638,8 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     if chance > 10 {
         chance = 10
     }
-    if rand.N(100) >= 10 {
+
+    if rand.N(100) >= chance {
         return
     }
 
@@ -6050,7 +6052,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             foodPerTurn := player.FoodPerTurn()
             manaPerTurn := player.ManaPerTurn(game.ComputePower(player), game)
 
-            conjunction := game.ActiveConjunctionName()
+            conjunction, conjunctionColor := game.ActiveConjunctionName()
 
             elements = append(elements, &uilib.UIElement{
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -6084,7 +6086,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     }
 
                     if conjunction != "" {
-                        game.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(155 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, conjunction)
+                        var scale ebiten.ColorScale
+                        scale.ScaleWithColor(conjunctionColor)
+                        game.WhiteFont.PrintCenter(screen, float64(278 * data.ScreenScale), float64(155 * data.ScreenScale), float64(data.ScreenScale), scale, conjunction)
                     }
                 },
             })
@@ -6671,20 +6675,20 @@ func (game *Game) ConjunctionSorceryActive() bool {
     })
 }
 
-func (game *Game) ActiveConjunctionName() string {
+func (game *Game) ActiveConjunctionName() (string, color.Color) {
 
     for _, event := range game.RandomEvents {
         switch event.Type {
-            case RandomEventConjunctionChaos: return "Conjunction"
-            case RandomEventConjunctionNature: return "Conjunction"
-            case RandomEventConjunctionSorcery: return "Conjunction"
-            case RandomEventManaShort: return "Mana Short"
-            case RandomEventGoodMoon: return "Good Moon"
-            case RandomEventBadMoon: return "Bad Moon"
+            case RandomEventConjunctionChaos: return "Conjunction", color.RGBA{R: 255, G: 0, B: 0, A: 255}
+            case RandomEventConjunctionNature: return "Conjunction", color.RGBA{R: 0, G: 255, B: 0, A: 255}
+            case RandomEventConjunctionSorcery: return "Conjunction", color.RGBA{R: 0, G: 0, B: 255, A: 255}
+            case RandomEventManaShort: return "Mana Short", color.RGBA{R: 0, G: 255, B: 0, A: 255}
+            case RandomEventGoodMoon: return "Good Moon", color.RGBA{R: 255, G: 255, B: 255, A: 255}
+            case RandomEventBadMoon: return "Bad Moon", color.RGBA{R: 0, G: 0, B: 0, A: 255}
         }
     }
 
-    return ""
+    return "", color.RGBA{}
 }
 
 func (game *Game) DoRandomEvents() {

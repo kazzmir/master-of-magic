@@ -5098,6 +5098,7 @@ var KlackonSettlers Unit = Unit{
     HitPoints: 20,
     AttackSound: AttackSoundNormal,
     MovementSound: MovementSoundShuffle,
+    Abilities: []data.Ability{data.MakeAbility(data.AbilityConstruction)},
     Race: data.RaceKlackon,
 }
 
