@@ -1512,7 +1512,7 @@ func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) 
         }
 
         if city.CityServices.PlagueActive(city) {
-            // plague cannot reduce population below 1000
+            // plague cannot reduce population below 2000
             if city.Citizens() >= 3 {
                 city.Population -= 1000
             }
