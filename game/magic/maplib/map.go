@@ -63,6 +63,7 @@ const (
     ExtraKindBonus
     ExtraKindMagicNode
     ExtraKindEncounter
+    ExtraKindOpenTower
     ExtraKindVolcano
     ExtraKindCorruption
 )
@@ -74,6 +75,7 @@ var ExtraDrawOrder = []ExtraKind{
     ExtraKindBonus,
     ExtraKindMagicNode,
     ExtraKindEncounter,
+    ExtraKindOpenTower,
 }
 
 type Direction int
@@ -185,7 +187,6 @@ const (
     EncounterTypeLair EncounterType = iota
     EncounterTypeCave
     EncounterTypePlaneTower
-    EncounterTypePlaneTowerOpen
     EncounterTypeAncientTemple
     EncounterTypeFallenTemple
     EncounterTypeRuins
@@ -201,7 +202,6 @@ func (encounterType EncounterType) Name() string {
         case EncounterTypeLair: return "Monster Lair"
         case EncounterTypeCave: return "Mysterious Cave"
         case EncounterTypePlaneTower: return "Tower"
-        case EncounterTypePlaneTowerOpen: return "Tower"
         case EncounterTypeAncientTemple: return "Ancient Temple"
         case EncounterTypeFallenTemple: return "Fallen Temple"
         case EncounterTypeRuins: return "Ruins"
@@ -220,7 +220,6 @@ func (encounterType EncounterType) ShortName() string {
         case EncounterTypeLair: return "Lair"
         case EncounterTypeCave: return "Cave"
         case EncounterTypePlaneTower: return "Tower"
-        case EncounterTypePlaneTowerOpen: return "Tower"
         case EncounterTypeAncientTemple: return "Temple"
         case EncounterTypeFallenTemple: return "Temple"
         case EncounterTypeRuins: return "Ruins"
@@ -243,7 +242,6 @@ func randomEncounterType() EncounterType {
         EncounterTypeRuins,
         EncounterTypeAbandonedKeep,
         EncounterTypeDungeon,
-        // EncounterTypePlaneTower,
     }
 
     return all[rand.N(len(all))]
@@ -353,7 +351,6 @@ func (extra *ExtraEncounter) DrawLayer1(screen *ebiten.Image, imageCache *util.I
     switch extra.Type {
         case EncounterTypeLair, EncounterTypeCave: index = 71
         case EncounterTypePlaneTower: index = 69
-        case EncounterTypePlaneTowerOpen: index = 70
         case EncounterTypeAncientTemple: index = 72
         case EncounterTypeFallenTemple: index = 75
         case EncounterTypeRuins: index = 74
@@ -373,6 +370,21 @@ func (extra *ExtraEncounter) DrawLayer1(screen *ebiten.Image, imageCache *util.I
 
 func (extra *ExtraEncounter) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
     // nuthin'
+}
+
+type ExtraOpenTower struct {
+}
+
+func (extra *ExtraOpenTower) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+    index := 70
+
+    pic, err := imageCache.GetImage("mapback.lbx", index, 0)
+    if err == nil {
+        screen.DrawImage(pic, options)
+    }
+}
+
+func (extra *ExtraOpenTower) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
 }
 
 type ExtraMagicNode struct {
@@ -1097,6 +1109,11 @@ func (mapObject *Map) RemoveEncounter(x int, y int) {
     if exists {
         delete(mapObject.ExtraMap[image.Pt(x, y)], ExtraKindEncounter)
     }
+}
+
+// an open plane tower
+func (mapObject *Map) SetPlaneTower(x int, y int) {
+    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindOpenTower] = &ExtraOpenTower{}
 }
 
 func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {

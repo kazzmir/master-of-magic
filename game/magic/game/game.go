@@ -286,6 +286,15 @@ type Game struct {
     Camera camera.Camera
 }
 
+func (game *Game) GetOppositeMap(plane data.Plane) *maplib.Map {
+    switch plane {
+        case data.PlaneArcanus: return game.MyrrorMap
+        case data.PlaneMyrror: return game.ArcanusMap
+    }
+
+    return nil
+}
+
 func (game *Game) GetMap(plane data.Plane) *maplib.Map {
     switch plane {
         case data.PlaneArcanus: return game.ArcanusMap
@@ -4326,6 +4335,15 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
         mapUse.RemoveEncounter(x, y)
 
         game.createTreasure(encounter.Type, encounter.Budget, player)
+
+        // defeating a plane tower also removes the tower from the other plane
+        if encounter.Type == maplib.EncounterTypePlaneTower {
+            mapUse.SetPlaneTower(x, y)
+            otherMap := game.GetOppositeMap(mapUse.Plane)
+            otherMap.RemoveEncounter(x, y)
+            otherMap.SetPlaneTower(x, y)
+        }
+
     } else {
         var remaining []units.Unit
         for index := range enemies {
