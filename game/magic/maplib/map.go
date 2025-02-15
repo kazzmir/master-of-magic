@@ -284,13 +284,13 @@ func makeEncounter(encounterType EncounterType, difficulty data.DifficultySettin
 
     budget := 0
     if weakStrength {
-        if plane == data.PlaneArcanus {
+        if plane == data.PlaneArcanus || encounterType == EncounterTypePlaneTower {
             budget = (rand.N(20) + 1) * 30
         } else {
             budget = (rand.N(30) + 1) * 30
         }
     } else {
-        if plane == data.PlaneArcanus {
+        if plane == data.PlaneArcanus || encounterType == EncounterTypePlaneTower {
             budget = (rand.N(80) + 1) * 50 + 250
         } else {
             budget = (rand.N(90) + 1) * 50 + 250
