@@ -178,6 +178,15 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 player.LiftFogAll(data.PlaneMyrror)
             }
 
+        case "Heroism":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                // stack := player.FindStack(tileX, tileY, game.Plane)
+
+                game.doCastOnMap(yield, tileX, tileY, 3, false, spell.Sound, func (x int, y int, animationFrame int) {})
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+
         case "Summon Hero":
             game.doSummonHero(player, false)
         case "Summon Champion":
@@ -570,7 +579,10 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         }
 
                     case LocationTypeFriendlyUnit:
-                        // TODO
+                        stack := player.FindStack(tileX, tileY, game.Plane)
+                        if stack != nil {
+                            return tileX, tileY, false
+                        }
 
                     case LocationTypeEnemyUnit:
                         // TODO
