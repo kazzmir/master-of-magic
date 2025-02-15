@@ -303,6 +303,31 @@ func (enchantment UnitEnchantment) LbxIndex() int {
     return -1
 }
 
+// the index in specfx.lbx for when this enchantment is casted
+func (enchantment UnitEnchantment) CastAnimationIndex() int {
+    switch enchantment {
+        /*
+        case UnitEnchantmentGiantStrength: return 65
+        case UnitEnchantmentLionHeart: return 89
+        case UnitEnchantmentHaste: return 77
+        case UnitEnchantmentImmolation: return 32
+        case UnitEnchantmentResistElements: return 72
+        case UnitEnchantmentResistMagic: return 81
+        case UnitEnchantmentElementalArmor: return 73
+        case UnitEnchantmentRighteousness: return 93
+        case UnitEnchantmentCloakOfFear: return 21
+        case UnitEnchantmentTrueSight: return 85
+        case UnitEnchantmentFlight: return 80
+        case UnitEnchantmentChaosChannelsDemonWings: return 63
+        case UnitEnchantmentEndurance: return 76
+        */
+        case UnitEnchantmentBless: return 3
+        case UnitEnchantmentHeroism: return 3
+    }
+
+    return -1
+}
+
 // city enchantments (also called Town Enchantments)
 type CityEnchantment int
 const (

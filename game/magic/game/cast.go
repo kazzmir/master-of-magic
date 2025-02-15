@@ -180,28 +180,44 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 game.RefreshUI()
             }
 
+        case "Bless":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentBless)
         case "Heroism":
-            var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
-            selected = func (yield coroutine.YieldFunc, tileX int, tileY int){
-                // FIXME: generalize this code (move to a helper) for other unit enchantments
-                game.doMoveCamera(yield, tileX, tileY)
-                stack := player.FindStack(tileX, tileY, game.Plane)
-                unit := game.doSelectUnit(yield, player, stack)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHeroism)
 
-                // player didn't select a unit, let them pick a different stack
-                if unit == nil {
-                    game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
-                    return
-                }
-
-                game.doCastOnMap(yield, tileX, tileY, 3, false, spell.Sound, func (x int, y int, animationFrame int) {})
-                unit.AddEnchantment(data.UnitEnchantmentHeroism)
-
-                game.RefreshUI()
-            }
-
-            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
-
+        /*
+Holy Armor	
+Holy Weapon	
+Invulnerability
+Lionheart	
+Planar Travel
+Righteousness
+True Sight
+Elemental Armor	
+Giant Strength
+Iron Skin
+Path Finding
+Regeneration	
+Resist Elements	
+Stone Skin	
+Water Walking	
+Flight	
+Guardian Wind	
+Haste	
+Invisibility	
+Magic Immunity	
+Resist Magic	
+Spell Lock	
+Wind Walking	
+Eldritch Weapon	
+Flame Blade	
+Immolation	
+Berserk	
+Black Channels	
+Cloak of Fear
+Wraith Form
+         */
+            
         case "Summon Hero":
             game.doSummonHero(player, false)
         case "Summon Champion":
@@ -218,6 +234,28 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
     }
+}
+
+func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {
+    var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
+    selected = func (yield coroutine.YieldFunc, tileX int, tileY int){
+        game.doMoveCamera(yield, tileX, tileY)
+        stack := player.FindStack(tileX, tileY, game.Plane)
+        unit := game.doSelectUnit(yield, player, stack)
+
+        // player didn't select a unit, let them pick a different stack
+        if unit == nil {
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+            return
+        }
+
+        game.doCastOnMap(yield, tileX, tileY, enchantment.CastAnimationIndex(), false, spell.Sound, func (x int, y int, animationFrame int) {})
+        unit.AddEnchantment(enchantment)
+
+        game.RefreshUI()
+    }
+
+    game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
 }
 
 func (game *Game) doSelectUnit(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack) units.StackUnit {
