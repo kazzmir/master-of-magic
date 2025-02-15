@@ -963,7 +963,7 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 func (game *Game) doCastFloatingIsland(yield coroutine.YieldFunc, player *playerlib.Player, tileX int, tileY int) {
     update := func (x int, y int, frame int) {
         if frame == 5 {
-            overworldUnit := units.MakeOverworldUnitFromUnit(units.GetUnitByName("Floating Island"), tileX, tileY, game.CurrentMap().Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+            overworldUnit := units.MakeOverworldUnitFromUnit(units.FloatingIsland, tileX, tileY, game.CurrentMap().Plane, player.Wizard.Banner, player.MakeExperienceInfo())
             player.AddUnit(overworldUnit)
             player.LiftFog(tileX, tileY, 1, game.Plane)
         }
