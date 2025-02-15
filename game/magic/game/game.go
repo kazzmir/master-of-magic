@@ -3822,7 +3822,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                 enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
                                 if enemyStack != nil {
                                     quit := false
-                                    clicked := func(){
+                                    clicked := func(unit unitview.UnitView){
                                         quit = true
                                     }
 
@@ -6377,7 +6377,24 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
         enchantment.City.RemoveEnchantment(enchantment.Enchantment.Enchantment, enchantment.Enchantment.Owner)
     }
 
-    // FIXME: dissipate unit enchantments
+    var enchantedUnits []units.StackUnit
+    for _, unit := range player.Units {
+        if len(unit.GetEnchantments()) > 0 {
+            enchantedUnits = append(enchantedUnits, unit)
+        }
+    }
+
+    for len(enchantedUnits) > 0 && isManaIssue() {
+        unit := enchantedUnits[rand.N(len(enchantedUnits))]
+        enchantments := unit.GetEnchantments()
+        enchantment := enchantments[rand.N(len(enchantments))]
+        unit.RemoveEnchantment(enchantment)
+        if len(unit.GetEnchantments()) == 0 {
+            enchantedUnits = slices.DeleteFunc(enchantedUnits, func(u units.StackUnit) bool {
+                return u == unit
+            })
+        }
+    }
 }
 
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {

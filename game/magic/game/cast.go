@@ -20,6 +20,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/camera"
@@ -176,7 +177,30 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
                 player.LiftFogAll(data.PlaneArcanus)
                 player.LiftFogAll(data.PlaneMyrror)
+                game.RefreshUI()
             }
+
+        case "Heroism":
+            var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
+            selected = func (yield coroutine.YieldFunc, tileX int, tileY int){
+                // FIXME: generalize this code (move to a helper) for other unit enchantments
+                game.doMoveCamera(yield, tileX, tileY)
+                stack := player.FindStack(tileX, tileY, game.Plane)
+                unit := game.doSelectUnit(yield, player, stack)
+
+                // player didn't select a unit, let them pick a different stack
+                if unit == nil {
+                    game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+                    return
+                }
+
+                game.doCastOnMap(yield, tileX, tileY, 3, false, spell.Sound, func (x int, y int, animationFrame int) {})
+                unit.AddEnchantment(data.UnitEnchantmentHeroism)
+
+                game.RefreshUI()
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
 
         case "Summon Hero":
             game.doSummonHero(player, false)
@@ -194,6 +218,66 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
     }
+}
+
+func (game *Game) doSelectUnit(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack) units.StackUnit {
+
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    quit := false
+
+    ui := uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+        LeftClick: func(){
+            quit = true
+        },
+    }
+
+    var chosen units.StackUnit
+
+    var viewUnits []unitview.UnitView
+    for _, unit := range stack.Units() {
+        viewUnits = append(viewUnits, unit)
+    }
+
+    viewElements := unitview.MakeSmallListView(game.Cache, &ui, viewUnits, fmt.Sprintf("%v Units", player.Wizard.Name), func(unit unitview.UnitView){
+        quit = true
+
+        if unit != nil {
+            stackUnit, ok := unit.(units.StackUnit)
+            if ok {
+                chosen = stackUnit
+            }
+        }
+    })
+    ui.SetElementsFromArray(viewElements)
+
+    yield()
+
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+        ui.Draw(&ui, screen)
+    }
+
+    for !quit {
+        game.Counter += 1
+        ui.StandardUpdate()
+
+        if yield() != nil {
+            return nil
+        }
+    }
+
+    return chosen
 }
 
 func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
@@ -228,6 +312,8 @@ func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
             case game.Events <- &event:
             default:
         }
+
+        game.RefreshUI()
     }
 }
 
@@ -241,6 +327,7 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
     if summonCity != nil {
         overworldUnit := units.MakeOverworldUnitFromUnit(unit, summonCity.X, summonCity.Y, summonCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
         player.AddUnit(overworldUnit)
+        game.RefreshUI()
     }
 }
 
@@ -349,6 +436,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             selectMessage = fmt.Sprintf("Select a magic node as the target for a %v spell.", spell.Name)
         case LocationTypeEnemyCity:
             selectMessage = fmt.Sprintf("Select an enemy city as the target for a %v spell.", spell.Name)
+        case LocationTypeFriendlyUnit:
+            selectMessage = fmt.Sprintf("Select a friendly unit as the target for a %v spell.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
     }
@@ -570,7 +659,10 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         }
 
                     case LocationTypeFriendlyUnit:
-                        // TODO
+                        stack := player.FindStack(tileX, tileY, game.Plane)
+                        if stack != nil {
+                            return tileX, tileY, false
+                        }
 
                     case LocationTypeEnemyUnit:
                         // TODO
@@ -604,6 +696,7 @@ func (game *Game) doCastCityEnchantment(yield coroutine.YieldFunc, tileX int, ti
     }
 
     game.showCityEnchantment(yield, chosenCity, player, enchantment)
+    game.RefreshUI()
 }
 
 type UpdateMapFunction func (tileX int, tileY int, animationFrame int)
@@ -708,8 +801,8 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
     }
 
     game.doCastOnMap(yield, tileX, tileY, 8, false, 28, update)
+    game.RefreshUI()
 }
-
 
 func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY int) {
     update := func (x int, y int, frame int) {
@@ -727,8 +820,8 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
     }
 
     game.doCastOnMap(yield, tileX, tileY, 0, false, 28, update)
+    game.RefreshUI()
 }
-
 
 func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player) {
     update := func (x int, y int, frame int) {
@@ -755,6 +848,8 @@ func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY
             }
         }
     }
+
+    game.RefreshUI()
 }
 
 func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY int) {
@@ -769,6 +864,7 @@ func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY i
     }
 
     game.doCastOnMap(yield, tileX, tileY, 7, false, 103, update)
+    game.RefreshUI()
 }
 
 func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int) {

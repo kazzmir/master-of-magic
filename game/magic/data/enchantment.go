@@ -150,6 +150,7 @@ const (
     UnitEnchantmentFlight
     UnitEnchantmentChaosChannelsDemonWings
     UnitEnchantmentEndurance
+    UnitEnchantmentHeroism
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -171,7 +172,6 @@ func GetMagicColor(magic MagicType) color.Color {
 }
 
 /*
-Heroism	Life
 Holy Armor	Life
 Holy Weapon	Life
 Invulnerability	Life
@@ -208,9 +208,33 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentFlight: return sorceryColor
         case UnitEnchantmentChaosChannelsDemonWings: return chaosColor
         case UnitEnchantmentEndurance: return lifeColor
+        case UnitEnchantmentHeroism: return lifeColor
     }
 
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
+}
+
+func (enchantment UnitEnchantment) UpkeepMana() int {
+    switch enchantment {
+        case UnitEnchantmentGiantStrength: return 1
+        case UnitEnchantmentLionHeart: return 4
+        // combat only
+        case UnitEnchantmentHaste: return 0
+        case UnitEnchantmentImmolation: return 2
+        case UnitEnchantmentResistElements: return 1
+        case UnitEnchantmentResistMagic: return 1
+        case UnitEnchantmentElementalArmor: return 5
+        case UnitEnchantmentBless: return 1
+        case UnitEnchantmentRighteousness: return 2
+        case UnitEnchantmentCloakOfFear: return 1
+        case UnitEnchantmentTrueSight: return 2
+        case UnitEnchantmentFlight: return 3
+        case UnitEnchantmentChaosChannelsDemonWings: return 0
+        case UnitEnchantmentEndurance: return 1
+        case UnitEnchantmentHeroism: return 2
+    }
+
+    return 0
 }
 
 func (enchantment UnitEnchantment) Name() string {
@@ -229,6 +253,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentFlight: return "Flight"
         case UnitEnchantmentChaosChannelsDemonWings: return "Demon Wings"
         case UnitEnchantmentEndurance: return "Endurance"
+        case UnitEnchantmentHeroism: return "Heroism"
     }
 
     return ""
@@ -250,6 +275,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentFlight: return "special.lbx"
         case UnitEnchantmentChaosChannelsDemonWings: return "special.lbx"
         case UnitEnchantmentEndurance: return "special.lbx"
+        case UnitEnchantmentHeroism: return "special.lbx"
     }
 
     return ""
@@ -271,6 +297,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentFlight: return 80
         case UnitEnchantmentChaosChannelsDemonWings: return 63
         case UnitEnchantmentEndurance: return 76
+        case UnitEnchantmentHeroism: return 87
     }
 
     return -1
