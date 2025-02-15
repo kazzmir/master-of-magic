@@ -177,6 +177,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
                 player.LiftFogAll(data.PlaneArcanus)
                 player.LiftFogAll(data.PlaneMyrror)
+                game.RefreshUI()
             }
 
         case "Heroism":
@@ -195,6 +196,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 game.doCastOnMap(yield, tileX, tileY, 3, false, spell.Sound, func (x int, y int, animationFrame int) {})
                 unit.AddEnchantment(data.UnitEnchantmentHeroism)
+
+                game.RefreshUI()
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
@@ -309,6 +312,8 @@ func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
             case game.Events <- &event:
             default:
         }
+
+        game.RefreshUI()
     }
 }
 
@@ -322,6 +327,7 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
     if summonCity != nil {
         overworldUnit := units.MakeOverworldUnitFromUnit(unit, summonCity.X, summonCity.Y, summonCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
         player.AddUnit(overworldUnit)
+        game.RefreshUI()
     }
 }
 
@@ -690,6 +696,7 @@ func (game *Game) doCastCityEnchantment(yield coroutine.YieldFunc, tileX int, ti
     }
 
     game.showCityEnchantment(yield, chosenCity, player, enchantment)
+    game.RefreshUI()
 }
 
 type UpdateMapFunction func (tileX int, tileY int, animationFrame int)
@@ -794,8 +801,8 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
     }
 
     game.doCastOnMap(yield, tileX, tileY, 8, false, 28, update)
+    game.RefreshUI()
 }
-
 
 func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY int) {
     update := func (x int, y int, frame int) {
@@ -813,8 +820,8 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
     }
 
     game.doCastOnMap(yield, tileX, tileY, 0, false, 28, update)
+    game.RefreshUI()
 }
-
 
 func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player) {
     update := func (x int, y int, frame int) {
@@ -841,6 +848,8 @@ func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY
             }
         }
     }
+
+    game.RefreshUI()
 }
 
 func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY int) {
@@ -855,6 +864,7 @@ func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY i
     }
 
     game.doCastOnMap(yield, tileX, tileY, 7, false, 103, update)
+    game.RefreshUI()
 }
 
 func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int) {

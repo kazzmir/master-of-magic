@@ -214,6 +214,29 @@ func (enchantment UnitEnchantment) Color() color.Color {
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
 }
 
+func (enchantment UnitEnchantment) UpkeepMana() int {
+    switch enchantment {
+        case UnitEnchantmentGiantStrength: return 1
+        case UnitEnchantmentLionHeart: return 4
+        // combat only
+        case UnitEnchantmentHaste: return 0
+        case UnitEnchantmentImmolation: return 2
+        case UnitEnchantmentResistElements: return 1
+        case UnitEnchantmentResistMagic: return 1
+        case UnitEnchantmentElementalArmor: return 5
+        case UnitEnchantmentBless: return 1
+        case UnitEnchantmentRighteousness: return 2
+        case UnitEnchantmentCloakOfFear: return 1
+        case UnitEnchantmentTrueSight: return 2
+        case UnitEnchantmentFlight: return 3
+        case UnitEnchantmentChaosChannelsDemonWings: return 0
+        case UnitEnchantmentEndurance: return 1
+        case UnitEnchantmentHeroism: return 2
+    }
+
+    return 0
+}
+
 func (enchantment UnitEnchantment) Name() string {
     switch enchantment {
         case UnitEnchantmentGiantStrength: return "Giant Strength"
