@@ -223,6 +223,8 @@ func (game *Game) doSelectUnit(yield coroutine.YieldFunc, player *playerlib.Play
         game.Drawer = drawer
     }()
 
+    quit := false
+
     ui := uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -231,9 +233,10 @@ func (game *Game) doSelectUnit(yield coroutine.YieldFunc, player *playerlib.Play
                 }
             })
         },
+        LeftClick: func(){
+            quit = true
+        },
     }
-
-    quit := false
 
     var chosen units.StackUnit
 
