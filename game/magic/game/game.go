@@ -5208,6 +5208,14 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
         for _, unit := range stack.Units() {
             if unit.GetBusy() == units.BusyStatusBuildRoad {
                 engineerCount += 1
+
+                if unit.GetRace() == data.RaceDwarf {
+                    engineerCount += 1
+                }
+
+                if unit.HasEnchantment(data.UnitEnchantmentEndurance) {
+                    engineerCount += 1
+                }
             }
         }
 
