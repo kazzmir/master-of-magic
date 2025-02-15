@@ -5383,6 +5383,15 @@ func (game *Game) SwitchPlane() {
         case data.PlaneArcanus: game.Plane = data.PlaneMyrror
         case data.PlaneMyrror: game.Plane = data.PlaneArcanus
     }
+
+    stack := game.Players[0].SelectedStack
+
+    if stack != nil {
+        if game.CurrentMap().HasOpenTower(stack.X(), stack.Y()) {
+            stack.SetPlane(game.Plane)
+            game.Players[0].UpdateFogVisibility()
+        }
+    }
 }
 
 func (game *Game) MakeHudUI() *uilib.UI {

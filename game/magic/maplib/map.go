@@ -1116,6 +1116,11 @@ func (mapObject *Map) SetPlaneTower(x int, y int) {
     mapObject.ExtraMap[image.Pt(x, y)][ExtraKindOpenTower] = &ExtraOpenTower{}
 }
 
+func (mapObject *Map) HasOpenTower(x int, y int) bool {
+    _, exists := mapObject.ExtraMap[image.Pt(x, y)][ExtraKindOpenTower]
+    return exists
+}
+
 func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
     return getExtra[*ExtraMagicNode](mapObject.ExtraMap[image.Pt(x, y)], ExtraKindMagicNode)
 }
