@@ -1065,6 +1065,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     // unit enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Bless"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Heroism"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
 
     x, y, _ := game.FindValidCityLocation(game.Plane)
 

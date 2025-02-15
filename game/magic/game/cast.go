@@ -184,6 +184,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentBless)
         case "Heroism":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHeroism)
+        case "Giant Strength":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentGiantStrength)
 
         /*
 Holy Armor	
@@ -194,7 +196,6 @@ Planar Travel
 Righteousness
 True Sight
 Elemental Armor	
-Giant Strength
 Iron Skin
 Path Finding
 Regeneration	
