@@ -122,6 +122,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     // log.Printf("City at %v, %v", x, y)
 
     player.LiftFog(x, y, 30, data.PlaneArcanus)
+    player.LiftFog(x, y, 30, data.PlaneMyrror)
 
     drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
 

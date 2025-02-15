@@ -238,12 +238,12 @@ func randomEncounterType() EncounterType {
     all := []EncounterType{
         EncounterTypeLair,
         EncounterTypeCave,
-        EncounterTypePlaneTower,
         EncounterTypeAncientTemple,
         EncounterTypeFallenTemple,
         EncounterTypeRuins,
         EncounterTypeAbandonedKeep,
         EncounterTypeDungeon,
+        // EncounterTypePlaneTower,
     }
 
     return all[rand.N(len(all))]
@@ -701,16 +701,29 @@ func getLandSize(size int) (int, int) {
     return 100, 100
 }
 
-func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane, cityProvider CityProvider) *Map {
+func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane, cityProvider CityProvider, planeTowers []image.Point) *Map {
     landWidth, landHeight := getLandSize(landSize)
 
     map_ := terrain.GenerateLandCellularAutomata(landWidth, landHeight, terrainData, plane)
 
     extraMap := make(map[image.Point]map[ExtraKind]ExtraTile)
+
+    // place towers, and then re-resolve tiles
+    for _, point := range planeTowers {
+        map_.Terrain[point.X][point.Y] = terrain.GetTile(terrain.IndexGrass1).Index(plane)
+        extraMap[point] = make(map[ExtraKind]ExtraTile)
+        extraMap[point][ExtraKindEncounter] = makeEncounter(EncounterTypePlaneTower, difficulty, false, plane)
+    }
+
+    map_.ResolveTiles(terrainData, plane)
+
     for x := range landWidth {
         for y := range landHeight {
             point := image.Pt(x, y)
-            extraMap[point] = make(map[ExtraKind]ExtraTile)
+            _, exists := extraMap[point]
+            if !exists {
+                extraMap[point] = make(map[ExtraKind]ExtraTile)
+            }
 
             tile := terrainData.Tiles[map_.Terrain[x][y]].Tile
             switch tile.TerrainType() {
@@ -922,6 +935,40 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
         ExtraMap: extraMap,
         CityProvider: cityProvider,
     }
+}
+
+func GeneratePlaneTowerPositions(landSize int, count int) []image.Point {
+    width, height := getLandSize(landSize)
+
+    var out []image.Point
+
+    for range count {
+        x := rand.N(width)
+        y := rand.N(height)
+
+        // not too close to the edges
+        if y < 3 || y >= height - 3 {
+            continue
+        }
+
+        point := image.Pt(x, y)
+
+        ok := true
+        for _, other := range out {
+            vector := other.Sub(point)
+            distance := math.Sqrt(float64(vector.X * vector.X + vector.Y * vector.Y))
+            if distance < 10 {
+                ok = false
+                break
+            }
+        }
+
+        if ok {
+            out = append(out, point)
+        }
+    }
+
+    return out
 }
 
 // get all the tiles that are part of the continent that contains the given x, y
