@@ -143,8 +143,10 @@ func getMonsterIndex(unit units.Unit) int {
         monsterIndex = 14
     } else if unit.Equals(units.Wraith) {
         monsterIndex = 16
-    } else if unit.Equals(units.NightStalker) {
+    } else if unit.Equals(units.ShadowDemons) {
         monsterIndex = 17
+    } else if unit.Equals(units.DeathKnights) {
+        monsterIndex = 18
     } else if unit.Equals(units.DemonLord) {
         monsterIndex = 19
     } else if unit.Equals(units.Unicorn) {
@@ -157,13 +159,13 @@ func getMonsterIndex(unit units.Unit) int {
         monsterIndex = 24
     } else if unit.Equals(units.WarBear) {
         monsterIndex = 25
-    } else if unit.Equals(units.Sprite) {
+    } else if unit.Equals(units.Sprites) {
         monsterIndex = 26
-    } else if unit.Equals(units.Cockatrice) {
+    } else if unit.Equals(units.Cockatrices) {
         monsterIndex = 27
     } else if unit.Equals(units.Basilisk) {
         monsterIndex = 28
-    } else if unit.Equals(units.GiantSpider) {
+    } else if unit.Equals(units.GiantSpiders) {
         monsterIndex = 29
     } else if unit.Equals(units.StoneGiant) {
         monsterIndex = 30
