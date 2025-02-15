@@ -31,6 +31,7 @@ type LocationType int
 const (
     LocationTypeAny LocationType = iota
     LocationTypeLand
+    LocationTypeEmptyWater
     LocationTypeFriendlyCity
     LocationTypeEnemyCity
     LocationTypeFriendlyUnit
@@ -59,7 +60,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
              "Unicorns", "Basilisk", "Behemoth", "Cockatrices", "Colossus",
              "Earth Elemental", "Giant Spiders", "Gorgons", "Great Wyrm",
              "Sprites", "Stone Giant", "War Bears", "Air Elemental",
-             "Djinn", "Floating Island", "Nagas", "Phantom Beast", "Phantom Warriors",
+             "Djinn", "Nagas", "Phantom Beast", "Phantom Warriors",
              "Sky Drake", "Storm Giant", "Chaos Spawn", "Chimeras", "Doom Bat",
              "Efreet", "Fire Elemental", "Fire Giant", "Gargoyles",
              "Great Drake", "Hell Hounds", "Hydra", "Death Knights",
@@ -69,7 +70,12 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         // FIXME: lycanthropy selects a friendly unit
         // Lycanthropy	Icon DeathDeath	Uncommon	180	--	5	400	6 Regenerating Icon Melee Normal Melee creatures replace a target friendly Normal Unit.
+        case "Floating Island":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastFloatingIsland(yield, player, tileX, tileY)
+            }
 
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEmptyWater, SelectedFunc: selected}
         case "Wall of Fire":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentWallOfFire)
@@ -177,8 +183,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         case "Summon Champion":
             game.doSummonHero(player, true)
 
+        // FIXME: Incarnation
         // Incarnation	Icon LifeLife	Rare	500	--	12	960	Summons Torin the Chosen – one of the most powerful Champions in the game.
-
         case "Enchant Road":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: game.doCastEnchantRoad}
         case "Corruption":
@@ -334,7 +340,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     var selectMessage string
 
     switch locationType {
-        case LocationTypeAny, LocationTypeLand, LocationTypeChangeTerrain, LocationTypeTransmute, LocationTypeRaiseVolcano:
+        case LocationTypeAny, LocationTypeLand, LocationTypeEmptyWater, LocationTypeChangeTerrain,
+            LocationTypeTransmute, LocationTypeRaiseVolcano:
             selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
         case LocationTypeFriendlyCity:
             selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
@@ -476,6 +483,25 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             if player.IsTileExplored(tileX, tileY, game.Plane) {
                                 if overworld.Map.GetTile(tileX, tileY).Tile.IsLand() {
                                     return tileX, tileY, false
+                                }
+                            }
+                        }
+                    case LocationTypeEmptyWater:
+                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
+                            tileX = overworld.Map.WrapX(tileX)
+                            if player.IsTileExplored(tileX, tileY, game.Plane) {
+                                if overworld.Map.GetTile(tileX, tileY).Tile.IsWater() {
+                                    empty := true
+                                    for _, enemy := range game.GetEnemies(player) {
+                                        if enemy.FindStack(tileX, tileY, game.Plane) != nil {
+                                            empty = false
+                                            break
+                                        }
+                                    }
+
+                                    if empty {
+                                        return tileX, tileY, false
+                                    }
                                 }
                             }
                         }
@@ -932,4 +958,16 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 
     yield()
 
+}
+
+func (game *Game) doCastFloatingIsland(yield coroutine.YieldFunc, player *playerlib.Player, tileX int, tileY int) {
+    update := func (x int, y int, frame int) {
+        if frame == 5 {
+            overworldUnit := units.MakeOverworldUnitFromUnit(units.GetUnitByName("Floating Island"), tileX, tileY, game.CurrentMap().Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+            player.AddUnit(overworldUnit)
+            player.LiftFog(tileX, tileY, 1, game.Plane)
+        }
+    }
+
+    game.doCastOnMap(yield, tileX, tileY, 1, false, 29, update)
 }
