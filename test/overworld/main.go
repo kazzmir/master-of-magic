@@ -1004,6 +1004,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Famine"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Pestilence"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Evil Presence"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
