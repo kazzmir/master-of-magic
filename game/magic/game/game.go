@@ -652,7 +652,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         PurifyWorkMyrror: make(map[image.Point]float64),
     }
 
-    planeTowers := maplib.GeneratePlaneTowerPositions(settings.LandSize, 13)
+    planeTowers := maplib.GeneratePlaneTowerPositions(settings.LandSize, 6)
 
     game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, game, planeTowers)
     game.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneMyrror, game, planeTowers)
