@@ -286,6 +286,15 @@ type Game struct {
     Camera camera.Camera
 }
 
+func (game *Game) GetOppositeMap(plane data.Plane) *maplib.Map {
+    switch plane {
+        case data.PlaneArcanus: return game.MyrrorMap
+        case data.PlaneMyrror: return game.ArcanusMap
+    }
+
+    return nil
+}
+
 func (game *Game) GetMap(plane data.Plane) *maplib.Map {
     switch plane {
         case data.PlaneArcanus: return game.ArcanusMap
@@ -643,8 +652,10 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         PurifyWorkMyrror: make(map[image.Point]float64),
     }
 
-    game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, game)
-    game.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneMyrror, game)
+    planeTowers := maplib.GeneratePlaneTowerPositions(settings.LandSize, 6)
+
+    game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, game, planeTowers)
+    game.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneMyrror, game, planeTowers)
 
     game.HudUI = game.MakeHudUI()
     game.Drawer = func(screen *ebiten.Image, game *Game){
@@ -4324,6 +4335,15 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
         mapUse.RemoveEncounter(x, y)
 
         game.createTreasure(encounter.Type, encounter.Budget, player)
+
+        // defeating a plane tower also removes the tower from the other plane
+        if encounter.Type == maplib.EncounterTypePlaneTower {
+            mapUse.SetPlaneTower(x, y)
+            otherMap := game.GetOppositeMap(mapUse.Plane)
+            otherMap.RemoveEncounter(x, y)
+            otherMap.SetPlaneTower(x, y)
+        }
+
     } else {
         var remaining []units.Unit
         for index := range enemies {
@@ -5358,10 +5378,29 @@ func (game *Game) DoPurify(player *playerlib.Player) {
     }
 }
 
+func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
+    return slices.ContainsFunc(game.Players, func (player *playerlib.Player) bool {
+        return player.GlobalEnchantments.Contains(enchantment)
+    })
+}
+
 func (game *Game) SwitchPlane() {
     switch game.Plane {
         case data.PlaneArcanus: game.Plane = data.PlaneMyrror
         case data.PlaneMyrror: game.Plane = data.PlaneArcanus
+    }
+
+    // no switching planes if the global enchantment planar seal is in effect
+    if !game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
+        stack := game.Players[0].SelectedStack
+
+        if stack != nil {
+            // FIXME: also allow switching planes if the stack has planar travel
+            if game.CurrentMap().HasOpenTower(stack.X(), stack.Y()) {
+                stack.SetPlane(game.Plane)
+                game.Players[0].UpdateFogVisibility()
+            }
+        }
     }
 }
 

@@ -63,6 +63,7 @@ const (
     ExtraKindBonus
     ExtraKindMagicNode
     ExtraKindEncounter
+    ExtraKindOpenTower
     ExtraKindVolcano
     ExtraKindCorruption
 )
@@ -74,6 +75,7 @@ var ExtraDrawOrder = []ExtraKind{
     ExtraKindBonus,
     ExtraKindMagicNode,
     ExtraKindEncounter,
+    ExtraKindOpenTower,
 }
 
 type Direction int
@@ -185,7 +187,6 @@ const (
     EncounterTypeLair EncounterType = iota
     EncounterTypeCave
     EncounterTypePlaneTower
-    EncounterTypePlaneTowerOpen
     EncounterTypeAncientTemple
     EncounterTypeFallenTemple
     EncounterTypeRuins
@@ -201,7 +202,6 @@ func (encounterType EncounterType) Name() string {
         case EncounterTypeLair: return "Monster Lair"
         case EncounterTypeCave: return "Mysterious Cave"
         case EncounterTypePlaneTower: return "Tower"
-        case EncounterTypePlaneTowerOpen: return "Tower"
         case EncounterTypeAncientTemple: return "Ancient Temple"
         case EncounterTypeFallenTemple: return "Fallen Temple"
         case EncounterTypeRuins: return "Ruins"
@@ -220,7 +220,6 @@ func (encounterType EncounterType) ShortName() string {
         case EncounterTypeLair: return "Lair"
         case EncounterTypeCave: return "Cave"
         case EncounterTypePlaneTower: return "Tower"
-        case EncounterTypePlaneTowerOpen: return "Tower"
         case EncounterTypeAncientTemple: return "Temple"
         case EncounterTypeFallenTemple: return "Temple"
         case EncounterTypeRuins: return "Ruins"
@@ -238,7 +237,6 @@ func randomEncounterType() EncounterType {
     all := []EncounterType{
         EncounterTypeLair,
         EncounterTypeCave,
-        EncounterTypePlaneTower,
         EncounterTypeAncientTemple,
         EncounterTypeFallenTemple,
         EncounterTypeRuins,
@@ -286,13 +284,13 @@ func makeEncounter(encounterType EncounterType, difficulty data.DifficultySettin
 
     budget := 0
     if weakStrength {
-        if plane == data.PlaneArcanus {
+        if plane == data.PlaneArcanus || encounterType == EncounterTypePlaneTower {
             budget = (rand.N(20) + 1) * 30
         } else {
             budget = (rand.N(30) + 1) * 30
         }
     } else {
-        if plane == data.PlaneArcanus {
+        if plane == data.PlaneArcanus || encounterType == EncounterTypePlaneTower {
             budget = (rand.N(80) + 1) * 50 + 250
         } else {
             budget = (rand.N(90) + 1) * 50 + 250
@@ -353,7 +351,6 @@ func (extra *ExtraEncounter) DrawLayer1(screen *ebiten.Image, imageCache *util.I
     switch extra.Type {
         case EncounterTypeLair, EncounterTypeCave: index = 71
         case EncounterTypePlaneTower: index = 69
-        case EncounterTypePlaneTowerOpen: index = 70
         case EncounterTypeAncientTemple: index = 72
         case EncounterTypeFallenTemple: index = 75
         case EncounterTypeRuins: index = 74
@@ -373,6 +370,21 @@ func (extra *ExtraEncounter) DrawLayer1(screen *ebiten.Image, imageCache *util.I
 
 func (extra *ExtraEncounter) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
     // nuthin'
+}
+
+type ExtraOpenTower struct {
+}
+
+func (extra *ExtraOpenTower) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
+    index := 70
+
+    pic, err := imageCache.GetImage("mapback.lbx", index, 0)
+    if err == nil {
+        screen.DrawImage(pic, options)
+    }
+}
+
+func (extra *ExtraOpenTower) DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
 }
 
 type ExtraMagicNode struct {
@@ -701,16 +713,29 @@ func getLandSize(size int) (int, int) {
     return 100, 100
 }
 
-func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane, cityProvider CityProvider) *Map {
+func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane, cityProvider CityProvider, planeTowers []image.Point) *Map {
     landWidth, landHeight := getLandSize(landSize)
 
     map_ := terrain.GenerateLandCellularAutomata(landWidth, landHeight, terrainData, plane)
 
     extraMap := make(map[image.Point]map[ExtraKind]ExtraTile)
+
+    // place towers, and then re-resolve tiles
+    for _, point := range planeTowers {
+        map_.Terrain[point.X][point.Y] = terrain.GetTile(terrain.IndexGrass1).Index(plane)
+        extraMap[point] = make(map[ExtraKind]ExtraTile)
+        extraMap[point][ExtraKindEncounter] = makeEncounter(EncounterTypePlaneTower, difficulty, false, plane)
+    }
+
+    map_.ResolveTiles(terrainData, plane)
+
     for x := range landWidth {
         for y := range landHeight {
             point := image.Pt(x, y)
-            extraMap[point] = make(map[ExtraKind]ExtraTile)
+            _, exists := extraMap[point]
+            if !exists {
+                extraMap[point] = make(map[ExtraKind]ExtraTile)
+            }
 
             tile := terrainData.Tiles[map_.Terrain[x][y]].Tile
             switch tile.TerrainType() {
@@ -924,6 +949,40 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
     }
 }
 
+func GeneratePlaneTowerPositions(landSize int, count int) []image.Point {
+    width, height := getLandSize(landSize)
+
+    var out []image.Point
+
+    for range count {
+        x := rand.N(width)
+        y := rand.N(height)
+
+        // not too close to the edges
+        if y < 3 || y >= height - 3 {
+            continue
+        }
+
+        point := image.Pt(x, y)
+
+        ok := true
+        for _, other := range out {
+            vector := other.Sub(point)
+            distance := math.Sqrt(float64(vector.X * vector.X + vector.Y * vector.Y))
+            if distance < 10 {
+                ok = false
+                break
+            }
+        }
+
+        if ok {
+            out = append(out, point)
+        }
+    }
+
+    return out
+}
+
 // get all the tiles that are part of the continent that contains the given x, y
 func (mapObject *Map) GetContinentTiles(x int, y int) []FullTile {
     continent := mapObject.Map.FindContinent(x, y)
@@ -1050,6 +1109,16 @@ func (mapObject *Map) RemoveEncounter(x int, y int) {
     if exists {
         delete(mapObject.ExtraMap[image.Pt(x, y)], ExtraKindEncounter)
     }
+}
+
+// an open plane tower
+func (mapObject *Map) SetPlaneTower(x int, y int) {
+    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindOpenTower] = &ExtraOpenTower{}
+}
+
+func (mapObject *Map) HasOpenTower(x int, y int) bool {
+    _, exists := mapObject.ExtraMap[image.Pt(x, y)][ExtraKindOpenTower]
+    return exists
 }
 
 func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
