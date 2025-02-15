@@ -273,7 +273,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
 }
 
 // list of units that shows up when you right click on an enemy unit stack
-func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, title string, clicked func()) []*uilib.UIElement {
+func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, title string, clicked func(UnitView)) []*uilib.UIElement {
     imageCache := util.MakeImageCache(cache)
 
     titleHeight := 22
@@ -352,7 +352,7 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
             getAlpha = ui.MakeFadeOut(7)
             ui.AddDelay(7, func(){
                 ui.RemoveElements(elements)
-                clicked()
+                clicked(nil)
             })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){

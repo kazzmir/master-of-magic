@@ -20,6 +20,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/camera"
@@ -179,10 +180,20 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
         case "Heroism":
-            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                // stack := player.FindStack(tileX, tileY, game.Plane)
+            var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
+            selected = func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doMoveCamera(yield, tileX, tileY)
+                stack := player.FindStack(tileX, tileY, game.Plane)
+                unit := game.doSelectUnit(yield, player, stack)
+
+                // player didn't select a unit, let them pick a different stack
+                if unit == nil {
+                    game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+                    return
+                }
 
                 game.doCastOnMap(yield, tileX, tileY, 3, false, spell.Sound, func (x int, y int, animationFrame int) {})
+                unit.AddEnchantment(data.UnitEnchantmentHeroism)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
@@ -203,6 +214,63 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
     }
+}
+
+func (game *Game) doSelectUnit(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack) units.StackUnit {
+
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    ui := uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+    }
+
+    quit := false
+
+    var chosen units.StackUnit
+
+    var viewUnits []unitview.UnitView
+    for _, unit := range stack.Units() {
+        viewUnits = append(viewUnits, unit)
+    }
+
+    viewElements := unitview.MakeSmallListView(game.Cache, &ui, viewUnits, fmt.Sprintf("%v Units", player.Wizard.Name), func(unit unitview.UnitView){
+        quit = true
+
+        if unit != nil {
+            stackUnit, ok := unit.(units.StackUnit)
+            if ok {
+                chosen = stackUnit
+            }
+        }
+    })
+    ui.SetElementsFromArray(viewElements)
+
+    yield()
+
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+        ui.Draw(&ui, screen)
+    }
+
+    for !quit {
+        game.Counter += 1
+        ui.StandardUpdate()
+
+        if yield() != nil {
+            return nil
+        }
+    }
+
+    return chosen
 }
 
 func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
@@ -358,6 +426,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             selectMessage = fmt.Sprintf("Select a magic node as the target for a %v spell.", spell.Name)
         case LocationTypeEnemyCity:
             selectMessage = fmt.Sprintf("Select an enemy city as the target for a %v spell.", spell.Name)
+        case LocationTypeFriendlyUnit:
+            selectMessage = fmt.Sprintf("Select a friendly unit as the target for a %v spell.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
     }

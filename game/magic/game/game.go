@@ -3822,7 +3822,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                 enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
                                 if enemyStack != nil {
                                     quit := false
-                                    clicked := func(){
+                                    clicked := func(unit unitview.UnitView){
                                         quit = true
                                     }
 

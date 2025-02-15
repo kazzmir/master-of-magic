@@ -150,6 +150,7 @@ const (
     UnitEnchantmentFlight
     UnitEnchantmentChaosChannelsDemonWings
     UnitEnchantmentEndurance
+    UnitEnchantmentHeroism
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -171,7 +172,6 @@ func GetMagicColor(magic MagicType) color.Color {
 }
 
 /*
-Heroism	Life
 Holy Armor	Life
 Holy Weapon	Life
 Invulnerability	Life
@@ -208,6 +208,7 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentFlight: return sorceryColor
         case UnitEnchantmentChaosChannelsDemonWings: return chaosColor
         case UnitEnchantmentEndurance: return lifeColor
+        case UnitEnchantmentHeroism: return lifeColor
     }
 
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
@@ -229,6 +230,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentFlight: return "Flight"
         case UnitEnchantmentChaosChannelsDemonWings: return "Demon Wings"
         case UnitEnchantmentEndurance: return "Endurance"
+        case UnitEnchantmentHeroism: return "Heroism"
     }
 
     return ""
@@ -250,6 +252,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentFlight: return "special.lbx"
         case UnitEnchantmentChaosChannelsDemonWings: return "special.lbx"
         case UnitEnchantmentEndurance: return "special.lbx"
+        case UnitEnchantmentHeroism: return "special.lbx"
     }
 
     return ""
@@ -271,6 +274,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentFlight: return 80
         case UnitEnchantmentChaosChannelsDemonWings: return 63
         case UnitEnchantmentEndurance: return 76
+        case UnitEnchantmentHeroism: return 87
     }
 
     return -1
