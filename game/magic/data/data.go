@@ -161,6 +161,15 @@ func (plane Plane) String() string {
     return ""
 }
 
+func (plane Plane) Opposite() Plane {
+    switch plane {
+        case PlaneArcanus: return PlaneMyrror
+        case PlaneMyrror: return PlaneArcanus
+    }
+
+    return PlaneArcanus
+}
+
 type WizardBase int
 
 const (
