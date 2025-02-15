@@ -5378,18 +5378,28 @@ func (game *Game) DoPurify(player *playerlib.Player) {
     }
 }
 
+func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
+    return slices.ContainsFunc(game.Players, func (player *playerlib.Player) bool {
+        return player.GlobalEnchantments.Contains(enchantment)
+    })
+}
+
 func (game *Game) SwitchPlane() {
     switch game.Plane {
         case data.PlaneArcanus: game.Plane = data.PlaneMyrror
         case data.PlaneMyrror: game.Plane = data.PlaneArcanus
     }
 
-    stack := game.Players[0].SelectedStack
+    // no switching planes if the global enchantment planar seal is in effect
+    if !game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
+        stack := game.Players[0].SelectedStack
 
-    if stack != nil {
-        if game.CurrentMap().HasOpenTower(stack.X(), stack.Y()) {
-            stack.SetPlane(game.Plane)
-            game.Players[0].UpdateFogVisibility()
+        if stack != nil {
+            // FIXME: also allow switching planes if the stack has planar travel
+            if game.CurrentMap().HasOpenTower(stack.X(), stack.Y()) {
+                stack.SetPlane(game.Plane)
+                game.Players[0].UpdateFogVisibility()
+            }
         }
     }
 }
