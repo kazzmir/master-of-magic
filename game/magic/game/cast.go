@@ -182,6 +182,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         case "Heroism":
             var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
             selected = func (yield coroutine.YieldFunc, tileX int, tileY int){
+                // FIXME: generalize this code (move to a helper) for other unit enchantments
                 game.doMoveCamera(yield, tileX, tileY)
                 stack := player.FindStack(tileX, tileY, game.Plane)
                 unit := game.doSelectUnit(yield, player, stack)
