@@ -810,7 +810,7 @@ func (hero *Hero) HasAbility(ability data.AbilityType) bool {
         }
     }
 
-    return slices.ContainsFunc(hero.Abilities, func (a data.Ability) bool {
+    return hero.Unit.HasAbility(ability) || slices.ContainsFunc(hero.Abilities, func (a data.Ability) bool {
         return a.Ability == ability
     })
 }

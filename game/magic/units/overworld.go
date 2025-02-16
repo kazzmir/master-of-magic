@@ -268,8 +268,21 @@ func (unit *OverworldUnit) GetRangedAttacks() int {
     return unit.Unit.RangedAttacks
 }
 
+// an ability can either be inherint to the unit or granted by an enchantment
 func (unit *OverworldUnit) HasAbility(ability data.AbilityType) bool {
-    return unit.Unit.HasAbility(ability)
+    if unit.Unit.HasAbility(ability) {
+        return true
+    }
+
+    for _, enchantment := range unit.Enchantments {
+        for _, grantedAbility := range enchantment.Abilities() {
+            if grantedAbility.Ability == ability {
+                return true
+            }
+        }
+    }
+
+    return false
 }
 
 func (unit *OverworldUnit) SetBanner(banner data.BannerType) {

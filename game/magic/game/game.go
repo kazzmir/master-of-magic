@@ -5411,25 +5411,29 @@ func (game *Game) SwitchPlane() {
             canMove := false
 
             // FIXME: also allow switching planes if the stack has planar travel
-            if game.CurrentMap().HasOpenTower(stack.X(), stack.Y()) {
+            if game.CurrentMap().HasOpenTower(activeStack.X(), activeStack.Y()) {
+                // FIXME: check for enemy stack on opposite plane
                 canMove = true
             } else {
-                cityThisPlane := player.FindCity(stack.X(), stack.Y(), stack.Plane())
-                cityOppositePlane := player.FindCity(stack.X(), stack.Y(), stack.Plane().Opposite())
+                cityThisPlane := player.FindCity(activeStack.X(), activeStack.Y(), activeStack.Plane())
+                cityOppositePlane := player.FindCity(activeStack.X(), activeStack.Y(), activeStack.Plane().Opposite())
                 hasAstralGate := (cityThisPlane != nil && cityThisPlane.HasEnchantment(data.CityEnchantmentAstralGate)) ||
                                  (cityOppositePlane != nil && cityOppositePlane.HasEnchantment(data.CityEnchantmentAstralGate))
-                if hasAstralGate {
-                    mapPlane := game.GetMap(stack.Plane().Opposite())
 
-                    tile := mapPlane.GetTile(stack.X(), stack.Y())
-                    canMove = cityOppositePlane != nil || stack.AllFlyers() || tile.Tile.IsLand()
+                hasPlanarTravel := activeStack.ActiveUnitsHasAbility(data.AbilityPlanarTravel)
+
+                if hasAstralGate || hasPlanarTravel {
+                    mapPlane := game.GetMap(activeStack.Plane().Opposite())
+
+                    tile := mapPlane.GetTile(activeStack.X(), activeStack.Y())
+                    canMove = cityOppositePlane != nil || activeStack.AllFlyers() || tile.Tile.IsLand()
 
                     // cannot planar travel if there is an encounter node
-                    if mapPlane.GetEncounter(stack.X(), stack.Y()) != nil {
+                    if mapPlane.GetEncounter(activeStack.X(), activeStack.Y()) != nil {
                         canMove = false
                     }
 
-                    if tile.Tile.IsWater() && stack.AllLandWalkers() {
+                    if tile.Tile.IsWater() && activeStack.AllLandWalkers() {
                         canMove = false
                     }
 

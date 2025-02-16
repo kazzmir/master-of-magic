@@ -238,6 +238,27 @@ func (enchantment UnitEnchantment) Color() color.Color {
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
 }
 
+// granted abilities, if any
+func (enchantment UnitEnchantment) Abilities() []Ability {
+    switch enchantment {
+        case UnitEnchantmentImmolation: return []Ability{MakeAbility(AbilityImmolation)}
+        case UnitEnchantmentCloakOfFear: return []Ability{MakeAbility(AbilityCloakOfFear)}
+        case UnitEnchantmentTrueSight: return []Ability{MakeAbility(AbilityIllusionsImmunity)}
+        case UnitEnchantmentPathFinding: return []Ability{MakeAbility(AbilityPathfinding)}
+        case UnitEnchantmentChaosChannelsFireBreath: return []Ability{MakeAbilityValue(AbilityFireBreath, 2)}
+        case UnitEnchantmentInvulnerability: return []Ability{MakeAbility(AbilityWeaponImmunity)}
+        case UnitEnchantmentPlanarTravel: return []Ability{MakeAbility(AbilityPlanarTravel)}
+        case UnitEnchantmentRegeneration: return []Ability{MakeAbility(AbilityRegeneration)}
+        case UnitEnchantmentGuardianWind: return []Ability{MakeAbility(AbilityMissileImmunity)}
+        case UnitEnchantmentInvisibility: return []Ability{MakeAbility(AbilityInvisibility)}
+        case UnitEnchantmentMagicImmunity: return []Ability{MakeAbility(AbilityMagicImmunity)}
+        case UnitEnchantmentWindWalking: return []Ability{MakeAbility(AbilityWindWalking)}
+        case UnitEnchantmentWraithForm: return []Ability{MakeAbility(AbilityWeaponImmunity), MakeAbility(AbilityNonCorporeal)}
+    }
+
+    return nil
+}
+
 func (enchantment UnitEnchantment) UpkeepMana() int {
     switch enchantment {
         case UnitEnchantmentGiantStrength: return 1

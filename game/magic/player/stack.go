@@ -210,7 +210,6 @@ func (stack *UnitStack) ActiveUnitsDoesntHaveAbility(ability data.AbilityType) b
 
 func (stack *UnitStack) HasPathfinding() bool {
     return stack.ActiveUnitsHasAbility(data.AbilityPathfinding) ||
-           stack.ActiveUnitsHasEnchantment(data.UnitEnchantmentPathFinding) ||
            (stack.ActiveUnitsHasAbility(data.AbilityMountaineer) && stack.ActiveUnitsHasAbility(data.AbilityForester))
 }
 
