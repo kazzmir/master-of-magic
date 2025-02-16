@@ -1024,7 +1024,6 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     enchantmentAreaRect := image.Rect(140 * data.ScreenScale, 51 * data.ScreenScale, 140 * data.ScreenScale + 60 * data.ScreenScale, 93 * data.ScreenScale)
     maxEnchantments := enchantmentAreaRect.Dy() / (cityScreen.Fonts.BannerFonts[data.BannerGreen].Height() * data.ScreenScale)
 
-    enchantmentMin := 0
     var enchantmentElements []*uilib.UIElement
 
     // if there are too many enchantments then up/down arrows will appear that let the user scroll the enchantment view
@@ -1100,6 +1099,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     }
 
     if cityScreen.City.Enchantments.Size() > maxEnchantments {
+        enchantmentMin := 0
         updateElements := func(){
             fontHeight := cityScreen.Fonts.BannerFonts[data.BannerGreen].Height()
             yOffset := enchantmentMin * fontHeight * data.ScreenScale
