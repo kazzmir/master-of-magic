@@ -165,6 +165,7 @@ const (
     UnitEnchantmentSpellLock
     UnitEnchantmentWindWalking
     UnitEnchantmentEldritchWeapon
+    UnitEnchantmentFlameBlade
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -217,6 +218,7 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentImmolation: return chaosColor
         case UnitEnchantmentChaosChannelsDemonWings: return chaosColor
         case UnitEnchantmentEldritchWeapon: return chaosColor
+        case UnitEnchantmentFlameBlade: return chaosColor
 
         case UnitEnchantmentBless: return lifeColor
         case UnitEnchantmentLionHeart: return lifeColor
@@ -266,6 +268,7 @@ func (enchantment UnitEnchantment) UpkeepMana() int {
         case UnitEnchantmentSpellLock: return 1
         case UnitEnchantmentWindWalking: return 10
         case UnitEnchantmentEldritchWeapon: return 1
+        case UnitEnchantmentFlameBlade: return 2
     }
 
     return 0
@@ -303,6 +306,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentSpellLock: return "Spell Lock"
         case UnitEnchantmentWindWalking: return "Wind Walking"
         case UnitEnchantmentEldritchWeapon: return "Eldritch Weapon"
+        case UnitEnchantmentFlameBlade: return "Flame Blade"
     }
 
     return ""
@@ -340,6 +344,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentSpellLock: return "special2.lbx"
         case UnitEnchantmentWindWalking: return "special.lbx"
         case UnitEnchantmentEldritchWeapon: return "special.lbx"
+        case UnitEnchantmentFlameBlade: return "special.lbx"
     }
 
     return ""
@@ -377,6 +382,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentSpellLock: return 8
         case UnitEnchantmentWindWalking: return 79
         case UnitEnchantmentEldritchWeapon: return 84
+        case UnitEnchantmentFlameBlade: return 83
     }
 
     return -1
@@ -403,6 +409,7 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
         case UnitEnchantmentImmolation: return 2
         case UnitEnchantmentChaosChannelsDemonWings: return 2
         case UnitEnchantmentEldritchWeapon: return 2
+        case UnitEnchantmentFlameBlade: return 2
 
         // sorcery
         case UnitEnchantmentHaste: return 1

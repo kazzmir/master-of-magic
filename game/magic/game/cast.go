@@ -244,9 +244,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWindWalking)
         case "Eldritch Weapon":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentEldritchWeapon)
+        case "Flame Blade":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentFlameBlade)
 
         /*
-Flame Blade	
 Berserk	
 Black Channels	
 Wraith Form
