@@ -4742,9 +4742,14 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             if dead {
                 player.RemoveUnit(unit)
 
-                if unit.IsHero() && player.IsHuman() {
+                if unit.IsHero() {
                     hero := unit.(*herolib.Hero)
-                    distributeEquipment(player, hero)
+                    if player.IsHuman() {
+                        distributeEquipment(player, hero)
+                    }
+                    for index := range hero.Equipment {
+                        hero.Equipment[index] = nil
+                    }
                 }
             }
         }
