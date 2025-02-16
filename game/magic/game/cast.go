@@ -231,9 +231,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentStoneSkin)
         case "Water Walking":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWaterWalking)
+        case "Guardian Wind":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentGuardianWind)
 
         /*
-Guardian Wind	
 Invisibility	
 Magic Immunity	
 Resist Magic	

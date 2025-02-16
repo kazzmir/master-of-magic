@@ -159,6 +159,7 @@ const (
     UnitEnchantmentRegeneration
     UnitEnchantmentStoneSkin
     UnitEnchantmentWaterWalking
+    UnitEnchantmentGuardianWind
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -208,6 +209,7 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentFlight: return sorceryColor
         case UnitEnchantmentHaste: return sorceryColor
         case UnitEnchantmentResistMagic: return sorceryColor
+        case UnitEnchantmentGuardianWind: return sorceryColor
 
         case UnitEnchantmentCloakOfFear: return deathColor
 
@@ -256,6 +258,7 @@ func (enchantment UnitEnchantment) UpkeepMana() int {
         case UnitEnchantmentRegeneration: return 10
         case UnitEnchantmentStoneSkin: return 1
         case UnitEnchantmentWaterWalking: return 1
+        case UnitEnchantmentGuardianWind: return 2
     }
 
     return 0
@@ -287,6 +290,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentRegeneration: return "Regeneration"
         case UnitEnchantmentStoneSkin: return "Stone Skin"
         case UnitEnchantmentWaterWalking: return "Water Walking"
+        case UnitEnchantmentGuardianWind: return "Guardian Wind"
     }
 
     return ""
@@ -318,6 +322,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentRegeneration: return "special.lbx"
         case UnitEnchantmentStoneSkin: return "special.lbx"
         case UnitEnchantmentWaterWalking: return "special.lbx"
+        case UnitEnchantmentGuardianWind: return "special2.lbx"
     }
 
     return ""
@@ -349,6 +354,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentRegeneration: return 69
         case UnitEnchantmentStoneSkin: return 74
         case UnitEnchantmentWaterWalking: return 71
+        case UnitEnchantmentGuardianWind: return 7
     }
 
     return -1
@@ -359,14 +365,14 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
     switch enchantment {
         // nature
         // FIXME: verify
-        case UnitEnchantmentGiantStrength: return 45
-        case UnitEnchantmentElementalArmor: return 45
-        case UnitEnchantmentResistElements: return 45
-        case UnitEnchantmentIronSkin: return 45
-        case UnitEnchantmentPathFinding: return 45
-        case UnitEnchantmentRegeneration: return 45
-        case UnitEnchantmentStoneSkin: return 45
-        case UnitEnchantmentWaterWalking: return 45
+        case UnitEnchantmentGiantStrength: return 0
+        case UnitEnchantmentElementalArmor: return 0
+        case UnitEnchantmentResistElements: return 0
+        case UnitEnchantmentIronSkin: return 0
+        case UnitEnchantmentPathFinding: return 0
+        case UnitEnchantmentRegeneration: return 0
+        case UnitEnchantmentStoneSkin: return 0
+        case UnitEnchantmentWaterWalking: return 0
 
         // death
         case UnitEnchantmentCloakOfFear: return 4
@@ -376,9 +382,10 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
         case UnitEnchantmentChaosChannelsDemonWings: return 2
 
         // sorcery
-        case UnitEnchantmentHaste: return 0
-        case UnitEnchantmentFlight: return 0
-        case UnitEnchantmentResistMagic: return 0
+        case UnitEnchantmentHaste: return 1
+        case UnitEnchantmentFlight: return 1
+        case UnitEnchantmentResistMagic: return 1
+        case UnitEnchantmentGuardianWind: return 1
 
         // life
         case UnitEnchantmentBless: return 3
