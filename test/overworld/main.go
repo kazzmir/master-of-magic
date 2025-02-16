@@ -1082,6 +1082,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Invisiblity"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Magic Immunity"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Spell Lock"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Wind Walking"))
 
     x, y, _ := game.FindValidCityLocation(game.Plane)
 
