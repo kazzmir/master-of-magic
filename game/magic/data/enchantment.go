@@ -156,6 +156,7 @@ const (
     UnitEnchantmentInvulnerability
     UnitEnchantmentPlanarTravel
     UnitEnchantmentIronSkin
+    UnitEnchantmentRegeneration
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -177,7 +178,6 @@ func GetMagicColor(magic MagicType) color.Color {
 }
 
 /*
-Regeneration	Nature
 Stone Skin	Nature
 Water Walking	Nature
 Guardian Wind	Sorcery
@@ -199,6 +199,7 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentResistElements: return natureColor
         case UnitEnchantmentElementalArmor: return natureColor
         case UnitEnchantmentPathFinding: return natureColor
+        case UnitEnchantmentRegeneration: return natureColor
 
         case UnitEnchantmentFlight: return sorceryColor
         case UnitEnchantmentHaste: return sorceryColor
@@ -248,6 +249,7 @@ func (enchantment UnitEnchantment) UpkeepMana() int {
         case UnitEnchantmentPlanarTravel: return 5
         case UnitEnchantmentIronSkin: return 5
         case UnitEnchantmentPathFinding: return 1
+        case UnitEnchantmentRegeneration: return 10
     }
 
     return 0
@@ -276,6 +278,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentPlanarTravel: return "Planar Travel"
         case UnitEnchantmentIronSkin: return "Iron Skin"
         case UnitEnchantmentPathFinding: return "Path Finding"
+        case UnitEnchantmentRegeneration: return "Regeneration"
     }
 
     return ""
@@ -304,6 +307,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentPlanarTravel: return "special.lbx"
         case UnitEnchantmentIronSkin: return "special.lbx"
         case UnitEnchantmentPathFinding: return "special.lbx"
+        case UnitEnchantmentRegeneration: return "special.lbx"
     }
 
     return ""
@@ -332,6 +336,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentPlanarTravel: return 91
         case UnitEnchantmentIronSkin: return 75
         case UnitEnchantmentPathFinding: return 70
+        case UnitEnchantmentRegeneration: return 69
     }
 
     return -1
@@ -347,6 +352,7 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
         case UnitEnchantmentResistElements: return 45
         case UnitEnchantmentIronSkin: return 45
         case UnitEnchantmentPathFinding: return 45
+        case UnitEnchantmentRegeneration: return 45
 
         // death
         case UnitEnchantmentCloakOfFear: return 4
