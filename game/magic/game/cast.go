@@ -215,10 +215,11 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentEndurance)
         case "Holy Armor":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHolyArmor)
+        case "Holy Weapon":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHolyWeapon)
 
 
         /*
-Holy Weapon	
 Invulnerability
 Planar Travel
 Iron Skin
