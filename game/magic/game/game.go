@@ -4708,7 +4708,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             if item != nil {
                 showHeroNotice = true
                 select {
-                    case game.Events <- &GameEventVault{CreatedArtifact: item}:
+                    case game.Events <- &GameEventVault{CreatedArtifact: item, Player: player}:
                     default:
                 }
             }
