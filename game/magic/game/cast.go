@@ -217,10 +217,11 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHolyArmor)
         case "Holy Weapon":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHolyWeapon)
+        case "Invulnerability":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentInvulnerability)
 
 
         /*
-Invulnerability
 Planar Travel
 Iron Skin
 Path Finding

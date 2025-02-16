@@ -153,6 +153,7 @@ const (
     UnitEnchantmentHeroism
     UnitEnchantmentHolyArmor
     UnitEnchantmentHolyWeapon
+    UnitEnchantmentInvulnerability
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -174,7 +175,6 @@ func GetMagicColor(magic MagicType) color.Color {
 }
 
 /*
-Invulnerability	Life
 Planar Travel	Life
 Iron Skin	Nature
 Regeneration	Nature
@@ -211,6 +211,7 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentHeroism: return lifeColor
         case UnitEnchantmentHolyArmor: return lifeColor
         case UnitEnchantmentHolyWeapon: return lifeColor
+        case UnitEnchantmentInvulnerability: return lifeColor
     }
 
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
@@ -236,6 +237,7 @@ func (enchantment UnitEnchantment) UpkeepMana() int {
         case UnitEnchantmentHeroism: return 2
         case UnitEnchantmentHolyArmor: return 2
         case UnitEnchantmentHolyWeapon: return 1
+        case UnitEnchantmentInvulnerability: return 5
     }
 
     return 0
@@ -260,6 +262,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentHeroism: return "Heroism"
         case UnitEnchantmentHolyArmor: return "Holy Armor"
         case UnitEnchantmentHolyWeapon: return "Holy Weapon"
+        case UnitEnchantmentInvulnerability: return "Invulnerability"
     }
 
     return ""
@@ -284,6 +287,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentHeroism: return "special.lbx"
         case UnitEnchantmentHolyArmor: return "special.lbx"
         case UnitEnchantmentHolyWeapon: return "special.lbx"
+        case UnitEnchantmentInvulnerability: return "special.lbx"
     }
 
     return ""
@@ -308,6 +312,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentHeroism: return 87
         case UnitEnchantmentHolyArmor: return 92
         case UnitEnchantmentHolyWeapon: return 86
+        case UnitEnchantmentInvulnerability: return 94
     }
 
     return -1
@@ -343,6 +348,7 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
         case UnitEnchantmentRighteousness: return 3
         case UnitEnchantmentHolyArmor: return 3
         case UnitEnchantmentHolyWeapon: return 3
+        case UnitEnchantmentInvulnerability: return 3
     }
 
     return -1

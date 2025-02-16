@@ -1071,6 +1071,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Chaos Channels"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Holy Armor"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Holy Weapon"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Invulnerability"))
 
     x, y, _ := game.FindValidCityLocation(game.Plane)
 
