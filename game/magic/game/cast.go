@@ -20,6 +20,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/camera"
@@ -31,6 +32,7 @@ type LocationType int
 const (
     LocationTypeAny LocationType = iota
     LocationTypeLand
+    LocationTypeEmptyWater
     LocationTypeFriendlyCity
     LocationTypeEnemyCity
     LocationTypeFriendlyUnit
@@ -59,7 +61,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
              "Unicorns", "Basilisk", "Behemoth", "Cockatrices", "Colossus",
              "Earth Elemental", "Giant Spiders", "Gorgons", "Great Wyrm",
              "Sprites", "Stone Giant", "War Bears", "Air Elemental",
-             "Djinn", "Floating Island", "Nagas", "Phantom Beast", "Phantom Warriors",
+             "Djinn", "Nagas", "Phantom Beast", "Phantom Warriors",
              "Sky Drake", "Storm Giant", "Chaos Spawn", "Chimeras", "Doom Bat",
              "Efreet", "Fire Elemental", "Fire Giant", "Gargoyles",
              "Great Drake", "Hell Hounds", "Hydra", "Death Knights",
@@ -69,7 +71,12 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         // FIXME: lycanthropy selects a friendly unit
         // Lycanthropy	Icon DeathDeath	Uncommon	180	--	5	400	6 Regenerating Icon Melee Normal Melee creatures replace a target friendly Normal Unit.
+        case "Floating Island":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastFloatingIsland(yield, player, tileX, tileY)
+            }
 
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEmptyWater, SelectedFunc: selected}
         case "Wall of Fire":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentWallOfFire)
@@ -134,6 +141,25 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         case "Evil Presence":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentEvilPresence)
+        case "Stream of Life":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentStreamOfLife)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
+
+        case "Call the Void":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                chosenCity, owner := game.FindCity(tileX, tileY, game.Plane)
+
+                // FIXME: show a fizzle notification?
+                if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentChaosWard) {
+                    return
+                }
+
+                // FIXME: verify the animation and sound
+                game.doCastOnMap(yield, tileX, tileY, 12, false, 72, func (x int, y int, animationFrame int) {})
+                game.doCallTheVoid(chosenCity, owner)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyCity, SelectedFunc: selected}
@@ -154,15 +180,86 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
                 player.LiftFogAll(data.PlaneArcanus)
                 player.LiftFogAll(data.PlaneMyrror)
+                game.RefreshUI()
             }
+
+        case "Bless":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentBless)
+        case "Heroism":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHeroism)
+        case "Giant Strength":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentGiantStrength)
+        case "Lionheart":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentLionHeart)
+        case "Immolation":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentImmolation)
+        case "Resist Elements":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentResistElements)
+        case "Resist Magic":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentResistMagic)
+        case "Elemental Armor":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentElementalArmor)
+        case "Righteousness":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentRighteousness)
+        case "Cloak of Fear":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentCloakOfFear)
+        case "True Sight":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentTrueSight)
+        case "Flight":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentFlight)
+        case "Chaos Channels":
+            choices := []data.UnitEnchantment{
+                data.UnitEnchantmentChaosChannelsDemonSkin,
+                data.UnitEnchantmentChaosChannelsDemonWings,
+                data.UnitEnchantmentChaosChannelsFireBreath,
+            }
+            game.doCastUnitEnchantment(player, spell, choices[rand.N(len(choices))])
+        case "Endurance":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentEndurance)
+        case "Holy Armor":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHolyArmor)
+        case "Holy Weapon":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHolyWeapon)
+        case "Invulnerability":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentInvulnerability)
+        case "Planar Travel":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentPlanarTravel)
+        case "Iron Skin":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentIronSkin)
+        case "Path Finding":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentPathFinding)
+        case "Regeneration":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentRegeneration)
+        case "Stone Skin":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentStoneSkin)
+        case "Water Walking":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWaterWalking)
+        case "Guardian Wind":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentGuardianWind)
+        // "Invisiblity" is a typo in the game in spelldat.lbx
+        case "Invisiblity":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentInvisibility)
+        case "Magic Immunity":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentMagicImmunity)
+        case "Spell Lock":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentSpellLock)
+        case "Wind Walking":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWindWalking)
+        case "Eldritch Weapon":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentEldritchWeapon)
+        case "Flame Blade":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentFlameBlade)
+        case "Black Channels":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentBlackChannels)
+        case "Wraith Form":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWraithForm)
 
         case "Summon Hero":
             game.doSummonHero(player, false)
         case "Summon Champion":
             game.doSummonHero(player, true)
-
-        // Incarnation	Icon LifeLife	Rare	500	--	12	960	Summons Torin the Chosen – one of the most powerful Champions in the game.
-
+        case "Incarnation":
+            game.doIncarnation(player)
         case "Enchant Road":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: game.doCastEnchantRoad}
         case "Corruption":
@@ -172,6 +269,88 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
     }
+}
+
+func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {
+    var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
+    selected = func (yield coroutine.YieldFunc, tileX int, tileY int){
+        game.doMoveCamera(yield, tileX, tileY)
+        stack := player.FindStack(tileX, tileY, game.Plane)
+        unit := game.doSelectUnit(yield, player, stack)
+
+        // player didn't select a unit, let them pick a different stack
+        if unit == nil {
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+            return
+        }
+
+        game.doCastOnMap(yield, tileX, tileY, enchantment.CastAnimationIndex(), false, spell.Sound, func (x int, y int, animationFrame int) {})
+        unit.AddEnchantment(enchantment)
+
+        game.RefreshUI()
+    }
+
+    game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+}
+
+func (game *Game) doSelectUnit(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack) units.StackUnit {
+
+    drawer := game.Drawer
+    defer func(){
+        game.Drawer = drawer
+    }()
+
+    quit := false
+
+    ui := uilib.UI{
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            ui.IterateElementsByLayer(func (element *uilib.UIElement){
+                if element.Draw != nil {
+                    element.Draw(element, screen)
+                }
+            })
+        },
+        LeftClick: func(){
+            quit = true
+        },
+    }
+
+    var chosen units.StackUnit
+
+    var viewUnits []unitview.UnitView
+    for _, unit := range stack.Units() {
+        viewUnits = append(viewUnits, unit)
+    }
+
+    viewElements := unitview.MakeSmallListView(game.Cache, &ui, viewUnits, fmt.Sprintf("%v Units", player.Wizard.Name), func(unit unitview.UnitView){
+        quit = true
+
+        if unit != nil {
+            stackUnit, ok := unit.(units.StackUnit)
+            if ok {
+                chosen = stackUnit
+            }
+        }
+    })
+    ui.SetElementsFromArray(viewElements)
+
+    yield()
+
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        drawer(screen, game)
+        ui.Draw(&ui, screen)
+    }
+
+    for !quit {
+        game.Counter += 1
+        ui.StandardUpdate()
+
+        if yield() != nil {
+            return nil
+        }
+    }
+
+    return chosen
 }
 
 func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
@@ -206,6 +385,25 @@ func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
             case game.Events <- &event:
             default:
         }
+
+        game.RefreshUI()
+    }
+}
+
+func (game *Game) doIncarnation(player *playerlib.Player) {
+    for _, hero := range game.Heroes {
+        if hero.HeroType == herolib.HeroTorin && hero.Status != herolib.StatusEmployed {
+            event := GameEventHireHero{
+                Hero: hero,
+                Player: player,
+                Cost: 0,
+            }
+
+            select {
+                case game.Events <- &event:
+                default:
+            }
+        }
     }
 }
 
@@ -219,6 +417,7 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
     if summonCity != nil {
         overworldUnit := units.MakeOverworldUnitFromUnit(unit, summonCity.X, summonCity.Y, summonCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
         player.AddUnit(overworldUnit)
+        game.RefreshUI()
     }
 }
 
@@ -318,7 +517,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     var selectMessage string
 
     switch locationType {
-        case LocationTypeAny, LocationTypeLand, LocationTypeChangeTerrain, LocationTypeTransmute, LocationTypeRaiseVolcano:
+        case LocationTypeAny, LocationTypeLand, LocationTypeEmptyWater, LocationTypeChangeTerrain,
+            LocationTypeTransmute, LocationTypeRaiseVolcano:
             selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
         case LocationTypeFriendlyCity:
             selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
@@ -326,6 +526,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             selectMessage = fmt.Sprintf("Select a magic node as the target for a %v spell.", spell.Name)
         case LocationTypeEnemyCity:
             selectMessage = fmt.Sprintf("Select an enemy city as the target for a %v spell.", spell.Name)
+        case LocationTypeFriendlyUnit:
+            selectMessage = fmt.Sprintf("Select a friendly unit as the target for a %v spell.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
     }
@@ -463,6 +665,25 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                                 }
                             }
                         }
+                    case LocationTypeEmptyWater:
+                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
+                            tileX = overworld.Map.WrapX(tileX)
+                            if player.IsTileExplored(tileX, tileY, game.Plane) {
+                                if overworld.Map.GetTile(tileX, tileY).Tile.IsWater() {
+                                    empty := true
+                                    for _, enemy := range game.GetEnemies(player) {
+                                        if enemy.FindStack(tileX, tileY, game.Plane) != nil {
+                                            empty = false
+                                            break
+                                        }
+                                    }
+
+                                    if empty {
+                                        return tileX, tileY, false
+                                    }
+                                }
+                            }
+                        }
                     case LocationTypeFriendlyCity:
                         city := player.FindCity(tileX, tileY, game.Plane)
                         if city != nil {
@@ -528,7 +749,10 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         }
 
                     case LocationTypeFriendlyUnit:
-                        // TODO
+                        stack := player.FindStack(tileX, tileY, game.Plane)
+                        if stack != nil {
+                            return tileX, tileY, false
+                        }
 
                     case LocationTypeEnemyUnit:
                         // TODO
@@ -547,7 +771,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
 func (game *Game) doCastCityEnchantment(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player, enchantment data.CityEnchantment) {
     game.doMoveCamera(yield, tileX, tileY)
-    chosenCity := game.FindCity(tileX, tileY, game.Plane)
+    chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
     if chosenCity == nil {
         return
     }
@@ -562,6 +786,7 @@ func (game *Game) doCastCityEnchantment(yield coroutine.YieldFunc, tileX int, ti
     }
 
     game.showCityEnchantment(yield, chosenCity, player, enchantment)
+    game.RefreshUI()
 }
 
 type UpdateMapFunction func (tileX int, tileY int, animationFrame int)
@@ -666,8 +891,8 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
     }
 
     game.doCastOnMap(yield, tileX, tileY, 8, false, 28, update)
+    game.RefreshUI()
 }
-
 
 func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY int) {
     update := func (x int, y int, frame int) {
@@ -685,8 +910,8 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
     }
 
     game.doCastOnMap(yield, tileX, tileY, 0, false, 28, update)
+    game.RefreshUI()
 }
-
 
 func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player) {
     update := func (x int, y int, frame int) {
@@ -713,6 +938,8 @@ func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY
             }
         }
     }
+
+    game.RefreshUI()
 }
 
 func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY int) {
@@ -727,6 +954,7 @@ func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY i
     }
 
     game.doCastOnMap(yield, tileX, tileY, 7, false, 103, update)
+    game.RefreshUI()
 }
 
 func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int) {
@@ -916,4 +1144,16 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 
     yield()
 
+}
+
+func (game *Game) doCastFloatingIsland(yield coroutine.YieldFunc, player *playerlib.Player, tileX int, tileY int) {
+    update := func (x int, y int, frame int) {
+        if frame == 5 {
+            overworldUnit := units.MakeOverworldUnitFromUnit(units.FloatingIsland, tileX, tileY, game.CurrentMap().Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+            player.AddUnit(overworldUnit)
+            player.LiftFog(tileX, tileY, 1, game.Plane)
+        }
+    }
+
+    game.doCastOnMap(yield, tileX, tileY, 1, false, 29, update)
 }

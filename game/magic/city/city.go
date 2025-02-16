@@ -868,6 +868,11 @@ func (city *City) InteracialUnrest() float64 {
 }
 
 func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
+
+    if city.HasEnchantment(data.CityEnchantmentStreamOfLife) {
+        return 0
+    }
+
     unrestPercent := float64(0)
 
     // unrest percent from taxes
@@ -1008,8 +1013,6 @@ func (city *City) PopulationGrowthRate() int {
         base += int(2.5 * float32(city.MaximumCitySize()) / 10) * 10
     }
 
-    // FIXME: Add Stream of Life
-
     if city.ProducingBuilding == buildinglib.BuildingHousing {
         bonus := 50
         if city.Population > 1 {
@@ -1025,6 +1028,10 @@ func (city *City) PopulationGrowthRate() int {
         }
 
         base += bonus
+    }
+
+    if city.HasEnchantment(data.CityEnchantmentStreamOfLife) {
+        base *= 2
     }
 
     if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
@@ -1428,6 +1435,10 @@ func (city *City) GrowOutpost() CityEvent {
 
     growChance := 0.01 * float64(city.MaximumCitySize()) + growRaceBonus / 100.0 + growTerrainChance + growSpellChance
 
+    if city.HasEnchantment(data.CityEnchantmentStreamOfLife) {
+        growChance += 0.1
+    }
+
     shrinkSpellChance := 0.0
 
     // FIXME: take global enchantments into account for shrinkage
@@ -1492,6 +1503,7 @@ func (city *City) GetWeaponBonus() data.WeaponBonus {
 // do all the stuff needed per turn
 // increase population, add production, add food/money, etc
 func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) []CityEvent {
+    // FIXME: heal all units if StreamOfLife active
     var cityEvents []CityEvent
     if city.Outpost {
         event := city.GrowOutpost()
@@ -1552,7 +1564,6 @@ func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) 
         if city.Population < 1000 {
             cityEvents = append(cityEvents, &CityEventCityAbandoned{})
         }
-
     }
 
     if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {

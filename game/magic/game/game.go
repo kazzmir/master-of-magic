@@ -643,8 +643,10 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         PurifyWorkMyrror: make(map[image.Point]float64),
     }
 
-    game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, game)
-    game.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneMyrror, game)
+    planeTowers := maplib.GeneratePlaneTowerPositions(settings.LandSize, 6)
+
+    game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, game, planeTowers)
+    game.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneMyrror, game, planeTowers)
 
     game.HudUI = game.MakeHudUI()
     game.Drawer = func(screen *ebiten.Image, game *Game){
@@ -675,19 +677,21 @@ func (game *Game) UpdateImages() {
     }
 }
 
-func (game *Game) FindCity(x int, y int, plane data.Plane) *citylib.City {
+// return the city and its owner
+func (game *Game) FindCity(x int, y int, plane data.Plane) (*citylib.City, *playerlib.Player) {
     for _, player := range game.Players {
         city := player.FindCity(x, y, plane)
         if city != nil {
-            return city
+            return city, player
         }
     }
 
-    return nil
+    return nil, nil
 }
 
 func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
-    return game.FindCity(x, y, plane) != nil
+    city, _ := game.FindCity(x, y, plane)
+    return city != nil
 }
 
 func (game *Game) NearCity(point image.Point, squares int, plane data.Plane) bool {
@@ -3818,7 +3822,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                 enemyStack := otherPlayer.FindStack(tileX, tileY, game.Plane)
                                 if enemyStack != nil {
                                     quit := false
-                                    clicked := func(){
+                                    clicked := func(unit unitview.UnitView){
                                         quit = true
                                     }
 
@@ -4322,6 +4326,15 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
         mapUse.RemoveEncounter(x, y)
 
         game.createTreasure(encounter.Type, encounter.Budget, player)
+
+        // defeating a plane tower also removes the tower from the other plane
+        if encounter.Type == maplib.EncounterTypePlaneTower {
+            mapUse.SetPlaneTower(x, y)
+            otherMap := game.GetMap(mapUse.Plane.Opposite())
+            otherMap.RemoveEncounter(x, y)
+            otherMap.SetPlaneTower(x, y)
+        }
+
     } else {
         var remaining []units.Unit
         for index := range enemies {
@@ -4695,7 +4708,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             if item != nil {
                 showHeroNotice = true
                 select {
-                    case game.Events <- &GameEventVault{CreatedArtifact: item}:
+                    case game.Events <- &GameEventVault{CreatedArtifact: item, Player: player}:
                     default:
                 }
             }
@@ -4729,9 +4742,15 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             if dead {
                 player.RemoveUnit(unit)
 
-                if unit.IsHero() && player.IsHuman() {
+                if unit.IsHero() {
                     hero := unit.(*herolib.Hero)
-                    distributeEquipment(player, hero)
+                    if player.IsHuman() {
+                        distributeEquipment(player, hero)
+                    }
+                    // FIXME: what happens with the equipment in case of non-human players?
+                    for index := range hero.Equipment {
+                        hero.Equipment[index] = nil
+                    }
                 }
             }
         }
@@ -5195,6 +5214,14 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
         for _, unit := range stack.Units() {
             if unit.GetBusy() == units.BusyStatusBuildRoad {
                 engineerCount += 1
+
+                if unit.GetRace() == data.RaceDwarf {
+                    engineerCount += 1
+                }
+
+                if unit.HasEnchantment(data.UnitEnchantmentEndurance) {
+                    engineerCount += 1
+                }
             }
         }
 
@@ -5356,10 +5383,29 @@ func (game *Game) DoPurify(player *playerlib.Player) {
     }
 }
 
+func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
+    return slices.ContainsFunc(game.Players, func (player *playerlib.Player) bool {
+        return player.GlobalEnchantments.Contains(enchantment)
+    })
+}
+
 func (game *Game) SwitchPlane() {
     switch game.Plane {
         case data.PlaneArcanus: game.Plane = data.PlaneMyrror
         case data.PlaneMyrror: game.Plane = data.PlaneArcanus
+    }
+
+    // no switching planes if the global enchantment planar seal is in effect
+    if !game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
+        stack := game.Players[0].SelectedStack
+
+        if stack != nil {
+            // FIXME: also allow switching planes if the stack has planar travel
+            if game.CurrentMap().HasOpenTower(stack.X(), stack.Y()) {
+                stack.SetPlane(game.Plane)
+                game.Players[0].UpdateFogVisibility()
+            }
+        }
     }
 }
 
@@ -5616,7 +5662,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             }
 
                             x, y := options.GeoM.Apply(float64(4 * data.ScreenScale), float64(19 * data.ScreenScale))
-                            vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthLength), float32(y), 1, useColor, false)
+                            vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthLength), float32(y), float32(data.ScreenScale), useColor, false)
                         }
 
                         silverBadge := 51
@@ -6337,7 +6383,24 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
         enchantment.City.RemoveEnchantment(enchantment.Enchantment.Enchantment, enchantment.Enchantment.Owner)
     }
 
-    // FIXME: dissipate unit enchantments
+    var enchantedUnits []units.StackUnit
+    for _, unit := range player.Units {
+        if len(unit.GetEnchantments()) > 0 {
+            enchantedUnits = append(enchantedUnits, unit)
+        }
+    }
+
+    for len(enchantedUnits) > 0 && isManaIssue() {
+        unit := enchantedUnits[rand.N(len(enchantedUnits))]
+        enchantments := unit.GetEnchantments()
+        enchantment := enchantments[rand.N(len(enchantments))]
+        unit.RemoveEnchantment(enchantment)
+        if len(unit.GetEnchantments()) == 0 {
+            enchantedUnits = slices.DeleteFunc(enchantedUnits, func(u units.StackUnit) bool {
+                return u == unit
+            })
+        }
+    }
 }
 
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
@@ -6620,11 +6683,70 @@ func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (in
     return people, len(killedUnits), len(destroyedBuildings)
 }
 
-func (game *Game) doCallTheVoid(city *citylib.City) (int, int, int) {
-    // FIXME: destroy buildings with 50% chance, and a bunch of other effects
+// returns number of citizens killed, units killed, and buildings destroyed
+func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (int, int, int) {
     // https://masterofmagic.fandom.com/wiki/Call_the_Void
 
-    return 0, 0, 0
+    var destroyedBuildings []buildinglib.Building
+
+    for _, building := range city.Buildings.Values() {
+        if rand.N(2) == 0 {
+            destroyedBuildings = append(destroyedBuildings, building)
+            city.Buildings.Remove(building)
+        }
+    }
+
+    killedCitizens := 0
+    for range city.Citizens() - 1 {
+        if rand.N(2) == 0 {
+            killedCitizens += 1
+        }
+    }
+
+    city.Population -= killedCitizens * 1000
+
+    stack := player.FindStack(city.X, city.Y, city.Plane)
+    var garrison []units.StackUnit
+    killedUnits := 0
+    if stack != nil {
+        for _, unit := range stack.Units() {
+            // some units are immune
+            if unit.HasAbility(data.AbilityMagicImmunity) || unit.HasAbility(data.AbilityRegeneration) || unit.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                continue
+            }
+
+            if rand.N(2) == 0 {
+                unit.AdjustHealth(-10)
+                if unit.GetHealth() <= 0 {
+                    player.RemoveUnit(unit)
+                    killedUnits += 1
+                }
+            }
+        }
+
+        garrison = stack.Units()
+    }
+
+    city.ResetCitizens(garrison)
+
+    mapUse := game.GetMap(city.Plane)
+
+    // corrupt surrouding tiles
+    for dx := -2; dx <= 2; dx++ {
+        for dy := -2; dy <= 2; dy++ {
+            cx := mapUse.WrapX(city.X + dx)
+            cy := city.Y + dy
+            if cy < 0 || cy >= mapUse.Height() {
+                continue
+            }
+
+            if mapUse.GetTile(cx, cy).Tile.IsLand() && rand.N(2) == 0 {
+                mapUse.SetCorruption(cx, cy)
+            }
+        }
+    }
+
+    return killedCitizens, killedUnits, len(destroyedBuildings)
 }
 
 func (game *Game) ManaShortActive() bool {
@@ -6899,7 +7021,7 @@ func (game *Game) DoRandomEvents() {
 
                         city := choices[rand.N(len(choices))]
 
-                        people, units, buildings := game.doCallTheVoid(city)
+                        people, units, buildings := game.doCallTheVoid(city, target)
 
                         return MakeGreatMeteorEvent(game.TurnNumber, city.Name, people, units, buildings), nil
 

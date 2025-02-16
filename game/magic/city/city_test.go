@@ -374,6 +374,34 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
 
+    // Stream of Life
+    city.AddEnchantment(data.CityEnchantmentStreamOfLife, banner)
+    if city.FoodProductionRate() != 12 {
+        // 5 * 2 farmer + 0.2 * 10
+        test.Errorf("City FoodProductionRate is not correct: %v", city.FoodProductionRate())
+    }
+
+    if int(city.WorkProductionRate()) != int(math.Floor(15.75)) {
+        // (2 x (3 x 2 worker + 5 x 0.5 farmer) + 13.5 terrain) / 2 = 12.375
+        test.Errorf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
+    }
+
+    if city.GoldSurplus() != 23 {
+        // 2 x 8 taxation + 15.75/2 trade goods
+        test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
+    }
+
+    if city.ComputeUnrest(stack) != 0 {
+        // 0 stream of life
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+    }
+
+    if city.PopulationGrowthRate() != 127 {
+        // ((10 * (18 - 10 + 1) / 2 max city size and population + (2.5 * 18) rounded to 10s gaias blessing) * 2 stream of life) * 0.75 dark rituals
+        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
+    }
+    city.RemoveEnchantment(data.CityEnchantmentStreamOfLife, banner)  // enable unrest
+
     // Famine
     city.AddEnchantment(data.CityEnchantmentFamine, banner)
 

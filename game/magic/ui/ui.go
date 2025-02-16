@@ -405,7 +405,10 @@ func (ui *UI) StandardUpdate() {
             }
 
             if !ui.Disabled && leftClick && !elementLeftClicked {
-                elementLeftClicked = true
+                // if the element is interested in left click at all
+                if element.LeftClick != nil || element.LeftClickRelease != nil || element.DoubleLeftClick != nil {
+                    elementLeftClicked = true
+                }
                 if element.LeftClick != nil {
                     if element.PlaySoundLeftClick {
                         ui.PlayStandardSound()

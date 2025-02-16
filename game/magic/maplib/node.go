@@ -160,10 +160,10 @@ func computeNatureNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
     const (
         None Enemy = iota
         WarBear
-        Sprite
+        Sprites
         EarthElemental
-        Spiders
-        Cockatrice
+        GiantSpiders
+        Cockatrices
         Basilisk
         StoneGiant
         Gorgons
@@ -175,10 +175,10 @@ func computeNatureNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
     makeUnit := func(enemy Enemy) units.Unit {
         switch enemy {
             case WarBear: return units.WarBear
-            case Sprite: return units.Sprite
+            case Sprites: return units.Sprites
             case EarthElemental: return units.EarthElemental
-            case Spiders: return units.GiantSpider
-            case Cockatrice: return units.Cockatrice
+            case GiantSpiders: return units.GiantSpiders
+            case Cockatrices: return units.Cockatrices
             case Basilisk: return units.Basilisk
             case StoneGiant: return units.StoneGiant
             case Gorgons: return units.Gorgon
@@ -193,10 +193,10 @@ func computeNatureNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
     enemyCosts := map[Enemy]int{
         None: 0,
         WarBear: units.WarBear.CastingCost,
-        Sprite: units.Sprite.CastingCost,
+        Sprites: units.Sprites.CastingCost,
         EarthElemental: units.EarthElemental.CastingCost,
-        Spiders: units.GiantSpider.CastingCost,
-        Cockatrice: units.Cockatrice.CastingCost,
+        GiantSpiders: units.GiantSpiders.CastingCost,
+        Cockatrices: units.Cockatrices.CastingCost,
         Basilisk: units.Basilisk.CastingCost,
         StoneGiant: units.StoneGiant.CastingCost,
         Gorgons: units.Gorgon.CastingCost,
@@ -261,7 +261,7 @@ func computeDeathNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
         Werewolves
         ShadowDemons
         Wraiths
-        DeathKnight
+        DeathKnights
         DemonLord
     )
 
@@ -273,9 +273,9 @@ func computeDeathNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
             case Demons: return units.Demon
             case NightStalker: return units.NightStalker
             case Werewolves: return units.WereWolf
-            case ShadowDemons: return units.ShadowDemon
+            case ShadowDemons: return units.ShadowDemons
             case Wraiths: return units.Wraith
-            case DeathKnight: return units.DeathKnight
+            case DeathKnights: return units.DeathKnights
             case DemonLord: return units.DemonLord
         }
 
@@ -290,9 +290,9 @@ func computeDeathNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
         Demons: units.Demon.CastingCost,
         NightStalker: units.NightStalker.CastingCost,
         Werewolves: units.WereWolf.CastingCost,
-        ShadowDemons: units.ShadowDemon.CastingCost,
+        ShadowDemons: units.ShadowDemons.CastingCost,
         Wraiths: units.Wraith.CastingCost,
-        DeathKnight: units.DeathKnight.CastingCost,
+        DeathKnights: units.DeathKnights.CastingCost,
         DemonLord: units.DemonLord.CastingCost,
     }
 

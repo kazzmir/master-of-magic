@@ -273,7 +273,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
 }
 
 // list of units that shows up when you right click on an enemy unit stack
-func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, title string, clicked func()) []*uilib.UIElement {
+func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, title string, clicked func(UnitView)) []*uilib.UIElement {
     imageCache := util.MakeImageCache(cache)
 
     titleHeight := 22
@@ -316,7 +316,7 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
     mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], brightPalette)
 
     // title bar + 1 for each unit
-    height := titleHeight + unitHeight * len(stack)
+    height := titleHeight + 1 + unitHeight * len(stack)
 
     fullBackground, _ := imageCache.GetImage("unitview.lbx", 28, 0)
 
@@ -345,14 +345,14 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
     moveImage, _ := imageCache.GetImageTransform("unitview.lbx", 24, 0, "cut1", cut1PixelFunc)
 
     rect := util.ImageRect(posX, posY, background)
-    element := &uilib.UIElement{
+    elements = append(elements, &uilib.UIElement{
         Rect: rect,
         Layer: 1,
         LeftClick: func(this *uilib.UIElement){
             getAlpha = ui.MakeFadeOut(7)
             ui.AddDelay(7, func(){
                 ui.RemoveElements(elements)
-                clicked()
+                clicked(nil)
             })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -374,18 +374,45 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(posX), float64(posY + titleHeight * data.ScreenScale))
+        },
 
-            var unitOptions ebiten.DrawImageOptions
-            for _, unit := range stack {
+    })
+
+    for i, unit := range stack {
+        x1 := posX
+        y1 := posY + (titleHeight + unitHeight * i) * data.ScreenScale
+        x2 := posX + background.Bounds().Dx()
+        y2 := y1 + unitHeight * data.ScreenScale
+
+        rect := image.Rect(x1, y1, x2, y2)
+        elements = append(elements, &uilib.UIElement{
+            Rect: rect,
+            Layer: 1,
+            Order: 1,
+            LeftClick: func(this *uilib.UIElement){
+                getAlpha = ui.MakeFadeOut(7)
+                ui.AddDelay(7, func(){
+                    ui.RemoveElements(elements)
+                    clicked(unit)
+                })
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(getAlpha())
+                options.GeoM.Reset()
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+
+                var unitOptions ebiten.DrawImageOptions
                 banner := unit.GetBanner()
+
                 unitBack, err := units.GetUnitBackgroundImage(unit.GetBanner(), &imageCache)
                 if err != nil {
-                    continue
+                    return
                 }
 
                 unitImage, err := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
                 if err != nil {
-                    continue
+                    return
                 }
 
                 var x, y float64
@@ -395,6 +422,12 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 screen.DrawImage(unitBack, &unitOptions)
                 unitOptions.GeoM.Translate(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
                 screen.DrawImage(unitImage, &unitOptions)
+
+                for _, enchantment := range unit.GetEnchantments() {
+                    x, y := unitOptions.GeoM.Apply(0, 0)
+                    util.DrawOutline(screen, &imageCache, unitImage, x, y, options.ColorScale, ui.Counter/10, enchantment.Color())
+                    break
+                }
 
                 x, y = unitOptions.GeoM.Apply(float64(unitBack.Bounds().Dx() + 2 * data.ScreenScale), float64(5 * data.ScreenScale))
                 mediumFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, unit.GetName())
@@ -436,11 +469,9 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 screen.DrawImage(moveImage, &unitOptions)
 
                 options.GeoM.Translate(0, float64(unitHeight * data.ScreenScale))
-            }
-        },
+            },
+        })
     }
-
-    elements = append(elements, element)
 
     return elements
 }

@@ -1543,7 +1543,7 @@ var Wraith Unit = Unit{
     CastingCost: 500,
 }
 
-var ShadowDemon Unit = Unit{
+var ShadowDemons Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 51,
     CombatLbxFile: "figure12.lbx",
@@ -1580,7 +1580,7 @@ var ShadowDemon Unit = Unit{
     CastingCost: 325,
 }
 
-var DeathKnight Unit = Unit{
+var DeathKnights Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 52,
     CombatLbxFile: "figure12.lbx",
@@ -1818,7 +1818,7 @@ var WarBear Unit = Unit{
     CastingCost: 70,
 }
 
-var Sprite Unit = Unit{
+var Sprites Unit = Unit{
     LbxFile: "units2.lbx",
     Name: "Sprites",
     Index: 60,
@@ -1845,10 +1845,10 @@ var Sprite Unit = Unit{
     CastingCost: 100,
 }
 
-var Cockatrice Unit = Unit{
+var Cockatrices Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 61,
-    Name: "Cockatrice",
+    Name: "Cockatrices",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 8,
     UpkeepMana: 8,
@@ -1888,10 +1888,10 @@ var Basilisk Unit = Unit{
     CastingCost: 325,
 }
 
-var GiantSpider Unit = Unit{
+var GiantSpiders Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 63,
-    Name: "Giant Spider",
+    Name: "Giant Spiders",
     CombatLbxFile: "figure13.lbx",
     CombatIndex: 24,
     Realm: data.NatureMagic,
@@ -5179,8 +5179,8 @@ var AllUnits []Unit = []Unit{
     WereWolf,
     Demon,
     Wraith,
-    ShadowDemon,
-    DeathKnight,
+    ShadowDemons,
+    DeathKnights,
     DemonLord,
     Zombie,
     Unicorn,
@@ -5188,10 +5188,10 @@ var AllUnits []Unit = []Unit{
     Angel,
     ArchAngel,
     WarBear,
-    Sprite,
-    Cockatrice,
+    Sprites,
+    Cockatrices,
     Basilisk,
-    GiantSpider,
+    GiantSpiders,
     StoneGiant,
     Colossus,
     Gorgon,

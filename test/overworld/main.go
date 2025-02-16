@@ -122,6 +122,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     // log.Printf("City at %v, %v", x, y)
 
     player.LiftFog(x, y, 30, data.PlaneArcanus)
+    player.LiftFog(x, y, 30, data.PlaneMyrror)
 
     drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
 
@@ -987,13 +988,65 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
+    // summoning
+    player.KnownSpells.AddSpell(allSpells.FindByName("Guardian Spirit"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Unicorns"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Incarnation"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Angel"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Arch Angel"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Floating Island"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Nagas"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Storm Giant"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Djinn"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Sky Drake"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Phantom Beast"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Phantom Warriors"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Air Elemental"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("War Bears"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Sprites"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Giant Spiders"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Cockatrices"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Basilisk"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Stone Giant"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Gorgons"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Behemoth"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Colossus"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Great Wyrm"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Earth Elemental"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Skeletons"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Ghouls"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Night Stalker"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Shadow Demons"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Wraiths"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Death Knights"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Demon Lord"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Hell Hounds"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Fire Giant"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Gargoyles"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Doom Bat"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Chimeras"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Chaos Spawn"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Efreet"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Hydra"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Great Drake"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Fire Elemental"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Summon Champion"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Summon Hero"))
+
+    // special spells
     player.KnownSpells.AddSpell(allSpells.FindByName("Earth Lore"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Ice Bolt"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Item"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Create Artifact"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Wraiths"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Road"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Raise Volcano"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Corruption"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Warp Node"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Call The Void"))
+
+    // city spells
     player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Darkness"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature's Eye"))
@@ -1005,15 +1058,36 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Pestilence"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Evil Presence"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Stream of Life"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Summon Hero"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Summon Champion"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Road"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Raise Volcano"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Corruption"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Warp Node"))
+
+    // unit enchantments
+    player.KnownSpells.AddSpell(allSpells.FindByName("Bless"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Heroism"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Lionheart"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Cloak of Fear"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Chaos Channels"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Holy Armor"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Holy Weapon"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Invulnerability"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Planar Travel"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Iron Skin"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Path Finding"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Regeneration"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Stone Skin"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Water Walking"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Guardian Wind"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Invisiblity"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Magic Immunity"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Spell Lock"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Wind Walking"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Eldritch Weapon"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Flame Blade"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Black Channels"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Wraith Form"))
 
     x, y, _ := game.FindValidCityLocation(game.Plane)
 
@@ -1029,6 +1103,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
+    city.AddBuilding(buildinglib.BuildingFortress)
     city.AddBuilding(buildinglib.BuildingShrine)
     city.AddBuilding(buildinglib.BuildingGranary)
 
@@ -1037,7 +1112,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.AddCity(city)
 
     player.Gold = 1000
-    player.Mana = 1000
+    player.Mana = 10000
 
     player.LiftFog(x, y, 4, data.PlaneArcanus)
 
@@ -1061,13 +1136,17 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city2.Plane = data.PlaneArcanus
     city2.ProducingBuilding = buildinglib.BuildingHousing
     city2.ProducingUnit = units.UnitNone
+    city2.AddBuilding(buildinglib.BuildingShrine)
+    city2.AddBuilding(buildinglib.BuildingGranary)
+    city2.AddBuilding(buildinglib.BuildingBank)
     city2.Farmers = 10
     city2.Workers = 4
     city2.Wall = false
     city2.ResetCitizens(nil)
     enemy.AddCity(city2)
 
-    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y, data.PlaneArcanus, wizard.Banner, nil))
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y, data.PlaneArcanus, enemy.Wizard.Banner, nil))
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x + 2, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, nil))
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.DragonTurtle, x + 2, y, data.PlaneArcanus, wizard.Banner, nil))
     player.LiftFog(x, y, 2, data.PlaneArcanus)
@@ -3173,7 +3252,7 @@ func createScenario37(cache *lbx.LbxCache) *gamelib.Game {
     player.Fame = 10
     player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Cockatrice, node.X, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Cockatrices, node.X, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
     unit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.SkyDrake, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
     stack := player.FindStackByUnit(unit)
     player.SetSelectedStack(stack)
@@ -3714,7 +3793,7 @@ func NewEngine(scenario int) (*Engine, error) {
         LbxCache: cache,
         Coroutine: coroutine.MakeCoroutine(run),
         Game: game,
-        Console: console.MakeConsole(),
+        Console: console.MakeConsole(game),
     }, nil
 }
 

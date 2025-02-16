@@ -149,6 +149,28 @@ const (
     UnitEnchantmentPathFinding
     UnitEnchantmentFlight
     UnitEnchantmentChaosChannelsDemonWings
+    UnitEnchantmentChaosChannelsDemonSkin
+    UnitEnchantmentChaosChannelsFireBreath
+    UnitEnchantmentEndurance
+    UnitEnchantmentHeroism
+    UnitEnchantmentHolyArmor
+    UnitEnchantmentHolyWeapon
+    UnitEnchantmentInvulnerability
+    UnitEnchantmentPlanarTravel
+    UnitEnchantmentIronSkin
+    UnitEnchantmentRegeneration
+    UnitEnchantmentStoneSkin
+    UnitEnchantmentWaterWalking
+    UnitEnchantmentGuardianWind
+    UnitEnchantmentInvisibility
+    UnitEnchantmentMagicImmunity
+    UnitEnchantmentSpellLock
+    UnitEnchantmentWindWalking
+    UnitEnchantmentEldritchWeapon
+    UnitEnchantmentFlameBlade
+    UnitEnchantmentBerserk
+    UnitEnchantmentBlackChannels
+    UnitEnchantmentWraithForm
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -169,47 +191,96 @@ func GetMagicColor(magic MagicType) color.Color {
     return color.RGBA{}
 }
 
-/*
-Endurance	Life
-Heroism	Life
-Holy Armor	Life
-Holy Weapon	Life
-Invulnerability	Life
-Planar Travel	Life
-Iron Skin	Nature
-Regeneration	Nature
-Stone Skin	Nature
-Water Walking	Nature
-Guardian Wind	Sorcery
-Invisibility	Sorcery
-Magic Immunity	Sorcery
-Spell Lock	Sorcery
-Wind Walking	Sorcery
-Eldritch Weapon	Chaos
-Flame Blade	Chaos
-Berserk	Death
-Black Channels	Death
-Wraith Form	Death
- */
-
 func (enchantment UnitEnchantment) Color() color.Color {
     switch enchantment {
+        case UnitEnchantmentIronSkin: return natureColor
         case UnitEnchantmentGiantStrength: return natureColor
-        case UnitEnchantmentLionHeart: return lifeColor
-        case UnitEnchantmentHaste: return sorceryColor
-        case UnitEnchantmentImmolation: return chaosColor
         case UnitEnchantmentResistElements: return natureColor
-        case UnitEnchantmentResistMagic: return sorceryColor
         case UnitEnchantmentElementalArmor: return natureColor
-        case UnitEnchantmentBless: return lifeColor
-        case UnitEnchantmentRighteousness: return lifeColor
-        case UnitEnchantmentCloakOfFear: return deathColor
-        case UnitEnchantmentTrueSight: return lifeColor
+        case UnitEnchantmentPathFinding: return natureColor
+        case UnitEnchantmentRegeneration: return natureColor
+        case UnitEnchantmentStoneSkin: return natureColor
+        case UnitEnchantmentWaterWalking: return natureColor
+
         case UnitEnchantmentFlight: return sorceryColor
+        case UnitEnchantmentHaste: return sorceryColor
+        case UnitEnchantmentResistMagic: return sorceryColor
+        case UnitEnchantmentGuardianWind: return sorceryColor
+        case UnitEnchantmentInvisibility: return sorceryColor
+        case UnitEnchantmentMagicImmunity: return sorceryColor
+        case UnitEnchantmentSpellLock: return sorceryColor
+        case UnitEnchantmentWindWalking: return sorceryColor
+
+        case UnitEnchantmentCloakOfFear: return deathColor
+        case UnitEnchantmentBerserk: return deathColor
+        case UnitEnchantmentBlackChannels: return deathColor
+        case UnitEnchantmentWraithForm: return deathColor
+
+        case UnitEnchantmentImmolation: return chaosColor
         case UnitEnchantmentChaosChannelsDemonWings: return chaosColor
+        case UnitEnchantmentChaosChannelsDemonSkin: return chaosColor
+        case UnitEnchantmentChaosChannelsFireBreath: return chaosColor
+        case UnitEnchantmentEldritchWeapon: return chaosColor
+        case UnitEnchantmentFlameBlade: return chaosColor
+
+        case UnitEnchantmentBless: return lifeColor
+        case UnitEnchantmentLionHeart: return lifeColor
+        case UnitEnchantmentEndurance: return lifeColor
+        case UnitEnchantmentHeroism: return lifeColor
+        case UnitEnchantmentTrueSight: return lifeColor
+        case UnitEnchantmentHolyArmor: return lifeColor
+        case UnitEnchantmentRighteousness: return lifeColor
+        case UnitEnchantmentHolyWeapon: return lifeColor
+        case UnitEnchantmentInvulnerability: return lifeColor
+        case UnitEnchantmentPlanarTravel: return lifeColor
     }
 
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
+}
+
+func (enchantment UnitEnchantment) UpkeepMana() int {
+    switch enchantment {
+        case UnitEnchantmentGiantStrength: return 1
+        case UnitEnchantmentLionHeart: return 4
+        // combat only
+        case UnitEnchantmentHaste: return 0
+        case UnitEnchantmentImmolation: return 2
+        case UnitEnchantmentResistElements: return 1
+        case UnitEnchantmentResistMagic: return 1
+        case UnitEnchantmentElementalArmor: return 5
+        case UnitEnchantmentBless: return 1
+        case UnitEnchantmentRighteousness: return 2
+        case UnitEnchantmentCloakOfFear: return 1
+        case UnitEnchantmentTrueSight: return 2
+        case UnitEnchantmentFlight: return 3
+        case UnitEnchantmentChaosChannelsDemonWings: return 0
+        case UnitEnchantmentChaosChannelsDemonSkin: return 0
+        case UnitEnchantmentChaosChannelsFireBreath: return 0
+        case UnitEnchantmentEndurance: return 1
+        case UnitEnchantmentHeroism: return 2
+        case UnitEnchantmentHolyArmor: return 2
+        case UnitEnchantmentHolyWeapon: return 1
+        case UnitEnchantmentInvulnerability: return 5
+        case UnitEnchantmentPlanarTravel: return 5
+        case UnitEnchantmentIronSkin: return 5
+        case UnitEnchantmentPathFinding: return 1
+        case UnitEnchantmentRegeneration: return 10
+        case UnitEnchantmentStoneSkin: return 1
+        case UnitEnchantmentWaterWalking: return 1
+        case UnitEnchantmentGuardianWind: return 2
+        case UnitEnchantmentInvisibility: return 10
+        case UnitEnchantmentMagicImmunity: return 5
+        case UnitEnchantmentSpellLock: return 1
+        case UnitEnchantmentWindWalking: return 10
+        case UnitEnchantmentEldritchWeapon: return 1
+        case UnitEnchantmentFlameBlade: return 2
+        // combat only
+        case UnitEnchantmentBerserk: return 0
+        case UnitEnchantmentBlackChannels: return 1
+        case UnitEnchantmentWraithForm: return 3
+    }
+
+    return 0
 }
 
 func (enchantment UnitEnchantment) Name() string {
@@ -227,6 +298,29 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentTrueSight: return "True Sight"
         case UnitEnchantmentFlight: return "Flight"
         case UnitEnchantmentChaosChannelsDemonWings: return "Demon Wings"
+        case UnitEnchantmentChaosChannelsDemonSkin: return "Demon Skin"
+        case UnitEnchantmentChaosChannelsFireBreath: return "Fire Breath"
+        case UnitEnchantmentEndurance: return "Endurance"
+        case UnitEnchantmentHeroism: return "Heroism"
+        case UnitEnchantmentHolyArmor: return "Holy Armor"
+        case UnitEnchantmentHolyWeapon: return "Holy Weapon"
+        case UnitEnchantmentInvulnerability: return "Invulnerability"
+        case UnitEnchantmentPlanarTravel: return "Planar Travel"
+        case UnitEnchantmentIronSkin: return "Iron Skin"
+        case UnitEnchantmentPathFinding: return "Path Finding"
+        case UnitEnchantmentRegeneration: return "Regeneration"
+        case UnitEnchantmentStoneSkin: return "Stone Skin"
+        case UnitEnchantmentWaterWalking: return "Water Walking"
+        case UnitEnchantmentGuardianWind: return "Guardian Wind"
+        case UnitEnchantmentInvisibility: return "Invisibility"
+        case UnitEnchantmentMagicImmunity: return "Magic Immunity"
+        case UnitEnchantmentSpellLock: return "Spell Lock"
+        case UnitEnchantmentWindWalking: return "Wind Walking"
+        case UnitEnchantmentEldritchWeapon: return "Eldritch Weapon"
+        case UnitEnchantmentFlameBlade: return "Flame Blade"
+        case UnitEnchantmentBerserk: return "Berserk"
+        case UnitEnchantmentBlackChannels: return "Black Channels"
+        case UnitEnchantmentWraithForm: return "Wraith Form"
     }
 
     return ""
@@ -247,6 +341,29 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentTrueSight: return "special.lbx"
         case UnitEnchantmentFlight: return "special.lbx"
         case UnitEnchantmentChaosChannelsDemonWings: return "special.lbx"
+        case UnitEnchantmentChaosChannelsDemonSkin: return "special.lbx"
+        case UnitEnchantmentChaosChannelsFireBreath: return "special.lbx"
+        case UnitEnchantmentEndurance: return "special.lbx"
+        case UnitEnchantmentHeroism: return "special.lbx"
+        case UnitEnchantmentHolyArmor: return "special.lbx"
+        case UnitEnchantmentHolyWeapon: return "special.lbx"
+        case UnitEnchantmentInvulnerability: return "special.lbx"
+        case UnitEnchantmentPlanarTravel: return "special.lbx"
+        case UnitEnchantmentIronSkin: return "special.lbx"
+        case UnitEnchantmentPathFinding: return "special.lbx"
+        case UnitEnchantmentRegeneration: return "special.lbx"
+        case UnitEnchantmentStoneSkin: return "special.lbx"
+        case UnitEnchantmentWaterWalking: return "special.lbx"
+        case UnitEnchantmentGuardianWind: return "special2.lbx"
+        case UnitEnchantmentInvisibility: return "special.lbx"
+        case UnitEnchantmentMagicImmunity: return "special.lbx"
+        case UnitEnchantmentSpellLock: return "special2.lbx"
+        case UnitEnchantmentWindWalking: return "special.lbx"
+        case UnitEnchantmentEldritchWeapon: return "special.lbx"
+        case UnitEnchantmentFlameBlade: return "special.lbx"
+        case UnitEnchantmentBerserk: return "special2.lbx"
+        case UnitEnchantmentBlackChannels: return "special.lbx"
+        case UnitEnchantmentWraithForm: return "special.lbx"
     }
 
     return ""
@@ -266,7 +383,84 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentCloakOfFear: return 21
         case UnitEnchantmentTrueSight: return 85
         case UnitEnchantmentFlight: return 80
+        case UnitEnchantmentChaosChannelsDemonSkin: return 62
         case UnitEnchantmentChaosChannelsDemonWings: return 63
+        case UnitEnchantmentChaosChannelsFireBreath: return 64
+        case UnitEnchantmentEndurance: return 76
+        case UnitEnchantmentHeroism: return 87
+        case UnitEnchantmentHolyArmor: return 92
+        case UnitEnchantmentHolyWeapon: return 86
+        case UnitEnchantmentInvulnerability: return 94
+        case UnitEnchantmentPlanarTravel: return 91
+        case UnitEnchantmentIronSkin: return 75
+        case UnitEnchantmentPathFinding: return 70
+        case UnitEnchantmentRegeneration: return 69
+        case UnitEnchantmentStoneSkin: return 74
+        case UnitEnchantmentWaterWalking: return 71
+        case UnitEnchantmentGuardianWind: return 7
+        case UnitEnchantmentInvisibility: return 78
+        case UnitEnchantmentMagicImmunity: return 82
+        case UnitEnchantmentSpellLock: return 8
+        case UnitEnchantmentWindWalking: return 79
+        case UnitEnchantmentEldritchWeapon: return 84
+        case UnitEnchantmentFlameBlade: return 83
+        case UnitEnchantmentBerserk: return 17
+        case UnitEnchantmentBlackChannels: return 67
+        case UnitEnchantmentWraithForm: return 68
+    }
+
+    return -1
+}
+
+// the index in specfx.lbx for when this enchantment is casted
+func (enchantment UnitEnchantment) CastAnimationIndex() int {
+    switch enchantment {
+        // nature
+        // FIXME: verify
+        case UnitEnchantmentGiantStrength: return 0
+        case UnitEnchantmentElementalArmor: return 0
+        case UnitEnchantmentResistElements: return 0
+        case UnitEnchantmentIronSkin: return 0
+        case UnitEnchantmentPathFinding: return 0
+        case UnitEnchantmentRegeneration: return 0
+        case UnitEnchantmentStoneSkin: return 0
+        case UnitEnchantmentWaterWalking: return 0
+
+        // death
+        case UnitEnchantmentCloakOfFear: return 4
+        case UnitEnchantmentBerserk: return 4
+        case UnitEnchantmentBlackChannels: return 4
+        case UnitEnchantmentWraithForm: return 4
+
+        // chaos
+        case UnitEnchantmentImmolation: return 2
+        case UnitEnchantmentChaosChannelsDemonSkin: return 2
+        case UnitEnchantmentChaosChannelsDemonWings: return 2
+        case UnitEnchantmentChaosChannelsFireBreath: return 2
+        case UnitEnchantmentEldritchWeapon: return 2
+        case UnitEnchantmentFlameBlade: return 2
+
+        // sorcery
+        case UnitEnchantmentHaste: return 1
+        case UnitEnchantmentFlight: return 1
+        case UnitEnchantmentResistMagic: return 1
+        case UnitEnchantmentGuardianWind: return 1
+        case UnitEnchantmentInvisibility: return 1
+        case UnitEnchantmentMagicImmunity: return 1
+        case UnitEnchantmentSpellLock: return 1
+        case UnitEnchantmentWindWalking: return 1
+
+        // life
+        case UnitEnchantmentBless: return 3
+        case UnitEnchantmentHeroism: return 3
+        case UnitEnchantmentLionHeart: return 3
+        case UnitEnchantmentEndurance: return 3
+        case UnitEnchantmentTrueSight: return 3
+        case UnitEnchantmentRighteousness: return 3
+        case UnitEnchantmentHolyArmor: return 3
+        case UnitEnchantmentHolyWeapon: return 3
+        case UnitEnchantmentInvulnerability: return 3
+        case UnitEnchantmentPlanarTravel: return 3
     }
 
     return -1
