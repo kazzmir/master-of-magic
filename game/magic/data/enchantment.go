@@ -306,24 +306,31 @@ func (enchantment UnitEnchantment) LbxIndex() int {
 // the index in specfx.lbx for when this enchantment is casted
 func (enchantment UnitEnchantment) CastAnimationIndex() int {
     switch enchantment {
+        // nature
         // FIXME: verify
         case UnitEnchantmentGiantStrength: return 45
-        /*
-        case UnitEnchantmentLionHeart: return 89
-        case UnitEnchantmentHaste: return 77
-        case UnitEnchantmentImmolation: return 32
-        case UnitEnchantmentResistElements: return 72
-        case UnitEnchantmentResistMagic: return 81
-        case UnitEnchantmentElementalArmor: return 73
-        case UnitEnchantmentRighteousness: return 93
-        case UnitEnchantmentCloakOfFear: return 21
-        case UnitEnchantmentTrueSight: return 85
-        case UnitEnchantmentFlight: return 80
-        case UnitEnchantmentChaosChannelsDemonWings: return 63
-        case UnitEnchantmentEndurance: return 76
-        */
+        case UnitEnchantmentElementalArmor: return 45
+        case UnitEnchantmentResistElements: return 45
+
+        // death
+        case UnitEnchantmentCloakOfFear: return 4
+
+        // chaos
+        case UnitEnchantmentImmolation: return 2
+        case UnitEnchantmentChaosChannelsDemonWings: return 2
+
+        // sorcery
+        case UnitEnchantmentHaste: return 0
+        case UnitEnchantmentFlight: return 0
+        case UnitEnchantmentResistMagic: return 0
+
+        // life
         case UnitEnchantmentBless: return 3
         case UnitEnchantmentHeroism: return 3
+        case UnitEnchantmentLionHeart: return 3
+        case UnitEnchantmentEndurance: return 3
+        case UnitEnchantmentTrueSight: return 3
+        case UnitEnchantmentRighteousness: return 3
     }
 
     return -1

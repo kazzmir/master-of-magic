@@ -186,25 +186,49 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHeroism)
         case "Giant Strength":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentGiantStrength)
+        case "Lionheart":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentLionHeart)
+        case "Haste":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHaste)
+        case "Immolation":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentImmolation)
+        case "Resist Elements":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentResistElements)
+        case "Resist Magic":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentResistMagic)
+        case "Elemental Armor":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentElementalArmor)
+        case "Righteousness":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentRighteousness)
+        case "Cloak of Fear":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentCloakOfFear)
+        case "True Sight":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentTrueSight)
+        case "Flight":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentFlight)
+        case "Chaos Channels":
+            choices := []data.UnitEnchantment{
+                data.UnitEnchantmentChaosChannelsDemonWings,
+            }
+            game.doCastUnitEnchantment(player, spell, choices[rand.N(len(choices))])
+
+            /*
+        case UnitEnchantmentEndurance: return lifeColor
+        case UnitEnchantmentHeroism: return lifeColor
+        */
+
 
         /*
 Holy Armor	
 Holy Weapon	
 Invulnerability
-Lionheart	
 Planar Travel
-Righteousness
-True Sight
-Elemental Armor	
 Iron Skin
 Path Finding
 Regeneration	
-Resist Elements	
 Stone Skin	
 Water Walking	
-Flight	
 Guardian Wind	
-Haste	
 Invisibility	
 Magic Immunity	
 Resist Magic	
@@ -212,10 +236,8 @@ Spell Lock
 Wind Walking	
 Eldritch Weapon	
 Flame Blade	
-Immolation	
 Berserk	
 Black Channels	
-Cloak of Fear
 Wraith Form
          */
             
