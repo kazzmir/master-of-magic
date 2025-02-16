@@ -206,7 +206,9 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentFlight)
         case "Chaos Channels":
             choices := []data.UnitEnchantment{
+                data.UnitEnchantmentChaosChannelsDemonSkin,
                 data.UnitEnchantmentChaosChannelsDemonWings,
+                data.UnitEnchantmentChaosChannelsFireBreath,
             }
             game.doCastUnitEnchantment(player, spell, choices[rand.N(len(choices))])
         case "Endurance":

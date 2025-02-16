@@ -149,6 +149,8 @@ const (
     UnitEnchantmentPathFinding
     UnitEnchantmentFlight
     UnitEnchantmentChaosChannelsDemonWings
+    UnitEnchantmentChaosChannelsDemonSkin
+    UnitEnchantmentChaosChannelsFireBreath
     UnitEnchantmentEndurance
     UnitEnchantmentHeroism
     UnitEnchantmentHolyArmor
@@ -216,6 +218,8 @@ func (enchantment UnitEnchantment) Color() color.Color {
 
         case UnitEnchantmentImmolation: return chaosColor
         case UnitEnchantmentChaosChannelsDemonWings: return chaosColor
+        case UnitEnchantmentChaosChannelsDemonSkin: return chaosColor
+        case UnitEnchantmentChaosChannelsFireBreath: return chaosColor
         case UnitEnchantmentEldritchWeapon: return chaosColor
         case UnitEnchantmentFlameBlade: return chaosColor
 
@@ -250,6 +254,8 @@ func (enchantment UnitEnchantment) UpkeepMana() int {
         case UnitEnchantmentTrueSight: return 2
         case UnitEnchantmentFlight: return 3
         case UnitEnchantmentChaosChannelsDemonWings: return 0
+        case UnitEnchantmentChaosChannelsDemonSkin: return 0
+        case UnitEnchantmentChaosChannelsFireBreath: return 0
         case UnitEnchantmentEndurance: return 1
         case UnitEnchantmentHeroism: return 2
         case UnitEnchantmentHolyArmor: return 2
@@ -292,6 +298,8 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentTrueSight: return "True Sight"
         case UnitEnchantmentFlight: return "Flight"
         case UnitEnchantmentChaosChannelsDemonWings: return "Demon Wings"
+        case UnitEnchantmentChaosChannelsDemonSkin: return "Demon Skin"
+        case UnitEnchantmentChaosChannelsFireBreath: return "Fire Breath"
         case UnitEnchantmentEndurance: return "Endurance"
         case UnitEnchantmentHeroism: return "Heroism"
         case UnitEnchantmentHolyArmor: return "Holy Armor"
@@ -333,6 +341,8 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentTrueSight: return "special.lbx"
         case UnitEnchantmentFlight: return "special.lbx"
         case UnitEnchantmentChaosChannelsDemonWings: return "special.lbx"
+        case UnitEnchantmentChaosChannelsDemonSkin: return "special.lbx"
+        case UnitEnchantmentChaosChannelsFireBreath: return "special.lbx"
         case UnitEnchantmentEndurance: return "special.lbx"
         case UnitEnchantmentHeroism: return "special.lbx"
         case UnitEnchantmentHolyArmor: return "special.lbx"
@@ -373,7 +383,9 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentCloakOfFear: return 21
         case UnitEnchantmentTrueSight: return 85
         case UnitEnchantmentFlight: return 80
+        case UnitEnchantmentChaosChannelsDemonSkin: return 62
         case UnitEnchantmentChaosChannelsDemonWings: return 63
+        case UnitEnchantmentChaosChannelsFireBreath: return 64
         case UnitEnchantmentEndurance: return 76
         case UnitEnchantmentHeroism: return 87
         case UnitEnchantmentHolyArmor: return 92
@@ -422,7 +434,9 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
 
         // chaos
         case UnitEnchantmentImmolation: return 2
+        case UnitEnchantmentChaosChannelsDemonSkin: return 2
         case UnitEnchantmentChaosChannelsDemonWings: return 2
+        case UnitEnchantmentChaosChannelsFireBreath: return 2
         case UnitEnchantmentEldritchWeapon: return 2
         case UnitEnchantmentFlameBlade: return 2
 
