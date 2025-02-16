@@ -227,9 +227,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentPathFinding)
         case "Regeneration":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentRegeneration)
+        case "Stone Skin":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentStoneSkin)
 
         /*
-Stone Skin	
 Water Walking	
 Guardian Wind	
 Invisibility	

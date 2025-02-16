@@ -157,6 +157,7 @@ const (
     UnitEnchantmentPlanarTravel
     UnitEnchantmentIronSkin
     UnitEnchantmentRegeneration
+    UnitEnchantmentStoneSkin
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -200,6 +201,7 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentElementalArmor: return natureColor
         case UnitEnchantmentPathFinding: return natureColor
         case UnitEnchantmentRegeneration: return natureColor
+        case UnitEnchantmentStoneSkin: return natureColor
 
         case UnitEnchantmentFlight: return sorceryColor
         case UnitEnchantmentHaste: return sorceryColor
@@ -250,6 +252,7 @@ func (enchantment UnitEnchantment) UpkeepMana() int {
         case UnitEnchantmentIronSkin: return 5
         case UnitEnchantmentPathFinding: return 1
         case UnitEnchantmentRegeneration: return 10
+        case UnitEnchantmentStoneSkin: return 1
     }
 
     return 0
@@ -279,6 +282,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentIronSkin: return "Iron Skin"
         case UnitEnchantmentPathFinding: return "Path Finding"
         case UnitEnchantmentRegeneration: return "Regeneration"
+        case UnitEnchantmentStoneSkin: return "Stone Skin"
     }
 
     return ""
@@ -308,6 +312,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentIronSkin: return "special.lbx"
         case UnitEnchantmentPathFinding: return "special.lbx"
         case UnitEnchantmentRegeneration: return "special.lbx"
+        case UnitEnchantmentStoneSkin: return "special.lbx"
     }
 
     return ""
@@ -337,6 +342,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentIronSkin: return 75
         case UnitEnchantmentPathFinding: return 70
         case UnitEnchantmentRegeneration: return 69
+        case UnitEnchantmentStoneSkin: return 74
     }
 
     return -1
@@ -353,6 +359,7 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
         case UnitEnchantmentIronSkin: return 45
         case UnitEnchantmentPathFinding: return 45
         case UnitEnchantmentRegeneration: return 45
+        case UnitEnchantmentStoneSkin: return 45
 
         // death
         case UnitEnchantmentCloakOfFear: return 4
