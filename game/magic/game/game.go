@@ -5401,14 +5401,40 @@ func (game *Game) SwitchPlane() {
 
         stack := player.SelectedStack
 
-        if stack != nil {
-            city := player.FindCity(stack.X(), stack.Y(), stack.Plane())
-            hasAstralGate := city != nil && city.HasEnchantment(data.CityEnchantmentAstralGate)
-
+        if stack != nil && stack.Plane() == game.Plane.Opposite() {
             // FIXME: also allow switching planes if the stack has planar travel
-            if game.CurrentMap().HasOpenTower(stack.X(), stack.Y()) || hasAstralGate {
+            if game.CurrentMap().HasOpenTower(stack.X(), stack.Y()) {
                 stack.SetPlane(game.Plane)
                 player.UpdateFogVisibility()
+            } else {
+                cityThisPlane := player.FindCity(stack.X(), stack.Y(), stack.Plane())
+                cityOppositePlane := player.FindCity(stack.X(), stack.Y(), stack.Plane().Opposite())
+                hasAstralGate := (cityThisPlane != nil && cityThisPlane.HasEnchantment(data.CityEnchantmentAstralGate)) ||
+                                 (cityOppositePlane != nil && cityOppositePlane.HasEnchantment(data.CityEnchantmentAstralGate))
+                if hasAstralGate {
+                    // FIXME: check if the stack can move to the tile on the other plane
+
+                    mapPlane := game.GetMap(stack.Plane().Opposite())
+
+                    tile := mapPlane.GetTile(stack.X(), stack.Y())
+                    canMove := cityOppositePlane != nil || stack.AllFlyers() || tile.Tile.IsLand()
+
+                    if tile.Tile.IsWater() && stack.AllLandWalkers() {
+                        canMove = false
+                    }
+
+                    // FIXME: check that the opposite plane doesn't have an encounter node, enemy stack or city
+
+                    if canMove {
+                        stack.SetPlane(stack.Plane().Opposite())
+                        player.UpdateFogVisibility()
+                    } else {
+                        select {
+                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("All of the units in this group can not enter water areas.")}:
+                            default:
+                        }
+                    }
+                }
             }
         }
     }
