@@ -238,10 +238,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentInvisibility)
         case "Magic Immunity":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentMagicImmunity)
+        case "Spell Lock":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentSpellLock)
 
         /*
-Resist Magic	
-Spell Lock	
 Wind Walking	
 Eldritch Weapon	
 Flame Blade	
