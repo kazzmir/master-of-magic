@@ -1022,6 +1022,10 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     }
 
     enchantmentAreaRect := image.Rect(140 * data.ScreenScale, 51 * data.ScreenScale, 140 * data.ScreenScale + 60 * data.ScreenScale, 93 * data.ScreenScale)
+    maxEnchantments := enchantmentAreaRect.Dy() / (cityScreen.Fonts.BannerFonts[data.BannerGreen].Height() * data.ScreenScale)
+
+    enchantmentMin := 0
+    var enchantmentElements []*uilib.UIElement
 
     // FIXME: what happens where there are too many enchantments such that the text goes beyond the enchantment ui box?
     for i, enchantment := range slices.SortedFunc(slices.Values(cityScreen.City.Enchantments.Values()), func (a citylib.Enchantment, b citylib.Enchantment) int {
@@ -1030,12 +1034,13 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         useFont := cityScreen.Fonts.BannerFonts[enchantment.Owner]
         x := 140 * data.ScreenScale
         y := (51 + i * useFont.Height()) * data.ScreenScale
+
         rect := image.Rect(x, y, x + int(useFont.MeasureTextWidth(enchantment.Enchantment.Name(), float64(data.ScreenScale))), y + useFont.Height() * data.ScreenScale)
         inside := false
-        elements = append(elements, &uilib.UIElement{
+        enchantmentElement := &uilib.UIElement{
             Rect: rect,
             Inside: func(element *uilib.UIElement, x int, y int){
-                if image.Pt(x, y).In(enchantmentAreaRect.Sub(rect.Min)) {
+                if image.Pt(x, y).In(enchantmentAreaRect.Sub(element.Rect.Min)) {
                     inside = true
                 }
             },
@@ -1085,9 +1090,68 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 area := screen.SubImage(enchantmentAreaRect).(*ebiten.Image)
-                useFont.Print(area, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, enchantment.Enchantment.Name())
+
+                useFont.Print(area, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, enchantment.Enchantment.Name())
+            },
+        }
+
+        elements = append(elements, enchantmentElement)
+        enchantmentElements = append(enchantmentElements, enchantmentElement)
+    }
+
+    if cityScreen.City.Enchantments.Size() > maxEnchantments {
+        updateElements := func(){
+            fontHeight := cityScreen.Fonts.BannerFonts[data.BannerGreen].Height()
+            yOffset := enchantmentMin * fontHeight * data.ScreenScale
+            for i, element := range enchantmentElements {
+                y := (51 + i * fontHeight) * data.ScreenScale
+                element.Rect.Min.Y = y - yOffset
+                element.Rect.Max.Y = element.Rect.Min.Y + fontHeight * data.ScreenScale
+            }
+        }
+
+        upArrow, _ := cityScreen.ImageCache.GetImages("resource.lbx", 32)
+        upArrowRect := util.ImageRect(200 * data.ScreenScale, 51 * data.ScreenScale, upArrow[0])
+        upUse := 1
+        elements = append(elements, &uilib.UIElement{
+            Rect: upArrowRect,
+            LeftClick: func(element *uilib.UIElement){
+                upUse = 0
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                enchantmentMin = max(0, enchantmentMin - 1)
+                upUse = 1
+
+                updateElements()
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(upArrowRect.Min.X), float64(upArrowRect.Min.Y))
+                screen.DrawImage(upArrow[upUse], &options)
             },
         })
+
+        downArrow, _ := cityScreen.ImageCache.GetImages("resource.lbx", 33)
+        downArrowRect := util.ImageRect(200 * data.ScreenScale, 83 * data.ScreenScale, downArrow[0])
+        downUse := 1
+        elements = append(elements, &uilib.UIElement{
+            Rect: downArrowRect,
+            LeftClick: func(element *uilib.UIElement){
+                downUse = 0
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                downUse = 1
+                enchantmentMin = min(cityScreen.City.Enchantments.Size() - maxEnchantments, enchantmentMin + 1)
+
+                updateElements()
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(downArrowRect.Min.X), float64(downArrowRect.Min.Y))
+                screen.DrawImage(downArrow[downUse], &options)
+            },
+        })
+
     }
 
     // FIXME: show Nightshade as a city enchantment if a nightshade tile is in the city catchment area and an appropriate building exists
