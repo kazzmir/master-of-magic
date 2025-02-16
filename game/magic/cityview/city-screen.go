@@ -1027,7 +1027,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     enchantmentMin := 0
     var enchantmentElements []*uilib.UIElement
 
-    // FIXME: what happens where there are too many enchantments such that the text goes beyond the enchantment ui box?
+    // if there are too many enchantments then up/down arrows will appear that let the user scroll the enchantment view
     for i, enchantment := range slices.SortedFunc(slices.Values(cityScreen.City.Enchantments.Values()), func (a citylib.Enchantment, b citylib.Enchantment) int {
         return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
     }) {
