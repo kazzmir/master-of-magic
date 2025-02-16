@@ -223,10 +223,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentPlanarTravel)
         case "Iron Skin":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentIronSkin)
-
+        case "Path Finding":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentPathFinding)
 
         /*
-Path Finding
 Regeneration	
 Stone Skin	
 Water Walking	

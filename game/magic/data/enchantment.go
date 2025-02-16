@@ -198,6 +198,7 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentGiantStrength: return natureColor
         case UnitEnchantmentResistElements: return natureColor
         case UnitEnchantmentElementalArmor: return natureColor
+        case UnitEnchantmentPathFinding: return natureColor
 
         case UnitEnchantmentFlight: return sorceryColor
         case UnitEnchantmentHaste: return sorceryColor
@@ -246,6 +247,7 @@ func (enchantment UnitEnchantment) UpkeepMana() int {
         case UnitEnchantmentInvulnerability: return 5
         case UnitEnchantmentPlanarTravel: return 5
         case UnitEnchantmentIronSkin: return 5
+        case UnitEnchantmentPathFinding: return 1
     }
 
     return 0
@@ -273,6 +275,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentInvulnerability: return "Invulnerability"
         case UnitEnchantmentPlanarTravel: return "Planar Travel"
         case UnitEnchantmentIronSkin: return "Iron Skin"
+        case UnitEnchantmentPathFinding: return "Path Finding"
     }
 
     return ""
@@ -300,6 +303,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentInvulnerability: return "special.lbx"
         case UnitEnchantmentPlanarTravel: return "special.lbx"
         case UnitEnchantmentIronSkin: return "special.lbx"
+        case UnitEnchantmentPathFinding: return "special.lbx"
     }
 
     return ""
@@ -327,6 +331,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentInvulnerability: return 94
         case UnitEnchantmentPlanarTravel: return 91
         case UnitEnchantmentIronSkin: return 75
+        case UnitEnchantmentPathFinding: return 70
     }
 
     return -1
@@ -341,6 +346,7 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
         case UnitEnchantmentElementalArmor: return 45
         case UnitEnchantmentResistElements: return 45
         case UnitEnchantmentIronSkin: return 45
+        case UnitEnchantmentPathFinding: return 45
 
         // death
         case UnitEnchantmentCloakOfFear: return 4
