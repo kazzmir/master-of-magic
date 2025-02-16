@@ -1100,6 +1100,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
     if cityScreen.City.Enchantments.Size() > maxEnchantments {
         enchantmentMin := 0
+        // shift all enchantment rect's around depending on the scroll position
         updateElements := func(){
             fontHeight := cityScreen.Fonts.BannerFonts[data.BannerGreen].Height()
             yOffset := enchantmentMin * fontHeight * data.ScreenScale
