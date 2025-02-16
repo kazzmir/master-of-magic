@@ -1021,6 +1021,8 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         })
     }
 
+    enchantmentAreaRect := image.Rect(140 * data.ScreenScale, 51 * data.ScreenScale, 140 * data.ScreenScale + 60 * data.ScreenScale, 93 * data.ScreenScale)
+
     // FIXME: what happens where there are too many enchantments such that the text goes beyond the enchantment ui box?
     for i, enchantment := range slices.SortedFunc(slices.Values(cityScreen.City.Enchantments.Values()), func (a citylib.Enchantment, b citylib.Enchantment) int {
         return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
@@ -1029,9 +1031,22 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         x := 140 * data.ScreenScale
         y := (51 + i * useFont.Height()) * data.ScreenScale
         rect := image.Rect(x, y, x + int(useFont.MeasureTextWidth(enchantment.Enchantment.Name(), float64(data.ScreenScale))), y + useFont.Height() * data.ScreenScale)
+        inside := false
         elements = append(elements, &uilib.UIElement{
             Rect: rect,
+            Inside: func(element *uilib.UIElement, x int, y int){
+                if image.Pt(x, y).In(enchantmentAreaRect.Sub(rect.Min)) {
+                    inside = true
+                }
+            },
+            NotInside: func(element *uilib.UIElement){
+                inside = false
+            },
             LeftClickRelease: func(element *uilib.UIElement) {
+                if !inside {
+                    return
+                }
+
                 if enchantment.Owner == cityScreen.Player.GetBanner() {
                     yes := func(){
                         cityScreen.City.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
@@ -1059,13 +1074,18 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                 }
             },
             RightClick: func(element *uilib.UIElement){
+                if !inside {
+                    return
+                }
+
                 helpEntries := help.GetEntriesByName(enchantment.Enchantment.Name())
                 if helpEntries != nil {
                     ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cityScreen.LbxCache, &cityScreen.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                useFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, enchantment.Enchantment.Name())
+                area := screen.SubImage(enchantmentAreaRect).(*ebiten.Image)
+                useFont.Print(area, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, enchantment.Enchantment.Name())
             },
         })
     }
