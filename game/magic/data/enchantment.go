@@ -158,6 +158,7 @@ const (
     UnitEnchantmentIronSkin
     UnitEnchantmentRegeneration
     UnitEnchantmentStoneSkin
+    UnitEnchantmentWaterWalking
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -202,6 +203,7 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentPathFinding: return natureColor
         case UnitEnchantmentRegeneration: return natureColor
         case UnitEnchantmentStoneSkin: return natureColor
+        case UnitEnchantmentWaterWalking: return natureColor
 
         case UnitEnchantmentFlight: return sorceryColor
         case UnitEnchantmentHaste: return sorceryColor
@@ -253,6 +255,7 @@ func (enchantment UnitEnchantment) UpkeepMana() int {
         case UnitEnchantmentPathFinding: return 1
         case UnitEnchantmentRegeneration: return 10
         case UnitEnchantmentStoneSkin: return 1
+        case UnitEnchantmentWaterWalking: return 1
     }
 
     return 0
@@ -283,6 +286,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentPathFinding: return "Path Finding"
         case UnitEnchantmentRegeneration: return "Regeneration"
         case UnitEnchantmentStoneSkin: return "Stone Skin"
+        case UnitEnchantmentWaterWalking: return "Water Walking"
     }
 
     return ""
@@ -313,6 +317,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentPathFinding: return "special.lbx"
         case UnitEnchantmentRegeneration: return "special.lbx"
         case UnitEnchantmentStoneSkin: return "special.lbx"
+        case UnitEnchantmentWaterWalking: return "special.lbx"
     }
 
     return ""
@@ -343,6 +348,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentPathFinding: return 70
         case UnitEnchantmentRegeneration: return 69
         case UnitEnchantmentStoneSkin: return 74
+        case UnitEnchantmentWaterWalking: return 71
     }
 
     return -1
@@ -360,6 +366,7 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
         case UnitEnchantmentPathFinding: return 45
         case UnitEnchantmentRegeneration: return 45
         case UnitEnchantmentStoneSkin: return 45
+        case UnitEnchantmentWaterWalking: return 45
 
         // death
         case UnitEnchantmentCloakOfFear: return 4
