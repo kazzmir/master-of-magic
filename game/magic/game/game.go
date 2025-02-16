@@ -4747,6 +4747,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
                     if player.IsHuman() {
                         distributeEquipment(player, hero)
                     }
+                    // FIXME: what happens with the equipment in case of non-human players?
                     for index := range hero.Equipment {
                         hero.Equipment[index] = nil
                     }
