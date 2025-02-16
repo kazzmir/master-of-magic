@@ -155,6 +155,7 @@ const (
     UnitEnchantmentHolyWeapon
     UnitEnchantmentInvulnerability
     UnitEnchantmentPlanarTravel
+    UnitEnchantmentIronSkin
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -176,7 +177,6 @@ func GetMagicColor(magic MagicType) color.Color {
 }
 
 /*
-Iron Skin	Nature
 Regeneration	Nature
 Stone Skin	Nature
 Water Walking	Nature
@@ -194,22 +194,27 @@ Wraith Form	Death
 
 func (enchantment UnitEnchantment) Color() color.Color {
     switch enchantment {
+        case UnitEnchantmentIronSkin: return natureColor
         case UnitEnchantmentGiantStrength: return natureColor
-        case UnitEnchantmentLionHeart: return lifeColor
-        case UnitEnchantmentHaste: return sorceryColor
-        case UnitEnchantmentImmolation: return chaosColor
         case UnitEnchantmentResistElements: return natureColor
-        case UnitEnchantmentResistMagic: return sorceryColor
         case UnitEnchantmentElementalArmor: return natureColor
-        case UnitEnchantmentBless: return lifeColor
-        case UnitEnchantmentRighteousness: return lifeColor
-        case UnitEnchantmentCloakOfFear: return deathColor
-        case UnitEnchantmentTrueSight: return lifeColor
+
         case UnitEnchantmentFlight: return sorceryColor
+        case UnitEnchantmentHaste: return sorceryColor
+        case UnitEnchantmentResistMagic: return sorceryColor
+
+        case UnitEnchantmentCloakOfFear: return deathColor
+
+        case UnitEnchantmentImmolation: return chaosColor
         case UnitEnchantmentChaosChannelsDemonWings: return chaosColor
+
+        case UnitEnchantmentBless: return lifeColor
+        case UnitEnchantmentLionHeart: return lifeColor
         case UnitEnchantmentEndurance: return lifeColor
         case UnitEnchantmentHeroism: return lifeColor
+        case UnitEnchantmentTrueSight: return lifeColor
         case UnitEnchantmentHolyArmor: return lifeColor
+        case UnitEnchantmentRighteousness: return lifeColor
         case UnitEnchantmentHolyWeapon: return lifeColor
         case UnitEnchantmentInvulnerability: return lifeColor
         case UnitEnchantmentPlanarTravel: return lifeColor
@@ -240,6 +245,7 @@ func (enchantment UnitEnchantment) UpkeepMana() int {
         case UnitEnchantmentHolyWeapon: return 1
         case UnitEnchantmentInvulnerability: return 5
         case UnitEnchantmentPlanarTravel: return 5
+        case UnitEnchantmentIronSkin: return 5
     }
 
     return 0
@@ -266,6 +272,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentHolyWeapon: return "Holy Weapon"
         case UnitEnchantmentInvulnerability: return "Invulnerability"
         case UnitEnchantmentPlanarTravel: return "Planar Travel"
+        case UnitEnchantmentIronSkin: return "Iron Skin"
     }
 
     return ""
@@ -292,6 +299,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentHolyWeapon: return "special.lbx"
         case UnitEnchantmentInvulnerability: return "special.lbx"
         case UnitEnchantmentPlanarTravel: return "special.lbx"
+        case UnitEnchantmentIronSkin: return "special.lbx"
     }
 
     return ""
@@ -318,6 +326,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentHolyWeapon: return 86
         case UnitEnchantmentInvulnerability: return 94
         case UnitEnchantmentPlanarTravel: return 91
+        case UnitEnchantmentIronSkin: return 75
     }
 
     return -1
@@ -331,6 +340,7 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
         case UnitEnchantmentGiantStrength: return 45
         case UnitEnchantmentElementalArmor: return 45
         case UnitEnchantmentResistElements: return 45
+        case UnitEnchantmentIronSkin: return 45
 
         // death
         case UnitEnchantmentCloakOfFear: return 4

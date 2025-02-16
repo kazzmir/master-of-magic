@@ -1073,6 +1073,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Holy Weapon"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Invulnerability"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Planar Travel"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Iron Skin"))
 
     x, y, _ := game.FindValidCityLocation(game.Plane)
 
