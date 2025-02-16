@@ -164,6 +164,7 @@ const (
     UnitEnchantmentMagicImmunity
     UnitEnchantmentSpellLock
     UnitEnchantmentWindWalking
+    UnitEnchantmentEldritchWeapon
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -185,7 +186,6 @@ func GetMagicColor(magic MagicType) color.Color {
 }
 
 /*
-Eldritch Weapon	Chaos
 Flame Blade	Chaos
 Berserk	Death
 Black Channels	Death
@@ -216,6 +216,7 @@ func (enchantment UnitEnchantment) Color() color.Color {
 
         case UnitEnchantmentImmolation: return chaosColor
         case UnitEnchantmentChaosChannelsDemonWings: return chaosColor
+        case UnitEnchantmentEldritchWeapon: return chaosColor
 
         case UnitEnchantmentBless: return lifeColor
         case UnitEnchantmentLionHeart: return lifeColor
@@ -264,6 +265,7 @@ func (enchantment UnitEnchantment) UpkeepMana() int {
         case UnitEnchantmentMagicImmunity: return 5
         case UnitEnchantmentSpellLock: return 1
         case UnitEnchantmentWindWalking: return 10
+        case UnitEnchantmentEldritchWeapon: return 1
     }
 
     return 0
@@ -300,6 +302,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentMagicImmunity: return "Magic Immunity"
         case UnitEnchantmentSpellLock: return "Spell Lock"
         case UnitEnchantmentWindWalking: return "Wind Walking"
+        case UnitEnchantmentEldritchWeapon: return "Eldritch Weapon"
     }
 
     return ""
@@ -336,6 +339,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentMagicImmunity: return "special.lbx"
         case UnitEnchantmentSpellLock: return "special2.lbx"
         case UnitEnchantmentWindWalking: return "special.lbx"
+        case UnitEnchantmentEldritchWeapon: return "special.lbx"
     }
 
     return ""
@@ -372,6 +376,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentMagicImmunity: return 82
         case UnitEnchantmentSpellLock: return 8
         case UnitEnchantmentWindWalking: return 79
+        case UnitEnchantmentEldritchWeapon: return 84
     }
 
     return -1
@@ -397,6 +402,7 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
         // chaos
         case UnitEnchantmentImmolation: return 2
         case UnitEnchantmentChaosChannelsDemonWings: return 2
+        case UnitEnchantmentEldritchWeapon: return 2
 
         // sorcery
         case UnitEnchantmentHaste: return 1
