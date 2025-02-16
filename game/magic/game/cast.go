@@ -211,15 +211,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 data.UnitEnchantmentChaosChannelsDemonWings,
             }
             game.doCastUnitEnchantment(player, spell, choices[rand.N(len(choices))])
-
-            /*
-        case UnitEnchantmentEndurance: return lifeColor
-        case UnitEnchantmentHeroism: return lifeColor
-        */
+        case "Endurance":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentEndurance)
+        case "Holy Armor":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHolyArmor)
 
 
         /*
-Holy Armor	
 Holy Weapon	
 Invulnerability
 Planar Travel

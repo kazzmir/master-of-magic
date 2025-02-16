@@ -151,6 +151,7 @@ const (
     UnitEnchantmentChaosChannelsDemonWings
     UnitEnchantmentEndurance
     UnitEnchantmentHeroism
+    UnitEnchantmentHolyArmor
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -209,6 +210,7 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentChaosChannelsDemonWings: return chaosColor
         case UnitEnchantmentEndurance: return lifeColor
         case UnitEnchantmentHeroism: return lifeColor
+        case UnitEnchantmentHolyArmor: return lifeColor
     }
 
     return color.RGBA{R: 0, G: 0, B: 0, A: 0}
@@ -232,6 +234,7 @@ func (enchantment UnitEnchantment) UpkeepMana() int {
         case UnitEnchantmentChaosChannelsDemonWings: return 0
         case UnitEnchantmentEndurance: return 1
         case UnitEnchantmentHeroism: return 2
+        case UnitEnchantmentHolyArmor: return 2
     }
 
     return 0
@@ -254,6 +257,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentChaosChannelsDemonWings: return "Demon Wings"
         case UnitEnchantmentEndurance: return "Endurance"
         case UnitEnchantmentHeroism: return "Heroism"
+        case UnitEnchantmentHolyArmor: return "Holy Armor"
     }
 
     return ""
@@ -276,6 +280,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentChaosChannelsDemonWings: return "special.lbx"
         case UnitEnchantmentEndurance: return "special.lbx"
         case UnitEnchantmentHeroism: return "special.lbx"
+        case UnitEnchantmentHolyArmor: return "special.lbx"
     }
 
     return ""
@@ -298,6 +303,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentChaosChannelsDemonWings: return 63
         case UnitEnchantmentEndurance: return 76
         case UnitEnchantmentHeroism: return 87
+        case UnitEnchantmentHolyArmor: return 92
     }
 
     return -1
@@ -331,6 +337,7 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
         case UnitEnchantmentEndurance: return 3
         case UnitEnchantmentTrueSight: return 3
         case UnitEnchantmentRighteousness: return 3
+        case UnitEnchantmentHolyArmor: return 3
     }
 
     return -1
