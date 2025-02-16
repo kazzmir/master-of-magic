@@ -246,11 +246,9 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentFlameBlade)
         case "Black Channels":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentBlackChannels)
+        case "Wraith Form":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWraithForm)
 
-        /*
-Wraith Form
-         */
-            
         case "Summon Hero":
             game.doSummonHero(player, false)
         case "Summon Champion":

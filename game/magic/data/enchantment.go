@@ -168,6 +168,7 @@ const (
     UnitEnchantmentFlameBlade
     UnitEnchantmentBerserk
     UnitEnchantmentBlackChannels
+    UnitEnchantmentWraithForm
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -187,10 +188,6 @@ func GetMagicColor(magic MagicType) color.Color {
 
     return color.RGBA{}
 }
-
-/*
-Wraith Form	Death
- */
 
 func (enchantment UnitEnchantment) Color() color.Color {
     switch enchantment {
@@ -215,6 +212,7 @@ func (enchantment UnitEnchantment) Color() color.Color {
         case UnitEnchantmentCloakOfFear: return deathColor
         case UnitEnchantmentBerserk: return deathColor
         case UnitEnchantmentBlackChannels: return deathColor
+        case UnitEnchantmentWraithForm: return deathColor
 
         case UnitEnchantmentImmolation: return chaosColor
         case UnitEnchantmentChaosChannelsDemonWings: return chaosColor
@@ -273,6 +271,7 @@ func (enchantment UnitEnchantment) UpkeepMana() int {
         // combat only
         case UnitEnchantmentBerserk: return 0
         case UnitEnchantmentBlackChannels: return 1
+        case UnitEnchantmentWraithForm: return 3
     }
 
     return 0
@@ -313,6 +312,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentFlameBlade: return "Flame Blade"
         case UnitEnchantmentBerserk: return "Berserk"
         case UnitEnchantmentBlackChannels: return "Black Channels"
+        case UnitEnchantmentWraithForm: return "Wraith Form"
     }
 
     return ""
@@ -353,6 +353,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentFlameBlade: return "special.lbx"
         case UnitEnchantmentBerserk: return "special2.lbx"
         case UnitEnchantmentBlackChannels: return "special.lbx"
+        case UnitEnchantmentWraithForm: return "special.lbx"
     }
 
     return ""
@@ -393,6 +394,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentFlameBlade: return 83
         case UnitEnchantmentBerserk: return 17
         case UnitEnchantmentBlackChannels: return 67
+        case UnitEnchantmentWraithForm: return 68
     }
 
     return -1
@@ -416,6 +418,7 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
         case UnitEnchantmentCloakOfFear: return 4
         case UnitEnchantmentBerserk: return 4
         case UnitEnchantmentBlackChannels: return 4
+        case UnitEnchantmentWraithForm: return 4
 
         // chaos
         case UnitEnchantmentImmolation: return 2
