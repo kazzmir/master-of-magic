@@ -5503,8 +5503,10 @@ func (game *Game) SwitchPlane() {
             cityStackInfo := game.ComputeCityStackInfo()
 
             canMove := false
+            travelEnabled := false
 
             if game.CurrentMap().HasOpenTower(activeStack.X(), activeStack.Y()) {
+                travelEnabled = true
                 canMove = true
             } else {
                 cityThisPlane := player.FindCity(activeStack.X(), activeStack.Y(), activeStack.Plane())
@@ -5515,6 +5517,7 @@ func (game *Game) SwitchPlane() {
                 hasPlanarTravel := activeStack.ActiveUnitsHasAbility(data.AbilityPlanarTravel)
 
                 if hasAstralGate || hasPlanarTravel {
+                    travelEnabled = true
                     mapPlane := game.GetMap(activeStack.Plane().Opposite())
 
                     tile := mapPlane.GetTile(activeStack.X(), activeStack.Y())
@@ -5528,19 +5531,24 @@ func (game *Game) SwitchPlane() {
                     if tile.Tile.IsWater() && activeStack.AllLandWalkers() {
                         canMove = false
                     }
+                }
+            }
 
-                    // FIXME: check that the opposite plane doesn't have an enemy stack or city
+            if travelEnabled {
+                if cityStackInfo.ContainsEnemy(activeStack.X(), activeStack.Y(), activeStack.Plane().Opposite(), player) {
+                    canMove = false
+                }
 
-                    if !canMove {
-                        select {
-                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The selected units cannot planar travel at this location.")}:
-                            default:
-                        }
+                // no matter what the reason, just emit a message that planar travel is not possible
+                if !canMove {
+                    select {
+                        case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The selected units cannot planar travel at this location.")}:
+                        default:
                     }
                 }
             }
 
-            if canMove && !cityStackInfo.ContainsEnemy(activeStack.X(), activeStack.Y(), activeStack.Plane().Opposite(), player) {
+            if canMove {
                 player.SelectedStack = activeStack
                 // if there is a friendly stack at the new location then merge the stacks
                 mergeStack := cityStackInfo.FindFriendlyStack(activeStack.X(), activeStack.Y(), activeStack.Plane().Opposite(), player)
@@ -5554,6 +5562,7 @@ func (game *Game) SwitchPlane() {
                     player.MergeStacks(stack, activeStack)
                 }
             }
+
         }
     }
 }

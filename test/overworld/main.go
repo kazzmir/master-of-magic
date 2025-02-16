@@ -3792,6 +3792,16 @@ func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
     stack := player.FindStack(x, y, city.Plane)
     city.ResetCitizens(stack.Units())
 
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "dingus",
+        Banner: data.BannerGreen,
+    }, false)
+
+    enemy1.AIBehavior = nil
+
+    // add an enemy at the same spot but on the opposite plane
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneMyrror, enemy1.Wizard.Banner, nil))
+
     game.Camera.Center(x, y)
 
     return game
