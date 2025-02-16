@@ -233,9 +233,11 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWaterWalking)
         case "Guardian Wind":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentGuardianWind)
+        // "Invisiblity" is a typo in the game in spelldat.lbx
+        case "Invisiblity":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentInvisibility)
 
         /*
-Invisibility	
 Magic Immunity	
 Resist Magic	
 Spell Lock	
