@@ -3,11 +3,14 @@ package console
 import (
     "log"
 
+    "strings"
     "image"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
 
     "github.com/hajimehoshi/ebiten/v2/text/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -38,9 +41,10 @@ type Console struct {
     PosY int
     Font *text.GoTextFaceSource
     Events chan ConsoleEvent
+    Game *gamelib.Game
 }
 
-func MakeConsole() *Console {
+func MakeConsole(game *gamelib.Game) *Console {
     font, err := LoadFont()
     if err != nil {
         log.Printf("Unable to load console font: %v", err)
@@ -51,15 +55,63 @@ func MakeConsole() *Console {
         Font: font,
         State: ConsoleClosed,
         Events: make(chan ConsoleEvent, 10),
+        Game: game,
     }
 }
 
 func (console *Console) Run(command string) {
-    if command == "quit" {
-        select {
-            case console.Events <- &ConsoleQuit{}:
-            default:
-        }
+    parts := strings.Fields(command)
+
+    if len(parts) == 0 {
+        return
+    }
+
+    switch strings.ToLower(parts[0]) {
+        case "quit":
+            select {
+                case console.Events <- &ConsoleQuit{}:
+                default:
+            }
+        case "help":
+            console.Lines = append(console.Lines, "Available commands:")
+            console.Lines = append(console.Lines, "  quit - Quit the game")
+            console.Lines = append(console.Lines, "  help - This help")
+            console.Lines = append(console.Lines, "  cast <term> ... - Cast a spell. Search for spells given the terms,")
+            console.Lines = append(console.Lines, "    such as 'cast gua wi' will cast Guardian Wind.")
+        case "cast":
+            if len(parts) == 1 {
+                console.Lines = append(console.Lines, "Cast a spell. Give the name of the spell to cast. Partial names are ok.")
+            } else {
+                spells := console.Game.AllSpells()
+                var use spellbook.Spells
+
+                for _, spell := range spells.Spells {
+                    keep := true
+                    for _, part := range parts[1:] {
+                        if !strings.Contains(strings.ToLower(spell.Name), strings.ToLower(part)) {
+                            keep = false
+                            break
+                        }
+                    }
+
+                    if keep {
+                        use.AddSpell(spell)
+                    }
+                }
+
+                if len(use.Spells) == 1 {
+                    console.Lines = append(console.Lines, "Casting " + use.Spells[0].Name)
+                    console.Game.Events <- &gamelib.GameEventCastSpell{
+                        Player: console.Game.Players[0],
+                        Spell: use.Spells[0],
+                    }
+                } else {
+                    for _, spell := range use.Spells {
+                        console.Lines = append(console.Lines, "  " + spell.Name)
+                    }
+                }
+            }
+
     }
 }
 
@@ -130,7 +182,7 @@ func (console *Console) Update() {
         }
     }
 
-    const speed = 8
+    const speed = 9
 
     if console.State == ConsoleOpen {
         if console.PosY < ConsoleHeight * data.ScreenScale {

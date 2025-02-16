@@ -3791,7 +3791,7 @@ func NewEngine(scenario int) (*Engine, error) {
         LbxCache: cache,
         Coroutine: coroutine.MakeCoroutine(run),
         Game: game,
-        Console: console.MakeConsole(),
+        Console: console.MakeConsole(game),
     }, nil
 }
 
