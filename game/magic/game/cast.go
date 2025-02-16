@@ -188,8 +188,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentGiantStrength)
         case "Lionheart":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentLionHeart)
-        case "Haste":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHaste)
         case "Immolation":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentImmolation)
         case "Resist Elements":
@@ -246,10 +244,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentEldritchWeapon)
         case "Flame Blade":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentFlameBlade)
+        case "Black Channels":
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentBlackChannels)
 
         /*
-Berserk	
-Black Channels	
 Wraith Form
          */
             
