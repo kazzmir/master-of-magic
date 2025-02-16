@@ -3686,7 +3686,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
     leftClick := inputmanager.LeftClick()
     rightClick := inputmanager.RightClick()
 
-    if player.SelectedStack != nil {
+    if player.SelectedStack != nil && player.SelectedStack.Plane() == game.Plane {
         stack := player.SelectedStack
         mapUse := game.GetMap(stack.Plane())
         oldX := stack.X()
@@ -5402,38 +5402,60 @@ func (game *Game) SwitchPlane() {
         stack := player.SelectedStack
 
         if stack != nil && stack.Plane() == game.Plane.Opposite() {
+            activeStack := player.SplitActiveStack(stack)
+            // nothing to do
+            if len(activeStack.Units()) == 0 {
+                return
+            }
+
+            canMove := false
+
             // FIXME: also allow switching planes if the stack has planar travel
             if game.CurrentMap().HasOpenTower(stack.X(), stack.Y()) {
-                stack.SetPlane(game.Plane)
-                player.UpdateFogVisibility()
+                canMove = true
             } else {
                 cityThisPlane := player.FindCity(stack.X(), stack.Y(), stack.Plane())
                 cityOppositePlane := player.FindCity(stack.X(), stack.Y(), stack.Plane().Opposite())
                 hasAstralGate := (cityThisPlane != nil && cityThisPlane.HasEnchantment(data.CityEnchantmentAstralGate)) ||
                                  (cityOppositePlane != nil && cityOppositePlane.HasEnchantment(data.CityEnchantmentAstralGate))
                 if hasAstralGate {
-                    // FIXME: check if the stack can move to the tile on the other plane
-
                     mapPlane := game.GetMap(stack.Plane().Opposite())
 
                     tile := mapPlane.GetTile(stack.X(), stack.Y())
-                    canMove := cityOppositePlane != nil || stack.AllFlyers() || tile.Tile.IsLand()
+                    canMove = cityOppositePlane != nil || stack.AllFlyers() || tile.Tile.IsLand()
+
+                    // cannot planar travel if there is an encounter node
+                    if mapPlane.GetEncounter(stack.X(), stack.Y()) != nil {
+                        canMove = false
+                    }
 
                     if tile.Tile.IsWater() && stack.AllLandWalkers() {
                         canMove = false
                     }
 
-                    // FIXME: check that the opposite plane doesn't have an encounter node, enemy stack or city
+                    // FIXME: check that the opposite plane doesn't have an enemy stack or city
 
-                    if canMove {
-                        stack.SetPlane(stack.Plane().Opposite())
-                        player.UpdateFogVisibility()
-                    } else {
+                    if !canMove {
                         select {
-                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("All of the units in this group can not enter water areas.")}:
+                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The selected units cannot planar travel at this location.")}:
                             default:
                         }
                     }
+                }
+            }
+
+            if canMove {
+                player.SelectedStack = activeStack
+                // if there is a friendly stack at the new location then merge the stacks
+                mergeStack := player.FindStack(stack.X(), stack.Y(), game.Plane)
+                activeStack.SetPlane(game.Plane)
+                if mergeStack != nil {
+                    player.MergeStacks(activeStack, mergeStack)
+                }
+                player.UpdateFogVisibility()
+            } else {
+                if activeStack != stack {
+                    player.MergeStacks(stack, activeStack)
                 }
             }
         }
