@@ -423,6 +423,12 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 unitOptions.GeoM.Translate(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
                 screen.DrawImage(unitImage, &unitOptions)
 
+                for _, enchantment := range unit.GetEnchantments() {
+                    x, y := unitOptions.GeoM.Apply(0, 0)
+                    util.DrawOutline(screen, &imageCache, unitImage, x, y, options.ColorScale, ui.Counter/10, enchantment.Color())
+                    break
+                }
+
                 x, y = unitOptions.GeoM.Apply(float64(unitBack.Bounds().Dx() + 2 * data.ScreenScale), float64(5 * data.ScreenScale))
                 mediumFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, unit.GetName())
 

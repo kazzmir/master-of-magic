@@ -1063,7 +1063,30 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
 
     // unit enchantments
+    player.KnownSpells.AddSpell(allSpells.FindByName("Bless"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Heroism"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Lionheart"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Cloak of Fear"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Chaos Channels"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Holy Armor"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Holy Weapon"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Invulnerability"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Planar Travel"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Iron Skin"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Path Finding"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Regeneration"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Stone Skin"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Water Walking"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Guardian Wind"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Invisiblity"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Magic Immunity"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Spell Lock"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Wind Walking"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Eldritch Weapon"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Flame Blade"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Black Channels"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Wraith Form"))
 
     x, y, _ := game.FindValidCityLocation(game.Plane)
 
@@ -3768,7 +3791,7 @@ func NewEngine(scenario int) (*Engine, error) {
         LbxCache: cache,
         Coroutine: coroutine.MakeCoroutine(run),
         Game: game,
-        Console: console.MakeConsole(),
+        Console: console.MakeConsole(game),
     }, nil
 }
 
