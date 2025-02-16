@@ -3527,7 +3527,7 @@ func createScenario41(cache *lbx.LbxCache) *gamelib.Game {
 
 // water unit
 func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
-    log.Printf("Running scenario 41")
+    log.Printf("Running scenario 42")
     wizard := setup.WizardCustom{
         Name: "bob",
         Banner: data.BannerRed,
@@ -3721,6 +3721,82 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// astral gate
+func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 44")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.CastingSkillPower += 500000
+    player.TaxRate = fraction.Zero()
+
+    x, y, _ := game.FindValidCityLocationOnShore(game.Plane)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 16
+    city.Workers = 0
+    city.Wall = false
+
+    city.AddBuilding(buildinglib.BuildingShrine)
+    city.AddBuilding(buildinglib.BuildingTemple)
+    city.AddBuilding(buildinglib.BuildingParthenon)
+    city.AddBuilding(buildinglib.BuildingGranary)
+    city.AddBuilding(buildinglib.BuildingOracle)
+    city.AddBuilding(buildinglib.BuildingFarmersMarket)
+
+    city.AddEnchantment(data.CityEnchantmentAstralGate, player.GetBanner())
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 1000
+
+    player.LiftFog(x, y, 200, data.PlaneArcanus)
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x, y, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x, y, data.PlaneArcanus, wizard.Banner, nil))
+
+    stack := player.FindStack(x, y, city.Plane)
+    city.ResetCitizens(stack.Units())
+
+    game.Camera.Center(x, y)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -3770,6 +3846,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 41: game = createScenario41(cache)
         case 42: game = createScenario42(cache)
         case 43: game = createScenario43(cache)
+        case 44: game = createScenario44(cache)
         default: game = createScenario1(cache)
     }
 

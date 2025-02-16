@@ -5397,13 +5397,18 @@ func (game *Game) SwitchPlane() {
 
     // no switching planes if the global enchantment planar seal is in effect
     if !game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
-        stack := game.Players[0].SelectedStack
+        player := game.Players[0]
+
+        stack := player.SelectedStack
 
         if stack != nil {
+            city := player.FindCity(stack.X(), stack.Y(), stack.Plane())
+            hasAstralGate := city != nil && city.HasEnchantment(data.CityEnchantmentAstralGate)
+
             // FIXME: also allow switching planes if the stack has planar travel
-            if game.CurrentMap().HasOpenTower(stack.X(), stack.Y()) {
+            if game.CurrentMap().HasOpenTower(stack.X(), stack.Y()) || hasAstralGate {
                 stack.SetPlane(game.Plane)
-                game.Players[0].UpdateFogVisibility()
+                player.UpdateFogVisibility()
             }
         }
     }
