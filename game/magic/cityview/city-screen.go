@@ -1152,6 +1152,20 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             },
         })
 
+        // scroll wheel element
+        elements = append(elements, &uilib.UIElement{
+            Rect: enchantmentAreaRect,
+            Scroll: func (element *uilib.UIElement, x float64, y float64) {
+                if y < 0 {
+                    enchantmentMin = min(cityScreen.City.Enchantments.Size() - maxEnchantments, enchantmentMin + 1)
+                    updateElements()
+                } else if y > 0 {
+                    enchantmentMin = max(0, enchantmentMin - 1)
+                    updateElements()
+                }
+            },
+        })
+
     }
 
     // FIXME: show Nightshade as a city enchantment if a nightshade tile is in the city catchment area and an appropriate building exists
