@@ -289,6 +289,7 @@ func (player *Player) AddHero(hero *herolib.Hero) bool {
             experienceInfo := player.MakeExperienceInfo()
 
             hero.Unit = units.MakeOverworldUnitFromUnit(hero.GetRawUnit(), fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, experienceInfo)
+            hero.AdjustHealth(hero.GetMaxHealth())
             hero.AddExperience(level.ExperienceRequired(experienceInfo.HasWarlord(), experienceInfo.Crusade()))
 
             player.AddUnit(hero)

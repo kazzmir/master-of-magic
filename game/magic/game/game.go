@@ -5662,7 +5662,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             }
 
                             x, y := options.GeoM.Apply(float64(4 * data.ScreenScale), float64(19 * data.ScreenScale))
-                            vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthLength), float32(y), 1, useColor, false)
+                            vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthLength), float32(y), float32(data.ScreenScale), useColor, false)
                         }
 
                         silverBadge := 51
