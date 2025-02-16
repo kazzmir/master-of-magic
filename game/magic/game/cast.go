@@ -255,9 +255,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doSummonHero(player, false)
         case "Summon Champion":
             game.doSummonHero(player, true)
-
-        // FIXME: Incarnation
-        // Incarnation	Icon LifeLife	Rare	500	--	12	960	Summons Torin the Chosen – one of the most powerful Champions in the game.
+        case "Incarnation":
+            game.doIncarnation(player)
         case "Enchant Road":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: game.doCastEnchantRoad}
         case "Corruption":
@@ -385,6 +384,23 @@ func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
         }
 
         game.RefreshUI()
+    }
+}
+
+func (game *Game) doIncarnation(player *playerlib.Player) {
+    for _, hero := range game.Heroes {
+        if hero.HeroType == herolib.HeroTorin && hero.Status != herolib.StatusEmployed {
+            event := GameEventHireHero{
+                Hero: hero,
+                Player: player,
+                Cost: 0,
+            }
+
+            select {
+                case game.Events <- &event:
+                default:
+            }
+        }
     }
 }
 

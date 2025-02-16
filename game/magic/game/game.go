@@ -4708,7 +4708,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             if item != nil {
                 showHeroNotice = true
                 select {
-                    case game.Events <- &GameEventVault{CreatedArtifact: item}:
+                    case game.Events <- &GameEventVault{CreatedArtifact: item, Player: player}:
                     default:
                 }
             }
@@ -4742,9 +4742,15 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             if dead {
                 player.RemoveUnit(unit)
 
-                if unit.IsHero() && player.IsHuman() {
+                if unit.IsHero() {
                     hero := unit.(*herolib.Hero)
-                    distributeEquipment(player, hero)
+                    if player.IsHuman() {
+                        distributeEquipment(player, hero)
+                    }
+                    // FIXME: what happens with the equipment in case of non-human players?
+                    for index := range hero.Equipment {
+                        hero.Equipment[index] = nil
+                    }
                 }
             }
         }
@@ -5656,7 +5662,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             }
 
                             x, y := options.GeoM.Apply(float64(4 * data.ScreenScale), float64(19 * data.ScreenScale))
-                            vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthLength), float32(y), 1, useColor, false)
+                            vector.StrokeLine(screen, float32(x), float32(y), float32(x + healthLength), float32(y), float32(data.ScreenScale), useColor, false)
                         }
 
                         silverBadge := 51

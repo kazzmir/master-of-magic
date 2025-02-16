@@ -77,6 +77,13 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
+    hireText := "Hire"
+    titleText := fmt.Sprintf("Hero for Hire: %v gold", goldToHire)
+    if hero.HeroType == herolib.HeroTorin {
+        hireText = "Accept"
+        titleText = "Hero Summoned"
+    }
+
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -172,7 +179,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
             x := float64(hireRect.Min.X + hireRect.Max.X) / 2
             y := float64(hireRect.Min.Y + hireRect.Max.Y) / 2
-            okDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Hire")
+            okDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, hireText)
         },
     })
 
@@ -213,7 +220,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(banner, &options)
 
-            okDismissFont.PrintCenter(screen, float64(135 * data.ScreenScale), float64(6 * data.ScreenScale), float64(1 * data.ScreenScale), options.ColorScale, fmt.Sprintf("Hero for Hire: %v gold", goldToHire))
+            okDismissFont.PrintCenter(screen, float64(135 * data.ScreenScale), float64(6 * data.ScreenScale), float64(1 * data.ScreenScale), options.ColorScale, titleText)
         },
     })
 

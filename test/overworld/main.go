@@ -991,7 +991,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     // summoning
     player.KnownSpells.AddSpell(allSpells.FindByName("Guardian Spirit"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Unicorns"))
-    // player.KnownSpells.AddSpell(allSpells.FindByName("Incarnation"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Incarnation"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Angel"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Arch Angel"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Floating Island"))
@@ -1102,6 +1102,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
+    city.AddBuilding(buildinglib.BuildingFortress)
     city.AddBuilding(buildinglib.BuildingShrine)
     city.AddBuilding(buildinglib.BuildingGranary)
 
