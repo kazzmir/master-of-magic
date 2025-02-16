@@ -285,6 +285,7 @@ func (player *Player) AddHero(hero *herolib.Hero) bool {
         if player.Heroes[i] == nil {
             player.Heroes[i] = hero
 
+            // keep the current level of the hero when creating a new overworld unit (which stores the experience)
             level := hero.GetExperienceLevel()
             experienceInfo := player.MakeExperienceInfo()
 
