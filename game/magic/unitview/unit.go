@@ -262,9 +262,24 @@ func createUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, med
     var elements []*uilib.UIElement
 
     if !pureAbilities {
-        artifacts := slices.Clone(unit.GetArtifacts())
-
         background, _ := imageCache.GetImage("special.lbx", 3, 0)
+
+        // experience badge
+        experienceX := x
+        experienceY := y
+        elements = append(elements, &uilib.UIElement{
+            Layer: layer,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha((*getAlpha)())
+                options.GeoM.Translate(float64(experienceX), float64(experienceY))
+                RenderExperienceBadge(screen, imageCache, unit, mediumFont, options, true)
+            },
+        })
+
+        y += background.Bounds().Dy() + 1
+
+        artifacts := slices.Clone(unit.GetArtifacts())
 
         for _, slot := range unit.GetArtifactSlots() {
             rect := util.ImageRect(x, y, background)
