@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/fonts"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -261,7 +262,9 @@ func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, un
     return float64(pic.Bounds().Dy() + 1 * data.ScreenScale)
 }
 
-func makeItemPopup(uiGroup *uilib.UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, layer uilib.UILayer, item *artifact.Artifact, mediumFont *font.Font) *uilib.UIElement {
+func makeItemPopup(uiGroup *uilib.UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, layer uilib.UILayer, item *artifact.Artifact) *uilib.UIElement {
+    vaultFonts := fonts.MakeVaultFonts(cache)
+
     rect := image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight)
     getAlpha := uiGroup.MakeFadeIn(7)
     element := &uilib.UIElement{
@@ -277,7 +280,7 @@ func makeItemPopup(uiGroup *uilib.UIElementGroup, cache *lbx.LbxCache, imageCach
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(float64(48 * data.ScreenScale), float64(48 * data.ScreenScale))
-            artifact.RenderArtifactBox(screen, imageCache, *item, uiGroup.Counter / 8, mediumFont, options)
+            artifact.RenderArtifactBox(screen, imageCache, *item, uiGroup.Counter / 8, vaultFonts.ItemName, options)
         },
     }
 
@@ -338,7 +341,7 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
                 Layer: layer,
                 RightClick: func(element *uilib.UIElement){
                     if showArtifact != nil {
-                        uiGroup.AddElement(makeItemPopup(uiGroup, cache, imageCache, layer+1, showArtifact, mediumFont))
+                        uiGroup.AddElement(makeItemPopup(uiGroup, cache, imageCache, layer+1, showArtifact))
                     }
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
