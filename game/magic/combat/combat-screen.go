@@ -1524,7 +1524,7 @@ func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUni
     if combat.Model.InsideWallOfDarkness(defender.X, defender.Y) && !combat.Model.InsideWallOfDarkness(attacker.X, attacker.Y) {
         // attacker can't target a defender inside a wall of darkness, unless the attacker has True Sight or Illusions Immunity
 
-        if attacker.Unit.HasEnchantment(data.UnitEnchantmentTrueSight) || attacker.Unit.HasAbility(data.AbilityIllusionsImmunity) {
+        if attacker.HasAbility(data.AbilityIllusionsImmunity) {
             return true
         }
 

@@ -52,6 +52,7 @@ const (
     AbilityDispelEvil
     AbilityDoomBoltSpell
     AbilityDoomGaze
+    AbilityDeathTouch
     AbilityFireballSpell
     AbilityFireBreath
     AbilityFireImmunity
@@ -121,36 +122,6 @@ const (
     AbilitySuperPrayermaster
     AbilitySage
     AbilitySuperSage
-
-    // artifact abilities
-    AbilityBless
-    AbilityChaos
-    AbilityCloakOfFear
-    AbilityDeath
-    AbilityDeathTouch
-    AbilityDestruction
-    AbilityElementalArmor
-    AbilityEndurance
-    AbilityFlaming
-    AbilityFlight
-    AbilityGiantStrength
-    AbilityGuardianWind
-    AbilityHaste
-    AbilityHolyAvenger
-    AbilityInvulnerability
-    AbilityLightning
-    AbilityLionHeart
-    AbilityPhantasmal
-    AbilityPlanarTravel
-    AbilityPowerDrain
-    AbilityResistElements
-    AbilityResistMagic
-    AbilityRighteousness
-    AbilityStoning
-    AbilityTrueSight
-    AbilityVampiric
-    AbilityWaterWalking
-    AbilityWraithform
 )
 
 // the file that stores the icon for this ability
@@ -165,11 +136,9 @@ func (ability Ability) LbxFile() string {
         case AbilityDeathGaze: return "special2.lbx"
         case AbilityDeathImmunity: return "special.lbx"
         case AbilityDispelEvil: return "special2.lbx"
-        case AbilityHolyAvenger: return "itemisc.lbx"
         case AbilityDoomBoltSpell: return "special.lbx"
         case AbilityDoomGaze: return "special.lbx"
         case AbilityDeathTouch: return "special2.lbx"
-        case AbilityDestruction: return "special2.lbx"
         case AbilityFireballSpell: return "special.lbx"
         case AbilityFireBreath: return "special2.lbx"
         case AbilityFireImmunity: return "special.lbx"
@@ -183,7 +152,7 @@ func (ability Ability) LbxFile() string {
         case AbilityImmolation: return "special.lbx"
         case AbilityInvisibility: return "special.lbx"
         case AbilityLargeShield: return "special.lbx"
-        case AbilityLifeSteal, AbilityVampiric: return "special.lbx"
+        case AbilityLifeSteal: return "special.lbx"
         case AbilityLightningBreath: return "special2.lbx"
         case AbilityLongRange: return "special2.lbx"
         case AbilityMagicImmunity: return "special.lbx"
@@ -203,7 +172,7 @@ func (ability Ability) LbxFile() string {
         case AbilityScouting: return "special.lbx"
         case AbilityStoningGaze: return "special.lbx"
         case AbilityStoningImmunity: return "special.lbx"
-        case AbilityStoningTouch, AbilityStoning: return "special.lbx"
+        case AbilityStoningTouch: return "special.lbx"
         case AbilitySummonDemons: return "special2.lbx"
         case AbilityTeleporting: return "special.lbx"
         case AbilityThrown: return "special2.lbx"
@@ -249,11 +218,9 @@ func (ability Ability) Name() string {
         case AbilityDeathGaze: return fmt.Sprintf("Death Gaze %v", int(ability.Value))
         case AbilityDeathImmunity: return "Death Immunity"
         case AbilityDispelEvil: return "Dispel Evil"
-        case AbilityHolyAvenger: return "Holy Avenger"
         case AbilityDoomBoltSpell: return "Doom Bolt Spell"
         case AbilityDoomGaze: return "Doom Gaze"
         case AbilityDeathTouch: return "Death Touch"
-        case AbilityDestruction: return "Destruction"
         case AbilityFireballSpell: return fmt.Sprintf("Fireball Spell x%v", int(ability.Value))
         case AbilityFireBreath: return fmt.Sprintf("Fire Breath %v", int(ability.Value))
         case AbilityFireImmunity: return "Fire Immunity"
@@ -268,7 +235,6 @@ func (ability Ability) Name() string {
         case AbilityInvisibility: return "Invisibility"
         case AbilityLargeShield: return "Large Shield"
         case AbilityLifeSteal: return fmt.Sprintf("Life Steal %v", int(ability.Value))
-        case AbilityVampiric: return "Vampiric"
         case AbilityLightningBreath: return fmt.Sprintf("Lightning Breath %v", int(ability.Value))
         case AbilityLongRange: return "Long Range"
         case AbilityMagicImmunity: return "Magic Immunity"
@@ -289,7 +255,6 @@ func (ability Ability) Name() string {
         case AbilityStoningGaze: return fmt.Sprintf("Stoning Gaze %v", int(ability.Value))
         case AbilityStoningImmunity: return "Stoning Immunity"
         case AbilityStoningTouch: return fmt.Sprintf("Stoning Touch %v", int(ability.Value))
-        case AbilityStoning: return "Stoning"
         case AbilitySummonDemons: return "Summon Demons"
         case AbilityTeleporting: return "Teleporting"
         case AbilityThrown: return "Thrown"
@@ -323,30 +288,6 @@ func (ability Ability) Name() string {
         case AbilitySuperPrayermaster: return "Super Prayermaster"
         case AbilitySage: return "Sage"
         case AbilitySuperSage: return "Super Sage"
-
-        case AbilityBless: return "Bless"
-        case AbilityChaos: return "Chaos"
-        case AbilityCloakOfFear: return "Cloak Of Fear"
-        case AbilityDeath: return "Death"
-        case AbilityElementalArmor: return "Elemental Armor"
-        case AbilityEndurance: return "Endurance"
-        case AbilityFlaming: return "Flaming"
-        case AbilityFlight: return "Flight"
-        case AbilityGiantStrength: return "Giant Strength"
-        case AbilityGuardianWind: return "Guardian Wind"
-        case AbilityHaste: return "Haste"
-        case AbilityInvulnerability: return "Invulnerability"
-        case AbilityLightning: return "Lightning"
-        case AbilityLionHeart: return "Lion Heart"
-        case AbilityPhantasmal: return "Phantasmal"
-        case AbilityPlanarTravel: return "Planar Travel"
-        case AbilityPowerDrain: return "Power Drain"
-        case AbilityResistElements: return "Resist Elements"
-        case AbilityResistMagic: return "Resist Magic"
-        case AbilityRighteousness: return "Righteousness"
-        case AbilityTrueSight: return "True Sight"
-        case AbilityWaterWalking: return "Water Walking"
-        case AbilityWraithform: return "Wraithform"
     }
 
     return "?"
@@ -364,11 +305,9 @@ func (ability Ability) LbxIndex() int {
         case AbilityDeathGaze: return 24
         case AbilityDeathImmunity: return 49
         case AbilityDispelEvil: return 22
-        case AbilityHolyAvenger: return 33
         case AbilityDoomBoltSpell: return 41
         case AbilityDoomGaze: return 26
         case AbilityDeathTouch: return 30
-        case AbilityDestruction: return 5
         case AbilityFireballSpell: return 39
         case AbilityFireBreath: return 27
         case AbilityFireImmunity: return 6
@@ -382,7 +321,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityImmolation: return 32
         case AbilityInvisibility: return 18
         case AbilityLargeShield: return 14
-        case AbilityLifeSteal, AbilityVampiric: return 31
+        case AbilityLifeSteal: return 31
         case AbilityLightningBreath: return 26
         case AbilityLongRange: return 18
         case AbilityMagicImmunity: return 12
@@ -402,7 +341,7 @@ func (ability Ability) LbxIndex() int {
         case AbilityScouting: return 37
         case AbilityStoningGaze: return 26
         case AbilityStoningImmunity: return 7
-        case AbilityStoningTouch, AbilityStoning: return 27
+        case AbilityStoningTouch: return 27
         case AbilitySummonDemons: return 28
         case AbilityTeleporting: return 0
         case AbilityThrown: return 19
@@ -432,30 +371,172 @@ func (ability Ability) LbxIndex() int {
     return -1
 }
 
-func (ability Ability) MagicType() MagicType {
-    switch ability.Ability {
-        case AbilityWraithform, AbilityVampiric,
-             AbilityDeath, AbilityPowerDrain,
-             AbilityCloakOfFear: return DeathMagic
+func (item ItemAbility) MagicType() MagicType {
+    switch item {
+        case ItemAbilityWraithform, ItemAbilityVampiric,
+             ItemAbilityDeath, ItemAbilityPowerDrain,
+             ItemAbilityCloakOfFear: return DeathMagic
 
-        case AbilityGuardianWind, AbilityHaste,
-             AbilityInvisibility, AbilityFlight,
-             AbilityResistMagic, AbilityMagicImmunity,
-             AbilityPhantasmal: return SorceryMagic
+        case ItemAbilityGuardianWind, ItemAbilityHaste,
+             ItemAbilityInvisibility, ItemAbilityFlight,
+             ItemAbilityResistMagic, ItemAbilityMagicImmunity,
+             ItemAbilityPhantasmal: return SorceryMagic
 
-        case AbilityWaterWalking, AbilityRegeneration,
-             AbilityPathfinding, AbilityMerging,
-             AbilityResistElements, AbilityElementalArmor,
-             AbilityGiantStrength, AbilityStoning: return NatureMagic
+        case ItemAbilityWaterWalking, ItemAbilityRegeneration,
+             ItemAbilityPathfinding, ItemAbilityMerging,
+             ItemAbilityResistElements, ItemAbilityElementalArmor,
+             ItemAbilityGiantStrength, ItemAbilityStoning: return NatureMagic
 
-        case AbilityHolyAvenger, AbilityTrueSight,
-             AbilityBless, AbilityRighteousness,
-             AbilityInvulnerability, AbilityEndurance,
-             AbilityPlanarTravel, AbilityLionHeart: return LifeMagic
+        case ItemAbilityHolyAvenger, ItemAbilityTrueSight,
+             ItemAbilityBless, ItemAbilityRighteousness,
+             ItemAbilityInvulnerability, ItemAbilityEndurance,
+             ItemAbilityPlanarTravel, ItemAbilityLionHeart: return LifeMagic
 
-        case AbilityFlaming, AbilityLightning,
-             AbilityChaos, AbilityDestruction: return ChaosMagic
+        case ItemAbilityFlaming, ItemAbilityLightning,
+             ItemAbilityChaos, ItemAbilityDestruction: return ChaosMagic
     }
 
     return MagicNone
+}
+
+type ItemAbility int
+const (
+    ItemAbilityNone ItemAbility = iota
+    ItemAbilityVampiric
+    ItemAbilityGuardianWind
+    ItemAbilityLightning
+    ItemAbilityCloakOfFear
+    ItemAbilityDestruction
+    ItemAbilityWraithform
+    ItemAbilityRegeneration
+    ItemAbilityPathfinding
+    ItemAbilityWaterWalking
+    ItemAbilityResistElements
+    ItemAbilityElementalArmor
+    ItemAbilityChaos
+    ItemAbilityStoning
+    ItemAbilityEndurance
+    ItemAbilityHaste
+    ItemAbilityInvisibility
+    ItemAbilityDeath
+    ItemAbilityFlight
+    ItemAbilityResistMagic
+    ItemAbilityMagicImmunity
+    ItemAbilityFlaming
+    ItemAbilityHolyAvenger
+    ItemAbilityTrueSight
+    ItemAbilityPhantasmal
+    ItemAbilityPowerDrain
+    ItemAbilityBless
+    ItemAbilityLionHeart
+    ItemAbilityGiantStrength
+    ItemAbilityPlanarTravel
+    ItemAbilityMerging
+    ItemAbilityRighteousness
+    ItemAbilityInvulnerability
+)
+
+func (item ItemAbility) AbilityType() AbilityType {
+    switch item {
+        case ItemAbilityCloakOfFear: return AbilityCauseFear
+        case ItemAbilityLightning: return AbilityArmorPiercing
+        case ItemAbilityHolyAvenger: return AbilityDispelEvil
+        // FIXME: should return AbilityValue(StoningTouch, 1)
+        case ItemAbilityStoning: return AbilityStoningTouch
+        case ItemAbilityPhantasmal: return AbilityIllusion
+
+    }
+
+    return AbilityNone
+}
+
+func (item ItemAbility) Enchantment() UnitEnchantment {
+    switch item {
+        case ItemAbilityBless: return UnitEnchantmentBless
+        case ItemAbilityHolyAvenger: return UnitEnchantmentBless
+        case ItemAbilityTrueSight: return UnitEnchantmentTrueSight
+        case ItemAbilityResistElements: return UnitEnchantmentResistElements
+        case ItemAbilityElementalArmor: return UnitEnchantmentElementalArmor
+        // giant strength stacks with the spell, so we need a way to count the number of times this enchantment is applied to a unit
+        case ItemAbilityGiantStrength: return UnitEnchantmentGiantStrength
+        case ItemAbilityGuardianWind: return UnitEnchantmentGuardianWind
+        case ItemAbilityHaste: return UnitEnchantmentHaste
+        case ItemAbilityResistMagic: return UnitEnchantmentResistMagic
+        case ItemAbilityMagicImmunity: return UnitEnchantmentMagicImmunity
+        case ItemAbilityWraithform: return UnitEnchantmentWraithForm
+        case ItemAbilityRighteousness: return UnitEnchantmentRighteousness
+        case ItemAbilityInvulnerability: return UnitEnchantmentInvulnerability
+        case ItemAbilityEndurance: return UnitEnchantmentEndurance
+        case ItemAbilityPlanarTravel: return UnitEnchantmentPlanarTravel
+        case ItemAbilityLionHeart: return UnitEnchantmentLionHeart
+        case ItemAbilityWaterWalking: return UnitEnchantmentWaterWalking
+        case ItemAbilityRegeneration: return UnitEnchantmentRegeneration
+        case ItemAbilityPathfinding: return UnitEnchantmentPathFinding
+        case ItemAbilityFlight: return UnitEnchantmentFlight
+        case ItemAbilityInvisibility: return UnitEnchantmentInvisibility
+    }
+
+    return UnitEnchantmentNone
+}
+
+func (item ItemAbility) Name() string {
+    switch item {
+        case ItemAbilityBless: return "Bless"
+        case ItemAbilityChaos: return "Chaos"
+        case ItemAbilityCloakOfFear: return "Cloak Of Fear"
+        case ItemAbilityDeath: return "Death"
+        case ItemAbilityElementalArmor: return "Elemental Armor"
+        case ItemAbilityEndurance: return "Endurance"
+        case ItemAbilityFlaming: return "Flaming"
+        case ItemAbilityFlight: return "Flight"
+        case ItemAbilityGiantStrength: return "Giant Strength"
+        case ItemAbilityGuardianWind: return "Guardian Wind"
+        case ItemAbilityHaste: return "Haste"
+        case ItemAbilityInvulnerability: return "Invulnerability"
+        case ItemAbilityLightning: return "Lightning"
+        case ItemAbilityLionHeart: return "Lion Heart"
+        case ItemAbilityPhantasmal: return "Phantasmal"
+        case ItemAbilityPlanarTravel: return "Planar Travel"
+        case ItemAbilityPowerDrain: return "Power Drain"
+        case ItemAbilityResistElements: return "Resist Elements"
+        case ItemAbilityResistMagic: return "Resist Magic"
+        case ItemAbilityRighteousness: return "Righteousness"
+        case ItemAbilityTrueSight: return "True Sight"
+        case ItemAbilityWaterWalking: return "Water Walking"
+        case ItemAbilityWraithform: return "Wraithform"
+
+        case ItemAbilityVampiric: return "Vampiric"
+        case ItemAbilityDestruction: return "Destruction"
+        case ItemAbilityRegeneration: return "Regeneration"
+        case ItemAbilityPathfinding: return "Pathfinding"
+        case ItemAbilityStoning: return "Stoning"
+        case ItemAbilityInvisibility: return "Invisibility"
+        case ItemAbilityMagicImmunity: return "Magic Immunity"
+        case ItemAbilityHolyAvenger: return "Holy Avenger"
+        case ItemAbilityMerging: return "Merging"
+    }
+
+    return ""
+}
+
+func (item ItemAbility) LbxFile() string {
+    switch item {
+        case ItemAbilityHolyAvenger: return "itemisc.lbx"
+        case ItemAbilityVampiric: return "special.lbx"
+        case ItemAbilityDestruction: return "special2.lbx"
+        case ItemAbilityStoning: return "special.lbx"
+    }
+
+    return ""
+}
+
+func (item ItemAbility) LbxIndex() int {
+    switch item {
+        case ItemAbilityStoning: return 27
+        case ItemAbilityHolyAvenger: return 33
+        case ItemAbilityDestruction: return 5
+        case ItemAbilityVampiric: return 31
+    }
+
+    return -1
 }
