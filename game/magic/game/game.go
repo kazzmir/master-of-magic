@@ -251,8 +251,6 @@ type Game struct {
 
     TurnNumber uint64
 
-    Heroes map[herolib.HeroType]*herolib.Hero
-
     ArtifactPool map[string]*artifact.Artifact
 
     MouseData *mouselib.MouseData
@@ -508,18 +506,6 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
     return newPlayer
 }
 
-func createHeroes() map[herolib.HeroType]*herolib.Hero {
-    heroes := make(map[herolib.HeroType]*herolib.Hero)
-
-    for _, heroType := range herolib.AllHeroTypes() {
-        hero := herolib.MakeHeroSimple(heroType)
-        hero.SetExtraAbilities()
-        heroes[heroType] = hero
-    }
-
-    return heroes
-}
-
 func createArtifactPool(lbxCache *lbx.LbxCache) map[string]*artifact.Artifact {
     artifacts, err := artifact.ReadArtifacts(lbxCache)
     if err != nil {
@@ -628,7 +614,6 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         ImageCache: imageCache,
         InfoFontYellow: infoFontYellow,
         InfoFontRed: infoFontRed,
-        Heroes: createHeroes(),
         ArtifactPool: createArtifactPool(lbxCache),
         WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
@@ -2412,7 +2397,7 @@ func (game *Game) maybeHireHero(player *playerlib.Player) {
 
     if rand.N(100) < chance {
         var heroCandidates []*herolib.Hero
-        for _, hero := range game.Heroes {
+        for _, hero := range player.HeroPool {
             // torin can never be hired
             if hero.HeroType == herolib.HeroTorin {
                 continue
@@ -4357,7 +4342,7 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
         log.Printf("Error: unable to read spells: %v", err)
     } else {
         var heroes []*herolib.Hero
-        for _, hero := range game.Heroes {
+        for _, hero := range player.HeroPool {
             // only include available heroes that are not champions
             if hero.Status == herolib.StatusAvailable && !hero.IsChampion() {
                 heroes = append(heroes, hero)

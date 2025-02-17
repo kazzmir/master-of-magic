@@ -435,11 +435,15 @@ func (hero *Hero) SetStatus(status HeroStatus) {
 }
 
 func (hero *Hero) GetName() string {
-    return hero.Unit.GetName()
+    return hero.Name
+}
+
+func (hero *Hero) SetName(name string) {
+    hero.Name = name
 }
 
 func (hero *Hero) FullName() string {
-    return fmt.Sprintf("%v the %v", hero.Unit.GetName(), hero.GetTitle())
+    return fmt.Sprintf("%v the %v", hero.GetName(), hero.GetTitle())
 }
 
 func (hero *Hero) GetPortraitLbxInfo() (string, int) {
