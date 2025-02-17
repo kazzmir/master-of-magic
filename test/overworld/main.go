@@ -1466,6 +1466,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
     city.Banner = wizard.Banner
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
+    city.AddBuilding(buildinglib.BuildingFortress)
     city.Race = wizard.Race
     city.Farmers = 3
     city.Workers = 3
@@ -1482,12 +1483,12 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
 
-    player.Heroes[0] = hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, wizard.Banner, nil), hero.HeroRakir, "Rakir")
-    player.Heroes[1] = hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, 1, 1, data.PlaneArcanus, wizard.Banner, nil), hero.HeroTorin, "Torin")
-    player.Heroes[2] = hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroWarrax, 1, 1, data.PlaneArcanus, wizard.Banner, nil), hero.HeroWarrax, "Warrax")
-    player.Heroes[3] = hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRavashack, 1, 1, data.PlaneArcanus, wizard.Banner, nil), hero.HeroRavashack, "Ravashack")
-    player.Heroes[4] = hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroSirHarold, 1, 1, data.PlaneArcanus, wizard.Banner, nil), hero.HeroSirHarold, "Sir Harold")
-    player.Heroes[5] = hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroAlorra, 1, 1, data.PlaneArcanus, wizard.Banner, nil), hero.HeroAlorra, "Alorra")
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, x, y, data.PlaneArcanus, wizard.Banner, nil), hero.HeroRakir, "Rakir"))
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, x, y, data.PlaneArcanus, wizard.Banner, nil), hero.HeroTorin, "Torin"))
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroWarrax, x, y, data.PlaneArcanus, wizard.Banner, nil), hero.HeroWarrax, "Warrax"))
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRavashack, x, y, data.PlaneArcanus, wizard.Banner, nil), hero.HeroRavashack, "Ravashack"))
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroSirHarold, x, y, data.PlaneArcanus, wizard.Banner, nil), hero.HeroSirHarold, "Sir Harold"))
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroAlorra, x, y, data.PlaneArcanus, wizard.Banner, nil), hero.HeroAlorra, "Alorra"))
 
     player.VaultEquipment[0] = &artifact.Artifact{
         Name: "Baloney",
@@ -1569,6 +1570,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Events <- &gamelib.GameEventVault{
         CreatedArtifact: &testArtifact,
+        Player: player,
     }
 
     return game

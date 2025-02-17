@@ -194,6 +194,18 @@ func (artifact *Artifact) HasItemAbility(ability data.ItemAbility) bool {
     })
 }
 
+func (artifact *Artifact) HasEnchantment(enchantment data.UnitEnchantment) bool {
+    for _, check := range artifact.Powers {
+        isAbility := check.Type == PowerTypeAbility1 || check.Type == PowerTypeAbility2 || check.Type == PowerTypeAbility3
+        if isAbility && check.Ability.Enchantment() == enchantment {
+            return true
+        }
+    }
+
+    return false
+
+}
+
 func (artifact *Artifact) HasAbility(ability data.AbilityType) bool {
     switch ability {
         case data.AbilityLargeShield: return artifact.Type == ArtifactTypeShield
@@ -201,8 +213,17 @@ func (artifact *Artifact) HasAbility(ability data.AbilityType) bool {
 
     for _, check := range artifact.Powers {
         isAbility := check.Type == PowerTypeAbility1 || check.Type == PowerTypeAbility2 || check.Type == PowerTypeAbility3
-        if isAbility && check.Ability.AbilityType() == ability {
-            return true
+        if isAbility {
+            if check.Ability.AbilityType() == ability {
+                return true
+            }
+
+            // an item power might confer an enchantment that confers an ability
+            for _, enchantmentAbility := range check.Ability.Enchantment().Abilities() {
+                if enchantmentAbility.Ability == ability {
+                    return true
+                }
+            }
         }
     }
 

@@ -439,8 +439,11 @@ const (
 func (item ItemAbility) AbilityType() AbilityType {
     switch item {
         case ItemAbilityCloakOfFear: return AbilityCauseFear
-        case ItemAbilityPlanarTravel: return AbilityPlaneShift
         case ItemAbilityLightning: return AbilityArmorPiercing
+        case ItemAbilityHolyAvenger: return AbilityDispelEvil
+        // FIXME: should return AbilityValue(StoningTouch, 1)
+        case ItemAbilityStoning: return AbilityStoningTouch
+        case ItemAbilityPhantasmal: return AbilityIllusion
 
     }
 
@@ -450,6 +453,27 @@ func (item ItemAbility) AbilityType() AbilityType {
 func (item ItemAbility) Enchantment() UnitEnchantment {
     switch item {
         case ItemAbilityBless: return UnitEnchantmentBless
+        case ItemAbilityHolyAvenger: return UnitEnchantmentBless
+        case ItemAbilityTrueSight: return UnitEnchantmentTrueSight
+        case ItemAbilityResistElements: return UnitEnchantmentResistElements
+        case ItemAbilityElementalArmor: return UnitEnchantmentElementalArmor
+        // giant strength stacks with the spell, so we need a way to count the number of times this enchantment is applied to a unit
+        case ItemAbilityGiantStrength: return UnitEnchantmentGiantStrength
+        case ItemAbilityGuardianWind: return UnitEnchantmentGuardianWind
+        case ItemAbilityHaste: return UnitEnchantmentHaste
+        case ItemAbilityResistMagic: return UnitEnchantmentResistMagic
+        case ItemAbilityMagicImmunity: return UnitEnchantmentMagicImmunity
+        case ItemAbilityWraithform: return UnitEnchantmentWraithForm
+        case ItemAbilityRighteousness: return UnitEnchantmentRighteousness
+        case ItemAbilityInvulnerability: return UnitEnchantmentInvulnerability
+        case ItemAbilityEndurance: return UnitEnchantmentEndurance
+        case ItemAbilityPlanarTravel: return UnitEnchantmentPlanarTravel
+        case ItemAbilityLionHeart: return UnitEnchantmentLionHeart
+        case ItemAbilityWaterWalking: return UnitEnchantmentWaterWalking
+        case ItemAbilityRegeneration: return UnitEnchantmentRegeneration
+        case ItemAbilityPathfinding: return UnitEnchantmentPathFinding
+        case ItemAbilityFlight: return UnitEnchantmentFlight
+        case ItemAbilityInvisibility: return UnitEnchantmentInvisibility
     }
 
     return UnitEnchantmentNone

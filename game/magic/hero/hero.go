@@ -598,7 +598,9 @@ func (hero *Hero) GetEnchantments() []data.UnitEnchantment {
 }
 
 func (hero *Hero) HasEnchantment(enchantment data.UnitEnchantment) bool {
-    return hero.Unit.HasEnchantment(enchantment)
+    return hero.Unit.HasEnchantment(enchantment) || slices.ContainsFunc(hero.Equipment[:], func (a *artifact.Artifact) bool {
+        return a != nil && a.HasEnchantment(enchantment)
+    })
 }
 
 func (hero *Hero) AddEnchantment(enchantment data.UnitEnchantment) {
