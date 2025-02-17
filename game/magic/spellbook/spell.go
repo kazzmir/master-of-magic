@@ -1274,6 +1274,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
                     // if the user is already casting a spell then ask them if they want to abort that spell
                     if overland && currentSpell.Valid() {
+                        group := uilib.MakeGroup()
                         confirm := func(){
                             // if the user clicked on the same spell being cast then select an invalid spell, which
                             // is the same thing as not casting any spell
@@ -1282,9 +1283,14 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                             } else {
                                 shutdown(spell, true)
                             }
+
+                            ui.RemoveGroup(group)
                         }
                         message := fmt.Sprintf("Do you wish to abort your %v spell?", currentSpell.Name)
-                        ui.AddElements(uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, message, true, confirm, func(){}))
+                        group.AddElements(uilib.MakeConfirmDialogWithLayer(group, cache, &imageCache, 2, message, true, confirm, func(){
+                            ui.RemoveGroup(group)
+                        }))
+                        ui.AddGroup(group)
                     } else {
                         // log.Printf("Click on spell %v", spell)
                         shutdown(spell, true)

@@ -896,13 +896,18 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 LeftClick: func(element *uilib.UIElement){
                     // can only cancel the player's enchantments
                     if enchantment.Banner == player.GetBanner() {
-                        no := func(){}
+                        group := uilib.MakeGroup()
+                        no := func(){
+                            ui.RemoveGroup(group)
+                        }
                         yes := func(){
                             player.GlobalEnchantments.Remove(enchantment.Enchantment)
                             setupEnchantments()
+                            ui.RemoveGroup(group)
                         }
 
-                        ui.AddElements(uilib.MakeConfirmDialog(ui, magic.Cache, &magic.ImageCache, fmt.Sprintf("Do you wish to cancel your %v spell?", name), false, yes, no))
+                        group.AddElements(uilib.MakeConfirmDialog(group, magic.Cache, &magic.ImageCache, fmt.Sprintf("Do you wish to cancel your %v spell?", name), false, yes, no))
+                        ui.AddGroup(group)
                     }
                 },
                 RightClick: func(element *uilib.UIElement) {

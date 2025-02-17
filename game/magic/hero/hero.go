@@ -601,6 +601,8 @@ func (hero *Hero) GetEnchantments() []data.UnitEnchantment {
     return hero.Unit.GetEnchantments()
 }
 
+// note that HasEnchantment is not the same as contains(GetEnchantments(), enchantment) because HasEnchantment will search
+// in the artifacts as well. GetEnchantments will only return the enchantments that have been explicitly cast on a unit
 func (hero *Hero) HasEnchantment(enchantment data.UnitEnchantment) bool {
     return hero.Unit.HasEnchantment(enchantment) || slices.ContainsFunc(hero.Equipment[:], func (a *artifact.Artifact) bool {
         return a != nil && a.HasEnchantment(enchantment)
@@ -986,8 +988,13 @@ func (hero *Hero) GetAbilityBonus(ability data.AbilityType) int {
 }
 
 func (hero *Hero) GetBaseRangedAttackPower() int {
+    base := hero.Unit.GetBaseRangedAttackPower()
+    if base == 0 {
+        return 0
+    }
+
     level := hero.GetExperienceLevel()
-    return hero.Unit.GetBaseRangedAttackPower() + hero.getBaseRangedAttackPowerProgression(level)
+    return base + hero.getBaseRangedAttackPowerProgression(level)
 }
 
 func (hero *Hero) getBaseRangedAttackPowerProgression(level units.HeroExperienceLevel) int {
