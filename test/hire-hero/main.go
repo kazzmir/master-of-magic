@@ -42,7 +42,7 @@ func NewEngine(scenario int) (*Engine, error) {
                 Unit: units.HeroRakir,
             }, hero.HeroRakir, "Rakir")
 
-    ui.AddElements(gamelib.MakeHireHeroScreenUI(cache, ui, rakir, 100, func (hired bool){
+    ui.AddGroup(gamelib.MakeHireHeroScreenUI(cache, ui, rakir, 100, func (hired bool){
         log.Printf("hired %v", hired)
     }, func(){}))
 

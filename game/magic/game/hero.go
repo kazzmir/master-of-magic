@@ -24,7 +24,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, goldToHire int, action func(bool), onFadeOut func()) []*uilib.UIElement {
+func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, goldToHire int, action func(bool), onFadeOut func()) *uilib.UIElementGroup {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -71,8 +71,6 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
     okDismissFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
 
-    var elements []*uilib.UIElement
-
     const fadeSpeed = 7
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
@@ -84,7 +82,9 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
         titleText = "Hero Summoned"
     }
 
-    elements = append(elements, &uilib.UIElement{
+    uiGroup := uilib.MakeGroup()
+
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
@@ -123,12 +123,9 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
         },
     })
 
-    uiGroup := uilib.MakeGroup()
-    ui.AddGroup(uiGroup)
+    uiGroup.AddElements(unitview.MakeUnitAbilitiesElements(uiGroup, &imageCache, hero, mediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, true))
 
-    ui.AddElements(unitview.MakeUnitAbilitiesElements(uiGroup, &imageCache, hero, mediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, true))
-
-    elements = append(elements, &uilib.UIElement{
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             box, _ := imageCache.GetImage("unitview.lbx", 2, 0)
@@ -144,7 +141,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
     // hire button
     hireRect := util.ImageRect(257 * data.ScreenScale, 149 * data.ScreenScale + int(yTop), buttonBackgrounds[0])
     hireIndex := 0
-    elements = append(elements, &uilib.UIElement{
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Rect: hireRect,
         LeftClick: func(this *uilib.UIElement){
@@ -171,7 +168,6 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             hireIndex = 0
             getAlpha = ui.MakeFadeOut(fadeSpeed)
             ui.AddDelay(fadeSpeed, func(){
-                ui.RemoveElements(elements)
                 ui.RemoveGroup(uiGroup)
                 onFadeOut()
             })
@@ -190,7 +186,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
     rejectRect := util.ImageRect(257 * data.ScreenScale, 169 * data.ScreenScale + int(yTop), buttonBackgrounds[0])
     rejectIndex := 0
-    elements = append(elements, &uilib.UIElement{
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Rect: rejectRect,
         LeftClick: func(this *uilib.UIElement){
@@ -200,7 +196,6 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             getAlpha = ui.MakeFadeOut(fadeSpeed)
 
             ui.AddDelay(fadeSpeed, func(){
-                ui.RemoveElements(elements)
                 ui.RemoveGroup(uiGroup)
                 action(false)
             })
@@ -217,7 +212,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
         },
     })
 
-    elements = append(elements, &uilib.UIElement{
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             banner, _ := imageCache.GetImage("hire.lbx", 0, 0)
@@ -230,7 +225,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
         },
     })
 
-    return elements
+    return uiGroup
 }
 
 func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.Hero) {

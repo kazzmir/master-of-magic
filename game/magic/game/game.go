@@ -2457,7 +2457,7 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
         quit = true
     }
 
-    game.HudUI.AddElements(MakeHireHeroScreenUI(game.Cache, game.HudUI, hero, cost, result, fadeOut))
+    game.HudUI.AddGroup(MakeHireHeroScreenUI(game.Cache, game.HudUI, hero, cost, result, fadeOut))
 
     for !quit {
         game.Counter += 1
