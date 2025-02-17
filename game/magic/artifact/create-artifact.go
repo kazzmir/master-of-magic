@@ -1342,15 +1342,19 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
             }
 
             if len(currentArtifact.Powers) == 0 {
+                group := uilib.MakeGroup()
                 yes := func(){
                     quit = true
                     canceled = true
+                    ui.RemoveGroup(group)
                 }
 
                 no := func(){
+                    ui.RemoveGroup(group)
                 }
 
-                ui.AddElements(uilib.MakeConfirmDialog(ui, cache, &imageCache, "This item has no powers. Do you wish to abort the enchantment?", true, yes, no))
+                group.AddElements(uilib.MakeConfirmDialog(group, cache, &imageCache, "This item has no powers. Do you wish to abort the enchantment?", true, yes, no))
+                ui.AddGroup(group)
                 return
             }
 

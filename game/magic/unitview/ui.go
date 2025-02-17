@@ -166,7 +166,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
         },
     })
 
-    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false))
+    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false))
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
@@ -192,16 +192,15 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
             var confirmElements []*uilib.UIElement
 
             yes := func(){
-                ui.RemoveGroup(uiGroup)
                 doDisband()
             }
 
             no := func(){
             }
 
-            confirmElements = uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, disbandMessage, true, yes, no)
+            confirmElements = uilib.MakeConfirmDialogWithLayer(uiGroup, cache, &imageCache, 2, disbandMessage, true, yes, no)
 
-            ui.AddElements(confirmElements)
+            uiGroup.AddElements(confirmElements)
         },
         LeftClickRelease: func(this *uilib.UIElement){
             cancelIndex = 0

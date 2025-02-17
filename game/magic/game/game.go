@@ -2742,16 +2742,22 @@ func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
             message = "Some units do not have enough mana and will disband unless you make more mana. Do you wish to allow them to disband?"
         }
 
+        group := uilib.MakeGroup()
+
         yes := func(){
             quit = true
             doit = true
+
+            game.HudUI.RemoveGroup(group)
         }
 
         no := func(){
             quit = true
+            game.HudUI.RemoveGroup(group)
         }
 
-        game.HudUI.AddElements(uilib.MakeConfirmDialog(game.HudUI, game.Cache, &game.ImageCache, message, true, yes, no))
+        group.AddElements(uilib.MakeConfirmDialog(group, game.Cache, &game.ImageCache, message, true, yes, no))
+        game.HudUI.AddGroup(group)
 
         for !quit {
             game.Counter += 1
@@ -4190,7 +4196,10 @@ func (game *Game) confirmRazeTown(yield coroutine.YieldFunc, city *citylib.City)
 
     ui.SetElementsFromArray(nil)
 
-    ui.AddElements(uilib.MakeConfirmDialogWithLayerFull(ui, game.Cache, &game.ImageCache, 1, "Do you wish to completely destroy this city?", true, no, yes, noImages, yesImages))
+    group := uilib.MakeGroup()
+
+    group.AddElements(uilib.MakeConfirmDialogWithLayerFull(group, game.Cache, &game.ImageCache, 1, "Do you wish to completely destroy this city?", true, no, yes, noImages, yesImages))
+    ui.AddGroup(group)
 
     oldDrawer := game.Drawer
     game.Drawer = func(screen *ebiten.Image, game *Game){
@@ -4804,15 +4813,20 @@ func GetCityWallImage(city *citylib.City, cache *util.ImageCache) (*ebiten.Image
 }
 
 func (game *Game) ShowGrandVizierUI(){
+    group := uilib.MakeGroup()
+
     yes := func(){
         // FIXME: enable grand vizier
+        game.HudUI.RemoveGroup(group)
     }
 
     no := func(){
         // FIXME: disable grand vizier
+        game.HudUI.RemoveGroup(group)
     }
 
-    game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you wish to allow the Grand Vizier to select what buildings your cities create?", true, yes, no))
+    group.AddElements(uilib.MakeConfirmDialogWithLayer(group, game.Cache, &game.ImageCache, 1, "Do you wish to allow the Grand Vizier to select what buildings your cities create?", true, yes, no))
+    game.HudUI.AddGroup(group)
 }
 
 func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){

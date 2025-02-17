@@ -246,6 +246,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             LeftClick: func(element *uilib.UIElement){
                 if selectedItem != nil {
 
+                    group := uilib.MakeGroup()
+
                     gainedMana := selectedItem.Cost
                     if !player.Wizard.AbilityEnabled(setup.AbilityArtificer) {
                         gainedMana /= 2
@@ -255,12 +257,15 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                         player.Mana += gainedMana
                         selectedItem = nil
                         updateMouse()
+                        ui.RemoveGroup(group)
                     }
 
                     no := func(){
+                        ui.RemoveGroup(group)
                     }
 
-                    ui.AddElements(uilib.MakeConfirmDialog(ui, game.Cache, &imageCache, fmt.Sprintf("Do you want to destroy your %v and gain %v mana crystals?", selectedItem.Name, gainedMana), true, yes, no))
+                    group.AddElements(uilib.MakeConfirmDialog(group, game.Cache, &imageCache, fmt.Sprintf("Do you want to destroy your %v and gain %v mana crystals?", selectedItem.Name, gainedMana), true, yes, no))
+                    ui.AddGroup(group)
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){

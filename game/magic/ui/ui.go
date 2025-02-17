@@ -74,6 +74,8 @@ type UIElementGroup struct {
     Elements map[UILayer][]*UIElement
     minLayer UILayer
     maxLayer UILayer
+    Counter uint64
+    Delays []UIDelay
 }
 
 func MakeGroup() *UIElementGroup {
@@ -113,6 +115,18 @@ func (group *UIElementGroup) RemoveElements(elements []*UIElement){
     for _, element := range elements {
         group.Remove(element)
     }
+}
+
+func (group *UIElementGroup) MakeFadeIn(time uint64) util.AlphaFadeFunc {
+    return util.MakeFadeIn(time, &group.Counter)
+}
+
+func (group *UIElementGroup) MakeFadeOut(time uint64) util.AlphaFadeFunc {
+    return util.MakeFadeOut(time, &group.Counter)
+}
+
+func (group *UIElementGroup) AddDelay(time uint64, f func()){
+    group.Delays = append(group.Delays, UIDelay{Time: group.Counter + time, Func: f})
 }
 
 const DoubleClickThreshold = 20
@@ -416,6 +430,23 @@ func (ui *UI) StandardUpdate() {
             }
         }
         ui.Delays = append(ui.Delays, keepDelays...)
+    }
+
+    for _, group := range ui.Groups {
+        group.Counter += 1
+
+        var keepDelays []UIDelay
+        // invoking a delay might cause another delay to be added
+        oldDelays := slices.Clone(group.Delays)
+        group.Delays = nil
+        for _, delay := range oldDelays {
+            if group.Counter <= delay.Time {
+                keepDelays = append(keepDelays, delay)
+            } else {
+                delay.Func()
+            }
+        }
+        group.Delays = append(group.Delays, keepDelays...)
     }
 
     if !ui.Disabled {
