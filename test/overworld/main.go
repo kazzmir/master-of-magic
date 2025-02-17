@@ -1735,7 +1735,7 @@ func createScenario19(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Events <- &gamelib.GameEventHireHero{
         Player: player,
-        Hero: game.Heroes[hero.HeroRakir],
+        Hero: player.HeroPool[hero.HeroRakir],
         Cost: 200,
     }
 
@@ -2825,7 +2825,7 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
                 },
                 */
                 &gamelib.TreasurePrisonerHero{
-                    Hero: game.Heroes[0],
+                    Hero: player.HeroPool[hero.HeroRakir],
                 },
             },
         },

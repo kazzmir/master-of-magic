@@ -146,7 +146,12 @@ type Player struct {
     // relations with other players (treaties, etc)
     PlayerRelations map[*Player]*Relationship
 
+    // possible heros that can be employed. some heroes might be dead
+    HeroPool map[herolib.HeroType]*herolib.Hero
+
+    // currently employed heroes
     Heroes [6]*herolib.Hero
+
     VaultEquipment [4]*artifact.Artifact
 
     // total power points put into the casting skill
@@ -195,6 +200,7 @@ func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight i
         MyrrorFog: makeFog(),
         Wizard: wizard,
         Human: human,
+        HeroPool: createHeroes(),
         PlayerRelations: make(map[*Player]*Relationship),
         GlobalEnchantments: set.MakeSet[data.Enchantment](),
         BookOrderSeed1: rand.Uint64(),
@@ -206,6 +212,19 @@ func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight i
         },
     }
 }
+
+func createHeroes() map[herolib.HeroType]*herolib.Hero {
+    heroes := make(map[herolib.HeroType]*herolib.Hero)
+
+    for _, heroType := range herolib.AllHeroTypes() {
+        hero := herolib.MakeHeroSimple(heroType)
+        hero.SetExtraAbilities()
+        heroes[heroType] = hero
+    }
+
+    return heroes
+}
+
 
 func (player *Player) GetKnownPlayers() []*Player {
     var out []*Player

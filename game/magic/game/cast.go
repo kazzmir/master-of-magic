@@ -352,7 +352,7 @@ func (game *Game) doSelectUnit(yield coroutine.YieldFunc, player *playerlib.Play
 
 func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
     var choices []*herolib.Hero
-    for _, hero := range game.Heroes {
+    for _, hero := range player.HeroPool {
         // torin is not summonable through this method
         if hero.Status == herolib.StatusAvailable && hero.IsChampion() == champion && hero.HeroType != herolib.HeroTorin {
             choices = append(choices, hero)
@@ -388,7 +388,7 @@ func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
 }
 
 func (game *Game) doIncarnation(player *playerlib.Player) {
-    for _, hero := range game.Heroes {
+    for _, hero := range player.HeroPool {
         if hero.HeroType == herolib.HeroTorin && hero.Status != herolib.StatusEmployed {
             event := GameEventHireHero{
                 Hero: hero,
