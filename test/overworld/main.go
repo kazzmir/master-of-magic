@@ -3791,6 +3791,8 @@ func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x, y, data.PlaneArcanus, wizard.Banner, nil))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x, y, data.PlaneArcanus, wizard.Banner, nil))
 
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.ShadowDemons, x-1, y, data.PlaneArcanus, wizard.Banner, nil))
+
     stack := player.FindStack(x, y, city.Plane)
     city.ResetCitizens(stack.Units())
 
