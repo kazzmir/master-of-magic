@@ -83,6 +83,15 @@ type CityServicesProvider interface {
     PlagueActive(city *City) bool
 }
 
+type ReignProvider interface {
+    HasDivinePower() bool
+    HasInfernalPower() bool
+    // FIXME: Add NumberOfSpells / HasLifeBooks / HasDeathBooks or GetBooks
+    // FIXME: RulingRace
+    // FIXME: TaxRate
+    // FIXME: Banner
+}
+
 const MAX_CITY_CITIZENS = 25
 
 type Enchantment struct {
@@ -113,6 +122,7 @@ type City struct {
 
     CatchmentProvider CatchmentProvider
     CityServices CityServicesProvider
+    ReignProvider ReignProvider
 
     TaxRate fraction.Fraction
 
@@ -128,7 +138,7 @@ type City struct {
 }
 
 // FIXME: Add plane?
-func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider, cityServices CityServicesProvider) *City {
+func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider, cityServices CityServicesProvider, reignProvider ReignProvider) *City {
     city := City{
         Name: name,
         X: x,
@@ -141,6 +151,7 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
         TaxRate: taxRate,
         CatchmentProvider: catchmentProvider,
         CityServices: cityServices,
+        ReignProvider: reignProvider,
         BuildingInfo: buildingInfo,
     }
 
@@ -168,9 +179,9 @@ func (city *City) GetOutpostHouses() int {
     return city.Population / 100
 }
 
-func (city *City) UpdateTaxRate(taxRate fraction.Fraction, garrison []units.StackUnit, infernalPower bool){
+func (city *City) UpdateTaxRate(taxRate fraction.Fraction, garrison []units.StackUnit){
     city.TaxRate = taxRate
-    city.UpdateUnrest(garrison, infernalPower)
+    city.UpdateUnrest(garrison)
 }
 
 func (city *City) AddBuilding(building buildinglib.Building){
@@ -523,7 +534,7 @@ func (city *City) NonRebels() int {
     return city.Citizens() - city.Rebels
 }
 
-func (city *City) ResetCitizens(garrison []units.StackUnit, infernalPower bool) {
+func (city *City) ResetCitizens(garrison []units.StackUnit) {
     // try to leave farmers alone, but adjust them if necessary
     minimumFarmers := city.ComputeSubsistenceFarmers()
     if city.Farmers < minimumFarmers {
@@ -534,7 +545,7 @@ func (city *City) ResetCitizens(garrison []units.StackUnit, infernalPower bool) 
     }
     city.Workers = city.Citizens() - city.Farmers
     city.Rebels = 0
-    city.UpdateUnrest(garrison, infernalPower)
+    city.UpdateUnrest(garrison)
 }
 
 /* FIXME: take enchantments into account
@@ -616,70 +627,70 @@ func (city *City) PowerWizardsGuild() int {
 
 }
 
-func (city *City) PowerShrine(infernalPower bool, moonBonus float64) float64 {
+func (city *City) PowerShrine(moonBonus float64) float64 {
     if !city.Buildings.Contains(buildinglib.BuildingShrine) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
         return 0
     }
 
     power := 1 * moonBonus
 
-    if infernalPower {
+    if city.ReignProvider.HasDivinePower() || city.ReignProvider.HasInfernalPower() {
         power *= 1.5
     }
 
     return power
 }
 
-func (city *City) PowerTemple(infernalPower bool, moonBonus float64) float64 {
+func (city *City) PowerTemple(moonBonus float64) float64 {
     if !city.Buildings.Contains(buildinglib.BuildingTemple) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
         return 0
     }
 
     power := 2 * moonBonus
 
-    if infernalPower {
+    if city.ReignProvider.HasDivinePower() || city.ReignProvider.HasInfernalPower() {
         power *= 1.5
     }
 
     return power
 }
 
-func (city *City) PowerParthenon(infernalPower bool, moonBonus float64) float64 {
+func (city *City) PowerParthenon(moonBonus float64) float64 {
     if !city.Buildings.Contains(buildinglib.BuildingParthenon) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
         return 0
     }
 
     power := 3 * moonBonus
 
-    if infernalPower {
+    if city.ReignProvider.HasDivinePower() || city.ReignProvider.HasInfernalPower() {
         power *= 1.5
     }
 
     return power
 }
 
-func (city *City) PowerCathedral(infernalPower bool, moonBonus float64) float64 {
+func (city *City) PowerCathedral(moonBonus float64) float64 {
     if !city.Buildings.Contains(buildinglib.BuildingCathedral) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
         return 0
     }
 
     power := 4 * moonBonus
 
-    if infernalPower {
+    if city.ReignProvider.HasDivinePower() || city.ReignProvider.HasInfernalPower() {
         power *= 1.5
     }
 
     return power
 }
 
-func (city *City) PowerDarkRituals(infernalPower bool, moonBonus float64) float64 {
+func (city *City) PowerDarkRituals(moonBonus float64) float64 {
     power := 0.0
 
     if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
-        power := city.PowerShrine(infernalPower, moonBonus)
-        power += city.PowerTemple(infernalPower, moonBonus)
-        power += city.PowerParthenon(infernalPower, moonBonus)
-        power += city.PowerCathedral(infernalPower, moonBonus)
+        power := city.PowerShrine(moonBonus)
+        power += city.PowerTemple(moonBonus)
+        power += city.PowerParthenon(moonBonus)
+        power += city.PowerCathedral(moonBonus)
     }
 
     return power
@@ -688,6 +699,7 @@ func (city *City) PowerDarkRituals(infernalPower bool, moonBonus float64) float6
 func (city *City) PowerMoonBonus(spellBooks []data.WizardBook) float64 {
     moonBonus := 1.0
 
+    // FIXME: this should have breaks?????
     if city.CityServices.GoodMoonActive() {
         for _, book := range spellBooks {
             if book.Magic == data.LifeMagic {
@@ -713,7 +725,7 @@ func (city *City) PowerMoonBonus(spellBooks []data.WizardBook) float64 {
 
 /* power production from buildings and citizens
  */
-func (city *City) ComputePower(spellBooks []data.WizardBook, infernalPower bool) int {
+func (city *City) ComputePower(spellBooks []data.WizardBook) int {
     // FIXME: add Divine Power
     totalBooks := 0
     for _, book := range spellBooks {
@@ -728,17 +740,17 @@ func (city *City) ComputePower(spellBooks []data.WizardBook, infernalPower bool)
 
     moonBonus := city.PowerMoonBonus(spellBooks)
 
-    religiousPower := city.PowerShrine(infernalPower, moonBonus)
-    religiousPower += city.PowerTemple(infernalPower, moonBonus)
-    religiousPower += city.PowerParthenon(infernalPower, moonBonus)
-    religiousPower += city.PowerCathedral(infernalPower, moonBonus)
-    religiousPower += city.PowerDarkRituals(infernalPower, moonBonus)
+    religiousPower := city.PowerShrine(moonBonus)
+    religiousPower += city.PowerTemple(moonBonus)
+    religiousPower += city.PowerParthenon(moonBonus)
+    religiousPower += city.PowerCathedral(moonBonus)
+    religiousPower += city.PowerDarkRituals(moonBonus)
 
     return power + int(religiousPower)
 }
 
-func (city *City) UpdateUnrest(garrison []units.StackUnit, infernalPower bool) {
-    rebels := city.ComputeUnrest(garrison, infernalPower)
+func (city *City) UpdateUnrest(garrison []units.StackUnit) {
+    rebels := city.ComputeUnrest(garrison)
 
     if rebels > city.Rebels {
         for i := city.Rebels; i < rebels && city.Workers > 0; i++ {
@@ -936,7 +948,7 @@ func (city *City) InteracialUnrest() float64 {
     return unrest[city.Race][city.RulingRace]
 }
 
-func (city *City) ComputeUnrest(garrison []units.StackUnit, infernalPower bool) int {
+func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
 
     if city.HasEnchantment(data.CityEnchantmentStreamOfLife) {
         return 0
@@ -995,10 +1007,7 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit, infernalPower bool) 
     // pacification from buildings
 
     pacificationRetort := float64(1)
-
-    // FIXME: Divine Power
-
-    if infernalPower {
+    if city.ReignProvider.HasDivinePower() || city.ReignProvider.HasInfernalPower() {
         pacificationRetort = 1.5
     }
 
@@ -1575,7 +1584,7 @@ func (city *City) GetWeaponBonus() data.WeaponBonus {
 
 // do all the stuff needed per turn
 // increase population, add production, add food/money, etc
-func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map, infernalPower bool) []CityEvent {
+func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) []CityEvent {
     // FIXME: heal all units if StreamOfLife active
     var cityEvents []CityEvent
     if city.Outpost {
@@ -1673,7 +1682,7 @@ func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map, 
     }
 
     // update minimum farmers
-    city.ResetCitizens(garrison, infernalPower)
+    city.ResetCitizens(garrison)
 
     return cityEvents
 }

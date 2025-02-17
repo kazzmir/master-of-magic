@@ -17,7 +17,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
-    "github.com/kazzmir/master-of-magic/game/magic/setup"
 )
 
 type EnemyAI struct {
@@ -306,7 +305,7 @@ func (ai *EnemyAI) NewTurn(player *playerlib.Player) {
         if stack != nil {
             units = stack.Units()
         }
-        city.ResetCitizens(units, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
+        city.ResetCitizens(units)
     }
 
     // keep going as long as there is more food available

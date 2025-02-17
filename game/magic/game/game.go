@@ -975,7 +975,7 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
     power := float64(0)
 
     for _, city := range player.Cities {
-        power += float64(city.ComputePower(player.Wizard.Books, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower)))
+        power += float64(city.ComputePower(player.Wizard.Books))
     }
 
     magicBonus := float64(1)
@@ -3453,7 +3453,7 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         attacker.AddCity(city)
         city.Banner = attacker.Wizard.Banner
         city.RulingRace = attacker.Wizard.Race
-        city.UpdateTaxRate(attacker.TaxRate, attackerStack.Units(), attacker.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
+        city.UpdateTaxRate(attacker.TaxRate, attackerStack.Units())
 
         city.Buildings.Remove(buildinglib.BuildingFortress)
         city.Buildings.Remove(buildinglib.BuildingSummoningCircle)
@@ -3658,7 +3658,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     // update unrest for new units in the city
     newCity := player.FindCity(stack.X(), stack.Y(), stack.Plane())
     if newCity != nil {
-        newCity.UpdateUnrest(stack.Units(), player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
+        newCity.UpdateUnrest(stack.Units())
     }
 
     if stepsTaken > 0 {
@@ -5097,7 +5097,7 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
     cityName := game.SuggestCityName(settlers.GetRace())
 
-    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()), game)
+    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()), game, player)
     newCity.Plane = settlers.GetPlane()
     newCity.RulingRace = player.Wizard.Race
     newCity.Population = 300
@@ -6667,7 +6667,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     var removeCities []*citylib.City
 
     for _, city := range player.Cities {
-        cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y, city.Plane), game.GetMap(city.Plane), player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
+        cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y, city.Plane), game.GetMap(city.Plane))
         for _, event := range cityEvents {
             switch event.(type) {
             case *citylib.CityEventPopulationGrowth:
@@ -6895,7 +6895,7 @@ func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (i
         garrison = stack.Units()
     }
 
-    city.ResetCitizens(garrison, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
+    city.ResetCitizens(garrison)
 
     mapUse := game.GetMap(city.Plane)
 

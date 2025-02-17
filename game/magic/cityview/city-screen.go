@@ -19,7 +19,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
-    "github.com/kazzmir/master-of-magic/game/magic/setup"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
@@ -2120,19 +2119,18 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
         }
     }
 
-    infernalPower := cityScreen.Player.Wizard.AbilityEnabled(setup.AbilityInfernalPower)
     moonBonus := cityScreen.City.PowerMoonBonus(cityScreen.Player.Wizard.Books)
 
     add(cityScreen.City.PowerCitizens(), "Townsfolk", buildinglib.BuildingNone)
     add(cityScreen.City.PowerFortress(cityScreen.Player.Wizard.TotalBooks()), "Fortress", buildinglib.BuildingFortress)
-    add(int(cityScreen.City.PowerShrine(infernalPower, moonBonus)), "Shrine", buildinglib.BuildingShrine)
-    add(int(cityScreen.City.PowerTemple(infernalPower, moonBonus)), "Temple", buildinglib.BuildingTemple)
-    add(int(cityScreen.City.PowerParthenon(infernalPower, moonBonus)), "Parthenon", buildinglib.BuildingParthenon)
-    add(int(cityScreen.City.PowerCathedral(infernalPower, moonBonus)), "Cathedral", buildinglib.BuildingCathedral)
+    add(int(cityScreen.City.PowerShrine(moonBonus)), "Shrine", buildinglib.BuildingShrine)
+    add(int(cityScreen.City.PowerTemple(moonBonus)), "Temple", buildinglib.BuildingTemple)
+    add(int(cityScreen.City.PowerParthenon(moonBonus)), "Parthenon", buildinglib.BuildingParthenon)
+    add(int(cityScreen.City.PowerCathedral(moonBonus)), "Cathedral", buildinglib.BuildingCathedral)
     add(cityScreen.City.PowerAlchemistsGuild(), "Alchemist's Guild", buildinglib.BuildingAlchemistsGuild)
     add(cityScreen.City.PowerWizardsGuild(), "Wizard's Guild", buildinglib.BuildingWizardsGuild)
     add(cityScreen.City.PowerMinerals(), "Minerals", buildinglib.BuildingNone)
-    add(int(cityScreen.City.PowerDarkRituals(infernalPower, moonBonus)), "Dark Rituals", buildinglib.BuildingNone)
+    add(int(cityScreen.City.PowerDarkRituals(moonBonus)), "Dark Rituals", buildinglib.BuildingNone)
 
     // FIXME: add tiles (adamantium mine) and miner's guild
 
@@ -2253,7 +2251,6 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         },
     })
 
-    hasInfernalPower := cityScreen.Player.Wizard.AbilityEnabled(setup.AbilityInfernalPower)
     powerRect := image.Rect(6 * data.ScreenScale, 76 * data.ScreenScale, 6 * data.ScreenScale + 9 * bigMagic.Bounds().Dx(), 76 * data.ScreenScale + bigMagic.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: powerRect,
@@ -2264,7 +2261,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(powerRect.Min.X), float64(powerRect.Min.Y))
-            cityScreen.drawIcons(cityScreen.City.ComputePower(cityScreen.Player.Wizard.Books, hasInfernalPower), smallMagic, bigMagic, options, screen)
+            cityScreen.drawIcons(cityScreen.City.ComputePower(cityScreen.Player.Wizard.Books), smallMagic, bigMagic, options, screen)
         },
     })
 

@@ -89,7 +89,7 @@ func (engine *Engine) MakeUI() (*uilib.UI, context.Context, error) {
         },
     }
 
-    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{})
+    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{}, player)
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2
@@ -104,7 +104,7 @@ func (engine *Engine) MakeUI() (*uilib.UI, context.Context, error) {
     city.Buildings.Insert(buildinglib.BuildingSawmill)
     city.Buildings.Insert(buildinglib.BuildingMechaniciansGuild)
     city.ProducingBuilding = buildinglib.BuildingHousing
-    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
+    city.ResetCitizens(nil)
 
     city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
 
