@@ -299,17 +299,15 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
         ebitenutil.DebugPrintAt(screen, "the master of magic data files", 10, 30)
     }
 
+    var cache *lbx.LbxCache
     if dataPath != "" {
-        cache := lbx.CacheFromPath(dataPath)
+        cache = lbx.CacheFromPath(dataPath)
         if cache == nil {
-            return fmt.Errorf("Could not load data from %v", dataPath)
+            return fmt.Errorf("Could not load data from '%v'", dataPath)
         }
-        log.Printf("Loaded data from %v", dataPath)
-        game.Cache = cache
-        return nil
+        log.Printf("Loaded data from '%v'", dataPath)
     }
 
-    var cache *lbx.LbxCache
     for cache == nil {
         cache = lbx.AutoCache()
         if cache == nil {
