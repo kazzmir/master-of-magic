@@ -202,19 +202,3 @@ func (building Building) Size() (int, int) {
 
     return 0, 0
 }
-
-func (building Building) ReligiousPowerPower(hasEvilPresence bool) int {
-    if hasEvilPresence {
-        return 0
-    }
-
-    switch building {
-        case BuildingShrine: return 1
-        case BuildingTemple: return 2
-        case BuildingParthenon: return 3
-        case BuildingCathedral: return 4
-    }
-
-    return 0
-}
-
