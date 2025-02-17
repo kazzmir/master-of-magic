@@ -1253,7 +1253,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                 },
                 Inside: func(this *uilib.UIElement, x int, y int){
                     // if the user hovers over this element, then draw partially transparent books
-                    ghostBooks = level
+                    // The number of drawn ghost books should not exceed the number of the picks you still have
+                    maxGhostBooks := screen.CustomWizard.MagicLevel(bookMagic) + picksLeft() - 1
+                    ghostBooks = min(maxGhostBooks, level)
                 },
                 Draw: func(this *uilib.UIElement, window *ebiten.Image){
                     if screen.CustomWizard.MagicLevel(bookMagic) > level {
