@@ -24,7 +24,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, goldToHire int, action func(bool)) []*uilib.UIElement {
+func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, goldToHire int, action func(bool), onFadeOut func()) []*uilib.UIElement {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -164,11 +164,12 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             */
         },
         LeftClickRelease: func(this *uilib.UIElement){
+            action(true)
             hireIndex = 0
             getAlpha = ui.MakeFadeOut(fadeSpeed)
             ui.AddDelay(fadeSpeed, func(){
                 ui.RemoveElements(elements)
-                action(true)
+                onFadeOut()
             })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){

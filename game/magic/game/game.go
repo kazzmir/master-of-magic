@@ -2438,11 +2438,14 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
     quit := false
 
     result := func(hired bool) {
-        quit = true
         if hired {
             if player.AddHero(hero) {
                 player.Gold -= cost
                 hero.SetStatus(herolib.StatusEmployed)
+
+                name := game.doInput(yield, "Hero Name", hero.GetName(), 70, 50)
+                hero.SetName(name)
+
                 game.RefreshUI()
             }
         } else {
@@ -2450,13 +2453,21 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
         }
     }
 
-    game.HudUI.AddElements(MakeHireHeroScreenUI(game.Cache, game.HudUI, hero, cost, result))
+    fadeOut := func() {
+        quit = true
+    }
+
+    game.HudUI.AddElements(MakeHireHeroScreenUI(game.Cache, game.HudUI, hero, cost, result, fadeOut))
 
     for !quit {
         game.Counter += 1
         game.HudUI.StandardUpdate()
-        yield()
+        if yield() != nil {
+            return
+        }
     }
+
+    yield()
 }
 
 /* random chance to create a hire mercenaries event
