@@ -177,7 +177,7 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
     return infoElement
 }
 
-func MakeErrorElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, clicked func()) *UIElement {
+func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, clicked func()) *UIElement {
     errorX := 67
     errorY := 73
 
@@ -415,11 +415,11 @@ func MakeConfirmDialogWithLayerFull(container UIContainer, cache *lbx.LbxCache, 
     return elements
 }
 
-func MakeLairConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, message string, confirm func(), cancel func()) []*UIElement {
+func MakeLairConfirmDialog(ui UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, message string, confirm func(), cancel func()) []*UIElement {
     return MakeLairConfirmDialogWithLayer(ui, cache, imageCache, lairPicture, 1, message, confirm, cancel)
 }
 
-func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
+func MakeLairConfirmDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
     confirmX := 67 * data.ScreenScale
     confirmY := 40 * data.ScreenScale
 
@@ -573,7 +573,7 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
     return elements
 }
 
-func MakeLairShowDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, layer UILayer, message string, dismiss func()) []*UIElement {
+func MakeLairShowDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, layer UILayer, message string, dismiss func()) []*UIElement {
     confirmX := 67 * data.ScreenScale
     confirmY := 40 * data.ScreenScale
 
@@ -663,7 +663,7 @@ type Selection struct {
     Hotkey string
 }
 
-func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache, cornerX int, cornerY int, selectionTitle string, choices []Selection) []*UIElement {
+func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.ImageCache, cornerX int, cornerY int, selectionTitle string, choices []Selection) []*UIElement {
     var elements []*UIElement
 
     fontLbx, err := lbxCache.GetLbxFile("fonts.lbx")
