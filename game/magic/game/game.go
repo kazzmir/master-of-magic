@@ -2618,7 +2618,7 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
         }
     }
 
-    game.HudUI.AddElements(MakeHireMercenariesScreenUI(game.Cache, game.HudUI, units[0], len(units), cost, result))
+    game.HudUI.AddGroup(MakeHireMercenariesScreenUI(game.Cache, game.HudUI, units[0], len(units), cost, result))
 
     for !quit {
         game.Counter += 1

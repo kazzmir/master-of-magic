@@ -16,7 +16,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUnit, count int, goldToHire int, action func(bool)) []*uilib.UIElement {
+func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUnit, count int, goldToHire int, action func(bool)) *uilib.UIElementGroup {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -69,7 +69,9 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
-    elements = append(elements, &uilib.UIElement{
+    uiGroup := uilib.MakeGroup()
+
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
@@ -96,11 +98,9 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
         },
     })
 
-    uiGroup := uilib.MakeGroup()
     uiGroup.AddElements(unitview.MakeUnitAbilitiesElements(uiGroup, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false))
-    ui.AddGroup(uiGroup)
 
-    elements = append(elements, &uilib.UIElement{
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             box, _ := imageCache.GetImage("unitview.lbx", 2, 0)
@@ -116,7 +116,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
 
     hireRect := util.ImageRect(257 * data.ScreenScale, 149 * data.ScreenScale + int(yTop), buttonBackgrounds[0])
     hireIndex := 0
-    elements = append(elements, &uilib.UIElement{
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Rect: hireRect,
         LeftClick: func(this *uilib.UIElement){
@@ -145,7 +145,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
 
     rejectRect := util.ImageRect(257 * data.ScreenScale, 169 * data.ScreenScale + int(yTop), buttonBackgrounds[0])
     rejectIndex := 0
-    elements = append(elements, &uilib.UIElement{
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Rect: rejectRect,
         LeftClick: func(this *uilib.UIElement){
@@ -172,7 +172,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
         },
     })
 
-    elements = append(elements, &uilib.UIElement{
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             banner, _ := imageCache.GetImage("hire.lbx", 0, 0)
@@ -189,5 +189,5 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
         },
     })
 
-    return elements
+    return uiGroup
 }
