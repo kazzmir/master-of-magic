@@ -5756,7 +5756,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         updateMinMoves()
                     },
                     RightClick: func(this *uilib.UIElement){
-                        ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, unit, disband))
+                        ui.AddGroup(unitview.MakeUnitContextMenu(game.Cache, ui, unit, disband))
                     },
                     Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                         var options ebiten.DrawImageOptions

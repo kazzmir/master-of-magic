@@ -82,7 +82,7 @@ func MakeGroup() *UIElementGroup {
     }
 }
 
-func (group *UIElementGroup) Add(element *UIElement){
+func (group *UIElementGroup) AddElement(element *UIElement){
     if element.Layer < group.minLayer {
         group.minLayer = element.Layer
     }
@@ -97,7 +97,7 @@ func (group *UIElementGroup) Add(element *UIElement){
 
 func (group *UIElementGroup) AddElements(elements []*UIElement){
     for _, element := range elements {
-        group.Add(element)
+        group.AddElement(element)
     }
 }
 

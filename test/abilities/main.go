@@ -162,7 +162,7 @@ func NewEngine(scenario int) (*Engine, error) {
 
             hero := herolib.MakeHero(units.MakeOverworldUnitFromUnit(baseUnit, 1, 1, data.PlaneArcanus, data.BannerBrown, &Experience{}), herolib.HeroRakir, "rakir")
 
-            ui.AddElements(unitview.MakeUnitContextMenu(cache, ui, hero, func(){}))
+            ui.AddGroup(unitview.MakeUnitContextMenu(cache, ui, hero, func(){}))
     }
 
     return &Engine{

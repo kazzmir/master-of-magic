@@ -231,7 +231,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             heroElement := &uilib.UIElement{
                 Rect: rect,
                 RightClick: func (this *uilib.UIElement){
-                    ui.AddElements(unitview.MakeUnitContextMenu(view.Cache, ui, hero, disband))
+                    ui.AddGroup(unitview.MakeUnitContextMenu(view.Cache, ui, hero, disband))
                 },
                 LeftClick: func (this *uilib.UIElement){
                     stack := view.Player.FindStackByUnit(hero)
@@ -293,7 +293,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                                 view.Player.RemoveUnit(unit)
                                 resetUnits()
                             }
-                            ui.AddElements(unitview.MakeUnitContextMenu(view.Cache, ui, unit, disband))
+                            ui.AddGroup(unitview.MakeUnitContextMenu(view.Cache, ui, unit, disband))
                         },
                         Inside: func (this *uilib.UIElement, x, y int){
                             highlightedUnit = unit

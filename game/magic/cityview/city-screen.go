@@ -1333,7 +1333,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                         cityScreen.Player.SelectedStack = cityScreen.Player.FindStackByUnit(useUnit)
                     },
                     RightClick: func(element *uilib.UIElement) {
-                        ui.AddElements(unitview.MakeUnitContextMenu(cityScreen.LbxCache, ui, useUnit, disband))
+                        ui.AddGroup(unitview.MakeUnitContextMenu(cityScreen.LbxCache, ui, useUnit, disband))
                     },
                     Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                         var options colorm.DrawImageOptions
