@@ -216,6 +216,8 @@ func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight i
 func createHeroes() map[herolib.HeroType]*herolib.Hero {
     heroes := make(map[herolib.HeroType]*herolib.Hero)
 
+    // FIXME: for ai, read hero names from names.lbx
+
     for _, heroType := range herolib.AllHeroTypes() {
         hero := herolib.MakeHeroSimple(heroType)
         hero.SetExtraAbilities()
@@ -224,7 +226,6 @@ func createHeroes() map[herolib.HeroType]*herolib.Hero {
 
     return heroes
 }
-
 
 func (player *Player) GetKnownPlayers() []*Player {
     var out []*Player
