@@ -69,6 +69,52 @@ type UIElement struct {
     PlaySoundLeftClick bool
 }
 
+// a collection of ui elements that can be removed all at once
+type UIElementGroup struct {
+    Elements map[UILayer][]*UIElement
+    minLayer UILayer
+    maxLayer UILayer
+}
+
+func MakeGroup() *UIElementGroup {
+    return &UIElementGroup{
+        Elements: make(map[UILayer][]*UIElement),
+    }
+}
+
+func (group *UIElementGroup) Add(element *UIElement){
+    if element.Layer < group.minLayer {
+        group.minLayer = element.Layer
+    }
+    if element.Layer > group.maxLayer {
+        group.maxLayer = element.Layer
+    }
+
+    group.Elements[element.Layer] = slices.SortedFunc(slices.Values(append(group.Elements[element.Layer], element)), func (a, b *UIElement) int {
+        return cmp.Compare(a.Order, b.Order)
+    })
+}
+
+func (group *UIElementGroup) AddAll(elements []*UIElement){
+    for _, element := range elements {
+        group.Add(element)
+    }
+}
+
+func (group *UIElementGroup) Remove(element *UIElement){
+    elements := group.Elements[element.Layer]
+    elements = slices.DeleteFunc(elements, func (e *UIElement) bool {
+        return e == element
+    })
+    group.Elements[element.Layer] = elements
+}
+
+func (group *UIElementGroup) RemoveAll(elements []*UIElement){
+    for _, element := range elements {
+        group.Remove(element)
+    }
+}
+
 const DoubleClickThreshold = 20
 
 type doubleClick struct {
@@ -84,6 +130,7 @@ type UIDelay struct {
 type UI struct {
     // track the layer number of the elements
     Elements map[UILayer][]*UIElement
+    Groups []*UIElementGroup
     // keep track of the minimum and maximum keys so we don't have to sort
     minLayer UILayer
     maxLayer UILayer
@@ -147,6 +194,16 @@ func (ui *UI) AddDelay(time uint64, f func()){
     ui.Delays = append(ui.Delays, UIDelay{Time: ui.Counter + time, Func: f})
 }
 
+func (ui *UI) AddGroup(group *UIElementGroup){
+    ui.Groups = append(ui.Groups, group)
+}
+
+func (ui *UI) RemoveGroup(group *UIElementGroup){
+    ui.Groups = slices.DeleteFunc(ui.Groups, func (g *UIElementGroup) bool {
+        return g == group
+    })
+}
+
 func (ui *UI) AddElement(element *UIElement){
     if element.Layer < ui.minLayer {
         ui.minLayer = element.Layer
@@ -197,15 +254,34 @@ func (ui *UI) RemoveElement(toRemove *UIElement){
 }
 
 func (ui *UI) IterateElementsByLayer(f func(*UIElement)){
-    for i := ui.minLayer; i <= ui.maxLayer; i++ {
+    lowest := ui.minLayer
+    highest := ui.maxLayer
+
+    for _, group := range ui.Groups {
+        if group.minLayer < lowest {
+            lowest = group.minLayer
+        }
+        if group.maxLayer > highest {
+            highest = group.maxLayer
+        }
+    }
+
+    for i := lowest; i <= highest; i++ {
         for _, element := range ui.Elements[i] {
             f(element)
+        }
+
+        for _, group := range ui.Groups {
+            for _, element := range group.Elements[i] {
+                f(element)
+            }
         }
     }
 }
 
 func (ui *UI) GetHighestLayerValue() UILayer {
     elements := ui.GetHighestLayer()
+
     if len(elements) > 0 {
         return elements[0].Layer
     }
@@ -214,10 +290,34 @@ func (ui *UI) GetHighestLayerValue() UILayer {
 }
 
 func (ui *UI) GetHighestLayer() []*UIElement {
-    for i := ui.maxLayer; i >= ui.minLayer; i-- {
-        elements := ui.Elements[i]
-        if len(elements) > 0 {
-            return elements
+    highest := ui.maxLayer
+    lowest := ui.minLayer
+    for _, group := range ui.Groups {
+        if group.maxLayer > highest {
+            highest = group.maxLayer
+        }
+        if group.minLayer < lowest {
+            lowest = group.minLayer
+        }
+    }
+
+    for i := highest; i >= lowest; i-- {
+        out := ui.Elements[i]
+        needClone := true
+
+        for _, group := range ui.Groups {
+            if len(group.Elements[i]) > 0 {
+                if needClone {
+                    out = slices.Clone(out)
+                    needClone = false
+                }
+
+                out = append(out, group.Elements[i]...)
+            }
+        }
+
+        if len(out) > 0 {
+            return out
         }
     }
 

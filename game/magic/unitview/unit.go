@@ -327,6 +327,34 @@ func createUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, med
         }
     }
 
+    // FIXME: clicking on an enchantment should let the user cancel it
+    for _, enchantment := range unit.GetEnchantments() {
+        pic, err := imageCache.GetImage(enchantment.LbxFile(), enchantment.LbxIndex(), 0)
+
+        if err == nil {
+            rect := util.ImageRect(x, y, pic)
+            elements = append(elements, &uilib.UIElement{
+                Layer: layer,
+                Rect: rect,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha((*getAlpha)())
+                    options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                    screen.DrawImage(pic, &options)
+                    x, y := options.GeoM.Apply(0, 0)
+
+                    printX := x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale)
+                    printY := y + float64(5 * data.ScreenScale)
+                    mediumFont.Print(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, enchantment.Name())
+                },
+            })
+
+            y += pic.Bounds().Dy() + 1
+        } else {
+            log.Printf("Error: unable to render enchantment %#v %v", enchantment, enchantment.Name())
+        }
+    }
+
     // FIXME: handle more than 4 abilities by using more columns
     for _, ability := range unit.GetAbilities() {
         pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
