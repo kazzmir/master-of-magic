@@ -6,12 +6,15 @@ import (
     "fmt"
     "math"
     "slices"
+    "image"
 
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/fonts"
+    helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -259,7 +262,32 @@ func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, un
     return float64(pic.Bounds().Dy() + 1 * data.ScreenScale)
 }
 
-func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCache, uiGroup *uilib.UIElementGroup, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool, page uint32, updateAbilities func()) []*uilib.UIElement {
+func makeItemPopup(uiGroup *uilib.UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, layer uilib.UILayer, item *artifact.Artifact) *uilib.UIElement {
+    vaultFonts := fonts.MakeVaultFonts(cache)
+
+    rect := image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight)
+    getAlpha := uiGroup.MakeFadeIn(7)
+    element := &uilib.UIElement{
+        Layer: layer+1,
+        Rect: rect,
+        LeftClick: func(element *uilib.UIElement){
+            getAlpha = uiGroup.MakeFadeOut(7)
+            uiGroup.AddDelay(7, func(){
+                uiGroup.RemoveElement(element)
+            })
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            options.GeoM.Translate(float64(48 * data.ScreenScale), float64(48 * data.ScreenScale))
+            artifact.RenderArtifactBox(screen, imageCache, *item, uiGroup.Counter / 8, vaultFonts.ItemName, options)
+        },
+    }
+
+    return element
+}
+
+func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCache, uiGroup *uilib.UIElementGroup, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool, page uint32, help *helplib.Help, updateAbilities func()) []*uilib.UIElement {
     xStart := x
     yStart := y
 
@@ -273,6 +301,14 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
         experienceY := y
         elements = append(elements, &uilib.UIElement{
             Layer: layer,
+            Rect: util.ImageRect(experienceX, experienceY, background),
+            RightClick: func(element *uilib.UIElement){
+                experience := unit.GetExperienceData()
+                helpEntries := help.GetEntriesByName(experience.Name())
+                if helpEntries != nil {
+                    uiGroup.AddElement(uilib.MakeHelpElementWithLayer(uiGroup, cache, imageCache, layer+1, helpEntries[0], helpEntries[1:]...))
+                }
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha((*getAlpha)())
@@ -303,6 +339,11 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
             elements = append(elements, &uilib.UIElement{
                 Rect: rect,
                 Layer: layer,
+                RightClick: func(element *uilib.UIElement){
+                    if showArtifact != nil {
+                        uiGroup.AddElement(makeItemPopup(uiGroup, cache, imageCache, layer+1, showArtifact))
+                    }
+                },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
@@ -336,6 +377,12 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
             elements = append(elements, &uilib.UIElement{
                 Layer: layer,
                 Rect: rect,
+                RightClick: func(element *uilib.UIElement){
+                    helpEntries := help.GetEntriesByName(enchantment.Name())
+                    if helpEntries != nil {
+                        uiGroup.AddElement(uilib.MakeHelpElementWithLayer(uiGroup, cache, imageCache, layer+1, helpEntries[0], helpEntries[1:]...))
+                    }
+                },
                 LeftClick: func(element *uilib.UIElement){
                     message := fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Name())
                     confirm := func(){
@@ -375,6 +422,12 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
             elements = append(elements, &uilib.UIElement{
                 Layer: layer,
                 Rect: rect,
+                RightClick: func(element *uilib.UIElement){
+                    helpEntries := help.GetEntriesByName(ability.Name())
+                    if helpEntries != nil {
+                        uiGroup.AddElement(uilib.MakeHelpElementWithLayer(uiGroup, cache, imageCache, layer+1, helpEntries[0], helpEntries[1:]...))
+                    }
+                },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                     var options ebiten.DrawImageOptions
                     options.ColorScale.ScaleAlpha((*getAlpha)())
@@ -422,6 +475,17 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
 
     var abilityElements []*uilib.UIElement
 
+    // possibly pass in the help data rather than reading it every time
+    helpLbx, err := cache.GetLbxFile("help.lbx")
+    if err != nil {
+        return nil
+    }
+
+    help, err := helplib.ReadHelp(helpLbx, 2)
+    if err != nil {
+        return nil
+    }
+
     // after removing an enchantment, recreate the entire ability list
     updateAbilities := func(){
         group.RemoveElements(elements)
@@ -430,7 +494,7 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
         group.AddElements(MakeUnitAbilitiesElements(group, cache, imageCache, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page))
     }
 
-    abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, updateAbilities)
+    abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, &help, updateAbilities)
 
     elements = append(elements, abilityElements...)
 
@@ -461,7 +525,7 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
                 page -= 1
 
                 group.RemoveElements(abilityElements)
-                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, updateAbilities)
+                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, &help, updateAbilities)
                 group.AddElements(abilityElements)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
@@ -485,7 +549,7 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
                 page += 1
 
                 group.RemoveElements(abilityElements)
-                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, updateAbilities)
+                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, &help, updateAbilities)
                 group.AddElements(abilityElements)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {

@@ -13,11 +13,11 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func MakeHelpElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, help help.HelpEntry, helpEntries ...help.HelpEntry) *UIElement {
-    return MakeHelpElementWithLayer(ui, cache, imageCache, UILayer(1), help, helpEntries...)
+func MakeHelpElement(group *UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, help help.HelpEntry, helpEntries ...help.HelpEntry) *UIElement {
+    return MakeHelpElementWithLayer(group, cache, imageCache, UILayer(1), help, helpEntries...)
 }
 
-func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, help help.HelpEntry, helpEntries ...help.HelpEntry) *UIElement {
+func MakeHelpElementWithLayer(group *UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, help help.HelpEntry, helpEntries ...help.HelpEntry) *UIElement {
 
     helpTop, err := imageCache.GetImage("help.lbx", 0, 0)
     if err != nil {
@@ -36,7 +36,7 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
 
     const fadeSpeed = 7
 
-    getAlpha := ui.MakeFadeIn(fadeSpeed)
+    getAlpha := group.MakeFadeIn(fadeSpeed)
 
     helpPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -166,9 +166,9 @@ func MakeHelpElementWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.Imag
 
         },
         LeftClick: func(infoThis *UIElement){
-            getAlpha = ui.MakeFadeOut(fadeSpeed)
-            ui.AddDelay(fadeSpeed, func(){
-                ui.RemoveElement(infoThis)
+            getAlpha = group.MakeFadeOut(fadeSpeed)
+            group.AddDelay(fadeSpeed, func(){
+                group.RemoveElement(infoThis)
             })
         },
         Layer: layer,

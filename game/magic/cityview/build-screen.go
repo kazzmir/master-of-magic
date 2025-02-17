@@ -171,7 +171,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
     mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
 
-    var elements []*uilib.UIElement
+    // var elements []*uilib.UIElement
 
     ui := &uilib.UI{
         Cache: cache,
@@ -191,6 +191,9 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
         },
     }
+
+    group := uilib.MakeGroup()
+    ui.AddGroup(group)
 
     mainGroup := uilib.MakeGroup()
 
@@ -342,7 +345,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 RightClick: func(this *uilib.UIElement) {
                     helpEntries := help.GetEntriesByName("Building Options")
                     if helpEntries != nil {
-                        ui.AddElement(uilib.MakeHelpElement(ui, cache, imageCache, helpEntries[0]))
+                        group.AddElement(uilib.MakeHelpElement(group, cache, imageCache, helpEntries[0]))
                     }
                 },
                 Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
@@ -368,7 +371,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 }
             }()
 
-            elements = append(elements, element)
+            group.AddElement(element)
         }
     }
 
@@ -399,7 +402,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 RightClick: func(this *uilib.UIElement) {
                     helpEntries := help.GetEntriesByName("Unit Options")
                     if helpEntries != nil {
-                        ui.AddElement(uilib.MakeHelpElement(ui, cache, imageCache, helpEntries[0]))
+                        group.AddElement(uilib.MakeHelpElement(group, cache, imageCache, helpEntries[0]))
                     }
                 },
                 Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
@@ -425,7 +428,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 }
             }()
 
-            elements = append(elements, element)
+            group.AddElement(element)
         }
     }
 
@@ -437,7 +440,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         cancelY := 181 * data.ScreenScale
 
         // cancel button
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: util.ImageRect(cancelX, cancelY, buttonBackground),
             LeftClick: func(this *uilib.UIElement) {
                 doCancel()
@@ -445,7 +448,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
             RightClick: func(this *uilib.UIElement) {
                 helpEntries := help.GetEntries(376)
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElement(ui, cache, imageCache, helpEntries[0]))
+                    group.AddElement(uilib.MakeHelpElement(group, cache, imageCache, helpEntries[0]))
                 }
             },
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
@@ -460,7 +463,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         okX := 173 * data.ScreenScale
         okY := 181 * data.ScreenScale
         // ok button
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: util.ImageRect(okX, okY, buttonBackground),
             LeftClick: func(this *uilib.UIElement) {
                 doOk()
@@ -468,7 +471,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
             RightClick: func(this *uilib.UIElement) {
                 helpEntries := help.GetEntries(377)
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElement(ui, cache, imageCache, helpEntries[0]))
+                    group.AddElement(uilib.MakeHelpElement(group, cache, imageCache, helpEntries[0]))
                 }
             },
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
@@ -481,7 +484,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         })
     }
 
-    ui.SetElementsFromArray(elements)
+    ui.SetElementsFromArray(nil)
 
     return ui
 }
