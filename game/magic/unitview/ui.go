@@ -33,6 +33,7 @@ type UnitView interface {
     GetMovementSpeed() int
     GetProductionCost() int
     GetEnchantments() []data.UnitEnchantment
+    RemoveEnchantment(data.UnitEnchantment)
     GetWeaponBonus() data.WeaponBonus
     GetExperience() int
     GetExperienceData() units.ExperienceData
@@ -166,7 +167,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
         },
     })
 
-    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false))
+    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false, 0))
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
