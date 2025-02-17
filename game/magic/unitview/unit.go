@@ -6,6 +6,7 @@ import (
     "fmt"
     "math"
     "slices"
+    "image"
 
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -260,6 +261,29 @@ func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, un
     return float64(pic.Bounds().Dy() + 1 * data.ScreenScale)
 }
 
+func makeItemPopup(uiGroup *uilib.UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, layer uilib.UILayer, item *artifact.Artifact, mediumFont *font.Font) *uilib.UIElement {
+    rect := image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight)
+    getAlpha := uiGroup.MakeFadeIn(7)
+    element := &uilib.UIElement{
+        Layer: layer+1,
+        Rect: rect,
+        LeftClick: func(element *uilib.UIElement){
+            getAlpha = uiGroup.MakeFadeOut(7)
+            uiGroup.AddDelay(7, func(){
+                uiGroup.RemoveElement(element)
+            })
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            options.GeoM.Translate(float64(48 * data.ScreenScale), float64(48 * data.ScreenScale))
+            artifact.RenderArtifactBox(screen, imageCache, *item, uiGroup.Counter / 8, mediumFont, options)
+        },
+    }
+
+    return element
+}
+
 func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCache, uiGroup *uilib.UIElementGroup, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool, page uint32, help *helplib.Help, updateAbilities func()) []*uilib.UIElement {
     xStart := x
     yStart := y
@@ -312,6 +336,11 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
             elements = append(elements, &uilib.UIElement{
                 Rect: rect,
                 Layer: layer,
+                RightClick: func(element *uilib.UIElement){
+                    if showArtifact != nil {
+                        uiGroup.AddElement(makeItemPopup(uiGroup, cache, imageCache, layer+1, showArtifact, mediumFont))
+                    }
+                },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
