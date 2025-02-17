@@ -467,6 +467,7 @@ func createWallOfDarkness(tiles [][]Tile, centerX int, centerY int, sideLength i
 
 type CombatUnit interface {
     HasAbility(data.AbilityType) bool
+    HasItemAbility(data.ItemAbility) bool
     GetAbilityValue(data.AbilityType) float32
     GetDefense() int
     GetResistance() int
@@ -1711,7 +1712,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
         })
     }
 
-    if attacker.HasAbility(data.AbilityLifeSteal) || attacker.HasAbility(data.AbilityVampiric) {
+    if attacker.HasAbility(data.AbilityLifeSteal) {
         if !defender.HasAbility(data.AbilityDeathImmunity) && !defender.HasAbility(data.AbilityMagicImmunity) {
             modifier := int(attacker.Unit.GetAbilityValue(data.AbilityLifeSteal))
             // if vampiric, modifier will just be 0
@@ -1741,7 +1742,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
         }
     }
 
-    if attacker.HasAbility(data.AbilityStoningTouch) || attacker.HasAbility(data.AbilityStoning) {
+    if attacker.HasAbility(data.AbilityStoningTouch) {
         if !defender.HasAbility(data.AbilityStoningImmunity) && !defender.HasAbility(data.AbilityMagicImmunity) {
             damage := 0
 
@@ -1766,7 +1767,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
         }
     }
 
-    if attacker.HasAbility(data.AbilityDispelEvil) || attacker.HasAbility(data.AbilityHolyAvenger) {
+    if attacker.HasAbility(data.AbilityDispelEvil) {
         immune := true
 
         if defender.Unit.GetRace() == data.RaceFantastic {
@@ -1832,7 +1833,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
         }
     }
 
-    if attacker.HasAbility(data.AbilityDestruction) {
+    if attacker.Unit.HasItemAbility(data.ItemAbilityDestruction) {
         if !defender.HasAbility(data.AbilityMagicImmunity) {
             defenderResistance := defender.Unit.GetResistance() + defender.GetResistances(
                 data.UnitEnchantmentResistMagic, data.UnitEnchantmentBless,
@@ -2050,7 +2051,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
 
                 if throwDamage > 0 {
-                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, false, 0)
+                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, attacker.HasAbility(data.AbilityArmorPiercing), 0)
                     model.Observer.ThrowAttack(attacker, defender, damage)
                     model.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
                 }

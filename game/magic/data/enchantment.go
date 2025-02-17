@@ -242,12 +242,12 @@ func (enchantment UnitEnchantment) Color() color.Color {
 func (enchantment UnitEnchantment) Abilities() []Ability {
     switch enchantment {
         case UnitEnchantmentImmolation: return []Ability{MakeAbility(AbilityImmolation)}
-        case UnitEnchantmentCloakOfFear: return []Ability{MakeAbility(AbilityCloakOfFear)}
+        case UnitEnchantmentCloakOfFear: return []Ability{MakeAbility(AbilityCauseFear)}
         case UnitEnchantmentTrueSight: return []Ability{MakeAbility(AbilityIllusionsImmunity)}
         case UnitEnchantmentPathFinding: return []Ability{MakeAbility(AbilityPathfinding)}
         case UnitEnchantmentChaosChannelsFireBreath: return []Ability{MakeAbilityValue(AbilityFireBreath, 2)}
         case UnitEnchantmentInvulnerability: return []Ability{MakeAbility(AbilityWeaponImmunity)}
-        case UnitEnchantmentPlanarTravel: return []Ability{MakeAbility(AbilityPlanarTravel)}
+        case UnitEnchantmentPlanarTravel: return []Ability{MakeAbility(AbilityPlaneShift)}
         case UnitEnchantmentRegeneration: return []Ability{MakeAbility(AbilityRegeneration)}
         case UnitEnchantmentGuardianWind: return []Ability{MakeAbility(AbilityMissileImmunity)}
         case UnitEnchantmentInvisibility: return []Ability{MakeAbility(AbilityInvisibility)}

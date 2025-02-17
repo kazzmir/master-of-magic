@@ -285,6 +285,10 @@ func (unit *OverworldUnit) HasAbility(ability data.AbilityType) bool {
     return false
 }
 
+func (unit *OverworldUnit) HasItemAbility(ability data.ItemAbility) bool {
+    return false
+}
+
 func (unit *OverworldUnit) SetBanner(banner data.BannerType) {
     unit.Banner = banner
 }

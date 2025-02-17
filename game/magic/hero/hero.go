@@ -815,6 +815,12 @@ func (hero *Hero) HasAbility(ability data.AbilityType) bool {
     })
 }
 
+func (hero *Hero) HasItemAbility(ability data.ItemAbility) bool {
+    return slices.ContainsFunc(hero.Equipment[:], func (a *artifact.Artifact) bool {
+        return a != nil && a.HasItemAbility(ability)
+    })
+}
+
 func (hero *Hero) IsFlying() bool {
     return hero.Unit.IsFlying()
 }

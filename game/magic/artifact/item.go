@@ -133,7 +133,7 @@ type Power struct {
     Type PowerType
     Amount int // for an ability this is the number of books of the Magic needed
     Name string
-    Ability data.AbilityType
+    Ability data.ItemAbility
     Magic data.MagicType // for abilities
 
     Spell spellbook.Spell
@@ -163,25 +163,35 @@ func (artifact *Artifact) HasAbilities() bool {
     return artifact.HasAbilityPower()
 }
 
-func (artifact *Artifact) FirstAbility() data.Ability {
+func (artifact *Artifact) FirstAbility() data.ItemAbility {
     for _, power := range artifact.Powers {
         if power.Type == PowerTypeAbility1 || power.Type == PowerTypeAbility2 || power.Type == PowerTypeAbility3 {
-            return data.MakeAbility(power.Ability)
+            return power.Ability
         }
     }
 
-    return data.MakeAbility(data.AbilityNone)
+    return data.ItemAbilityNone
 }
 
-func (artifact *Artifact) LastAbility() data.Ability {
+func (artifact *Artifact) LastAbility() data.ItemAbility {
     for i := len(artifact.Powers) - 1; i >= 0; i-- {
         power := artifact.Powers[i]
         if power.Type == PowerTypeAbility1 || power.Type == PowerTypeAbility2 || power.Type == PowerTypeAbility3 {
-            return data.MakeAbility(power.Ability)
+            return power.Ability
         }
     }
 
-    return data.MakeAbility(data.AbilityNone)
+    return data.ItemAbilityNone
+}
+
+func (artifact *Artifact) HasItemAbility(ability data.ItemAbility) bool {
+    return slices.ContainsFunc(artifact.Powers, func (power Power) bool {
+        if power.Type == PowerTypeAbility1 || power.Type == PowerTypeAbility2 || power.Type == PowerTypeAbility3 {
+            return power.Ability == ability
+        }
+
+        return false
+    })
 }
 
 func (artifact *Artifact) HasAbility(ability data.AbilityType) bool {
@@ -191,7 +201,7 @@ func (artifact *Artifact) HasAbility(ability data.AbilityType) bool {
 
     for _, check := range artifact.Powers {
         isAbility := check.Type == PowerTypeAbility1 || check.Type == PowerTypeAbility2 || check.Type == PowerTypeAbility3
-        if isAbility && check.Ability == ability {
+        if isAbility && check.Ability.AbilityType() == ability {
             return true
         }
     }
@@ -454,39 +464,39 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
         9: ArtifactTypePlate,
     }
 
-    abilityMap := map[uint32]data.AbilityType {
-        1 << 0:  data.AbilityVampiric,
-        1 << 1:  data.AbilityGuardianWind,
-        1 << 2:  data.AbilityLightning,
-        1 << 3:  data.AbilityCloakOfFear,
-        1 << 4:  data.AbilityDestruction,
-        1 << 5:  data.AbilityWraithform,
-        1 << 6:  data.AbilityRegeneration,
-        1 << 7:  data.AbilityPathfinding,
-        1 << 8:  data.AbilityWaterWalking,
-        1 << 9:  data.AbilityResistElements,
-        1 << 10: data.AbilityElementalArmor,
-        1 << 11: data.AbilityChaos,
-        1 << 12: data.AbilityStoning,
-        1 << 13: data.AbilityEndurance,
-        1 << 14: data.AbilityHaste,
-        1 << 15: data.AbilityInvisibility,
-        1 << 16: data.AbilityDeath,
-        1 << 17: data.AbilityFlight,
-        1 << 18: data.AbilityResistMagic,
-        1 << 19: data.AbilityMagicImmunity,
-        1 << 20: data.AbilityFlaming,
-        1 << 21: data.AbilityHolyAvenger,
-        1 << 22: data.AbilityTrueSight,
-        1 << 23: data.AbilityPhantasmal,
-        1 << 24: data.AbilityPowerDrain,
-        1 << 25: data.AbilityBless,
-        1 << 26: data.AbilityLionHeart,
-        1 << 27: data.AbilityGiantStrength,
-        1 << 28: data.AbilityPlanarTravel,
-        1 << 29: data.AbilityMerging,
-        1 << 30: data.AbilityRighteousness,
-        1 << 31: data.AbilityInvulnerability,
+    abilityMap := map[uint32]data.ItemAbility {
+        1 << 0:  data.ItemAbilityVampiric,
+        1 << 1:  data.ItemAbilityGuardianWind,
+        1 << 2:  data.ItemAbilityLightning,
+        1 << 3:  data.ItemAbilityCloakOfFear,
+        1 << 4:  data.ItemAbilityDestruction,
+        1 << 5:  data.ItemAbilityWraithform,
+        1 << 6:  data.ItemAbilityRegeneration,
+        1 << 7:  data.ItemAbilityPathfinding,
+        1 << 8:  data.ItemAbilityWaterWalking,
+        1 << 9:  data.ItemAbilityResistElements,
+        1 << 10: data.ItemAbilityElementalArmor,
+        1 << 11: data.ItemAbilityChaos,
+        1 << 12: data.ItemAbilityStoning,
+        1 << 13: data.ItemAbilityEndurance,
+        1 << 14: data.ItemAbilityHaste,
+        1 << 15: data.ItemAbilityInvisibility,
+        1 << 16: data.ItemAbilityDeath,
+        1 << 17: data.ItemAbilityFlight,
+        1 << 18: data.ItemAbilityResistMagic,
+        1 << 19: data.ItemAbilityMagicImmunity,
+        1 << 20: data.ItemAbilityFlaming,
+        1 << 21: data.ItemAbilityHolyAvenger,
+        1 << 22: data.ItemAbilityTrueSight,
+        1 << 23: data.ItemAbilityPhantasmal,
+        1 << 24: data.ItemAbilityPowerDrain,
+        1 << 25: data.ItemAbilityBless,
+        1 << 26: data.ItemAbilityLionHeart,
+        1 << 27: data.ItemAbilityGiantStrength,
+        1 << 28: data.ItemAbilityPlanarTravel,
+        1 << 29: data.ItemAbilityMerging,
+        1 << 30: data.ItemAbilityRighteousness,
+        1 << 31: data.ItemAbilityInvulnerability,
     }
 
     for i := 0; i < int(numEntries); i++ {
@@ -619,7 +629,7 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
 
         for mask, ability := range abilityMap {
             if abilitiesValue&mask != 0 {
-                powers = append(powers, Power{Type: PowerTypeAbility1, Amount: 0, Name: data.MakeAbility(ability).Name(), Ability: ability})
+                powers = append(powers, Power{Type: PowerTypeAbility1, Amount: 0, Name: ability.Name(), Ability: ability})
             }
         }
 

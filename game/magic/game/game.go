@@ -5514,7 +5514,7 @@ func (game *Game) SwitchPlane() {
                 hasAstralGate := (cityThisPlane != nil && cityThisPlane.HasEnchantment(data.CityEnchantmentAstralGate)) ||
                                  (cityOppositePlane != nil && cityOppositePlane.HasEnchantment(data.CityEnchantmentAstralGate))
 
-                hasPlanarTravel := activeStack.ActiveUnitsHasAbility(data.AbilityPlanarTravel)
+                hasPlanarTravel := activeStack.ActiveUnitsHasAbility(data.AbilityPlaneShift)
 
                 if hasAstralGate || hasPlanarTravel {
                     travelEnabled = true

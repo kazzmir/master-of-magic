@@ -67,7 +67,7 @@ func NewEngine(scenario int) (*Engine, error) {
             {
                 Type: artifact.PowerTypeAbility1,
                 Name: "Flaming",
-                Ability: data.AbilityFlaming,
+                Ability: data.ItemAbilityFlaming,
             },
         },
         Cost: 250,
