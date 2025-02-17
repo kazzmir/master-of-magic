@@ -426,6 +426,7 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
     updateAbilities := func(){
         group.RemoveElements(elements)
         group.RemoveElements(abilityElements)
+        // pass in the current page so the ui doesn't jump around
         group.AddElements(MakeUnitAbilitiesElements(group, cache, imageCache, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page))
     }
 
