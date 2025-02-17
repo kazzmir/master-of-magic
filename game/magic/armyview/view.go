@@ -233,6 +233,16 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                 RightClick: func (this *uilib.UIElement){
                     ui.AddElements(unitview.MakeUnitContextMenu(view.Cache, ui, hero, disband))
                 },
+                LeftClick: func (this *uilib.UIElement){
+                    stack := view.Player.FindStackByUnit(hero)
+                    if stack != nil {
+                        view.Player.SelectedStack = stack
+                        view.State = ArmyScreenStateDone
+                    }
+                },
+                Inside: func (this *uilib.UIElement, x, y int){
+                    highlightedUnit = hero
+                },
                 Draw: func(this *uilib.UIElement, screen *ebiten.Image){
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(x), float64(y))
