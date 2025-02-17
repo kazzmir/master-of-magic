@@ -259,11 +259,14 @@ func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, un
 }
 
 func createUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool, page uint32) []*uilib.UIElement {
+    xStart := x
+    yStart := y
+
     var elements []*uilib.UIElement
 
-    if !pureAbilities {
-        background, _ := imageCache.GetImage("special.lbx", 3, 0)
+    background, _ := imageCache.GetImage("special.lbx", 3, 0)
 
+    if !pureAbilities {
         // experience badge
         experienceX := x
         experienceY := y
@@ -301,7 +304,7 @@ func createUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, med
                 Layer: layer,
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                    options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
                     options.ColorScale.ScaleAlpha((*getAlpha)())
 
                     screen.DrawImage(background, &options)
@@ -324,6 +327,33 @@ func createUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, med
         }
     }
 
+    // FIXME: handle more than 4 abilities by using more columns
+    for _, ability := range unit.GetAbilities() {
+        pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
+        if err == nil {
+            rect := util.ImageRect(x, y, pic)
+            elements = append(elements, &uilib.UIElement{
+                Layer: layer,
+                Rect: rect,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha((*getAlpha)())
+                    options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                    screen.DrawImage(pic, &options)
+                    x, y := options.GeoM.Apply(0, 0)
+
+                    printX := x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale)
+                    printY := y + float64(5 * data.ScreenScale)
+                    mediumFont.Print(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, ability.Name())
+                },
+            })
+
+            y += pic.Bounds().Dy() + 1
+        } else {
+            log.Printf("Error: unable to render ability %#v %v", ability, ability.Name())
+        }
+    }
+
     if len(elements) == 0 {
         return nil
     }
@@ -336,9 +366,18 @@ func createUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, med
 
     minElement := page * 4
     maxElement := int(min(float64(len(elements)), float64((page + 1) * 4)))
-    return elements[minElement:maxElement]
+
+    outElements := elements[minElement:maxElement]
+    for i, element := range outElements {
+        element.Rect.Min.X = xStart
+        element.Rect.Min.Y = yStart + i * (background.Bounds().Dy() + 1)
+        element.Rect.Max.Y = element.Rect.Min.Y + background.Bounds().Dy()
+    }
+
+    return outElements
 }
 
+/*
 func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions, pureAbilities bool, page uint32, counter uint64) {
     var renders []func() float64
 
@@ -426,6 +465,7 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
         defaultOptions.GeoM.Translate(0, height)
     }
 }
+*/
 
 func MakeUnitAbilitiesElements(ui *uilib.UI, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool) []*uilib.UIElement {
     var elements []*uilib.UIElement
