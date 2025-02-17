@@ -2533,6 +2533,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
     setupUI = func(){
         ui.RemoveGroup(group)
         group = uilib.MakeGroup()
+        ui.AddGroup(group)
         x1, y1 := options.GeoM.Apply(float64(5 * data.ScreenScale), float64(102 * data.ScreenScale))
 
         cityScapeElement := makeCityScapeElement(cache, group, city, &help, &imageCache, func(buildinglib.Building){}, buildings, buildinglib.BuildingNone, int(x1), int(y1), fonts, otherPlayer, &getAlpha)
