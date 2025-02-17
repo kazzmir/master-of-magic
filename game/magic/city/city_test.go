@@ -549,8 +549,8 @@ func TestScenario1(test *testing.T) {
 
     // Power
     books := []data.WizardBook{data.WizardBook{Magic: data.LifeMagic, Count: 11}}
-    if city.ComputePower(books) != 11 {
-        test.Logf("City ComputePower is not correct: %v", city.ComputePower(books))
+    if city.ComputePower(books, false) != 11 {
+        test.Logf("City ComputePower is not correct: %v", city.ComputePower(books, false))
     }
 
     if city.PopulationGrowthRate() != 120 {
@@ -627,8 +627,8 @@ func TestScenario2(test *testing.T) {
 
     // Power
     books := []data.WizardBook{data.WizardBook{Magic: data.LifeMagic, Count: 11}}
-    if city.ComputePower(books) != 11 {
-        test.Logf("City ComputePower is not correct: %v", city.ComputePower(books))
+    if city.ComputePower(books, false) != 11 {
+        test.Logf("City ComputePower is not correct: %v", city.ComputePower(books, false))
     }
 
     if city.PopulationGrowthRate() != 90 {

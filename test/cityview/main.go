@@ -66,6 +66,9 @@ func NewEngine() (*Engine, error) {
             Books: []data.WizardBook{
                 {Magic: data.ChaosMagic, Count: 11},
             },
+            Abilities: []setup.WizardAbility{
+                setup.AbilityInfernalPower,
+            },
         },
     }
 
@@ -99,42 +102,42 @@ func NewEngine() (*Engine, error) {
     city.ProducingBuilding = buildinglib.BuildingNone
     city.Banner = data.BannerBlue
 
-    city.AddBuilding(buildinglib.BuildingFortress)
-    city.AddBuilding(buildinglib.BuildingGranary)
-    city.AddBuilding(buildinglib.BuildingFarmersMarket)
-    city.AddBuilding(buildinglib.BuildingMarketplace)
-    city.AddBuilding(buildinglib.BuildingMinersGuild)
-    city.AddBuilding(buildinglib.BuildingSawmill)
-    city.AddBuilding(buildinglib.BuildingMechaniciansGuild)
-    city.AddBuilding(buildinglib.BuildingBuildersHall)
-    city.AddBuilding(buildinglib.BuildingCityWalls)
-    city.AddBuilding(buildinglib.BuildingWizardsGuild)
-    city.AddBuilding(buildinglib.BuildingSmithy)
-    city.AddBuilding(buildinglib.BuildingSummoningCircle)
-    city.AddBuilding(buildinglib.BuildingOracle)
+    // city.AddBuilding(buildinglib.BuildingFortress)
+    // city.AddBuilding(buildinglib.BuildingGranary)
+    // city.AddBuilding(buildinglib.BuildingFarmersMarket)
+    // city.AddBuilding(buildinglib.BuildingMarketplace)
+    // city.AddBuilding(buildinglib.BuildingMinersGuild)
+    // city.AddBuilding(buildinglib.BuildingSawmill)
+    // city.AddBuilding(buildinglib.BuildingMechaniciansGuild)
+    // city.AddBuilding(buildinglib.BuildingBuildersHall)
+    // city.AddBuilding(buildinglib.BuildingCityWalls)
+    // city.AddBuilding(buildinglib.BuildingWizardsGuild)
+    // city.AddBuilding(buildinglib.BuildingSmithy)
+    // city.AddBuilding(buildinglib.BuildingSummoningCircle)
+    // city.AddBuilding(buildinglib.BuildingOracle)
     city.AddBuilding(buildinglib.BuildingShrine)
-    // city.AddBuilding(buildinglib.BuildingTemple)
+    city.AddBuilding(buildinglib.BuildingTemple)
     // city.AddBuilding(buildinglib.BuildingParthenon)
-    city.AddBuilding(buildinglib.BuildingCathedral)
+    // city.AddBuilding(buildinglib.BuildingCathedral)
 
-    for _, building := range buildinglib.Buildings() {
-        city.AddBuilding(building)
-    }
+    // for _, building := range buildinglib.Buildings() {
+    //     city.AddBuilding(building)
+    // }
 
     city.ProducingBuilding = buildinglib.BuildingHousing
     // city.ProducingUnit = units.HighElfSpearmen
     city.ResetCitizens(nil)
         // ProducingUnit: units.UnitNone,
 
-    city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
+    // city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
     // city.AddEnchantment(data.CityEnchantmentWallOfDarkness, data.BannerGreen)
-    city.AddEnchantment(data.CityEnchantmentNaturesEye, data.BannerRed)
-    city.AddEnchantment(data.CityEnchantmentProsperity, data.BannerRed)
-    city.AddEnchantment(data.CityEnchantmentInspirations, data.BannerRed)
-    city.AddEnchantment(data.CityEnchantmentAstralGate, data.BannerRed)
-    city.AddEnchantment(data.CityEnchantmentAltarOfBattle, data.BannerRed)
-    city.AddEnchantment(data.CityEnchantmentStreamOfLife, data.BannerRed)
-    city.AddEnchantment(data.CityEnchantmentEarthGate, data.BannerRed)
+    // city.AddEnchantment(data.CityEnchantmentNaturesEye, data.BannerRed)
+    // city.AddEnchantment(data.CityEnchantmentProsperity, data.BannerRed)
+    // city.AddEnchantment(data.CityEnchantmentInspirations, data.BannerRed)
+    // city.AddEnchantment(data.CityEnchantmentAstralGate, data.BannerRed)
+    // city.AddEnchantment(data.CityEnchantmentAltarOfBattle, data.BannerRed)
+    // city.AddEnchantment(data.CityEnchantmentStreamOfLife, data.BannerRed)
+    // city.AddEnchantment(data.CityEnchantmentEarthGate, data.BannerRed)
     city.AddEnchantment(data.CityEnchantmentDarkRituals, data.BannerRed)
 
     var garrison []units.StackUnit

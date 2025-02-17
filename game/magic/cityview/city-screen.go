@@ -19,6 +19,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
@@ -2097,7 +2098,7 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
     var usage []ResourceUsage
 
     add := func(count int, name string, building buildinglib.Building){
-        if count != 0 && (building == buildinglib.BuildingNone || cityScreen.City.Buildings.Contains(building)) {
+        if count != 0 {
             usage = append(usage, ResourceUsage{
                 Count: count,
                 Name: name,
@@ -2106,23 +2107,19 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
         }
     }
 
-    addEnchantment := func (count int, name string){
-        add(count, name, buildinglib.BuildingNone)
-    }
+    infernalPower := cityScreen.Player.Wizard.AbilityEnabled(setup.AbilityInfernalPower)
+    moonBonus := cityScreen.City.PowerMoonBonus(cityScreen.Player.Wizard.Books)
 
-    add(int(cityScreen.City.PowerCitizens()), "Townsfolk", buildinglib.BuildingNone)
+    add(cityScreen.City.PowerCitizens(), "Townsfolk", buildinglib.BuildingNone)
     add(cityScreen.City.PowerFortress(cityScreen.Player.Wizard.TotalBooks()), "Fortress", buildinglib.BuildingFortress)
-    add(1, "Shrine", buildinglib.BuildingShrine)
-    add(2, "Temple", buildinglib.BuildingTemple)
-    add(3, "Parthenon", buildinglib.BuildingParthenon)
-    add(4, "Cathedral", buildinglib.BuildingCathedral)
-    add(3, "Alchemist's Guild", buildinglib.BuildingAlchemistsGuild)
-    add(-3, "Wizard's Guild", buildinglib.BuildingWizardsGuild)
+    add(int(cityScreen.City.PowerShrine(infernalPower, moonBonus)), "Shrine", buildinglib.BuildingShrine)
+    add(int(cityScreen.City.PowerTemple(infernalPower, moonBonus)), "Temple", buildinglib.BuildingTemple)
+    add(int(cityScreen.City.PowerParthenon(infernalPower, moonBonus)), "Parthenon", buildinglib.BuildingParthenon)
+    add(int(cityScreen.City.PowerCathedral(infernalPower, moonBonus)), "Cathedral", buildinglib.BuildingCathedral)
+    add(cityScreen.City.PowerAlchemistsGuild(), "Alchemist's Guild", buildinglib.BuildingAlchemistsGuild)
+    add(cityScreen.City.PowerWizardsGuild(), "Wizard's Guild", buildinglib.BuildingWizardsGuild)
     add(cityScreen.City.PowerMinerals(), "Minerals", buildinglib.BuildingNone)
-
-    if cityScreen.City.HasEnchantment(data.CityEnchantmentDarkRituals) {
-        addEnchantment(cityScreen.City.PowerDarkRituals(), "Dark Rituals")
-    }
+    add(int(cityScreen.City.PowerDarkRituals(infernalPower, moonBonus)), "Dark Rituals", buildinglib.BuildingNone)
 
     // FIXME: add tiles (adamantium mine) and miner's guild
 
@@ -2243,6 +2240,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         },
     })
 
+    hasInfernalPower := cityScreen.Player.Wizard.AbilityEnabled(setup.AbilityInfernalPower)
     powerRect := image.Rect(6 * data.ScreenScale, 76 * data.ScreenScale, 6 * data.ScreenScale + 9 * bigMagic.Bounds().Dx(), 76 * data.ScreenScale + bigMagic.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
         Rect: powerRect,
@@ -2253,7 +2251,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(powerRect.Min.X), float64(powerRect.Min.Y))
-            cityScreen.drawIcons(cityScreen.City.ComputePower(cityScreen.Player.Wizard.Books), smallMagic, bigMagic, options, screen)
+            cityScreen.drawIcons(cityScreen.City.ComputePower(cityScreen.Player.Wizard.Books, hasInfernalPower), smallMagic, bigMagic, options, screen)
         },
     })
 

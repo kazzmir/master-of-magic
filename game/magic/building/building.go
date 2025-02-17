@@ -203,16 +203,6 @@ func (building Building) Size() (int, int) {
     return 0, 0
 }
 
-func (building Building) Power(spellBooks int) int {
-    switch building {
-        case BuildingAlchemistsGuild: return 3
-        case BuildingWizardsGuild: return -3
-        case BuildingFortress: return city.PowerFortress(totalBooks)
-    }
-
-    return 0
-}
-
 func (building Building) ReligiousPowerPower(hasEvilPresence bool) int {
     if hasEvilPresence {
         return 0

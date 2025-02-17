@@ -587,6 +587,10 @@ func (city *City) PowerMinerals() int {
 }
 
 func (city *City) PowerFortress(spellBooks int) int {
+    if !city.Buildings.Contains(buildinglib.BuildingFortress) {
+        return 0
+    }
+
     power := spellBooks
     if city.Plane == data.PlaneMyrror {
         power += 5
@@ -595,54 +599,88 @@ func (city *City) PowerFortress(spellBooks int) int {
     return power
 }
 
-func (city *City) PowerDarkRituals() int {
-    power := 0
-    if city.Buildings.Contains(buildinglib.BuildingShrine) {
-        power += 1
+func (city *City) PowerAlchemistsGuild() int {
+    if !city.Buildings.Contains(buildinglib.BuildingAlchemistsGuild) {
+        return 0
     }
-    if city.Buildings.Contains(buildinglib.BuildingTemple) {
-        power += 2
+
+    return 3
+}
+
+func (city *City) PowerWizardsGuild() int {
+    if !city.Buildings.Contains(buildinglib.BuildingWizardsGuild) {
+        return 0
     }
-    if city.Buildings.Contains(buildinglib.BuildingParthenon) {
-        power += 3
+
+    return -3
+
+}
+
+func (city *City) PowerShrine(infernalPower bool, moonBonus float64) float64 {
+    if !city.Buildings.Contains(buildinglib.BuildingShrine) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+        return 0
     }
-    if city.Buildings.Contains(buildinglib.BuildingCathedral) {
-        power += 4
+
+    power := 1 * moonBonus
+
+    if infernalPower {
+        power *= 1.5
     }
+
     return power
 }
 
-
-/* power production from buildings and citizens
- */
-func (city *City) ComputePower(spellBooks []data.WizardBook) int {
-    power := 0
-
-    religiousPower := 0
-
-    totalBooks := 0
-    for _, book := range spellBooks {
-        totalBooks += book.Count
+func (city *City) PowerTemple(infernalPower bool, moonBonus float64) float64 {
+    if city.Buildings.Contains(buildinglib.BuildingTemple) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+        return 0
     }
 
-    for _, buildingValue := range city.Buildings.Values() {
-        switch buildingValue {
-            case buildinglib.BuildingShrine: religiousPower += 1
-            case buildinglib.BuildingTemple: religiousPower += 2
-            case buildinglib.BuildingParthenon: religiousPower += 3
-            case buildinglib.BuildingCathedral: religiousPower += 4
-            case buildinglib.BuildingAlchemistsGuild: power += 3
-            case buildinglib.BuildingWizardsGuild: power -= 3
-            case buildinglib.BuildingFortress: power += city.PowerFortress(totalBooks)
-        }
+    power := 2 * moonBonus
+
+    if infernalPower {
+        power *= 1.5
     }
 
-    if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
-        religiousPower += city.PowerDarkRituals()
+    return power
+}
+
+func (city *City) PowerParthenon(infernalPower bool, moonBonus float64) float64 {
+    if city.Buildings.Contains(buildinglib.BuildingParthenon) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+        return 0
     }
 
-    // FIXME: take bonuses for religious power into account (infernal power, etc.)
+    power := 3 * moonBonus
 
+    if infernalPower {
+        power *= 1.5
+    }
+
+    return power
+}
+
+func (city *City) PowerCathedral(infernalPower bool, moonBonus float64) float64 {
+    if city.Buildings.Contains(buildinglib.BuildingCathedral) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+        return 0
+    }
+
+    power := 4 * moonBonus
+
+    if infernalPower {
+        power *= 1.5
+    }
+
+    return power
+}
+
+func (city *City) PowerDarkRituals(infernalPower bool, moonBonus float64) float64 {
+    power := city.PowerShrine(infernalPower, moonBonus)
+    power += city.PowerTemple(infernalPower, moonBonus)
+    power += city.PowerParthenon(infernalPower, moonBonus)
+    power += city.PowerCathedral(infernalPower, moonBonus)
+    return power
+}
+
+func (city *City) PowerMoonBonus(spellBooks []data.WizardBook) float64 {
     moonBonus := 1.0
 
     if city.CityServices.GoodMoonActive() {
@@ -665,7 +703,35 @@ func (city *City) ComputePower(spellBooks []data.WizardBook) int {
         }
     }
 
-    return power + int(float64(religiousPower) * moonBonus) + city.PowerCitizens() + city.PowerMinerals()
+    return float64(moonBonus)
+}
+
+/* power production from buildings and citizens
+ */
+func (city *City) ComputePower(spellBooks []data.WizardBook, infernalPower bool) int {
+    totalBooks := 0
+    for _, book := range spellBooks {
+        totalBooks += book.Count
+    }
+
+    power := city.PowerFortress(totalBooks)
+    power += city.PowerAlchemistsGuild()
+    power += city.PowerWizardsGuild()
+    power += city.PowerCitizens()
+    power += city.PowerMinerals()
+
+    moonBonus := city.PowerMoonBonus(spellBooks)
+
+    religiousPower := city.PowerShrine(infernalPower, moonBonus)
+    religiousPower += city.PowerTemple(infernalPower, moonBonus)
+    religiousPower += city.PowerParthenon(infernalPower, moonBonus)
+    religiousPower += city.PowerCathedral(infernalPower, moonBonus)
+
+    if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
+        religiousPower += city.PowerDarkRituals(infernalPower, moonBonus)
+    }
+
+    return power + int(religiousPower)
 }
 
 func (city *City) UpdateUnrest(garrison []units.StackUnit) {
