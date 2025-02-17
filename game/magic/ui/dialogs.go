@@ -13,11 +13,11 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func MakeHelpElement(group *UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, help help.HelpEntry, helpEntries ...help.HelpEntry) *UIElement {
-    return MakeHelpElementWithLayer(group, cache, imageCache, UILayer(1), help, helpEntries...)
+func MakeHelpElement(container UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, help help.HelpEntry, helpEntries ...help.HelpEntry) *UIElement {
+    return MakeHelpElementWithLayer(container, cache, imageCache, UILayer(1), help, helpEntries...)
 }
 
-func MakeHelpElementWithLayer(group *UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, help help.HelpEntry, helpEntries ...help.HelpEntry) *UIElement {
+func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, help help.HelpEntry, helpEntries ...help.HelpEntry) *UIElement {
 
     helpTop, err := imageCache.GetImage("help.lbx", 0, 0)
     if err != nil {
@@ -36,7 +36,7 @@ func MakeHelpElementWithLayer(group *UIElementGroup, cache *lbx.LbxCache, imageC
 
     const fadeSpeed = 7
 
-    getAlpha := group.MakeFadeIn(fadeSpeed)
+    getAlpha := container.MakeFadeIn(fadeSpeed)
 
     helpPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -166,9 +166,9 @@ func MakeHelpElementWithLayer(group *UIElementGroup, cache *lbx.LbxCache, imageC
 
         },
         LeftClick: func(infoThis *UIElement){
-            getAlpha = group.MakeFadeOut(fadeSpeed)
-            group.AddDelay(fadeSpeed, func(){
-                group.RemoveElement(infoThis)
+            getAlpha = container.MakeFadeOut(fadeSpeed)
+            container.AddDelay(fadeSpeed, func(){
+                container.RemoveElement(infoThis)
             })
         },
         Layer: layer,
@@ -177,7 +177,7 @@ func MakeHelpElementWithLayer(group *UIElementGroup, cache *lbx.LbxCache, imageC
     return infoElement
 }
 
-func MakeErrorElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, clicked func()) *UIElement {
+func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, clicked func()) *UIElement {
     errorX := 67
     errorY := 73
 
@@ -249,20 +249,20 @@ func MakeErrorElement(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, 
     return element
 }
 
-func MakeConfirmDialog(group *UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, center bool, confirm func(), cancel func()) []*UIElement {
-    return MakeConfirmDialogWithLayer(group, cache, imageCache, 1, message, center, confirm, cancel)
+func MakeConfirmDialog(container UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, center bool, confirm func(), cancel func()) []*UIElement {
+    return MakeConfirmDialogWithLayer(container, cache, imageCache, 1, message, center, confirm, cancel)
 }
 
-func MakeConfirmDialogWithLayer(group *UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, message string, center bool, confirm func(), cancel func()) []*UIElement {
+func MakeConfirmDialogWithLayer(container UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, message string, center bool, confirm func(), cancel func()) []*UIElement {
     // a button that says 'Yes'
     yesButtons, _ := imageCache.GetImages("resource.lbx", 3)
 
     // a button that says 'No'
     noButtons, _ := imageCache.GetImages("resource.lbx", 4)
-    return MakeConfirmDialogWithLayerFull(group, cache, imageCache, layer, message, center, confirm, cancel, yesButtons, noButtons)
+    return MakeConfirmDialogWithLayerFull(container, cache, imageCache, layer, message, center, confirm, cancel, yesButtons, noButtons)
 }
 
-func MakeConfirmDialogWithLayerFull(group *UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, message string, center bool, confirm func(), cancel func(), yesButtons []*ebiten.Image, noButtons []*ebiten.Image) []*UIElement {
+func MakeConfirmDialogWithLayerFull(container UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, message string, center bool, confirm func(), cancel func(), yesButtons []*ebiten.Image, noButtons []*ebiten.Image) []*UIElement {
     confirmX := 67 * data.ScreenScale
     confirmY := 68 * data.ScreenScale
 
@@ -271,7 +271,7 @@ func MakeConfirmDialogWithLayerFull(group *UIElementGroup, cache *lbx.LbxCache, 
 
     const fadeSpeed = 7
 
-    getAlpha := group.MakeFadeIn(fadeSpeed)
+    getAlpha := container.MakeFadeIn(fadeSpeed)
 
     confirmTop, err := imageCache.GetImage("resource.lbx", 0, 0)
     if err != nil {
@@ -357,9 +357,9 @@ func MakeConfirmDialogWithLayerFull(group *UIElementGroup, cache *lbx.LbxCache, 
             LeftClickRelease: func(this *UIElement){
                 clicked = false
 
-                getAlpha = group.MakeFadeOut(fadeSpeed)
-                group.AddDelay(fadeSpeed, func(){
-                    group.RemoveElements(elements)
+                getAlpha = container.MakeFadeOut(fadeSpeed)
+                container.AddDelay(fadeSpeed, func(){
+                    container.RemoveElements(elements)
                     confirm()
                 })
             },
@@ -392,9 +392,9 @@ func MakeConfirmDialogWithLayerFull(group *UIElementGroup, cache *lbx.LbxCache, 
             LeftClickRelease: func(this *UIElement){
                 clicked = false
 
-                getAlpha = group.MakeFadeOut(fadeSpeed)
-                group.AddDelay(fadeSpeed, func(){
-                    group.RemoveElements(elements)
+                getAlpha = container.MakeFadeOut(fadeSpeed)
+                container.AddDelay(fadeSpeed, func(){
+                    container.RemoveElements(elements)
                     cancel()
                 })
             },
@@ -415,11 +415,11 @@ func MakeConfirmDialogWithLayerFull(group *UIElementGroup, cache *lbx.LbxCache, 
     return elements
 }
 
-func MakeLairConfirmDialog(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, message string, confirm func(), cancel func()) []*UIElement {
+func MakeLairConfirmDialog(ui UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, message string, confirm func(), cancel func()) []*UIElement {
     return MakeLairConfirmDialogWithLayer(ui, cache, imageCache, lairPicture, 1, message, confirm, cancel)
 }
 
-func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
+func MakeLairConfirmDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, layer UILayer, message string, confirm func(), cancel func()) []*UIElement {
     confirmX := 67 * data.ScreenScale
     confirmY := 40 * data.ScreenScale
 
@@ -573,7 +573,7 @@ func MakeLairConfirmDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *uti
     return elements
 }
 
-func MakeLairShowDialogWithLayer(ui *UI, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, layer UILayer, message string, dismiss func()) []*UIElement {
+func MakeLairShowDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, lairPicture *util.Animation, layer UILayer, message string, dismiss func()) []*UIElement {
     confirmX := 67 * data.ScreenScale
     confirmY := 40 * data.ScreenScale
 
@@ -663,7 +663,7 @@ type Selection struct {
     Hotkey string
 }
 
-func MakeSelectionUI(ui *UI, lbxCache *lbx.LbxCache, imageCache *util.ImageCache, cornerX int, cornerY int, selectionTitle string, choices []Selection) []*UIElement {
+func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.ImageCache, cornerX int, cornerY int, selectionTitle string, choices []Selection) []*UIElement {
     var elements []*UIElement
 
     fontLbx, err := lbxCache.GetLbxFile("fonts.lbx")
