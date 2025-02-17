@@ -45,6 +45,7 @@ type StackUnit interface {
     GetLbxIndex() int
     GetKnownSpells() []string
     HasAbility(data.AbilityType) bool
+    HasItemAbility(data.ItemAbility) bool
     GetAbilityValue(data.AbilityType) float32
     GetAbilities() []data.Ability
     GetBaseDefense() int

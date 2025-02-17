@@ -741,6 +741,15 @@ func (player *Player) FindStack(x int, y int, plane data.Plane) *UnitStack {
     return nil
 }
 
+func (player *Player) SplitActiveStack(stack *UnitStack) *UnitStack {
+    newStack := stack.SplitActiveUnits()
+    if newStack != stack {
+        player.Stacks = append(player.Stacks, newStack)
+    }
+
+    return newStack
+}
+
 func (player *Player) MergeStacks(stack1 *UnitStack, stack2 *UnitStack) *UnitStack {
     stack1.units = append(stack1.units, stack2.units...)
 
@@ -751,6 +760,10 @@ func (player *Player) MergeStacks(stack1 *UnitStack, stack2 *UnitStack) *UnitSta
     player.Stacks = slices.DeleteFunc(player.Stacks, func (s *UnitStack) bool {
         return s == stack2
     })
+
+    if player.SelectedStack == stack2 {
+        player.SelectedStack = stack1
+    }
 
     return stack1
 }

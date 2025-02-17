@@ -598,7 +598,9 @@ func (hero *Hero) GetEnchantments() []data.UnitEnchantment {
 }
 
 func (hero *Hero) HasEnchantment(enchantment data.UnitEnchantment) bool {
-    return hero.Unit.HasEnchantment(enchantment)
+    return hero.Unit.HasEnchantment(enchantment) || slices.ContainsFunc(hero.Equipment[:], func (a *artifact.Artifact) bool {
+        return a != nil && a.HasEnchantment(enchantment)
+    })
 }
 
 func (hero *Hero) AddEnchantment(enchantment data.UnitEnchantment) {
@@ -810,8 +812,14 @@ func (hero *Hero) HasAbility(ability data.AbilityType) bool {
         }
     }
 
-    return slices.ContainsFunc(hero.Abilities, func (a data.Ability) bool {
+    return hero.Unit.HasAbility(ability) || slices.ContainsFunc(hero.Abilities, func (a data.Ability) bool {
         return a.Ability == ability
+    })
+}
+
+func (hero *Hero) HasItemAbility(ability data.ItemAbility) bool {
+    return slices.ContainsFunc(hero.Equipment[:], func (a *artifact.Artifact) bool {
+        return a != nil && a.HasItemAbility(ability)
     })
 }
 

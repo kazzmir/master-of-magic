@@ -3686,7 +3686,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
     leftClick := inputmanager.LeftClick()
     rightClick := inputmanager.RightClick()
 
-    if player.SelectedStack != nil {
+    if player.SelectedStack != nil && player.SelectedStack.Plane() == game.Plane {
         stack := player.SelectedStack
         mapUse := game.GetMap(stack.Plane())
         oldX := stack.X()
@@ -5389,6 +5389,98 @@ func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
     })
 }
 
+// stores information about every stack and city for fast lookups
+// Warning: do not store this information for long periods of time as it will become out of date
+type CityStackInfo struct {
+    ArcanusStacks map[image.Point]*playerlib.UnitStack
+    MyrrorStacks map[image.Point]*playerlib.UnitStack
+    ArcanusCities map[image.Point]*citylib.City
+    MyrrorCities map[image.Point]*citylib.City
+}
+
+func (info CityStackInfo) FindStack(x int, y int, plane data.Plane) *playerlib.UnitStack {
+    var use map[image.Point]*playerlib.UnitStack
+
+    switch plane {
+        case data.PlaneArcanus: use = info.ArcanusStacks
+        case data.PlaneMyrror: use = info.MyrrorStacks
+    }
+
+    stack, ok := use[image.Pt(x, y)]
+    if ok {
+        return stack
+    }
+
+    return nil
+}
+
+func (info CityStackInfo) FindCity(x int, y int, plane data.Plane) *citylib.City {
+    var use map[image.Point]*citylib.City
+
+    switch plane {
+        case data.PlaneArcanus: use = info.ArcanusCities
+        case data.PlaneMyrror: use = info.MyrrorCities
+    }
+
+    city, ok := use[image.Pt(x, y)]
+    if ok {
+        return city
+    }
+
+    return nil
+}
+
+func (info CityStackInfo) ContainsEnemy(x int, y int, plane data.Plane, player *playerlib.Player) bool {
+    stack := info.FindStack(x, y, plane)
+    if stack != nil && stack.GetBanner() != player.GetBanner() {
+        return true
+    }
+
+    city := info.FindCity(x, y, plane)
+    if city != nil && city.Banner != player.GetBanner() {
+        return true
+    }
+
+    return false
+}
+
+func (info CityStackInfo) FindFriendlyStack(x int, y int, plane data.Plane, player *playerlib.Player) *playerlib.UnitStack {
+    stack := info.FindStack(x, y, plane)
+
+    if stack != nil && stack.GetBanner() == player.GetBanner() {
+        return stack
+    }
+
+    return nil
+}
+
+func (game *Game) ComputeCityStackInfo() CityStackInfo {
+    out := CityStackInfo{
+        ArcanusStacks: make(map[image.Point]*playerlib.UnitStack),
+        MyrrorStacks: make(map[image.Point]*playerlib.UnitStack),
+        ArcanusCities: make(map[image.Point]*citylib.City),
+        MyrrorCities: make(map[image.Point]*citylib.City),
+    }
+
+    for _, player := range game.Players {
+        for _, stack := range player.Stacks {
+            switch stack.Plane() {
+                case data.PlaneArcanus: out.ArcanusStacks[image.Pt(stack.X(), stack.Y())] = stack
+                case data.PlaneMyrror: out.MyrrorStacks[image.Pt(stack.X(), stack.Y())] = stack
+            }
+        }
+
+        for _, city := range player.Cities {
+            switch city.Plane {
+                case data.PlaneArcanus: out.ArcanusCities[image.Pt(city.X, city.Y)] = city
+                case data.PlaneMyrror: out.MyrrorCities[image.Pt(city.X, city.Y)] = city
+            }
+        }
+    }
+
+    return out
+}
+
 func (game *Game) SwitchPlane() {
     switch game.Plane {
         case data.PlaneArcanus: game.Plane = data.PlaneMyrror
@@ -5397,14 +5489,80 @@ func (game *Game) SwitchPlane() {
 
     // no switching planes if the global enchantment planar seal is in effect
     if !game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
-        stack := game.Players[0].SelectedStack
+        player := game.Players[0]
 
-        if stack != nil {
-            // FIXME: also allow switching planes if the stack has planar travel
-            if game.CurrentMap().HasOpenTower(stack.X(), stack.Y()) {
-                stack.SetPlane(game.Plane)
-                game.Players[0].UpdateFogVisibility()
+        stack := player.SelectedStack
+
+        if stack != nil && stack.Plane() == game.Plane.Opposite() {
+            activeStack := player.SplitActiveStack(stack)
+            // nothing to do
+            if len(activeStack.Units()) == 0 {
+                return
             }
+
+            cityStackInfo := game.ComputeCityStackInfo()
+
+            canMove := false
+            travelEnabled := false
+
+            if game.CurrentMap().HasOpenTower(activeStack.X(), activeStack.Y()) {
+                travelEnabled = true
+                canMove = true
+            } else {
+                cityThisPlane := player.FindCity(activeStack.X(), activeStack.Y(), activeStack.Plane())
+                cityOppositePlane := player.FindCity(activeStack.X(), activeStack.Y(), activeStack.Plane().Opposite())
+                hasAstralGate := (cityThisPlane != nil && cityThisPlane.HasEnchantment(data.CityEnchantmentAstralGate)) ||
+                                 (cityOppositePlane != nil && cityOppositePlane.HasEnchantment(data.CityEnchantmentAstralGate))
+
+                hasPlanarTravel := activeStack.ActiveUnitsHasAbility(data.AbilityPlaneShift)
+
+                if hasAstralGate || hasPlanarTravel {
+                    travelEnabled = true
+                    mapPlane := game.GetMap(activeStack.Plane().Opposite())
+
+                    tile := mapPlane.GetTile(activeStack.X(), activeStack.Y())
+                    canMove = cityOppositePlane != nil || activeStack.AllFlyers() || tile.Tile.IsLand()
+
+                    // cannot planar travel if there is an encounter node
+                    if mapPlane.GetEncounter(activeStack.X(), activeStack.Y()) != nil {
+                        canMove = false
+                    }
+
+                    if tile.Tile.IsWater() && activeStack.AllLandWalkers() {
+                        canMove = false
+                    }
+                }
+            }
+
+            if travelEnabled {
+                if cityStackInfo.ContainsEnemy(activeStack.X(), activeStack.Y(), activeStack.Plane().Opposite(), player) {
+                    canMove = false
+                }
+
+                // no matter what the reason, just emit a message that planar travel is not possible
+                if !canMove {
+                    select {
+                        case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The selected units cannot planar travel at this location.")}:
+                        default:
+                    }
+                }
+            }
+
+            if canMove {
+                player.SelectedStack = activeStack
+                // if there is a friendly stack at the new location then merge the stacks
+                mergeStack := cityStackInfo.FindFriendlyStack(activeStack.X(), activeStack.Y(), activeStack.Plane().Opposite(), player)
+                activeStack.SetPlane(game.Plane)
+                if mergeStack != nil {
+                    player.MergeStacks(activeStack, mergeStack)
+                }
+                player.UpdateFogVisibility()
+            } else {
+                if activeStack != stack {
+                    player.MergeStacks(stack, activeStack)
+                }
+            }
+
         }
     }
 }
