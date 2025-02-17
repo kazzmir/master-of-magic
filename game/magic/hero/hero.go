@@ -986,8 +986,13 @@ func (hero *Hero) GetAbilityBonus(ability data.AbilityType) int {
 }
 
 func (hero *Hero) GetBaseRangedAttackPower() int {
+    base := hero.Unit.GetBaseRangedAttackPower()
+    if base == 0 {
+        return 0
+    }
+
     level := hero.GetExperienceLevel()
-    return hero.Unit.GetBaseRangedAttackPower() + hero.getBaseRangedAttackPowerProgression(level)
+    return base + hero.getBaseRangedAttackPowerProgression(level)
 }
 
 func (hero *Hero) getBaseRangedAttackPowerProgression(level units.HeroExperienceLevel) int {

@@ -258,6 +258,72 @@ func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, un
     return float64(pic.Bounds().Dy() + 1 * data.ScreenScale)
 }
 
+func createUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool, page uint32) []*uilib.UIElement {
+    var elements []*uilib.UIElement
+
+    if !pureAbilities {
+        artifacts := slices.Clone(unit.GetArtifacts())
+
+        background, _ := imageCache.GetImage("special.lbx", 3, 0)
+
+        for _, slot := range unit.GetArtifactSlots() {
+            rect := util.ImageRect(x, y, background)
+
+            var showArtifact *artifact.Artifact
+            for _, check := range artifacts {
+                if check == nil {
+                    continue
+                }
+
+                if slot.CompatibleWith(check.Type) {
+                    showArtifact = check
+                    break
+                }
+            }
+
+            elements = append(elements, &uilib.UIElement{
+                Rect: rect,
+                Layer: layer,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                    options.ColorScale.ScaleAlpha((*getAlpha)())
+
+                    screen.DrawImage(background, &options)
+
+                    if showArtifact != nil {
+                        artifactPic := artifact.RenderArtifactImage(screen, imageCache, *showArtifact, *counter, options)
+
+                        x, y := options.GeoM.Apply(0, 0)
+                        printX := x + float64(artifactPic.Bounds().Dx() + 2 * data.ScreenScale)
+                        printY := y + float64(5 * data.ScreenScale)
+                        mediumFont.Print(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, showArtifact.Name)
+                    } else {
+                        pic, _ := imageCache.GetImage("itemisc.lbx", slot.ImageIndex() + 8, 0)
+                        screen.DrawImage(pic, &options)
+                    }
+                },
+            })
+
+            y += background.Bounds().Dy() + 1
+        }
+    }
+
+    if len(elements) == 0 {
+        return nil
+    }
+
+    pages := uint32(math.Ceil(float64(len(elements)) / 4))
+    for page < 0 {
+        page += pages
+    }
+    page = page % pages
+
+    minElement := page * 4
+    maxElement := int(min(float64(len(elements)), float64((page + 1) * 4)))
+    return elements[minElement:maxElement]
+}
+
 func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions, pureAbilities bool, page uint32, counter uint64) {
     var renders []func() float64
 
@@ -346,11 +412,16 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
     }
 }
 
-func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool) []*uilib.UIElement {
+func MakeUnitAbilitiesElements(ui *uilib.UI, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     page := uint32(0)
 
+    abilityElements := createUnitAbilitiesElements(imageCache, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page)
+
+    elements = append(elements, abilityElements...)
+
+    /*
     elements = append(elements, &uilib.UIElement{
         Layer: layer,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
@@ -360,6 +431,7 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
             renderUnitAbilities(screen, imageCache, unit, mediumFont, options, pureAbilities, page, *counter / 8)
         },
     })
+    */
 
     upImages, _ := imageCache.GetImages("unitview.lbx", 3)
     downImages, _ := imageCache.GetImages("unitview.lbx", 4)
@@ -386,6 +458,10 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
             LeftClickRelease: func(element *uilib.UIElement){
                 pageUpIndex = 0
                 page -= 1
+
+                ui.RemoveElements(abilityElements)
+                abilityElements = createUnitAbilitiesElements(imageCache, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page)
+                ui.AddElements(abilityElements)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
@@ -406,6 +482,10 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
             LeftClickRelease: func(element *uilib.UIElement){
                 pageDownIndex = 0
                 page += 1
+
+                ui.RemoveElements(abilityElements)
+                abilityElements = createUnitAbilitiesElements(imageCache, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page)
+                ui.AddElements(abilityElements)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions

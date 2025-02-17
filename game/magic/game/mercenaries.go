@@ -96,7 +96,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
         },
     })
 
-    elements = append(elements, unitview.MakeUnitAbilitiesElements(&imageCache, unit, mediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false)...)
+    elements = append(elements, unitview.MakeUnitAbilitiesElements(ui, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false)...)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,

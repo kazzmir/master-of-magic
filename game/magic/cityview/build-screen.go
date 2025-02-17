@@ -314,7 +314,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         var getAlpha util.AlphaFadeFunc = func () float32 {
             return 1
         }
-        mainElements = append(mainElements, unitview.MakeUnitAbilitiesElements(imageCache, bannerUnit, mediumFont, 85 * data.ScreenScale, 108 * data.ScreenScale, &ui.Counter, 0, &getAlpha, true)...)
+        mainElements = append(mainElements, unitview.MakeUnitAbilitiesElements(ui, imageCache, bannerUnit, mediumFont, 85 * data.ScreenScale, 108 * data.ScreenScale, &ui.Counter, 0, &getAlpha, true)...)
         ui.AddElements(mainElements)
     }
 
