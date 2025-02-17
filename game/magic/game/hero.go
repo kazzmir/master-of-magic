@@ -123,7 +123,10 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
         },
     })
 
-    elements = append(elements, unitview.MakeUnitAbilitiesElements(ui, &imageCache, hero, mediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, true)...)
+    uiGroup := uilib.MakeGroup()
+    ui.AddGroup(uiGroup)
+
+    ui.AddElements(unitview.MakeUnitAbilitiesElements(uiGroup, &imageCache, hero, mediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, true))
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -169,6 +172,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             getAlpha = ui.MakeFadeOut(fadeSpeed)
             ui.AddDelay(fadeSpeed, func(){
                 ui.RemoveElements(elements)
+                ui.RemoveGroup(uiGroup)
                 onFadeOut()
             })
         },
@@ -197,6 +201,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
             ui.AddDelay(fadeSpeed, func(){
                 ui.RemoveElements(elements)
+                ui.RemoveGroup(uiGroup)
                 action(false)
             })
         },

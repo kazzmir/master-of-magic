@@ -95,7 +95,7 @@ func (group *UIElementGroup) Add(element *UIElement){
     })
 }
 
-func (group *UIElementGroup) AddAll(elements []*UIElement){
+func (group *UIElementGroup) AddElements(elements []*UIElement){
     for _, element := range elements {
         group.Add(element)
     }
@@ -109,7 +109,7 @@ func (group *UIElementGroup) Remove(element *UIElement){
     group.Elements[element.Layer] = elements
 }
 
-func (group *UIElementGroup) RemoveAll(elements []*UIElement){
+func (group *UIElementGroup) RemoveElements(elements []*UIElement){
     for _, element := range elements {
         group.Remove(element)
     }
@@ -196,6 +196,14 @@ func (ui *UI) AddDelay(time uint64, f func()){
 
 func (ui *UI) AddGroup(group *UIElementGroup){
     ui.Groups = append(ui.Groups, group)
+
+    if group.minLayer < ui.minLayer {
+        ui.minLayer = group.minLayer
+    }
+
+    if group.maxLayer > ui.maxLayer {
+        ui.maxLayer = group.maxLayer
+    }
 }
 
 func (ui *UI) RemoveGroup(group *UIElementGroup){

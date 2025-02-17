@@ -495,7 +495,7 @@ func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit
 }
 */
 
-func MakeUnitAbilitiesElements(ui *uilib.UI, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool) []*uilib.UIElement {
+func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     page := uint32(0)
@@ -542,9 +542,9 @@ func MakeUnitAbilitiesElements(ui *uilib.UI, imageCache *util.ImageCache, unit U
                 pageUpIndex = 0
                 page -= 1
 
-                ui.RemoveElements(abilityElements)
+                group.RemoveElements(abilityElements)
                 abilityElements = createUnitAbilitiesElements(imageCache, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page)
-                ui.AddElements(abilityElements)
+                group.AddElements(abilityElements)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
@@ -566,9 +566,9 @@ func MakeUnitAbilitiesElements(ui *uilib.UI, imageCache *util.ImageCache, unit U
                 pageDownIndex = 0
                 page += 1
 
-                ui.RemoveElements(abilityElements)
+                group.RemoveElements(abilityElements)
                 abilityElements = createUnitAbilitiesElements(imageCache, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page)
-                ui.AddElements(abilityElements)
+                group.AddElements(abilityElements)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions

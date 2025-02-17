@@ -192,7 +192,9 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         },
     }
 
+    mainGroup := uilib.MakeGroup()
     var mainElements []*uilib.UIElement
+    ui.AddGroup(mainGroup)
 
     // elements = append(elements, mainElement)
 
@@ -217,7 +219,8 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
         allowsWrapped := mediumFont.CreateWrappedText(float64(100 * data.ScreenScale), float64(data.ScreenScale), allows)
 
-        ui.RemoveElements(mainElements)
+        // ui.RemoveElements(mainElements)
+        mainGroup.RemoveElements(mainElements)
         mainElements = nil
         mainElements = append(mainElements, &uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
@@ -283,11 +286,11 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 */
             },
         })
-        ui.AddElements(mainElements)
+        mainGroup.AddElements(mainElements)
     }
 
     updateMainElementUnit := func(unit units.Unit){
-        ui.RemoveElements(mainElements)
+        mainGroup.RemoveElements(mainElements)
         mainElements = nil
         bannerUnit := units.MakeOverworldUnitFromUnit(unit, 0, 0, city.Plane, city.Banner, nil)
         mainElements = append(mainElements, &uilib.UIElement{
@@ -314,8 +317,8 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         var getAlpha util.AlphaFadeFunc = func () float32 {
             return 1
         }
-        mainElements = append(mainElements, unitview.MakeUnitAbilitiesElements(ui, imageCache, bannerUnit, mediumFont, 85 * data.ScreenScale, 108 * data.ScreenScale, &ui.Counter, 0, &getAlpha, true)...)
-        ui.AddElements(mainElements)
+        mainGroup.AddElements(unitview.MakeUnitAbilitiesElements(mainGroup, imageCache, bannerUnit, mediumFont, 85 * data.ScreenScale, 108 * data.ScreenScale, &ui.Counter, 0, &getAlpha, true))
+        // ui.AddElements(mainElements)
     }
 
     if err == nil {

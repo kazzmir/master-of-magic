@@ -96,7 +96,9 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
         },
     })
 
-    elements = append(elements, unitview.MakeUnitAbilitiesElements(ui, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false)...)
+    uiGroup := uilib.MakeGroup()
+    uiGroup.AddElements(unitview.MakeUnitAbilitiesElements(uiGroup, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false))
+    ui.AddGroup(uiGroup)
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -125,6 +127,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
             getAlpha = ui.MakeFadeOut(fadeSpeed)
             ui.AddDelay(fadeSpeed, func(){
                 ui.RemoveElements(elements)
+                ui.RemoveGroup(uiGroup)
                 action(true)
             })
         },
@@ -153,6 +156,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
 
             ui.AddDelay(fadeSpeed, func(){
                 ui.RemoveElements(elements)
+                ui.RemoveGroup(uiGroup)
                 action(false)
             })
         },

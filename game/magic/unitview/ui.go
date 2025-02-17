@@ -166,7 +166,10 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
         },
     })
 
-    elements = append(elements, MakeUnitAbilitiesElements(ui, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false)...)
+    uiGroup := uilib.MakeGroup()
+    ui.AddGroup(uiGroup)
+
+    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false))
 
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -193,6 +196,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
             yes := func(){
                 ui.RemoveElements(elements)
+                ui.RemoveGroup(uiGroup)
                 doDisband()
             }
 
@@ -231,6 +235,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
             ui.AddDelay(fadeSpeed, func(){
                 ui.RemoveElements(elements)
+                ui.RemoveGroup(uiGroup)
             })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
