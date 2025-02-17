@@ -31,6 +31,7 @@ type Engine struct {
     ImageCache util.ImageCache
     Map *maplib.Map
     Garrison []units.StackUnit
+    Player *playerlib.Player
 }
 
 type NoCityProvider struct {
@@ -126,7 +127,7 @@ func NewEngine() (*Engine, error) {
 
     city.ProducingBuilding = buildinglib.BuildingHousing
     // city.ProducingUnit = units.HighElfSpearmen
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
         // ProducingUnit: units.UnitNone,
 
     // city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
@@ -138,7 +139,7 @@ func NewEngine() (*Engine, error) {
     // city.AddEnchantment(data.CityEnchantmentAltarOfBattle, data.BannerRed)
     // city.AddEnchantment(data.CityEnchantmentStreamOfLife, data.BannerRed)
     // city.AddEnchantment(data.CityEnchantmentEarthGate, data.BannerRed)
-    city.AddEnchantment(data.CityEnchantmentDarkRituals, data.BannerRed)
+    // city.AddEnchantment(data.CityEnchantmentDarkRituals, data.BannerRed)
 
     var garrison []units.StackUnit
     for i := 0; i < 2; i++ {
@@ -152,7 +153,7 @@ func NewEngine() (*Engine, error) {
         garrison = append(garrison, unit)
     }
 
-    city.UpdateUnrest(garrison)
+    city.UpdateUnrest(garrison, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingWizardsGuild)
 
@@ -162,6 +163,7 @@ func NewEngine() (*Engine, error) {
         ImageCache: util.MakeImageCache(cache),
         Map: &gameMap,
         Garrison: garrison,
+        Player: &player,
     }, nil
 }
 
@@ -179,7 +181,7 @@ func (engine *Engine) toggleEnchantment(enchantment data.CityEnchantment) {
     } else {
         engine.CityScreen.City.AddEnchantment(enchantment, data.BannerBlue)
     }
-    engine.CityScreen.City.UpdateUnrest(engine.Garrison)
+    engine.CityScreen.City.UpdateUnrest(engine.Garrison, engine.Player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
     engine.CityScreen.UI = engine.CityScreen.MakeUI(buildinglib.BuildingNone)
 }
 
@@ -200,6 +202,7 @@ func (engine *Engine) Update() error {
             case ebiten.Key6: engine.toggleEnchantment(data.CityEnchantmentHeavenlyLight)
             case ebiten.Key7: engine.toggleEnchantment(data.CityEnchantmentCloudOfShadow)
             case ebiten.Key8: engine.toggleEnchantment(data.CityEnchantmentPestilence)
+            case ebiten.Key9: engine.toggleEnchantment(data.CityEnchantmentEvilPresence)
         }
     }
 

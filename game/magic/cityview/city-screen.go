@@ -1715,6 +1715,8 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
         }
     }
 
+    // FIXME: Add evil presence overlay
+
     // magic walls and enchantment icons
     enchantments := city.Enchantments.Values()
     for _, enchantment := range slices.SortedFunc(slices.Values(enchantments), func (a citylib.Enchantment, b citylib.Enchantment) int {

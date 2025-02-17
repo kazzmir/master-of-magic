@@ -110,7 +110,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -249,7 +249,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     introCity.AddBuilding(buildinglib.BuildingShrine)
     introCity.AddBuilding(buildinglib.BuildingGranary)
 
-    introCity.ResetCitizens(nil)
+    introCity.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(introCity)
 
@@ -320,7 +320,7 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
 
     introCity.AddBuilding(buildinglib.BuildingShrine)
 
-    introCity.ResetCitizens(nil)
+    introCity.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(introCity)
 
@@ -400,7 +400,7 @@ func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
 
     introCity.AddBuilding(buildinglib.BuildingShrine)
 
-    introCity.ResetCitizens(nil)
+    introCity.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(introCity)
 
@@ -464,7 +464,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
 
     introCity.AddBuilding(buildinglib.BuildingShrine)
 
-    introCity.ResetCitizens(nil)
+    introCity.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(introCity)
 
@@ -498,7 +498,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
     city2.ProducingUnit = units.UnitNone
     city2.Wall = false
 
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city2)
 
@@ -550,7 +550,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
 
         introCity.AddBuilding(buildinglib.BuildingShrine)
 
-        introCity.ResetCitizens(nil)
+        introCity.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
         player.AddCity(introCity)
     }
@@ -568,7 +568,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
 
         introCity.AddBuilding(buildinglib.BuildingShrine)
 
-        introCity.ResetCitizens(nil)
+        introCity.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
         player.AddCity(introCity)
     }
@@ -626,7 +626,7 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -706,7 +706,7 @@ func createScenario9(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -782,7 +782,7 @@ func createScenario10(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -858,7 +858,7 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -928,7 +928,7 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -1107,7 +1107,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city.AddBuilding(buildinglib.BuildingShrine)
     city.AddBuilding(buildinglib.BuildingGranary)
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -1142,7 +1142,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city2.Farmers = 10
     city2.Workers = 4
     city2.Wall = false
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens(nil, enemy.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
     enemy.AddCity(city2)
 
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y, data.PlaneArcanus, enemy.Wizard.Banner, nil))
@@ -1237,7 +1237,7 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -1304,7 +1304,7 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 0
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -1386,7 +1386,7 @@ func createScenario16(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 0
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -1473,7 +1473,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -1627,7 +1627,7 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -1714,7 +1714,7 @@ func createScenario19(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -1790,7 +1790,7 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 0
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -1849,7 +1849,7 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
     city2.Workers = 2
     city2.Rebels = 1
 
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens(nil, enemy.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     for range 1 {
         // randomUnit := units.ChooseRandomUnit(enemy.Wizard.Race)
@@ -1909,7 +1909,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 0
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -1958,7 +1958,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
     city2.Buildings.Insert(buildinglib.BuildingSmithy)
     city2.Buildings.Insert(buildinglib.BuildingOracle)
 
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens(nil, enemy.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     city2.Farmers = 5
     city2.Workers = 2
@@ -2024,7 +2024,7 @@ func createScenario22(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -2099,7 +2099,7 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 0
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -2182,7 +2182,7 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
     city2.Buildings.Insert(buildinglib.BuildingSmithy)
     city2.Buildings.Insert(buildinglib.BuildingOracle)
 
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens(nil, enemy.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     city2.Farmers = 5
     city2.Workers = 2
@@ -2245,7 +2245,7 @@ func createScenario24(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 1
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -2320,7 +2320,7 @@ func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 5
     city.Workers = 1
     city.Wall = false
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
     player.AddCity(city)
 
     player.AddHero(hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther"))
@@ -2387,7 +2387,7 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 5
     city.Workers = 1
     city.Wall = false
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
     player.AddCity(city)
 
     gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther")
@@ -2461,7 +2461,7 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -2552,7 +2552,7 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 10
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -2695,7 +2695,7 @@ func createScenario30(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -2704,14 +2704,14 @@ func createScenario30(cache *lbx.LbxCache) *gamelib.Game {
     city2 := citylib.MakeCity("City2", x2, y2, data.RaceHighElf, player.GetBanner(), player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city2.Plane = city.Plane
     city2.Population = 6000
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city2)
 
     city3 := citylib.MakeCity("City3", x + 1, y2+2, data.RaceHighElf, player.GetBanner(), player.TaxRate, game.BuildingInfo, game.CurrentMap(), game)
     city3.Plane = city.Plane
     city3.Population = 6000
-    city3.ResetCitizens(nil)
+    city3.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city3)
 
@@ -2784,7 +2784,7 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
     city.Wall = false
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -2884,7 +2884,7 @@ func createScenario32(cache *lbx.LbxCache) *gamelib.Game {
     city.Wall = false
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -2986,7 +2986,7 @@ func createScenario33(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -3050,7 +3050,7 @@ func createScenario34(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player1.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player1.AddCity(city)
 
@@ -3129,7 +3129,7 @@ func createScenario35(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player1.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player1.AddCity(city)
 
@@ -3207,7 +3207,7 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, enemy1.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     enemy1.AddCity(city)
 
@@ -3295,7 +3295,7 @@ func createScenario38(cache *lbx.LbxCache) *gamelib.Game {
     city1.Farmers = 3
     city1.Workers = 3
     city1.Wall = false
-    city1.ResetCitizens(nil)
+    city1.ResetCitizens(nil, player1.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
     player1.AddCity(city1)
     player1.LiftFog(x, y, 3, data.PlaneArcanus)
 
@@ -3377,7 +3377,7 @@ func createScenario39(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Wall = false
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -3461,7 +3461,7 @@ func createScenario40(cache *lbx.LbxCache) *gamelib.Game {
     city.AddBuilding(buildinglib.BuildingShrine)
     city.AddBuilding(buildinglib.BuildingGranary)
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -3515,7 +3515,7 @@ func createScenario41(cache *lbx.LbxCache) *gamelib.Game {
     city.ProducingUnit = units.TrollSettlers
     city.Production = float32(city.ProducingUnit.ProductionCost)
     city.Farmers = 1
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
     player.Gold = 1000
@@ -3580,7 +3580,7 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
     city.AddBuilding(buildinglib.BuildingGranary)
     city.AddBuilding(buildinglib.BuildingOracle)
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
 
@@ -3618,7 +3618,7 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
     city2.AddBuilding(buildinglib.BuildingGranary)
     city2.AddBuilding(buildinglib.BuildingFarmersMarket)
 
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens(nil, enemy1.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     enemy1.AddCity(city2)
 
@@ -3686,7 +3686,7 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
     city.AddBuilding(buildinglib.BuildingShrine)
     city.AddBuilding(buildinglib.BuildingTemple)
     city.Farmers = 1
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(city)
     player.Gold = 1000
@@ -3795,7 +3795,7 @@ func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.ShadowDemons, x-1, y, data.PlaneArcanus, wizard.Banner, nil))
 
     stack := player.FindStack(x, y, city.Plane)
-    city.ResetCitizens(stack.Units())
+    city.ResetCitizens(stack.Units(), player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     enemy1 := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",

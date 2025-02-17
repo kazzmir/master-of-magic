@@ -244,7 +244,7 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
     introCity.ProducingUnit = units.UnitNone
     introCity.Farmers = 4
 
-    introCity.ResetCitizens(player.GetUnits(cityX, cityY, startingPlane))
+    introCity.ResetCitizens(player.GetUnits(cityX, cityY, startingPlane), wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     player.AddCity(introCity)
 

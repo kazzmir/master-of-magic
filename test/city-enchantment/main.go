@@ -104,7 +104,7 @@ func (engine *Engine) MakeUI() (*uilib.UI, context.Context, error) {
     city.Buildings.Insert(buildinglib.BuildingSawmill)
     city.Buildings.Insert(buildinglib.BuildingMechaniciansGuild)
     city.ProducingBuilding = buildinglib.BuildingHousing
-    city.ResetCitizens(nil)
+    city.ResetCitizens(nil, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
 

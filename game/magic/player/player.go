@@ -594,7 +594,7 @@ func (player *Player) ManaPerTurn(power int, cityEnchantmentsProvider CityEnchan
 func (player *Player) UpdateTaxRate(rate fraction.Fraction){
     player.TaxRate = rate
     for _, city := range player.Cities {
-        city.UpdateTaxRate(rate, player.GetUnits(city.X, city.Y, city.Plane))
+        city.UpdateTaxRate(rate, player.GetUnits(city.X, city.Y, city.Plane), player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
     }
 }
 

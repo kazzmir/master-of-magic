@@ -3453,7 +3453,7 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         attacker.AddCity(city)
         city.Banner = attacker.Wizard.Banner
         city.RulingRace = attacker.Wizard.Race
-        city.UpdateTaxRate(attacker.TaxRate, attackerStack.Units())
+        city.UpdateTaxRate(attacker.TaxRate, attackerStack.Units(), attacker.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
         city.Buildings.Remove(buildinglib.BuildingFortress)
         city.Buildings.Remove(buildinglib.BuildingSummoningCircle)
@@ -3658,7 +3658,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     // update unrest for new units in the city
     newCity := player.FindCity(stack.X(), stack.Y(), stack.Plane())
     if newCity != nil {
-        newCity.UpdateUnrest(stack.Units())
+        newCity.UpdateUnrest(stack.Units(), player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
     }
 
     if stepsTaken > 0 {
@@ -6667,7 +6667,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     var removeCities []*citylib.City
 
     for _, city := range player.Cities {
-        cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y, city.Plane), game.GetMap(city.Plane))
+        cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y, city.Plane), game.GetMap(city.Plane), player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
         for _, event := range cityEvents {
             switch event.(type) {
             case *citylib.CityEventPopulationGrowth:
@@ -6895,7 +6895,7 @@ func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (i
         garrison = stack.Units()
     }
 
-    city.ResetCitizens(garrison)
+    city.ResetCitizens(garrison, player.Wizard.AbilityEnabled(setup.AbilityInfernalPower))
 
     mapUse := game.GetMap(city.Plane)
 

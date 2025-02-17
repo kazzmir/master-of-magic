@@ -168,9 +168,9 @@ func (city *City) GetOutpostHouses() int {
     return city.Population / 100
 }
 
-func (city *City) UpdateTaxRate(taxRate fraction.Fraction, garrison []units.StackUnit){
+func (city *City) UpdateTaxRate(taxRate fraction.Fraction, garrison []units.StackUnit, infernalPower bool){
     city.TaxRate = taxRate
-    city.UpdateUnrest(garrison)
+    city.UpdateUnrest(garrison, infernalPower)
 }
 
 func (city *City) AddBuilding(building buildinglib.Building){
@@ -523,7 +523,7 @@ func (city *City) NonRebels() int {
     return city.Citizens() - city.Rebels
 }
 
-func (city *City) ResetCitizens(garrison []units.StackUnit) {
+func (city *City) ResetCitizens(garrison []units.StackUnit, infernalPower bool) {
     // try to leave farmers alone, but adjust them if necessary
     minimumFarmers := city.ComputeSubsistenceFarmers()
     if city.Farmers < minimumFarmers {
@@ -534,7 +534,7 @@ func (city *City) ResetCitizens(garrison []units.StackUnit) {
     }
     city.Workers = city.Citizens() - city.Farmers
     city.Rebels = 0
-    city.UpdateUnrest(garrison)
+    city.UpdateUnrest(garrison, infernalPower)
 }
 
 /* FIXME: take enchantments into account
@@ -631,7 +631,7 @@ func (city *City) PowerShrine(infernalPower bool, moonBonus float64) float64 {
 }
 
 func (city *City) PowerTemple(infernalPower bool, moonBonus float64) float64 {
-    if city.Buildings.Contains(buildinglib.BuildingTemple) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+    if !city.Buildings.Contains(buildinglib.BuildingTemple) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
         return 0
     }
 
@@ -645,7 +645,7 @@ func (city *City) PowerTemple(infernalPower bool, moonBonus float64) float64 {
 }
 
 func (city *City) PowerParthenon(infernalPower bool, moonBonus float64) float64 {
-    if city.Buildings.Contains(buildinglib.BuildingParthenon) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+    if !city.Buildings.Contains(buildinglib.BuildingParthenon) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
         return 0
     }
 
@@ -659,7 +659,7 @@ func (city *City) PowerParthenon(infernalPower bool, moonBonus float64) float64 
 }
 
 func (city *City) PowerCathedral(infernalPower bool, moonBonus float64) float64 {
-    if city.Buildings.Contains(buildinglib.BuildingCathedral) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+    if !city.Buildings.Contains(buildinglib.BuildingCathedral) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
         return 0
     }
 
@@ -673,10 +673,15 @@ func (city *City) PowerCathedral(infernalPower bool, moonBonus float64) float64 
 }
 
 func (city *City) PowerDarkRituals(infernalPower bool, moonBonus float64) float64 {
-    power := city.PowerShrine(infernalPower, moonBonus)
-    power += city.PowerTemple(infernalPower, moonBonus)
-    power += city.PowerParthenon(infernalPower, moonBonus)
-    power += city.PowerCathedral(infernalPower, moonBonus)
+    power := 0.0
+
+    if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
+        power := city.PowerShrine(infernalPower, moonBonus)
+        power += city.PowerTemple(infernalPower, moonBonus)
+        power += city.PowerParthenon(infernalPower, moonBonus)
+        power += city.PowerCathedral(infernalPower, moonBonus)
+    }
+
     return power
 }
 
@@ -709,6 +714,7 @@ func (city *City) PowerMoonBonus(spellBooks []data.WizardBook) float64 {
 /* power production from buildings and citizens
  */
 func (city *City) ComputePower(spellBooks []data.WizardBook, infernalPower bool) int {
+    // FIXME: add Divine Power
     totalBooks := 0
     for _, book := range spellBooks {
         totalBooks += book.Count
@@ -726,16 +732,13 @@ func (city *City) ComputePower(spellBooks []data.WizardBook, infernalPower bool)
     religiousPower += city.PowerTemple(infernalPower, moonBonus)
     religiousPower += city.PowerParthenon(infernalPower, moonBonus)
     religiousPower += city.PowerCathedral(infernalPower, moonBonus)
-
-    if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
-        religiousPower += city.PowerDarkRituals(infernalPower, moonBonus)
-    }
+    religiousPower += city.PowerDarkRituals(infernalPower, moonBonus)
 
     return power + int(religiousPower)
 }
 
-func (city *City) UpdateUnrest(garrison []units.StackUnit) {
-    rebels := city.ComputeUnrest(garrison)
+func (city *City) UpdateUnrest(garrison []units.StackUnit, infernalPower bool) {
+    rebels := city.ComputeUnrest(garrison, infernalPower)
 
     if rebels > city.Rebels {
         for i := city.Rebels; i < rebels && city.Workers > 0; i++ {
@@ -933,7 +936,7 @@ func (city *City) InteracialUnrest() float64 {
     return unrest[city.Race][city.RulingRace]
 }
 
-func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
+func (city *City) ComputeUnrest(garrison []units.StackUnit, infernalPower bool) int {
 
     if city.HasEnchantment(data.CityEnchantmentStreamOfLife) {
         return 0
@@ -992,8 +995,12 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
     // pacification from buildings
 
     pacificationRetort := float64(1)
-    // if has Divine Power or Infernal Power
-    // pacificationRetort = 1.5
+
+    // FIXME: Divine Power
+
+    if infernalPower {
+        pacificationRetort = 1.5
+    }
 
     pacification := float64(0)
     if city.Buildings.Contains(buildinglib.BuildingShrine) {
@@ -1568,7 +1575,7 @@ func (city *City) GetWeaponBonus() data.WeaponBonus {
 
 // do all the stuff needed per turn
 // increase population, add production, add food/money, etc
-func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) []CityEvent {
+func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map, infernalPower bool) []CityEvent {
     // FIXME: heal all units if StreamOfLife active
     var cityEvents []CityEvent
     if city.Outpost {
@@ -1666,7 +1673,7 @@ func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) 
     }
 
     // update minimum farmers
-    city.ResetCitizens(garrison)
+    city.ResetCitizens(garrison, infernalPower)
 
     return cityEvents
 }
