@@ -193,10 +193,6 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
     }
 
     mainGroup := uilib.MakeGroup()
-    var mainElements []*uilib.UIElement
-    ui.AddGroup(mainGroup)
-
-    // elements = append(elements, mainElement)
 
     buildingInfo, err := imageCache.GetImage("unitview.lbx", 31, 0)
 
@@ -219,10 +215,10 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
         allowsWrapped := mediumFont.CreateWrappedText(float64(100 * data.ScreenScale), float64(data.ScreenScale), allows)
 
-        // ui.RemoveElements(mainElements)
-        mainGroup.RemoveElements(mainElements)
-        mainElements = nil
-        mainElements = append(mainElements, &uilib.UIElement{
+        ui.RemoveGroup(mainGroup)
+        mainGroup = uilib.MakeGroup()
+        ui.AddGroup(mainGroup)
+        mainGroup.AddElement(&uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 images, err := imageCache.GetImages("cityscap.lbx", GetBuildingIndex(building))
                 if err == nil {
@@ -286,14 +282,14 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 */
             },
         })
-        mainGroup.AddElements(mainElements)
     }
 
     updateMainElementUnit := func(unit units.Unit){
-        mainGroup.RemoveElements(mainElements)
-        mainElements = nil
+        ui.RemoveGroup(mainGroup)
+        mainGroup = uilib.MakeGroup()
+        ui.AddGroup(mainGroup)
         bannerUnit := units.MakeOverworldUnitFromUnit(unit, 0, 0, city.Plane, city.Banner, nil)
-        mainElements = append(mainElements, &uilib.UIElement{
+        mainGroup.AddElement(&uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(104 * data.ScreenScale), float64(28 * data.ScreenScale))
