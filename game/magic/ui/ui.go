@@ -30,6 +30,16 @@ type UIScrollFunc func(*UIElement, float64, float64)
 
 type UILayer int
 
+type UIContainer interface {
+    MakeFadeIn(time uint64) util.AlphaFadeFunc
+    MakeFadeOut(time uint64) util.AlphaFadeFunc
+    AddDelay(time uint64, f func())
+    AddElement(*UIElement)
+    AddElements([]*UIElement)
+    RemoveElement(*UIElement)
+    RemoveElements([]*UIElement)
+}
+
 type UIElement struct {
     Rect image.Rectangle
     // fires if the mouse is not inside this element
