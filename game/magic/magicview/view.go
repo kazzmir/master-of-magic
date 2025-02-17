@@ -63,8 +63,8 @@ func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, enemies []*p
     return magic
 }
 
-func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib.Player, help *helplib.Help, cache *lbx.LbxCache, imageCache *util.ImageCache) []*uilib.UIElement {
-    var elements []*uilib.UIElement
+func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib.Player, help *helplib.Help, cache *lbx.LbxCache, imageCache *util.ImageCache) *uilib.UIElementGroup {
+    group := uilib.MakeGroup()
 
     ok, _ := imageCache.GetImages("magic.lbx", 54)
     okRect := util.ImageRect(176 * data.ScreenScale, 99 * data.ScreenScale, ok[0])
@@ -98,7 +98,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     cursorPosition := 0
     changePercent := float64(0)
 
-    elements = append(elements, &uilib.UIElement{
+    group.AddElement(&uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("magic.lbx", 52, 0)
@@ -182,14 +182,14 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     {
         posX := 0
         conveyorRect := image.Rect(131 * data.ScreenScale, 85 * data.ScreenScale, (131 + 56) * data.ScreenScale, (85 + 7) * data.ScreenScale)
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: conveyorRect,
             Layer: 1,
             PlaySoundLeftClick: true,
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Alchemy Ratio")
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                    group.AddElement(uilib.MakeHelpElementWithLayer(group, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
                 }
             },
             LeftClick: func(element *uilib.UIElement){
@@ -205,30 +205,30 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
         })
     }
 
-    elements = append(elements, &uilib.UIElement{
+    group.AddElement(&uilib.UIElement{
         Rect: image.Rect(94 * data.ScreenScale, 85 * data.ScreenScale, 123 * data.ScreenScale, 92 * data.ScreenScale),
         Layer: 1,
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntriesByName("Alchemy Gold")
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                group.AddElement(uilib.MakeHelpElementWithLayer(group, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
             }
         },
     })
 
-    elements = append(elements, &uilib.UIElement{
+    group.AddElement(&uilib.UIElement{
         Rect: image.Rect(195 * data.ScreenScale, 85 * data.ScreenScale, 225 * data.ScreenScale, 92 * data.ScreenScale),
         Layer: 1,
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntriesByName("Alchemy Power")
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                group.AddElement(uilib.MakeHelpElementWithLayer(group, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
             }
         },
     })
 
     // cancel button
-    elements = append(elements, &uilib.UIElement{
+    group.AddElement(&uilib.UIElement{
         Rect: cancelRect,
         Layer: 1,
         PlaySoundLeftClick: true,
@@ -237,18 +237,18 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
         },
         LeftClickRelease: func(element *uilib.UIElement){
             cancelIndex = 0
-            ui.RemoveElements(elements)
+            ui.RemoveGroup(group)
         },
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntries(371)
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                group.AddElement(uilib.MakeHelpElementWithLayer(group, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
             }
         },
     })
 
     // arrow button
-    elements = append(elements, &uilib.UIElement{
+    group.AddElement(&uilib.UIElement{
         Rect: arrowRect,
         Layer: 1,
         PlaySoundLeftClick: true,
@@ -258,13 +258,13 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntries(372)
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                group.AddElement(uilib.MakeHelpElementWithLayer(group, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
             }
         },
     })
 
     // ok button
-    elements = append(elements, &uilib.UIElement{
+    group.AddElement(&uilib.UIElement{
         Rect: okRect,
         Layer: 1,
         PlaySoundLeftClick: true,
@@ -273,7 +273,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
         },
         LeftClickRelease: func(element *uilib.UIElement){
             okIndex = 0
-            ui.RemoveElements(elements)
+            ui.RemoveGroup(group)
 
             goldChange := 0
             manaChange := 0
@@ -293,13 +293,13 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntries(373)
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                group.AddElement(uilib.MakeHelpElementWithLayer(group, cache, imageCache, 2, helpEntries[0], helpEntries[1:]...))
             }
         },
 
     })
 
-    return elements
+    return group
 }
 
 // FIXME: move this into player
@@ -383,7 +383,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         },
     }
 
-    var elements []*uilib.UIElement
+    group := uilib.MakeGroup()
 
     // gems with wizard info
     for i := range 4 {
@@ -428,7 +428,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         gemUnknown, _ := magic.ImageCache.GetImage("magic.lbx", 6, 0)
         position := gemPositions[i]
         rect := util.ImageRect(position.X * data.ScreenScale, position.Y * data.ScreenScale, gemUnknown)
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
                 // show diplomatic dialogue screen
@@ -474,12 +474,12 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                     if treatyIcon != nil {
                         usePosition := positionStart
                         rect := util.ImageRect(usePosition.X, usePosition.Y, treatyIcon)
-                        elements = append(elements, &uilib.UIElement{
+                        group.AddElement(&uilib.UIElement{
                             Rect: rect,
                             RightClick: func(element *uilib.UIElement){
                                 helpEntries := help.GetEntriesByName("TREATIES")
                                 if helpEntries != nil {
-                                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                                    group.AddElement(uilib.MakeHelpElement(group, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
                                 }
                             },
                             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -549,12 +549,12 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
     manaLocked, err := magic.ImageCache.GetImage("magic.lbx", 15, 0)
     if err == nil {
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: image.Rect(27 * data.ScreenScale, 81 * data.ScreenScale, 27 * data.ScreenScale + manaLocked.Bounds().Dx(), 81 * data.ScreenScale + manaLocked.Bounds().Dy() - 2 * data.ScreenScale),
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Mana Points Ratio")
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                    group.AddElement(uilib.MakeHelpElement(group, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
                 }
             },
             PlaySoundLeftClick: true,
@@ -569,7 +569,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         manaPowerStaff, _ := magic.ImageCache.GetImage("magic.lbx", 8, 0)
         staffRect := image.Rect(33 * data.ScreenScale, 102 * data.ScreenScale, 38 * data.ScreenScale, 102 * data.ScreenScale + manaPowerStaff.Bounds().Dy())
 
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: staffRect,
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
@@ -582,7 +582,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Mana Points Ratio")
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                    group.AddElement(uilib.MakeHelpElement(group, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
                 }
             },
             Inside: func(element *uilib.UIElement, x, y int){
@@ -612,17 +612,17 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
     // transmute button
     transmuteRect := image.Rect(235 * data.ScreenScale, 185 * data.ScreenScale, 290 * data.ScreenScale, 195 * data.ScreenScale)
-    elements = append(elements, &uilib.UIElement{
+    group.AddElement(&uilib.UIElement{
         Rect: transmuteRect,
         PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
-            transmuteElements := MakeTransmuteElements(ui, transmuteFont, player, &help, magic.Cache, &magic.ImageCache)
-            ui.AddElements(transmuteElements)
+            transmuteGroup := MakeTransmuteElements(ui, transmuteFont, player, &help, magic.Cache, &magic.ImageCache)
+            ui.AddGroup(transmuteGroup)
         },
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntries(247)
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                group.AddElement(uilib.MakeHelpElement(group, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -632,7 +632,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
     // ok button
     okRect := image.Rect(296 * data.ScreenScale, 185 * data.ScreenScale, 316 * data.ScreenScale, 195 * data.ScreenScale)
-    elements = append(elements, &uilib.UIElement{
+    group.AddElement(&uilib.UIElement{
         Rect: okRect,
         PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
@@ -641,7 +641,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntries(248)
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                group.AddElement(uilib.MakeHelpElement(group, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -653,7 +653,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     if err == nil {
         researchStaff, _ := magic.ImageCache.GetImage("magic.lbx", 9, 0)
 
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: image.Rect(74 * data.ScreenScale, 81 * data.ScreenScale, 74 * data.ScreenScale + researchLocked.Bounds().Dx(), 81 * data.ScreenScale + researchLocked.Bounds().Dy() - 2 * data.ScreenScale),
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
@@ -662,7 +662,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Research Ratio")
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                    group.AddElement(uilib.MakeHelpElement(group, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
                 }
             },
         })
@@ -671,7 +671,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         posY := 0
         staffRect := image.Rect(79 * data.ScreenScale, 102 * data.ScreenScale, 86 * data.ScreenScale, 102 * data.ScreenScale + researchPowerStaff.Bounds().Dy())
 
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: staffRect,
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
@@ -684,7 +684,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Research Ratio")
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                    group.AddElement(uilib.MakeHelpElement(group, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
                 }
             },
             Inside: func(element *uilib.UIElement, x, y int){
@@ -715,7 +715,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
     skillLocked, err := magic.ImageCache.GetImage("magic.lbx", 17, 0)
     if err == nil {
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: image.Rect(121 * data.ScreenScale, 81 * data.ScreenScale, 121 * data.ScreenScale + skillLocked.Bounds().Dx(), 81 * data.ScreenScale + skillLocked.Bounds().Dy() - 3 * data.ScreenScale),
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
@@ -724,7 +724,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Casting Skill Ratio")
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                    group.AddElement(uilib.MakeHelpElement(group, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
                 }
             },
         })
@@ -733,7 +733,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         posY := 0
         staffRect := image.Rect(126 * data.ScreenScale, 102 * data.ScreenScale, 132 * data.ScreenScale, 102 * data.ScreenScale + skillPowerStaff.Bounds().Dy())
 
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: staffRect,
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
@@ -746,7 +746,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Casting Skill Ratio")
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                    group.AddElement(uilib.MakeHelpElement(group, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
                 }
             },
             Inside: func(element *uilib.UIElement, x, y int){
@@ -778,12 +778,12 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     }
 
     spellCastUIRect := image.Rect(5 * data.ScreenScale, 175 * data.ScreenScale, 99 * data.ScreenScale, 196 * data.ScreenScale)
-    elements = append(elements, &uilib.UIElement{
+    group.AddElement(&uilib.UIElement{
         Rect: spellCastUIRect,
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntriesByName("Spell Casting Skill")
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                group.AddElement(uilib.MakeHelpElement(group, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -796,12 +796,12 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     })
 
     castingRect := image.Rect(100 * data.ScreenScale, 175 * data.ScreenScale, 220 * data.ScreenScale, 196 * data.ScreenScale)
-    elements = append(elements, &uilib.UIElement{
+    group.AddElement(&uilib.UIElement{
         Rect: castingRect,
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntries(276)
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                group.AddElement(uilib.MakeHelpElement(group, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -875,7 +875,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         })
     }
 
-    ui.SetElementsFromArray(elements)
+    ui.SetElementsFromArray(nil)
+    ui.AddGroup(group)
 
     var globalEnchantments []*uilib.UIElement
     var setupEnchantments func()
@@ -913,7 +914,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 RightClick: func(element *uilib.UIElement) {
                     helpEntries := help.GetEntriesByName(name)
                     if helpEntries != nil {
-                        ui.AddElement(uilib.MakeHelpElementWithLayer(ui, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                        group.AddElement(uilib.MakeHelpElementWithLayer(group, magic.Cache, &magic.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
                     }
                 },
             })
@@ -926,7 +927,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 RightClick: func(element *uilib.UIElement){
                     helpEntries := help.GetEntriesByName("Enchantments")
                     if helpEntries != nil {
-                        ui.AddElement(uilib.MakeHelpElement(ui, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
+                        group.AddElement(uilib.MakeHelpElement(group, magic.Cache, &magic.ImageCache, helpEntries[0], helpEntries[1:]...))
                     }
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){

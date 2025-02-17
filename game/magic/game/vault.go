@@ -192,6 +192,11 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
     ui.SetElementsFromArray(nil)
 
+    /*
+    group := uilib.MakeGroup()
+    ui.AddGroup(group)
+    */
+
     showItem := make(chan *artifact.Artifact, 10)
 
     // the 4 equipment slots
@@ -406,7 +411,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             },
             LeftClickRelease: func(element *uilib.UIElement){
                 index = 0
-                ui.AddElements(magicview.MakeTransmuteElements(ui, fonts.SmallFont, player, &help, game.Cache, &imageCache))
+                transmuteGroup := magicview.MakeTransmuteElements(ui, fonts.SmallFont, player, &help, game.Cache, &imageCache)
+                ui.AddGroup(transmuteGroup)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
