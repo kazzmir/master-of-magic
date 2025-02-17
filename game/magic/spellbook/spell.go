@@ -608,6 +608,9 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
         rect = image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight)
     }
 
+    group := uilib.MakeGroup()
+    ui.AddGroup(group)
+
     elements = append(elements, &uilib.UIElement{
         Rect: rect,
         Inside: func (this *uilib.UIElement, x int, y int){
@@ -683,7 +686,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             if spell != nil {
                 helpEntries := help.GetEntriesByName(spell.Name)
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                    group.AddElement(uilib.MakeHelpElementWithLayer(group, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
                 }
             }
         },
@@ -1044,6 +1047,9 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
     pageCache := make(map[int]*ebiten.Image)
 
+    group := uilib.MakeGroup()
+    ui.AddGroup(group)
+
     useSpells := spells.Copy()
     for spell, charge := range charges {
         if charge > 0 {
@@ -1299,7 +1305,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                 RightClick: func(element *uilib.UIElement){
                     helpEntries := help.GetEntriesByName(spell.Name)
                     if helpEntries != nil {
-                        ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                        group.AddElement(uilib.MakeHelpElementWithLayer(group, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
                     }
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){

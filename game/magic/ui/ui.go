@@ -103,7 +103,7 @@ func (group *UIElementGroup) AddElements(elements []*UIElement){
     }
 }
 
-func (group *UIElementGroup) Remove(element *UIElement){
+func (group *UIElementGroup) RemoveElement(element *UIElement){
     elements := group.Elements[element.Layer]
     elements = slices.DeleteFunc(elements, func (e *UIElement) bool {
         return e == element
@@ -113,7 +113,7 @@ func (group *UIElementGroup) Remove(element *UIElement){
 
 func (group *UIElementGroup) RemoveElements(elements []*UIElement){
     for _, element := range elements {
-        group.Remove(element)
+        group.RemoveElement(element)
     }
 }
 

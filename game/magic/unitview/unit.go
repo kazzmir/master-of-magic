@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -259,7 +260,7 @@ func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, un
     return float64(pic.Bounds().Dy() + 1 * data.ScreenScale)
 }
 
-func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCache, uiGroup *uilib.UIElementGroup, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool, page uint32, updateAbilities func()) []*uilib.UIElement {
+func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCache, uiGroup *uilib.UIElementGroup, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool, page uint32, help *helplib.Help, updateAbilities func()) []*uilib.UIElement {
     xStart := x
     yStart := y
 
@@ -336,6 +337,12 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
             elements = append(elements, &uilib.UIElement{
                 Layer: layer,
                 Rect: rect,
+                RightClick: func(element *uilib.UIElement){
+                    helpEntries := help.GetEntriesByName(enchantment.Name())
+                    if helpEntries != nil {
+                        uiGroup.AddElement(uilib.MakeHelpElementWithLayer(uiGroup, cache, imageCache, layer+1, helpEntries[0], helpEntries[1:]...))
+                    }
+                },
                 LeftClick: func(element *uilib.UIElement){
                     message := fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Name())
                     confirm := func(){
@@ -422,6 +429,17 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
 
     var abilityElements []*uilib.UIElement
 
+    // possibly pass in the help data rather than reading it every time
+    helpLbx, err := cache.GetLbxFile("help.lbx")
+    if err != nil {
+        return nil
+    }
+
+    help, err := helplib.ReadHelp(helpLbx, 2)
+    if err != nil {
+        return nil
+    }
+
     // after removing an enchantment, recreate the entire ability list
     updateAbilities := func(){
         group.RemoveElements(elements)
@@ -430,7 +448,7 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
         group.AddElements(MakeUnitAbilitiesElements(group, cache, imageCache, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page))
     }
 
-    abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, updateAbilities)
+    abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, &help, updateAbilities)
 
     elements = append(elements, abilityElements...)
 
@@ -461,7 +479,7 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
                 page -= 1
 
                 group.RemoveElements(abilityElements)
-                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, updateAbilities)
+                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, &help, updateAbilities)
                 group.AddElements(abilityElements)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
@@ -485,7 +503,7 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
                 page += 1
 
                 group.RemoveElements(abilityElements)
-                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, updateAbilities)
+                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, &help, updateAbilities)
                 group.AddElements(abilityElements)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
