@@ -47,6 +47,10 @@ or to run without building first
 $ go run ./game/magic
 ```
 
+# Music:
+
+To hear the music you must have a midi synthesizer running separately. On linux and macos you can use [fluidsynth](https://www.fluidsynth.org/). Simply run fluidsynth on its own, and `magic` will automatically connect to it.
+
 # Screenshots:
 ![new wizard](./images/new-custom-wizard.png)
 
