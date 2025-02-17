@@ -251,8 +251,6 @@ type Game struct {
 
     TurnNumber uint64
 
-    Heroes map[herolib.HeroType]*herolib.Hero
-
     ArtifactPool map[string]*artifact.Artifact
 
     MouseData *mouselib.MouseData
@@ -508,18 +506,6 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
     return newPlayer
 }
 
-func createHeroes() map[herolib.HeroType]*herolib.Hero {
-    heroes := make(map[herolib.HeroType]*herolib.Hero)
-
-    for _, heroType := range herolib.AllHeroTypes() {
-        hero := herolib.MakeHeroSimple(heroType)
-        hero.SetExtraAbilities()
-        heroes[heroType] = hero
-    }
-
-    return heroes
-}
-
 func createArtifactPool(lbxCache *lbx.LbxCache) map[string]*artifact.Artifact {
     artifacts, err := artifact.ReadArtifacts(lbxCache)
     if err != nil {
@@ -628,7 +614,6 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         ImageCache: imageCache,
         InfoFontYellow: infoFontYellow,
         InfoFontRed: infoFontRed,
-        Heroes: createHeroes(),
         ArtifactPool: createArtifactPool(lbxCache),
         WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
@@ -2412,7 +2397,7 @@ func (game *Game) maybeHireHero(player *playerlib.Player) {
 
     if rand.N(100) < chance {
         var heroCandidates []*herolib.Hero
-        for _, hero := range game.Heroes {
+        for _, hero := range player.HeroPool {
             // torin can never be hired
             if hero.HeroType == herolib.HeroTorin {
                 continue
@@ -2453,11 +2438,14 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
     quit := false
 
     result := func(hired bool) {
-        quit = true
         if hired {
             if player.AddHero(hero) {
                 player.Gold -= cost
                 hero.SetStatus(herolib.StatusEmployed)
+
+                name := game.doInput(yield, "Hero Name", hero.GetName(), 70, 50)
+                hero.SetName(name)
+
                 game.RefreshUI()
             }
         } else {
@@ -2465,13 +2453,21 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
         }
     }
 
-    game.HudUI.AddElements(MakeHireHeroScreenUI(game.Cache, game.HudUI, hero, cost, result))
+    fadeOut := func() {
+        quit = true
+    }
+
+    game.HudUI.AddGroup(MakeHireHeroScreenUI(game.Cache, game.HudUI, hero, cost, result, fadeOut))
 
     for !quit {
         game.Counter += 1
         game.HudUI.StandardUpdate()
-        yield()
+        if yield() != nil {
+            return
+        }
     }
+
+    yield()
 }
 
 /* random chance to create a hire mercenaries event
@@ -2622,7 +2618,7 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
         }
     }
 
-    game.HudUI.AddElements(MakeHireMercenariesScreenUI(game.Cache, game.HudUI, units[0], len(units), cost, result))
+    game.HudUI.AddGroup(MakeHireMercenariesScreenUI(game.Cache, game.HudUI, units[0], len(units), cost, result))
 
     for !quit {
         game.Counter += 1
@@ -2746,16 +2742,22 @@ func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
             message = "Some units do not have enough mana and will disband unless you make more mana. Do you wish to allow them to disband?"
         }
 
+        group := uilib.MakeGroup()
+
         yes := func(){
             quit = true
             doit = true
+
+            game.HudUI.RemoveGroup(group)
         }
 
         no := func(){
             quit = true
+            game.HudUI.RemoveGroup(group)
         }
 
-        game.HudUI.AddElements(uilib.MakeConfirmDialog(game.HudUI, game.Cache, &game.ImageCache, message, true, yes, no))
+        group.AddElements(uilib.MakeConfirmDialog(group, game.Cache, &game.ImageCache, message, true, yes, no))
+        game.HudUI.AddGroup(group)
 
         for !quit {
             game.Counter += 1
@@ -4194,7 +4196,10 @@ func (game *Game) confirmRazeTown(yield coroutine.YieldFunc, city *citylib.City)
 
     ui.SetElementsFromArray(nil)
 
-    ui.AddElements(uilib.MakeConfirmDialogWithLayerFull(ui, game.Cache, &game.ImageCache, 1, "Do you wish to completely destroy this city?", true, no, yes, noImages, yesImages))
+    group := uilib.MakeGroup()
+
+    group.AddElements(uilib.MakeConfirmDialogWithLayerFull(group, game.Cache, &game.ImageCache, 1, "Do you wish to completely destroy this city?", true, no, yes, noImages, yesImages))
+    ui.AddGroup(group)
 
     oldDrawer := game.Drawer
     game.Drawer = func(screen *ebiten.Image, game *Game){
@@ -4357,7 +4362,7 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
         log.Printf("Error: unable to read spells: %v", err)
     } else {
         var heroes []*herolib.Hero
-        for _, hero := range game.Heroes {
+        for _, hero := range player.HeroPool {
             // only include available heroes that are not champions
             if hero.Status == herolib.StatusAvailable && !hero.IsChampion() {
                 heroes = append(heroes, hero)
@@ -4808,15 +4813,20 @@ func GetCityWallImage(city *citylib.City, cache *util.ImageCache) (*ebiten.Image
 }
 
 func (game *Game) ShowGrandVizierUI(){
+    group := uilib.MakeGroup()
+
     yes := func(){
         // FIXME: enable grand vizier
+        game.HudUI.RemoveGroup(group)
     }
 
     no := func(){
         // FIXME: disable grand vizier
+        game.HudUI.RemoveGroup(group)
     }
 
-    game.HudUI.AddElements(uilib.MakeConfirmDialogWithLayer(game.HudUI, game.Cache, &game.ImageCache, 1, "Do you wish to allow the Grand Vizier to select what buildings your cities create?", true, yes, no))
+    group.AddElements(uilib.MakeConfirmDialogWithLayer(group, game.Cache, &game.ImageCache, 1, "Do you wish to allow the Grand Vizier to select what buildings your cities create?", true, yes, no))
+    game.HudUI.AddGroup(group)
 }
 
 func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
@@ -5760,7 +5770,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         updateMinMoves()
                     },
                     RightClick: func(this *uilib.UIElement){
-                        ui.AddElements(unitview.MakeUnitContextMenu(game.Cache, ui, unit, disband))
+                        ui.AddGroup(unitview.MakeUnitContextMenu(game.Cache, ui, unit, disband))
                     },
                     Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                         var options ebiten.DrawImageOptions

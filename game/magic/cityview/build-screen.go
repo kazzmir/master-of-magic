@@ -192,9 +192,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         },
     }
 
-    var mainElements []*uilib.UIElement
-
-    // elements = append(elements, mainElement)
+    mainGroup := uilib.MakeGroup()
 
     buildingInfo, err := imageCache.GetImage("unitview.lbx", 31, 0)
 
@@ -217,9 +215,10 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
         allowsWrapped := mediumFont.CreateWrappedText(float64(100 * data.ScreenScale), float64(data.ScreenScale), allows)
 
-        ui.RemoveElements(mainElements)
-        mainElements = nil
-        mainElements = append(mainElements, &uilib.UIElement{
+        ui.RemoveGroup(mainGroup)
+        mainGroup = uilib.MakeGroup()
+        ui.AddGroup(mainGroup)
+        mainGroup.AddElement(&uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 images, err := imageCache.GetImages("cityscap.lbx", GetBuildingIndex(building))
                 if err == nil {
@@ -283,14 +282,14 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 */
             },
         })
-        ui.AddElements(mainElements)
     }
 
     updateMainElementUnit := func(unit units.Unit){
-        ui.RemoveElements(mainElements)
-        mainElements = nil
+        ui.RemoveGroup(mainGroup)
+        mainGroup = uilib.MakeGroup()
+        ui.AddGroup(mainGroup)
         bannerUnit := units.MakeOverworldUnitFromUnit(unit, 0, 0, city.Plane, city.Banner, nil)
-        mainElements = append(mainElements, &uilib.UIElement{
+        mainGroup.AddElement(&uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(104 * data.ScreenScale), float64(28 * data.ScreenScale))
@@ -314,8 +313,8 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         var getAlpha util.AlphaFadeFunc = func () float32 {
             return 1
         }
-        mainElements = append(mainElements, unitview.MakeUnitAbilitiesElements(imageCache, bannerUnit, mediumFont, 85 * data.ScreenScale, 108 * data.ScreenScale, &ui.Counter, 0, &getAlpha, true)...)
-        ui.AddElements(mainElements)
+        mainGroup.AddElements(unitview.MakeUnitAbilitiesElements(mainGroup, cache, imageCache, bannerUnit, mediumFont, 85 * data.ScreenScale, 108 * data.ScreenScale, &ui.Counter, 0, &getAlpha, true, 0))
+        // ui.AddElements(mainElements)
     }
 
     if err == nil {

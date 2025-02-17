@@ -1639,11 +1639,11 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 3, data.PlaneArcanus)
     player.LiftFog(20, 20, 100, data.PlaneMyrror)
 
-    rakir := hero.MakeHero(units.MakeOverworldUnit(units.HeroRakir, 0, 0, data.PlaneArcanus), hero.HeroRakir, "bubba")
+    rakir := hero.MakeHero(units.MakeOverworldUnit(units.HeroRakir, x, y, data.PlaneArcanus), hero.HeroRakir, "bubba")
     player.AddHero(rakir)
     rakir.AddExperience(528)
 
-    mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX, 0, 0, data.PlaneArcanus), hero.HeroMysticX, "bubba")
+    mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX, x, y+1, data.PlaneArcanus), hero.HeroMysticX, "fred")
     player.AddHero(mysticX)
     mysticX.SetExtraAbilities()
     mysticX.AddAbility(data.AbilityArmsmaster)
@@ -1736,7 +1736,7 @@ func createScenario19(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Events <- &gamelib.GameEventHireHero{
         Player: player,
-        Hero: game.Heroes[hero.HeroRakir],
+        Hero: player.HeroPool[hero.HeroRakir],
         Cost: 200,
     }
 
@@ -2826,7 +2826,7 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
                 },
                 */
                 &gamelib.TreasurePrisonerHero{
-                    Hero: game.Heroes[0],
+                    Hero: player.HeroPool[hero.HeroRakir],
                 },
             },
         },

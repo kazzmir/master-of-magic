@@ -162,7 +162,10 @@ func NewEngine(scenario int) (*Engine, error) {
 
             hero := herolib.MakeHero(units.MakeOverworldUnitFromUnit(baseUnit, 1, 1, data.PlaneArcanus, data.BannerBrown, &Experience{}), herolib.HeroRakir, "rakir")
 
-            ui.AddElements(unitview.MakeUnitContextMenu(cache, ui, hero, func(){}))
+            hero.AddEnchantment(data.UnitEnchantmentBless)
+            hero.AddEnchantment(data.UnitEnchantmentGiantStrength)
+
+            ui.AddGroup(unitview.MakeUnitContextMenu(cache, ui, hero, func(){}))
     }
 
     return &Engine{
@@ -207,7 +210,7 @@ func main(){
         scenario, _ = strconv.Atoi(os.Args[1])
     }
 
-    ebiten.SetWindowSize(data.ScreenWidth * 3, data.ScreenHeight * 3)
+    ebiten.SetWindowSize(data.ScreenWidth * 2, data.ScreenHeight * 2)
     ebiten.SetWindowTitle("abilities")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
     ebiten.SetCursorMode(ebiten.CursorModeHidden)

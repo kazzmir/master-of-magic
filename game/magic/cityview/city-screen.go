@@ -845,19 +845,23 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         if cityScreen.City.SoldBuilding {
             ui.AddElement(uilib.MakeErrorElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, "You can only sell back one building per turn.", func(){}))
         } else {
+            group := uilib.MakeGroup()
             var confirmElements []*uilib.UIElement
 
             yes := func(){
                 cityScreen.SellBuilding(toSell)
                 // update the ui
                 cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
+                ui.RemoveGroup(group)
             }
 
             no := func(){
+                ui.RemoveGroup(group)
             }
 
-            confirmElements = uilib.MakeConfirmDialog(ui, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.City.BuildingInfo.Name(toSell), sellAmount(cityScreen.City, toSell)), true, yes, no)
-            ui.AddElements(confirmElements)
+            confirmElements = uilib.MakeConfirmDialog(group, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Are you sure you want to sell back the %v for %v gold?", cityScreen.City.BuildingInfo.Name(toSell), sellAmount(cityScreen.City, toSell)), true, yes, no)
+            group.AddElements(confirmElements)
+            ui.AddGroup(group)
         }
     }
 
@@ -929,15 +933,17 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
             buyIndex = 0
 
-            var elements []*uilib.UIElement
+            group := uilib.MakeGroup()
 
             yes := func(){
                 cityScreen.City.Production += buyProduction
                 cityScreen.Player.Gold -= buyAmount
                 cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
+                ui.RemoveGroup(group)
             }
 
             no := func(){
+                ui.RemoveGroup(group)
             }
 
             var name string
@@ -947,8 +953,9 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                 name = cityScreen.City.ProducingUnit.Name
             }
             message := fmt.Sprintf("Do you wish to spend %v by purchasing a %v?", buyAmount, name)
-            elements = uilib.MakeConfirmDialog(cityScreen.UI, cityScreen.LbxCache, &cityScreen.ImageCache, message, false, yes, no)
-            ui.AddElements(elements)
+            elements := uilib.MakeConfirmDialog(group, cityScreen.LbxCache, &cityScreen.ImageCache, message, false, yes, no)
+            group.AddElements(elements)
+            ui.AddGroup(group)
 
         },
         RightClick: func(element *uilib.UIElement) {
@@ -1053,7 +1060,9 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                 }
 
                 if enchantment.Owner == cityScreen.Player.GetBanner() {
+                    group := uilib.MakeGroup()
                     yes := func(){
+                        defer ui.RemoveGroup(group)
                         cityScreen.City.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
 
                         enchantmentBuildings := enchantmentBuildings()
@@ -1070,10 +1079,12 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                     }
 
                     no := func(){
+                        ui.RemoveGroup(group)
                     }
 
-                    confirmElements := uilib.MakeConfirmDialog(ui, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Enchantment.Name()), true, yes, no)
-                    ui.AddElements(confirmElements)
+                    confirmElements := uilib.MakeConfirmDialog(group, cityScreen.LbxCache, &cityScreen.ImageCache, fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Enchantment.Name()), true, yes, no)
+                    group.AddElements(confirmElements)
+                    ui.AddGroup(group)
                 } else {
                     ui.AddElement(uilib.MakeErrorElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, "You cannot cancel another wizard's enchantment.", func(){}))
                 }
@@ -1334,7 +1345,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                         cityScreen.Player.SelectedStack = cityScreen.Player.FindStackByUnit(useUnit)
                     },
                     RightClick: func(element *uilib.UIElement) {
-                        ui.AddElements(unitview.MakeUnitContextMenu(cityScreen.LbxCache, ui, useUnit, disband))
+                        ui.AddGroup(unitview.MakeUnitContextMenu(cityScreen.LbxCache, ui, useUnit, disband))
                     },
                     Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                         var options colorm.DrawImageOptions
@@ -2611,16 +2622,20 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
                 },
                 LeftClick: func(element *uilib.UIElement) {
                     if enchantment.Owner == player.GetBanner() {
+                        group := uilib.MakeGroup()
                         yes := func(){
                             city.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
+                            ui.RemoveGroup(group)
                             setupUI()
                         }
 
                         no := func(){
+                            ui.RemoveGroup(group)
                         }
 
-                        confirmElements := uilib.MakeConfirmDialog(ui, cache, &imageCache, fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Enchantment.Name()), true, yes, no)
-                        ui.AddElements(confirmElements)
+                        confirmElements := uilib.MakeConfirmDialog(group, cache, &imageCache, fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Enchantment.Name()), true, yes, no)
+                        group.AddElements(confirmElements)
+                        ui.AddGroup(group)
                     }
                 },
                 RightClick: func(element *uilib.UIElement){

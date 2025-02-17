@@ -33,6 +33,7 @@ type UnitView interface {
     GetMovementSpeed() int
     GetProductionCost() int
     GetEnchantments() []data.UnitEnchantment
+    RemoveEnchantment(data.UnitEnchantment)
     GetWeaponBonus() data.WeaponBonus
     GetExperience() int
     GetExperienceData() units.ExperienceData
@@ -61,7 +62,7 @@ func UnitDisbandMessage(unit UnitView) string {
     return fmt.Sprintf("Do you wish to disband the unit of %v?", unit.GetName())
 }
 
-func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, doDisband func()) []*uilib.UIElement {
+func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, doDisband func()) *uilib.UIElementGroup {
     maybeHero, ok := unit.(*herolib.Hero)
     if ok {
         return makeHeroContextMenu(cache, ui, maybeHero, doDisband)
@@ -70,11 +71,11 @@ func MakeUnitContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, doDis
     return MakeGenericContextMenu(cache, ui, unit, UnitDisbandMessage(unit), doDisband)
 }
 
-func makeHeroContextMenu(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, doDisband func()) []*uilib.UIElement {
+func makeHeroContextMenu(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, doDisband func()) *uilib.UIElementGroup {
     return MakeGenericContextMenu(cache, ui, hero, fmt.Sprintf("Do you wish to dismiss %v?", hero.GetName()), doDisband)
 }
 
-func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, disbandMessage string, doDisband func()) []*uilib.UIElement {
+func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, disbandMessage string, doDisband func()) *uilib.UIElementGroup {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -119,13 +120,13 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
     okDismissFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
 
-    var elements []*uilib.UIElement
+    uiGroup := uilib.MakeGroup()
 
     const fadeSpeed = 7
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
-    elements = append(elements, &uilib.UIElement{
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
@@ -166,9 +167,9 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
         },
     })
 
-    elements = append(elements, MakeUnitAbilitiesElements(&imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false)...)
+    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false, 0))
 
-    elements = append(elements, &uilib.UIElement{
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             box, _ := imageCache.GetImage("unitview.lbx", 2, 0)
@@ -183,7 +184,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
     // dismiss button
     cancelRect := util.ImageRect(257 * data.ScreenScale, 149 * data.ScreenScale, buttonBackgrounds[0])
     cancelIndex := 0
-    elements = append(elements, &uilib.UIElement{
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Rect: cancelRect,
         LeftClick: func(this *uilib.UIElement){
@@ -192,16 +193,15 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
             var confirmElements []*uilib.UIElement
 
             yes := func(){
-                ui.RemoveElements(elements)
                 doDisband()
             }
 
             no := func(){
             }
 
-            confirmElements = uilib.MakeConfirmDialogWithLayer(ui, cache, &imageCache, 2, disbandMessage, true, yes, no)
+            confirmElements = uilib.MakeConfirmDialogWithLayer(uiGroup, cache, &imageCache, 2, disbandMessage, true, yes, no)
 
-            ui.AddElements(confirmElements)
+            uiGroup.AddElements(confirmElements)
         },
         LeftClickRelease: func(this *uilib.UIElement){
             cancelIndex = 0
@@ -220,7 +220,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
     okRect := util.ImageRect(257 * data.ScreenScale, 169 * data.ScreenScale, buttonBackgrounds[0])
     okIndex := 0
-    elements = append(elements, &uilib.UIElement{
+    uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Rect: okRect,
         LeftClick: func(this *uilib.UIElement){
@@ -230,7 +230,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
             getAlpha = ui.MakeFadeOut(fadeSpeed)
 
             ui.AddDelay(fadeSpeed, func(){
-                ui.RemoveElements(elements)
+                ui.RemoveGroup(uiGroup)
             })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -245,7 +245,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
         },
     })
 
-    return elements
+    return uiGroup
 }
 
 // FIXME: this was copied from combat/combat-screen.go

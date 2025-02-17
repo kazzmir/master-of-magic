@@ -435,11 +435,15 @@ func (hero *Hero) SetStatus(status HeroStatus) {
 }
 
 func (hero *Hero) GetName() string {
-    return hero.Unit.GetName()
+    return hero.Name
+}
+
+func (hero *Hero) SetName(name string) {
+    hero.Name = name
 }
 
 func (hero *Hero) FullName() string {
-    return fmt.Sprintf("%v the %v", hero.Unit.GetName(), hero.GetTitle())
+    return fmt.Sprintf("%v the %v", hero.GetName(), hero.GetTitle())
 }
 
 func (hero *Hero) GetPortraitLbxInfo() (string, int) {
@@ -597,6 +601,8 @@ func (hero *Hero) GetEnchantments() []data.UnitEnchantment {
     return hero.Unit.GetEnchantments()
 }
 
+// note that HasEnchantment is not the same as contains(GetEnchantments(), enchantment) because HasEnchantment will search
+// in the artifacts as well. GetEnchantments will only return the enchantments that have been explicitly cast on a unit
 func (hero *Hero) HasEnchantment(enchantment data.UnitEnchantment) bool {
     return hero.Unit.HasEnchantment(enchantment) || slices.ContainsFunc(hero.Equipment[:], func (a *artifact.Artifact) bool {
         return a != nil && a.HasEnchantment(enchantment)
@@ -982,8 +988,13 @@ func (hero *Hero) GetAbilityBonus(ability data.AbilityType) int {
 }
 
 func (hero *Hero) GetBaseRangedAttackPower() int {
+    base := hero.Unit.GetBaseRangedAttackPower()
+    if base == 0 {
+        return 0
+    }
+
     level := hero.GetExperienceLevel()
-    return hero.Unit.GetBaseRangedAttackPower() + hero.getBaseRangedAttackPowerProgression(level)
+    return base + hero.getBaseRangedAttackPowerProgression(level)
 }
 
 func (hero *Hero) getBaseRangedAttackPowerProgression(level units.HeroExperienceLevel) int {

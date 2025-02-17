@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
     // "github.com/hajimehoshi/ebiten/v2/vector"
@@ -258,108 +259,180 @@ func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, un
     return float64(pic.Bounds().Dy() + 1 * data.ScreenScale)
 }
 
-func renderUnitAbilities(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, defaultOptions ebiten.DrawImageOptions, pureAbilities bool, page uint32, counter uint64) {
-    var renders []func() float64
+func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCache, uiGroup *uilib.UIElementGroup, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool, page uint32, updateAbilities func()) []*uilib.UIElement {
+    xStart := x
+    yStart := y
+
+    var elements []*uilib.UIElement
+
+    background, _ := imageCache.GetImage("special.lbx", 3, 0)
 
     if !pureAbilities {
         // experience badge
-        renders = append(renders, func() float64 {
-            return RenderExperienceBadge(screen, imageCache, unit, mediumFont, defaultOptions, true)
+        experienceX := x
+        experienceY := y
+        elements = append(elements, &uilib.UIElement{
+            Layer: layer,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha((*getAlpha)())
+                options.GeoM.Translate(float64(experienceX), float64(experienceY))
+                RenderExperienceBadge(screen, imageCache, unit, mediumFont, options, true)
+            },
         })
+
+        y += background.Bounds().Dy() + 1
 
         artifacts := slices.Clone(unit.GetArtifacts())
 
-        background, _ := imageCache.GetImage("special.lbx", 3, 0)
-
         for _, slot := range unit.GetArtifactSlots() {
-            renders = append(renders, func() float64 {
-                for i := 0; i < len(artifacts); i++ {
-                    if artifacts[i] == nil {
-                        continue
-                    }
+            rect := util.ImageRect(x, y, background)
 
-                    if slot.CompatibleWith(artifacts[i].Type) {
-                        screen.DrawImage(background, &defaultOptions)
-
-                        artifactPic := artifact.RenderArtifactImage(screen, imageCache, *artifacts[i], counter, defaultOptions)
-
-                        x, y := defaultOptions.GeoM.Apply(0, 0)
-                        mediumFont.Print(screen, x + float64(artifactPic.Bounds().Dx() + 2 * data.ScreenScale), y + float64(5 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, artifacts[i].Name)
-
-                        artifacts = slices.Delete(artifacts, i, i+1)
-                        return float64(artifactPic.Bounds().Dy() + 1)
-                    }
+            var showArtifact *artifact.Artifact
+            for _, check := range artifacts {
+                if check == nil {
+                    continue
                 }
 
-                pic, _ := imageCache.GetImage("itemisc.lbx", slot.ImageIndex() + 8, 0)
-                screen.DrawImage(pic, &defaultOptions)
+                if slot.CompatibleWith(check.Type) {
+                    showArtifact = check
+                    break
+                }
+            }
 
-                return float64(pic.Bounds().Dy() + 1 * data.ScreenScale)
+            elements = append(elements, &uilib.UIElement{
+                Rect: rect,
+                Layer: layer,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                    options.ColorScale.ScaleAlpha((*getAlpha)())
+
+                    screen.DrawImage(background, &options)
+
+                    if showArtifact != nil {
+                        artifactPic := artifact.RenderArtifactImage(screen, imageCache, *showArtifact, *counter, options)
+
+                        x, y := options.GeoM.Apply(0, 0)
+                        printX := x + float64(artifactPic.Bounds().Dx() + 2 * data.ScreenScale)
+                        printY := y + float64(5 * data.ScreenScale)
+                        mediumFont.Print(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, showArtifact.Name)
+                    } else {
+                        pic, _ := imageCache.GetImage("itemisc.lbx", slot.ImageIndex() + 8, 0)
+                        screen.DrawImage(pic, &options)
+                    }
+                },
             })
+
+            y += background.Bounds().Dy() + 1
         }
     }
 
-    // FIXME: clicking on an enchantment should let the user cancel it
     for _, enchantment := range unit.GetEnchantments() {
-        renders = append(renders, func() float64 {
-            pic, err := imageCache.GetImage(enchantment.LbxFile(), enchantment.LbxIndex(), 0)
-            if err == nil {
-                screen.DrawImage(pic, &defaultOptions)
-                x, y := defaultOptions.GeoM.Apply(0, 0)
-                mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale), y + float64(5 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, enchantment.Name())
-                return float64(pic.Bounds().Dy() + 1 * data.ScreenScale)
-            } else {
-                log.Printf("Error: unable to render ability %#v %v", enchantment, enchantment.Name())
-            }
+        pic, err := imageCache.GetImage(enchantment.LbxFile(), enchantment.LbxIndex(), 0)
 
-            return 0
-        })
+        if err == nil {
+            rect := util.ImageRect(x, y, pic)
+            elements = append(elements, &uilib.UIElement{
+                Layer: layer,
+                Rect: rect,
+                LeftClick: func(element *uilib.UIElement){
+                    message := fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Name())
+                    confirm := func(){
+                        unit.RemoveEnchantment(enchantment)
+                        updateAbilities()
+                    }
+
+                    cancel := func(){
+                    }
+
+                    uiGroup.AddElements(uilib.MakeConfirmDialogWithLayer(uiGroup, cache, imageCache, layer+1, message, false, confirm, cancel))
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha((*getAlpha)())
+                    options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                    screen.DrawImage(pic, &options)
+                    x, y := options.GeoM.Apply(0, 0)
+
+                    printX := x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale)
+                    printY := y + float64(5 * data.ScreenScale)
+                    mediumFont.Print(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, enchantment.Name())
+                },
+            })
+
+            y += pic.Bounds().Dy() + 1
+        } else {
+            log.Printf("Error: unable to render enchantment %#v %v", enchantment, enchantment.Name())
+        }
     }
 
     // FIXME: handle more than 4 abilities by using more columns
     for _, ability := range unit.GetAbilities() {
-        renders = append(renders, func() float64 {
-            pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
-            if err == nil {
-                screen.DrawImage(pic, &defaultOptions)
-                x, y := defaultOptions.GeoM.Apply(0, 0)
-                mediumFont.Print(screen, x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale), y + float64(5 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, ability.Name())
-                return float64(pic.Bounds().Dy() + 1)
-            } else {
-                log.Printf("Error: unable to render ability %#v %v", ability, ability.Name())
-            }
+        pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
+        if err == nil {
+            rect := util.ImageRect(x, y, pic)
+            elements = append(elements, &uilib.UIElement{
+                Layer: layer,
+                Rect: rect,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha((*getAlpha)())
+                    options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                    screen.DrawImage(pic, &options)
+                    x, y := options.GeoM.Apply(0, 0)
 
-            return 0
-        })
+                    printX := x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale)
+                    printY := y + float64(5 * data.ScreenScale)
+                    mediumFont.Print(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, ability.Name())
+                },
+            })
+
+            y += pic.Bounds().Dy() + 1
+        } else {
+            log.Printf("Error: unable to render ability %#v %v", ability, ability.Name())
+        }
     }
 
-    if len(renders) == 0 {
-        return
+    if len(elements) == 0 {
+        return nil
     }
 
-    pages := uint32(math.Ceil(float64(len(renders)) / 4))
+    pages := uint32(math.Ceil(float64(len(elements)) / 4))
+    for page < 0 {
+        page += pages
+    }
     page = page % pages
 
-    for i := int(page) * 4; i < len(renders) && i < (int(page) + 1) * 4; i++ {
-        height := renders[i]()
-        defaultOptions.GeoM.Translate(0, height)
+    minElement := page * 4
+    maxElement := int(min(float64(len(elements)), float64((page + 1) * 4)))
+
+    outElements := elements[minElement:maxElement]
+    for i, element := range outElements {
+        element.Rect.Min.X = xStart
+        element.Rect.Min.Y = yStart + i * (background.Bounds().Dy() + 1)
+        element.Rect.Max.Y = element.Rect.Min.Y + background.Bounds().Dy()
     }
+
+    return outElements
 }
 
-func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool) []*uilib.UIElement {
+func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool, page uint32) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
-    page := uint32(0)
+    var abilityElements []*uilib.UIElement
 
-    elements = append(elements, &uilib.UIElement{
-        Layer: layer,
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-            var options ebiten.DrawImageOptions
-            options.ColorScale.ScaleAlpha((*getAlpha)())
-            options.GeoM.Translate(float64(x), float64(y))
-            renderUnitAbilities(screen, imageCache, unit, mediumFont, options, pureAbilities, page, *counter / 8)
-        },
-    })
+    // after removing an enchantment, recreate the entire ability list
+    updateAbilities := func(){
+        group.RemoveElements(elements)
+        group.RemoveElements(abilityElements)
+        // pass in the current page so the ui doesn't jump around
+        group.AddElements(MakeUnitAbilitiesElements(group, cache, imageCache, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page))
+    }
+
+    abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, updateAbilities)
+
+    elements = append(elements, abilityElements...)
 
     upImages, _ := imageCache.GetImages("unitview.lbx", 3)
     downImages, _ := imageCache.GetImages("unitview.lbx", 4)
@@ -386,6 +459,10 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
             LeftClickRelease: func(element *uilib.UIElement){
                 pageUpIndex = 0
                 page -= 1
+
+                group.RemoveElements(abilityElements)
+                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, updateAbilities)
+                group.AddElements(abilityElements)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
@@ -406,6 +483,10 @@ func MakeUnitAbilitiesElements(imageCache *util.ImageCache, unit UnitView, mediu
             LeftClickRelease: func(element *uilib.UIElement){
                 pageDownIndex = 0
                 page += 1
+
+                group.RemoveElements(abilityElements)
+                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, updateAbilities)
+                group.AddElements(abilityElements)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
