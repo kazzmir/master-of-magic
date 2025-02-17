@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -40,19 +41,10 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
         color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
         color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
     }
-    darkPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.Lighten(color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}, 0),
-        util.Lighten(color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}, 20),
-        util.Lighten(color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}, 50),
-        util.Lighten(color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}, 80),
-        color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff},
-        color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff},
-    }
 
     lightFont := font.MakeOptimizedFontWithPalette(fonts[4], lightPalette)
-    darkFont := font.MakeOptimizedFontWithPalette(fonts[4], darkPalette)
+
+    vaultFonts := fontslib.MakeVaultFonts(cache)
 
     var elements []*uilib.UIElement
 
@@ -87,7 +79,7 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(float64(18 * data.ScreenScale), float64(80 * data.ScreenScale))
-            artifact.RenderArtifactBox(screen, &imageCache, *artifactToBuy, ui.Counter / 8, darkFont, options)
+            artifact.RenderArtifactBox(screen, &imageCache, *artifactToBuy, ui.Counter / 8, vaultFonts.ItemName, vaultFonts.PowerFont, options)
         },
     })
 

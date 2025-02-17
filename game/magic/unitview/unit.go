@@ -280,7 +280,7 @@ func makeItemPopup(uiGroup *uilib.UIElementGroup, cache *lbx.LbxCache, imageCach
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(float64(48 * data.ScreenScale), float64(48 * data.ScreenScale))
-            artifact.RenderArtifactBox(screen, imageCache, *item, uiGroup.Counter / 8, vaultFonts.ItemName, options)
+            artifact.RenderArtifactBox(screen, imageCache, *item, uiGroup.Counter / 8, vaultFonts.ItemName, vaultFonts.PowerFont, options)
         },
     }
 

@@ -79,5 +79,3 @@ func MakeVaultFonts(cache *lbx.LbxCache) *VaultFonts {
         SmallFont: transmuteFont,
     }
 }
-
-
