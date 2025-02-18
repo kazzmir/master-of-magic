@@ -233,7 +233,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
             Banner: data.BannerBrown,
-        }, false, 0, 0)
+        }, false, 0, 0, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
@@ -248,7 +248,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerGreen,
-        }, true, 0, 0)
+        }, true, 0, 0, nil)
 
     attackingPlayer.CastingSkillPower = 1000
     attackingPlayer.Mana = 1000
@@ -299,7 +299,7 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
             Banner: data.BannerBlue,
-        }, false, 0, 0)
+        }, false, 0, 0, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -316,7 +316,7 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerRed,
-        }, true, 0, 0)
+        }, true, 0, 0, nil)
 
     attackingPlayer.CastingSkillPower = 10
 
@@ -331,7 +331,7 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
             Banner: data.BannerBlue,
-        }, false, 0, 0)
+        }, false, 0, 0, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -348,7 +348,7 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerRed,
-        }, true, 0, 0)
+        }, true, 0, 0, nil)
 
     attackingPlayer.CastingSkillPower = 10
 
@@ -364,7 +364,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, 0, 0)
+        }, false, 0, 0, nil)
 
     // defendingArmy := createWarlockArmy(defendingPlayer)
     // defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -381,7 +381,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, 0, 0)
+        }, true, 0, 0, nil)
 
     attackingPlayer.CastingSkillPower = 10
 
@@ -393,7 +393,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy := createHeroArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil, nil)
+    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
     city.Wall = true
@@ -408,7 +408,7 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, 0, 0)
+        }, false, 0, 0, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -426,7 +426,7 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, 0, 0)
+        }, true, 0, 0, nil)
 
     attackingPlayer.CastingSkillPower = 10
 
@@ -434,7 +434,7 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createHeroArmy(attackingPlayer, cache)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil, nil)
+    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{ChaosNode: true})
@@ -444,7 +444,7 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, 0, 0)
+        }, false, 0, 0, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -462,7 +462,7 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, 0, 0)
+        }, true, 0, 0, nil)
 
     attackingPlayer.CastingSkillPower = 10
 
@@ -470,7 +470,7 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createArchAngelArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil, nil)
+    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{ChaosNode: true})
@@ -481,7 +481,7 @@ func makeScenario7(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, 0, 0)
+        }, false, 0, 0, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -499,7 +499,7 @@ func makeScenario7(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, 0, 0)
+        }, true, 0, 0, nil)
 
     attackingPlayer.CastingSkillPower = 10
 
@@ -507,7 +507,7 @@ func makeScenario7(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createArchAngelArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil, nil)
+    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, attackingPlayer.Wizard.Banner, fraction.Zero(), nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeWater, data.PlaneArcanus, combat.ZoneType{})

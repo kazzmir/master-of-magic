@@ -184,7 +184,7 @@ type Player struct {
     SelectedStack *UnitStack
 }
 
-func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight int) *Player {
+func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight int, heroNames map[herolib.HeroType]string) *Player {
 
     makeFog := func() data.FogMap {
         fog := make(data.FogMap, mapWidth)
@@ -200,7 +200,7 @@ func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight i
         MyrrorFog: makeFog(),
         Wizard: wizard,
         Human: human,
-        HeroPool: createHeroes(),
+        HeroPool: createHeroes(heroNames),
         PlayerRelations: make(map[*Player]*Relationship),
         GlobalEnchantments: set.MakeSet[data.Enchantment](),
         BookOrderSeed1: rand.Uint64(),
@@ -213,14 +213,18 @@ func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight i
     }
 }
 
-func createHeroes() map[herolib.HeroType]*herolib.Hero {
+func createHeroes(names map[herolib.HeroType]string) map[herolib.HeroType]*herolib.Hero {
     heroes := make(map[herolib.HeroType]*herolib.Hero)
-
-    // FIXME: for ai, read hero names from names.lbx
 
     for _, heroType := range herolib.AllHeroTypes() {
         hero := herolib.MakeHeroSimple(heroType)
         hero.SetExtraAbilities()
+
+        name, ok := names[heroType]
+        if ok {
+            hero.SetName(name)
+        }
+
         heroes[heroType] = hero
     }
 
@@ -851,4 +855,36 @@ func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {
     stack.AddUnit(unit)
 
     return unit
+}
+
+func (player *Player) HasDivinePower() bool {
+    return player.Wizard.AbilityEnabled(setup.AbilityDivinePower)
+}
+
+func (player *Player) HasInfernalPower() bool {
+    return player.Wizard.AbilityEnabled(setup.AbilityInfernalPower)
+}
+
+func (player *Player) HasLifeBooks() bool {
+    for _, book := range player.Wizard.Books {
+        if book.Magic == data.LifeMagic {
+            return true
+        }
+    }
+
+    return false
+}
+
+func (player *Player) HasDeathBooks() bool {
+    for _, book := range player.Wizard.Books {
+        if book.Magic == data.DeathMagic {
+            return true
+        }
+    }
+
+    return false
+}
+
+func (player *Player) TotalBooks() int {
+    return player.Wizard.TotalBooks()
 }
