@@ -6577,7 +6577,7 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
         }
 
         enchantment := enchantments[rand.N(len(enchantments))]
-        enchantment.City.RemoveEnchantment(enchantment.Enchantment.Enchantment, enchantment.Enchantment.Owner)
+        enchantment.City.CancelEnchantment(enchantment.Enchantment.Enchantment, enchantment.Enchantment.Owner)
     }
 
     var enchantedUnits []units.StackUnit

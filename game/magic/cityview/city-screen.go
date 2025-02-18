@@ -909,7 +909,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                     group := uilib.MakeGroup()
                     yes := func(){
                         defer ui.RemoveGroup(group)
-                        cityScreen.City.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
+                        cityScreen.City.CancelEnchantment(enchantment.Enchantment, enchantment.Owner)
 
                         enchantmentBuildings := enchantmentBuildings()
                         building, ok := enchantmentBuildings[enchantment.Enchantment]
@@ -2463,7 +2463,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
                 LeftClick: func(element *uilib.UIElement) {
                     if enchantment.Owner == player.GetBanner() {
                         yes := func(){
-                            city.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
+                            city.CancelEnchantment(enchantment.Enchantment, enchantment.Owner)
                             setupUI()
                         }
 

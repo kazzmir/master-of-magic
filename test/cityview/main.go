@@ -178,7 +178,7 @@ func (engine *Engine) togglePlane() {
 
 func (engine *Engine) toggleEnchantment(enchantment data.CityEnchantment) {
     if engine.CityScreen.City.HasEnchantment(enchantment) {
-        engine.CityScreen.City.RemoveEnchantment(enchantment, data.BannerBlue)
+        engine.CityScreen.City.CancelEnchantment(enchantment, data.BannerBlue)
     } else {
         engine.CityScreen.City.AddEnchantment(enchantment, data.BannerBlue)
     }
