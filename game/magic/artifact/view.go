@@ -37,7 +37,7 @@ func RenderArtifactImage(screen *ebiten.Image, imageCache *util.ImageCache, arti
     return itemImage
 }
 
-func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifact Artifact, counter uint64, font *font.Font, options ebiten.DrawImageOptions) {
+func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifact Artifact, counter uint64, titleFont *font.Font, attributeFont *font.Font, options ebiten.DrawImageOptions) {
     itemBackground, _ := imageCache.GetImage("itemisc.lbx", 25, 0)
     screen.DrawImage(itemBackground, &options)
 
@@ -46,7 +46,7 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
     itemImage := RenderArtifactImage(screen, imageCache, artifact, counter, options)
 
     x, y := options.GeoM.Apply(float64(itemImage.Bounds().Max.X + 3 * data.ScreenScale), float64(4 * data.ScreenScale))
-    font.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, artifact.Name)
+    titleFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, artifact.Name)
 
     dot, _ := imageCache.GetImage("itemisc.lbx", 26, 0)
     savedGeom := options.GeoM
@@ -59,6 +59,6 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
         screen.DrawImage(dot, &options)
 
         x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1 * data.ScreenScale), 0)
-        font.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, power.Name)
+        attributeFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, power.Name)
     }
 }

@@ -5613,6 +5613,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
         },
     }
 
+    group := uilib.MakeGroup()
+    ui.AddGroup(group)
+
     // onClick - true to perform the action when the left click occurs, false to perform the action when the left click is released
     makeButton := func(lbxIndex int, x int, y int, onClick bool, action func()) *uilib.UIElement {
         buttons, _ := game.ImageCache.GetImages("main.lbx", lbxIndex)
@@ -6245,7 +6248,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             RightClick: func(this *uilib.UIElement){
                 helpEntries := game.Help.GetEntriesByName("Next Turn")
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, game.Cache, &game.ImageCache, 1, helpEntries[0], helpEntries[1:]...))
+                    group.AddElement(uilib.MakeHelpElementWithLayer(group, game.Cache, &game.ImageCache, 1, helpEntries[0], helpEntries[1:]...))
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){

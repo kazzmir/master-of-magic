@@ -709,7 +709,7 @@ func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
     }
 }
 
-func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City, help *helplib.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, newBuilding buildinglib.Building, x1 int, y1 int, fonts *Fonts, player *playerlib.Player, getAlpha *util.AlphaFadeFunc) *uilib.UIElement {
+func makeCityScapeElement(cache *lbx.LbxCache, group *uilib.UIElementGroup, city *citylib.City, help *helplib.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, newBuilding buildinglib.Building, x1 int, y1 int, fonts *Fonts, player *playerlib.Player, getAlpha *util.AlphaFadeFunc) *uilib.UIElement {
     // this stores the in-memory image because we don't need the gpu ebiten.Image to do pixel perfect detection
     rawImageCache := make(map[int]image.Image)
 
@@ -744,14 +744,14 @@ func makeCityScapeElement(cache *lbx.LbxCache, ui *uilib.UI, city *citylib.City,
             var geom ebiten.GeoM
             geom.Translate(float64(x1), float64(y1))
             cityScapeScreen := screen.SubImage(buildingView).(*ebiten.Image)
-            drawCityScape(cityScapeScreen, city, buildings, buildingLook, buildingLookTime, newBuilding, ui.Counter / 8, imageCache, fonts, player, geom, (*getAlpha)())
+            drawCityScape(cityScapeScreen, city, buildings, buildingLook, buildingLookTime, newBuilding, group.Counter / 8, imageCache, fonts, player, geom, (*getAlpha)())
             // vector.StrokeRect(screen, float32(buildingView.Min.X), float32(buildingView.Min.Y), float32(buildingView.Dx()), float32(buildingView.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, true)
         },
         RightClick: func(element *uilib.UIElement) {
             if buildingLook != buildinglib.BuildingNone {
                 helpEntries := help.GetEntriesByName(getBuildingName(city.BuildingInfo, buildingLook))
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElement(ui, cache, imageCache, helpEntries[0]))
+                    group.AddElement(uilib.MakeHelpElement(group, cache, imageCache, helpEntries[0]))
                 }
             }
         },
@@ -837,7 +837,9 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         return nil
     }
 
-    var elements []*uilib.UIElement
+    group := uilib.MakeGroup()
+    ui.AddGroup(group)
+    // var elements []*uilib.UIElement
 
     sellBuilding := func (toSell buildinglib.Building) {
         // FIXME: Check if building is needed for other building
@@ -866,7 +868,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
     var getAlpha util.AlphaFadeFunc = func() float32 { return 1 }
 
-    elements = append(elements, makeCityScapeElement(cityScreen.LbxCache, ui, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, newBuilding, 4 * data.ScreenScale, 101 * data.ScreenScale, cityScreen.Fonts, cityScreen.Player, &getAlpha))
+    group.AddElement(makeCityScapeElement(cityScreen.LbxCache, group, cityScreen.City, &help, &cityScreen.ImageCache, sellBuilding, cityScreen.Buildings, newBuilding, 4 * data.ScreenScale, 101 * data.ScreenScale, cityScreen.Fonts, cityScreen.Player, &getAlpha))
 
     // returns the amount of gold and the amount of production that will be used to buy a building
     computeBuyAmount := func(cost int) (int, float32) {
@@ -915,7 +917,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     buyIndex := 0
     buyX := 214 * data.ScreenScale
     buyY := 188 * data.ScreenScale
-    elements = append(elements, &uilib.UIElement{
+    group.AddElement(&uilib.UIElement{
         Rect: image.Rect(buyX, buyY, buyX + buyButtons[0].Bounds().Dx(), buyY + buyButtons[0].Bounds().Dy()),
         PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement) {
@@ -960,7 +962,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         RightClick: func(element *uilib.UIElement) {
             helpEntries := help.GetEntries(305)
             if helpEntries != nil {
-                ui.AddElement(uilib.MakeHelpElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
+                group.AddElement(uilib.MakeHelpElement(group, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
@@ -981,7 +983,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     if err == nil {
         changeX := 247 * data.ScreenScale
         changeY := 188 * data.ScreenScale
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: image.Rect(changeX, changeY, changeX + changeButton.Bounds().Dx(), changeY + changeButton.Bounds().Dy()),
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement) {
@@ -992,7 +994,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             RightClick: func(element *uilib.UIElement) {
                 helpEntries := help.GetEntries(306)
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
+                    group.AddElement(uilib.MakeHelpElement(group, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
@@ -1008,7 +1010,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     if err == nil {
         okX := 286 * data.ScreenScale
         okY := 188 * data.ScreenScale
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: image.Rect(okX, okY, okX + okButton.Bounds().Dx(), okY + okButton.Bounds().Dy()),
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement) {
@@ -1017,7 +1019,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             RightClick: func(element *uilib.UIElement) {
                 helpEntries := help.GetEntries(307)
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElement(ui, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
+                    group.AddElement(uilib.MakeHelpElement(group, cityScreen.LbxCache, &cityScreen.ImageCache, helpEntries[0]))
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
@@ -1095,7 +1097,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
                 helpEntries := help.GetEntriesByName(enchantment.Enchantment.Name())
                 if helpEntries != nil {
-                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cityScreen.LbxCache, &cityScreen.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                    group.AddElement(uilib.MakeHelpElementWithLayer(group, cityScreen.LbxCache, &cityScreen.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -1105,7 +1107,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             },
         }
 
-        elements = append(elements, enchantmentElement)
+        group.AddElement(enchantmentElement)
         enchantmentElements = append(enchantmentElements, enchantmentElement)
     }
 
@@ -1125,7 +1127,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         upArrow, _ := cityScreen.ImageCache.GetImages("resource.lbx", 32)
         upArrowRect := util.ImageRect(200 * data.ScreenScale, 51 * data.ScreenScale, upArrow[0])
         upUse := 1
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: upArrowRect,
             LeftClick: func(element *uilib.UIElement){
                 upUse = 0
@@ -1146,7 +1148,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         downArrow, _ := cityScreen.ImageCache.GetImages("resource.lbx", 33)
         downArrowRect := util.ImageRect(200 * data.ScreenScale, 83 * data.ScreenScale, downArrow[0])
         downUse := 1
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: downArrowRect,
             LeftClick: func(element *uilib.UIElement){
                 downUse = 0
@@ -1165,7 +1167,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         })
 
         // scroll wheel element
-        elements = append(elements, &uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Rect: enchantmentAreaRect,
             Scroll: func (element *uilib.UIElement, x float64, y float64) {
                 if y < 0 {
@@ -1296,7 +1298,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         }
     }
 
-    ui.SetElementsFromArray(elements)
+    ui.SetElementsFromArray(nil)
 
     ui.AddElements(resourceIcons)
 
@@ -2518,21 +2520,25 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         },
     }
 
+    group := uilib.MakeGroup()
+
     getAlpha = ui.MakeFadeIn(7)
 
     ui.SetElementsFromArray(nil)
 
     var setupUI func()
     setupUI = func(){
-        ui.SetElementsFromArray(nil)
+        ui.RemoveGroup(group)
+        group = uilib.MakeGroup()
+        ui.AddGroup(group)
         x1, y1 := options.GeoM.Apply(float64(5 * data.ScreenScale), float64(102 * data.ScreenScale))
 
-        cityScapeElement := makeCityScapeElement(cache, ui, city, &help, &imageCache, func(buildinglib.Building){}, buildings, buildinglib.BuildingNone, int(x1), int(y1), fonts, otherPlayer, &getAlpha)
+        cityScapeElement := makeCityScapeElement(cache, group, city, &help, &imageCache, func(buildinglib.Building){}, buildings, buildinglib.BuildingNone, int(x1), int(y1), fonts, otherPlayer, &getAlpha)
 
-        ui.AddElement(cityScapeElement)
+        group.AddElement(cityScapeElement)
 
         // draw all farmers/workers/rebels
-        ui.AddElement(&uilib.UIElement{
+        group.AddElement(&uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 localOptions := options
                 localOptions.ColorScale.ScaleAlpha(getAlpha())
@@ -2581,7 +2587,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
 
                 pic, _ := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
                 rect := image.Rect(int(x), int(y), int(x) + pic.Bounds().Dx(), int(y) + pic.Bounds().Dy())
-                ui.AddElement(&uilib.UIElement{
+                group.AddElement(&uilib.UIElement{
                     Rect: rect,
                     Inside: func(element *uilib.UIElement, x int, y int){
                         currentUnitName = unit.GetName()
@@ -2612,7 +2618,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
             }
             x, y := options.GeoM.Apply(float64(142 * data.ScreenScale), float64((51 + i * useFont.Height()) * data.ScreenScale))
             rect := image.Rect(int(x), int(y), int(x + useFont.MeasureTextWidth(enchantment.Enchantment.Name(), float64(data.ScreenScale))), int(y) + useFont.Height() * data.ScreenScale)
-            ui.AddElement(&uilib.UIElement{
+            group.AddElement(&uilib.UIElement{
                 Rect: rect,
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     var scale ebiten.ColorScale
@@ -2621,26 +2627,22 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
                 },
                 LeftClick: func(element *uilib.UIElement) {
                     if enchantment.Owner == player.GetBanner() {
-                        group := uilib.MakeGroup()
                         yes := func(){
                             city.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
-                            ui.RemoveGroup(group)
                             setupUI()
                         }
 
                         no := func(){
-                            ui.RemoveGroup(group)
                         }
 
                         confirmElements := uilib.MakeConfirmDialog(group, cache, &imageCache, fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Enchantment.Name()), true, yes, no)
                         group.AddElements(confirmElements)
-                        ui.AddGroup(group)
                     }
                 },
                 RightClick: func(element *uilib.UIElement){
                     helpEntries := help.GetEntriesByName(enchantment.Enchantment.Name())
                     if helpEntries != nil {
-                        ui.AddElement(uilib.MakeHelpElementWithLayer(ui, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                        group.AddElement(uilib.MakeHelpElementWithLayer(group, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
                     }
                 },
             })

@@ -30,6 +30,16 @@ type UIScrollFunc func(*UIElement, float64, float64)
 
 type UILayer int
 
+type UIContainer interface {
+    MakeFadeIn(time uint64) util.AlphaFadeFunc
+    MakeFadeOut(time uint64) util.AlphaFadeFunc
+    AddDelay(time uint64, f func())
+    AddElement(*UIElement)
+    AddElements([]*UIElement)
+    RemoveElement(*UIElement)
+    RemoveElements([]*UIElement)
+}
+
 type UIElement struct {
     Rect image.Rectangle
     // fires if the mouse is not inside this element
@@ -103,7 +113,7 @@ func (group *UIElementGroup) AddElements(elements []*UIElement){
     }
 }
 
-func (group *UIElementGroup) Remove(element *UIElement){
+func (group *UIElementGroup) RemoveElement(element *UIElement){
     elements := group.Elements[element.Layer]
     elements = slices.DeleteFunc(elements, func (e *UIElement) bool {
         return e == element
@@ -113,7 +123,7 @@ func (group *UIElementGroup) Remove(element *UIElement){
 
 func (group *UIElementGroup) RemoveElements(elements []*UIElement){
     for _, element := range elements {
-        group.Remove(element)
+        group.RemoveElement(element)
     }
 }
 

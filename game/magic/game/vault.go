@@ -4,7 +4,6 @@ import (
     "log"
     "fmt"
     "image"
-    "image/color"
 
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -13,90 +12,21 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/fonts"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
-    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-type VaultFonts struct {
-    ItemName *font.Font
-    PowerFont *font.Font
-    ResourceFont *font.Font
-    SmallFont *font.Font
-}
-
-func makeFonts(cache *lbx.LbxCache) *VaultFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Could not read fonts: %v", err)
-        return &VaultFonts{}
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Could not read fonts: %v", err)
-        return &VaultFonts{}
-    }
-
-    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
-    namePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.Lighten(orange, 0),
-        util.Lighten(orange, 20),
-        util.Lighten(orange, 50),
-        util.Lighten(orange, 80),
-        orange,
-        orange,
-    }
-
-    // red1 := color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
-    powerPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.Lighten(orange, 40),
-    }
-
-    itemName := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
-    powerFont := font.MakeOptimizedFontWithPalette(fonts[2], powerPalette)
-
-    white := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
-    whitePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        white, white, white, white,
-    }
-
-    resourceFont := font.MakeOptimizedFontWithPalette(fonts[1], whitePalette)
-
-    translucentWhite := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 80})
-    transmutePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        translucentWhite, translucentWhite, translucentWhite,
-        translucentWhite, translucentWhite, translucentWhite,
-    }
-
-    transmuteFont := font.MakeOptimizedFontWithPalette(fonts[0], transmutePalette)
-
-    return &VaultFonts{
-        ItemName: itemName,
-        PowerFont: powerFont,
-        ResourceFont: resourceFont,
-        SmallFont: transmuteFont,
-    }
-}
-
-func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, imageCache *util.ImageCache, vaultFonts *VaultFonts) (func(coroutine.YieldFunc), func (*ebiten.Image)) {
+func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, imageCache *util.ImageCache, vaultFonts *fonts.VaultFonts) (func(coroutine.YieldFunc), func (*ebiten.Image)) {
     if vaultFonts == nil {
-        vaultFonts = makeFonts(cache)
+        vaultFonts = fonts.MakeVaultFonts(cache)
     }
 
     counter := uint64(0)
@@ -107,7 +37,7 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(getAlpha())
         options.GeoM.Translate(float64(48 * data.ScreenScale), float64(48 * data.ScreenScale))
-        artifact.RenderArtifactBox(screen, imageCache, *item, game.Counter / 8, vaultFonts.ItemName, options)
+        artifact.RenderArtifactBox(screen, imageCache, *item, game.Counter / 8, vaultFonts.ItemName, vaultFonts.PowerFont, options)
     }
 
     logic := func (yield coroutine.YieldFunc) {
@@ -140,7 +70,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
     imageCache := util.MakeImageCache(game.Cache)
 
-    fonts := makeFonts(game.Cache)
+    fonts := fonts.MakeVaultFonts(game.Cache)
 
     helpLbx, err := game.Cache.GetLbxFile("help.lbx")
     if err != nil {
@@ -191,6 +121,11 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
     }
 
     ui.SetElementsFromArray(nil)
+
+    /*
+    group := uilib.MakeGroup()
+    ui.AddGroup(group)
+    */
 
     showItem := make(chan *artifact.Artifact, 10)
 
@@ -406,7 +341,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             },
             LeftClickRelease: func(element *uilib.UIElement){
                 index = 0
-                ui.AddElements(magicview.MakeTransmuteElements(ui, fonts.SmallFont, player, &help, game.Cache, &imageCache))
+                transmuteGroup := magicview.MakeTransmuteElements(ui, fonts.SmallFont, player, &help, game.Cache, &imageCache)
+                ui.AddGroup(transmuteGroup)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions

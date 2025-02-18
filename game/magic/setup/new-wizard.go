@@ -1117,6 +1117,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
     }
 
     var elements []*uilib.UIElement
+    group := uilib.MakeGroup()
 
     const bookWidth = 8
     const bookHeight = 20
@@ -1248,11 +1249,13 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                         return
                     }
 
-                    screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0]))
+                    group.AddElement(uilib.MakeHelpElement(group, screen.LbxCache, &imageCache, helpEntries[0]))
                 },
                 Inside: func(this *uilib.UIElement, x int, y int){
                     // if the user hovers over this element, then draw partially transparent books
-                    ghostBooks = level
+                    // The number of drawn ghost books should not exceed the number of the picks you still have
+                    maxGhostBooks := screen.CustomWizard.MagicLevel(bookMagic) + picksLeft() - 1
+                    ghostBooks = min(maxGhostBooks, level)
                 },
                 Draw: func(this *uilib.UIElement, window *ebiten.Image){
                     if screen.CustomWizard.MagicLevel(bookMagic) > level {
@@ -1383,7 +1386,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                     helpEntries = []helplib.HelpEntry{screen.Help.GetRawEntry(702)}
                 }
 
-                screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0]))
+                group.AddElement(uilib.MakeHelpElement(group, screen.LbxCache, &imageCache, helpEntries[0]))
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 font := screen.AbilityFont
@@ -1422,7 +1425,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                 return
             }
 
-            screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0]))
+            group.AddElement(uilib.MakeHelpElement(group, screen.LbxCache, &imageCache, helpEntries[0]))
         },
         Draw: func(this *uilib.UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
@@ -1477,6 +1480,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
     }
 
     ui.SetElementsFromArray(elements)
+    ui.AddGroup(group)
 
     return ui
 
@@ -1665,6 +1669,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
         }
 
         var elements []*uilib.UIElement
+        group := uilib.MakeGroup()
 
         // make fonts in the color of the magic book (blue for sorcery, etc)
         titleFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], getPalette(magic))
@@ -1700,7 +1705,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                             return
                         }
 
-                        screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0]))
+                        group.AddElement(uilib.MakeHelpElement(group, screen.LbxCache, &imageCache, helpEntries[0]))
                     },
                     Draw: func(this *uilib.UIElement, window *ebiten.Image){
                         if screen.CustomWizard.StartingSpells.HasSpell(spell) {
@@ -1856,6 +1861,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
         }
 
         ui.SetElementsFromArray(elements)
+        ui.AddGroup(group)
 
         return ui
     }
@@ -1964,6 +1970,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
     raceSelect := font.MakeOptimizedFontWithPalette(screen.LbxFonts[2], selectPalette)
 
     var elements []*uilib.UIElement
+    group := uilib.MakeGroup()
 
     arcanianRaces := data.ArcanianRaces()
     myrranRaces := data.MyrranRaces()
@@ -1994,7 +2001,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
                     return
                 }
 
-                screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0], helpEntries[1:]...))
+                group.AddElement(uilib.MakeHelpElement(group, screen.LbxCache, &imageCache, helpEntries[0], helpEntries[1:]...))
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 if highlight {
@@ -2040,7 +2047,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
                     return
                 }
 
-                screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0], helpEntries[1:]...))
+                group.AddElement(uilib.MakeHelpElement(group, screen.LbxCache, &imageCache, helpEntries[0], helpEntries[1:]...))
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 fontDraw := fontUse
@@ -2120,12 +2127,14 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
     }
 
     ui.SetElementsFromArray(elements)
+    ui.AddGroup(group)
 
     return ui
 }
 
 func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
     var elements []*uilib.UIElement
+    group := uilib.MakeGroup()
     imageCache := util.MakeImageCache(screen.LbxCache)
 
     for i, banner := range []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow} {
@@ -2147,7 +2156,7 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
                     return
                 }
 
-                screen.UI.AddElement(uilib.MakeHelpElement(screen.UI, screen.LbxCache, &imageCache, helpEntries[0]))
+                group.AddElement(uilib.MakeHelpElement(group, screen.LbxCache, &imageCache, helpEntries[0]))
             },
         })
     }
@@ -2199,6 +2208,7 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
     }
 
     ui.SetElementsFromArray(elements)
+    ui.AddGroup(group)
 
     return ui
 }
