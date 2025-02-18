@@ -3481,7 +3481,7 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
     if raze {
         defender.RemoveCity(city)
     } else {
-        game.ChangeCityOwner(city, defender, attacker, false)
+        game.ChangeCityOwner(city, defender, attacker, ChangeCityRemoveOwnerEnchantments)
     }
 
     if containedFortress {
@@ -7211,7 +7211,7 @@ func (game *Game) DoRandomEvents() {
                                         }
                                     }
 
-                                    game.ChangeCityOwner(city, player, target, false)
+                                    game.ChangeCityOwner(city, player, target, ChangeCityRemoveAllEnchantments)
 
                                     return MakeDiplomaticMarriageEvent(game.TurnNumber, city), nil
                                 }
@@ -7332,7 +7332,7 @@ func (game *Game) DoRandomEvents() {
                                     }
                                 }
 
-                                game.ChangeCityOwner(city, target, neutralPlayer, true)
+                                game.ChangeCityOwner(city, target, neutralPlayer, ChangeCityRemoveAllEnchantments)
 
                                 // plague/population boom might still be active for the city. just leave them for now
 
