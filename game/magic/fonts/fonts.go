@@ -336,3 +336,79 @@ func MakeCityViewResourceFonts(cache *lbx.LbxCache) *CityViewResourceFonts {
         HelpTitleFont: helpTitleFont,
     }
 }
+
+type BuildScreenFonts struct {
+    TitleFont *font.Font
+    TitleFontWhite *font.Font
+    DescriptionFont *font.Font
+    OkCancelFont *font.Font
+    SmallFont *font.Font
+    MediumFont *font.Font
+}
+
+func MakeBuildScreenFonts(cache *lbx.LbxCache) *BuildScreenFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    titleFont := font.MakeOptimizedFont(fonts[2])
+
+    alphaWhite := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 180})
+
+    whitePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        alphaWhite, alphaWhite, alphaWhite,
+    }
+
+    titleFontWhite := font.MakeOptimizedFontWithPalette(fonts[2], whitePalette)
+
+    descriptionPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
+
+    yellowGradient := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+    }
+
+    okCancelFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
+
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
+
+    mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
+
+    return &BuildScreenFonts{
+        TitleFont: titleFont,
+        TitleFontWhite: titleFontWhite,
+        DescriptionFont: descriptionFont,
+        OkCancelFont: okCancelFont,
+        SmallFont: smallFont,
+        MediumFont: mediumFont,
+    }
+}
