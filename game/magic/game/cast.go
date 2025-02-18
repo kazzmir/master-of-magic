@@ -139,8 +139,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
-                // FIXME: show a fizzle notification?
                 if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentDeathWard) {
+                    game.ShowFizzleSpell(spell, player)
                     return
                 }
 
@@ -153,8 +153,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
-                // FIXME: show a fizzle notification?
                 if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentDeathWard) {
+                    game.ShowFizzleSpell(spell, player)
                     return
                 }
     
@@ -167,8 +167,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
-                // FIXME: show a fizzle notification?
                 if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentDeathWard) {
+                    game.ShowFizzleSpell(spell, player)
                     return
                 }
 
@@ -205,8 +205,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 chosenCity, owner := game.FindCity(tileX, tileY, game.Plane)
 
-                // FIXME: show a fizzle notification?
                 if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentChaosWard) {
+                    game.ShowFizzleSpell(spell, player)
                     return
                 }
 
@@ -224,9 +224,9 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
-                // FIXME: show a fizzle notification?
                 // FIXME: it's not obvious if Chaos Ward prevents Raise Volcano from being cast on city center. Left it here because it sounds logical
                 if chosenCity != nil && (chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentChaosWard)) {
+                    game.ShowFizzleSpell(spell, player)
                     return
                 }
                 game.doCastRaiseVolcano(yield, tileX, tileY, player)
@@ -326,9 +326,9 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
-                // FIXME: show a fizzle notification?
                 // FIXME: it's not obvious if Chaos Ward prevents Corruption from being cast on city center. Left it here because it sounds logical
                 if chosenCity != nil && (chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentChaosWard)) {
+                    game.ShowFizzleSpell(spell, player)
                     return
                 }
                 game.doCastCorruption(yield, tileX, tileY)
