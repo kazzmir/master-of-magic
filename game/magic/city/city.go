@@ -439,6 +439,16 @@ func (city *City) RemoveEnchantment(enchantment data.CityEnchantment, owner data
     })
 }
 
+func (city *City) RemoveEnchantments(enchantmentsToRemove ...data.CityEnchantment) {
+    for _, enchantmentTypeToRemove := range enchantmentsToRemove {
+        for _, enchantmentInstance := range city.Enchantments.Values() {
+            if enchantmentInstance.Enchantment == enchantmentTypeToRemove {
+                city.Enchantments.Remove(enchantmentInstance)
+            }
+        }
+    }
+}
+
 func (city *City) HasEnchantment(check data.CityEnchantment) bool {
     for _, enchantment := range city.Enchantments.Values() {
         if enchantment.Enchantment == check {

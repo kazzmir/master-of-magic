@@ -6865,19 +6865,8 @@ func (game *Game) doCleanCorruptionForConsecratedCities() {
             continue
         }
         useMap := game.GetMap(city.Plane)
-        for dx := -2; dx <= 2; dx++ {
-            for dy := -2; dy <= 2; dy++ {
-                if int(math.Abs(float64(dx)) + math.Abs(float64(dy))) == 4 {
-                    continue
-                }
-                cx := useMap.WrapX(city.X + dx)
-                cy := city.Y + dy
-                if cy < 0 || cy >= useMap.Height() {
-                    continue
-                }
-
-                useMap.RemoveCorruption(cx, cy)
-            }
+        for point, _ := range useMap.GetCatchmentArea(city.X, city.Y) {
+            useMap.RemoveCorruption(point.X, point.Y)
         }
     }
 }

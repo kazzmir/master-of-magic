@@ -110,15 +110,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 }
                 // Remove all the city curses from the targeted city on cast (https://masterofmagic.fandom.com/wiki/Consecration)
                 // Wiki specifies only the following ones as city curses
-                for _, enchantmentInstance := range chosenCity.Enchantments.Values() {
-                    if enchantmentInstance.Enchantment == data.CityEnchantmentChaosRift ||
-                        enchantmentInstance.Enchantment == data.CityEnchantmentCursedLands ||
-                        enchantmentInstance.Enchantment == data.CityEnchantmentEvilPresence ||
-                        enchantmentInstance.Enchantment == data.CityEnchantmentFamine ||
-                        enchantmentInstance.Enchantment == data.CityEnchantmentPestilence {
-                            chosenCity.RemoveEnchantment(enchantmentInstance.Enchantment, enchantmentInstance.Owner)
-                        }
-                }
+                chosenCity.RemoveEnchantments(
+                    data.CityEnchantmentChaosRift,
+                    data.CityEnchantmentCursedLands,
+                    data.CityEnchantmentEvilPresence,
+                    data.CityEnchantmentFamine,
+                    data.CityEnchantmentPestilence,
+                )
 
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentConsecration)
             }
