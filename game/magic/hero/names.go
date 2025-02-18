@@ -8,33 +8,15 @@ import (
     "fmt"
     "io"
 
-    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 )
 
-func ReadNamesPerWizard(cache *lbx.LbxCache) map[data.WizardBase]map[HeroType]string {
+func ReadNamesPerWizard(cache *lbx.LbxCache) map[int]map[HeroType]string {
     names, err := ReadNames(cache)
 
     if err != nil {
         log.Printf("Unable to read hero names: %v", err)
-        return make(map[data.WizardBase]map[HeroType]string)
-    }
-
-    wizardOrder := []data.WizardBase{
-        data.WizardMerlin,
-        data.WizardRaven,
-        data.WizardSharee,
-        data.WizardLoPan,
-        data.WizardJafar,
-        data.WizardOberic,
-        data.WizardRjak,
-        data.WizardSssra,
-        data.WizardTauron,
-        data.WizardFreya,
-        data.WizardHorus,
-        data.WizardAriel,
-        data.WizardTlaloc,
-        data.WizardKali,
+        return make(map[int]map[HeroType]string)
     }
 
     heroOrder := []HeroType{
@@ -75,21 +57,21 @@ func ReadNamesPerWizard(cache *lbx.LbxCache) map[data.WizardBase]map[HeroType]st
         HeroTorin,
     }
 
-    wizards := make(map[data.WizardBase]map[HeroType]string)
+    choices := make(map[int]map[HeroType]string)
 
     nameIndex := 0
-    for _, wizard := range wizardOrder {
-        wizards[wizard] = make(map[HeroType]string)
+    for i := range 5 {
+        choices[i] = make(map[HeroType]string)
         for _, hero := range heroOrder {
             if nameIndex >= len(names) {
                 break
             }
-            wizards[wizard][hero] = names[nameIndex]
+            choices[i][hero] = names[nameIndex]
             nameIndex += 1
         }
     }
 
-    return wizards
+    return choices
 }
 
 func ReadNames(cache *lbx.LbxCache) ([]string, error) {
@@ -133,7 +115,7 @@ func ReadNames(cache *lbx.LbxCache) ([]string, error) {
             return nil, fmt.Errorf("Failed to read all of the name data (%v)", n)
         }
 
-        log.Printf("Name: '%v'", string(data))
+        // log.Printf("Name: '%v'", string(data))
         out = append(out, string(data))
     }
 

@@ -64,10 +64,18 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool, 
         files := make(map[string]*lbx.LbxFile)
         files["names.lbx"] = &file
         cache := lbx.MakeCacheFromLbxFiles(files)
+
+        names := hero.ReadNamesPerWizard(cache)
+        for i, name := range names {
+            log.Printf("Choice %v: %v\n", i, name)
+        }
+
+        /*
         _, err := hero.ReadNames(cache)
         if err != nil {
             return err
         }
+        */
     } else if lbxName == "fonts.lbx" && !rawDump {
         fonts, err := font.ReadFonts(&file, 0)
         if err != nil {
