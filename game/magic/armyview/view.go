@@ -1,17 +1,16 @@
 package armyview
 
 import (
-    "log"
     "fmt"
     "image"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
-    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -57,41 +56,7 @@ func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap f
 func (view *ArmyScreen) MakeUI() *uilib.UI {
     var highlightedUnit units.StackUnit
 
-    fontLbx, err := view.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
-    }
-
-    normalColor := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -30)
-    normalPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        normalColor, normalColor, normalColor,
-        normalColor, normalColor, normalColor,
-    }
-    normalFont := font.MakeOptimizedFontWithPalette(fonts[1], normalPalette)
-
-    smallerFont := font.MakeOptimizedFontWithPalette(fonts[0], normalPalette)
-
-    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
-
-    yellow := color.RGBA{R: 0xf9, G: 0xdb, B: 0x4c, A: 0xff}
-    bigPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.RotateHue(yellow, -0.50),
-        util.RotateHue(yellow, -0.30),
-        util.RotateHue(yellow, -0.10),
-        yellow,
-    }
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], bigPalette)
+    fonts := fontslib.MakeArmyViewFonts(view.Cache)
 
     upArrows, _ := view.ImageCache.GetImages("armylist.lbx", 1)
     downArrows, _ := view.ImageCache.GetImages("armylist.lbx", 2)
@@ -106,18 +71,18 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             var options ebiten.DrawImageOptions
             screen.DrawImage(background, &options)
 
-            bigFont.PrintCenter(screen, float64(160 * data.ScreenScale), float64(10 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
+            fonts.BigFont.PrintCenter(screen, float64(160 * data.ScreenScale), float64(10 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
 
             if highlightedUnit != nil {
                 raceName := highlightedUnit.GetRace().String()
-                normalFont.PrintCenter(screen, float64(190 * data.ScreenScale), float64(162 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v %v", raceName, highlightedUnit.GetName()))
+                fonts.NormalFont.PrintCenter(screen, float64(190 * data.ScreenScale), float64(162 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v %v", raceName, highlightedUnit.GetName()))
 
             }
 
-            normalFont.PrintCenter(screen, float64(30 * data.ScreenScale), float64(162 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "UPKEEP")
-            normalFont.PrintCenter(screen, float64(45 * data.ScreenScale), float64(172 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", upkeepGold))
-            normalFont.PrintCenter(screen, float64(45 * data.ScreenScale), float64(182 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", upkeepMana))
-            normalFont.PrintCenter(screen, float64(45 * data.ScreenScale), float64(192 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", upkeepFood))
+            fonts.NormalFont.PrintCenter(screen, float64(30 * data.ScreenScale), float64(162 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "UPKEEP")
+            fonts.NormalFont.PrintCenter(screen, float64(45 * data.ScreenScale), float64(172 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", upkeepGold))
+            fonts.NormalFont.PrintCenter(screen, float64(45 * data.ScreenScale), float64(182 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", upkeepMana))
+            fonts.NormalFont.PrintCenter(screen, float64(45 * data.ScreenScale), float64(192 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", upkeepFood))
 
             minimapRect := image.Rect(85 * data.ScreenScale, 163 * data.ScreenScale, 135 * data.ScreenScale, 197 * data.ScreenScale)
             minimapArea := screen.SubImage(minimapRect).(*ebiten.Image)
@@ -252,7 +217,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
                     nameX, nameY := options.GeoM.Apply(0, 0)
 
-                    smallerFont.PrintCenter(screen, nameX + float64(15 * data.ScreenScale), nameY + float64(6 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, hero.GetName())
+                    fonts.SmallerFont.PrintCenter(screen, nameX + float64(15 * data.ScreenScale), nameY + float64(6 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, hero.GetName())
                 },
             }
 
