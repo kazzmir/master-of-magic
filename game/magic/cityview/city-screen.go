@@ -14,7 +14,6 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
-    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
@@ -1689,48 +1688,11 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
         return nil
     }
 
-    fontLbx, err := cityScreen.LbxCache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
+    fonts := fontslib.MakeCityViewResourceFonts(cityScreen.LbxCache)
 
     const fadeSpeed = 7
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
-
-    helpPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0x5e, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    helpFont := font.MakeOptimizedFontWithPalette(fonts[1], helpPalette)
-
-    titleRed := color.RGBA{R: 0x50, G: 0x00, B: 0x0e, A: 0xff}
-    titlePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        titleRed,
-        titleRed,
-        titleRed,
-        titleRed,
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    helpTitleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
     infoX := 55
     // infoY := 30
@@ -1744,11 +1706,11 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
     // fmt.Printf("Help text: %v\n", []byte(help.Text))
 
     helpTextY := infoTopMargin
-    helpTextY += helpTitleFont.Height() + 1
+    helpTextY += fonts.HelpTitleFont.Height() + 1
 
     maxResources := 14
 
-    textHeight := (min(len(resources), maxResources) + 1) * (helpFont.Height() + 1)
+    textHeight := (min(len(resources), maxResources) + 1) * (fonts.HelpFont.Height() + 1)
 
     bottom := helpTextY + textHeight
 
@@ -1788,9 +1750,9 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 
             titleX := infoX + infoLeftMargin + maxInfoWidth / 2
 
-            helpTitleFont.PrintCenter(window, float64(titleX * data.ScreenScale), float64(infoY + infoTopMargin * data.ScreenScale), 1, options.ColorScale, title)
+            fonts.HelpTitleFont.PrintCenter(window, float64(titleX * data.ScreenScale), float64(infoY + infoTopMargin * data.ScreenScale), 1, options.ColorScale, title)
 
-            yPos := infoY + (infoTopMargin + helpTitleFont.Height() + 1) * data.ScreenScale
+            yPos := infoY + (infoTopMargin + fonts.HelpTitleFont.Height() + 1) * data.ScreenScale
             xPos := (infoX + infoLeftMargin) * data.ScreenScale
 
             options.GeoM.Reset()
@@ -1799,7 +1761,7 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
             for _, usage := range resources {
                 if usage.Count < 0 {
                     x, y := options.GeoM.Apply(0, 1)
-                    helpFont.PrintRight(window, x, y, float64(data.ScreenScale), options.ColorScale, "-")
+                    fonts.HelpFont.PrintRight(window, x, y, float64(data.ScreenScale), options.ColorScale, "-")
                 }
 
                 cityScreen.drawIcons(int(math.Abs(float64(usage.Count))), smallIcon, bigIcon, options, window)
@@ -1811,9 +1773,9 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
                     text = fmt.Sprintf("%v (Replaced)", usage.Name)
                 }
                 text += fmt.Sprintf(" (%v)", usage.Count)
-                helpFont.Print(window, x, y, float64(data.ScreenScale), options.ColorScale, text)
-                yPos += (helpFont.Height() + 1) * data.ScreenScale
-                options.GeoM.Translate(0, float64((helpFont.Height() + 1) * data.ScreenScale))
+                fonts.HelpFont.Print(window, x, y, float64(data.ScreenScale), options.ColorScale, text)
+                yPos += (fonts.HelpFont.Height() + 1) * data.ScreenScale
+                options.GeoM.Translate(0, float64((fonts.HelpFont.Height() + 1) * data.ScreenScale))
             }
         }
     }
@@ -1847,8 +1809,8 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
     })
 
     if len(renderPages) > 1 {
-        width := helpFont.MeasureTextWidth("More", float64(data.ScreenScale))
-        height := float64(helpFont.Height() * data.ScreenScale)
+        width := fonts.HelpFont.MeasureTextWidth("More", float64(data.ScreenScale))
+        height := float64(fonts.HelpFont.Height() * data.ScreenScale)
 
         var geom ebiten.GeoM
         geom.Translate(float64(infoX * data.ScreenScale), float64(bottom * data.ScreenScale + infoY))
@@ -1866,10 +1828,10 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
                 options.ColorScale.ScaleAlpha(getAlpha())
                 options.GeoM.Reset()
                 options.GeoM.Translate(float64(infoX * data.ScreenScale), float64(bottom * data.ScreenScale + infoY))
-                options.GeoM.Translate(float64(infoWidth) - helpFont.MeasureTextWidth("More", float64(data.ScreenScale)) - float64(18 * data.ScreenScale), -float64(helpFont.Height() * data.ScreenScale))
+                options.GeoM.Translate(float64(infoWidth) - fonts.HelpFont.MeasureTextWidth("More", float64(data.ScreenScale)) - float64(18 * data.ScreenScale), -float64(fonts.HelpFont.Height() * data.ScreenScale))
                 x, y := options.GeoM.Apply(0, 0)
 
-                helpFont.Print(window, x, y, float64(data.ScreenScale), options.ColorScale, "More")
+                fonts.HelpFont.Print(window, x, y, float64(data.ScreenScale), options.ColorScale, "More")
             },
             LeftClick: func(this *uilib.UIElement){
                 currentPage = (currentPage + 1) % len(renderPages)

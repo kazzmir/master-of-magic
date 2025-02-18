@@ -285,3 +285,54 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
         CastFont: castFont,
     }, nil
 }
+
+type CityViewResourceFonts struct {
+    HelpFont *font.Font
+    HelpTitleFont *font.Font
+}
+
+func MakeCityViewResourceFonts(cache *lbx.LbxCache) *CityViewResourceFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil
+    }
+
+    helpPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0x5e, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    helpFont := font.MakeOptimizedFontWithPalette(fonts[1], helpPalette)
+
+    titleRed := color.RGBA{R: 0x50, G: 0x00, B: 0x0e, A: 0xff}
+    titlePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        titleRed,
+        titleRed,
+        titleRed,
+        titleRed,
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    helpTitleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
+
+    return &CityViewResourceFonts{
+        HelpFont: helpFont,
+        HelpTitleFont: helpTitleFont,
+    }
+}
