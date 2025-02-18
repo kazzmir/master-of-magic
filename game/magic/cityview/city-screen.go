@@ -2121,18 +2121,16 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
         }
     }
 
-    moonBonus := cityScreen.City.PowerMoonBonus()
-
     add(cityScreen.City.PowerCitizens(), "Townsfolk", buildinglib.BuildingNone)
     add(cityScreen.City.PowerFortress(), "Fortress", buildinglib.BuildingFortress)
-    add(int(cityScreen.City.PowerShrine(moonBonus)), "Shrine", buildinglib.BuildingShrine)
-    add(int(cityScreen.City.PowerTemple(moonBonus)), "Temple", buildinglib.BuildingTemple)
-    add(int(cityScreen.City.PowerParthenon(moonBonus)), "Parthenon", buildinglib.BuildingParthenon)
-    add(int(cityScreen.City.PowerCathedral(moonBonus)), "Cathedral", buildinglib.BuildingCathedral)
+    add(int(cityScreen.City.PowerShrine()), "Shrine", buildinglib.BuildingShrine)
+    add(int(cityScreen.City.PowerTemple()), "Temple", buildinglib.BuildingTemple)
+    add(int(cityScreen.City.PowerParthenon()), "Parthenon", buildinglib.BuildingParthenon)
+    add(int(cityScreen.City.PowerCathedral()), "Cathedral", buildinglib.BuildingCathedral)
     add(cityScreen.City.PowerAlchemistsGuild(), "Alchemist's Guild", buildinglib.BuildingAlchemistsGuild)
     add(cityScreen.City.PowerWizardsGuild(), "Wizard's Guild", buildinglib.BuildingWizardsGuild)
     add(cityScreen.City.PowerMinerals(), "Minerals", buildinglib.BuildingNone)
-    add(int(cityScreen.City.PowerDarkRituals(moonBonus)), "Dark Rituals", buildinglib.BuildingNone)
+    add(int(cityScreen.City.PowerDarkRituals()), "Dark Rituals", buildinglib.BuildingNone)
 
     // FIXME: add tiles (adamantium mine) and miner's guild
 

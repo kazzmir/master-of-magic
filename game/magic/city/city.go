@@ -629,7 +629,7 @@ func (city *City) PowerWizardsGuild() int {
 
 }
 
-func (city *City) PowerShrine(moonBonus float64) float64 {
+func (city *City) PowerShrine() float64 {
     if !city.Buildings.Contains(buildinglib.BuildingShrine) {
         return 0
     }
@@ -638,7 +638,7 @@ func (city *City) PowerShrine(moonBonus float64) float64 {
         return 0
     }
 
-    power := 1 * moonBonus
+    power := 1 * city.PowerMoonBonus()
 
     if city.ReignProvider.HasDivinePower() || city.ReignProvider.HasInfernalPower() {
         power *= 1.5
@@ -647,7 +647,7 @@ func (city *City) PowerShrine(moonBonus float64) float64 {
     return power
 }
 
-func (city *City) PowerTemple(moonBonus float64) float64 {
+func (city *City) PowerTemple() float64 {
     if !city.Buildings.Contains(buildinglib.BuildingTemple) {
         return 0
     }
@@ -656,7 +656,7 @@ func (city *City) PowerTemple(moonBonus float64) float64 {
         return 0
     }
 
-    power := 2 * moonBonus
+    power := 2 * city.PowerMoonBonus()
 
     if city.ReignProvider.HasDivinePower() || city.ReignProvider.HasInfernalPower() {
         power *= 1.5
@@ -665,7 +665,7 @@ func (city *City) PowerTemple(moonBonus float64) float64 {
     return power
 }
 
-func (city *City) PowerParthenon(moonBonus float64) float64 {
+func (city *City) PowerParthenon() float64 {
     if !city.Buildings.Contains(buildinglib.BuildingParthenon) {
         return 0
     }
@@ -675,7 +675,7 @@ func (city *City) PowerParthenon(moonBonus float64) float64 {
     }
 
 
-    power := 3 * moonBonus
+    power := 3 * city.PowerMoonBonus()
 
     if city.ReignProvider.HasDivinePower() || city.ReignProvider.HasInfernalPower() {
         power *= 1.5
@@ -684,7 +684,7 @@ func (city *City) PowerParthenon(moonBonus float64) float64 {
     return power
 }
 
-func (city *City) PowerCathedral(moonBonus float64) float64 {
+func (city *City) PowerCathedral() float64 {
     if !city.Buildings.Contains(buildinglib.BuildingCathedral) {
         return 0
     }
@@ -693,7 +693,7 @@ func (city *City) PowerCathedral(moonBonus float64) float64 {
         return 0
     }
 
-    power := 4 * moonBonus
+    power := 4 * city.PowerMoonBonus()
 
     if city.ReignProvider.HasDivinePower() || city.ReignProvider.HasInfernalPower() {
         power *= 1.5
@@ -702,14 +702,14 @@ func (city *City) PowerCathedral(moonBonus float64) float64 {
     return power
 }
 
-func (city *City) PowerDarkRituals(moonBonus float64) float64 {
+func (city *City) PowerDarkRituals() float64 {
     power := 0.0
 
     if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
-        power := city.PowerShrine(moonBonus)
-        power += city.PowerTemple(moonBonus)
-        power += city.PowerParthenon(moonBonus)
-        power += city.PowerCathedral(moonBonus)
+        power := city.PowerShrine()
+        power += city.PowerTemple()
+        power += city.PowerParthenon()
+        power += city.PowerCathedral()
     }
 
     return power
@@ -748,13 +748,11 @@ func (city *City) ComputePower(spellBooks []data.WizardBook) int {
     power += city.PowerCitizens()
     power += city.PowerMinerals()
 
-    moonBonus := city.PowerMoonBonus()
-
-    religiousPower := city.PowerShrine(moonBonus)
-    religiousPower += city.PowerTemple(moonBonus)
-    religiousPower += city.PowerParthenon(moonBonus)
-    religiousPower += city.PowerCathedral(moonBonus)
-    religiousPower += city.PowerDarkRituals(moonBonus)
+    religiousPower := city.PowerShrine()
+    religiousPower += city.PowerTemple()
+    religiousPower += city.PowerParthenon()
+    religiousPower += city.PowerCathedral()
+    religiousPower += city.PowerDarkRituals()
 
     return power + int(religiousPower)
 }
