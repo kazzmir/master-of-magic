@@ -140,6 +140,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
         case "Evil Presence":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+
+                chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
+                if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
+
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentEvilPresence)
             }
 

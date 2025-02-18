@@ -1151,6 +1151,33 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.DragonTurtle, x + 2, y, data.PlaneArcanus, wizard.Banner, nil))
     player.LiftFog(x, y, 2, data.PlaneArcanus)
 
+    enemyWizard2 := setup.WizardCustom{
+        Name: "enemy2",
+        Banner: data.BannerPurple,
+        Race: data.RaceBeastmen,
+    }
+
+    enemy2 := game.AddPlayer(enemyWizard2, false)
+
+    x2, y2, _ := game.FindValidCityLocation(game.Plane)
+
+    city3 := citylib.MakeCity("Test City", x2, y2, enemy2.Wizard.Race, enemy2.Wizard.Banner, fraction.Make(1, 1), game.BuildingInfo, game.CurrentMap(), game, enemy)
+    city3.Population = 14000
+    city3.Plane = data.PlaneArcanus
+    city3.ProducingBuilding = buildinglib.BuildingHousing
+    city3.ProducingUnit = units.UnitNone
+    city3.AddBuilding(buildinglib.BuildingShrine)
+    city3.AddBuilding(buildinglib.BuildingGranary)
+    city3.AddBuilding(buildinglib.BuildingBank)
+    city3.Farmers = 10
+    city3.Workers = 4
+    city3.Wall = false
+    city3.ResetCitizens(nil)
+    city3.AddEnchantment(data.CityEnchantmentConsecration, enemy2.GetBanner())
+    enemy2.AddCity(city3)
+
+    player.LiftFog(x2, y2, 4, city3.Plane)
+
     return game
 }
 

@@ -36,6 +36,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/music"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
@@ -2711,6 +2712,20 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     }
 }
 
+func (game *Game) ShowFizzleSpell(spell spellbook.Spell, caster *playerlib.Player) {
+    if caster.IsHuman() {
+        beep, err := audio.LoadSound(game.Cache, 0)
+        if err == nil {
+            beep.Play()
+        }
+
+        game.Events <- &GameEventNotice{
+            // FIXME: align this message with how dos mom does it
+            Message: fmt.Sprintf("The spell %v has fizzled.", spell.Name),
+        }
+    }
+}
+
 /* show the given message in an error popup on the screen
  */
 func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
@@ -2719,11 +2734,15 @@ func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
         quit = true
     }))
 
+    yield()
+
     for !quit {
         game.Counter += 1
         game.HudUI.StandardUpdate()
         yield()
     }
+
+    yield()
 }
 
 /* player has clicked the 'next turn' button, so attempt to start the next turn
