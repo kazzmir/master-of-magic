@@ -445,6 +445,14 @@ func (city *City) AddEnchantment(enchantment data.CityEnchantment, owner data.Ba
     })
 }
 
+func (city *City) RemoveAllEnchantmentsByOwner(owner data.BannerType) {
+    for _, enchantment := range city.Enchantments.Values() {
+        if enchantment.Owner == owner {
+            city.Enchantments.Remove(enchantment)
+        }
+    }
+}
+
 func (city *City) RemoveEnchantment(enchantment data.CityEnchantment, owner data.BannerType) {
     city.Enchantments.Remove(Enchantment{
         Enchantment: enchantment,
