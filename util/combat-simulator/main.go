@@ -383,12 +383,12 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
     cpuPlayer := playerlib.MakePlayer(setup.WizardCustom{
         Name: "CPU",
         Banner: data.BannerRed,
-    }, false, 0, 0)
+    }, false, 0, 0, nil)
 
     humanPlayer := playerlib.MakePlayer(setup.WizardCustom{
         Name: "Human",
         Banner: data.BannerGreen,
-    }, true, 0, 0)
+    }, true, 0, 0, nil)
 
     defendingArmy := combat.Army{
         Player: cpuPlayer,

@@ -28,7 +28,7 @@ func NewEngine() (*Engine, error) {
         Base: data.WizardHorus,
         Name: "Horus",
         Banner: data.BannerRed,
-    }, true, 0, 0)
+    }, true, 0, 0, nil)
 
     player.CastingSkillPower = 280
     player.Gold = 234
@@ -41,7 +41,7 @@ func NewEngine() (*Engine, error) {
         Base: data.WizardMerlin,
         Name: "Merlin",
         Banner: data.BannerPurple,
-    }, false, 0, 0)
+    }, false, 0, 0, nil)
 
     enemy1.GlobalEnchantments.Insert(data.EnchantmentCrusade)
 
