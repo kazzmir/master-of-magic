@@ -79,3 +79,53 @@ func MakeVaultFonts(cache *lbx.LbxCache) *VaultFonts {
         SmallFont: transmuteFont,
     }
 }
+
+type ArmyViewFonts struct {
+    NormalFont *font.Font
+    SmallerFont *font.Font
+    BigFont *font.Font
+}
+
+func MakeArmyViewFonts(cache *lbx.LbxCache) *ArmyViewFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    normalColor := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -30)
+    normalPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        normalColor, normalColor, normalColor,
+        normalColor, normalColor, normalColor,
+    }
+    normalFont := font.MakeOptimizedFontWithPalette(fonts[1], normalPalette)
+
+    smallerFont := font.MakeOptimizedFontWithPalette(fonts[0], normalPalette)
+
+    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+
+    yellow := color.RGBA{R: 0xf9, G: 0xdb, B: 0x4c, A: 0xff}
+    bigPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.RotateHue(yellow, -0.50),
+        util.RotateHue(yellow, -0.30),
+        util.RotateHue(yellow, -0.10),
+        yellow,
+    }
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], bigPalette)
+
+    return &ArmyViewFonts{
+        NormalFont: normalFont,
+        SmallerFont: smallerFont,
+        BigFont: bigFont,
+    }
+}
