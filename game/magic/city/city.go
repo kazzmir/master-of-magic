@@ -86,7 +86,9 @@ type CityServicesProvider interface {
 type ReignProvider interface {
     HasDivinePower() bool
     HasInfernalPower() bool
-    // FIXME: Add NumberOfSpells / HasLifeBooks / HasDeathBooks or GetBooks
+    HasLifeBooks() bool
+    HasDeathBooks() bool
+    TotalBooks() int
     // FIXME: RulingRace
     // FIXME: TaxRate
     // FIXME: Banner
@@ -597,12 +599,12 @@ func (city *City) PowerMinerals() int {
     return extra
 }
 
-func (city *City) PowerFortress(spellBooks int) int {
+func (city *City) PowerFortress() int {
     if !city.Buildings.Contains(buildinglib.BuildingFortress) {
         return 0
     }
 
-    power := spellBooks
+    power := city.ReignProvider.TotalBooks()
     if city.Plane == data.PlaneMyrror {
         power += 5
     }
@@ -628,7 +630,11 @@ func (city *City) PowerWizardsGuild() int {
 }
 
 func (city *City) PowerShrine(moonBonus float64) float64 {
-    if !city.Buildings.Contains(buildinglib.BuildingShrine) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+    if !city.Buildings.Contains(buildinglib.BuildingShrine) {
+        return 0
+    }
+
+    if city.HasEnchantment(data.CityEnchantmentEvilPresence) && !city.ReignProvider.HasDeathBooks() {
         return 0
     }
 
@@ -642,7 +648,11 @@ func (city *City) PowerShrine(moonBonus float64) float64 {
 }
 
 func (city *City) PowerTemple(moonBonus float64) float64 {
-    if !city.Buildings.Contains(buildinglib.BuildingTemple) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+    if !city.Buildings.Contains(buildinglib.BuildingTemple) {
+        return 0
+    }
+
+    if city.HasEnchantment(data.CityEnchantmentEvilPresence) && !city.ReignProvider.HasDeathBooks() {
         return 0
     }
 
@@ -656,9 +666,14 @@ func (city *City) PowerTemple(moonBonus float64) float64 {
 }
 
 func (city *City) PowerParthenon(moonBonus float64) float64 {
-    if !city.Buildings.Contains(buildinglib.BuildingParthenon) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+    if !city.Buildings.Contains(buildinglib.BuildingParthenon) {
         return 0
     }
+
+    if city.HasEnchantment(data.CityEnchantmentEvilPresence) && !city.ReignProvider.HasDeathBooks() {
+        return 0
+    }
+
 
     power := 3 * moonBonus
 
@@ -670,7 +685,11 @@ func (city *City) PowerParthenon(moonBonus float64) float64 {
 }
 
 func (city *City) PowerCathedral(moonBonus float64) float64 {
-    if !city.Buildings.Contains(buildinglib.BuildingCathedral) || city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+    if !city.Buildings.Contains(buildinglib.BuildingCathedral) {
+        return 0
+    }
+
+    if city.HasEnchantment(data.CityEnchantmentEvilPresence) && !city.ReignProvider.HasDeathBooks() {
         return 0
     }
 
@@ -696,27 +715,24 @@ func (city *City) PowerDarkRituals(moonBonus float64) float64 {
     return power
 }
 
-func (city *City) PowerMoonBonus(spellBooks []data.WizardBook) float64 {
+func (city *City) PowerMoonBonus() float64 {
     moonBonus := 1.0
 
-    // FIXME: this should have breaks?????
     if city.CityServices.GoodMoonActive() {
-        for _, book := range spellBooks {
-            if book.Magic == data.LifeMagic {
-                moonBonus *= 2
-            } else if book.Magic == data.DeathMagic {
-                moonBonus /= 2
-            }
+        if city.ReignProvider.HasLifeBooks() {
+            moonBonus *= 2
+        }
+        if city.ReignProvider.HasDeathBooks() {
+            moonBonus /= 2
         }
     }
 
     if city.CityServices.BadMoonActive() {
-        for _, book := range spellBooks {
-            if book.Magic == data.LifeMagic {
-                moonBonus /= 2
-            } else if book.Magic == data.DeathMagic {
-                moonBonus *= 2
-            }
+        if city.ReignProvider.HasLifeBooks() {
+            moonBonus /= 2
+        }
+        if city.ReignProvider.HasDeathBooks() {
+            moonBonus *= 2
         }
     }
 
@@ -726,19 +742,13 @@ func (city *City) PowerMoonBonus(spellBooks []data.WizardBook) float64 {
 /* power production from buildings and citizens
  */
 func (city *City) ComputePower(spellBooks []data.WizardBook) int {
-    // FIXME: add Divine Power
-    totalBooks := 0
-    for _, book := range spellBooks {
-        totalBooks += book.Count
-    }
-
-    power := city.PowerFortress(totalBooks)
+    power := city.PowerFortress()
     power += city.PowerAlchemistsGuild()
     power += city.PowerWizardsGuild()
     power += city.PowerCitizens()
     power += city.PowerMinerals()
 
-    moonBonus := city.PowerMoonBonus(spellBooks)
+    moonBonus := city.PowerMoonBonus()
 
     religiousPower := city.PowerShrine(moonBonus)
     religiousPower += city.PowerTemple(moonBonus)
@@ -1012,20 +1022,22 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
     }
 
     pacification := float64(0)
-    if city.Buildings.Contains(buildinglib.BuildingShrine) {
-        pacification += 1 * pacificationRetort
-    }
+    if !city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+        if city.Buildings.Contains(buildinglib.BuildingShrine) {
+            pacification += 1 * pacificationRetort
+        }
 
-    if city.Buildings.Contains(buildinglib.BuildingTemple) {
-        pacification += float64(templePacification(city.Race)) * pacificationRetort
-    }
+        if city.Buildings.Contains(buildinglib.BuildingTemple) {
+            pacification += float64(templePacification(city.Race)) * pacificationRetort
+        }
 
-    if city.Buildings.Contains(buildinglib.BuildingParthenon) {
-        pacification += float64(parthenonPacification(city.Race)) * pacificationRetort
-    }
+        if city.Buildings.Contains(buildinglib.BuildingParthenon) {
+            pacification += float64(parthenonPacification(city.Race)) * pacificationRetort
+        }
 
-    if city.Buildings.Contains(buildinglib.BuildingCathedral) {
-        pacification += float64(cathedralPacification(city.Race)) * pacificationRetort
+        if city.Buildings.Contains(buildinglib.BuildingCathedral) {
+            pacification += float64(cathedralPacification(city.Race)) * pacificationRetort
+        }
     }
 
     if city.Buildings.Contains(buildinglib.BuildingAnimistsGuild) {

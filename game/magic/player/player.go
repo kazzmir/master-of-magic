@@ -860,3 +860,27 @@ func (player *Player) HasDivinePower() bool {
 func (player *Player) HasInfernalPower() bool {
     return player.Wizard.AbilityEnabled(setup.AbilityInfernalPower)
 }
+
+func (player *Player) HasLifeBooks() bool {
+    for _, book := range player.Wizard.Books {
+        if book.Magic == data.LifeMagic {
+            return true
+        }
+    }
+
+    return false
+}
+
+func (player *Player) HasDeathBooks() bool {
+    for _, book := range player.Wizard.Books {
+        if book.Magic == data.DeathMagic {
+            return true
+        }
+    }
+
+    return false
+}
+
+func (player *Player) TotalBooks() int {
+    return player.Wizard.TotalBooks()
+}

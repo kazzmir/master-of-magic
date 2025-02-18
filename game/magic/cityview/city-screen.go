@@ -2121,10 +2121,10 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
         }
     }
 
-    moonBonus := cityScreen.City.PowerMoonBonus(cityScreen.Player.Wizard.Books)
+    moonBonus := cityScreen.City.PowerMoonBonus()
 
     add(cityScreen.City.PowerCitizens(), "Townsfolk", buildinglib.BuildingNone)
-    add(cityScreen.City.PowerFortress(cityScreen.Player.Wizard.TotalBooks()), "Fortress", buildinglib.BuildingFortress)
+    add(cityScreen.City.PowerFortress(), "Fortress", buildinglib.BuildingFortress)
     add(int(cityScreen.City.PowerShrine(moonBonus)), "Shrine", buildinglib.BuildingShrine)
     add(int(cityScreen.City.PowerTemple(moonBonus)), "Temple", buildinglib.BuildingTemple)
     add(int(cityScreen.City.PowerParthenon(moonBonus)), "Parthenon", buildinglib.BuildingParthenon)

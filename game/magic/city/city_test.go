@@ -71,6 +71,18 @@ func (reign *NoReign) HasInfernalPower() bool {
     return false
 }
 
+func (reign *NoReign) HasLifeBooks() bool {
+    return false
+}
+
+func (reign *NoReign) HasDeathBooks() bool {
+    return false
+}
+
+func (reign *NoReign) TotalBooks() int {
+    return 0
+}
+
 func TestBasicCity(test *testing.T){
     city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeSimpleMap()}, &NoCities{}, &NoReign{})
     city.Population = 6000
