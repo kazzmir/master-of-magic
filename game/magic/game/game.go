@@ -3479,6 +3479,7 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         city.Banner = attacker.Wizard.Banner
         city.RulingRace = attacker.Wizard.Race
         city.UpdateTaxRate(attacker.TaxRate, attackerStack.Units())
+        city.ReignProvider = attacker
 
         city.Buildings.Remove(buildinglib.BuildingFortress)
         city.Buildings.Remove(buildinglib.BuildingSummoningCircle)
@@ -7189,6 +7190,7 @@ func (game *Game) DoRandomEvents() {
                                     target.AddCity(city)
                                     city.Banner = target.Wizard.Banner
                                     city.RulingRace = target.Wizard.Race
+                                    city.ReignProvider = target
 
                                     return MakeDiplomaticMarriageEvent(game.TurnNumber, city), nil
                                 }
@@ -7313,6 +7315,7 @@ func (game *Game) DoRandomEvents() {
                                 neutralPlayer.AddCity(city)
                                 city.Banner = neutralPlayer.Wizard.Banner
                                 city.RulingRace = neutralPlayer.Wizard.Race
+                                city.ReignProvider = neutralPlayer
 
                                 // remove all enchantments on the city
                                 city.Enchantments.Clear()
