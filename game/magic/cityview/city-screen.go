@@ -1719,7 +1719,7 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
     // evil presence
     if city.HasEnchantment(data.CityEnchantmentEvilPresence) {
         for _, building := range buildings {
-            if building.Building.IsReligous() {
+            if building.Building.IsReligous() && !building.IsRubble {
                 index := GetBuildingIndex(building.Building)
                 images, err := imageCache.GetImagesTransform("cityscap.lbx", index, "crop", util.AutoCrop)
                 if err != nil {
