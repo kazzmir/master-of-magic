@@ -104,6 +104,22 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
         case "Consecration":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
+                if chosenCity == nil {
+                    return
+                }
+                // Remove all the city curses from the targeted city on cast (https://masterofmagic.fandom.com/wiki/Consecration)
+                // Wiki specifies only the following ones as city curses
+                for _, enchantmentInstance := range chosenCity.Enchantments.Values() {
+                    if enchantmentInstance.Enchantment == data.CityEnchantmentChaosRift ||
+                        enchantmentInstance.Enchantment == data.CityEnchantmentCursedLands ||
+                        enchantmentInstance.Enchantment == data.CityEnchantmentEvilPresence ||
+                        enchantmentInstance.Enchantment == data.CityEnchantmentFamine ||
+                        enchantmentInstance.Enchantment == data.CityEnchantmentPestilence {
+                            chosenCity.RemoveEnchantment(enchantmentInstance.Enchantment, enchantmentInstance.Owner)
+                        }
+                }
+
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentConsecration)
             }
 

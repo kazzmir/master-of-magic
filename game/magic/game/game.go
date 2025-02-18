@@ -6854,6 +6854,34 @@ func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (in
     return people, len(killedUnits), len(destroyedBuildings)
 }
 
+// At the beginning of each turn, all tiles in a 5x5 square (minus corners) around any city with Consecration should lose corruption
+func (game *Game) doCleanCorruptionForConsecratedCities() {
+    choices := game.AllCities()
+    if len(choices) == 0 {
+        return
+    }
+    for _, city := range choices {
+        if !city.HasEnchantment(data.CityEnchantmentConsecration) {
+            continue
+        }
+        useMap := game.GetMap(city.Plane)
+        for dx := -2; dx <= 2; dx++ {
+            for dy := -2; dy <= 2; dy++ {
+                if int(math.Abs(float64(dx)) + math.Abs(float64(dy))) == 4 {
+                    continue
+                }
+                cx := useMap.WrapX(city.X + dx)
+                cy := city.Y + dy
+                if cy < 0 || cy >= useMap.Height() {
+                    continue
+                }
+
+                useMap.RemoveCorruption(cx, cy)
+            }
+        }
+    }
+}
+
 // returns number of citizens killed, units killed, and buildings destroyed
 func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (int, int, int) {
     // https://masterofmagic.fandom.com/wiki/Call_the_Void
@@ -7368,6 +7396,8 @@ func (game *Game) EndOfTurn() {
     game.TurnNumber += 1
 
     game.DoRandomEvents()
+
+    game.doCleanCorruptionForConsecratedCities() // FIXME: I'm not fully sure if it should occur after random events and not before.
 }
 
 func (game *Game) DoNextTurn(){
