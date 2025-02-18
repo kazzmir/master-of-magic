@@ -464,7 +464,13 @@ func (game *Game) InitializeResearchableSpells(spells *spellbook.Spells, player 
 }
 
 func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Player{
-    newPlayer := playerlib.MakePlayer(wizard, human, game.CurrentMap().Width(), game.CurrentMap().Height())
+    heroNames := herolib.ReadNamesPerWizard(game.Cache)
+    useNames := heroNames[len(game.Players)]
+    if useNames == nil {
+        useNames = make(map[herolib.HeroType]string)
+    }
+
+    newPlayer := playerlib.MakePlayer(wizard, human, game.CurrentMap().Width(), game.CurrentMap().Height(), useNames)
 
     if !human {
         newPlayer.AIBehavior = ai.MakeEnemyAI()

@@ -19,6 +19,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/game"
+    "github.com/kazzmir/master-of-magic/game/magic/hero"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
 )
 
@@ -59,6 +60,22 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool, 
                 // fmt.Printf("Saved image %v to %v\n", i, name)
             }()
         }
+    } else if lbxName == "names.lbx" && !rawDump {
+        files := make(map[string]*lbx.LbxFile)
+        files["names.lbx"] = &file
+        cache := lbx.MakeCacheFromLbxFiles(files)
+
+        names := hero.ReadNamesPerWizard(cache)
+        for i, name := range names {
+            log.Printf("Choice %v: %v\n", i, name)
+        }
+
+        /*
+        _, err := hero.ReadNames(cache)
+        if err != nil {
+            return err
+        }
+        */
     } else if lbxName == "fonts.lbx" && !rawDump {
         fonts, err := font.ReadFonts(&file, 0)
         if err != nil {
