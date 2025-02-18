@@ -89,9 +89,9 @@ type ReignProvider interface {
     HasLifeBooks() bool
     HasDeathBooks() bool
     TotalBooks() int
-    // FIXME: RulingRace
-    // FIXME: TaxRate
-    // FIXME: Banner
+    // FIXME: Also add RulingRace?
+    // FIXME: Also add TaxRate?
+    // FIXME: Also add Banner?
 }
 
 const MAX_CITY_CITIZENS = 25
