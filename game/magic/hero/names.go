@@ -1,7 +1,7 @@
 package hero
 
 // read the names of the heroes per wizard from names.lbx
-// each wizarc has their own set of heroes, and each wizard gives a unique name to their hero
+// there are 5 sets of names, one for each player. each player gives a unique name to their hero
 
 import (
     "log"
