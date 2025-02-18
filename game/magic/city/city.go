@@ -741,7 +741,7 @@ func (city *City) PowerMoonBonus() float64 {
 
 /* power production from buildings and citizens
  */
-func (city *City) ComputePower(spellBooks []data.WizardBook) int {
+func (city *City) ComputePower() int {
     power := city.PowerFortress()
     power += city.PowerAlchemistsGuild()
     power += city.PowerWizardsGuild()
