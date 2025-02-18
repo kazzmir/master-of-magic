@@ -207,6 +207,8 @@ func TestForeignTrade(test *testing.T){
     }
 }
 
+// FIXME: Add test for evil presence
+
 func TestEnchantments(test *testing.T){
     banner := data.BannerBlue
 
