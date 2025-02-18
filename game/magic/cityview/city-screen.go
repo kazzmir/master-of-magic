@@ -1716,7 +1716,36 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
         }
     }
 
-    // FIXME: Add evil presence overlay
+    // evil presence
+    if city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+        for _, building := range buildings {
+            if building.Building.IsReligous() {
+                index := GetBuildingIndex(building.Building)
+                images, err := imageCache.GetImagesTransform("cityscap.lbx", index, "crop", util.AutoCrop)
+                if err != nil {
+                    continue
+                }
+                dx := images[0].Bounds().Dx()
+
+                index = data.CityEnchantmentEvilPresence.LbxIndex()
+                images, err = imageCache.GetImagesTransform("cityscap.lbx", index, "crop", util.AutoCrop)
+                if err != nil {
+                    continue
+                }
+
+                use := images[0]
+                x, y := building.Point.X * data.ScreenScale, building.Point.Y * data.ScreenScale
+
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(0.6)
+                options.GeoM = baseGeoM
+                options.GeoM.Translate(float64(x) + roadX, float64(y) + roadY)
+                options.GeoM.Translate(float64(dx - use.Bounds().Dx())/2, float64(-use.Bounds().Dy()))
+
+                screen.DrawImage(use, &options)
+            }
+        }
+    }
 
     // magic walls and enchantment icons
     enchantments := city.Enchantments.Values()
