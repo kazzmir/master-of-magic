@@ -157,7 +157,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                     game.ShowFizzleSpell(spell, player)
                     return
                 }
-    
+
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentFamine)
             }
 
