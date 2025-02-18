@@ -611,7 +611,7 @@ func (enchantment CityEnchantment) SoundIndex() int {
         case CityEnchantmentCloudOfShadow, CityEnchantmentEvilPresence, CityEnchantmentFamine,
             CityEnchantmentPestilence, CityEnchantmentWallOfDarkness:
             return 32
-        case CityEnchantmentConsecration: return 0 // FIXME: it's not an actual value
+        case CityEnchantmentConsecration: return 31
         case CityEnchantmentCursedLands: return 61
         case CityEnchantmentDarkRituals: return 60
         // case CityEnchantmentEarthGate: return 0
@@ -632,7 +632,7 @@ func (enchantment CityEnchantment) IconOffset() int {
     // FIXME: Add other offsets
     switch enchantment {
         // case CityEnchantmentCloudOfShadow: return 0
-        case CityEnchantmentConsecration: return 120 // FIXME: it's not an actual value
+        case CityEnchantmentConsecration: return 177
         case CityEnchantmentInspirations: return 134
         case CityEnchantmentNaturesEye: return 114
         case CityEnchantmentProsperity: return 153
