@@ -12,6 +12,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -21,7 +22,7 @@ func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *player
 
     background, _ := imageCache.GetImage("spellscr.lbx", 73, 0)
     buildingSlots := makeBuildingSlots(city)
-    fonts, err := makeFonts(cache)
+    fonts, err := fontslib.MakeCityViewFonts(cache)
     if err != nil {
         return nil, context.Background(), err
     }

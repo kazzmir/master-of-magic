@@ -6,6 +6,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
 )
 
@@ -128,4 +129,159 @@ func MakeArmyViewFonts(cache *lbx.LbxCache) *ArmyViewFonts {
         SmallerFont: smallerFont,
         BigFont: bigFont,
     }
+}
+
+type CityViewFonts struct {
+    BigFont *font.Font
+    DescriptionFont *font.Font
+    ProducingFont *font.Font
+    SmallFont *font.Font
+    RubbleFont *font.Font
+    CastFont *font.Font
+    BannerFonts map[data.BannerType]*font.Font
+}
+
+func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil, err
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil, err
+    }
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xfa, G: 0xe1, B: 0x16, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
+        color.RGBA{R: 0xe0, G: 0x8a, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
+
+    // FIXME: this palette isn't exactly right. It should be a yellow-orange fade. Probably it exists somewhere else in the codebase
+    yellow := color.RGBA{R: 0xef, G: 0xce, B: 0x4e, A: 0xff}
+    fadePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.RotateHue(yellow, -0.6),
+        // color.RGBA{R: 0xd5, G: 0x88, B: 0x25, A: 0xff},
+        util.RotateHue(yellow, -0.3),
+        util.RotateHue(yellow, -0.1),
+        yellow,
+    }
+
+    castFont := font.MakeOptimizedFontWithPalette(fonts[4], fadePalette)
+
+    brownPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xe1, G: 0x8e, B: 0x32, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+    }
+
+    // fixme: make shadow font as well
+    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[1], brownPalette)
+
+    whitePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    producingFont := font.MakeOptimizedFontWithPalette(fonts[1], whitePalette)
+
+    smallFontPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
+        color.RGBA{R: 128, G: 128, B: 128, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    // FIXME: this font should have a black outline around all the glyphs
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], smallFontPalette)
+
+    rubbleFontPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
+        color.RGBA{R: 128, G: 0, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+    }
+
+    // FIXME: this font should have a black outline around all the glyphs
+    rubbleFont := font.MakeOptimizedFontWithPalette(fonts[1], rubbleFontPalette)
+
+    makeBannerPalette := func(banner data.BannerType) color.Palette {
+        var bannerColor color.RGBA
+
+        switch banner {
+            case data.BannerBlue: bannerColor = color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}
+            case data.BannerGreen: bannerColor = color.RGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff}
+            case data.BannerPurple: bannerColor = color.RGBA{R: 0x8f, G: 0x30, B: 0xff, A: 0xff}
+            case data.BannerRed: bannerColor = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
+            case data.BannerYellow: bannerColor = color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}
+        }
+
+        return color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0x0},
+            bannerColor, bannerColor, bannerColor,
+            bannerColor, bannerColor, bannerColor,
+            bannerColor, bannerColor, bannerColor,
+        }
+    }
+
+    bannerFonts := make(map[data.BannerType]*font.Font)
+
+    for _, banner := range []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow} {
+        bannerFonts[banner] = font.MakeOptimizedFontWithPalette(fonts[0], makeBannerPalette(banner))
+    }
+
+    return &CityViewFonts{
+        BigFont: bigFont,
+        DescriptionFont: descriptionFont,
+        ProducingFont: producingFont,
+        SmallFont: smallFont,
+        RubbleFont: rubbleFont,
+        BannerFonts: bannerFonts,
+        CastFont: castFont,
+    }, nil
 }

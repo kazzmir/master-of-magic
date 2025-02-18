@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
@@ -24,8 +25,8 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
 
-    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/hajimehoshi/ebiten/v2"
     // "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/colorm"
@@ -115,20 +116,10 @@ const (
     CityScreenStateDone
 )
 
-type Fonts struct {
-    BigFont *font.Font
-    DescriptionFont *font.Font
-    ProducingFont *font.Font
-    SmallFont *font.Font
-    RubbleFont *font.Font
-    CastFont *font.Font
-    BannerFonts map[data.BannerType]*font.Font
-}
-
 type CityScreen struct {
     LbxCache *lbx.LbxCache
     ImageCache util.ImageCache
-    Fonts *Fonts
+    Fonts *fontslib.CityViewFonts
     City *citylib.City
 
     UI *uilib.UI
@@ -142,151 +133,6 @@ type CityScreen struct {
 
     Counter uint64
     State CityScreenState
-}
-
-func makeFonts(cache *lbx.LbxCache) (*Fonts, error) {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil, err
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil, err
-    }
-
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xfa, G: 0xe1, B: 0x16, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
-        color.RGBA{R: 0xe0, G: 0x8a, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
-
-    // FIXME: this palette isn't exactly right. It should be a yellow-orange fade. Probably it exists somewhere else in the codebase
-    yellow := color.RGBA{R: 0xef, G: 0xce, B: 0x4e, A: 0xff}
-    fadePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.RotateHue(yellow, -0.6),
-        // color.RGBA{R: 0xd5, G: 0x88, B: 0x25, A: 0xff},
-        util.RotateHue(yellow, -0.3),
-        util.RotateHue(yellow, -0.1),
-        yellow,
-    }
-
-    castFont := font.MakeOptimizedFontWithPalette(fonts[4], fadePalette)
-
-    brownPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xe1, G: 0x8e, B: 0x32, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-    }
-
-    // fixme: make shadow font as well
-    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[1], brownPalette)
-
-    whitePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    producingFont := font.MakeOptimizedFontWithPalette(fonts[1], whitePalette)
-
-    smallFontPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
-        color.RGBA{R: 128, G: 128, B: 128, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    // FIXME: this font should have a black outline around all the glyphs
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], smallFontPalette)
-
-    rubbleFontPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
-        color.RGBA{R: 128, G: 0, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-    }
-
-    // FIXME: this font should have a black outline around all the glyphs
-    rubbleFont := font.MakeOptimizedFontWithPalette(fonts[1], rubbleFontPalette)
-
-    makeBannerPalette := func(banner data.BannerType) color.Palette {
-        var bannerColor color.RGBA
-
-        switch banner {
-            case data.BannerBlue: bannerColor = color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}
-            case data.BannerGreen: bannerColor = color.RGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff}
-            case data.BannerPurple: bannerColor = color.RGBA{R: 0x8f, G: 0x30, B: 0xff, A: 0xff}
-            case data.BannerRed: bannerColor = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
-            case data.BannerYellow: bannerColor = color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}
-        }
-
-        return color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
-            color.RGBA{R: 0, G: 0, B: 0, A: 0x0},
-            bannerColor, bannerColor, bannerColor,
-            bannerColor, bannerColor, bannerColor,
-            bannerColor, bannerColor, bannerColor,
-        }
-    }
-
-    bannerFonts := make(map[data.BannerType]*font.Font)
-
-    for _, banner := range []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow} {
-        bannerFonts[banner] = font.MakeOptimizedFontWithPalette(fonts[0], makeBannerPalette(banner))
-    }
-
-    return &Fonts{
-        BigFont: bigFont,
-        DescriptionFont: descriptionFont,
-        ProducingFont: producingFont,
-        SmallFont: smallFont,
-        RubbleFont: rubbleFont,
-        BannerFonts: bannerFonts,
-        CastFont: castFont,
-    }, nil
 }
 
 func sortBuildings(buildings []buildinglib.Building) []buildinglib.Building {
@@ -640,7 +486,7 @@ func makeBuildingSlotsOld(city *citylib.City) []BuildingSlot {
 
 func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player, newBuilding buildinglib.Building) *CityScreen {
 
-    fonts, err := makeFonts(cache)
+    fonts, err := fontslib.MakeCityViewFonts(cache)
     if err != nil {
         log.Printf("Could not make fonts: %v", err)
         return nil
@@ -709,7 +555,7 @@ func (cityScreen *CityScreen) SellBuilding(building buildinglib.Building) {
     }
 }
 
-func makeCityScapeElement(cache *lbx.LbxCache, group *uilib.UIElementGroup, city *citylib.City, help *helplib.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, newBuilding buildinglib.Building, x1 int, y1 int, fonts *Fonts, player *playerlib.Player, getAlpha *util.AlphaFadeFunc) *uilib.UIElement {
+func makeCityScapeElement(cache *lbx.LbxCache, group *uilib.UIElementGroup, city *citylib.City, help *helplib.Help, imageCache *util.ImageCache, doSell func(buildinglib.Building), buildings []BuildingSlot, newBuilding buildinglib.Building, x1 int, y1 int, fonts *fontslib.CityViewFonts, player *playerlib.Player, getAlpha *util.AlphaFadeFunc) *uilib.UIElement {
     // this stores the in-memory image because we don't need the gpu ebiten.Image to do pixel perfect detection
     rawImageCache := make(map[int]image.Image)
 
@@ -1534,7 +1380,7 @@ func getBuildingName(info buildinglib.BuildingInfos, building buildinglib.Buildi
     return info.Name(building)
 }
 
-func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []BuildingSlot, buildingLook buildinglib.Building, buildingLookTime uint64, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *Fonts, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
+func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []BuildingSlot, buildingLook buildinglib.Building, buildingLookTime uint64, newBuilding buildinglib.Building, animationCounter uint64, imageCache *util.ImageCache, fonts *fontslib.CityViewFonts, player *playerlib.Player, baseGeoM ebiten.GeoM, alphaScale float32) {
     onMyrror := city.Plane == data.PlaneMyrror
 
     // background
@@ -2467,7 +2313,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player, otherPlayer *playerlib.Player) (func(coroutine.YieldFunc, func()), func(*ebiten.Image)) {
     imageCache := util.MakeImageCache(cache)
 
-    fonts, err := makeFonts(cache)
+    fonts, err := fontslib.MakeCityViewFonts(cache)
     if err != nil {
         log.Printf("Could not make fonts: %v", err)
         return func(yield coroutine.YieldFunc, update func()){}, func(*ebiten.Image){}
