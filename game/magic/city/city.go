@@ -464,14 +464,21 @@ func (city *City) RemoveEnchantments(enchantmentsToRemove ...data.CityEnchantmen
     }
 }
 
-func (city *City) HasEnchantment(check data.CityEnchantment) bool {
+// Returns true if the city has at least one of the enchantments from arguments
+func (city *City) HasAnyOfEnchantments(enchantmentsToCheck ...data.CityEnchantment) bool {
     for _, enchantment := range city.Enchantments.Values() {
-        if enchantment.Enchantment == check {
-            return true
+        for _, check := range enchantmentsToCheck {
+            if enchantment.Enchantment == check {
+                return true
+            }
         }
     }
 
     return false
+}
+
+func (city *City) HasEnchantment(check data.CityEnchantment) bool {
+    return city.HasAnyOfEnchantments(check)
 }
 
 func (city *City) GetEnchantmentsCastBy(banner data.BannerType) []Enchantment {

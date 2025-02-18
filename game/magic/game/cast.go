@@ -139,7 +139,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
-                if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentDeathWard) {
+                if chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
                     game.ShowFizzleSpell(spell, player)
                     return
                 }
@@ -153,7 +153,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
-                if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentDeathWard) {
+                if chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
                     game.ShowFizzleSpell(spell, player)
                     return
                 }
@@ -167,7 +167,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
-                if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentDeathWard) {
+                if chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
                     game.ShowFizzleSpell(spell, player)
                     return
                 }
@@ -186,7 +186,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
 
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
-                if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) {
+                if chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
                     game.ShowFizzleSpell(spell, player)
                     return
                 }
@@ -205,7 +205,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 chosenCity, owner := game.FindCity(tileX, tileY, game.Plane)
 
-                if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentChaosWard) {
+                if chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
                     game.ShowFizzleSpell(spell, player)
                     return
                 }
@@ -225,7 +225,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
                 // FIXME: it's not obvious if Chaos Ward prevents Raise Volcano from being cast on city center. Left it here because it sounds logical
-                if chosenCity != nil && (chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentChaosWard)) {
+                if chosenCity != nil && chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
                     game.ShowFizzleSpell(spell, player)
                     return
                 }
@@ -327,7 +327,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
                 // FIXME: it's not obvious if Chaos Ward prevents Corruption from being cast on city center. Left it here because it sounds logical
-                if chosenCity != nil && (chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentChaosWard)) {
+                if chosenCity != nil && chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
                     game.ShowFizzleSpell(spell, player)
                     return
                 }
