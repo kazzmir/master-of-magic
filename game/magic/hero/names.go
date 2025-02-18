@@ -8,8 +8,89 @@ import (
     "fmt"
     "io"
 
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 )
+
+func ReadNamesPerWizard(cache *lbx.LbxCache) map[data.WizardBase]map[HeroType]string {
+    names, err := ReadNames(cache)
+
+    if err != nil {
+        log.Printf("Unable to read hero names: %v", err)
+        return make(map[data.WizardBase]map[HeroType]string)
+    }
+
+    wizardOrder := []data.WizardBase{
+        data.WizardMerlin,
+        data.WizardRaven,
+        data.WizardSharee,
+        data.WizardLoPan,
+        data.WizardJafar,
+        data.WizardOberic,
+        data.WizardRjak,
+        data.WizardSssra,
+        data.WizardTauron,
+        data.WizardFreya,
+        data.WizardHorus,
+        data.WizardAriel,
+        data.WizardTlaloc,
+        data.WizardKali,
+    }
+
+    heroOrder := []HeroType{
+        HeroBrax,
+        HeroGunther,
+        HeroZaldron,
+        HeroBShan,
+        HeroRakir,
+        HeroValana,
+        HeroBahgtru,
+        HeroSerena,
+        HeroShuri,
+        HeroTheria,
+        HeroGreyfairer,
+        HeroTaki,
+        HeroReywind,
+        HeroMalleus,
+        HeroTumu,
+        HeroJaer,
+        HeroMarcus,
+        HeroFang,
+        HeroMorgana,
+        HeroAureus,
+        HeroShinBo,
+        HeroSpyder,
+        HeroShalla,
+        HeroYramrag,
+        HeroMysticX,
+        HeroAerie,
+        HeroDethStryke,
+        HeroElana,
+        HeroRoland,
+        HeroMortu,
+        HeroAlorra,
+        HeroSirHarold,
+        HeroRavashack,
+        HeroWarrax,
+        HeroTorin,
+    }
+
+    wizards := make(map[data.WizardBase]map[HeroType]string)
+
+    nameIndex := 0
+    for _, wizard := range wizardOrder {
+        wizards[wizard] = make(map[HeroType]string)
+        for _, hero := range heroOrder {
+            if nameIndex >= len(names) {
+                break
+            }
+            wizards[wizard][hero] = names[nameIndex]
+            nameIndex += 1
+        }
+    }
+
+    return wizards
+}
 
 func ReadNames(cache *lbx.LbxCache) ([]string, error) {
     lbxFile, err := cache.GetLbxFile("names.lbx")
