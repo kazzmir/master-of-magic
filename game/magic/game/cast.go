@@ -116,18 +116,36 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
         case "Cursed Lands":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                city, _ := game.FindCity(tileX, tileY, game.Plane)
+                if city != nil && city.HasEnchantment(data.CityEnchantmentConsecration) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
+
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentCursedLands)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyCity, SelectedFunc: selected}
         case "Famine":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                city, _ := game.FindCity(tileX, tileY, game.Plane)
+                if city != nil && city.HasEnchantment(data.CityEnchantmentConsecration) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
+
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentFamine)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyCity, SelectedFunc: selected}
         case "Pestilence":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                city, _ := game.FindCity(tileX, tileY, game.Plane)
+                if city != nil && city.HasEnchantment(data.CityEnchantmentConsecration) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
+
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentPestilence)
             }
 
@@ -161,8 +179,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 chosenCity, owner := game.FindCity(tileX, tileY, game.Plane)
 
-                // FIXME: show a fizzle notification?
                 if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentChaosWard) {
+                    game.ShowFizzleSpell(spell, player)
                     return
                 }
 
@@ -178,6 +196,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeTransmute, SelectedFunc: game.doCastTransmute}
         case "Raise Volcano":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                city, _ := game.FindCity(tileX, tileY, game.Plane)
+
+                if city != nil && city.HasEnchantment(data.CityEnchantmentConsecration) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
+
                 game.doCastRaiseVolcano(yield, tileX, tileY, player)
             }
 
@@ -272,7 +297,18 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         case "Enchant Road":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: game.doCastEnchantRoad}
         case "Corruption":
-            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeLand, SelectedFunc: game.doCastCorruption}
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                city, _ := game.FindCity(tileX, tileY, game.Plane)
+
+                if city != nil && city.HasEnchantment(data.CityEnchantmentConsecration) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
+
+                game.doCastCorruption(yield, tileX, tileY)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeLand, SelectedFunc: selected}
         case "Warp Node":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyMeldedNode, SelectedFunc: game.doCastWarpNode}
         default:
