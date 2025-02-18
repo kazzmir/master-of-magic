@@ -1561,6 +1561,37 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
         }
     }
 
+    // evil presence
+    if city.HasEnchantment(data.CityEnchantmentEvilPresence) {
+        for _, building := range buildings {
+            if building.Building.IsReligous() && !building.IsRubble {
+                index := GetBuildingIndex(building.Building)
+                images, err := imageCache.GetImagesTransform("cityscap.lbx", index, "crop", util.AutoCrop)
+                if err != nil {
+                    continue
+                }
+                dx := images[0].Bounds().Dx()
+
+                index = data.CityEnchantmentEvilPresence.LbxIndex()
+                images, err = imageCache.GetImagesTransform("cityscap.lbx", index, "crop", util.AutoCrop)
+                if err != nil {
+                    continue
+                }
+
+                use := images[0]
+                x, y := building.Point.X * data.ScreenScale, building.Point.Y * data.ScreenScale
+
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(0.6)
+                options.GeoM = baseGeoM
+                options.GeoM.Translate(float64(x) + roadX, float64(y) + roadY)
+                options.GeoM.Translate(float64(dx - use.Bounds().Dx())/2, float64(-use.Bounds().Dy()))
+
+                screen.DrawImage(use, &options)
+            }
+        }
+    }
+
     // magic walls and enchantment icons
     enchantments := city.Enchantments.Values()
     for _, enchantment := range slices.SortedFunc(slices.Values(enchantments), func (a citylib.Enchantment, b citylib.Enchantment) int {
@@ -1918,7 +1949,7 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
     var usage []ResourceUsage
 
     add := func(count int, name string, building buildinglib.Building){
-        if count != 0 && (building == buildinglib.BuildingNone || cityScreen.City.Buildings.Contains(building)) {
+        if count != 0 {
             usage = append(usage, ResourceUsage{
                 Count: count,
                 Name: name,
@@ -1927,23 +1958,16 @@ func (cityScreen *CityScreen) PowerProducers() []ResourceUsage {
         }
     }
 
-    addEnchantment := func (count int, name string){
-        add(count, name, buildinglib.BuildingNone)
-    }
-
-    add(int(cityScreen.City.PowerCitizens()), "Townsfolk", buildinglib.BuildingNone)
-    add(cityScreen.City.PowerFortress(cityScreen.Player.Wizard.TotalBooks()), "Fortress", buildinglib.BuildingFortress)
-    add(1, "Shrine", buildinglib.BuildingShrine)
-    add(2, "Temple", buildinglib.BuildingTemple)
-    add(3, "Parthenon", buildinglib.BuildingParthenon)
-    add(4, "Cathedral", buildinglib.BuildingCathedral)
-    add(3, "Alchemist's Guild", buildinglib.BuildingAlchemistsGuild)
-    add(-3, "Wizard's Guild", buildinglib.BuildingWizardsGuild)
+    add(cityScreen.City.PowerCitizens(), "Townsfolk", buildinglib.BuildingNone)
+    add(cityScreen.City.PowerFortress(), "Fortress", buildinglib.BuildingFortress)
+    add(int(cityScreen.City.PowerShrine()), "Shrine", buildinglib.BuildingShrine)
+    add(int(cityScreen.City.PowerTemple()), "Temple", buildinglib.BuildingTemple)
+    add(int(cityScreen.City.PowerParthenon()), "Parthenon", buildinglib.BuildingParthenon)
+    add(int(cityScreen.City.PowerCathedral()), "Cathedral", buildinglib.BuildingCathedral)
+    add(cityScreen.City.PowerAlchemistsGuild(), "Alchemist's Guild", buildinglib.BuildingAlchemistsGuild)
+    add(cityScreen.City.PowerWizardsGuild(), "Wizard's Guild", buildinglib.BuildingWizardsGuild)
     add(cityScreen.City.PowerMinerals(), "Minerals", buildinglib.BuildingNone)
-
-    if cityScreen.City.HasEnchantment(data.CityEnchantmentDarkRituals) {
-        addEnchantment(cityScreen.City.PowerDarkRituals(), "Dark Rituals")
-    }
+    add(int(cityScreen.City.PowerDarkRituals()), "Dark Rituals", buildinglib.BuildingNone)
 
     // FIXME: add tiles (adamantium mine) and miner's guild
 
@@ -2074,7 +2098,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(powerRect.Min.X), float64(powerRect.Min.Y))
-            cityScreen.drawIcons(cityScreen.City.ComputePower(cityScreen.Player.Wizard.Books), smallMagic, bigMagic, options, screen)
+            cityScreen.drawIcons(cityScreen.City.ComputePower(), smallMagic, bigMagic, options, screen)
         },
     })
 

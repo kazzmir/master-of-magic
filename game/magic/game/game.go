@@ -36,6 +36,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/music"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
@@ -981,7 +982,7 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
     power := float64(0)
 
     for _, city := range player.Cities {
-        power += float64(city.ComputePower(player.Wizard.Books))
+        power += float64(city.ComputePower())
     }
 
     magicBonus := float64(1)
@@ -2711,6 +2712,20 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     }
 }
 
+func (game *Game) ShowFizzleSpell(spell spellbook.Spell, caster *playerlib.Player) {
+    if caster.IsHuman() {
+        beep, err := audio.LoadSound(game.Cache, 0)
+        if err == nil {
+            beep.Play()
+        }
+
+        game.Events <- &GameEventNotice{
+            // FIXME: align this message with how dos mom does it
+            Message: fmt.Sprintf("The spell %v has fizzled.", spell.Name),
+        }
+    }
+}
+
 /* show the given message in an error popup on the screen
  */
 func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
@@ -2719,11 +2734,15 @@ func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
         quit = true
     }))
 
+    yield()
+
     for !quit {
         game.Counter += 1
         game.HudUI.StandardUpdate()
         yield()
     }
+
+    yield()
 }
 
 /* player has clicked the 'next turn' button, so attempt to start the next turn
@@ -3460,6 +3479,7 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         city.Banner = attacker.Wizard.Banner
         city.RulingRace = attacker.Wizard.Race
         city.UpdateTaxRate(attacker.TaxRate, attackerStack.Units())
+        city.ReignProvider = attacker
 
         city.Buildings.Remove(buildinglib.BuildingFortress)
         city.Buildings.Remove(buildinglib.BuildingSummoningCircle)
@@ -5103,7 +5123,7 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
     cityName := game.SuggestCityName(settlers.GetRace())
 
-    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()), game)
+    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()), game, player)
     newCity.Plane = settlers.GetPlane()
     newCity.RulingRace = player.Wizard.Race
     newCity.Population = 300
@@ -7170,6 +7190,7 @@ func (game *Game) DoRandomEvents() {
                                     target.AddCity(city)
                                     city.Banner = target.Wizard.Banner
                                     city.RulingRace = target.Wizard.Race
+                                    city.ReignProvider = target
 
                                     return MakeDiplomaticMarriageEvent(game.TurnNumber, city), nil
                                 }
@@ -7294,6 +7315,7 @@ func (game *Game) DoRandomEvents() {
                                 neutralPlayer.AddCity(city)
                                 city.Banner = neutralPlayer.Wizard.Banner
                                 city.RulingRace = neutralPlayer.Wizard.Race
+                                city.ReignProvider = neutralPlayer
 
                                 // remove all enchantments on the city
                                 city.Enchantments.Clear()

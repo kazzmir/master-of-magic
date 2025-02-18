@@ -856,3 +856,35 @@ func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {
 
     return unit
 }
+
+func (player *Player) HasDivinePower() bool {
+    return player.Wizard.AbilityEnabled(setup.AbilityDivinePower)
+}
+
+func (player *Player) HasInfernalPower() bool {
+    return player.Wizard.AbilityEnabled(setup.AbilityInfernalPower)
+}
+
+func (player *Player) HasLifeBooks() bool {
+    for _, book := range player.Wizard.Books {
+        if book.Magic == data.LifeMagic {
+            return true
+        }
+    }
+
+    return false
+}
+
+func (player *Player) HasDeathBooks() bool {
+    for _, book := range player.Wizard.Books {
+        if book.Magic == data.DeathMagic {
+            return true
+        }
+    }
+
+    return false
+}
+
+func (player *Player) TotalBooks() int {
+    return player.Wizard.TotalBooks()
+}

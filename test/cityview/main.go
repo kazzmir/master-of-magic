@@ -31,6 +31,7 @@ type Engine struct {
     ImageCache util.ImageCache
     Map *maplib.Map
     Garrison []units.StackUnit
+    Player *playerlib.Player
 }
 
 type NoCityProvider struct {
@@ -66,6 +67,9 @@ func NewEngine() (*Engine, error) {
             Books: []data.WizardBook{
                 {Magic: data.ChaosMagic, Count: 11},
             },
+            Abilities: []setup.WizardAbility{
+                setup.AbilityInfernalPower,
+            },
         },
     }
 
@@ -90,7 +94,7 @@ func NewEngine() (*Engine, error) {
         TileCache: make(map[int]*ebiten.Image),
     }
 
-    city := citylib.MakeCity("Boston", rand.N(20), rand.N(13) + 4, data.RaceKlackon, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{})
+    city := citylib.MakeCity("Boston", rand.N(20), rand.N(13) + 4, data.RaceKlackon, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{}, &player)
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2
@@ -117,9 +121,9 @@ func NewEngine() (*Engine, error) {
     // city.AddBuilding(buildinglib.BuildingParthenon)
     city.AddBuilding(buildinglib.BuildingCathedral)
 
-    for _, building := range buildinglib.Buildings() {
-        city.AddBuilding(building)
-    }
+    // for _, building := range buildinglib.Buildings() {
+    //     city.AddBuilding(building)
+    // }
 
     city.ProducingBuilding = buildinglib.BuildingHousing
     // city.ProducingUnit = units.HighElfSpearmen
@@ -127,7 +131,7 @@ func NewEngine() (*Engine, error) {
         // ProducingUnit: units.UnitNone,
 
     city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
-    // city.AddEnchantment(data.CityEnchantmentWallOfDarkness, data.BannerGreen)
+    // city.AddEnchantment(data.CityEnchantmentWallOfDarkness, data.BannerRed)
     city.AddEnchantment(data.CityEnchantmentNaturesEye, data.BannerRed)
     city.AddEnchantment(data.CityEnchantmentProsperity, data.BannerRed)
     city.AddEnchantment(data.CityEnchantmentInspirations, data.BannerRed)
@@ -136,6 +140,7 @@ func NewEngine() (*Engine, error) {
     city.AddEnchantment(data.CityEnchantmentStreamOfLife, data.BannerRed)
     city.AddEnchantment(data.CityEnchantmentEarthGate, data.BannerRed)
     city.AddEnchantment(data.CityEnchantmentDarkRituals, data.BannerRed)
+    city.AddEnchantment(data.CityEnchantmentEvilPresence, data.BannerGreen)
 
     var garrison []units.StackUnit
     for i := 0; i < 2; i++ {
@@ -159,6 +164,7 @@ func NewEngine() (*Engine, error) {
         ImageCache: util.MakeImageCache(cache),
         Map: &gameMap,
         Garrison: garrison,
+        Player: &player,
     }, nil
 }
 
@@ -197,6 +203,7 @@ func (engine *Engine) Update() error {
             case ebiten.Key6: engine.toggleEnchantment(data.CityEnchantmentHeavenlyLight)
             case ebiten.Key7: engine.toggleEnchantment(data.CityEnchantmentCloudOfShadow)
             case ebiten.Key8: engine.toggleEnchantment(data.CityEnchantmentPestilence)
+            case ebiten.Key9: engine.toggleEnchantment(data.CityEnchantmentEvilPresence)
         }
     }
 

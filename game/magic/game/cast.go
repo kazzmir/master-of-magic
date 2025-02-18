@@ -138,13 +138,25 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
+        case "Evil Presence":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+
+                chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
+                if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
+
+                game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentEvilPresence)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyCity, SelectedFunc: selected}
         case "Stream of Life":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentStreamOfLife)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
-
         case "Call the Void":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 chosenCity, owner := game.FindCity(tileX, tileY, game.Plane)

@@ -202,3 +202,12 @@ func (building Building) Size() (int, int) {
 
     return 0, 0
 }
+
+func (building Building) IsReligous() bool {
+    switch building {
+        case BuildingShrine, BuildingTemple, BuildingParthenon, BuildingCathedral:
+            return true
+    }
+
+    return false
+}
