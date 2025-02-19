@@ -1079,6 +1079,9 @@ type CombatModel struct {
 
     // cached location of city wall gate
     CityWallGate image.Point
+
+    // incremented for each unit that is inside the town area (when fighting in a town)
+    CollateralDamage int
 }
 
 func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType) *CombatModel {
