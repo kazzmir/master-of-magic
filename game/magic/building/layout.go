@@ -25,6 +25,44 @@ type Rect struct {
     Fortress bool
 }
 
+func (rect *Rect) Equals(other *Rect) bool {
+    if rect.Width != other.Width {
+        return false
+    }
+
+    if rect.Height != other.Height {
+        return false
+    }
+
+    if rect.Id != other.Id {
+        return false
+    }
+
+    if rect.X != other.X {
+        return false
+    }
+
+    if rect.Y != other.Y {
+        return false
+    }
+
+    if rect.Fortress != other.Fortress {
+        return false
+    }
+
+    if len(rect.Buildings) != len(other.Buildings) {
+        return false
+    }
+
+    for i := range len(rect.Buildings) {
+        if rect.Buildings[i] != other.Buildings[i] {
+            return false
+        }
+    }
+
+    return true
+}
+
 func (rect *Rect) Clone() *Rect {
     newRect := &Rect{Width: rect.Width, Height: rect.Height, Id: rect.Id, Fortress: rect.Fortress, X: rect.X, Y: rect.Y}
     newRect.Buildings = make([]BuildingPosition, len(rect.Buildings))
