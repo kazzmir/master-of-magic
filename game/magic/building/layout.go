@@ -3,7 +3,8 @@ package building
 import (
     "image"
     "slices"
-    "math/rand/v2"
+    randomlib "math/rand/v2"
+    "cmp"
 )
 
 // a position within some patch of land where this building is located. the Area field
@@ -23,6 +24,44 @@ type Rect struct {
     Buildings []BuildingPosition
     // true if this rect should contain the fortress
     Fortress bool
+}
+
+func (rect *Rect) Equals(other *Rect) bool {
+    if rect.Width != other.Width {
+        return false
+    }
+
+    if rect.Height != other.Height {
+        return false
+    }
+
+    if rect.Id != other.Id {
+        return false
+    }
+
+    if rect.X != other.X {
+        return false
+    }
+
+    if rect.Y != other.Y {
+        return false
+    }
+
+    if rect.Fortress != other.Fortress {
+        return false
+    }
+
+    if len(rect.Buildings) != len(other.Buildings) {
+        return false
+    }
+
+    for i := range len(rect.Buildings) {
+        if rect.Buildings[i] != other.Buildings[i] {
+            return false
+        }
+    }
+
+    return true
 }
 
 func (rect *Rect) Clone() *Rect {
@@ -52,7 +91,7 @@ func (rect *Rect) EmptySpace() int {
 // try to add the building to this patch of land. returns true if successful
 // each possible point the new building could be placed is tried in a random order. if the building
 // overlaps with any existing buildings then that point is skipped
-func (rect *Rect) Add(building Building, width, height int, random *rand.Rand) bool {
+func (rect *Rect) Add(building Building, width, height int, random *randomlib.Rand) bool {
 
     if rect.EmptySpace() < width * height {
         return false
@@ -97,7 +136,7 @@ func cloneRects(rects []*Rect) []*Rect {
 }
 
 // compute the positions of the buildings given a set of rectangles that the buildings could be placed into
-func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, count *int, maxIterations int) ([]*Rect, bool) {
+func doLayoutIterative(buildings []Building, rects []*Rect, random *randomlib.Rand, count *int, maxIterations int) ([]*Rect, bool) {
     if len(buildings) == 0 {
         return rects, true
     }
@@ -138,7 +177,7 @@ func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, c
         areasDifference := (bWidth * bHeight) - (aWidth * aHeight)
         // If areas are the same, sort by index, otherwise we'll get unpredictable order for buildings with equal areas.
         if areasDifference == 0 {
-            return b.Index() - a.Index()
+            return cmp.Compare(a, b)
         }
         return areasDifference
     })
@@ -185,7 +224,7 @@ func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, c
     return nil, false
 }
 
-func LayoutBuildings(buildings []Building, rects []*Rect, random *rand.Rand) ([]*Rect, bool) {
+func LayoutBuildings(buildings []Building, rects []*Rect, random *randomlib.Rand) ([]*Rect, bool) {
     return doLayoutIterative(buildings, rects, random, new(int), 500)
 }
 

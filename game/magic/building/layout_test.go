@@ -6,6 +6,8 @@ import (
     "time"
     "slices"
     "math/rand/v2"
+
+    "github.com/kazzmir/master-of-magic/lib/set"
 )
 
 const MAX_ITERATIONS = 500
@@ -59,12 +61,10 @@ func doLayoutRecursive(buildings []Building, rects []*Rect, random *rand.Rand, c
     return nil, false
 }
 
-
-
 func TestLayout2(test *testing.T){
     rects := []*Rect{&Rect{Width: 4, Height: 4, Id: 0}}
     count := 0
-    solution, ok := doLayoutRecursive([]Building{BuildingArmorersGuild}, rects, rand.New(rand.NewPCG(0, 1)), &count)
+    solution, ok := doLayoutIterative([]Building{BuildingArmorersGuild}, rects, rand.New(rand.NewPCG(0, 1)), &count, 1000)
     if !ok {
         fmt.Printf("No solution\n")
     } else {
@@ -170,7 +170,7 @@ func TestLayout(test *testing.T){
     fmt.Printf("Layout %v buildings\n", len(filterReplaced(try)))
 
     count := 0
-    solution, ok := doLayoutRecursive(filterReplaced(try), rects, rand.New(rand.NewPCG(uint64(a.UnixNano()), uint64(b.UnixNano()))), &count)
+    solution, ok := doLayoutIterative(filterReplaced(try), rects, rand.New(rand.NewPCG(uint64(a.UnixNano()), uint64(b.UnixNano()))), &count, 1000)
 
     if !ok {
         fmt.Printf("No solution found\n")
@@ -187,7 +187,7 @@ func TestLayout(test *testing.T){
         v1 := uint64(i) + uint64(time.Now().UnixNano())
         start := time.Now()
         count := 0
-        _, ok := doLayoutRecursive(filterReplaced(try), rects, rand.New(rand.NewPCG(v1, v1 + 1)), &count)
+        _, ok := doLayoutIterative(filterReplaced(try), rects, rand.New(rand.NewPCG(v1, v1 + 1)), &count, 1000)
         end := time.Now()
         if !ok {
             fmt.Printf("[%v] No solution\n", i)
@@ -371,6 +371,82 @@ func TestLayout3(test *testing.T){
             fmt.Printf("[%v] No solution\n", i)
         } else {
             fmt.Printf("[%v] Success in %v iterations %v\n", i, end.Sub(start), count)
+        }
+    }
+}
+
+// laying out the same buildings twice with the same initial random should produce the same layout
+func TestLayoutEquality(test *testing.T){
+    rects := StandardRects()
+
+    buildings := set.NewSet(
+        BuildingBarracks,
+        BuildingArmory,
+        BuildingFightersGuild,
+        BuildingArmorersGuild,
+        BuildingWarCollege,
+        BuildingSmithy,
+        BuildingStables,
+        BuildingAnimistsGuild,
+        BuildingFantasticStable,
+        BuildingSawmill,
+        BuildingCathedral,
+        BuildingMarketplace,
+        BuildingBank,
+        BuildingMerchantsGuild,
+        BuildingGranary,
+        BuildingFarmersMarket,
+        BuildingForestersGuild,
+        BuildingBuildersHall,
+        BuildingMechaniciansGuild,
+        BuildingMinersGuild,
+        BuildingCityWalls,
+        BuildingFortress,
+        BuildingSummoningCircle,
+        BuildingAltarOfBattle,
+        BuildingAstralGate,
+        BuildingStreamOfLife,
+        BuildingEarthGate,
+    )
+
+    random := rand.New(rand.NewPCG(0, 1))
+
+    layout, ok := LayoutBuildings(filterReplaced(buildings.Values()), rects, random)
+    if !ok {
+        test.Errorf("No solution found\n")
+    }
+
+    if len(layout) == 0 {
+        test.Errorf("No layout found\n")
+    }
+
+    // do layout check 5 times
+    for range 5 {
+        random = rand.New(rand.NewPCG(0, 1))
+        layout2, ok := LayoutBuildings(filterReplaced(buildings.Values()), rects, random)
+        if !ok {
+            test.Errorf("No solution found\n")
+            break
+        }
+
+        if len(layout2) == 0 {
+            test.Errorf("No second layout found\n")
+            break
+        }
+
+        for _, rect1 := range layout {
+            found := false
+            for _, rect2 := range layout2 {
+                if rect1.Equals(rect2) {
+                    found = true
+                    break
+                }
+            }
+
+            if !found {
+                test.Errorf("Rect %v not found in second layout\n", rect1.Id)
+                break
+            }
         }
     }
 }
