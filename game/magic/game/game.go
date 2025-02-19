@@ -4717,7 +4717,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             zone.City.Buildings.Remove(building)
         }
         // there cant be any units defending because they were all defeated
-        zone.City.UpdateUnrest(nil)
+        zone.City.ResetCitizens(nil)
 
         log.Printf("Collateral damage: %v. Kill population %v. Destroyed buildings %v", combatScreen.Model.CollateralDamage, cityPopulationLoss, cityBuildingLoss)
     }
