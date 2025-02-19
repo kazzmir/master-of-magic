@@ -165,7 +165,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         ui.AddGroup(mainGroup)
         mainGroup.AddElement(&uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
-                images, err := imageCache.GetImages("cityscap.lbx", GetBuildingIndex(building))
+                images, err := imageCache.GetImages("cityscap.lbx", GetProducingBuildingIndex(building))
                 if err == nil {
                     middleX := float64(103 * data.ScreenScale)
                     middleY := float64(22 * data.ScreenScale)
