@@ -2,7 +2,17 @@ package game
 
 import (
     "testing"
+    "image"
     "strings"
+
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
 func TestCityName(test *testing.T){
@@ -19,5 +29,77 @@ func TestCityName(test *testing.T){
     chosen = chooseCityName(names, choices)
     if !strings.Contains(chosen, "2") {
         test.Errorf("Expected 2 but got %v", chosen)
+    }
+}
+
+type NoCatchment struct {}
+
+func (no *NoCatchment) GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile {
+    return make(map[image.Point]maplib.FullTile)
+}
+
+func (no *NoCatchment) OnShore(x int, y int) bool {
+    return false
+}
+
+type NoServices struct {}
+
+func (no *NoServices) FindRoadConnectedCities(city *citylib.City) []*citylib.City {
+    return nil
+}
+
+func (no *NoServices) GoodMoonActive() bool {
+    return false
+}
+
+func (no *NoServices) BadMoonActive() bool {
+    return false
+}
+
+func (no *NoServices) PopulationBoomActive(city *citylib.City) bool {
+    return false
+}
+
+func (no *NoServices) PlagueActive(city *citylib.City) bool {
+    return false
+}
+
+func TestChangeCityOwner(test *testing.T){
+    player1 := playerlib.MakePlayer(setup.WizardCustom{Banner: data.BannerRed}, true, 1, 1, make(map[herolib.HeroType]string))
+    player2 := playerlib.MakePlayer(setup.WizardCustom{Banner: data.BannerGreen}, true, 1, 1, make(map[herolib.HeroType]string))
+
+    city := citylib.MakeCity("xyz", 1, 1, player1.Wizard.Race, player1.GetBanner(), fraction.Zero(), nil, &NoCatchment{}, &NoServices{}, player1)
+    city.AddBuilding(buildinglib.BuildingFortress)
+    city.AddEnchantment(data.CityEnchantmentAltarOfBattle, player1.GetBanner())
+    player1.AddCity(city)
+
+    ChangeCityOwner(city, player1, player2, ChangeCityKeepEnchantments)
+
+    if player1.OwnsCity(city) {
+        test.Errorf("Player 1 still owns the city")
+    }
+
+    if !player2.OwnsCity(city) {
+        test.Errorf("Player 2 does not own the city")
+    }
+
+    if !city.HasEnchantment(data.CityEnchantmentAltarOfBattle) {
+        test.Errorf("City does not have the altar of battle")
+    }
+
+    if city.Buildings.Contains(buildinglib.BuildingFortress) {
+        test.Errorf("City still has the fortress")
+    }
+
+    city.AddEnchantment(data.CityEnchantmentGaiasBlessing, player2.GetBanner())
+
+    ChangeCityOwner(city, player2, player1, ChangeCityRemoveOwnerEnchantments)
+
+    if player2.OwnsCity(city) {
+        test.Errorf("Player 2 still owns the city")
+    }
+
+    if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
+        test.Errorf("gaias blessing still on city")
     }
 }

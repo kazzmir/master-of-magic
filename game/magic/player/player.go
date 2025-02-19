@@ -611,6 +611,12 @@ func (player *Player) GetUnits(x int, y int, plane data.Plane) []units.StackUnit
     return nil
 }
 
+func (player *Player) OwnsCity(city *citylib.City) bool {
+    return slices.ContainsFunc(player.Cities, func (check *citylib.City) bool {
+        return check == city
+    })
+}
+
 func (player *Player) FindCity(x int, y int, plane data.Plane) *citylib.City {
     for _, city := range player.Cities {
         if city.X == x && city.Y == y && city.Plane == plane {
