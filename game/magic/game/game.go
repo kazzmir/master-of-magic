@@ -4718,8 +4718,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
         // there cant be any units defending because they were all defeated
         zone.City.ResetCitizens(nil)
-
-        log.Printf("Collateral damage: %v. Kill population %v. Destroyed buildings %v", combatScreen.Model.CollateralDamage, cityPopulationLoss, cityBuildingLoss)
     }
 
     // Show end screen
@@ -4742,7 +4740,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
 
         // FIXME: show how much gold was plundered (or lost)
-        endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result, combatScreen.Model.DiedWhileFleeing, fame)
+        endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result, combatScreen.Model.DiedWhileFleeing, fame, cityPopulationLoss, len(cityBuildingLoss))
         game.Drawer = func (screen *ebiten.Image, game *Game){
             endScreen.Draw(screen)
         }

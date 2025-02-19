@@ -33,13 +33,16 @@ type CombatEndScreen struct {
     Result CombatEndScreenResult
     UnitsLost int
     Fame int
+    // when fighting in a city, citizens and buildings may be lost
+    PopulationLost int
+    BuildingsLost int
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
     UI *uilib.UI
     State CombatEndScreenState
 }
 
-func MakeCombatEndScreen(cache *lbx.LbxCache, combat *CombatScreen, result CombatEndScreenResult, unitsLost int, fame int) *CombatEndScreen {
+func MakeCombatEndScreen(cache *lbx.LbxCache, combat *CombatScreen, result CombatEndScreenResult, unitsLost int, fame int, populationLost int, buildingsLost int) *CombatEndScreen {
     end := &CombatEndScreen{
         CombatScreen: combat,
         Cache: cache,
@@ -47,6 +50,8 @@ func MakeCombatEndScreen(cache *lbx.LbxCache, combat *CombatScreen, result Comba
         Result: result,
         UnitsLost: unitsLost,
         Fame: fame,
+        PopulationLost: populationLost,
+        BuildingsLost: buildingsLost,
         State: CombatEndScreenRunning,
     }
 
@@ -96,6 +101,19 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
 
     titleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
+    // for population/buildings lost
+    extraText2 := ""
+    if end.PopulationLost > 0 || end.BuildingsLost > 0 {
+        switch {
+            case end.PopulationLost > 0 && end.BuildingsLost > 0:
+                extraText2 = fmt.Sprintf("%v citizens were lost and %v buildings were destroyed.", end.PopulationLost, end.BuildingsLost)
+            case end.PopulationLost > 0:
+                extraText2 = fmt.Sprintf("%v citizens were lost.", end.PopulationLost)
+            case end.BuildingsLost > 0:
+                extraText2 = fmt.Sprintf("%v buildings were destroyed.", end.BuildingsLost)
+        }
+    }
+
     extraText := ""
     switch {
         case end.Result == CombatEndScreenResultWin:
@@ -126,6 +144,16 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
 
     extraFont := font.MakeOptimizedFontWithPalette(fonts[1], extraPalette)
 
+    var pic *ebiten.Image
+    switch end.Result {
+        case CombatEndScreenResultWin:
+            pic, _ = end.ImageCache.GetImage("scroll.lbx", 10, 0)
+        case CombatEndScreenResultLoose, CombatEndScreenResultRetreat:
+            pic, _ = end.ImageCache.GetImage("scroll.lbx", 11, 0)
+    }
+
+    extraText2Render := extraFont.CreateWrappedText(float64(pic.Bounds().Dx() - 2 * data.ScreenScale), float64(data.ScreenScale), extraText2)
+
     element := &uilib.UIElement{
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
         LeftClick: func(element *uilib.UIElement){
@@ -135,19 +163,14 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var pic *ebiten.Image
-            switch end.Result {
-                case CombatEndScreenResultWin:
-                    pic, _ = end.ImageCache.GetImage("scroll.lbx", 10, 0)
-                case CombatEndScreenResultLoose, CombatEndScreenResultRetreat:
-                    pic, _ = end.ImageCache.GetImage("scroll.lbx", 11, 0)
-            }
-
             bottom, _ := end.ImageCache.GetImage("help.lbx", 1, 0)
 
             picLength := 90
-
             fontY := picLength
+
+            if extraText2 != "" {
+                picLength += extraFont.Height() * data.ScreenScale
+            }
 
             picLength += extraFont.Height()
 
@@ -174,6 +197,12 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             screen.DrawImage(bottom, &options)
 
             extraFont.PrintCenter(screen, extraX, extraY, float64(data.ScreenScale), options.ColorScale, extraText)
+
+            if extraText2 != "" {
+                extraY += float64((extraFont.Height() + 1) * data.ScreenScale)
+                // extraFont.PrintCenter(screen, extraX, extraY, float64(data.ScreenScale), options.ColorScale, extraText2)
+                extraFont.RenderWrapped(screen, extraX, extraY, extraText2Render, options.ColorScale, true)
+            }
         },
     }
 
