@@ -286,7 +286,6 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
 
     toLayout := city.Buildings.Clone()
-    toLayout.RemoveMany(buildinglib.BuildingCityWalls, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild)
 
     for _, building := range toLayout.Values() {
         width, height := building.Size()
@@ -298,10 +297,12 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     enchantmentBuildings := enchantmentBuildings()
 
     for enchantment, building := range enchantmentBuildings {
-        if city.HasEnchantment(enchantment) && building != buildinglib.BuildingCityWalls {
+        if city.HasEnchantment(enchantment) {
             toLayout.Insert(building)
         }
     }
+
+    toLayout.RemoveMany(buildinglib.BuildingCityWalls, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild)
 
     var result []*buildinglib.Rect
     ok := false
