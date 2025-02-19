@@ -140,7 +140,7 @@ func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, c
 
     var stack []State
 
-    for _, i := range rand.Perm(len(rects)) {
+    for _, i := range random.Perm(len(rects)) {
         stack = append(stack, State{Buildings: buildings, Rects: rects, Index: i})
     }
 
@@ -169,7 +169,7 @@ func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, c
         if rect.Add(building, width, height, random) {
             // fmt.Printf("Added %v (%v,%v) to rect %v\n", building, width, height, rect.Id)
 
-            for _, i := range rand.Perm(len(rects)) {
+            for _, i := range random.Perm(len(rects)) {
                 stack = append(stack, State{Buildings: use.Buildings[1:], Rects: moreRects, Index: i})
             }
 
