@@ -148,6 +148,7 @@ func enchantmentBuildings() map[data.CityEnchantment]buildinglib.Building {
     buildings[data.CityEnchantmentStreamOfLife] = buildinglib.BuildingStreamOfLife
     buildings[data.CityEnchantmentEarthGate] = buildinglib.BuildingEarthGate
     buildings[data.CityEnchantmentDarkRituals] = buildinglib.BuildingDarkRituals
+    buildings[data.CityEnchantmentWallOfStone] = buildinglib.BuildingCityWalls
     return buildings
 }
 
@@ -285,7 +286,6 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
 
     toLayout := city.Buildings.Clone()
-    toLayout.RemoveMany(buildinglib.BuildingCityWalls, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild)
 
     for _, building := range toLayout.Values() {
         width, height := building.Size()
@@ -301,6 +301,8 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
             toLayout.Insert(building)
         }
     }
+
+    toLayout.RemoveMany(buildinglib.BuildingCityWalls, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild)
 
     var result []*buildinglib.Rect
     ok := false

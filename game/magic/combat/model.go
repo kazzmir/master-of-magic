@@ -287,7 +287,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             createWallOfDarkness(tiles, TownCenterX, TownCenterY, 4)
         }
 
-        if zone.City.Wall {
+        if zone.City.HasWall() {
             createCityWall(tiles, TownCenterX, TownCenterY, 4)
         }
 
