@@ -131,11 +131,16 @@ func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, c
     }
     buildings = buildingsUse
 
-    // sort from biggest to smallest
+    // sort from biggest to smallest, or by index
     buildings = slices.SortedFunc(slices.Values(buildings), func (a, b Building) int {
         aWidth, aHeight := a.Size()
         bWidth, bHeight := b.Size()
-        return (bWidth * bHeight) - (aWidth * aHeight)
+        areasDifference := (bWidth * bHeight) - (aWidth * aHeight)
+        // If areas are the same, sort by index, otherwise we'll get unpredictable order for buildings with equal areas.
+        if areasDifference == 0 {
+            return b.Index() - a.Index()
+        }
+        return areasDifference
     })
 
     var stack []State
