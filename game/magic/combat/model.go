@@ -255,14 +255,13 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
 
         // clear all space around the city
         for x := townSquare.Min.X; x <= townSquare.Max.X; x++ {
-            for y := -townSquare.Min.Y; y <= townSquare.Max.Y; y++ {
-                mx := x + TownCenterX
-                my := y + TownCenterY
-                tiles[my][mx].ExtraObject.Index = -1
-                tiles[my][mx].InsideTown = true
+            for y := townSquare.Min.Y; y <= townSquare.Max.Y; y++ {
+                tiles[y][x].ExtraObject.Index = -1
+                tiles[y][x].InsideTown = true
             }
         }
 
+        // add random houses
         for range 8 {
             x, y := randTownSquare()
 
