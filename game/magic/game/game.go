@@ -4606,7 +4606,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-        // FIXME: take plane into account for the landscape/terrain
         combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
 
         // ebiten.SetCursorMode(ebiten.CursorModeHidden)
@@ -4694,6 +4693,42 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     attacker.Fame = max(0, attacker.Fame + attackerFame)
     defender.Fame = max(0, defender.Fame + defenderFame)
+
+    cityPopulationLoss := 0
+    var cityBuildingLoss []buildinglib.Building
+
+    if zone.City != nil && state == combat.CombatStateAttackerWin {
+        // maximum chance is 50%, minimum is 10%
+        chance := min(50, 10 + combatScreen.Model.CollateralDamage * 2)
+        for range zone.City.Citizens() - 1 {
+            if rand.N(100) < chance {
+                cityPopulationLoss += 1
+            }
+        }
+
+        minBuildingChance := 10
+        if attacker.GetBanner() == data.BannerBrown {
+            minBuildingChance = 50
+        }
+
+        chance = min(75, minBuildingChance + combatScreen.Model.CollateralDamage)
+        for _, building := range zone.City.Buildings.Values() {
+            if building == buildinglib.BuildingFortress || building == buildinglib.BuildingSummoningCircle {
+                continue
+            }
+
+            if rand.N(100) < chance {
+                cityBuildingLoss = append(cityBuildingLoss, building)
+            }
+        }
+
+        zone.City.Population -= cityPopulationLoss * 1000
+        for _, building := range cityBuildingLoss {
+            zone.City.Buildings.Remove(building)
+        }
+        // there cant be any units defending because they were all defeated
+        zone.City.UpdateUnrest(nil)
+    }
 
     // Show end screen
     if !attacker.StrategicCombat || !defender.StrategicCombat {
