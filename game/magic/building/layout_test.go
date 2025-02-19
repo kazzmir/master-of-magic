@@ -6,6 +6,8 @@ import (
     "time"
     "slices"
     "math/rand/v2"
+
+    "github.com/kazzmir/master-of-magic/lib/set"
 )
 
 const MAX_ITERATIONS = 500
@@ -377,7 +379,7 @@ func TestLayout3(test *testing.T){
 func TestLayoutEquality(test *testing.T){
     rects := StandardRects()
 
-    buildings := []Building{
+    buildings := set.NewSet(
         BuildingBarracks,
         BuildingArmory,
         BuildingFightersGuild,
@@ -405,12 +407,11 @@ func TestLayoutEquality(test *testing.T){
         BuildingAstralGate,
         BuildingStreamOfLife,
         BuildingEarthGate,
-    }
+    )
 
-    layoutBuildings := filterReplaced(buildings)
     random := rand.New(rand.NewPCG(0, 1))
 
-    layout, ok := LayoutBuildings(layoutBuildings, rects, random)
+    layout, ok := LayoutBuildings(filterReplaced(buildings.Values()), rects, random)
     if !ok {
         test.Errorf("No solution found\n")
     }
@@ -422,7 +423,7 @@ func TestLayoutEquality(test *testing.T){
     // do layout check 5 times
     for range 5 {
         random = rand.New(rand.NewPCG(0, 1))
-        layout2, ok := LayoutBuildings(layoutBuildings, rects, random)
+        layout2, ok := LayoutBuildings(filterReplaced(buildings.Values()), rects, random)
         if !ok {
             test.Errorf("No solution found\n")
             break
