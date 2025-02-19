@@ -445,21 +445,40 @@ func (city *City) AddEnchantment(enchantment data.CityEnchantment, owner data.Ba
     })
 }
 
-func (city *City) RemoveEnchantment(enchantment data.CityEnchantment, owner data.BannerType) {
+// Used when an enchantment removal is an explicit player action (e.g. disabling a specific enchantment from a city screen)
+func (city *City) CancelEnchantment(enchantment data.CityEnchantment, owner data.BannerType) {
     city.Enchantments.Remove(Enchantment{
         Enchantment: enchantment,
         Owner: owner,
     })
 }
 
-func (city *City) HasEnchantment(check data.CityEnchantment) bool {
+// Used when an enchantment removal is caused by some mechanic (e.g. consecration spell).
+func (city *City) RemoveEnchantments(enchantmentsToRemove ...data.CityEnchantment) {
+    for _, enchantmentTypeToRemove := range enchantmentsToRemove {
+        for _, enchantmentInstance := range city.Enchantments.Values() {
+            if enchantmentInstance.Enchantment == enchantmentTypeToRemove {
+                city.Enchantments.Remove(enchantmentInstance)
+            }
+        }
+    }
+}
+
+// Returns true if the city has at least one of the enchantments from arguments
+func (city *City) HasAnyOfEnchantments(enchantmentsToCheck ...data.CityEnchantment) bool {
     for _, enchantment := range city.Enchantments.Values() {
-        if enchantment.Enchantment == check {
-            return true
+        for _, check := range enchantmentsToCheck {
+            if enchantment.Enchantment == check {
+                return true
+            }
         }
     }
 
     return false
+}
+
+func (city *City) HasEnchantment(check data.CityEnchantment) bool {
+    return city.HasAnyOfEnchantments(check)
 }
 
 func (city *City) GetEnchantmentsCastBy(banner data.BannerType) []Enchantment {

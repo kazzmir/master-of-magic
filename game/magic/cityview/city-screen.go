@@ -909,7 +909,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                     group := uilib.MakeGroup()
                     yes := func(){
                         defer ui.RemoveGroup(group)
-                        cityScreen.City.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
+                        cityScreen.City.CancelEnchantment(enchantment.Enchantment, enchantment.Owner)
 
                         enchantmentBuildings := enchantmentBuildings()
                         building, ok := enchantmentBuildings[enchantment.Enchantment]
@@ -1606,7 +1606,7 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
                 images, _ := imageCache.GetImages("cityscap.lbx", enchantment.Enchantment.LbxIndex())
                 index := animationCounter % uint64(len(images))
                 screen.DrawImage(images[index], &options)
-            case data.CityEnchantmentNaturesEye, data.CityEnchantmentProsperity:
+            case data.CityEnchantmentNaturesEye, data.CityEnchantmentProsperity, data.CityEnchantmentConsecration:
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(alphaScale)
                 options.GeoM = baseGeoM
@@ -2463,7 +2463,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
                 LeftClick: func(element *uilib.UIElement) {
                     if enchantment.Owner == player.GetBanner() {
                         yes := func(){
-                            city.RemoveEnchantment(enchantment.Enchantment, enchantment.Owner)
+                            city.CancelEnchantment(enchantment.Enchantment, enchantment.Owner)
                             setupUI()
                         }
 

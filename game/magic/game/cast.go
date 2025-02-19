@@ -102,6 +102,26 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
+        case "Consecration":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
+                if chosenCity == nil {
+                    return
+                }
+                // Remove all the city curses from the targeted city on cast (https://masterofmagic.fandom.com/wiki/Consecration)
+                // Wiki specifies only the following ones as city curses
+                chosenCity.RemoveEnchantments(
+                    data.CityEnchantmentChaosRift,
+                    data.CityEnchantmentCursedLands,
+                    data.CityEnchantmentEvilPresence,
+                    data.CityEnchantmentFamine,
+                    data.CityEnchantmentPestilence,
+                )
+
+                game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentConsecration)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
         case "Inspirations":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentInspirations)
@@ -116,18 +136,42 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
         case "Cursed Lands":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+
+                chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
+
+                if chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
+
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentCursedLands)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyCity, SelectedFunc: selected}
         case "Famine":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+
+                chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
+
+                if chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
+
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentFamine)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyCity, SelectedFunc: selected}
         case "Pestilence":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+
+                chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
+
+                if chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
+
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentPestilence)
             }
 
@@ -142,7 +186,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
 
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
-                if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) {
+                if chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
                     game.ShowFizzleSpell(spell, player)
                     return
                 }
@@ -161,8 +205,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 chosenCity, owner := game.FindCity(tileX, tileY, game.Plane)
 
-                // FIXME: show a fizzle notification?
-                if chosenCity.HasEnchantment(data.CityEnchantmentConsecration) || chosenCity.HasEnchantment(data.CityEnchantmentChaosWard) {
+                if chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
+                    game.ShowFizzleSpell(spell, player)
                     return
                 }
 
@@ -178,6 +222,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeTransmute, SelectedFunc: game.doCastTransmute}
         case "Raise Volcano":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
+
+                // FIXME: it's not obvious if Chaos Ward prevents Raise Volcano from being cast on city center. Left it here because it sounds logical
+                if chosenCity != nil && chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
                 game.doCastRaiseVolcano(yield, tileX, tileY, player)
             }
 
@@ -272,7 +323,18 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         case "Enchant Road":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: game.doCastEnchantRoad}
         case "Corruption":
-            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeLand, SelectedFunc: game.doCastCorruption}
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
+
+                // FIXME: it's not obvious if Chaos Ward prevents Corruption from being cast on city center. Left it here because it sounds logical
+                if chosenCity != nil && chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
+                game.doCastCorruption(yield, tileX, tileY)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeLand, SelectedFunc: selected}
         case "Warp Node":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyMeldedNode, SelectedFunc: game.doCastWarpNode}
         default:
