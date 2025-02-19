@@ -445,20 +445,21 @@ func (city *City) AddEnchantment(enchantment data.CityEnchantment, owner data.Ba
     })
 }
 
-func (city *City) RemoveAllEnchantmentsByOwner(owner data.BannerType) {
-    for _, enchantment := range city.Enchantments.Values() {
-        if enchantment.Owner == owner {
-            city.Enchantments.Remove(enchantment)
-        }
-    }
-}
-
 // Used when an enchantment removal is an explicit player action (e.g. disabling a specific enchantment from a city screen)
 func (city *City) CancelEnchantment(enchantment data.CityEnchantment, owner data.BannerType) {
     city.Enchantments.Remove(Enchantment{
         Enchantment: enchantment,
         Owner: owner,
     })
+}
+
+// remove all enchantments owned by a specific wizard
+func (city *City) RemoveAllEnchantmentsByOwner(owner data.BannerType) {
+    for _, enchantment := range city.Enchantments.Values() {
+        if enchantment.Owner == owner {
+            city.Enchantments.Remove(enchantment)
+        }
+    }
 }
 
 // Used when an enchantment removal is caused by some mechanic (e.g. consecration spell).
