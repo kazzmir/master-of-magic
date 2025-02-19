@@ -226,6 +226,13 @@ func StartingCityEvent(city *citylib.City) *GameEventCityName {
     }
 }
 
+type ChangeCityEnchantments int
+const (
+    ChangeCityKeepEnchantments ChangeCityEnchantments = iota
+    ChangeCityRemoveOwnerEnchantments
+    ChangeCityRemoveAllEnchantments
+)
+
 type GameState int
 const (
     GameStateRunning GameState = iota
@@ -3474,16 +3481,7 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
     if raze {
         defender.RemoveCity(city)
     } else {
-        defender.RemoveCity(city)
-        attacker.AddCity(city)
-        city.Banner = attacker.Wizard.Banner
-        city.RulingRace = attacker.Wizard.Race
-        city.UpdateTaxRate(attacker.TaxRate, attackerStack.Units())
-        city.ReignProvider = attacker
-
-        city.Buildings.Remove(buildinglib.BuildingFortress)
-        city.Buildings.Remove(buildinglib.BuildingSummoningCircle)
-        // FIXME: remove enchantments (and their buildings)?
+        ChangeCityOwner(city, defender, attacker, ChangeCityRemoveOwnerEnchantments)
     }
 
     if containedFortress {
@@ -6963,6 +6961,33 @@ func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (i
     return killedCitizens, killedUnits, len(destroyedBuildings)
 }
 
+// city is controlled by the newOwner instead of owner
+func ChangeCityOwner(city *citylib.City, owner *playerlib.Player, newOwner *playerlib.Player, enchantmentChange ChangeCityEnchantments) {
+    owner.RemoveCity(city)
+    newOwner.AddCity(city)
+    city.Banner = newOwner.Wizard.Banner
+    city.RulingRace = newOwner.Wizard.Race
+    city.ReignProvider = newOwner
+
+    city.Buildings.Remove(buildinglib.BuildingFortress)
+    city.Buildings.Remove(buildinglib.BuildingSummoningCircle)
+
+    var newUnits []units.StackUnit
+    stack := newOwner.FindStack(city.X, city.Y, city.Plane)
+    if stack != nil {
+        newUnits = stack.Units()
+    }
+    city.UpdateTaxRate(newOwner.TaxRate, newUnits)
+
+    switch enchantmentChange {
+        case ChangeCityKeepEnchantments:
+        case ChangeCityRemoveOwnerEnchantments:
+            city.RemoveAllEnchantmentsByOwner(owner.GetBanner())
+        case ChangeCityRemoveAllEnchantments:
+            city.Enchantments.Clear()
+    }
+}
+
 func (game *Game) ManaShortActive() bool {
     return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
         return event.Type == RandomEventManaShort
@@ -7203,11 +7228,7 @@ func (game *Game) DoRandomEvents() {
                                         }
                                     }
 
-                                    player.RemoveCity(city)
-                                    target.AddCity(city)
-                                    city.Banner = target.Wizard.Banner
-                                    city.RulingRace = target.Wizard.Race
-                                    city.ReignProvider = target
+                                    ChangeCityOwner(city, player, target, ChangeCityRemoveAllEnchantments)
 
                                     return MakeDiplomaticMarriageEvent(game.TurnNumber, city), nil
                                 }
@@ -7328,14 +7349,7 @@ func (game *Game) DoRandomEvents() {
                                     }
                                 }
 
-                                target.RemoveCity(city)
-                                neutralPlayer.AddCity(city)
-                                city.Banner = neutralPlayer.Wizard.Banner
-                                city.RulingRace = neutralPlayer.Wizard.Race
-                                city.ReignProvider = neutralPlayer
-
-                                // remove all enchantments on the city
-                                city.Enchantments.Clear()
+                                ChangeCityOwner(city, target, neutralPlayer, ChangeCityRemoveAllEnchantments)
 
                                 // plague/population boom might still be active for the city. just leave them for now
 
