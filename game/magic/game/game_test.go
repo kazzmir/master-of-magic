@@ -65,8 +65,9 @@ func (no *NoServices) PlagueActive(city *citylib.City) bool {
 }
 
 func TestChangeCityOwner(test *testing.T){
-    player1 := playerlib.MakePlayer(setup.WizardCustom{Banner: data.BannerRed}, true, 1, 1, make(map[herolib.HeroType]string))
-    player2 := playerlib.MakePlayer(setup.WizardCustom{Banner: data.BannerGreen}, true, 1, 1, make(map[herolib.HeroType]string))
+    player1 := playerlib.MakePlayer(setup.WizardCustom{Banner: data.BannerRed, Race: data.RaceDraconian}, true, 1, 1, make(map[herolib.HeroType]string))
+    player2 := playerlib.MakePlayer(setup.WizardCustom{Banner: data.BannerGreen, Race: data.RaceDarkElf}, true, 1, 1, make(map[herolib.HeroType]string))
+    player2.TaxRate = fraction.FromInt(2)
 
     city := citylib.MakeCity("xyz", 1, 1, player1.Wizard.Race, player1.GetBanner(), fraction.Zero(), nil, &NoCatchment{}, &NoServices{}, player1)
     city.AddBuilding(buildinglib.BuildingFortress)
@@ -81,6 +82,14 @@ func TestChangeCityOwner(test *testing.T){
 
     if !player2.OwnsCity(city) {
         test.Errorf("Player 2 does not own the city")
+    }
+
+    if city.RulingRace != data.RaceDarkElf {
+        test.Errorf("ruling race was not updated to dark elf")
+    }
+
+    if !city.TaxRate.Equals(fraction.FromInt(2)) {
+        test.Errorf("City tax rate not changed")
     }
 
     if !city.HasEnchantment(data.CityEnchantmentAltarOfBattle) {
