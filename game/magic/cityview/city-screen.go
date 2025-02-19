@@ -1256,6 +1256,15 @@ func (cityScreen *CityScreen) Update() CityScreenState {
     return cityScreen.State
 }
 
+// the sprite used to show when building the thing (like when selecting buildings in the build screen)
+func GetProducingBuildingIndex(building buildinglib.Building) int {
+    if building == buildinglib.BuildingCityWalls {
+        return 114
+    }
+
+    return GetBuildingIndex(building)
+}
+
 // the index in cityscap.lbx for the picture of this building
 func GetBuildingIndex(building buildinglib.Building) int {
     index := building.Index()
@@ -2149,7 +2158,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     workRequired := 0
 
     if cityScreen.City.ProducingBuilding != buildinglib.BuildingNone {
-        lbxIndex := GetBuildingIndex(cityScreen.City.ProducingBuilding)
+        lbxIndex := GetProducingBuildingIndex(cityScreen.City.ProducingBuilding)
 
         if cityScreen.City.ProducingBuilding == buildinglib.BuildingHousing {
             switch cityScreen.City.Race.HouseType() {
