@@ -4805,35 +4805,25 @@ func GetUnitImage(unit units.StackUnit, imageCache *util.ImageCache, banner data
     return image, err
 }
 
-func GetCityNoWallImage(size citylib.CitySize, cache *util.ImageCache) (*ebiten.Image, error) {
-    var index int = 0
+func GetCityImage(city *citylib.City, cache *util.ImageCache) (*ebiten.Image, error) {
+    var spriteIndex int = 21
+    var animationIndex int = 0
 
-    switch size {
-        case citylib.CitySizeHamlet: index = 0
-        case citylib.CitySizeVillage: index = 1
-        case citylib.CitySizeTown: index = 2
-        case citylib.CitySizeCity: index = 3
-        case citylib.CitySizeCapital: index = 4
+    if city.HasWall() {
+        spriteIndex = 20
     }
 
-    // the city image is a sub-frame of animation 21
-    return cache.GetImage("mapback.lbx", 21, index)
-}
-
-func GetCityWallImage(city *citylib.City, cache *util.ImageCache) (*ebiten.Image, error) {
-    var index int = 0
-
     switch city.GetSize() {
-        case citylib.CitySizeHamlet: index = 0
-        case citylib.CitySizeVillage: index = 1
-        case citylib.CitySizeTown: index = 2
-        case citylib.CitySizeCity: index = 3
-        case citylib.CitySizeCapital: index = 4
+        case citylib.CitySizeHamlet: animationIndex = 0
+        case citylib.CitySizeVillage: animationIndex = 1
+        case citylib.CitySizeTown: animationIndex = 2
+        case citylib.CitySizeCity: animationIndex = 3
+        case citylib.CitySizeCapital: animationIndex = 4
     }
 
     // the city image is a sub-frame of animation 20
     // return cache.GetImageTransform("mapback.lbx", 20, index, city.Banner.String(), util.ComposeImageTransform(units.MakeUpdateUnitColorsFunc(city.Banner), util.AutoCropGeneric))
-    return cache.GetImageTransform("mapback.lbx", 20, index, city.Banner.String(), units.MakeUpdateUnitColorsFunc(city.Banner))
+    return cache.GetImageTransform("mapback.lbx", spriteIndex, animationIndex, city.Banner.String(), units.MakeUpdateUnitColorsFunc(city.Banner))
 }
 
 func (game *Game) ShowGrandVizierUI(){
@@ -7685,14 +7675,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         var cityPic *ebiten.Image
         var err error
         cityPositions[image.Point{city.X, city.Y}] = struct{}{}
-        cityPic, err = GetCityWallImage(city, overworld.ImageCache)
-        /*
-        if city.Wall {
-            cityPic, err = GetCityWallImage(city.GetSize(), overworld.ImageCache)
-        } else {
-            cityPic, err = GetCityNoWallImage(city.GetSize(), overworld.ImageCache)
-        }
-        */
+        cityPic, err = GetCityImage(city, overworld.ImageCache)
 
         if err == nil {
             var options ebiten.DrawImageOptions

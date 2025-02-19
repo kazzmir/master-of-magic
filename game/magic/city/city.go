@@ -108,7 +108,6 @@ type City struct {
     Workers int
     Rebels int
     Name string
-    Wall bool
     Plane data.Plane
     // the race of the towns people
     Race data.Race
@@ -500,6 +499,10 @@ func (city *City) GetEnchantmentsCastBy(banner data.BannerType) []Enchantment {
     }
 
     return enchantments
+}
+
+func (city *City) HasWall() bool {
+    return city.Buildings.Contains(buildinglib.BuildingCityWalls)
 }
 
 func (city *City) HasWallOfFire() bool {
