@@ -6575,7 +6575,7 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
         }
 
         enchantment := enchantments[rand.N(len(enchantments))]
-        enchantment.City.RemoveEnchantment(enchantment.Enchantment.Enchantment, enchantment.Enchantment.Owner)
+        enchantment.City.CancelEnchantment(enchantment.Enchantment.Enchantment, enchantment.Enchantment.Owner)
     }
 
     var enchantedUnits []units.StackUnit
@@ -6876,6 +6876,23 @@ func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (in
     }
 
     return people, len(killedUnits), len(destroyedBuildings)
+}
+
+// At the beginning of each turn, all tiles in a 5x5 square (minus corners) around any city with Consecration should lose corruption
+func (game *Game) doCleanCorruptionForConsecratedCities() {
+    choices := game.AllCities()
+    if len(choices) == 0 {
+        return
+    }
+    for _, city := range choices {
+        if !city.HasEnchantment(data.CityEnchantmentConsecration) {
+            continue
+        }
+        useMap := game.GetMap(city.Plane)
+        for point, _ := range useMap.GetCatchmentArea(city.X, city.Y) {
+            useMap.RemoveCorruption(point.X, point.Y)
+        }
+    }
 }
 
 // returns number of citizens killed, units killed, and buildings destroyed
@@ -7410,6 +7427,8 @@ func (game *Game) EndOfTurn() {
     game.TurnNumber += 1
 
     game.DoRandomEvents()
+
+    game.doCleanCorruptionForConsecratedCities() // FIXME: I'm not fully sure if it should occur after random events and not before.
 }
 
 func (game *Game) DoNextTurn(){

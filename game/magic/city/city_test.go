@@ -459,7 +459,7 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City ComputePower is not correct: %v", city.ComputePower())
     }
 
-    city.RemoveEnchantment(data.CityEnchantmentStreamOfLife, banner)  // enable unrest
+    city.CancelEnchantment(data.CityEnchantmentStreamOfLife, banner)  // enable unrest
 
     // Famine
     city.AddEnchantment(data.CityEnchantmentFamine, banner)

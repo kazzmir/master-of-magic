@@ -1033,6 +1033,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Summon Champion"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Summon Hero"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Consecration"))
 
     // special spells
     player.KnownSpells.AddSpell(allSpells.FindByName("Earth Lore"))
