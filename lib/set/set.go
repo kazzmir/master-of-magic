@@ -1,5 +1,9 @@
 package set
 
+// The set type is a generic set implementation that uses a map as the underlying data structure.
+// Note that iterating over its Values() is non-deterministic. The order of the elements may be
+// different each time.
+
 type Set[T comparable] struct {
     data map[T]bool
 }
