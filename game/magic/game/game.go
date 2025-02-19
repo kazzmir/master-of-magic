@@ -25,6 +25,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/armyview"
@@ -1093,44 +1094,9 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
         game.Drawer = oldDrawer
     }()
 
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return ""
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return ""
-    }
-
-    bluish := color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff}
-    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
-    namePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        util.Lighten(bluish, -30),
-        util.Lighten(bluish, -20),
-        util.Lighten(bluish, -10),
-        util.Lighten(bluish, 0),
-    }
-
-    orange := color.RGBA{R: 0xed, G: 0xa7, B: 0x12, A: 0xff}
-    titlePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        util.Lighten(orange, -30),
-        util.Lighten(orange, -20),
-        util.Lighten(orange, -10),
-        util.Lighten(orange, 0),
-    }
+    fonts := fontslib.MakeInputFonts(game.Cache)
 
     maxLength := float64(84 * data.ScreenScale)
-
-    nameFont := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
-
-    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
     quit := false
 
@@ -1158,7 +1124,7 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
         TextEntry: func(element *uilib.UIElement, text string) string {
             name = text
 
-            for len(name) > 0 && nameFont.MeasureTextWidth(name, float64(data.ScreenScale)) > maxLength {
+            for len(name) > 0 && fonts.NameFont.MeasureTextWidth(name, float64(data.ScreenScale)) > maxLength {
                 name = name[:len(name)-1]
             }
 
@@ -1186,13 +1152,13 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
 
             x, y := options.GeoM.Apply(float64(13 * data.ScreenScale), float64(20 * data.ScreenScale))
 
-            nameFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, name)
+            fonts.NameFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, name)
 
             tx, ty := options.GeoM.Apply(float64(9 * data.ScreenScale), float64(6 * data.ScreenScale))
-            titleFont.Print(screen, tx, ty, float64(data.ScreenScale), options.ColorScale, title)
+            fonts.TitleFont.Print(screen, tx, ty, float64(data.ScreenScale), options.ColorScale, title)
 
             // draw cursor
-            cursorX := x + nameFont.MeasureTextWidth(name, float64(data.ScreenScale))
+            cursorX := x + fonts.NameFont.MeasureTextWidth(name, float64(data.ScreenScale))
 
             util.DrawTextCursor(screen, source, cursorX, y, game.Counter)
         },

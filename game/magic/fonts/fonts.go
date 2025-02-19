@@ -412,3 +412,51 @@ func MakeBuildScreenFonts(cache *lbx.LbxCache) *BuildScreenFonts {
         MediumFont: mediumFont,
     }
 }
+
+type InputFonts struct {
+    NameFont *font.Font
+    TitleFont *font.Font
+}
+
+func MakeInputFonts(cache *lbx.LbxCache) *InputFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    bluish := color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff}
+    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    namePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        util.Lighten(bluish, -30),
+        util.Lighten(bluish, -20),
+        util.Lighten(bluish, -10),
+        util.Lighten(bluish, 0),
+    }
+
+    orange := color.RGBA{R: 0xed, G: 0xa7, B: 0x12, A: 0xff}
+    titlePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        util.Lighten(orange, -30),
+        util.Lighten(orange, -20),
+        util.Lighten(orange, -10),
+        util.Lighten(orange, 0),
+    }
+
+    nameFont := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
+    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
+
+    return &InputFonts{
+        NameFont: nameFont,
+        TitleFont: titleFont,
+    }
+}
