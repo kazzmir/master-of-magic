@@ -131,16 +131,21 @@ func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, c
     }
     buildings = buildingsUse
 
-    // sort from biggest to smallest
+    // sort from biggest to smallest, or by index
     buildings = slices.SortedFunc(slices.Values(buildings), func (a, b Building) int {
         aWidth, aHeight := a.Size()
         bWidth, bHeight := b.Size()
-        return (bWidth * bHeight) - (aWidth * aHeight)
+        areasDifference := (bWidth * bHeight) - (aWidth * aHeight)
+        // If areas are the same, sort by index, otherwise we'll get unpredictable order for buildings with equal areas.
+        if areasDifference == 0 {
+            return b.Index() - a.Index()
+        }
+        return areasDifference
     })
 
     var stack []State
 
-    for _, i := range rand.Perm(len(rects)) {
+    for _, i := range random.Perm(len(rects)) {
         stack = append(stack, State{Buildings: buildings, Rects: rects, Index: i})
     }
 
@@ -169,7 +174,7 @@ func doLayoutIterative(buildings []Building, rects []*Rect, random *rand.Rand, c
         if rect.Add(building, width, height, random) {
             // fmt.Printf("Added %v (%v,%v) to rect %v\n", building, width, height, rect.Id)
 
-            for _, i := range rand.Perm(len(rects)) {
+            for _, i := range random.Perm(len(rects)) {
                 stack = append(stack, State{Buildings: use.Buildings[1:], Rects: moreRects, Index: i})
             }
 
