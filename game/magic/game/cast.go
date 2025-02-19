@@ -89,6 +89,9 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 chosenCity.AddBuilding(building.BuildingCityWalls)
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentWallOfStone)
                 chosenCity.RemoveEnchantments(data.CityEnchantmentWallOfStone)
+                if chosenCity.ProducingBuilding == building.BuildingCityWalls {
+                    chosenCity.ProducingBuilding = building.BuildingTradeGoods
+                }
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCityNoWalls, SelectedFunc: selected}
