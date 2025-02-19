@@ -148,6 +148,7 @@ func enchantmentBuildings() map[data.CityEnchantment]buildinglib.Building {
     buildings[data.CityEnchantmentStreamOfLife] = buildinglib.BuildingStreamOfLife
     buildings[data.CityEnchantmentEarthGate] = buildinglib.BuildingEarthGate
     buildings[data.CityEnchantmentDarkRituals] = buildinglib.BuildingDarkRituals
+    buildings[data.CityEnchantmentWallOfStone] = buildinglib.BuildingCityWalls
     return buildings
 }
 
@@ -297,7 +298,7 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     enchantmentBuildings := enchantmentBuildings()
 
     for enchantment, building := range enchantmentBuildings {
-        if city.HasEnchantment(enchantment) {
+        if city.HasEnchantment(enchantment) && building != buildinglib.BuildingCityWalls {
             toLayout.Insert(building)
         }
     }

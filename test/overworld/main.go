@@ -1036,6 +1036,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     // city spells
     player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Darkness"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Stone"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature's Eye"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Prosperity"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Inspirations"))
@@ -1083,7 +1084,6 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city.Plane = data.PlaneArcanus
     city.Banner = wizard.Banner
     city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
-    city.Buildings.Insert(buildinglib.BuildingCityWalls)
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.Race = wizard.Race

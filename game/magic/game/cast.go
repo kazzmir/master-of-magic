@@ -24,6 +24,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/camera"
+    "github.com/kazzmir/master-of-magic/game/magic/building"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -34,6 +35,7 @@ const (
     LocationTypeLand
     LocationTypeEmptyWater
     LocationTypeFriendlyCity
+    LocationTypeFriendlyCityNoWalls
     LocationTypeEnemyCity
     LocationTypeFriendlyUnit
     LocationTypeEnemyUnit
@@ -77,6 +79,19 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEmptyWater, SelectedFunc: selected}
+        case "Wall of Stone":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
+                if chosenCity == nil {
+                    return
+                }
+
+                chosenCity.AddBuilding(building.BuildingCityWalls)
+                game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentWallOfStone)
+                chosenCity.RemoveEnchantments(data.CityEnchantmentWallOfStone)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCityNoWalls, SelectedFunc: selected}
         case "Wall of Fire":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentWallOfFire)
@@ -591,7 +606,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         case LocationTypeAny, LocationTypeLand, LocationTypeEmptyWater, LocationTypeChangeTerrain,
             LocationTypeTransmute, LocationTypeRaiseVolcano:
             selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
-        case LocationTypeFriendlyCity:
+        case LocationTypeFriendlyCity, LocationTypeFriendlyCityNoWalls:
             selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
         case LocationTypeEnemyMeldedNode:
             selectMessage = fmt.Sprintf("Select a magic node as the target for a %v spell.", spell.Name)
@@ -758,6 +773,11 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                     case LocationTypeFriendlyCity:
                         city := player.FindCity(tileX, tileY, game.Plane)
                         if city != nil {
+                            return tileX, tileY, false
+                        }
+                    case LocationTypeFriendlyCityNoWalls:
+                        city := player.FindCity(tileX, tileY, game.Plane)
+                        if city != nil && !city.Buildings.Contains(building.BuildingCityWalls){
                             return tileX, tileY, false
                         }
                     case LocationTypeChangeTerrain:
