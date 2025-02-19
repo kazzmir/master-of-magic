@@ -611,6 +611,12 @@ func (player *Player) GetUnits(x int, y int, plane data.Plane) []units.StackUnit
     return nil
 }
 
+func (player *Player) OwnsStack(stack *UnitStack) bool {
+    return slices.ContainsFunc(player.Stacks, func (check *UnitStack) bool {
+        return check == stack
+    })
+}
+
 func (player *Player) OwnsCity(city *citylib.City) bool {
     return slices.ContainsFunc(player.Cities, func (check *citylib.City) bool {
         return check == city

@@ -3512,6 +3512,26 @@ func (game *Game) doBanish(yield coroutine.YieldFunc, attacker *playerlib.Player
     yield()
 }
 
+func (game *Game) GetStackOwner(stack *playerlib.UnitStack) *playerlib.Player {
+    for _, player := range game.Players {
+        if player.OwnsStack(stack) {
+            return player
+        }
+    }
+
+    return nil
+}
+
+func (game *Game) GetCityOwner(city *citylib.City) *playerlib.Player {
+    for _, player := range game.Players {
+        if player.OwnsCity(city) {
+            return player
+        }
+    }
+
+    return nil
+}
+
 func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerlib.Player) {
     stack := player.SelectedStack
     if stack == nil || len(stack.ActiveUnits()) == 0 {
@@ -3528,39 +3548,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         return player.FindStack(mapUse.WrapX(x), y, stack.Plane())
     }
 
-    // represents stacks and cities at a given location
-    type Entity struct {
-        Stack *playerlib.UnitStack
-        City *citylib.City
-        Player *playerlib.Player
-    }
-
-    // cache the positions of all enemies and cities
-    otherEntities := make(map[image.Point]*Entity)
-
-    for _, otherPlayer := range game.Players[1:] {
-        for _, other := range otherPlayer.Stacks {
-            if stack.Plane() == other.Plane() {
-                otherEntities[image.Pt(stack.X(), stack.Y())] = &Entity{
-                    Stack: stack,
-                    Player: otherPlayer,
-                }
-            }
-        }
-
-        for _, city := range otherPlayer.Cities {
-            if city.Plane == stack.Plane() {
-                entity, ok := otherEntities[image.Pt(city.X, city.Y)]
-                if !ok {
-                    otherEntities[image.Pt(city.X, city.Y)] = &Entity{}
-                    entity = otherEntities[image.Pt(city.X, city.Y)]
-                }
-
-                entity.City = city
-                entity.Player = otherPlayer
-            }
-        }
-    }
+    entityInfo := game.ComputeCityStackInfo()
 
     quitMoving:
     for i, step := range stack.CurrentPath {
@@ -3605,23 +3593,24 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             game.showMovement(yield, oldX, oldY, stack, true)
             player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
-            entity, ok := otherEntities[image.Pt(stack.X(), stack.Y())]
-            if ok {
+            if entityInfo.ContainsEnemy(stack.X(), stack.Y(), stack.Plane(), player) {
                 // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
-                otherStack := entity.Stack
+                otherStack := entityInfo.FindStack(stack.X(), stack.Y(), stack.Plane())
                 if otherStack != nil {
-                    otherCity := entity.City
+                    otherCity := entityInfo.FindCity(stack.X(), stack.Y(), stack.Plane())
                     zone := combat.ZoneType{
                         City: otherCity,
                     }
 
+                    defenderPlayer := game.GetStackOwner(otherStack)
+
                     // note: doCombat will already call defeatCity if the attacker wins the battle
-                    state := game.doCombat(yield, player, stack, entity.Player, otherStack, zone)
+                    state := game.doCombat(yield, player, stack, defenderPlayer, otherStack, zone)
                     if state == combat.CombatStateAttackerFlee {
                         stack.SetX(oldX)
                         stack.SetY(oldY)
                     } else if state == combat.CombatStateDefenderFlee {
-                        game.doMoveFleeingDefender(entity.Player, otherStack)
+                        game.doMoveFleeingDefender(defenderPlayer, otherStack)
                     }
 
                     stack.ExhaustMoves()
@@ -3632,15 +3621,16 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                 }
 
                 // defeat any unguarded cities immediately
-                otherCity := entity.City
+                otherCity := entityInfo.FindCity(stack.X(), stack.Y(), stack.Plane())
                 if otherCity != nil {
-                    raze, gold := game.defeatCity(yield, player, stack, entity.Player, otherCity)
+                    defenderPlayer := game.GetCityOwner(otherCity)
+                    raze, gold := game.defeatCity(yield, player, stack, defenderPlayer, otherCity)
 
                     // FIXME: show a notice about any fame won
                     player.Fame += otherCity.FameForCaptureOrRaze(!raze)
-                    entity.Player.Fame += otherCity.FameForCaptureOrRaze(false)
+                    defenderPlayer.Fame += otherCity.FameForCaptureOrRaze(false)
                     player.Gold += gold
-                    entity.Player.Gold -= gold
+                    defenderPlayer.Gold -= gold
 
                     stack.ExhaustMoves()
                     game.RefreshUI()
@@ -4606,7 +4596,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-        // FIXME: take plane into account for the landscape/terrain
         combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
 
         // ebiten.SetCursorMode(ebiten.CursorModeHidden)
@@ -4695,6 +4684,42 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     attacker.Fame = max(0, attacker.Fame + attackerFame)
     defender.Fame = max(0, defender.Fame + defenderFame)
 
+    cityPopulationLoss := 0
+    var cityBuildingLoss []buildinglib.Building
+
+    if zone.City != nil && state == combat.CombatStateAttackerWin {
+        // maximum chance is 50%, minimum is 10%
+        chance := min(50, 10 + combatScreen.Model.CollateralDamage * 2)
+        for range zone.City.Citizens() - 1 {
+            if rand.N(100) < chance {
+                cityPopulationLoss += 1
+            }
+        }
+
+        minBuildingChance := 10
+        if attacker.GetBanner() == data.BannerBrown {
+            minBuildingChance = 50
+        }
+
+        chance = min(75, minBuildingChance + combatScreen.Model.CollateralDamage)
+        for _, building := range zone.City.Buildings.Values() {
+            if building == buildinglib.BuildingFortress || building == buildinglib.BuildingSummoningCircle {
+                continue
+            }
+
+            if rand.N(100) < chance {
+                cityBuildingLoss = append(cityBuildingLoss, building)
+            }
+        }
+
+        zone.City.Population -= cityPopulationLoss * 1000
+        for _, building := range cityBuildingLoss {
+            zone.City.Buildings.Remove(building)
+        }
+        // there cant be any units defending because they were all defeated
+        zone.City.ResetCitizens(nil)
+    }
+
     // Show end screen
     if !attacker.StrategicCombat || !defender.StrategicCombat {
         result := combat.CombatEndScreenResultLoose
@@ -4715,7 +4740,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
 
         // FIXME: show how much gold was plundered (or lost)
-        endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result, combatScreen.Model.DiedWhileFleeing, fame)
+        endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result, combatScreen.Model.DiedWhileFleeing, fame, cityPopulationLoss, len(cityBuildingLoss))
         game.Drawer = func (screen *ebiten.Image, game *Game){
             endScreen.Draw(screen)
         }

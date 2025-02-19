@@ -3792,6 +3792,114 @@ func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// combat in enemy city
+func createScenario45(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 45")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.CastingSkillPower += 500000
+    player.TaxRate = fraction.Zero()
+
+    x, y, _ := game.FindValidCityLocationOnShore(game.Plane)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game, player)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 16
+    city.Workers = 0
+
+    city.AddBuilding(buildinglib.BuildingShrine)
+    city.AddBuilding(buildinglib.BuildingTemple)
+    city.AddBuilding(buildinglib.BuildingParthenon)
+    city.AddBuilding(buildinglib.BuildingGranary)
+    city.AddBuilding(buildinglib.BuildingOracle)
+    city.AddBuilding(buildinglib.BuildingFarmersMarket)
+
+    city.AddEnchantment(data.CityEnchantmentAstralGate, player.GetBanner())
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 1000
+
+    player.LiftFog(x, y, 200, data.PlaneArcanus)
+
+    city.ResetCitizens(nil)
+
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "dingus",
+        Banner: data.BannerGreen,
+        Race: data.RaceHighElf,
+    }, false)
+
+    enemy1.AIBehavior = nil
+    enemy1.Gold = 10000
+    enemy1.Mana = 10000
+
+    x, y, _ = game.FindValidCityLocation(game.Plane)
+
+    city2 := citylib.MakeCity("enemy city", x, y, enemy1.Wizard.Race, enemy1.Wizard.Banner, enemy1.TaxRate, game.BuildingInfo, game.CurrentMap(), game, enemy1)
+    city2.Population = 16190
+    city2.Plane = data.PlaneArcanus
+    city2.Banner = enemy1.Wizard.Banner
+    city2.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city2.ProducingBuilding = buildinglib.BuildingGranary
+    city2.ProducingUnit = units.UnitNone
+    city2.Race = wizard.Race
+    city2.Farmers = 16
+    city2.Workers = 0
+
+    city2.AddBuilding(buildinglib.BuildingShrine)
+    city2.AddBuilding(buildinglib.BuildingTemple)
+    city2.AddBuilding(buildinglib.BuildingParthenon)
+    city2.AddBuilding(buildinglib.BuildingGranary)
+    city2.AddBuilding(buildinglib.BuildingOracle)
+    city2.AddBuilding(buildinglib.BuildingFarmersMarket)
+    enemy1.AddCity(city2)
+
+    // add an enemy at the same spot but on the opposite plane
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x, y+1, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x, y+1, data.PlaneArcanus, wizard.Banner, nil))
+
+    game.Camera.Center(x, y)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -3842,6 +3950,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 42: game = createScenario42(cache)
         case 43: game = createScenario43(cache)
         case 44: game = createScenario44(cache)
+        case 45: game = createScenario45(cache)
         default: game = createScenario1(cache)
     }
 

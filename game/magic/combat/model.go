@@ -148,6 +148,7 @@ type Tile struct {
     Wall *set.Set[WallKind]
 
     // true if this tile is inside the wall of fire/darkness
+    InsideTown bool
     InsideFire bool
     InsideDarkness bool
     InsideWall bool
@@ -254,13 +255,13 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
 
         // clear all space around the city
         for x := townSquare.Min.X; x <= townSquare.Max.X; x++ {
-            for y := -townSquare.Min.Y; y <= townSquare.Max.Y; y++ {
-                mx := x + TownCenterX
-                my := y + TownCenterY
-                tiles[my][mx].ExtraObject.Index = -1
+            for y := townSquare.Min.Y; y <= townSquare.Max.Y; y++ {
+                tiles[y][x].ExtraObject.Index = -1
+                tiles[y][x].InsideTown = true
             }
         }
 
+        // add random houses
         for range 8 {
             x, y := randTownSquare()
 
@@ -1079,6 +1080,9 @@ type CombatModel struct {
 
     // cached location of city wall gate
     CityWallGate image.Point
+
+    // incremented for each unit that is inside the town area (when fighting in a town)
+    CollateralDamage int
 }
 
 func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType) *CombatModel {
@@ -1193,6 +1197,11 @@ func (model *CombatModel) NextTurn() {
     }
 
     for _, unit := range model.AttackingArmy.Units {
+        // increase collateral damage to the town for each unit that is within the town area
+        if model.InsideTown(unit.X, unit.Y) {
+            model.CollateralDamage += 1
+        }
+
         unit.ResetTurnData()
     }
 }
@@ -1462,6 +1471,14 @@ func (model *CombatModel) InsideWallOfDarkness(x int, y int) bool {
     }
 
     return model.Tiles[y][x].InsideDarkness
+}
+
+func (model *CombatModel) InsideTown(x int, y int) bool {
+    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
+        return false
+    }
+
+    return model.Tiles[y][x].InsideTown
 }
 
 func (model *CombatModel) InsideCityWall(x int, y int) bool {

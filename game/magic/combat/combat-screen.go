@@ -2875,7 +2875,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     }
 
     if combat.DrawRoad {
-        tx, ty := tilePosition(TownCenterX+1, TownCenterY-4)
+        tx, ty := tilePosition(TownCenterX-1, TownCenterY-4)
 
         road, _ := combat.ImageCache.GetImageTransform("cmbtcity.lbx", 0, 0, "crop", util.AutoCrop)
         options.GeoM.Reset()
