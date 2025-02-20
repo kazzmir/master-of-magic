@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -571,21 +572,9 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         }
     }
 
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Error reading fonts: %v", err)
-        return 0, 0, true
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Error reading fonts: %v", err)
-        return 0, 0, true
-    }
-
-    castingFont := makeSurveyorFont(fonts)
-    // yellowFont := makeYellowFont(fonts)
-    whiteFont := makeWhiteFont(fonts)
+    fonts := fontslib.MakeSurveyorFonts(game.Cache)
+    castingFont := fonts.SurveyorFont
+    whiteFont := fonts.WhiteFont
 
     overworld := Overworld{
         Camera: game.Camera,

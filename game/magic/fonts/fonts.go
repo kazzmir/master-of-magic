@@ -495,3 +495,59 @@ func MakeMerchantFonts(cache *lbx.LbxCache) *MerchantFonts {
         LightFont: lightFont,
     }
 }
+
+type SurveyorFonts struct {
+    SurveyorFont *font.Font
+    YellowFont *font.Font
+    WhiteFont *font.Font
+}
+
+func MakeSurveyorFonts(cache *lbx.LbxCache) *SurveyorFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Error reading fonts: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error reading fonts: %v", err)
+        return nil
+    }
+
+    white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+    palette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        white, white, white,
+        white, white, white,
+    }
+
+    surveyorFont := font.MakeOptimizedFontWithPalette(fonts[4], palette)
+
+    yellow := util.RotateHue(color.RGBA{R: 255, G: 255, B: 0, A: 255}, -0.15)
+
+    paletteYellow := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+    }
+
+    yellowFont := font.MakeOptimizedFontWithPalette(fonts[1], paletteYellow)
+
+    paletteWhite := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        white, white, white,
+        white, white, white,
+    }
+
+    whiteFont := font.MakeOptimizedFontWithPalette(fonts[1], paletteWhite)
+
+    return &SurveyorFonts{
+        SurveyorFont: surveyorFont,
+        YellowFont: yellowFont,
+        WhiteFont: whiteFont,
+    }
+}
