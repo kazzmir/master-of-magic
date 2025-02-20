@@ -405,7 +405,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
           */
 
         /* TODO: global enchantments
-          Awareness
           Detect Magic
           Charm of Life
           Crusade
