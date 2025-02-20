@@ -251,6 +251,15 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeRaiseVolcano, SelectedFunc: selected}
+        case "Awareness":
+            if !player.GlobalEnchantments.Contains(data.EnchantmentAwareness) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentAwareness}
+
+                player.GlobalEnchantments.Insert(data.EnchantmentAwareness)
+                game.doExploreFogForAwareness(player)
+                
+                game.RefreshUI()
+            }
         case "Nature Awareness":
             if !player.GlobalEnchantments.Contains(data.EnchantmentNatureAwareness) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentNatureAwareness}

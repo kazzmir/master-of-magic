@@ -1324,6 +1324,7 @@ func (mapObject *Map) OnShore(x int, y int) bool {
     return tile.IsTouchingShore(mapObject)
 }
 
+// Returns city catchment area (5x5 square minus the corners)
 func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]FullTile {
 
     area := make(map[image.Point]FullTile)
@@ -1334,6 +1335,27 @@ func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]FullTile {
                 continue
             }
 
+            tileX := mapObject.WrapX(x + dx)
+            tileY := y + dy
+
+            tile := mapObject.GetTile(tileX, tileY)
+            if tile.Valid() {
+                area[image.Pt(tileX, tileY)] = tile
+            }
+        }
+    }
+
+    return area
+}
+
+// Returns a square with a side of (radius * 2 + 1), and x, y in the center. May be useful for some spells or area effects
+// Radius has to be >= 0
+func (mapObject *Map) GetSquareAreaAround(x int, y int, radius int) map[image.Point]FullTile {
+
+    area := make(map[image.Point]FullTile)
+
+    for dx := -radius; dx <= radius; dx++ {
+        for dy := -radius; dy <= radius; dy++ {
             tileX := mapObject.WrapX(x + dx)
             tileY := y + dy
 
