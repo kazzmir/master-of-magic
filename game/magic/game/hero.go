@@ -1,15 +1,12 @@
 package game
 
 import (
-    "log"
     "fmt"
     "image"
-    "image/color"
     "math"
     "slices"
     "cmp"
 
-    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -17,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -25,51 +23,11 @@ import (
 )
 
 func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, goldToHire int, action func(bool), onFadeOut func()) *uilib.UIElementGroup {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
-    }
-
     imageCache := util.MakeImageCache(cache)
 
     yTop := float64(10 * data.ScreenScale)
 
-    descriptionPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
-    mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
-
-    yellowGradient := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
-        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-    }
-
-    okDismissFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
+    fonts := fontslib.MakeHireHeroFonts(cache)
 
     const fadeSpeed = 7
 
@@ -108,13 +66,13 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
             options.GeoM.Translate(float64(51 * data.ScreenScale), float64(7 * data.ScreenScale))
 
-            unitview.RenderUnitInfoNormal(screen, &imageCache, hero, hero.GetTitle(), "", descriptionFont, smallFont, options)
+            unitview.RenderUnitInfoNormal(screen, &imageCache, hero, hero.GetTitle(), "", fonts.DescriptionFont, fonts.SmallFont, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
             options.GeoM.Translate(float64(10 * data.ScreenScale), float64(50 * data.ScreenScale))
-            unitview.RenderUnitInfoStats(screen, &imageCache, hero, 15, descriptionFont, smallFont, options)
+            unitview.RenderUnitInfoStats(screen, &imageCache, hero, 15, fonts.DescriptionFont, fonts.SmallFont, options)
 
             /*
             options.GeoM.Translate(0, 60)
@@ -123,7 +81,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
         },
     })
 
-    uiGroup.AddElements(unitview.MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, hero, mediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, true, 0))
+    uiGroup.AddElements(unitview.MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, hero, fonts.MediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, true, 0))
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
@@ -180,7 +138,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
             x := float64(hireRect.Min.X + hireRect.Max.X) / 2
             y := float64(hireRect.Min.Y + hireRect.Max.Y) / 2
-            okDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, hireText)
+            fonts.OkDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, hireText)
         },
     })
 
@@ -208,7 +166,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
             x := float64(rejectRect.Min.X + rejectRect.Max.X) / 2
             y := float64(rejectRect.Min.Y + rejectRect.Max.Y) / 2
-            okDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Reject")
+            fonts.OkDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Reject")
         },
     })
 
@@ -221,7 +179,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(banner, &options)
 
-            okDismissFont.PrintCenter(screen, float64(135 * data.ScreenScale), float64(6 * data.ScreenScale), float64(1 * data.ScreenScale), options.ColorScale, titleText)
+            fonts.OkDismissFont.PrintCenter(screen, float64(135 * data.ScreenScale), float64(6 * data.ScreenScale), float64(1 * data.ScreenScale), options.ColorScale, titleText)
         },
     })
 
@@ -229,28 +187,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 }
 
 func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.Hero) {
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return
-    }
-
-    yellowGradient := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
-        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-    }
+    fonts := fontslib.MakeHeroLevelUpFonts(game.Cache)
 
     top := float64(40 * data.ScreenScale)
     left := float64(30 * data.ScreenScale)
@@ -289,16 +226,13 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
     height := (50 + abilityRows * 20) * data.ScreenScale
 
-    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[2], yellowGradient)
-
     backgroundTop, _ := game.ImageCache.GetImage("reload.lbx", 23, 0)
     backgroundTop = backgroundTop.SubImage(image.Rect(0, 0, backgroundTop.Bounds().Dx(), height)).(*ebiten.Image)
 
     backgroundBottom, _ := game.ImageCache.GetImage("reload.lbx", 24, 0)
 
     portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
-    portrait, err := game.ImageCache.GetImage(portraitLbx, portraitIndex, 0)
+    portrait, _ := game.ImageCache.GetImage(portraitLbx, portraitIndex, 0)
 
     dot, _ := game.ImageCache.GetImage("itemisc.lbx", 26, 0)
 
@@ -329,7 +263,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
         screen.DrawImage(portrait, &options)
 
         // text
-        titleFont.Print(screen, left + float64(48 * data.ScreenScale), top + float64(10 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v has made a level.", hero.Name))
+        fonts.TitleFont.Print(screen, left + float64(48 * data.ScreenScale), top + float64(10 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v has made a level.", hero.Name))
 
         // stats progression
         for index, progression := range hero.GetBaseProgression() {
@@ -340,7 +274,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
             options.GeoM.Translate(left + (48 + xOffset) * float64(data.ScreenScale), top + (25 + yOffset) * float64(data.ScreenScale))
             screen.DrawImage(dot, &options)
 
-            smallFont.Print(screen, left + (55 + xOffset) * float64(data.ScreenScale), top + (24 + yOffset) * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, progression)
+            fonts.SmallFont.Print(screen, left + (55 + xOffset) * float64(data.ScreenScale), top + (24 + yOffset) * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, progression)
         }
 
         row := 0
@@ -350,7 +284,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
         // level
         options.GeoM.Reset()
         options.GeoM.Translate(left + float64((10 + abilityWidth * column) * data.ScreenScale), top + float64((50 + row * 20) * data.ScreenScale))
-        unitview.RenderExperienceBadge(screen, &game.ImageCache, hero, smallFont, options, false)
+        unitview.RenderExperienceBadge(screen, &game.ImageCache, hero, fonts.SmallFont, options, false)
 
         // start in second column because the badge is in the first
         column = 1
@@ -367,9 +301,9 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
                 abilityBonus := hero.GetAbilityBonus(ability.Ability)
                 if abilityBonus > 0 {
-                    smallFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v +%v", ability.Name(), abilityBonus))
+                    fonts.SmallFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v +%v", ability.Name(), abilityBonus))
                 } else {
-                    smallFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, ability.Name())
+                    fonts.SmallFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, ability.Name())
                 }
             }
 

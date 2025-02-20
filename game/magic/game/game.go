@@ -25,6 +25,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/game/magic/armyview"
@@ -43,7 +44,6 @@ import (
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
-    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -243,14 +243,13 @@ const (
 type Game struct {
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
-    WhiteFont *font.Font
 
     Music *music.Music
 
+    Fonts *fontslib.GameFonts
+
     Settings setup.NewGameSettings
 
-    InfoFontYellow *font.Font
-    InfoFontRed *font.Font
     Counter uint64
     Fog *ebiten.Image
     Drawer func (*ebiten.Image, *Game)
@@ -559,48 +558,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         return nil
     }
 
-    fontLbx, err := lbxCache.GetLbxFile("FONTS.LBX")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
-    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
-
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        orange,
-        orange,
-        orange,
-        orange,
-        orange,
-        orange,
-    }
-
-    infoFontYellow := font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
-
-    red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
-    redPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        red, red, red,
-        red, red, red,
-    }
-
-    infoFontRed := font.MakeOptimizedFontWithPalette(fonts[0], redPalette)
-
-    whitePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.White, color.White, color.White, color.White,
-    }
-
-    whiteFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
+    fonts := fontslib.MakeGameFonts(lbxCache)
 
     buildingInfo, err := buildinglib.ReadBuildingInfo(lbxCache)
     if err != nil {
@@ -626,10 +584,8 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         State: GameStateRunning,
         Settings: settings,
         ImageCache: imageCache,
-        InfoFontYellow: infoFontYellow,
-        InfoFontRed: infoFontRed,
+        Fonts: fonts,
         ArtifactPool: createArtifactPool(lbxCache),
-        WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
         TurnNumber: 1,
         CurrentPlayer: -1,
@@ -1093,44 +1049,9 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
         game.Drawer = oldDrawer
     }()
 
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return ""
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return ""
-    }
-
-    bluish := color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff}
-    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
-    namePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        util.Lighten(bluish, -30),
-        util.Lighten(bluish, -20),
-        util.Lighten(bluish, -10),
-        util.Lighten(bluish, 0),
-    }
-
-    orange := color.RGBA{R: 0xed, G: 0xa7, B: 0x12, A: 0xff}
-    titlePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        util.Lighten(orange, -30),
-        util.Lighten(orange, -20),
-        util.Lighten(orange, -10),
-        util.Lighten(orange, 0),
-    }
+    fonts := fontslib.MakeInputFonts(game.Cache)
 
     maxLength := float64(84 * data.ScreenScale)
-
-    nameFont := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
-
-    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
     quit := false
 
@@ -1158,7 +1079,7 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
         TextEntry: func(element *uilib.UIElement, text string) string {
             name = text
 
-            for len(name) > 0 && nameFont.MeasureTextWidth(name, float64(data.ScreenScale)) > maxLength {
+            for len(name) > 0 && fonts.NameFont.MeasureTextWidth(name, float64(data.ScreenScale)) > maxLength {
                 name = name[:len(name)-1]
             }
 
@@ -1186,13 +1107,13 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
 
             x, y := options.GeoM.Apply(float64(13 * data.ScreenScale), float64(20 * data.ScreenScale))
 
-            nameFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, name)
+            fonts.NameFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, name)
 
             tx, ty := options.GeoM.Apply(float64(9 * data.ScreenScale), float64(6 * data.ScreenScale))
-            titleFont.Print(screen, tx, ty, float64(data.ScreenScale), options.ColorScale, title)
+            fonts.TitleFont.Print(screen, tx, ty, float64(data.ScreenScale), options.ColorScale, title)
 
             // draw cursor
-            cursorX := x + nameFont.MeasureTextWidth(name, float64(data.ScreenScale))
+            cursorX := x + fonts.NameFont.MeasureTextWidth(name, float64(data.ScreenScale))
 
             util.DrawTextCursor(screen, source, cursorX, y, game.Counter)
         },
@@ -1216,29 +1137,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         game.Drawer = drawer
     }()
 
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return
-    }
-
-    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-    }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+    fonts := fontslib.MakeNewBuildingFonts(game.Cache)
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
 
@@ -1257,7 +1156,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
     }
     animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
 
-    wrappedText := bigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
+    wrappedText := fonts.BigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
 
     rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
 
@@ -1287,7 +1186,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         screen.DrawImage(animal, &iconOptions)
 
         x, y := options.GeoM.Apply(float64(8 * data.ScreenScale + animal.Bounds().Dx()), float64(9 * data.ScreenScale))
-        bigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
+        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
         screen.DrawImage(rightSide, &options)
@@ -1339,42 +1238,13 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 }
 
 func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text string){
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return
-    }
+    fonts := fontslib.MakeScrollFonts(game.Cache)
 
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return
-    }
-
-    red := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -60)
-    redPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        red, red, red,
-        red, red, red,
-    }
-
-    red2 := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -80)
-    redPalette2 := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        red2, red2, red2,
-        red2, red2, red2,
-    }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
-
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], redPalette2)
-    wrappedText := smallFont.CreateWrappedText(float64(180 * data.ScreenScale), float64(data.ScreenScale), text)
+    wrappedText := fonts.SmallFont.CreateWrappedText(float64(180 * data.ScreenScale), float64(data.ScreenScale), text)
 
     scrollImages, _ := game.ImageCache.GetImages("scroll.lbx", 2)
 
-    totalImages := int((wrappedText.TotalHeight + float64(bigFont.Height() * data.ScreenScale)) / float64(5 * data.ScreenScale)) + 1
+    totalImages := int((wrappedText.TotalHeight + float64(fonts.BigFont.Height() * data.ScreenScale)) / float64(5 * data.ScreenScale)) + 1
 
     if totalImages < 3 {
         totalImages = 3
@@ -1420,10 +1290,10 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
         textScale := options.ColorScale
         textScale.ScaleAlpha(getAlpha())
 
-        x, y := options.GeoM.Apply(float64(pageBackground.Bounds().Dx()) / 2, float64(middleY) - wrappedText.TotalHeight / 2 - float64(bigFont.Height() * data.ScreenScale) / 2 + 5)
-        bigFont.PrintCenter(screen, x, y, float64(data.ScreenScale), textScale, title)
-        y += float64(bigFont.Height() * data.ScreenScale) + 1
-        smallFont.RenderWrapped(screen, x, y, wrappedText, textScale, true)
+        x, y := options.GeoM.Apply(float64(pageBackground.Bounds().Dx()) / 2, float64(middleY) - wrappedText.TotalHeight / 2 - float64(fonts.BigFont.Height() * data.ScreenScale) / 2 + 5)
+        fonts.BigFont.PrintCenter(screen, x, y, float64(data.ScreenScale), textScale, title)
+        y += float64(fonts.BigFont.Height() * data.ScreenScale) + 1
+        fonts.SmallFont.RenderWrapped(screen, x, y, wrappedText, textScale, true)
 
         scrollOptions := options
         scrollOptions.GeoM.Translate(float64(-63 * data.ScreenScale), float64(-20 * data.ScreenScale))
@@ -1488,41 +1358,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         game.Drawer = drawer
     }()
 
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return
-    }
-
-    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
-    yellow := util.Lighten(util.RotateHue(color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}, -0.60), 0)
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow,
-        util.Lighten(yellow, -20),
-        util.Lighten(yellow, -20),
-        util.Lighten(yellow, -15),
-        util.Lighten(yellow, -30),
-        util.Lighten(yellow, -10),
-        util.Lighten(yellow, -15),
-        util.Lighten(yellow, -10),
-        util.Lighten(yellow, -10),
-        util.Lighten(yellow, -35),
-        util.Lighten(yellow, -45),
-        yellow,
-        yellow,
-        yellow,
-    }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
+    fonts := fontslib.MakeOutpostFonts(game.Cache)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
@@ -1576,13 +1412,13 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         }
 
         x, y := options.GeoM.Apply(float64(6 * data.ScreenScale), float64(22 * data.ScreenScale))
-        game.InfoFontYellow.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, city.Race.String())
+        game.Fonts.InfoFontYellow.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, city.Race.String())
 
         x, y = options.GeoM.Apply(float64(20 * data.ScreenScale), float64(5 * data.ScreenScale))
         if rename {
-            bigFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "New Outpost Founded")
+            fonts.BigFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "New Outpost Founded")
         } else {
-            bigFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
+            fonts.BigFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
         }
 
         cityScapeOptions := options
@@ -2165,28 +2001,7 @@ func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summo
 // mutates the ui by adding/removing elements
 // FIXME: its a hack to pass in the background image as a double pointer so we can mutate it
 func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, background **ebiten.Image, onOk func()) {
-    fontLbx, err := game.Cache.GetLbxFile("FONTS.LBX")
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return
-    }
-
-    bluish := util.Lighten(color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}, 90)
-
-    optionPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        bluish, bluish, bluish, bluish,
-        bluish, bluish, bluish, bluish,
-    }
-
-    optionFont := font.MakeOptimizedFontWithPalette(fonts[2], optionPalette)
+    fonts := fontslib.MakeSettingsFonts(game.Cache)
 
     var elements []*uilib.UIElement
 
@@ -2260,7 +2075,7 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, back
                 screen.DrawImage(resolutionBackground, &options)
 
                 x, y := options.GeoM.Apply(float64(3 * data.ScreenScale), float64(3 * data.ScreenScale))
-                optionFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "Screen")
+                fonts.OptionFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "Screen")
             },
         })
 
@@ -2835,29 +2650,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
         game.Drawer = drawer
     }()
 
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return
-    }
-
-    yellow := util.RotateHue(color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}, -0.1)
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow,
-        util.Lighten(yellow, -5),
-        util.Lighten(yellow, -15),
-        util.Lighten(yellow, -25),
-    }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+    fonts := fontslib.MakeRandomEventFonts(game.Cache)
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
 
@@ -2880,7 +2673,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
     if !start {
         message = event.MessageStop
     }
-    wrappedText := bigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), message)
+    wrappedText := fonts.BigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), message)
 
     rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
 
@@ -2914,7 +2707,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
         screen.DrawImage(animal, &iconOptions)
 
         x, y := options.GeoM.Apply(float64(75 * data.ScreenScale), float64(9 * data.ScreenScale))
-        bigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
+        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
 
@@ -4403,32 +4196,7 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
 func (game *Game) doTreasurePopup(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure){
     uiDone := false
 
-    fontLbx, err := game.Cache.GetLbxFile("FONTS.LBX")
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return
-    }
-
-    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
-
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        orange,
-        util.Lighten(orange, 15),
-        util.Lighten(orange, 30),
-        util.Lighten(orange, 50),
-        orange,
-        orange,
-    }
-
-    treasureFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+    fonts := fontslib.MakeTreasureFonts(game.Cache)
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
@@ -4458,7 +4226,7 @@ func (game *Game) doTreasurePopup(yield coroutine.YieldFunc, player *playerlib.P
             options.GeoM = rightGeom
             screen.DrawImage(right, &options)
 
-            treasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, treasure.String())
+            fonts.TreasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, treasure.String())
         },
     }
 
@@ -5965,13 +5733,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         // draw a G on the unit if they are moving, P if purify, and B if building road
                         if unit.GetBusy() == units.BusyStatusBuildRoad {
                             x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
-                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "B")
+                            game.Fonts.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "B")
                         } else if unit.GetBusy() == units.BusyStatusPurify {
                             x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
-                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "P")
+                            game.Fonts.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "P")
                         } else if len(stack.CurrentPath) != 0 {
                             x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
-                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "G")
+                            game.Fonts.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "G")
                         }
                     },
                 })
@@ -6224,7 +5992,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 if !minMoves.IsZero() {
                     x := float64(246.0 * data.ScreenScale)
                     y := float64(167.0 * data.ScreenScale)
-                    game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
+                    game.Fonts.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
 
                     sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
                     swimmingIcon, _ := game.ImageCache.GetImage("main.lbx", 19, 0)
@@ -6324,27 +6092,27 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     negativeScale.SetR(float32(v))
 
                     if goldPerTurn < 0 {
-                        game.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(103 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Gold", goldPerTurn))
+                        game.Fonts.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(103 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Gold", goldPerTurn))
                     } else {
-                        game.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(103 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
+                        game.Fonts.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(103 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
                     }
 
                     if foodPerTurn < 0 {
-                        game.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(135 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Food", foodPerTurn))
+                        game.Fonts.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(135 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Food", foodPerTurn))
                     } else {
-                        game.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(135 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
+                        game.Fonts.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(135 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
                     }
 
                     if manaPerTurn < 0 {
-                        game.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Mana", manaPerTurn))
+                        game.Fonts.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Mana", manaPerTurn))
                     } else {
-                        game.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
+                        game.Fonts.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
                     }
 
                     if conjunction != "" {
                         var scale ebiten.ColorScale
                         scale.ScaleWithColor(conjunctionColor)
-                        game.WhiteFont.PrintCenter(screen, float64(278 * data.ScreenScale), float64(155 * data.ScreenScale), float64(data.ScreenScale), scale, conjunction)
+                        game.Fonts.WhiteFont.PrintCenter(screen, float64(278 * data.ScreenScale), float64(155 * data.ScreenScale), float64(data.ScreenScale), scale, conjunction)
                     }
                 },
             })
@@ -6353,13 +6121,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
         },
     })
 

@@ -4,13 +4,12 @@ import (
     "fmt"
     "log"
     "image"
-    "image/color"
     "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
-    "github.com/kazzmir/master-of-magic/lib/font"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -571,21 +570,9 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         }
     }
 
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Error reading fonts: %v", err)
-        return 0, 0, true
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Error reading fonts: %v", err)
-        return 0, 0, true
-    }
-
-    castingFont := makeSurveyorFont(fonts)
-    // yellowFont := makeYellowFont(fonts)
-    whiteFont := makeWhiteFont(fonts)
+    fonts := fontslib.MakeSurveyorFonts(game.Cache)
+    castingFont := fonts.SurveyorFont
+    whiteFont := fonts.WhiteFont
 
     overworld := Overworld{
         Camera: game.Camera,
@@ -641,8 +628,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                 }
             })
 
-            game.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
-            game.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
 
             castingFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(81 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Casting")
 
@@ -1064,39 +1051,7 @@ func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int
 
 func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *playerlib.Player, enchantment data.Enchantment) {
     // FIXME: play some midi song, not a sound effect
-
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Error reading fonts: %v", err)
-        return
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Error reading fonts: %v", err)
-        return
-    }
-
-    white := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
-    // red := color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
-    palette := color.Palette{
-        color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x0},
-        color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x0},
-        white,
-        white,
-        white,
-        white,
-        white,
-        white,
-        util.Lighten(white, -20),
-        util.Lighten(white, -30),
-        util.Lighten(white, -60),
-        util.Lighten(white, -40),
-        util.Lighten(white, -60),
-        util.Lighten(white, -50),
-    }
-
-    infoFont := font.MakeOptimizedFontWithPalette(fonts[5], palette)
+    fonts := fontslib.MakeGlobalEnchantmentFonts(game.Cache)
 
     diplomacLbx, _ := game.Cache.GetLbxFile("diplomac.lbx")
     // the tauron fade in, but any mask will work
@@ -1175,13 +1130,13 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
             screen.DrawImage(mood, &options)
 
             // FIXME: if another wizard is casting the spell should their name be shown instead of 'You' ?
-            infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, "You have finished casting")
+            fonts.InfoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, "You have finished casting")
         } else {
             // then draw the spell image
             options.GeoM.Translate(float64(9 * data.ScreenScale), float64(8 * data.ScreenScale))
             screen.DrawImage(spellImage, &options)
 
-            infoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, enchantment.String())
+            fonts.InfoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, enchantment.String())
         }
 
     }

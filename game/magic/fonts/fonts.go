@@ -412,3 +412,624 @@ func MakeBuildScreenFonts(cache *lbx.LbxCache) *BuildScreenFonts {
         MediumFont: mediumFont,
     }
 }
+
+type InputFonts struct {
+    NameFont *font.Font
+    TitleFont *font.Font
+}
+
+func MakeInputFonts(cache *lbx.LbxCache) *InputFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    bluish := color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff}
+    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    namePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        util.Lighten(bluish, -30),
+        util.Lighten(bluish, -20),
+        util.Lighten(bluish, -10),
+        util.Lighten(bluish, 0),
+    }
+
+    orange := color.RGBA{R: 0xed, G: 0xa7, B: 0x12, A: 0xff}
+    titlePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        util.Lighten(orange, -30),
+        util.Lighten(orange, -20),
+        util.Lighten(orange, -10),
+        util.Lighten(orange, 0),
+    }
+
+    nameFont := font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
+    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
+
+    return &InputFonts{
+        NameFont: nameFont,
+        TitleFont: titleFont,
+    }
+}
+
+type MerchantFonts struct {
+    LightFont *font.Font
+}
+
+func MakeMerchantFonts(cache *lbx.LbxCache) *MerchantFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    lightPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
+        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+    }
+
+    lightFont := font.MakeOptimizedFontWithPalette(fonts[4], lightPalette)
+
+    return &MerchantFonts{
+        LightFont: lightFont,
+    }
+}
+
+type SurveyorFonts struct {
+    SurveyorFont *font.Font
+    YellowFont *font.Font
+    WhiteFont *font.Font
+}
+
+func MakeSurveyorFonts(cache *lbx.LbxCache) *SurveyorFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Error reading fonts: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error reading fonts: %v", err)
+        return nil
+    }
+
+    white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+    palette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        white, white, white,
+        white, white, white,
+    }
+
+    surveyorFont := font.MakeOptimizedFontWithPalette(fonts[4], palette)
+
+    yellow := util.RotateHue(color.RGBA{R: 255, G: 255, B: 0, A: 255}, -0.15)
+
+    paletteYellow := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+    }
+
+    yellowFont := font.MakeOptimizedFontWithPalette(fonts[1], paletteYellow)
+
+    paletteWhite := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        white, white, white,
+        white, white, white,
+    }
+
+    whiteFont := font.MakeOptimizedFontWithPalette(fonts[1], paletteWhite)
+
+    return &SurveyorFonts{
+        SurveyorFont: surveyorFont,
+        YellowFont: yellowFont,
+        WhiteFont: whiteFont,
+    }
+}
+
+type MercenariesFonts struct {
+    DescriptionFont *font.Font
+    SmallFont *font.Font
+    MediumFont *font.Font
+    OkDismissFont *font.Font
+}
+
+func MakeMercenariesFonts(cache *lbx.LbxCache) *MercenariesFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Error reading fonts: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error reading fonts: %v", err)
+        return nil
+    }
+
+    descriptionPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
+    mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
+
+    yellowGradient := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
+        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+    }
+
+    okDismissFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
+
+    return &MercenariesFonts{
+        DescriptionFont: descriptionFont,
+        SmallFont: smallFont,
+        MediumFont: mediumFont,
+        OkDismissFont: okDismissFont,
+    }
+}
+
+type GlobalEnchantmentFonts struct {
+    InfoFont *font.Font
+}
+
+func MakeGlobalEnchantmentFonts(cache *lbx.LbxCache) *GlobalEnchantmentFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Error reading fonts: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error reading fonts: %v", err)
+        return nil
+    }
+
+    white := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+    // red := color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
+    palette := color.Palette{
+        color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x0},
+        color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x0},
+        white,
+        white,
+        white,
+        white,
+        white,
+        white,
+        util.Lighten(white, -20),
+        util.Lighten(white, -30),
+        util.Lighten(white, -60),
+        util.Lighten(white, -40),
+        util.Lighten(white, -60),
+        util.Lighten(white, -50),
+    }
+
+    infoFont := font.MakeOptimizedFontWithPalette(fonts[5], palette)
+
+    return &GlobalEnchantmentFonts{
+        InfoFont: infoFont,
+    }
+}
+
+type HireHeroFonts struct {
+    DescriptionFont *font.Font
+    SmallFont *font.Font
+    MediumFont *font.Font
+    OkDismissFont *font.Font
+}
+
+func MakeHireHeroFonts(cache *lbx.LbxCache) *HireHeroFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    descriptionPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
+    mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
+
+    yellowGradient := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
+        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+    }
+
+    okDismissFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
+
+    return &HireHeroFonts{
+        DescriptionFont: descriptionFont,
+        SmallFont: smallFont,
+        MediumFont: mediumFont,
+        OkDismissFont: okDismissFont,
+    }
+}
+
+type HeroLevelUpFonts struct {
+    TitleFont *font.Font
+    SmallFont *font.Font
+}
+
+func MakeHeroLevelUpFonts(cache *lbx.LbxCache) *HeroLevelUpFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    yellowGradient := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
+        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+    }
+
+    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[2], yellowGradient)
+
+    return &HeroLevelUpFonts{
+        TitleFont: titleFont,
+        SmallFont: smallFont,
+    }
+}
+
+type NewBuildingFonts struct {
+    BigFont *font.Font
+}
+
+func MakeNewBuildingFonts(cache *lbx.LbxCache) *NewBuildingFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+
+    return &NewBuildingFonts{
+        BigFont: bigFont,
+    }
+}
+
+type ScrollFonts struct {
+    BigFont *font.Font
+    SmallFont *font.Font
+}
+
+func MakeScrollFonts(cache *lbx.LbxCache) *ScrollFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    red := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -60)
+    redPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        red, red, red,
+        red, red, red,
+    }
+
+    red2 := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -80)
+    redPalette2 := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        red2, red2, red2,
+        red2, red2, red2,
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
+
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], redPalette2)
+
+    return &ScrollFonts{
+        BigFont: bigFont,
+        SmallFont: smallFont,
+    }
+}
+
+type OutpostFonts struct {
+    BigFont *font.Font
+}
+
+func MakeOutpostFonts(cache *lbx.LbxCache) *OutpostFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    yellow := util.Lighten(util.RotateHue(color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}, -0.60), 0)
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow,
+        util.Lighten(yellow, -20),
+        util.Lighten(yellow, -20),
+        util.Lighten(yellow, -15),
+        util.Lighten(yellow, -30),
+        util.Lighten(yellow, -10),
+        util.Lighten(yellow, -15),
+        util.Lighten(yellow, -10),
+        util.Lighten(yellow, -10),
+        util.Lighten(yellow, -35),
+        util.Lighten(yellow, -45),
+        yellow,
+        yellow,
+        yellow,
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
+
+    return &OutpostFonts{
+        BigFont: bigFont,
+    }
+}
+
+type RandomEventFonts struct {
+    BigFont *font.Font
+}
+
+func MakeRandomEventFonts(cache *lbx.LbxCache) *RandomEventFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    yellow := util.RotateHue(color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}, -0.1)
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow,
+        util.Lighten(yellow, -5),
+        util.Lighten(yellow, -15),
+        util.Lighten(yellow, -25),
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+
+    return &RandomEventFonts{
+        BigFont: bigFont,
+    }
+}
+
+type SettingsFonts struct {
+    OptionFont *font.Font
+}
+
+func MakeSettingsFonts(cache *lbx.LbxCache) *SettingsFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
+
+    bluish := util.Lighten(color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}, 90)
+
+    optionPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        bluish, bluish, bluish, bluish,
+        bluish, bluish, bluish, bluish,
+    }
+
+    optionFont := font.MakeOptimizedFontWithPalette(fonts[2], optionPalette)
+
+    return &SettingsFonts{
+        OptionFont: optionFont,
+    }
+}
+
+type TreasureFonts struct {
+    TreasureFont *font.Font
+}
+
+func MakeTreasureFonts(cache *lbx.LbxCache) *TreasureFonts {
+    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
+
+    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        orange,
+        util.Lighten(orange, 15),
+        util.Lighten(orange, 30),
+        util.Lighten(orange, 50),
+        orange,
+        orange,
+    }
+
+    treasureFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+
+    return &TreasureFonts{
+        TreasureFont: treasureFont,
+    }
+}
+
+type GameFonts struct {
+    InfoFontYellow *font.Font
+    InfoFontRed *font.Font
+    WhiteFont *font.Font
+}
+
+func MakeGameFonts(cache *lbx.LbxCache) *GameFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil
+    }
+
+    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        orange,
+        orange,
+        orange,
+        orange,
+        orange,
+        orange,
+    }
+
+    infoFontYellow := font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
+
+    red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    redPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        red, red, red,
+        red, red, red,
+    }
+
+    infoFontRed := font.MakeOptimizedFontWithPalette(fonts[0], redPalette)
+
+    whitePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.White, color.White, color.White, color.White,
+    }
+
+    whiteFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
+
+    return &GameFonts{
+        InfoFontYellow: infoFontYellow,
+        InfoFontRed: infoFontRed,
+        WhiteFont: whiteFont,
+    }
+}

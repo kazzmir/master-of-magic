@@ -288,7 +288,7 @@ func MakeRebellionEvent(year uint64, city *citylib.City) *RandomEvent {
     return &RandomEvent{
         Type: RandomEventRebellion,
         BirthYear: year,
-        Message: fmt.Sprintf("Rebellion! The %v of %v has rebelled and become a netural city.", city.GetSize(), city.Name),
+        Message: fmt.Sprintf("Rebellion! The %v of %v has rebelled and become a neutral city.", city.GetSize(), city.Name),
         LbxIndex: 7,
         IsConjunction: false,
         Instant: true,

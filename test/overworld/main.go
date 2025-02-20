@@ -3679,7 +3679,6 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
 
     game.TurnNumber = 300
 
-    /*
     game.Events <- &gamelib.GameEventShowRandomEvent{
         // Event: gamelib.MakeDisjunctionEvent(0),
         // Event: gamelib.MakeBadMoonEvent(0),
@@ -3699,8 +3698,8 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
         // Event: gamelib.MakePlagueEvent(0, city),
         // Event: gamelib.MakePopulationBoomEvent(0, city),
         Event: gamelib.MakeRebellionEvent(0, city),
+        Starting: true,
     }
-    */
 
     return game
 }
