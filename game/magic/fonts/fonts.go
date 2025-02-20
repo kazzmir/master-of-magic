@@ -906,3 +906,36 @@ func MakeRandomEventFonts(cache *lbx.LbxCache) *RandomEventFonts {
         BigFont: bigFont,
     }
 }
+
+type SettingsFonts struct {
+    OptionFont *font.Font
+}
+
+func MakeSettingsFonts(cache *lbx.LbxCache) *SettingsFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
+
+    bluish := util.Lighten(color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}, 90)
+
+    optionPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        bluish, bluish, bluish, bluish,
+        bluish, bluish, bluish, bluish,
+    }
+
+    optionFont := font.MakeOptimizedFontWithPalette(fonts[2], optionPalette)
+
+    return &SettingsFonts{
+        OptionFont: optionFont,
+    }
+}

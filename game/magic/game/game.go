@@ -2046,28 +2046,7 @@ func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summo
 // mutates the ui by adding/removing elements
 // FIXME: its a hack to pass in the background image as a double pointer so we can mutate it
 func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, background **ebiten.Image, onOk func()) {
-    fontLbx, err := game.Cache.GetLbxFile("FONTS.LBX")
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return
-    }
-
-    bluish := util.Lighten(color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}, 90)
-
-    optionPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        bluish, bluish, bluish, bluish,
-        bluish, bluish, bluish, bluish,
-    }
-
-    optionFont := font.MakeOptimizedFontWithPalette(fonts[2], optionPalette)
+    fonts := fontslib.MakeSettingsFonts(game.Cache)
 
     var elements []*uilib.UIElement
 
@@ -2141,7 +2120,7 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, back
                 screen.DrawImage(resolutionBackground, &options)
 
                 x, y := options.GeoM.Apply(float64(3 * data.ScreenScale), float64(3 * data.ScreenScale))
-                optionFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "Screen")
+                fonts.OptionFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "Screen")
             },
         })
 
