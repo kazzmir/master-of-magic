@@ -86,6 +86,12 @@ func (console *Console) Run(command string) {
                 var use spellbook.Spells
 
                 for _, spell := range spells.Spells {
+                    if len(parts[1:]) == 1 && strings.ToLower(spell.Name) == strings.ToLower(parts[1]) {
+                        use.Spells = nil
+                        use.AddSpell(spell)
+                        break
+                    }
+
                     keep := true
                     for _, part := range parts[1:] {
                         if !strings.Contains(strings.ToLower(spell.Name), strings.ToLower(part)) {
