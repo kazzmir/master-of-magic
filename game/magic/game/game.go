@@ -1403,41 +1403,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         game.Drawer = drawer
     }()
 
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return
-    }
-
-    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
-    yellow := util.Lighten(util.RotateHue(color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}, -0.60), 0)
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow,
-        util.Lighten(yellow, -20),
-        util.Lighten(yellow, -20),
-        util.Lighten(yellow, -15),
-        util.Lighten(yellow, -30),
-        util.Lighten(yellow, -10),
-        util.Lighten(yellow, -15),
-        util.Lighten(yellow, -10),
-        util.Lighten(yellow, -10),
-        util.Lighten(yellow, -35),
-        util.Lighten(yellow, -45),
-        yellow,
-        yellow,
-        yellow,
-    }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
+    fonts := fontslib.MakeOutpostFonts(game.Cache)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
@@ -1495,9 +1461,9 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 
         x, y = options.GeoM.Apply(float64(20 * data.ScreenScale), float64(5 * data.ScreenScale))
         if rename {
-            bigFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "New Outpost Founded")
+            fonts.BigFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "New Outpost Founded")
         } else {
-            bigFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
+            fonts.BigFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
         }
 
         cityScapeOptions := options
