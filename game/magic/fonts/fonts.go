@@ -976,3 +976,60 @@ func MakeTreasureFonts(cache *lbx.LbxCache) *TreasureFonts {
         TreasureFont: treasureFont,
     }
 }
+
+type GameFonts struct {
+    InfoFontYellow *font.Font
+    InfoFontRed *font.Font
+    WhiteFont *font.Font
+}
+
+func MakeGameFonts(cache *lbx.LbxCache) *GameFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil
+    }
+
+    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        orange,
+        orange,
+        orange,
+        orange,
+        orange,
+        orange,
+    }
+
+    infoFontYellow := font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
+
+    red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+    redPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        red, red, red,
+        red, red, red,
+    }
+
+    infoFontRed := font.MakeOptimizedFontWithPalette(fonts[0], redPalette)
+
+    whitePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.White, color.White, color.White, color.White,
+    }
+
+    whiteFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
+
+    return &GameFonts{
+        InfoFontYellow: infoFontYellow,
+        InfoFontRed: infoFontRed,
+        WhiteFont: whiteFont,
+    }
+}

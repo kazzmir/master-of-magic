@@ -44,7 +44,6 @@ import (
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
-    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -244,14 +243,13 @@ const (
 type Game struct {
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
-    WhiteFont *font.Font
 
     Music *music.Music
 
+    Fonts *fontslib.GameFonts
+
     Settings setup.NewGameSettings
 
-    InfoFontYellow *font.Font
-    InfoFontRed *font.Font
     Counter uint64
     Fog *ebiten.Image
     Drawer func (*ebiten.Image, *Game)
@@ -560,48 +558,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         return nil
     }
 
-    fontLbx, err := lbxCache.GetLbxFile("FONTS.LBX")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
-    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
-
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        orange,
-        orange,
-        orange,
-        orange,
-        orange,
-        orange,
-    }
-
-    infoFontYellow := font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
-
-    red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
-    redPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        red, red, red,
-        red, red, red,
-    }
-
-    infoFontRed := font.MakeOptimizedFontWithPalette(fonts[0], redPalette)
-
-    whitePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.White, color.White, color.White, color.White,
-    }
-
-    whiteFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
+    fonts := fontslib.MakeGameFonts(lbxCache)
 
     buildingInfo, err := buildinglib.ReadBuildingInfo(lbxCache)
     if err != nil {
@@ -627,10 +584,8 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         State: GameStateRunning,
         Settings: settings,
         ImageCache: imageCache,
-        InfoFontYellow: infoFontYellow,
-        InfoFontRed: infoFontRed,
+        Fonts: fonts,
         ArtifactPool: createArtifactPool(lbxCache),
-        WhiteFont: whiteFont,
         BuildingInfo: buildingInfo,
         TurnNumber: 1,
         CurrentPlayer: -1,
@@ -1457,7 +1412,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         }
 
         x, y := options.GeoM.Apply(float64(6 * data.ScreenScale), float64(22 * data.ScreenScale))
-        game.InfoFontYellow.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, city.Race.String())
+        game.Fonts.InfoFontYellow.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, city.Race.String())
 
         x, y = options.GeoM.Apply(float64(20 * data.ScreenScale), float64(5 * data.ScreenScale))
         if rename {
@@ -5778,13 +5733,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         // draw a G on the unit if they are moving, P if purify, and B if building road
                         if unit.GetBusy() == units.BusyStatusBuildRoad {
                             x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
-                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "B")
+                            game.Fonts.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "B")
                         } else if unit.GetBusy() == units.BusyStatusPurify {
                             x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
-                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "P")
+                            game.Fonts.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "P")
                         } else if len(stack.CurrentPath) != 0 {
                             x, y := options.GeoM.Apply(float64(1 * data.ScreenScale), float64(1 * data.ScreenScale))
-                            game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "G")
+                            game.Fonts.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, "G")
                         }
                     },
                 })
@@ -6037,7 +5992,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 if !minMoves.IsZero() {
                     x := float64(246.0 * data.ScreenScale)
                     y := float64(167.0 * data.ScreenScale)
-                    game.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
+                    game.Fonts.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
 
                     sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
                     swimmingIcon, _ := game.ImageCache.GetImage("main.lbx", 19, 0)
@@ -6137,27 +6092,27 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     negativeScale.SetR(float32(v))
 
                     if goldPerTurn < 0 {
-                        game.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(103 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Gold", goldPerTurn))
+                        game.Fonts.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(103 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Gold", goldPerTurn))
                     } else {
-                        game.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(103 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
+                        game.Fonts.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(103 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
                     }
 
                     if foodPerTurn < 0 {
-                        game.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(135 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Food", foodPerTurn))
+                        game.Fonts.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(135 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Food", foodPerTurn))
                     } else {
-                        game.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(135 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
+                        game.Fonts.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(135 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
                     }
 
                     if manaPerTurn < 0 {
-                        game.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Mana", manaPerTurn))
+                        game.Fonts.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Mana", manaPerTurn))
                     } else {
-                        game.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
+                        game.Fonts.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
                     }
 
                     if conjunction != "" {
                         var scale ebiten.ColorScale
                         scale.ScaleWithColor(conjunctionColor)
-                        game.WhiteFont.PrintCenter(screen, float64(278 * data.ScreenScale), float64(155 * data.ScreenScale), float64(data.ScreenScale), scale, conjunction)
+                        game.Fonts.WhiteFont.PrintCenter(screen, float64(278 * data.ScreenScale), float64(155 * data.ScreenScale), float64(data.ScreenScale), scale, conjunction)
                     }
                 },
             })
@@ -6166,13 +6121,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
         },
     })
 
