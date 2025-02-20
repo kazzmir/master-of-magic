@@ -872,3 +872,37 @@ func MakeOutpostFonts(cache *lbx.LbxCache) *OutpostFonts {
         BigFont: bigFont,
     }
 }
+
+type RandomEventFonts struct {
+    BigFont *font.Font
+}
+
+func MakeRandomEventFonts(cache *lbx.LbxCache) *RandomEventFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    yellow := util.RotateHue(color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}, -0.1)
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow,
+        util.Lighten(yellow, -5),
+        util.Lighten(yellow, -15),
+        util.Lighten(yellow, -25),
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+
+    return &RandomEventFonts{
+        BigFont: bigFont,
+    }
+}

@@ -2716,29 +2716,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
         game.Drawer = drawer
     }()
 
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return
-    }
-
-    yellow := util.RotateHue(color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}, -0.1)
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow,
-        util.Lighten(yellow, -5),
-        util.Lighten(yellow, -15),
-        util.Lighten(yellow, -25),
-    }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+    fonts := fontslib.MakeRandomEventFonts(game.Cache)
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
 
@@ -2761,7 +2739,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
     if !start {
         message = event.MessageStop
     }
-    wrappedText := bigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), message)
+    wrappedText := fonts.BigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), message)
 
     rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
 
@@ -2795,7 +2773,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
         screen.DrawImage(animal, &iconOptions)
 
         x, y := options.GeoM.Apply(float64(75 * data.ScreenScale), float64(9 * data.ScreenScale))
-        bigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
+        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
 
