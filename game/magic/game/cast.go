@@ -355,6 +355,45 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeLand, SelectedFunc: selected}
         case "Warp Node":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyMeldedNode, SelectedFunc: game.doCastWarpNode}
+
+        /* TODO: instant spells
+           Disenchant Area
+           Disjunction 
+           Spell of Mastery
+           Spell of Return
+           Summoning Circle
+           Plane Shift
+           Resurrection
+           Earthquake
+           Ice Storm
+           Move Fortress
+           Nature's Cures
+           Disenchant True
+           Disjunction True
+           Great Unsummoning
+           Spell Binding
+           Spell Blast
+           Stasis
+           Word of Recall
+           Fire Storm
+           Black Wind
+           Cruel Unminding
+           Death Wish
+           Drain Power
+           Lycanthropy
+           Subversion
+         */
+
+         /* TODO: town enchantments
+          Altar of Battle
+          Astral Gate
+          Heavenly Light
+          Earth Gate
+          Flying Fortress
+          Spell Ward
+          Cloud of Shadow
+          */
+
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
     }
