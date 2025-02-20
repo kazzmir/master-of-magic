@@ -3463,7 +3463,9 @@ func createScenario40(cache *lbx.LbxCache) *gamelib.Game {
     game.Events <- &gamelib.GameEventCastGlobalEnchantment{
         Player: player,
         // Enchantment: data.EnchantmentNatureAwareness,
-        Enchantment: data.EnchantmentTimeStop,
+        // Enchantment: data.EnchantmentZombieMastery,
+        Enchantment: data.EnchantmentPlanarSeal,
+        // Enchantment: data.EnchantmentTimeStop,
     }
 
     return game

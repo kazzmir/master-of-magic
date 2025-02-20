@@ -10,6 +10,7 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
+    "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -1050,7 +1051,41 @@ func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int
 }
 
 func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *playerlib.Player, enchantment data.Enchantment) {
-    // FIXME: play some midi song, not a sound effect
+
+    song := music.SongNone
+
+    switch enchantment {
+        case data.EnchantmentAwareness: song = music.SongLearnSpell
+        case data.EnchantmentDetectMagic: song = music.SongLearnSpell
+        case data.EnchantmentCharmOfLife: song = music.SongLearnSpell
+        case data.EnchantmentCrusade: song = music.SongCrusade
+        case data.EnchantmentHolyArms: song = music.SongHolyArms
+        case data.EnchantmentJustCause: song = music.SongJustCause
+        case data.EnchantmentLifeForce: song = music.SongLifeForce
+        case data.EnchantmentPlanarSeal: song = music.SongUncommonSummoningSpell
+        case data.EnchantmentTranquility: song = music.SongTranquility
+        case data.EnchantmentHerbMastery: song = music.SongHerbMastery
+        case data.EnchantmentNatureAwareness: song = music.SongNatureAwareness
+        case data.EnchantmentNaturesWrath: song = music.SongNaturesWrath
+        case data.EnchantmentAuraOfMajesty: song = music.SongAuraOfMajesty
+        case data.EnchantmentSuppressMagic: song = music.SongSuppressMagic
+        case data.EnchantmentTimeStop: song = music.SongTimeStop
+        case data.EnchantmentWindMastery: song = music.SongWindMastery
+        case data.EnchantmentArmageddon: song = music.SongArmageddon
+        case data.EnchantmentChaosSurge: song = music.SongChaosSurge
+        case data.EnchantmentDoomMastery: song = music.SongDoomMastery
+        case data.EnchantmentGreatWasting: song = music.SongGreatWasting
+        case data.EnchantmentMeteorStorm: song = music.SongMeteorStorm
+        case data.EnchantmentEternalNight: song = music.SongEternalNight
+        case data.EnchantmentEvilOmens: song = music.SongEvilOmens
+        case data.EnchantmentZombieMastery: song = music.SongZombieMastery
+    }
+
+    if song != music.SongNone {
+        game.Music.PushSong(song)
+        defer game.Music.PopSong()
+    }
+
     fonts := fontslib.MakeGlobalEnchantmentFonts(game.Cache)
 
     diplomacLbx, _ := game.Cache.GetLbxFile("diplomac.lbx")

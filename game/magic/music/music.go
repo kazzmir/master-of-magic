@@ -22,6 +22,7 @@ import (
 type Song int
 
 const (
+    SongNone Song = -1
 
     // summoning circle, spell of return
     SongSummoningCircle Song = 0
