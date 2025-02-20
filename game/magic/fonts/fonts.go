@@ -748,3 +748,81 @@ func MakeHeroLevelUpFonts(cache *lbx.LbxCache) *HeroLevelUpFonts {
         SmallFont: smallFont,
     }
 }
+
+type NewBuildingFonts struct {
+    BigFont *font.Font
+}
+
+func MakeNewBuildingFonts(cache *lbx.LbxCache) *NewBuildingFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+        yellow, yellow, yellow,
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+
+    return &NewBuildingFonts{
+        BigFont: bigFont,
+    }
+}
+
+type ScrollFonts struct {
+    BigFont *font.Font
+    SmallFont *font.Font
+}
+
+func MakeScrollFonts(cache *lbx.LbxCache) *ScrollFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return nil
+    }
+
+    red := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -60)
+    redPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        red, red, red,
+        red, red, red,
+    }
+
+    red2 := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -80)
+    redPalette2 := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0},
+        red2, red2, red2,
+        red2, red2, red2,
+    }
+
+    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
+
+    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], redPalette2)
+
+    return &ScrollFonts{
+        BigFont: bigFont,
+        SmallFont: smallFont,
+    }
+}

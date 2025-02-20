@@ -1182,29 +1182,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         game.Drawer = drawer
     }()
 
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return
-    }
-
-    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-    }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+    fonts := fontslib.MakeNewBuildingFonts(game.Cache)
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
 
@@ -1223,7 +1201,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
     }
     animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
 
-    wrappedText := bigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
+    wrappedText := fonts.BigFont.CreateWrappedText(float64(175 * data.ScreenScale), float64(1 * data.ScreenScale), fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
 
     rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
 
@@ -1253,7 +1231,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         screen.DrawImage(animal, &iconOptions)
 
         x, y := options.GeoM.Apply(float64(8 * data.ScreenScale + animal.Bounds().Dx()), float64(9 * data.ScreenScale))
-        bigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
+        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
         screen.DrawImage(rightSide, &options)
@@ -1305,42 +1283,13 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 }
 
 func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text string){
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return
-    }
+    fonts := fontslib.MakeScrollFonts(game.Cache)
 
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return
-    }
-
-    red := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -60)
-    redPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        red, red, red,
-        red, red, red,
-    }
-
-    red2 := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -80)
-    redPalette2 := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        red2, red2, red2,
-        red2, red2, red2,
-    }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
-
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], redPalette2)
-    wrappedText := smallFont.CreateWrappedText(float64(180 * data.ScreenScale), float64(data.ScreenScale), text)
+    wrappedText := fonts.SmallFont.CreateWrappedText(float64(180 * data.ScreenScale), float64(data.ScreenScale), text)
 
     scrollImages, _ := game.ImageCache.GetImages("scroll.lbx", 2)
 
-    totalImages := int((wrappedText.TotalHeight + float64(bigFont.Height() * data.ScreenScale)) / float64(5 * data.ScreenScale)) + 1
+    totalImages := int((wrappedText.TotalHeight + float64(fonts.BigFont.Height() * data.ScreenScale)) / float64(5 * data.ScreenScale)) + 1
 
     if totalImages < 3 {
         totalImages = 3
@@ -1386,10 +1335,10 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
         textScale := options.ColorScale
         textScale.ScaleAlpha(getAlpha())
 
-        x, y := options.GeoM.Apply(float64(pageBackground.Bounds().Dx()) / 2, float64(middleY) - wrappedText.TotalHeight / 2 - float64(bigFont.Height() * data.ScreenScale) / 2 + 5)
-        bigFont.PrintCenter(screen, x, y, float64(data.ScreenScale), textScale, title)
-        y += float64(bigFont.Height() * data.ScreenScale) + 1
-        smallFont.RenderWrapped(screen, x, y, wrappedText, textScale, true)
+        x, y := options.GeoM.Apply(float64(pageBackground.Bounds().Dx()) / 2, float64(middleY) - wrappedText.TotalHeight / 2 - float64(fonts.BigFont.Height() * data.ScreenScale) / 2 + 5)
+        fonts.BigFont.PrintCenter(screen, x, y, float64(data.ScreenScale), textScale, title)
+        y += float64(fonts.BigFont.Height() * data.ScreenScale) + 1
+        fonts.SmallFont.RenderWrapped(screen, x, y, wrappedText, textScale, true)
 
         scrollOptions := options
         scrollOptions.GeoM.Translate(float64(-63 * data.ScreenScale), float64(-20 * data.ScreenScale))
