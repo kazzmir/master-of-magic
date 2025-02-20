@@ -1,15 +1,12 @@
 package game
 
 import (
-    "log"
     "fmt"
     "image"
-    "image/color"
     "math"
     "slices"
     "cmp"
 
-    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -190,28 +187,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 }
 
 func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.Hero) {
-    fontLbx, err := game.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return
-    }
-
-    yellowGradient := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
-        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-    }
+    fonts := fontslib.MakeHeroLevelUpFonts(game.Cache)
 
     top := float64(40 * data.ScreenScale)
     left := float64(30 * data.ScreenScale)
@@ -250,16 +226,13 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
     height := (50 + abilityRows * 20) * data.ScreenScale
 
-    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[2], yellowGradient)
-
     backgroundTop, _ := game.ImageCache.GetImage("reload.lbx", 23, 0)
     backgroundTop = backgroundTop.SubImage(image.Rect(0, 0, backgroundTop.Bounds().Dx(), height)).(*ebiten.Image)
 
     backgroundBottom, _ := game.ImageCache.GetImage("reload.lbx", 24, 0)
 
     portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
-    portrait, err := game.ImageCache.GetImage(portraitLbx, portraitIndex, 0)
+    portrait, _ := game.ImageCache.GetImage(portraitLbx, portraitIndex, 0)
 
     dot, _ := game.ImageCache.GetImage("itemisc.lbx", 26, 0)
 
@@ -290,7 +263,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
         screen.DrawImage(portrait, &options)
 
         // text
-        titleFont.Print(screen, left + float64(48 * data.ScreenScale), top + float64(10 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v has made a level.", hero.Name))
+        fonts.TitleFont.Print(screen, left + float64(48 * data.ScreenScale), top + float64(10 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v has made a level.", hero.Name))
 
         // stats progression
         for index, progression := range hero.GetBaseProgression() {
@@ -301,7 +274,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
             options.GeoM.Translate(left + (48 + xOffset) * float64(data.ScreenScale), top + (25 + yOffset) * float64(data.ScreenScale))
             screen.DrawImage(dot, &options)
 
-            smallFont.Print(screen, left + (55 + xOffset) * float64(data.ScreenScale), top + (24 + yOffset) * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, progression)
+            fonts.SmallFont.Print(screen, left + (55 + xOffset) * float64(data.ScreenScale), top + (24 + yOffset) * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, progression)
         }
 
         row := 0
@@ -311,7 +284,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
         // level
         options.GeoM.Reset()
         options.GeoM.Translate(left + float64((10 + abilityWidth * column) * data.ScreenScale), top + float64((50 + row * 20) * data.ScreenScale))
-        unitview.RenderExperienceBadge(screen, &game.ImageCache, hero, smallFont, options, false)
+        unitview.RenderExperienceBadge(screen, &game.ImageCache, hero, fonts.SmallFont, options, false)
 
         // start in second column because the badge is in the first
         column = 1
@@ -328,9 +301,9 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
                 abilityBonus := hero.GetAbilityBonus(ability.Ability)
                 if abilityBonus > 0 {
-                    smallFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v +%v", ability.Name(), abilityBonus))
+                    fonts.SmallFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v +%v", ability.Name(), abilityBonus))
                 } else {
-                    smallFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, ability.Name())
+                    fonts.SmallFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, ability.Name())
                 }
             }
 
