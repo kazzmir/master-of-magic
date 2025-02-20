@@ -4241,32 +4241,7 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
 func (game *Game) doTreasurePopup(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure){
     uiDone := false
 
-    fontLbx, err := game.Cache.GetLbxFile("FONTS.LBX")
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return
-    }
-
-    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
-
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        orange,
-        util.Lighten(orange, 15),
-        util.Lighten(orange, 30),
-        util.Lighten(orange, 50),
-        orange,
-        orange,
-    }
-
-    treasureFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+    fonts := fontslib.MakeTreasureFonts(game.Cache)
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
@@ -4296,7 +4271,7 @@ func (game *Game) doTreasurePopup(yield coroutine.YieldFunc, player *playerlib.P
             options.GeoM = rightGeom
             screen.DrawImage(right, &options)
 
-            treasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, treasure.String())
+            fonts.TreasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, treasure.String())
         },
     }
 

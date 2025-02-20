@@ -939,3 +939,40 @@ func MakeSettingsFonts(cache *lbx.LbxCache) *SettingsFonts {
         OptionFont: optionFont,
     }
 }
+
+type TreasureFonts struct {
+    TreasureFont *font.Font
+}
+
+func MakeTreasureFonts(cache *lbx.LbxCache) *TreasureFonts {
+    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
+
+    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        orange,
+        util.Lighten(orange, 15),
+        util.Lighten(orange, 30),
+        util.Lighten(orange, 50),
+        orange,
+        orange,
+    }
+
+    treasureFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+
+    return &TreasureFonts{
+        TreasureFont: treasureFont,
+    }
+}
