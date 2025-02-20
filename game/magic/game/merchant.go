@@ -1,11 +1,8 @@
 package game
 
 import (
-    "log"
     "fmt"
-    "image/color"
 
-    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -17,33 +14,9 @@ import (
 )
 
 func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *artifact.Artifact, goldToBuy int, action func(bool)) []*uilib.UIElement {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
-    }
-
     imageCache := util.MakeImageCache(cache)
 
-    lightPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
-        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-    }
-
-    lightFont := font.MakeOptimizedFontWithPalette(fonts[4], lightPalette)
-
+    fonts := fontslib.MakeMerchantFonts(cache)
     vaultFonts := fontslib.MakeVaultFonts(cache)
 
     var elements []*uilib.UIElement
@@ -69,7 +42,7 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
             colorScale := ebiten.ColorScale{}
             colorScale.ScaleAlpha(getAlpha())
             text := fmt.Sprintf("A merchant arrives and offers a magic %v for sale. The price is only %v gold pieces.", artifactToBuy.Name, goldToBuy)
-            lightFont.PrintWrap(screen, float64(60 * data.ScreenScale), float64(23 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), colorScale, text)
+            fonts.LightFont.PrintWrap(screen, float64(60 * data.ScreenScale), float64(23 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), colorScale, text)
         },
     })
 
@@ -108,7 +81,7 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
 
             x := float64(buyRect.Min.X + buyRect.Max.X) / 2
             y := float64(buyRect.Min.Y + buyRect.Max.Y) / 2
-            lightFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Buy")
+            fonts.LightFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Buy")
         },
     })
 
@@ -136,7 +109,7 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
 
             x := float64(rejectRect.Min.X + rejectRect.Max.X) / 2
             y := float64(rejectRect.Min.Y + rejectRect.Max.Y) / 2
-            lightFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Reject")
+            fonts.LightFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Reject")
         },
     })
 
