@@ -392,7 +392,34 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
           Flying Fortress
           Spell Ward
           Cloud of Shadow
+          Chaos Rift
           */
+
+        /* TODO: global enchantments
+          Awareness
+          Detect Magic
+          Charm of Life
+          Crusade
+          Holy Arms
+          Just Cause
+          Life Force
+          Planar Seal
+          Tranquility
+          Herb Mastery
+          Nature's Wrath
+          Aura of Majesty
+          Suppress Magic
+          Time Stop
+          Wind Mastery
+          Armageddon
+          Chaos Surge
+          Doom Mastery
+          Great Wasting
+          Meteor Storm
+          Eternal Night
+          Evil Omens
+          Zombie Mastery
+         */
 
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
