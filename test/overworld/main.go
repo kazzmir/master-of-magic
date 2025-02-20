@@ -1047,9 +1047,12 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Evil Presence"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Stream of Life"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
+
+    // global enchantments
+    player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Awareness"))
 
     // unit enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Bless"))

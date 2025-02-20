@@ -6600,6 +6600,10 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
     player.UpdateFogVisibility()
 
+    if player.GlobalEnchantments.Contains(data.EnchantmentAwareness) {
+        game.doExploreFogForAwareness(player)
+    }
+
     // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
     game.DoNextUnit(player)
     if player.IsHuman() {
@@ -6663,11 +6667,7 @@ func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (in
 
 // At the beginning of each turn, all tiles in a 5x5 square (minus corners) around any city with Consecration should lose corruption
 func (game *Game) doCleanCorruptionForConsecratedCities() {
-    choices := game.AllCities()
-    if len(choices) == 0 {
-        return
-    }
-    for _, city := range choices {
+    for _, city := range game.AllCities() {
         if !city.HasEnchantment(data.CityEnchantmentConsecration) {
             continue
         }
@@ -6675,6 +6675,16 @@ func (game *Game) doCleanCorruptionForConsecratedCities() {
         for point, _ := range useMap.GetCatchmentArea(city.X, city.Y) {
             useMap.RemoveCorruption(point.X, point.Y)
         }
+    }
+}
+
+// At the beginning of each turn, Awareness clears the fog from all cities for enchantment's owner (newly built included)
+func (game *Game) doExploreFogForAwareness(awarenessOwner *playerlib.Player) {
+    for _, city := range game.AllCities() {
+        if city.Banner == awarenessOwner.GetBanner() {
+            continue // No need, those cities do already provide vision
+        }
+        awarenessOwner.ExploreFogSquare(city.X, city.Y, 1, city.Plane)
     }
 }
 

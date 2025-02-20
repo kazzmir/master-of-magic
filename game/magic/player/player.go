@@ -693,6 +693,26 @@ func (player *Player) LiftFogSquare(x int, y int, squares int, plane data.Plane)
     }
 }
 
+// Doesn't provide direct visibility, whilst making the tiles explored.
+func (player *Player) ExploreFogSquare(x int, y int, squares int, plane data.Plane){
+    fog := player.GetFog(plane)
+
+    for dx := -squares; dx <= squares; dx++ {
+        for dy := -squares; dy <= squares; dy++ {
+            mx := player.WrapX(x + dx)
+            my := y + dy
+
+            if mx < 0 || mx >= len(fog) || my < 0 || my >= len(fog[0]) {
+                continue
+            }
+            
+            if fog[mx][my] == data.FogTypeUnexplored {
+                fog[mx][my] = data.FogTypeExplored
+            }
+        }
+    }
+}
+
 /* make anything within the given radius viewable by the player */
 func (player *Player) LiftFog(x int, y int, radius int, plane data.Plane){
     fog := player.GetFog(plane)
