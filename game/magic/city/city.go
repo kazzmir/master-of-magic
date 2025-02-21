@@ -32,6 +32,7 @@ type CityEventCityAbandoned struct {
 type CityEventNewUnit struct {
     Unit units.Unit
     WeaponBonus data.WeaponBonus
+    Experience int
 }
 
 type CityEventOutpostDestroyed struct {
@@ -1671,7 +1672,14 @@ func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) 
                     city.ProducingBuilding = buildinglib.BuildingHousing
                 }
             } else if !city.ProducingUnit.Equals(units.UnitNone) && city.Production >= float32(city.ProducingUnit.ProductionCost) {
-                cityEvents = append(cityEvents, &CityEventNewUnit{Unit: city.ProducingUnit, WeaponBonus: city.GetWeaponBonus()})
+                experience := 0
+                switch {
+                    case city.HasEnchantment(data.CityEnchantmentAltarOfBattle): experience = 120
+                    case city.Buildings.Contains(buildinglib.BuildingWarCollege): experience = 61
+                    case city.Buildings.Contains(buildinglib.BuildingFightersGuild): experience = 20
+                }
+
+                cityEvents = append(cityEvents, &CityEventNewUnit{Unit: city.ProducingUnit, WeaponBonus: city.GetWeaponBonus(), Experience: experience})
                 city.Production = 0
 
                 if city.ProducingUnit.IsSettlers() {
