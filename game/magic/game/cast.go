@@ -461,8 +461,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 }
 
 func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, disenchantTrue bool, tileX int, tileY int) {
-    // specfx 9
-
     game.doCastOnMap(yield, tileX, tileY, 9, false, spell.Sound, func (x int, y int, animationFrame int){})
 
     disenchantStrength := spell.OverrideCost
@@ -523,7 +521,6 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
         }
     }
 
-    // TODO: stacks and warp node on magic nodes
     stack, owner := game.FindStack(tileX, tileY, game.Plane)
     if stack != nil && owner != player {
         for _, unit := range stack.Units() {
@@ -540,6 +537,8 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
             }
         }
     }
+
+    // FIXME: dispel warp node
 }
 
 func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {
