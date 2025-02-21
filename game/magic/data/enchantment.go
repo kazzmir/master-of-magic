@@ -534,6 +534,17 @@ const (
     CityEnchantmentWallOfStone
 )
 
+func (enchantment CityEnchantment) SpellName() string {
+    switch enchantment {
+        case CityEnchantmentLifeWard,
+             CityEnchantmentSorceryWard,
+             CityEnchantmentNatureWard,
+             CityEnchantmentDeathWard,
+             CityEnchantmentChaosWard: return "Spell Ward"
+        default: return enchantment.Name()
+    }
+}
+
 func (enchantment CityEnchantment) Name() string {
     switch enchantment {
         case CityEnchantmentAltarOfBattle: return "Altar of Battle"

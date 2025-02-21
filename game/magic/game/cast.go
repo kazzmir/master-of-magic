@@ -500,7 +500,7 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
     }
 
     citySpellCost := func (enchantment citylib.Enchantment) int {
-        spell := allSpells.FindByName(enchantment.Enchantment.Name())
+        spell := allSpells.FindByName(enchantment.Enchantment.SpellName())
         cost := spell.Cost(true)
         return applyResistance(game.GetPlayerByBanner(enchantment.Owner), cost, spell.Magic)
     }
