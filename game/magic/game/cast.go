@@ -159,13 +159,19 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /*
             TOWN ENCHANTMENTS
                 TODO:
-                Astral Gate
                 Heavenly Light
                 Earth Gate
                 Flying Fortress
                 Spell Ward
                 Cloud of Shadow
         */
+        case "Astral Gate":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentAstralGate)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
+
         case "Prosperity":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentProsperity)

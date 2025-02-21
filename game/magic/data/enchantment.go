@@ -657,6 +657,8 @@ func (enchantment CityEnchantment) SoundIndex() int {
     return 0
 }
 
+// this is the offset in the city view of where to draw the enchantment sprite
+// for enchantments that have 'normal' buildings associated with them (such as altar of battle), this is not needed
 func (enchantment CityEnchantment) IconOffset() int {
     // FIXME: Add other offsets
     switch enchantment {
