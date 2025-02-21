@@ -950,6 +950,24 @@ type Army struct {
     Units []*ArmyUnit
     Auto bool
     Fled bool
+
+    Enchantments []data.CombatEnchantment
+}
+
+func (army *Army) AddEnchantment(enchantment data.CombatEnchantment) {
+    army.Enchantments = append(army.Enchantments, enchantment)
+}
+
+func (army *Army) HasEnchantment(enchantment data.CombatEnchantment) bool {
+    return slices.ContainsFunc(army.Enchantments, func(check data.CombatEnchantment) bool {
+        return check == enchantment
+    })
+}
+
+func (army *Army) RemoveEnchantment(enchamtent data.CombatEnchantment) {
+    army.Enchantments = slices.DeleteFunc(army.Enchantments, func(check data.CombatEnchantment) bool {
+        return check == enchamtent
+    })
 }
 
 // a number that mostly represents the strength of this army
