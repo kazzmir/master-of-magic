@@ -89,7 +89,7 @@ type ReignProvider interface {
     HasLifeBooks() bool
     HasDeathBooks() bool
     TotalBooks() int
-    // FIXME: Also add RulingRace?
+    RulingRace() data.Race
     // FIXME: Also add TaxRate?
     // FIXME: Also add Banner?
 }
@@ -111,8 +111,6 @@ type City struct {
     Plane data.Plane
     // the race of the towns people
     Race data.Race
-    // the race of the controlling wizard
-    RulingRace data.Race
     X int
     Y int
     Outpost bool
@@ -146,7 +144,6 @@ func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType,
         Y: y,
         Banner: banner,
         Race: race,
-        RulingRace: race,
         Buildings: set.MakeSet[buildinglib.Building](),
         Enchantments: set.MakeSet[Enchantment](),
         TaxRate: taxRate,
@@ -984,7 +981,7 @@ func (city *City) InteracialUnrest() float64 {
 
     set(data.RaceTroll, data.RaceTroll, 0)
 
-    return unrest[city.Race][city.RulingRace]
+    return unrest[city.Race][city.ReignProvider.RulingRace()]
 }
 
 func (city *City) ComputeUnrest(garrison []units.StackUnit) int {

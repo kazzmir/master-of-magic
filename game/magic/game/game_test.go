@@ -84,10 +84,6 @@ func TestChangeCityOwner(test *testing.T){
         test.Errorf("Player 2 does not own the city")
     }
 
-    if city.RulingRace != data.RaceDarkElf {
-        test.Errorf("ruling race was not updated to dark elf")
-    }
-
     if !city.TaxRate.Equals(fraction.FromInt(2)) {
         test.Errorf("City tax rate not changed")
     }

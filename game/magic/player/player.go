@@ -705,7 +705,7 @@ func (player *Player) ExploreFogSquare(x int, y int, squares int, plane data.Pla
             if mx < 0 || mx >= len(fog) || my < 0 || my >= len(fog[0]) {
                 continue
             }
-            
+
             if fog[mx][my] == data.FogTypeUnexplored {
                 fog[mx][my] = data.FogTypeExplored
             }
@@ -919,4 +919,8 @@ func (player *Player) HasDeathBooks() bool {
 
 func (player *Player) TotalBooks() int {
     return player.Wizard.TotalBooks()
+}
+
+func (player *Player) RulingRace() data.Race {
+    return player.Wizard.Race
 }

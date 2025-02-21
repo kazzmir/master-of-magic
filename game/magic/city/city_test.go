@@ -84,6 +84,10 @@ func (reign *NoReign) TotalBooks() int {
     return reign.NumberOfBooks
 }
 
+func (reign *NoReign) RulingRace() data.Race {
+    return data.RaceHighMen
+}
+
 func TestBasicCity(test *testing.T){
     city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, fraction.Make(3, 2), nil, &Catchment{Map: makeSimpleMap()}, &NoCities{}, &NoReign{})
     city.Population = 6000

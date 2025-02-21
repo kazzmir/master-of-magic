@@ -4906,7 +4906,6 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
 
     newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()), game, player)
     newCity.Plane = settlers.GetPlane()
-    newCity.RulingRace = player.Wizard.Race
     newCity.Population = 300
     newCity.Outpost = true
     newCity.Banner = player.Wizard.Banner
@@ -6759,7 +6758,6 @@ func ChangeCityOwner(city *citylib.City, owner *playerlib.Player, newOwner *play
     owner.RemoveCity(city)
     newOwner.AddCity(city)
     city.Banner = newOwner.Wizard.Banner
-    city.RulingRace = newOwner.Wizard.Race
     city.ReignProvider = newOwner
 
     city.Buildings.Remove(buildinglib.BuildingFortress)
