@@ -6540,6 +6540,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 if overworldUnit.GetRace() != data.RaceFantastic {
                     overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
                 }
+                overworldUnit.AddExperience(newUnit.Experience)
                 player.AddUnit(overworldUnit)
 
                 if player.AIBehavior != nil {
