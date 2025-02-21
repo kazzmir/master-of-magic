@@ -4104,6 +4104,8 @@ func createScenario47(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x2, y2, 4, city3.Plane)
 
+    city.AddEnchantment(data.CityEnchantmentFamine, enemy.GetBanner())
+
     return game
 }
 
