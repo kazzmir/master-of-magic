@@ -653,6 +653,14 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
                 }
             }
         },
+        // Emulating the original game behavior
+        NotLeftClicked: func(element *uilib.UIElement) {
+            if len(screen.CustomWizard.Name) > 0 {
+                screen.State = NewWizardScreenStateCustomBooks
+                ui.UnfocusElement()
+                screen.UI = screen.MakeCustomWizardBooksUI()
+            }
+        },
     }
 
     ui.AddElement(nameElement)

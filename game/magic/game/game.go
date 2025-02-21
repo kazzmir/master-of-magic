@@ -1120,6 +1120,12 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
                 }
             }
         },
+        // Emulating the original game behavior.
+        NotLeftClicked: func(element *uilib.UIElement) {
+            if len(name) > 0 {
+                quit = true
+            }
+        },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := game.ImageCache.GetImage("backgrnd.lbx", 33, 0)
             var options ebiten.DrawImageOptions
@@ -5974,7 +5980,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         buildIndex = 1
                     } else if powers.Meld {
                         canMeld := false
-                        if node != nil && !node.Warped{
+                        if node != nil && !node.Warped {
                             canMeld = true
                         }
 

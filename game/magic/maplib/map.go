@@ -399,6 +399,8 @@ type ExtraMagicNode struct {
     GuardianSpiritMeld bool
 
     Warped bool
+    // the wizard that cast warp node (so it can be dispelled)
+    WarpedOwner Wizard
 }
 
 func (node *ExtraMagicNode) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
@@ -529,7 +531,6 @@ func (node *ExtraMagicNode) GetPower(magicBonus float64) float64 {
 
     return float64(len(node.Zone)) * magicBonus
 }
-
 
 type ExtraVolcano struct {
     CastingWizard Wizard
