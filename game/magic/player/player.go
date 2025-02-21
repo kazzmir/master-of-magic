@@ -598,7 +598,7 @@ func (player *Player) ManaPerTurn(power int, cityEnchantmentsProvider CityEnchan
 func (player *Player) UpdateTaxRate(rate fraction.Fraction){
     player.TaxRate = rate
     for _, city := range player.Cities {
-        city.UpdateTaxRate(rate, player.GetUnits(city.X, city.Y, city.Plane))
+        city.UpdateUnrest(player.GetUnits(city.X, city.Y, city.Plane))
     }
 }
 
@@ -705,7 +705,7 @@ func (player *Player) ExploreFogSquare(x int, y int, squares int, plane data.Pla
             if mx < 0 || mx >= len(fog) || my < 0 || my >= len(fog[0]) {
                 continue
             }
-            
+
             if fog[mx][my] == data.FogTypeUnexplored {
                 fog[mx][my] = data.FogTypeExplored
             }
@@ -919,4 +919,12 @@ func (player *Player) HasDeathBooks() bool {
 
 func (player *Player) TotalBooks() int {
     return player.Wizard.TotalBooks()
+}
+
+func (player *Player) GetRulingRace() data.Race {
+    return player.Wizard.Race
+}
+
+func (player *Player) GetTaxRate() fraction.Fraction {
+    return player.TaxRate
 }

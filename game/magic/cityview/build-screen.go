@@ -233,7 +233,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         ui.RemoveGroup(mainGroup)
         mainGroup = uilib.MakeGroup()
         ui.AddGroup(mainGroup)
-        bannerUnit := units.MakeOverworldUnitFromUnit(unit, 0, 0, city.Plane, city.Banner, nil)
+        bannerUnit := units.MakeOverworldUnitFromUnit(unit, 0, 0, city.Plane, city.GetBanner(), nil)
         mainGroup.AddElement(&uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions

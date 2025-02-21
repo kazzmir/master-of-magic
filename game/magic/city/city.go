@@ -90,9 +90,9 @@ type ReignProvider interface {
     HasLifeBooks() bool
     HasDeathBooks() bool
     TotalBooks() int
-    // FIXME: Also add RulingRace?
-    // FIXME: Also add TaxRate?
-    // FIXME: Also add Banner?
+    GetRulingRace() data.Race
+    GetTaxRate() fraction.Fraction
+    GetBanner() data.BannerType
 }
 
 const MAX_CITY_CITIZENS = 25
@@ -112,12 +112,9 @@ type City struct {
     Plane data.Plane
     // the race of the towns people
     Race data.Race
-    // the race of the controlling wizard
-    RulingRace data.Race
     X int
     Y int
     Outpost bool
-    Banner data.BannerType
     Buildings *set.Set[buildinglib.Building]
 
     Enchantments *set.Set[Enchantment]
@@ -125,8 +122,6 @@ type City struct {
     CatchmentProvider CatchmentProvider
     CityServices CityServicesProvider
     ReignProvider ReignProvider
-
-    TaxRate fraction.Fraction
 
     // reset every turn, keeps track of whether the player sold a building
     SoldBuilding bool
@@ -140,17 +135,14 @@ type City struct {
 }
 
 // FIXME: Add plane?
-func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, taxRate fraction.Fraction, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider, cityServices CityServicesProvider, reignProvider ReignProvider) *City {
+func MakeCity(name string, x int, y int, race data.Race, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider, cityServices CityServicesProvider, reignProvider ReignProvider) *City {
     city := City{
         Name: name,
         X: x,
         Y: y,
-        Banner: banner,
         Race: race,
-        RulingRace: race,
         Buildings: set.MakeSet[buildinglib.Building](),
         Enchantments: set.MakeSet[Enchantment](),
-        TaxRate: taxRate,
         CatchmentProvider: catchmentProvider,
         CityServices: cityServices,
         ReignProvider: reignProvider,
@@ -173,17 +165,12 @@ func (city *City) GetY() int {
 }
 
 func (city *City) GetBanner() data.BannerType {
-    return city.Banner
+    return city.ReignProvider.GetBanner()
 }
 
 func (city *City) GetOutpostHouses() int {
     // every 100 population is 1 house
     return city.Population / 100
-}
-
-func (city *City) UpdateTaxRate(taxRate fraction.Fraction, garrison []units.StackUnit){
-    city.TaxRate = taxRate
-    city.UpdateUnrest(garrison)
 }
 
 func (city *City) AddBuilding(building buildinglib.Building){
@@ -985,7 +972,7 @@ func (city *City) InteracialUnrest() float64 {
 
     set(data.RaceTroll, data.RaceTroll, 0)
 
-    return unrest[city.Race][city.RulingRace]
+    return unrest[city.Race][city.ReignProvider.GetRulingRace()]
 }
 
 func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
@@ -997,19 +984,20 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
     unrestPercent := float64(0)
 
     // unrest percent from taxes
-    if city.TaxRate.Equals(fraction.Zero()) {
+    taxRate := city.ReignProvider.GetTaxRate()
+    if taxRate.Equals(fraction.Zero()) {
         unrestPercent = 0
-    } else if city.TaxRate.Equals(fraction.Make(1,2)) {
+    } else if taxRate.Equals(fraction.Make(1,2)) {
         unrestPercent = 0.1
-    } else if city.TaxRate.Equals(fraction.Make(1, 1)) {
+    } else if taxRate.Equals(fraction.Make(1, 1)) {
         unrestPercent = 0.2
-    } else if city.TaxRate.Equals(fraction.Make(3, 2)) {
+    } else if taxRate.Equals(fraction.Make(3, 2)) {
         unrestPercent = 0.3
-    } else if city.TaxRate.Equals(fraction.Make(2, 1)) {
+    } else if taxRate.Equals(fraction.Make(2, 1)) {
         unrestPercent = 0.45
-    } else if city.TaxRate.Equals(fraction.Make(5, 2)) {
+    } else if taxRate.Equals(fraction.Make(5, 2)) {
         unrestPercent = 0.60
-    } else if city.TaxRate.Equals(fraction.Make(3, 1)) {
+    } else if taxRate.Equals(fraction.Make(3, 1)) {
         unrestPercent = 0.75
     }
 
@@ -1309,7 +1297,7 @@ func (city *City) ComputeUpkeep() int {
 }
 
 func (city *City) GoldTaxation() int {
-    return int(float32(city.NonRebels()) * float32(city.TaxRate.ToFloat()))
+    return int(float32(city.NonRebels()) * float32(city.ReignProvider.GetTaxRate().ToFloat()))
 }
 
 func (city *City) GoldTradeGoods() int {

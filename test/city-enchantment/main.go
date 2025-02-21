@@ -86,16 +86,17 @@ func (engine *Engine) MakeUI() (*uilib.UI, context.Context, error) {
     player := &playerlib.Player{
         Wizard: setup.WizardCustom{
             Name: "joe",
+            Banner: data.BannerBlue,
         },
+        TaxRate: fraction.Make(2, 1),
     }
 
-    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{}, player)
+    city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, buildingInfo, &gameMap, &NoCityProvider{}, player)
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2
     city.Production = 18
     city.ProducingBuilding = buildinglib.BuildingNone
-    city.Banner = data.BannerBlue
     city.Buildings.Insert(buildinglib.BuildingGranary)
     city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
     city.Buildings.Insert(buildinglib.BuildingMarketplace)
