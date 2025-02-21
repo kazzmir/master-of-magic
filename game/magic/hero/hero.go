@@ -895,8 +895,15 @@ func (hero *Hero) GetExperienceData() units.ExperienceData {
 }
 
 func (hero *Hero) GetExperienceLevel() units.HeroExperienceLevel {
+
+    experience := hero.Unit.Experience
+
+    if experience < 120 && hero.HasEnchantment(data.UnitEnchantmentHeroism) {
+        experience = 120
+    }
+
     if hero.Unit.ExperienceInfo != nil {
-        return units.GetHeroExperienceLevel(hero.Unit.Experience, hero.Unit.ExperienceInfo.HasWarlord(), hero.Unit.ExperienceInfo.Crusade())
+        return units.GetHeroExperienceLevel(experience, hero.Unit.ExperienceInfo.HasWarlord(), hero.Unit.ExperienceInfo.Crusade())
     }
 
     return units.ExperienceHero

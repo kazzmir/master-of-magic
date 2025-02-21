@@ -188,6 +188,10 @@ func (unit *OverworldUnit) AddExperience(amount int) {
             unit.Experience = 120
         }
     }
+
+    if unit.Experience >= 120 && unit.HasEnchantment(data.UnitEnchantmentHeroism) {
+        unit.RemoveEnchantment(data.UnitEnchantmentHeroism)
+    }
 }
 
 func (unit *OverworldUnit) GetExperience() int {
@@ -359,8 +363,13 @@ func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
         return ExperienceRecruit
     }
 
+    experience := unit.Experience
+    if unit.HasEnchantment(data.UnitEnchantmentHeroism) {
+        experience = 120
+    }
+
     if unit.ExperienceInfo != nil {
-        return GetNormalExperienceLevel(unit.Experience, unit.ExperienceInfo.HasWarlord(), unit.ExperienceInfo.Crusade())
+        return GetNormalExperienceLevel(experience, unit.ExperienceInfo.HasWarlord(), unit.ExperienceInfo.Crusade())
     }
 
     return ExperienceRecruit
