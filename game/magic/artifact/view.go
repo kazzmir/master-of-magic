@@ -30,8 +30,7 @@ func RenderArtifactImage(screen *ebiten.Image, imageCache *util.ImageCache, arti
 
     enchanted := artifact.HasAbilities()
     if enchanted {
-        x, y := options.GeoM.Apply(0, 0)
-        util.DrawOutline(screen, imageCache, itemImage, x, y, options.ColorScale, counter, data.GetMagicColor(artifact.FirstAbility().MagicType()))
+        util.DrawOutline(screen, imageCache, itemImage, options.GeoM, options.ColorScale, counter, data.GetMagicColor(artifact.FirstAbility().MagicType()))
     }
 
     return itemImage

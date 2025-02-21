@@ -107,8 +107,7 @@ func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
         screen.DrawImage(use, &options)
 
         if enchantment != data.UnitEnchantmentNone {
-            x, y := options.GeoM.Apply(0, 0)
-            util.DrawOutline(screen, imageCache, use, x, y, options.ColorScale, timeCounter/10, enchantment.Color())
+            util.DrawOutline(screen, imageCache, use, options.GeoM, options.ColorScale, timeCounter/10, enchantment.Color())
         }
     }
 }
