@@ -51,6 +51,7 @@ type UnitView interface {
     GetAbilities() []data.Ability
     GetArtifactSlots() []artifact.ArtifactSlot
     GetArtifacts() []*artifact.Artifact
+    GetRace() data.Race
 }
 
 type PortraitUnit interface {
@@ -424,8 +425,7 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 screen.DrawImage(unitImage, &unitOptions)
 
                 for _, enchantment := range unit.GetEnchantments() {
-                    x, y := unitOptions.GeoM.Apply(0, 0)
-                    util.DrawOutline(screen, &imageCache, unitImage, x, y, options.ColorScale, ui.Counter/10, enchantment.Color())
+                    util.DrawOutline(screen, &imageCache, unitImage, unitOptions.GeoM, options.ColorScale, ui.Counter/10, enchantment.Color())
                     break
                 }
 

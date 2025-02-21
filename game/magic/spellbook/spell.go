@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/vector"
@@ -969,6 +970,117 @@ func CastRightSideDistortions2(page *ebiten.Image) util.Distortion {
     }
 }
 
+// a popup that allows the user to select an additional amount of mana to add to the spell, upto maximum
+func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCache, maximum int, okCallback func(amount int)) *uilib.UIElementGroup {
+    group := uilib.MakeGroup()
+
+    var layer uilib.UILayer = 2
+
+    x := 320 - 158
+    y := 30
+
+    fonts := fontslib.MakeSpellbookFonts(cache)
+
+    amount := 0
+
+    fadeSpeed := uint64(7)
+
+    getAlpha := group.MakeFadeIn(fadeSpeed)
+
+    group.AddElement(&uilib.UIElement{
+        Layer: layer,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            background, _ := imageCache.GetImage("spellscr.lbx", 5, 0)
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            options.GeoM.Translate(float64(x * data.ScreenScale), float64(y * data.ScreenScale))
+            screen.DrawImage(background, &options)
+
+            mx, my := options.GeoM.Apply(float64(8 * data.ScreenScale), float64(6 * data.ScreenScale))
+            fonts.BigOrange.Print(screen, mx, my, float64(data.ScreenScale), options.ColorScale, "Additional Power:")
+            mx, _ = options.GeoM.Apply(float64(background.Bounds().Dx() - 6 * data.ScreenScale), 0)
+            fonts.BigOrange.PrintRight(screen, mx, my, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("+%v", amount))
+        },
+        Order: 0,
+    })
+
+    // conveyor
+    conveyor, _ := imageCache.GetImageTransform("spellscr.lbx", 4, 0, "conveyor", func (img *image.Paletted) image.Image {
+        return img.SubImage(image.Rect(0, 0, img.Bounds().Dx() - 6, img.Bounds().Dy()))
+    })
+    conveyorRect := util.ImageRect((x + 12) * data.ScreenScale, (y + 22) * data.ScreenScale, conveyor)
+    conveyorX := 0
+    doUpdate := false
+    group.AddElement(&uilib.UIElement{
+        Layer: layer,
+        Order: 1,
+        Rect: conveyorRect,
+        Inside: func(element *uilib.UIElement, x int, y int){
+            conveyorX = x
+            if doUpdate {
+                amount = maximum * conveyorX / conveyor.Bounds().Dx()
+            }
+        },
+        LeftClick: func(element *uilib.UIElement){
+            doUpdate = true
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            doUpdate = false
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            showRect := conveyorRect
+            showRect.Max.X = showRect.Min.X + int((float64(conveyor.Bounds().Dx()) * float64(amount) / float64(maximum)))
+            area := screen.SubImage(showRect).(*ebiten.Image)
+
+            motion := (group.Counter) % uint64(conveyor.Bounds().Dx())
+
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            options.GeoM.Translate(float64(conveyorRect.Min.X - conveyor.Bounds().Dx() + int(motion)), float64(conveyorRect.Min.Y))
+            area.DrawImage(conveyor, &options)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(conveyorRect.Min.X + int(motion)), float64(conveyorRect.Min.Y))
+            area.DrawImage(conveyor, &options)
+
+            star, _ := imageCache.GetImage("spellscr.lbx", 3, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(conveyorRect.Min.X + conveyor.Bounds().Dx() * amount / maximum - 3 * data.ScreenScale), float64(conveyorRect.Min.Y - 1 * data.ScreenScale))
+            screen.DrawImage(star, &options)
+
+            // vector.StrokeRect(area, float32(conveyorRect.Min.X), float32(conveyorRect.Min.Y), float32(conveyorRect.Bounds().Dx()), float32(conveyorRect.Bounds().Dy()), 2, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+        },
+    })
+
+    // ok button
+    okIndex := 0
+    okImages, _ := imageCache.GetImages("spellscr.lbx", 42)
+    okRect := util.ImageRect((x + 127) * data.ScreenScale, (y + 17) * data.ScreenScale, okImages[0])
+    group.AddElement(&uilib.UIElement{
+        Layer: layer,
+        Rect: okRect,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(okRect.Min.X), float64(okRect.Min.Y))
+            options.ColorScale.ScaleAlpha(getAlpha())
+            screen.DrawImage(okImages[okIndex], &options)
+        },
+        LeftClick: func(element *uilib.UIElement){
+            okIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            okIndex = 0
+
+            getAlpha = group.MakeFadeOut(fadeSpeed)
+            group.AddDelay(fadeSpeed, func(){
+                okCallback(amount)
+            })
+        },
+        Order: 1,
+    })
+
+    return group
+}
+
 // FIXME: take in the wizard/player that is casting the spell
 // chosenCallback is invoked when the spellbook ui goes away, either because the user
 // selected a spell or because they canceled the ui
@@ -1376,12 +1488,32 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     _ = pageSideRight
 
     shutdown = func(spell Spell, picked bool){
-        getAlpha = ui.MakeFadeOut(7)
-        ui.AddDelay(7, func(){
-            setupSpells(-1)
-            ui.RemoveElements(elements)
-            chosenCallback(spell, picked)
-        })
+        shutdownFinal := func(){
+            getAlpha = ui.MakeFadeOut(7)
+            ui.AddDelay(7, func(){
+                setupSpells(-1)
+                ui.RemoveElements(elements)
+                chosenCallback(spell, picked)
+            })
+
+        }
+
+        if picked && spell.IsVariableCost() {
+            var powerGroup *uilib.UIElementGroup
+            extraStrength := spell.Cost(overland) * 4
+            if !overland {
+                extraStrength = min(spell.Cost(overland) * 4, castingSkill)
+            }
+
+            powerGroup = makeAdditionalPowerElements(cache, &imageCache, extraStrength, func(amount int){
+                spell.OverrideCost = spell.Cost(overland) + amount
+                ui.RemoveGroup(powerGroup)
+                shutdownFinal()
+            })
+            ui.AddGroup(powerGroup)
+        } else {
+            shutdownFinal()
+        }
     }
 
     elements = append(elements, &uilib.UIElement{

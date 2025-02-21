@@ -35,6 +35,10 @@ type Spell struct {
     Rarity SpellRarity
 }
 
+func (spell Spell) IsVariableCost() bool {
+    return spell.SpellType >= 18
+}
+
 func (spell Spell) Invalid() bool {
     return spell.Name == ""
 }
@@ -565,6 +569,11 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
 
         magicData := <-spellMagicIterator
 
+        // hacks to fix some spells that are not marked as variable cost
+        if name == "Spell Blast" {
+            spellType = 18
+        }
+
         spells.AddSpell(Spell{
             Name: name,
             Index: i,
@@ -581,7 +590,6 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
             Flag1: int(flag1),
             Flag2: int(flag2),
             Flag3: int(flag3),
-
             Magic: magicData.Magic,
             Rarity: magicData.Rarity,
         })

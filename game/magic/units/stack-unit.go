@@ -75,6 +75,8 @@ type StackUnit interface {
     AddExperience(int)
     GetExperience() int
     GetExperienceData() ExperienceData
+    GetExperienceLevel() NormalExperienceLevel
+    GetHeroExperienceLevel() HeroExperienceLevel
     GetRawUnit() Unit
     GetToHitMelee() int
     CanTouchAttack(Damage) bool

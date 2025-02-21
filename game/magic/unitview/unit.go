@@ -297,25 +297,27 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
 
     if !pureAbilities {
         // experience badge
-        experienceX := x
-        experienceY := y
-        elements = append(elements, &uilib.UIElement{
-            Layer: layer,
-            Rect: util.ImageRect(experienceX, experienceY, background),
-            RightClick: func(element *uilib.UIElement){
-                experience := unit.GetExperienceData()
-                helpEntries := help.GetEntriesByName(experience.Name())
-                if helpEntries != nil {
-                    uiGroup.AddElement(uilib.MakeHelpElementWithLayer(uiGroup, cache, imageCache, layer+1, helpEntries[0], helpEntries[1:]...))
-                }
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                var options ebiten.DrawImageOptions
-                options.ColorScale.ScaleAlpha((*getAlpha)())
-                options.GeoM.Translate(float64(experienceX), float64(experienceY))
-                RenderExperienceBadge(screen, imageCache, unit, mediumFont, options, true)
-            },
-        })
+        if unit.GetRace() != data.RaceFantastic {
+            experienceX := x
+            experienceY := y
+            elements = append(elements, &uilib.UIElement{
+                Layer: layer,
+                Rect: util.ImageRect(experienceX, experienceY, background),
+                RightClick: func(element *uilib.UIElement){
+                    experience := unit.GetExperienceData()
+                    helpEntries := help.GetEntriesByName(experience.Name())
+                    if helpEntries != nil {
+                        uiGroup.AddElement(uilib.MakeHelpElementWithLayer(uiGroup, cache, imageCache, layer+1, helpEntries[0], helpEntries[1:]...))
+                    }
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha((*getAlpha)())
+                    options.GeoM.Translate(float64(experienceX), float64(experienceY))
+                    RenderExperienceBadge(screen, imageCache, unit, mediumFont, options, true)
+                },
+            })
+        }
 
         y += background.Bounds().Dy() + 1
 

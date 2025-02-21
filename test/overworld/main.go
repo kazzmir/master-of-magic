@@ -124,10 +124,10 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 30, data.PlaneArcanus)
     player.LiftFog(x, y, 30, data.PlaneMyrror)
 
-    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     for i := 0; i < 5; i++ {
-        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
         _ = fireElemental
     }
 
@@ -143,8 +143,8 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
     }, false)
 
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
 
     game.Camera.Center(stack.X(), stack.Y())
 
@@ -194,7 +194,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(4, 5, 3, data.PlaneArcanus)
 
-    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, 5, 5, data.PlaneArcanus, wizard.Banner, nil))
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, 5, 5, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     stack := player.FindStackByUnit(drake)
     player.SetSelectedStack(stack)
@@ -258,9 +258,9 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
-    settlers := player.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSettlers, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
+    settlers := player.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSettlers, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     stack := player.FindStackByUnit(settlers)
     player.SetSelectedStack(stack)
@@ -328,9 +328,9 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
-    settlers := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSettlers, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
+    settlers := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSettlers, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     stack := player.FindStackByUnit(settlers)
     player.SetSelectedStack(stack)
@@ -473,15 +473,15 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
     _ = introCity
 
     for i := 0; i < 3; i++ {
-        player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x + i, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x + i, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     }
 
     for i := 0; i < 3; i++ {
-        player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 3 + i, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 3 + i, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     }
 
     for i := 0; i < 3; i++ {
-        player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 6 + i, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 6 + i, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     }
 
     x, y, _ = game.FindValidCityLocation(game.Plane)
@@ -627,20 +627,20 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     nodes := findNodes(game.CurrentMap())
 
     node := nodes[terrain.SorceryNode][0]
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
     node = nodes[terrain.ChaosNode][0]
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
     node = nodes[terrain.NatureNode][0]
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
     stack := player.FindStackByUnit(drake)
@@ -705,10 +705,10 @@ func createScenario9(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     for i := 0; i < 1; i++ {
-        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
         _ = fireElemental
     }
 
@@ -779,10 +779,10 @@ func createScenario10(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     for i := 0; i < 1; i++ {
-        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
         _ = fireElemental
     }
 
@@ -857,7 +857,7 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
-    spirit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    spirit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     stack := player.FindStackByUnit(spirit)
     player.SetSelectedStack(stack)
@@ -919,7 +919,7 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 10, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     game.CurrentMap().SetBonus(x-3, y-1, data.BonusSilverOre)
     game.CurrentMap().SetBonus(x-2, y-1, data.BonusGem)
@@ -1028,6 +1028,10 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Corruption"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Warp Node"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Call The Void"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Disenchant Area"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Disenchant True"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
 
     // city spells
     player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
@@ -1043,12 +1047,12 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Evil Presence"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Stream of Life"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Altar of Battle"))
 
     // global enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Awareness"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Crusade"))
 
     // unit enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Bless"))
@@ -1101,7 +1105,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     game.CurrentMap().SetRoad(x, y+1, false)
     game.CurrentMap().SetRoad(x, y+2, false)
@@ -1130,10 +1134,10 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city2.ResetCitizens(nil)
     enemy.AddCity(city2)
 
-    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y, data.PlaneArcanus, enemy.Wizard.Banner, nil))
-    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x + 2, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, nil))
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x + 2, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.DragonTurtle, x + 2, y, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.DragonTurtle, x + 2, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     player.LiftFog(x, y, 2, data.PlaneArcanus)
 
     enemyWizard2 := setup.WizardCustom{
@@ -1323,10 +1327,10 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    spear1 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
-    spear2 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
-    spear3 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
+    spear1 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    spear2 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    spear3 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     spear1.AdjustHealth(-spear1.GetHealth() / 2)
     spear2.AdjustHealth(-spear2.GetHealth() / 3)
     spear3.AdjustHealth(-1)
@@ -1341,8 +1345,8 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
     }, false)
 
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
 
     return game
 }
@@ -1487,14 +1491,14 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, x, y, data.PlaneArcanus, wizard.Banner, nil), hero.HeroRakir, "Rakir"))
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, x, y, data.PlaneArcanus, wizard.Banner, nil), hero.HeroTorin, "Torin"))
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroWarrax, x, y, data.PlaneArcanus, wizard.Banner, nil), hero.HeroWarrax, "Warrax"))
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRavashack, x, y, data.PlaneArcanus, wizard.Banner, nil), hero.HeroRavashack, "Ravashack"))
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroSirHarold, x, y, data.PlaneArcanus, wizard.Banner, nil), hero.HeroSirHarold, "Sir Harold"))
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroAlorra, x, y, data.PlaneArcanus, wizard.Banner, nil), hero.HeroAlorra, "Alorra"))
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()), hero.HeroRakir, "Rakir"))
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()), hero.HeroTorin, "Torin"))
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroWarrax, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()), hero.HeroWarrax, "Warrax"))
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRavashack, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()), hero.HeroRavashack, "Ravashack"))
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroSirHarold, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()), hero.HeroSirHarold, "Sir Harold"))
+    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroAlorra, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()), hero.HeroAlorra, "Alorra"))
 
     player.VaultEquipment[0] = &artifact.Artifact{
         Name: "Baloney",
@@ -1652,7 +1656,7 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     mysticX.AddAbility(data.AbilityArmsmaster)
     mysticX.AddExperience(528)
 
-    warlock := player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x, y, data.PlaneArcanus, player.GetBanner(), nil))
+    warlock := player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x, y, data.PlaneArcanus, player.GetBanner(), player.MakeExperienceInfo()))
     // warlock.AddEnchantment(data.UnitEnchantmentGiantStrength)
     warlock.AddEnchantment(data.UnitEnchantmentLionHeart)
 
@@ -1666,9 +1670,9 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerBlue,
     }, false)
 
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
 
     return game
 }
@@ -1732,8 +1736,8 @@ func createScenario19(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
     }, false)
 
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
 
     game.Events <- &gamelib.GameEventHireHero{
         Player: player,
@@ -2032,11 +2036,11 @@ func createScenario22(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     for i := 0; i < 1; i++ {
-        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
         _ = fireElemental
     }
 
@@ -2254,14 +2258,14 @@ func createScenario24(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
     }, false)
 
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 1, y + 1, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 1, y + 1, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 1, y + 1, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 1, y + 1, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
 
     game.Events <- &gamelib.GameEventHireMercenaries{
         Player: player,
         Units: []*units.OverworldUnit{
-            units.MakeOverworldUnitFromUnit(units.BarbarianSpearmen, x, y, data.PlaneArcanus, player.Wizard.Banner, nil),
-            units.MakeOverworldUnitFromUnit(units.BarbarianSpearmen, x, y, data.PlaneArcanus, player.Wizard.Banner, nil),
+            units.MakeOverworldUnitFromUnit(units.BarbarianSpearmen, x, y, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
+            units.MakeOverworldUnitFromUnit(units.BarbarianSpearmen, x, y, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
         },
         Cost: 200,
     }
@@ -2321,7 +2325,7 @@ func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
         Name: "dingus",
         Banner: data.BannerRed,
     }, false)
-    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.KlackonSpearmen, x + 1, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, nil))
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.KlackonSpearmen, x + 1, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
 
     artifact := game.ArtifactPool["Pummel Mace"]
 
@@ -2395,7 +2399,7 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
         Name: "dingus",
         Banner: data.BannerRed,
     }, false)
-    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.KlackonSpearmen, x + 1, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, nil))
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.KlackonSpearmen, x + 1, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
 
     return game
 }
@@ -2463,10 +2467,10 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 30, data.PlaneArcanus)
 
-    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     for i := 0; i < 2; i++ {
-        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
         _ = fireElemental
     }
 
@@ -2474,8 +2478,8 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
 
     stack := player.FindStackByUnit(drake)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, player.Wizard.Banner, nil))
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenCavalry, x + 2, y + 2, data.PlaneArcanus, player.Wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenCavalry, x + 2, y + 2, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
 
     stack2 := player.FindStack(x + 2, y + 2, data.PlaneArcanus)
     stack2.Move(-1, -1, fraction.Zero(), game.GetNormalizeCoordinateFunc())
@@ -2489,8 +2493,8 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
     }, false)
 
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 3, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 3, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 3, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 3, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
 
     game.Camera.Center(stack.X(), stack.Y())
 
@@ -2552,9 +2556,9 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
     node := nodes[terrain.SorceryNode][0]
     game.CurrentMap().RemoveEncounter(node.X, node.Y)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, player.MakeExperienceInfo()))
     // has pathfinding
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.NomadRangers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.NomadRangers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, player.MakeExperienceInfo()))
 
     player.LiftFog(node.X, node.Y, 4, game.Plane)
 
@@ -2621,9 +2625,9 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
     node := nodes[terrain.SorceryNode][0]
     game.CurrentMap().RemoveEncounter(node.X, node.Y)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcSwordsmen, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcSwordsmen, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, player.MakeExperienceInfo()))
 
     player.LiftFog(node.X, node.Y, 4, game.Plane)
 
@@ -2703,7 +2707,7 @@ func createScenario30(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 8, game.Plane)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, x + 1, y + 1, game.Plane, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, x + 1, y + 1, game.Plane, wizard.Banner, player.MakeExperienceInfo()))
 
     for i := x; i <= x2; i++ {
         game.CurrentMap().SetRoad(i, y, false)
@@ -2779,10 +2783,10 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 30, data.PlaneArcanus)
 
-    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     for i := 0; i < 4; i++ {
-        player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     }
 
     // player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
@@ -2979,8 +2983,8 @@ func createScenario33(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 30, data.PlaneArcanus)
 
-    priest1 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.BeastmenPriest, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
-    priest2 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.BeastmenPriest, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    priest1 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.BeastmenPriest, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    priest2 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.BeastmenPriest, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     _ = priest2
 
@@ -3055,7 +3059,7 @@ func createScenario34(cache *lbx.LbxCache) *gamelib.Game {
     node.Node.MeldingWizard = player2
     player1.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
-    spirit := player1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard1.Banner, nil))
+    spirit := player1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard1.Banner, player1.MakeExperienceInfo()))
     stack := player1.FindStackByUnit(spirit)
     player1.SetSelectedStack(stack)
     player1.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
@@ -3120,7 +3124,7 @@ func createScenario35(cache *lbx.LbxCache) *gamelib.Game {
         player1.KnownSpells.AddSpell(spell)
     }
 
-    spirit := player1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard1.Banner, nil))
+    spirit := player1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard1.Banner, player1.MakeExperienceInfo()))
     stack := player1.FindStackByUnit(spirit)
     player1.SetSelectedStack(stack)
     player1.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
@@ -3191,7 +3195,7 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy1.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSettlers, x, y, data.PlaneArcanus, wizard1.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSettlers, x, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo()))
 
     // allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
@@ -3228,8 +3232,8 @@ func createScenario37(cache *lbx.LbxCache) *gamelib.Game {
     player.Fame = 10
     player.LiftFog(node.X, node.Y, 3, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Cockatrices, node.X, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
-    unit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.SkyDrake, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Cockatrices, node.X, node.Y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    unit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.SkyDrake, node.X + 1, node.Y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     stack := player.FindStackByUnit(unit)
     player.SetSelectedStack(stack)
 
@@ -3274,7 +3278,7 @@ func createScenario38(cache *lbx.LbxCache) *gamelib.Game {
     x, y, _ = game.FindValidCityLocation(game.Plane)
     player1.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    unit1 := player1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneArcanus, wizard1.Banner, nil))
+    unit1 := player1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneArcanus, wizard1.Banner, player1.MakeExperienceInfo()))
     stack1 := player1.FindStackByUnit(unit1)
     player1.SetSelectedStack(stack1)
 
@@ -3288,12 +3292,12 @@ func createScenario38(cache *lbx.LbxCache) *gamelib.Game {
     player2.AIBehavior = ai.MakeRaiderAI()
     player2.Mana = 26557
 
-    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x+1, y-2, data.PlaneArcanus, wizard2.Banner, nil))
-    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x+1, y-1, data.PlaneArcanus, wizard2.Banner, nil))
-    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x+1, y, data.PlaneArcanus, wizard2.Banner, nil))
-    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x-1, y-2, data.PlaneArcanus, wizard2.Banner, nil))
-    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x-1, y-1, data.PlaneArcanus, wizard2.Banner, nil))
-    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x-1, y, data.PlaneArcanus, wizard2.Banner, nil))
+    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x+1, y-2, data.PlaneArcanus, wizard2.Banner, player2.MakeExperienceInfo()))
+    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x+1, y-1, data.PlaneArcanus, wizard2.Banner, player2.MakeExperienceInfo()))
+    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x+1, y, data.PlaneArcanus, wizard2.Banner, player2.MakeExperienceInfo()))
+    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x-1, y-2, data.PlaneArcanus, wizard2.Banner, player2.MakeExperienceInfo()))
+    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x-1, y-1, data.PlaneArcanus, wizard2.Banner, player2.MakeExperienceInfo()))
+    player2.AddUnit(units.MakeOverworldUnitFromUnit(units.Basilisk, x-1, y, data.PlaneArcanus, wizard2.Banner, player2.MakeExperienceInfo()))
 
     return game
 }
@@ -3439,7 +3443,7 @@ func createScenario40(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     game.CurrentMap().SetRoad(x, y+1, false)
     game.CurrentMap().SetRoad(x, y+2, false)
@@ -3557,9 +3561,9 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 200, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x+1, y, data.PlaneArcanus, wizard.Banner, nil))
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, x, y, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     enemy1 := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",
@@ -3607,8 +3611,8 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
     }
 
     use := candidates[rand.N(len(candidates))]
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, use.X, use.Y, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, use.X, use.Y, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, use.X, use.Y, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, use.X, use.Y, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
 
     game.Camera.Center(x, y)
 
@@ -3751,10 +3755,10 @@ func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 200, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x, y, data.PlaneArcanus, wizard.Banner, nil))
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x, y, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.ShadowDemons, x-1, y, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.ShadowDemons, x-1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     stack := player.FindStack(x, y, city.Plane)
     city.ResetCitizens(stack.Units())
@@ -3767,7 +3771,7 @@ func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
     enemy1.AIBehavior = nil
 
     // add an enemy at the same spot but on the opposite plane
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneMyrror, enemy1.Wizard.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneMyrror, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
 
     game.Camera.Center(x, y)
 
@@ -3870,12 +3874,233 @@ func createScenario45(cache *lbx.LbxCache) *gamelib.Game {
     enemy1.AddCity(city2)
 
     // add an enemy at the same spot but on the opposite plane
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo()))
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x, y+1, data.PlaneArcanus, wizard.Banner, nil))
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x, y+1, data.PlaneArcanus, wizard.Banner, nil))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x, y+1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x, y+1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     game.Camera.Center(x, y)
+
+    return game
+}
+
+// building units with experience
+func createScenario46(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 46")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityWarlord,
+        },
+        Books: []data.WizardBook{
+            {
+                Magic: data.LifeMagic,
+                Count:11,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.CastingSkillPower += 500000
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player.KnownSpells.AddSpell(allSpells.FindByName("Guardian Spirit"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Altar of Battle"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Crusade"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Heroism"))
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game, player)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingNone
+    city.ProducingUnit = units.TrollSpearmen
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+
+    city.AddBuilding(buildinglib.BuildingFortress)
+    city.AddBuilding(buildinglib.BuildingFightersGuild)
+    city.AddBuilding(buildinglib.BuildingWarCollege)
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 1000
+    player.Mana = 10000
+
+    player.LiftFog(x, y, 4, data.PlaneArcanus)
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+
+    return game
+}
+
+// disenchanting things
+func createScenario47(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 47")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityAlchemy,
+            setup.AbilitySageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.CastingSkillPower += 500000
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+    player.KnownSpells.AddSpell(allSpells.FindByName("Disenchant Area"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Disenchant True"))
+
+    game.Events <- &gamelib.GameEventCastSpell{Player: player, Spell: allSpells.FindByName("Nature Awareness")}
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game, player)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+
+    city.AddBuilding(buildinglib.BuildingFortress)
+    city.AddBuilding(buildinglib.BuildingShrine)
+    city.AddBuilding(buildinglib.BuildingGranary)
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 1000
+    player.Mana = 10000
+
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, player.GetBanner(), player.MakeExperienceInfo()))
+    drake.AddEnchantment(data.UnitEnchantmentGiantStrength)
+
+    player.LiftFog(x, y, 4, data.PlaneArcanus)
+
+    enemyWizard := setup.WizardCustom{
+        Name: "enemy",
+        Banner: data.BannerGreen,
+        Race: data.RaceDraconian,
+    }
+
+    enemy := game.AddPlayer(enemyWizard, false)
+
+    x, y, _ = game.FindValidCityLocation(game.Plane)
+
+    city2 := citylib.MakeCity("Test City", x, y, enemy.Wizard.Race, enemy.Wizard.Banner, fraction.Make(1, 1), game.BuildingInfo, game.CurrentMap(), game, enemy)
+    city2.Population = 14000
+    city2.Plane = data.PlaneArcanus
+    city2.ProducingBuilding = buildinglib.BuildingHousing
+    city2.ProducingUnit = units.UnitNone
+    city2.AddBuilding(buildinglib.BuildingShrine)
+    city2.AddBuilding(buildinglib.BuildingGranary)
+    city2.AddBuilding(buildinglib.BuildingBank)
+    city2.Farmers = 10
+    city2.Workers = 4
+    city2.ResetCitizens(nil)
+    enemy.AddCity(city2)
+
+    enemy1Unit := enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, enemy.GetBanner(), enemy.MakeExperienceInfo()))
+    enemy1Unit.AddEnchantment(data.UnitEnchantmentGiantStrength)
+    enemy1Unit.AddEnchantment(data.UnitEnchantmentLionHeart)
+    enemy1Unit.AddEnchantment(data.UnitEnchantmentHaste)
+
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x + 2, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.DragonTurtle, x + 2, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.LiftFog(x, y, 2, data.PlaneArcanus)
+
+    enemyWizard2 := setup.WizardCustom{
+        Name: "enemy2",
+        Banner: data.BannerPurple,
+        Race: data.RaceBeastmen,
+    }
+
+    enemy2 := game.AddPlayer(enemyWizard2, false)
+
+    x2, y2, _ := game.FindValidCityLocation(game.Plane)
+
+    city3 := citylib.MakeCity("Test City", x2, y2, enemy2.Wizard.Race, enemy2.Wizard.Banner, fraction.Make(1, 1), game.BuildingInfo, game.CurrentMap(), game, enemy)
+    city3.Population = 14000
+    city3.Plane = data.PlaneArcanus
+    city3.ProducingBuilding = buildinglib.BuildingHousing
+    city3.ProducingUnit = units.UnitNone
+    city3.AddBuilding(buildinglib.BuildingShrine)
+    city3.AddBuilding(buildinglib.BuildingGranary)
+    city3.AddBuilding(buildinglib.BuildingBank)
+    city3.Farmers = 10
+    city3.Workers = 4
+    city3.ResetCitizens(nil)
+    city3.AddEnchantment(data.CityEnchantmentConsecration, enemy2.GetBanner())
+    enemy2.AddCity(city3)
+
+    player.LiftFog(x2, y2, 4, city3.Plane)
+
+    city.AddEnchantment(data.CityEnchantmentConsecration, player.GetBanner())
+    city.AddEnchantment(data.CityEnchantmentFamine, enemy.GetBanner())
+
+    // force a node to be melded and warped
+    var node *maplib.ExtraMagicNode
+    mapUse := game.GetMap(data.PlaneArcanus)
+    nodeLook:
+    for x := range mapUse.Width() {
+        for y := range mapUse.Height() {
+            if mapUse.GetMagicNode(x, y) != nil {
+                node = mapUse.GetMagicNode(x, y)
+                break nodeLook
+            }
+        }
+    }
+
+    if node != nil {
+        node.Meld(enemy, units.MagicSpirit)
+        node.Warped = true
+        node.WarpedOwner = enemy
+    }
 
     return game
 }
@@ -3931,6 +4156,8 @@ func NewEngine(scenario int) (*Engine, error) {
         case 43: game = createScenario43(cache)
         case 44: game = createScenario44(cache)
         case 45: game = createScenario45(cache)
+        case 46: game = createScenario46(cache)
+        case 47: game = createScenario47(cache)
         default: game = createScenario1(cache)
     }
 

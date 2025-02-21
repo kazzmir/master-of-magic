@@ -37,6 +37,10 @@ func (engine *Engine) MakeUI() *uilib.UI {
     }
 
     spells := spellbook.Spells{}
+
+    // spells.AddSpell(allSpells.FindByName("Disenchant Area"))
+
+    /*
     spells.AddSpell(allSpells.FindByName("War Bears"))
     spells.AddSpell(allSpells.FindByName("Guardian Spirit"))
     spells.AddSpell(allSpells.FindByName("Sprites"))
@@ -46,6 +50,7 @@ func (engine *Engine) MakeUI() *uilib.UI {
     spells.AddSpell(allSpells.FindByName("Arch Angel"))
     spells.AddSpell(allSpells.FindByName("Bless"))
     spells.AddSpell(allSpells.FindByName("Iron Skin"))
+    */
 
     spells = allSpells
 
@@ -62,7 +67,7 @@ func (engine *Engine) MakeUI() *uilib.UI {
 
     more := spellbook.MakeSpellBookCastUI(ui, engine.Cache, spells, make(map[spellbook.Spell]int), 60, spellbook.Spell{}, 0, true, func (result spellbook.Spell, picked bool){
         if picked {
-            log.Printf("Picked spell %v", result)
+            log.Printf("Picked spell %+v", result)
         }
     })
     ui.AddElements(more)

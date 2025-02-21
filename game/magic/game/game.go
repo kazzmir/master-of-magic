@@ -632,12 +632,33 @@ func (game *Game) UpdateImages() {
     }
 }
 
+func (game *Game) GetPlayerByBanner(banner data.BannerType) *playerlib.Player {
+    for _, player := range game.Players {
+        if player.GetBanner() == banner {
+            return player
+        }
+    }
+
+    return nil
+}
+
 // return the city and its owner
 func (game *Game) FindCity(x int, y int, plane data.Plane) (*citylib.City, *playerlib.Player) {
     for _, player := range game.Players {
         city := player.FindCity(x, y, plane)
         if city != nil {
             return city, player
+        }
+    }
+
+    return nil, nil
+}
+
+func (game *Game) FindStack(x int, y int, plane data.Plane) (*playerlib.UnitStack, *playerlib.Player) {
+    for _, player := range game.Players {
+        stack := player.FindStack(x, y, plane)
+        if stack != nil {
+            return stack, player
         }
     }
 
@@ -1097,6 +1118,12 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
                             name = name[:len(name) - 1]
                         }
                 }
+            }
+        },
+        // Emulating the original game behavior.
+        NotLeftClicked: func(element *uilib.UIElement) {
+            if len(name) > 0 {
+                quit = true
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -2624,14 +2651,11 @@ func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
 
 func (game *Game) AddExperience(player *playerlib.Player, unit units.StackUnit, amount int) {
     if player.IsHuman() && unit.IsHero() {
-        warlord := player.Wizard.AbilityEnabled(setup.AbilityWarlord)
-        crusade := player.GlobalEnchantments.Contains(data.EnchantmentCrusade)
-
-        level_before := units.GetHeroExperienceLevel(unit.GetExperience(), warlord, crusade)
+        level_before := unit.GetHeroExperienceLevel()
 
         unit.AddExperience(amount)
 
-        level_after := units.GetHeroExperienceLevel(unit.GetExperience(), warlord, crusade)
+        level_after := unit.GetHeroExperienceLevel()
 
         if level_before != level_after {
             hero := unit.(*herolib.Hero)
@@ -5608,8 +5632,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                             // draw the first enchantment on the unit
                             for _, enchantment := range unit.GetEnchantments() {
-                                x, y := options.GeoM.Apply(0, 0)
-                                util.DrawOutline(screen, &game.ImageCache, unitImage, x, y, options.ColorScale, game.Counter/10, enchantment.Color())
+                                util.DrawOutline(screen, &game.ImageCache, unitImage, options.GeoM, options.ColorScale, game.Counter/10, enchantment.Color())
                                 break
                             }
                         }
@@ -5649,7 +5672,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                         // draw experience badges
                         if unit.GetRace() == data.RaceHero {
-                            switch units.GetHeroExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), player.GlobalEnchantments.Contains(data.EnchantmentCrusade)) {
+                            switch unit.GetHeroExperienceLevel() {
                             case units.ExperienceHero:
                             case units.ExperienceMyrmidon:
                                 count = 1
@@ -5678,7 +5701,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             }
                         } else {
 
-                            switch units.GetNormalExperienceLevel(unit.GetExperience(), player.Wizard.AbilityEnabled(setup.AbilityWarlord), player.GlobalEnchantments.Contains(data.EnchantmentCrusade)) {
+                            switch unit.GetExperienceLevel() {
                             case units.ExperienceRecruit:
                                 // nothing
                             case units.ExperienceRegular:
@@ -5954,7 +5977,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         buildIndex = 1
                     } else if powers.Meld {
                         canMeld := false
-                        if node != nil && !node.Warped{
+                        if node != nil && !node.Warped {
                             canMeld = true
                         }
 
@@ -6538,6 +6561,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 if overworldUnit.GetRace() != data.RaceFantastic {
                     overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
                 }
+                overworldUnit.AddExperience(newUnit.Experience)
                 player.AddUnit(overworldUnit)
 
                 if player.AIBehavior != nil {
@@ -7564,8 +7588,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
                 enchantment := util.First(leader.GetEnchantments(), data.UnitEnchantmentNone)
                 if enchantment != data.UnitEnchantmentNone {
-                    x, y := options.GeoM.Apply(0, 0)
-                    util.DrawOutline(screen, overworld.ImageCache, pic, x, y, options.ColorScale, overworld.Counter/10, enchantment.Color())
+                    util.DrawOutline(screen, overworld.ImageCache, pic, options.GeoM, options.ColorScale, overworld.Counter/10, enchantment.Color())
                 }
             }
 

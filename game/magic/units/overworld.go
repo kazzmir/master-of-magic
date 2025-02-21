@@ -80,7 +80,7 @@ func (unit *OverworldUnit) RemoveEnchantment(toRemove data.UnitEnchantment) {
 }
 
 func (unit *OverworldUnit) GetEnchantments() []data.UnitEnchantment {
-    return unit.Enchantments
+    return slices.Clone(unit.Enchantments)
 }
 
 func (unit *OverworldUnit) GetLbxFile() string {
@@ -180,6 +180,10 @@ func (unit *OverworldUnit) IsSwimmer() bool {
 }
 
 func (unit *OverworldUnit) AddExperience(amount int) {
+    if unit.GetRace() == data.RaceFantastic {
+        return
+    }
+
     unit.Experience += amount
 
     // normal units max out at 120 experience
@@ -188,9 +192,16 @@ func (unit *OverworldUnit) AddExperience(amount int) {
             unit.Experience = 120
         }
     }
+
+    if unit.Experience >= 120 && unit.HasEnchantment(data.UnitEnchantmentHeroism) {
+        unit.RemoveEnchantment(data.UnitEnchantmentHeroism)
+    }
 }
 
 func (unit *OverworldUnit) GetExperience() int {
+    if unit.GetRace() == data.RaceFantastic {
+        return 0
+    }
     return unit.Experience
 }
 
@@ -353,14 +364,23 @@ func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
     return power
 }
 
+func (unit *OverworldUnit) GetHeroExperienceLevel() HeroExperienceLevel {
+    return ExperienceHero
+}
+
 func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
     // fantastic creatures can never gain any levels
     if unit.GetRace() == data.RaceFantastic {
         return ExperienceRecruit
     }
 
+    experience := unit.Experience
+    if unit.HasEnchantment(data.UnitEnchantmentHeroism) {
+        experience = 120
+    }
+
     if unit.ExperienceInfo != nil {
-        return GetNormalExperienceLevel(unit.Experience, unit.ExperienceInfo.HasWarlord(), unit.ExperienceInfo.Crusade())
+        return GetNormalExperienceLevel(experience, unit.ExperienceInfo.HasWarlord(), unit.ExperienceInfo.Crusade())
     }
 
     return ExperienceRecruit
