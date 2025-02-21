@@ -281,8 +281,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
                             enchantment := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
                             if enchantment != data.UnitEnchantmentNone {
-                                x, y := options.GeoM.Apply(0, 0)
-                                util.DrawOutline(screen, &view.ImageCache, pic, x, y, ebiten.ColorScale{}, ui.Counter/10, enchantment.Color())
+                                util.DrawOutline(screen, &view.ImageCache, pic, options.GeoM, ebiten.ColorScale{}, ui.Counter/10, enchantment.Color())
                             }
 
                         },
