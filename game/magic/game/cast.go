@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -368,7 +369,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         case "Disenchant Area":
 
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                game.doDisenchantArea(yield, player, spell, tileX, tileY)
+                game.doDisenchantArea(yield, player, spell, false, tileX, tileY)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeDisenchant, SelectedFunc: selected}
@@ -442,10 +443,36 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
     }
 }
 
-func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, tileX int, tileY int) {
+func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, disenchantTrue bool, tileX int, tileY int) {
     // specfx 9
 
     game.doCastOnMap(yield, tileX, tileY, 9, false, spell.Sound, func (x int, y int, animationFrame int){})
+
+    disenchantStrength := spell.OverrideCost
+    if disenchantTrue {
+        // each additional point of mana spent increases the disenchant strength by 3
+        disenchantStrength = spell.CastCost + (spell.Cost(true) - spell.CastCost) * 3
+    }
+
+    if player.Wizard.AbilityEnabled(setup.AbilityRunemaster) {
+        disenchantStrength *= 2
+    }
+
+    spellCost := func (enchantment data.CityEnchantment) int {
+        return 0
+    }
+
+    city, _ := game.FindCity(tileX, tileY, game.Plane)
+    if city != nil {
+        for _, enchantment := range city.Enchantments.Values() {
+            if enchantment.Owner != player.GetBanner() {
+                dispellChance := disenchantStrength * 100 / (disenchantStrength + spellCost(enchantment.Enchantment))
+                if rand.N(100) < dispellChance {
+                    city.RemoveEnchantments(enchantment.Enchantment)
+                }
+            }
+        }
+    }
 
     // remove enchantments not owned by player
 }
