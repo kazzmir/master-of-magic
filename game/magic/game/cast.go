@@ -541,7 +541,17 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
         }
     }
 
-    // FIXME: dispel warp node
+    mapUse := game.GetMap(game.Plane)
+    magicNode := mapUse.GetMagicNode(tileX, tileY)
+    if magicNode != nil && magicNode.Warped && magicNode.WarpedOwner != player {
+        warpNode := allSpells.FindByName("Warp Node")
+        cost := applyResistance(game.GetPlayerByBanner(magicNode.WarpedOwner.GetBanner()), warpNode.Cost(true), warpNode.Magic)
+
+        dispellChance := disenchantStrength * 100 / (disenchantStrength + cost)
+        if rand.N(100) < dispellChance {
+            magicNode.Warped = false
+        }
+    }
 }
 
 func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {
