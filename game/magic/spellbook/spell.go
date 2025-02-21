@@ -981,7 +981,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
 
     fonts := fontslib.MakeSpellbookFonts(cache)
 
-    amount := 50
+    amount := 0
 
     fadeSpeed := uint64(7)
 
