@@ -378,7 +378,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeLand, SelectedFunc: selected}
         case "Warp Node":
-            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyMeldedNode, SelectedFunc: game.doCastWarpNode}
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastWarpNode(yield, tileX, tileY, player)
+            }
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyMeldedNode, SelectedFunc: selected}
         case "Disenchant Area":
 
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
@@ -538,7 +541,17 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
         }
     }
 
-    // FIXME: dispel warp node
+    mapUse := game.GetMap(game.Plane)
+    magicNode := mapUse.GetMagicNode(tileX, tileY)
+    if magicNode != nil && magicNode.Warped && magicNode.WarpedOwner != player {
+        warpNode := allSpells.FindByName("Warp Node")
+        cost := applyResistance(game.GetPlayerByBanner(magicNode.WarpedOwner.GetBanner()), warpNode.Cost(true), warpNode.Magic)
+
+        dispellChance := disenchantStrength * 100 / (disenchantStrength + cost)
+        if rand.N(100) < dispellChance {
+            magicNode.Warped = false
+        }
+    }
 }
 
 func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {
@@ -1232,7 +1245,7 @@ func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY i
     game.RefreshUI()
 }
 
-func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int) {
+func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int, caster *playerlib.Player) {
     update := func (x int, y int, frame int) {}
 
     game.doCastOnMap(yield, tileX, tileY, 13, true, 5, update)
@@ -1240,6 +1253,7 @@ func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int
     node := game.CurrentMap().GetMagicNode(tileX, tileY)
     if node != nil {
         node.Warped = true
+        node.WarpedOwner = caster
     }
 }
 

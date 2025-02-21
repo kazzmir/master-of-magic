@@ -5980,7 +5980,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         buildIndex = 1
                     } else if powers.Meld {
                         canMeld := false
-                        if node != nil && !node.Warped{
+                        if node != nil && !node.Warped {
                             canMeld = true
                         }
 
