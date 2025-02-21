@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/vector"
@@ -969,6 +970,59 @@ func CastRightSideDistortions2(page *ebiten.Image) util.Distortion {
     }
 }
 
+// a popup that allows the user to select an additional amount of mana to add to the spell, upto maximum
+func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCache, maximum int, okCallback func(amount int)) *uilib.UIElementGroup {
+    group := uilib.MakeGroup()
+
+    var layer uilib.UILayer = 2
+
+    x := 320 - 158
+    y := 30
+
+    fonts := fontslib.MakeSpellbookFonts(cache)
+
+    amount := 0
+
+    group.AddElement(&uilib.UIElement{
+        Layer: layer,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            background, _ := imageCache.GetImage("spellscr.lbx", 5, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(x * data.ScreenScale), float64(y * data.ScreenScale))
+            screen.DrawImage(background, &options)
+
+            mx, my := options.GeoM.Apply(float64(8 * data.ScreenScale), float64(6 * data.ScreenScale))
+            fonts.BigOrange.Print(screen, mx, my, float64(data.ScreenScale), options.ColorScale, "Additional Power:")
+            mx, _ = options.GeoM.Apply(float64(background.Bounds().Dx() - 6 * data.ScreenScale), 0)
+            fonts.BigOrange.PrintRight(screen, mx, my, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("+%v", amount))
+        },
+        Order: 0,
+    })
+
+    // ok button
+    okIndex := 0
+    okImages, _ := imageCache.GetImages("spellscr.lbx", 42)
+    okRect := util.ImageRect((x + 127) * data.ScreenScale, (y + 17) * data.ScreenScale, okImages[0])
+    group.AddElement(&uilib.UIElement{
+        Layer: layer,
+        Rect: okRect,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(okRect.Min.X), float64(okRect.Min.Y))
+            screen.DrawImage(okImages[okIndex], &options)
+        },
+        LeftClick: func(element *uilib.UIElement){
+            okIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            okIndex = 0
+        },
+        Order: 1,
+    })
+
+    return group
+}
+
 // FIXME: take in the wizard/player that is casting the spell
 // chosenCallback is invoked when the spellbook ui goes away, either because the user
 // selected a spell or because they canceled the ui
@@ -1376,12 +1430,28 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     _ = pageSideRight
 
     shutdown = func(spell Spell, picked bool){
-        getAlpha = ui.MakeFadeOut(7)
-        ui.AddDelay(7, func(){
-            setupSpells(-1)
-            ui.RemoveElements(elements)
-            chosenCallback(spell, picked)
-        })
+        shutdownFinal := func(){
+            getAlpha = ui.MakeFadeOut(7)
+            ui.AddDelay(7, func(){
+                setupSpells(-1)
+                ui.RemoveElements(elements)
+                chosenCallback(spell, picked)
+            })
+
+        }
+
+        if picked && spell.ExtraStrength {
+            var powerGroup *uilib.UIElementGroup
+            // FIXME: get the 200 max power from somewhere
+            powerGroup = makeAdditionalPowerElements(cache, &imageCache, 200, func(amount int){
+                spell.OverrideCost = spell.Cost(overland) + amount
+                ui.RemoveGroup(powerGroup)
+                shutdownFinal()
+            })
+            ui.AddGroup(powerGroup)
+        } else {
+            shutdownFinal()
+        }
     }
 
     elements = append(elements, &uilib.UIElement{

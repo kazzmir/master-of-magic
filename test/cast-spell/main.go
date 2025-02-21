@@ -37,6 +37,10 @@ func (engine *Engine) MakeUI() *uilib.UI {
     }
 
     spells := spellbook.Spells{}
+
+    spells.AddSpell(allSpells.FindByName("Disenchant Area"))
+
+    /*
     spells.AddSpell(allSpells.FindByName("War Bears"))
     spells.AddSpell(allSpells.FindByName("Guardian Spirit"))
     spells.AddSpell(allSpells.FindByName("Sprites"))
@@ -48,6 +52,7 @@ func (engine *Engine) MakeUI() *uilib.UI {
     spells.AddSpell(allSpells.FindByName("Iron Skin"))
 
     spells = allSpells
+    */
 
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {

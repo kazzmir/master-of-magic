@@ -1033,3 +1033,15 @@ func MakeGameFonts(cache *lbx.LbxCache) *GameFonts {
         WhiteFont: whiteFont,
     }
 }
+
+type SpellbookFonts struct {
+    BigOrange *font.Font
+}
+
+func MakeSpellbookFonts(cache *lbx.LbxCache) *SpellbookFonts {
+    treasureFonts := MakeTreasureFonts(cache)
+
+    return &SpellbookFonts{
+        BigOrange: treasureFonts.TreasureFont,
+    }
+}

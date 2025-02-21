@@ -1032,6 +1032,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Corruption"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Warp Node"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Call The Void"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Disenchant Area"))
 
     // city spells
     player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
