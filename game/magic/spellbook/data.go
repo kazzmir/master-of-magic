@@ -30,8 +30,8 @@ type Spell struct {
     Flag2 int
     Flag3 int
 
-    // if true, the user can pump more mana into this spell while casting it
-    ExtraStrength bool
+    // maximum extra strength allowed for this spell, or 0 if none
+    ExtraStrength int
 
     // which book of magic this spell is a part of
     Magic data.MagicType
@@ -456,12 +456,13 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
     })()
 
     // FIXME: is there a better way to know which spells allow extra strength?
-    hasExtraStrength := func(name string) bool {
+    getExtraStrength := func(name string) int {
         switch name {
-            case "Disenchant Area": return true
+            case "Disenchant Area": return 200
+            case "Lightning Bolt": return 40
         }
 
-        return false
+        return 0
     }
 
     for i := 0; i < int(numEntries); i++ {
@@ -594,7 +595,7 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
             Flag2: int(flag2),
             Flag3: int(flag3),
 
-            ExtraStrength: hasExtraStrength(name),
+            ExtraStrength: getExtraStrength(name),
 
             Magic: magicData.Magic,
             Rarity: magicData.Rarity,

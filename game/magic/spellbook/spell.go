@@ -1498,10 +1498,14 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
         }
 
-        if picked && spell.ExtraStrength {
+        if picked && spell.ExtraStrength > 0 {
             var powerGroup *uilib.UIElementGroup
-            // FIXME: get the 200 max power from somewhere
-            powerGroup = makeAdditionalPowerElements(cache, &imageCache, 200, func(amount int){
+            extraStrength := spell.ExtraStrength
+            if !overland {
+                extraStrength = min(spell.ExtraStrength, castingSkill)
+            }
+
+            powerGroup = makeAdditionalPowerElements(cache, &imageCache, extraStrength, func(amount int){
                 spell.OverrideCost = spell.Cost(overland) + amount
                 ui.RemoveGroup(powerGroup)
                 shutdownFinal()

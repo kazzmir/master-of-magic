@@ -443,10 +443,9 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 }
 
 func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, tileX int, tileY int) {
-    // sound 80
     // specfx 9
 
-    game.doCastOnMap(yield, tileX, tileY, 9, false, 80, func (x int, y int, animationFrame int){})
+    game.doCastOnMap(yield, tileX, tileY, 9, false, spell.Sound, func (x int, y int, animationFrame int){})
 
     // remove enchantments not owned by player
 }
