@@ -95,13 +95,12 @@ func NewEngine() (*Engine, error) {
         TileCache: make(map[int]*ebiten.Image),
     }
 
-    city := citylib.MakeCity("Boston", rand.N(20), rand.N(13) + 4, data.RaceKlackon, player.Wizard.Banner, buildingInfo, &gameMap, &NoCityProvider{}, &player)
+    city := citylib.MakeCity("Boston", rand.N(20), rand.N(13) + 4, data.RaceKlackon, buildingInfo, &gameMap, &NoCityProvider{}, &player)
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2
     city.Production = 18
     city.ProducingBuilding = buildinglib.BuildingNone
-    city.Banner = data.BannerBlue
 
     city.AddBuilding(buildinglib.BuildingFortress)
     city.AddBuilding(buildinglib.BuildingGranary)
@@ -144,12 +143,12 @@ func NewEngine() (*Engine, error) {
 
     var garrison []units.StackUnit
     for i := 0; i < 2; i++ {
-        unit := units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo())
+        unit := units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, city.X, city.Y, city.Plane, city.ReignProvider.GetBanner(), player.MakeExperienceInfo())
         player.AddUnit(unit)
         garrison = append(garrison, unit)
     }
     for i := 0; i < 4; i++ {
-        unit := units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, city.X, city.Y, city.Plane, city.Banner, player.MakeExperienceInfo())
+        unit := units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, city.X, city.Y, city.Plane, city.ReignProvider.GetBanner(), player.MakeExperienceInfo())
         player.AddUnit(unit)
         garrison = append(garrison, unit)
     }

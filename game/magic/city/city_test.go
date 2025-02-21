@@ -93,9 +93,13 @@ func (reign *NoReign) GetTaxRate() fraction.Fraction {
     return reign.TaxRate
 }
 
+func (reign *NoReign) GetBanner() data.BannerType {
+    return data.BannerBlue
+}
+
 func TestBasicCity(test *testing.T){
     reign := NoReign{TaxRate: fraction.Make(3, 2)}
-    city := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, nil, &Catchment{Map: makeSimpleMap()}, &NoCities{}, &reign)
+    city := MakeCity("Test City", 10, 10, data.RaceHighMen, nil, &Catchment{Map: makeSimpleMap()}, &NoCities{}, &reign)
     city.Population = 6000
     city.Farmers = 6
     city.Workers = 0
@@ -184,13 +188,13 @@ func closeFloat(a float64, b float64) bool {
 
 func TestForeignTrade(test *testing.T){
     var connected AllConnected
-    city1 := MakeCity("Test City", 10, 10, data.RaceHighMen, data.BannerBlue, nil, &Catchment{Map: makeSimpleMap()}, &connected, &NoReign{TaxRate: fraction.Make(3, 2)})
+    city1 := MakeCity("Test City", 10, 10, data.RaceHighMen, nil, &Catchment{Map: makeSimpleMap()}, &connected, &NoReign{TaxRate: fraction.Make(3, 2)})
     city1.Population = 6000
     city1.Farmers = 6
     city1.Workers = 0
     city1.ResetCitizens(nil)
 
-    city2 := MakeCity("Test City 2", 10, 10, data.RaceHighMen, data.BannerBlue, nil, &Catchment{Map: makeSimpleMap()}, &connected, &NoReign{TaxRate: fraction.Make(3, 2)})
+    city2 := MakeCity("Test City 2", 10, 10, data.RaceHighMen, nil, &Catchment{Map: makeSimpleMap()}, &connected, &NoReign{TaxRate: fraction.Make(3, 2)})
     city2.Population = 7000
     city2.Farmers = 7
     city2.Workers = 0
@@ -204,7 +208,7 @@ func TestForeignTrade(test *testing.T){
     }
 
     // different race
-    city3 := MakeCity("Test City 3 elf", 10, 10, data.RaceHighElf, data.BannerBlue, nil, &Catchment{Map: makeSimpleMap()}, &connected, &NoReign{TaxRate: fraction.Make(3, 2)})
+    city3 := MakeCity("Test City 3 elf", 10, 10, data.RaceHighElf, nil, &Catchment{Map: makeSimpleMap()}, &connected, &NoReign{TaxRate: fraction.Make(3, 2)})
     city3.Population = 5000
     city3.Farmers = 5
     city3.Workers = 0
@@ -232,7 +236,7 @@ func TestEnchantments(test *testing.T){
     }
     catchment := Catchment{Map: map_}
 
-    city := MakeCity("Test City", 10, 10, data.RaceHighMen, banner, nil, &catchment, &NoCities{}, &NoReign{TaxRate: fraction.FromInt(1)})
+    city := MakeCity("Test City", 10, 10, data.RaceHighMen, nil, &catchment, &NoCities{}, &NoReign{TaxRate: fraction.FromInt(1)})
     city.Population = 10100
     city.Farmers = 5
     city.Workers = 3
@@ -616,7 +620,7 @@ func TestScenario1(test *testing.T) {
     // Test against values from a city screen of original MoM v1.60
 
     // City
-    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, data.BannerGreen, nil, &Catchment{Map: makeScenarioMap()}, &NoCities{}, &NoReign{NumberOfBooks: 11, TaxRate: fraction.FromInt(1)})
+    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, nil, &Catchment{Map: makeScenarioMap()}, &NoCities{}, &NoReign{NumberOfBooks: 11, TaxRate: fraction.FromInt(1)})
     city.Population = 4600
     city.Farmers = 3
     city.Workers = 1
@@ -674,7 +678,7 @@ func TestScenario2(test *testing.T) {
     // Test against values from a city screen of original MoM v1.60
 
     // City
-    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, data.BannerGreen, nil, &Catchment{Map: makeScenarioMap()}, &NoCities{}, &NoReign{NumberOfBooks: 11, TaxRate: fraction.FromInt(1)})
+    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, nil, &Catchment{Map: makeScenarioMap()}, &NoCities{}, &NoReign{NumberOfBooks: 11, TaxRate: fraction.FromInt(1)})
     city.Population = 10110
     city.Farmers = 7
     city.Workers = 3

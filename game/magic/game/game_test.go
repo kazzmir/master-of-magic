@@ -70,7 +70,7 @@ func TestChangeCityOwner(test *testing.T){
     player1.TaxRate = fraction.Zero()
     player2.TaxRate = fraction.FromInt(2)
 
-    city := citylib.MakeCity("xyz", 1, 1, player1.Wizard.Race, player1.GetBanner(), nil, &NoCatchment{}, &NoServices{}, player1)
+    city := citylib.MakeCity("xyz", 1, 1, player1.Wizard.Race, nil, &NoCatchment{}, &NoServices{}, player1)
     city.Population = 6000
     city.ResetCitizens(nil)
     city.AddBuilding(buildinglib.BuildingFortress)

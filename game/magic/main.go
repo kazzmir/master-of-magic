@@ -227,7 +227,7 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
 
     cityName := game.SuggestCityName(player.Wizard.Race)
 
-    introCity := citylib.MakeCity(cityName, cityX, cityY, player.Wizard.Race, player.Wizard.Banner, game.BuildingInfo, game.GetMap(startingPlane), game, player)
+    introCity := citylib.MakeCity(cityName, cityX, cityY, player.Wizard.Race, game.BuildingInfo, game.GetMap(startingPlane), game, player)
     introCity.Population = 4000
     introCity.Plane = startingPlane
 

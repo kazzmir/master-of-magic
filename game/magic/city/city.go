@@ -91,7 +91,7 @@ type ReignProvider interface {
     TotalBooks() int
     GetRulingRace() data.Race
     GetTaxRate() fraction.Fraction
-    // FIXME: Also add Banner?
+    GetBanner() data.BannerType
 }
 
 const MAX_CITY_CITIZENS = 25
@@ -114,7 +114,6 @@ type City struct {
     X int
     Y int
     Outpost bool
-    Banner data.BannerType
     Buildings *set.Set[buildinglib.Building]
 
     Enchantments *set.Set[Enchantment]
@@ -135,12 +134,11 @@ type City struct {
 }
 
 // FIXME: Add plane?
-func MakeCity(name string, x int, y int, race data.Race, banner data.BannerType, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider, cityServices CityServicesProvider, reignProvider ReignProvider) *City {
+func MakeCity(name string, x int, y int, race data.Race, buildingInfo buildinglib.BuildingInfos, catchmentProvider CatchmentProvider, cityServices CityServicesProvider, reignProvider ReignProvider) *City {
     city := City{
         Name: name,
         X: x,
         Y: y,
-        Banner: banner,
         Race: race,
         Buildings: set.MakeSet[buildinglib.Building](),
         Enchantments: set.MakeSet[Enchantment](),
@@ -166,7 +164,7 @@ func (city *City) GetY() int {
 }
 
 func (city *City) GetBanner() data.BannerType {
-    return city.Banner
+    return city.ReignProvider.GetBanner()
 }
 
 func (city *City) GetOutpostHouses() int {
