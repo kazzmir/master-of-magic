@@ -983,11 +983,16 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
 
     amount := 50
 
+    fadeSpeed := uint64(7)
+
+    getAlpha := group.MakeFadeIn(fadeSpeed)
+
     group.AddElement(&uilib.UIElement{
         Layer: layer,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("spellscr.lbx", 5, 0)
             var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(float64(x * data.ScreenScale), float64(y * data.ScreenScale))
             screen.DrawImage(background, &options)
 
@@ -1030,6 +1035,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
             motion := (group.Counter) % uint64(conveyor.Bounds().Dx())
 
             var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(float64(conveyorRect.Min.X - conveyor.Bounds().Dx() + int(motion)), float64(conveyorRect.Min.Y))
             area.DrawImage(conveyor, &options)
             options.GeoM.Reset()
@@ -1055,6 +1061,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(okRect.Min.X), float64(okRect.Min.Y))
+            options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(okImages[okIndex], &options)
         },
         LeftClick: func(element *uilib.UIElement){
@@ -1062,6 +1069,11 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
         },
         LeftClickRelease: func(element *uilib.UIElement){
             okIndex = 0
+
+            getAlpha = group.MakeFadeOut(fadeSpeed)
+            group.AddDelay(fadeSpeed, func(){
+                okCallback(amount)
+            })
         },
         Order: 1,
     })
