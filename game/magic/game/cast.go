@@ -43,6 +43,7 @@ const (
     LocationTypeTransmute
     LocationTypeRaiseVolcano
     LocationTypeEnemyMeldedNode
+    LocationTypeDisenchant
 )
 
 func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
@@ -364,6 +365,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeLand, SelectedFunc: selected}
         case "Warp Node":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyMeldedNode, SelectedFunc: game.doCastWarpNode}
+        case "Disenchant Area":
+
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doDisenchantArea(yield, player, spell, tileX, tileY)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeDisenchant, SelectedFunc: selected}
 
         /* TODO: instant spells
            Disenchant Area
@@ -432,6 +440,15 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         default:
             log.Printf("Warning: casting unhandled spell %v", spell.Name)
     }
+}
+
+func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, tileX int, tileY int) {
+    // sound 80
+    // specfx 9
+
+    game.doCastOnMap(yield, tileX, tileY, 9, false, 80, func (x int, y int, animationFrame int){})
+
+    // remove enchantments not owned by player
 }
 
 func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {
@@ -669,7 +686,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
     switch locationType {
         case LocationTypeAny, LocationTypeLand, LocationTypeEmptyWater, LocationTypeChangeTerrain,
-            LocationTypeTransmute, LocationTypeRaiseVolcano:
+             LocationTypeTransmute, LocationTypeRaiseVolcano, LocationTypeDisenchant:
             selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
         case LocationTypeFriendlyCity, LocationTypeFriendlyCityNoWalls:
             selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
@@ -783,6 +800,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         ui.Draw(ui, screen)
     }
 
+    entityInfo := game.ComputeCityStackInfo()
+
     for !quit {
         if game.Camera.GetZoom() > 0.9 {
             overworld.Counter += 1
@@ -894,6 +913,16 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                                     return tileX, tileY, false
                                 }
                             }
+                        }
+
+                    case LocationTypeDisenchant:
+                        // return if the tile has a stack, town, or is a magic node
+
+                        if entityInfo.FindStack(tileX, tileY, game.Plane) != nil ||
+                           entityInfo.FindCity(tileX, tileY, game.Plane) != nil ||
+                           overworld.Map.GetMagicNode(tileX, tileY) != nil {
+
+                            return tileX, tileY, false
                         }
 
                     case LocationTypeEnemyCity:
