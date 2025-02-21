@@ -399,6 +399,7 @@ type ExtraMagicNode struct {
     GuardianSpiritMeld bool
 
     Warped bool
+    // the wizard that cast warp node (so it can be dispelled)
     WarpedOwner Wizard
 }
 
