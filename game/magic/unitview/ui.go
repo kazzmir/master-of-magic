@@ -51,6 +51,7 @@ type UnitView interface {
     GetAbilities() []data.Ability
     GetArtifactSlots() []artifact.ArtifactSlot
     GetArtifacts() []*artifact.Artifact
+    GetRace() data.Race
 }
 
 type PortraitUnit interface {
