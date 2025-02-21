@@ -1099,6 +1099,12 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
                 }
             }
         },
+        // Emulating the original game behavior.
+        NotLeftClicked: func(element *uilib.UIElement) {
+            if len(name) > 0 {
+                quit = true
+            }
+        },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := game.ImageCache.GetImage("backgrnd.lbx", 33, 0)
             var options ebiten.DrawImageOptions
