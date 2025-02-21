@@ -1000,12 +1000,28 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
     })
 
     // conveyor
-    conveyor, _ := imageCache.GetImage("spellscr.lbx", 4, 0)
+    conveyor, _ := imageCache.GetImageTransform("spellscr.lbx", 4, 0, "conveyor", func (img *image.Paletted) image.Image {
+        return img.SubImage(image.Rect(0, 0, img.Bounds().Dx() - 6, img.Bounds().Dy()))
+    })
     conveyorRect := util.ImageRect((x + 12) * data.ScreenScale, (y + 22) * data.ScreenScale, conveyor)
+    conveyorX := 0
+    doUpdate := false
     group.AddElement(&uilib.UIElement{
         Layer: layer,
         Order: 1,
         Rect: conveyorRect,
+        Inside: func(element *uilib.UIElement, x int, y int){
+            conveyorX = x
+            if doUpdate {
+                amount = maximum * conveyorX / conveyor.Bounds().Dx()
+            }
+        },
+        LeftClick: func(element *uilib.UIElement){
+            doUpdate = true
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            doUpdate = false
+        },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             showRect := conveyorRect
             showRect.Max.X = showRect.Min.X + int((float64(conveyor.Bounds().Dx()) * float64(amount) / float64(maximum)))
