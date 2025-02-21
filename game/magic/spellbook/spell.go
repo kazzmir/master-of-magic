@@ -981,7 +981,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
 
     fonts := fontslib.MakeSpellbookFonts(cache)
 
-    amount := 0
+    amount := 50
 
     group.AddElement(&uilib.UIElement{
         Layer: layer,
@@ -997,6 +997,36 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
             fonts.BigOrange.PrintRight(screen, mx, my, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("+%v", amount))
         },
         Order: 0,
+    })
+
+    // conveyor
+    conveyor, _ := imageCache.GetImage("spellscr.lbx", 4, 0)
+    conveyorRect := util.ImageRect((x + 12) * data.ScreenScale, (y + 22) * data.ScreenScale, conveyor)
+    group.AddElement(&uilib.UIElement{
+        Layer: layer,
+        Order: 1,
+        Rect: conveyorRect,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            showRect := conveyorRect
+            showRect.Max.X = showRect.Min.X + int((float64(conveyor.Bounds().Dx()) * float64(amount) / float64(maximum)))
+            area := screen.SubImage(showRect).(*ebiten.Image)
+
+            motion := (group.Counter) % uint64(conveyor.Bounds().Dx())
+
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(conveyorRect.Min.X - conveyor.Bounds().Dx() + int(motion)), float64(conveyorRect.Min.Y))
+            area.DrawImage(conveyor, &options)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(conveyorRect.Min.X + int(motion)), float64(conveyorRect.Min.Y))
+            area.DrawImage(conveyor, &options)
+
+            star, _ := imageCache.GetImage("spellscr.lbx", 3, 0)
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(conveyorRect.Min.X + conveyor.Bounds().Dx() * amount / maximum - 3 * data.ScreenScale), float64(conveyorRect.Min.Y - 1 * data.ScreenScale))
+            screen.DrawImage(star, &options)
+
+            // vector.StrokeRect(area, float32(conveyorRect.Min.X), float32(conveyorRect.Min.Y), float32(conveyorRect.Bounds().Dx()), float32(conveyorRect.Bounds().Dy()), 2, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+        },
     })
 
     // ok button
