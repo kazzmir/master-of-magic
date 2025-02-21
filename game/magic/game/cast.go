@@ -475,17 +475,47 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
         disenchantStrength *= 2
     }
 
-    spellCost := func (enchantment citylib.Enchantment) int {
-        // archmage doubles the cost
-        // chaos mastery, nature mastery, sorcery mastery double the cost only if the spell is of that magic type
-        return 0
+    allSpells := game.AllSpells()
+
+    applyResistance := func (owner *playerlib.Player, cost int, magic data.MagicType) int {
+        modifier := 1
+
+        if owner.Wizard.AbilityEnabled(setup.AbilityArchmage) {
+            modifier += 1
+        }
+
+        if owner.Wizard.AbilityEnabled(setup.AbilityChaosMastery) && magic == data.ChaosMagic {
+            modifier += 1
+        }
+
+        if owner.Wizard.AbilityEnabled(setup.AbilityNatureMastery) && magic == data.NatureMagic {
+            modifier += 1
+        }
+
+        if owner.Wizard.AbilityEnabled(setup.AbilitySorceryMastery) && magic == data.SorceryMagic {
+            modifier += 1
+        }
+
+        return cost * modifier
+    }
+
+    citySpellCost := func (enchantment citylib.Enchantment) int {
+        spell := allSpells.FindByName(enchantment.Enchantment.Name())
+        cost := spell.Cost(true)
+        return applyResistance(game.GetPlayerByBanner(enchantment.Owner), cost, spell.Magic)
+    }
+
+    unitSpellCost := func (enchantment data.UnitEnchantment, owner *playerlib.Player) int {
+        spell := allSpells.FindByName(enchantment.SpellName())
+        cost := spell.Cost(true)
+        return applyResistance(owner, cost, enchantment.Magic())
     }
 
     city, _ := game.FindCity(tileX, tileY, game.Plane)
     if city != nil {
         for _, enchantment := range city.Enchantments.Values() {
             if enchantment.Owner != player.GetBanner() {
-                dispellChance := disenchantStrength * 100 / (disenchantStrength + spellCost(enchantment))
+                dispellChance := disenchantStrength * 100 / (disenchantStrength + citySpellCost(enchantment))
                 if rand.N(100) < dispellChance {
                     city.RemoveEnchantments(enchantment.Enchantment)
                 }
@@ -494,6 +524,22 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
     }
 
     // TODO: stacks and warp node on magic nodes
+    stack, owner := game.FindStack(tileX, tileY, game.Plane)
+    if stack != nil && owner != player {
+        for _, unit := range stack.Units() {
+            var toRemove []data.UnitEnchantment
+            for _, enchantment := range unit.GetEnchantments() {
+                dispellChance := disenchantStrength * 100 / (disenchantStrength + unitSpellCost(enchantment, owner))
+                if rand.N(100) < dispellChance {
+                    toRemove = append(toRemove, enchantment)
+                }
+            }
+
+            for _, enchantment := range toRemove {
+                unit.RemoveEnchantment(enchantment)
+            }
+        }
+    }
 }
 
 func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {
