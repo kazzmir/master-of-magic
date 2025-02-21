@@ -219,6 +219,12 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
+        case "Altar of Battle":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentAltarOfBattle)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
         case "Call the Void":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 chosenCity, owner := game.FindCity(tileX, tileY, game.Plane)
@@ -257,7 +263,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 player.GlobalEnchantments.Insert(data.EnchantmentAwareness)
                 game.doExploreFogForAwareness(player)
-                
+
                 game.RefreshUI()
             }
         case "Nature Awareness":
@@ -367,7 +373,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         /* TODO: instant spells
            Disenchant Area
-           Disjunction 
+           Disjunction
            Spell of Mastery
            Spell of Return
            Summoning Circle
@@ -394,7 +400,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
          */
 
          /* TODO: town enchantments
-          Altar of Battle
           Astral Gate
           Heavenly Light
           Earth Gate

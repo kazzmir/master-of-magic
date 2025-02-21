@@ -1032,6 +1032,8 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Corruption"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Warp Node"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Call The Void"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
 
     // city spells
     player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
@@ -1047,8 +1049,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Evil Presence"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Stream of Life"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Altar of Battle"))
 
     // global enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
@@ -3904,6 +3905,73 @@ func createScenario45(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// building units with experience
+func createScenario46(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 46")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Abilities: []setup.WizardAbility{
+            setup.AbilityWarlord,
+        },
+        Books: []data.WizardBook{
+            {
+                Magic: data.LifeMagic,
+                Count:11,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.CastingSkillPower += 500000
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player.KnownSpells.AddSpell(allSpells.FindByName("Guardian Spirit"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Altar of Battle"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Heroism"))
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, player.Wizard.Banner, player.TaxRate, game.BuildingInfo, game.CurrentMap(), game, player)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Banner = wizard.Banner
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingNone
+    city.ProducingUnit = units.TrollSpearmen
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+
+    city.AddBuilding(buildinglib.BuildingFortress)
+    city.AddBuilding(buildinglib.BuildingFightersGuild)
+    city.AddBuilding(buildinglib.BuildingWarCollege)
+
+    city.ResetCitizens(nil)
+
+    player.AddCity(city)
+
+    player.Gold = 1000
+    player.Mana = 10000
+
+    player.LiftFog(x, y, 4, data.PlaneArcanus)
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+
+    return game
+}
+
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -3955,6 +4023,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 43: game = createScenario43(cache)
         case 44: game = createScenario44(cache)
         case 45: game = createScenario45(cache)
+        case 46: game = createScenario46(cache)
         default: game = createScenario1(cache)
     }
 
