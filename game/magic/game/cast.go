@@ -396,7 +396,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
 
         /* TODO: instant spells
-           Disenchant Area
            Disjunction
            Spell of Mastery
            Spell of Return
@@ -407,7 +406,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
            Ice Storm
            Move Fortress
            Nature's Cures
-           Disenchant True
            Disjunction True
            Great Unsummoning
            Spell Binding
@@ -458,7 +456,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
          */
 
         default:
-            log.Printf("Warning: casting unhandled spell %v", spell.Name)
+            log.Printf("Warning: casting unhandled spell '%v'", spell.Name)
     }
 }
 
