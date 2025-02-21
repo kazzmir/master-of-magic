@@ -676,3 +676,24 @@ func (enchantment CityEnchantment) IconOffset() int {
 
     return 0
 }
+
+type CombatEnchantment int
+
+const (
+    CombatEnchantmentNone CombatEnchantment = iota
+    CombatEnchantmentHighPrayer
+    CombatEnchantmentPrayer
+    CombatEnchantmentTrueLight
+    CombatEnchantmentCallLightning
+    CombatEnchantmentEntangle
+    CombatEnchantmentBlur
+    CombatEnchantmentCounterMagic
+    CombatEnchantmentMassInvisibility
+    CombatEnchantmentMetalFires
+    CombatEnchantmentWarpReality
+    CombatEnchantmentBlackPrayer
+    CombatEnchantmentDarkness
+    CombatEnchantmentManaLeak
+    CombatEnchantmentTerror
+    CombatEnchantmentWrack
+)
