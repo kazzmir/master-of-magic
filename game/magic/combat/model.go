@@ -518,6 +518,8 @@ type ArmyUnit struct {
     CastingSkill float32
     Casted bool
 
+    Model *CombatModel
+
     Team Team
 
     RangedAttacks int
@@ -537,6 +539,19 @@ type ArmyUnit struct {
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
+}
+
+func (unit *ArmyUnit) GetMeleeAttackPower() int {
+    modifier := 0
+
+    if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
+        switch unit.Unit.GetRealm() {
+            case data.LifeMagic: modifier += 1
+            case data.DeathMagic: modifier -= 1
+        }
+    }
+
+    return max(0, unit.Unit.GetMeleeAttackPower() + modifier)
 }
 
 func (unit *ArmyUnit) HasAbility(ability data.AbilityType) bool {
@@ -577,7 +592,7 @@ func (unit *ArmyUnit) GetPower() int {
     power += unit.Unit.GetDefense()
     power += unit.Unit.GetResistance()
     power += unit.Unit.GetRangedAttackPower() * unit.Figures()
-    power += unit.Unit.GetMeleeAttackPower() * unit.Figures()
+    power += unit.GetMeleeAttackPower() * unit.Figures()
 
     return power
 }
@@ -887,7 +902,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
 
 func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int) (int, bool) {
 
-    if unit.Unit.GetMeleeAttackPower() == 0 {
+    if unit.GetMeleeAttackPower() == 0 {
         return 0, false
     }
 
@@ -896,7 +911,7 @@ func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int) (int, bool) {
     for range unit.Figures() - fearFigure {
         // even if all figures fail to cause damage, it still counts as a hit for touch purposes
         hit = true
-        for range unit.Unit.GetMeleeAttackPower() {
+        for range unit.GetMeleeAttackPower() {
             if rand.N(100) < unit.Unit.GetToHitMelee() {
                 damage += 1
             }
@@ -1122,6 +1137,7 @@ func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
     }
 
     for _, unit := range defendingArmy.Units {
+        unit.Model = model
         unit.Team = TeamDefender
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
         unit.InitializeSpells(allSpells, defendingArmy.Player)
@@ -1129,6 +1145,7 @@ func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
     }
 
     for _, unit := range attackingArmy.Units {
+        unit.Model = model
         unit.Team = TeamAttacker
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
         unit.InitializeSpells(allSpells, attackingArmy.Player)
@@ -1363,6 +1380,18 @@ func (model *CombatModel) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
 
 func (model *CombatModel) GetObserver() CombatObserver {
     return &model.Observer
+}
+
+func (model *CombatModel) IsEnchantmentActive(enchantment data.CombatEnchantment, team Team) bool {
+    if team == TeamEither || team == TeamDefender {
+        return model.DefendingArmy.HasEnchantment(enchantment)
+    }
+
+    if team == TeamEither || team == TeamAttacker {
+        return model.AttackingArmy.HasEnchantment(enchantment)
+    }
+
+    return false
 }
 
 func (model *CombatModel) AddLogEvent(text string) {

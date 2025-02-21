@@ -1167,7 +1167,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 options.GeoM.Reset()
                 options.GeoM.Translate(float64(126 * data.ScreenScale), float64(173 * data.ScreenScale))
                 screen.DrawImage(plainAttack, &options)
-                combat.HudFont.PrintRight(screen, float64(126 * data.ScreenScale), float64(174 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetMeleeAttackPower()))
+                combat.HudFont.PrintRight(screen, float64(126 * data.ScreenScale), float64(174 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.GetMeleeAttackPower()))
 
                 if combat.Model.SelectedUnit.RangedAttacks > 0 {
                     y := float64(180 * data.ScreenScale)
@@ -2469,7 +2469,7 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     options.GeoM.Translate(float64(x1 + 14) * float64(data.ScreenScale), float64(y1 + 10) * float64(data.ScreenScale))
     screen.DrawImage(meleeImage, &options)
     ax, ay := options.GeoM.Apply(0, 2)
-    combat.InfoFont.PrintRight(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", unit.Unit.GetMeleeAttackPower()))
+    combat.InfoFont.PrintRight(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", unit.GetMeleeAttackPower()))
 
     switch unit.Unit.GetRangedAttackDamageType() {
         case units.DamageRangedMagical:
