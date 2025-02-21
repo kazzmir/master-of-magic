@@ -458,7 +458,7 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
     // FIXME: is there a better way to know which spells allow extra strength?
     getExtraStrength := func(name string) int {
         switch name {
-            case "Disenchant Area": return 200
+            case "Disenchant Area", "Disenchant True": return 200
             case "Lightning Bolt": return 40
         }
 

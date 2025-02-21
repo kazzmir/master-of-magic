@@ -373,6 +373,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeDisenchant, SelectedFunc: selected}
+        case "Disenchant True":
+
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doDisenchantArea(yield, player, spell, true, tileX, tileY)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeDisenchant, SelectedFunc: selected}
+
 
         /* TODO: instant spells
            Disenchant Area
