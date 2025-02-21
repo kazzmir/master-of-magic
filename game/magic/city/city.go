@@ -89,7 +89,7 @@ type ReignProvider interface {
     HasLifeBooks() bool
     HasDeathBooks() bool
     TotalBooks() int
-    RulingRace() data.Race
+    GetRulingRace() data.Race
     GetTaxRate() fraction.Fraction
     // FIXME: Also add Banner?
 }
@@ -973,7 +973,7 @@ func (city *City) InteracialUnrest() float64 {
 
     set(data.RaceTroll, data.RaceTroll, 0)
 
-    return unrest[city.Race][city.ReignProvider.RulingRace()]
+    return unrest[city.Race][city.ReignProvider.GetRulingRace()]
 }
 
 func (city *City) ComputeUnrest(garrison []units.StackUnit) int {

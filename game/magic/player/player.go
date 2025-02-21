@@ -921,7 +921,7 @@ func (player *Player) TotalBooks() int {
     return player.Wizard.TotalBooks()
 }
 
-func (player *Player) RulingRace() data.Race {
+func (player *Player) GetRulingRace() data.Race {
     return player.Wizard.Race
 }
 

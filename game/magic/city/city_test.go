@@ -85,7 +85,7 @@ func (reign *NoReign) TotalBooks() int {
     return reign.NumberOfBooks
 }
 
-func (reign *NoReign) RulingRace() data.Race {
+func (reign *NoReign) GetRulingRace() data.Race {
     return data.RaceHighMen
 }
 
