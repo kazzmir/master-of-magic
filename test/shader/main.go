@@ -19,9 +19,6 @@ import (
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
-const ScreenWidth = 320
-const ScreenHeight = 200
-
 type DrawFunction func (engine *Engine, screen *ebiten.Image)
 
 type Engine struct {
@@ -180,14 +177,14 @@ func DrawScenario2(engine *Engine, screen *ebiten.Image){
 
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return ScreenWidth, ScreenHeight
+    return data.ScreenWidth, data.ScreenHeight
 }
 
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
     data.ScreenScale = 1
-    ebiten.SetWindowSize(ScreenWidth * 2, ScreenHeight * 2)
+    ebiten.SetWindowSize(data.ScreenWidth * 2, data.ScreenHeight * 2)
     ebiten.SetWindowTitle("shader test")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
