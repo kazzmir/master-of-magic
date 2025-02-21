@@ -71,6 +71,7 @@ func NewEngine() (*Engine, error) {
                 setup.AbilityInfernalPower,
             },
         },
+        TaxRate: fraction.Make(2, 1),
     }
 
     player.Gold = 500
@@ -94,7 +95,7 @@ func NewEngine() (*Engine, error) {
         TileCache: make(map[int]*ebiten.Image),
     }
 
-    city := citylib.MakeCity("Boston", rand.N(20), rand.N(13) + 4, data.RaceKlackon, player.Wizard.Banner, fraction.Make(2, 1), buildingInfo, &gameMap, &NoCityProvider{}, &player)
+    city := citylib.MakeCity("Boston", rand.N(20), rand.N(13) + 4, data.RaceKlackon, player.Wizard.Banner, buildingInfo, &gameMap, &NoCityProvider{}, &player)
     city.Population = 12000
     city.Farmers = 4
     city.Workers = 2

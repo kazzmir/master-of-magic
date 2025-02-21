@@ -598,7 +598,7 @@ func (player *Player) ManaPerTurn(power int, cityEnchantmentsProvider CityEnchan
 func (player *Player) UpdateTaxRate(rate fraction.Fraction){
     player.TaxRate = rate
     for _, city := range player.Cities {
-        city.UpdateTaxRate(rate, player.GetUnits(city.X, city.Y, city.Plane))
+        city.UpdateUnrest(player.GetUnits(city.X, city.Y, city.Plane))
     }
 }
 
@@ -923,4 +923,8 @@ func (player *Player) TotalBooks() int {
 
 func (player *Player) RulingRace() data.Race {
     return player.Wizard.Race
+}
+
+func (player *Player) GetTaxRate() fraction.Fraction {
+    return player.TaxRate
 }

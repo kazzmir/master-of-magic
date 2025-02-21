@@ -4904,7 +4904,7 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
     cityName := game.SuggestCityName(settlers.GetRace())
 
-    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), player.TaxRate, game.BuildingInfo, game.GetMap(settlers.GetPlane()), game, player)
+    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), settlers.GetBanner(), game.BuildingInfo, game.GetMap(settlers.GetPlane()), game, player)
     newCity.Plane = settlers.GetPlane()
     newCity.Population = 300
     newCity.Outpost = true
@@ -6768,7 +6768,7 @@ func ChangeCityOwner(city *citylib.City, owner *playerlib.Player, newOwner *play
     if stack != nil {
         newUnits = stack.Units()
     }
-    city.UpdateTaxRate(newOwner.TaxRate, newUnits)
+    city.UpdateUnrest(newUnits)
 
     switch enchantmentChange {
         case ChangeCityKeepEnchantments:

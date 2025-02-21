@@ -67,12 +67,19 @@ func (no *NoServices) PlagueActive(city *citylib.City) bool {
 func TestChangeCityOwner(test *testing.T){
     player1 := playerlib.MakePlayer(setup.WizardCustom{Banner: data.BannerRed, Race: data.RaceDraconian}, true, 1, 1, make(map[herolib.HeroType]string))
     player2 := playerlib.MakePlayer(setup.WizardCustom{Banner: data.BannerGreen, Race: data.RaceDarkElf}, true, 1, 1, make(map[herolib.HeroType]string))
+    player1.TaxRate = fraction.Zero()
     player2.TaxRate = fraction.FromInt(2)
 
-    city := citylib.MakeCity("xyz", 1, 1, player1.Wizard.Race, player1.GetBanner(), fraction.Zero(), nil, &NoCatchment{}, &NoServices{}, player1)
+    city := citylib.MakeCity("xyz", 1, 1, player1.Wizard.Race, player1.GetBanner(), nil, &NoCatchment{}, &NoServices{}, player1)
+    city.Population = 6000
+    city.ResetCitizens(nil)
     city.AddBuilding(buildinglib.BuildingFortress)
     city.AddEnchantment(data.CityEnchantmentAltarOfBattle, player1.GetBanner())
     player1.AddCity(city)
+
+    if city.ComputeUnrest(nil) != 0 {
+        test.Errorf("Unrest is unexpected")
+    }
 
     ChangeCityOwner(city, player1, player2, ChangeCityKeepEnchantments)
 
@@ -84,16 +91,16 @@ func TestChangeCityOwner(test *testing.T){
         test.Errorf("Player 2 does not own the city")
     }
 
-    if !city.TaxRate.Equals(fraction.FromInt(2)) {
-        test.Errorf("City tax rate not changed")
-    }
-
     if !city.HasEnchantment(data.CityEnchantmentAltarOfBattle) {
         test.Errorf("City does not have the altar of battle")
     }
 
     if city.Buildings.Contains(buildinglib.BuildingFortress) {
         test.Errorf("City still has the fortress")
+    }
+
+    if city.ComputeUnrest(nil) != 3 {
+        test.Errorf("Unrest is not updated")
     }
 
     city.AddEnchantment(data.CityEnchantmentGaiasBlessing, player2.GetBanner())
