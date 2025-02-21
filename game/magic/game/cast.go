@@ -275,7 +275,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 player.LiftFogAll(data.PlaneMyrror)
                 game.RefreshUI()
             }
+        case "Crusade":
+            if !player.GlobalEnchantments.Contains(data.EnchantmentCrusade) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentCrusade}
 
+                player.GlobalEnchantments.Insert(data.EnchantmentCrusade)
+
+                game.RefreshUI()
+            }
         case "Bless":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentBless)
         case "Heroism":
@@ -412,7 +419,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /* TODO: global enchantments
           Detect Magic
           Charm of Life
-          Crusade
           Holy Arms
           Just Cause
           Life Force

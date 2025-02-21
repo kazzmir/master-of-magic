@@ -1054,6 +1054,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     // global enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Awareness"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Crusade"))
 
     // unit enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Bless"))
@@ -3938,6 +3939,7 @@ func createScenario46(cache *lbx.LbxCache) *gamelib.Game {
 
     player.KnownSpells.AddSpell(allSpells.FindByName("Guardian Spirit"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Altar of Battle"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Crusade"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Heroism"))
 
     x, y, _ := game.FindValidCityLocation(game.Plane)
