@@ -466,7 +466,9 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
         disenchantStrength *= 2
     }
 
-    spellCost := func (enchantment data.CityEnchantment) int {
+    spellCost := func (enchantment citylib.Enchantment) int {
+        // archmage doubles the cost
+        // chaos mastery, nature mastery, sorcery mastery double the cost only if the spell is of that magic type
         return 0
     }
 
@@ -474,7 +476,7 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
     if city != nil {
         for _, enchantment := range city.Enchantments.Values() {
             if enchantment.Owner != player.GetBanner() {
-                dispellChance := disenchantStrength * 100 / (disenchantStrength + spellCost(enchantment.Enchantment))
+                dispellChance := disenchantStrength * 100 / (disenchantStrength + spellCost(enchantment))
                 if rand.N(100) < dispellChance {
                     city.RemoveEnchantments(enchantment.Enchantment)
                 }
@@ -482,7 +484,7 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
         }
     }
 
-    // remove enchantments not owned by player
+    // TODO: stacks and warp node on magic nodes
 }
 
 func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {

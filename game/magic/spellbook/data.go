@@ -30,12 +30,13 @@ type Spell struct {
     Flag2 int
     Flag3 int
 
-    // maximum extra strength allowed for this spell, or 0 if none
-    ExtraStrength int
-
     // which book of magic this spell is a part of
     Magic data.MagicType
     Rarity SpellRarity
+}
+
+func (spell Spell) IsVariableCost() bool {
+    return spell.SpellType >= 18
 }
 
 func (spell Spell) Invalid() bool {
@@ -455,16 +456,6 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
         return out
     })()
 
-    // FIXME: is there a better way to know which spells allow extra strength?
-    getExtraStrength := func(name string) int {
-        switch name {
-            case "Disenchant Area", "Disenchant True": return 200
-            case "Lightning Bolt": return 40
-        }
-
-        return 0
-    }
-
     for i := 0; i < int(numEntries); i++ {
         data := make([]byte, entrySize)
         n, err := reader.Read(data)
@@ -578,6 +569,11 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
 
         magicData := <-spellMagicIterator
 
+        // hacks to fix some spells that are not marked as variable cost
+        if name == "Spell Blast" {
+            spellType = 18
+        }
+
         spells.AddSpell(Spell{
             Name: name,
             Index: i,
@@ -594,9 +590,6 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
             Flag1: int(flag1),
             Flag2: int(flag2),
             Flag3: int(flag3),
-
-            ExtraStrength: getExtraStrength(name),
-
             Magic: magicData.Magic,
             Rarity: magicData.Rarity,
         })

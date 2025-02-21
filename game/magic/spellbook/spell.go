@@ -1498,11 +1498,11 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
         }
 
-        if picked && spell.ExtraStrength > 0 {
+        if picked && spell.IsVariableCost() {
             var powerGroup *uilib.UIElementGroup
-            extraStrength := spell.ExtraStrength
+            extraStrength := spell.Cost(overland) * 4
             if !overland {
-                extraStrength = min(spell.ExtraStrength, castingSkill)
+                extraStrength = min(spell.Cost(overland) * 4, castingSkill)
             }
 
             powerGroup = makeAdditionalPowerElements(cache, &imageCache, extraStrength, func(amount int){
