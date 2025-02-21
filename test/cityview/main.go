@@ -143,12 +143,12 @@ func NewEngine() (*Engine, error) {
 
     var garrison []units.StackUnit
     for i := 0; i < 2; i++ {
-        unit := units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, city.X, city.Y, city.Plane, city.ReignProvider.GetBanner(), player.MakeExperienceInfo())
+        unit := units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo())
         player.AddUnit(unit)
         garrison = append(garrison, unit)
     }
     for i := 0; i < 4; i++ {
-        unit := units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, city.X, city.Y, city.Plane, city.ReignProvider.GetBanner(), player.MakeExperienceInfo())
+        unit := units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo())
         player.AddUnit(unit)
         garrison = append(garrison, unit)
     }

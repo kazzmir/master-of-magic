@@ -164,10 +164,6 @@ func (city *City) GetY() int {
     return city.Y
 }
 
-func (city *City) GetBanner() data.BannerType {
-    return city.ReignProvider.GetBanner()
-}
-
 func (city *City) GetOutpostHouses() int {
     // every 100 population is 1 house
     return city.Population / 100
@@ -1760,6 +1756,10 @@ func (city *City) GetSightRange() int {
     }
 
     return 2
+}
+
+func (city *City) GetBanner() data.BannerType {
+    return city.ReignProvider.GetBanner()
 }
 
 func ReadCityNames(cache *lbx.LbxCache) ([]string, error) {

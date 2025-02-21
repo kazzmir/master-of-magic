@@ -1432,7 +1432,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
             stackOptions.GeoM.Translate(float64(7 * data.ScreenScale), float64(55 * data.ScreenScale))
 
             for _, unit := range stack.Units() {
-                pic, _ := GetUnitImage(unit, &game.ImageCache, city.ReignProvider.GetBanner())
+                pic, _ := GetUnitImage(unit, &game.ImageCache, city.GetBanner())
                 screen.DrawImage(pic, &stackOptions)
                 stackOptions.GeoM.Translate(float64(pic.Bounds().Dx() + 1 * data.ScreenScale), 0)
             }
@@ -4639,8 +4639,8 @@ func GetCityImage(city *citylib.City, cache *util.ImageCache) (*ebiten.Image, er
     }
 
     // the city image is a sub-frame of animation 20
-    // return cache.GetImageTransform("mapback.lbx", 20, index, city.ReignProvider.GetBanner().String(), util.ComposeImageTransform(units.MakeUpdateUnitColorsFunc(city.ReignProvider.GetBanner()), util.AutoCropGeneric))
-    return cache.GetImageTransform("mapback.lbx", spriteIndex, animationIndex, city.ReignProvider.GetBanner().String(), units.MakeUpdateUnitColorsFunc(city.ReignProvider.GetBanner()))
+    // return cache.GetImageTransform("mapback.lbx", 20, index, city.GetBanner().String(), util.ComposeImageTransform(units.MakeUpdateUnitColorsFunc(city.GetBanner()), util.AutoCropGeneric))
+    return cache.GetImageTransform("mapback.lbx", spriteIndex, animationIndex, city.GetBanner().String(), units.MakeUpdateUnitColorsFunc(city.GetBanner()))
 }
 
 func (game *Game) ShowGrandVizierUI(){
@@ -5276,7 +5276,7 @@ func (info CityStackInfo) ContainsEnemy(x int, y int, plane data.Plane, player *
     }
 
     city := info.FindCity(x, y, plane)
-    if city != nil && city.ReignProvider.GetBanner() != player.GetBanner() {
+    if city != nil && city.GetBanner() != player.GetBanner() {
         return true
     }
 
@@ -6556,7 +6556,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 }
             case *citylib.CityEventNewUnit:
                 newUnit := event.(*citylib.CityEventNewUnit)
-                overworldUnit := units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.ReignProvider.GetBanner(), player.MakeExperienceInfo())
+                overworldUnit := units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo())
                 // only normal units get weapon bonuses
                 if overworldUnit.GetRace() != data.RaceFantastic {
                     overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
@@ -6703,7 +6703,7 @@ func (game *Game) doCleanCorruptionForConsecratedCities() {
 // At the beginning of each turn, Awareness clears the fog from all cities for enchantment's owner (newly built included)
 func (game *Game) doExploreFogForAwareness(awarenessOwner *playerlib.Player) {
     for _, city := range game.AllCities() {
-        if city.ReignProvider.GetBanner() == awarenessOwner.GetBanner() {
+        if city.GetBanner() == awarenessOwner.GetBanner() {
             continue // No need, those cities do already provide vision
         }
         awarenessOwner.ExploreFogSquare(city.X, city.Y, 1, city.Plane)
