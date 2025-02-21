@@ -4107,6 +4107,25 @@ func createScenario47(cache *lbx.LbxCache) *gamelib.Game {
     city.AddEnchantment(data.CityEnchantmentConsecration, player.GetBanner())
     city.AddEnchantment(data.CityEnchantmentFamine, enemy.GetBanner())
 
+    // force a node to be melded and warped
+    var node *maplib.ExtraMagicNode
+    mapUse := game.GetMap(data.PlaneArcanus)
+    nodeLook:
+    for x := range mapUse.Width() {
+        for y := range mapUse.Height() {
+            if mapUse.GetMagicNode(x, y) != nil {
+                node = mapUse.GetMagicNode(x, y)
+                break nodeLook
+            }
+        }
+    }
+
+    if node != nil {
+        node.Meld(enemy, units.MagicSpirit)
+        node.Warped = true
+        node.WarpedOwner = enemy
+    }
+
     return game
 }
 
