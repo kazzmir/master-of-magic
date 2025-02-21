@@ -1383,15 +1383,15 @@ func (model *CombatModel) GetObserver() CombatObserver {
 }
 
 func (model *CombatModel) IsEnchantmentActive(enchantment data.CombatEnchantment, team Team) bool {
-    if team == TeamEither || team == TeamDefender {
-        return model.DefendingArmy.HasEnchantment(enchantment)
+    if team == TeamEither {
+        return model.DefendingArmy.HasEnchantment(enchantment) || model.AttackingArmy.HasEnchantment(enchantment)
     }
 
-    if team == TeamEither || team == TeamAttacker {
+    if team == TeamDefender {
+        return model.DefendingArmy.HasEnchantment(enchantment)
+    } else {
         return model.AttackingArmy.HasEnchantment(enchantment)
     }
-
-    return false
 }
 
 func (model *CombatModel) AddLogEvent(text string) {

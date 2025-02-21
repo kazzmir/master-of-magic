@@ -178,6 +178,19 @@ func createArchAngelArmy(player *player.Player) *combat.Army {
     }
 }
 
+func createDeathCreatureArmy(player *player.Player) *combat.Army {
+    var armyUnits []*combat.ArmyUnit
+
+    armyUnits = append(armyUnits, &combat.ArmyUnit{
+        Unit: units.MakeOverworldUnitFromUnit(units.DemonLord, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
+    })
+
+    return &combat.Army{
+        Player: player,
+        Units: armyUnits,
+    }
+}
+
 func createHeroArmy(player *player.Player, cache *lbx.LbxCache) *combat.Army{
     var armyUnits []*combat.ArmyUnit
 
@@ -517,6 +530,45 @@ func makeScenario7(cache *lbx.LbxCache) *combat.CombatScreen {
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeWater, data.PlaneArcanus, combat.ZoneType{})
 }
 
+// life fantastic creatures vs death
+func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
+    defendingPlayer := player.MakePlayer(setup.WizardCustom{
+            Name: "Enemy",
+            Banner: data.BannerBlue,
+        }, false, 0, 0, nil)
+
+    // defendingArmy := createWarlockArmy(&defendingPlayer)
+    defendingArmy := createDeathCreatureArmy(defendingPlayer)
+    defendingArmy.LayoutUnits(combat.TeamDefender)
+
+    /*
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Unable to read spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+    */
+
+    attackingPlayer := player.MakePlayer(setup.WizardCustom{
+            Name: "Merlin",
+            Banner: data.BannerRed,
+            Race: data.RaceHighMen,
+        }, true, 0, 0, nil)
+
+    attackingPlayer.CastingSkillPower = 10
+    attackingPlayer.TaxRate = fraction.Zero()
+
+    attackingArmy := createArchAngelArmy(attackingPlayer)
+    attackingArmy.LayoutUnits(combat.TeamAttacker)
+
+    attackingArmy.AddEnchantment(data.CombatEnchantmentTrueLight)
+
+    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{ChaosNode: true})
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -530,6 +582,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 5: combatScreen = makeScenario5(cache)
         case 6: combatScreen = makeScenario6(cache)
         case 7: combatScreen = makeScenario7(cache)
+        case 8: combatScreen = makeScenario8(cache)
         default: combatScreen = makeScenario1(cache)
     }
 
