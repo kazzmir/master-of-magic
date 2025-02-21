@@ -2358,6 +2358,19 @@ func (model *CombatModel) GetOtherArmy(unit *ArmyUnit) *Army {
 
 // predicts the outcome of a battle just by comparing the relative power level of each army
 func DoStrategicCombat(attackingArmy *Army, defendingArmy *Army) (CombatState, int, int) {
+    fakeModel := CombatModel{
+        AttackingArmy: attackingArmy,
+        DefendingArmy: defendingArmy,
+    }
+
+    for _, unit := range attackingArmy.Units {
+        unit.Model = &fakeModel
+    }
+
+    for _, unit := range defendingArmy.Units {
+        unit.Model = &fakeModel
+    }
+
     attackingPower := attackingArmy.GetPower()
     defendingPower := defendingArmy.GetPower()
 
