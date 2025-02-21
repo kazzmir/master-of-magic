@@ -632,12 +632,33 @@ func (game *Game) UpdateImages() {
     }
 }
 
+func (game *Game) GetPlayerByBanner(banner data.BannerType) *playerlib.Player {
+    for _, player := range game.Players {
+        if player.GetBanner() == banner {
+            return player
+        }
+    }
+
+    return nil
+}
+
 // return the city and its owner
 func (game *Game) FindCity(x int, y int, plane data.Plane) (*citylib.City, *playerlib.Player) {
     for _, player := range game.Players {
         city := player.FindCity(x, y, plane)
         if city != nil {
             return city, player
+        }
+    }
+
+    return nil, nil
+}
+
+func (game *Game) FindStack(x int, y int, plane data.Plane) (*playerlib.UnitStack, *playerlib.Player) {
+    for _, player := range game.Players {
+        stack := player.FindStack(x, y, plane)
+        if stack != nil {
+            return stack, player
         }
     }
 

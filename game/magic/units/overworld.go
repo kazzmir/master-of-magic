@@ -80,7 +80,7 @@ func (unit *OverworldUnit) RemoveEnchantment(toRemove data.UnitEnchantment) {
 }
 
 func (unit *OverworldUnit) GetEnchantments() []data.UnitEnchantment {
-    return unit.Enchantments
+    return slices.Clone(unit.Enchantments)
 }
 
 func (unit *OverworldUnit) GetLbxFile() string {

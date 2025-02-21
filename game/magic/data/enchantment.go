@@ -192,50 +192,55 @@ func GetMagicColor(magic MagicType) color.Color {
 }
 
 func (enchantment UnitEnchantment) Color() color.Color {
+    return GetMagicColor(enchantment.Magic())
+}
+
+// the magic realm this enchantment belongs to
+func (enchantment UnitEnchantment) Magic() MagicType {
     switch enchantment {
-        case UnitEnchantmentIronSkin: return natureColor
-        case UnitEnchantmentGiantStrength: return natureColor
-        case UnitEnchantmentResistElements: return natureColor
-        case UnitEnchantmentElementalArmor: return natureColor
-        case UnitEnchantmentPathFinding: return natureColor
-        case UnitEnchantmentRegeneration: return natureColor
-        case UnitEnchantmentStoneSkin: return natureColor
-        case UnitEnchantmentWaterWalking: return natureColor
+        case UnitEnchantmentIronSkin: return NatureMagic
+        case UnitEnchantmentGiantStrength: return NatureMagic
+        case UnitEnchantmentResistElements: return NatureMagic
+        case UnitEnchantmentElementalArmor: return NatureMagic
+        case UnitEnchantmentPathFinding: return NatureMagic
+        case UnitEnchantmentRegeneration: return NatureMagic
+        case UnitEnchantmentStoneSkin: return NatureMagic
+        case UnitEnchantmentWaterWalking: return NatureMagic
 
-        case UnitEnchantmentFlight: return sorceryColor
-        case UnitEnchantmentHaste: return sorceryColor
-        case UnitEnchantmentResistMagic: return sorceryColor
-        case UnitEnchantmentGuardianWind: return sorceryColor
-        case UnitEnchantmentInvisibility: return sorceryColor
-        case UnitEnchantmentMagicImmunity: return sorceryColor
-        case UnitEnchantmentSpellLock: return sorceryColor
-        case UnitEnchantmentWindWalking: return sorceryColor
+        case UnitEnchantmentFlight: return SorceryMagic
+        case UnitEnchantmentHaste: return SorceryMagic
+        case UnitEnchantmentResistMagic: return SorceryMagic
+        case UnitEnchantmentGuardianWind: return SorceryMagic
+        case UnitEnchantmentInvisibility: return SorceryMagic
+        case UnitEnchantmentMagicImmunity: return SorceryMagic
+        case UnitEnchantmentSpellLock: return SorceryMagic
+        case UnitEnchantmentWindWalking: return SorceryMagic
 
-        case UnitEnchantmentCloakOfFear: return deathColor
-        case UnitEnchantmentBerserk: return deathColor
-        case UnitEnchantmentBlackChannels: return deathColor
-        case UnitEnchantmentWraithForm: return deathColor
+        case UnitEnchantmentCloakOfFear: return DeathMagic
+        case UnitEnchantmentBerserk: return DeathMagic
+        case UnitEnchantmentBlackChannels: return DeathMagic
+        case UnitEnchantmentWraithForm: return DeathMagic
 
-        case UnitEnchantmentImmolation: return chaosColor
-        case UnitEnchantmentChaosChannelsDemonWings: return chaosColor
-        case UnitEnchantmentChaosChannelsDemonSkin: return chaosColor
-        case UnitEnchantmentChaosChannelsFireBreath: return chaosColor
-        case UnitEnchantmentEldritchWeapon: return chaosColor
-        case UnitEnchantmentFlameBlade: return chaosColor
+        case UnitEnchantmentImmolation: return ChaosMagic
+        case UnitEnchantmentChaosChannelsDemonWings: return ChaosMagic
+        case UnitEnchantmentChaosChannelsDemonSkin: return ChaosMagic
+        case UnitEnchantmentChaosChannelsFireBreath: return ChaosMagic
+        case UnitEnchantmentEldritchWeapon: return ChaosMagic
+        case UnitEnchantmentFlameBlade: return ChaosMagic
 
-        case UnitEnchantmentBless: return lifeColor
-        case UnitEnchantmentLionHeart: return lifeColor
-        case UnitEnchantmentEndurance: return lifeColor
-        case UnitEnchantmentHeroism: return lifeColor
-        case UnitEnchantmentTrueSight: return lifeColor
-        case UnitEnchantmentHolyArmor: return lifeColor
-        case UnitEnchantmentRighteousness: return lifeColor
-        case UnitEnchantmentHolyWeapon: return lifeColor
-        case UnitEnchantmentInvulnerability: return lifeColor
-        case UnitEnchantmentPlanarTravel: return lifeColor
+        case UnitEnchantmentBless: return LifeMagic
+        case UnitEnchantmentLionHeart: return LifeMagic
+        case UnitEnchantmentEndurance: return LifeMagic
+        case UnitEnchantmentHeroism: return LifeMagic
+        case UnitEnchantmentTrueSight: return LifeMagic
+        case UnitEnchantmentHolyArmor: return LifeMagic
+        case UnitEnchantmentRighteousness: return LifeMagic
+        case UnitEnchantmentHolyWeapon: return LifeMagic
+        case UnitEnchantmentInvulnerability: return LifeMagic
+        case UnitEnchantmentPlanarTravel: return LifeMagic
     }
 
-    return color.RGBA{R: 0, G: 0, B: 0, A: 0}
+    return MagicNone
 }
 
 // granted abilities, if any
@@ -302,6 +307,16 @@ func (enchantment UnitEnchantment) UpkeepMana() int {
     }
 
     return 0
+}
+
+// the equivalent spell that would have cast this spell
+func (enchantment UnitEnchantment) SpellName() string {
+    switch enchantment {
+        case UnitEnchantmentChaosChannelsDemonWings,
+             UnitEnchantmentChaosChannelsDemonSkin,
+             UnitEnchantmentChaosChannelsFireBreath: return "Chaos Channels"
+        default: return enchantment.Name()
+    }
 }
 
 func (enchantment UnitEnchantment) Name() string {
@@ -518,6 +533,17 @@ const (
     CityEnchantmentWallOfFire
     CityEnchantmentWallOfStone
 )
+
+func (enchantment CityEnchantment) SpellName() string {
+    switch enchantment {
+        case CityEnchantmentLifeWard,
+             CityEnchantmentSorceryWard,
+             CityEnchantmentNatureWard,
+             CityEnchantmentDeathWard,
+             CityEnchantmentChaosWard: return "Spell Ward"
+        default: return enchantment.Name()
+    }
+}
 
 func (enchantment CityEnchantment) Name() string {
     switch enchantment {

@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -43,6 +44,7 @@ const (
     LocationTypeTransmute
     LocationTypeRaiseVolcano
     LocationTypeEnemyMeldedNode
+    LocationTypeDisenchant
 )
 
 func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
@@ -377,9 +379,23 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeLand, SelectedFunc: selected}
         case "Warp Node":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyMeldedNode, SelectedFunc: game.doCastWarpNode}
+        case "Disenchant Area":
+
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doDisenchantArea(yield, player, spell, false, tileX, tileY)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeDisenchant, SelectedFunc: selected}
+        case "Disenchant True":
+
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doDisenchantArea(yield, player, spell, true, tileX, tileY)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeDisenchant, SelectedFunc: selected}
+
 
         /* TODO: instant spells
-           Disenchant Area
            Disjunction
            Spell of Mastery
            Spell of Return
@@ -390,7 +406,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
            Ice Storm
            Move Fortress
            Nature's Cures
-           Disenchant True
            Disjunction True
            Great Unsummoning
            Spell Binding
@@ -441,8 +456,89 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
          */
 
         default:
-            log.Printf("Warning: casting unhandled spell %v", spell.Name)
+            log.Printf("Warning: casting unhandled spell '%v'", spell.Name)
     }
+}
+
+func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, disenchantTrue bool, tileX int, tileY int) {
+    game.doCastOnMap(yield, tileX, tileY, 9, false, spell.Sound, func (x int, y int, animationFrame int){})
+
+    disenchantStrength := spell.OverrideCost
+    if disenchantTrue {
+        // each additional point of mana spent increases the disenchant strength by 3
+        disenchantStrength = spell.CastCost + (spell.Cost(true) - spell.CastCost) * 3
+    }
+
+    if player.Wizard.AbilityEnabled(setup.AbilityRunemaster) {
+        disenchantStrength *= 2
+    }
+
+    allSpells := game.AllSpells()
+
+    applyResistance := func (owner *playerlib.Player, cost int, magic data.MagicType) int {
+        modifier := 1
+
+        if owner.Wizard.AbilityEnabled(setup.AbilityArchmage) {
+            modifier += 1
+        }
+
+        if owner.Wizard.AbilityEnabled(setup.AbilityChaosMastery) && magic == data.ChaosMagic {
+            modifier += 1
+        }
+
+        if owner.Wizard.AbilityEnabled(setup.AbilityNatureMastery) && magic == data.NatureMagic {
+            modifier += 1
+        }
+
+        if owner.Wizard.AbilityEnabled(setup.AbilitySorceryMastery) && magic == data.SorceryMagic {
+            modifier += 1
+        }
+
+        return cost * modifier
+    }
+
+    citySpellCost := func (enchantment citylib.Enchantment) int {
+        spell := allSpells.FindByName(enchantment.Enchantment.SpellName())
+        cost := spell.Cost(true)
+        return applyResistance(game.GetPlayerByBanner(enchantment.Owner), cost, spell.Magic)
+    }
+
+    unitSpellCost := func (enchantment data.UnitEnchantment, owner *playerlib.Player) int {
+        spell := allSpells.FindByName(enchantment.SpellName())
+        cost := spell.Cost(true)
+        return applyResistance(owner, cost, enchantment.Magic())
+    }
+
+    city, _ := game.FindCity(tileX, tileY, game.Plane)
+    if city != nil {
+        for _, enchantment := range city.Enchantments.Values() {
+            if enchantment.Owner != player.GetBanner() {
+                dispellChance := disenchantStrength * 100 / (disenchantStrength + citySpellCost(enchantment))
+                if rand.N(100) < dispellChance {
+                    city.RemoveEnchantments(enchantment.Enchantment)
+                }
+            }
+        }
+    }
+
+    stack, owner := game.FindStack(tileX, tileY, game.Plane)
+    if stack != nil && owner != player {
+        for _, unit := range stack.Units() {
+            var toRemove []data.UnitEnchantment
+            for _, enchantment := range unit.GetEnchantments() {
+                dispellChance := disenchantStrength * 100 / (disenchantStrength + unitSpellCost(enchantment, owner))
+                if rand.N(100) < dispellChance {
+                    toRemove = append(toRemove, enchantment)
+                }
+            }
+
+            for _, enchantment := range toRemove {
+                unit.RemoveEnchantment(enchantment)
+            }
+        }
+    }
+
+    // FIXME: dispel warp node
 }
 
 func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {
@@ -680,7 +776,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
     switch locationType {
         case LocationTypeAny, LocationTypeLand, LocationTypeEmptyWater, LocationTypeChangeTerrain,
-            LocationTypeTransmute, LocationTypeRaiseVolcano:
+             LocationTypeTransmute, LocationTypeRaiseVolcano, LocationTypeDisenchant:
             selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
         case LocationTypeFriendlyCity, LocationTypeFriendlyCityNoWalls:
             selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
@@ -794,6 +890,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         ui.Draw(ui, screen)
     }
 
+    entityInfo := game.ComputeCityStackInfo()
+
     for !quit {
         if game.Camera.GetZoom() > 0.9 {
             overworld.Counter += 1
@@ -905,6 +1003,16 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                                     return tileX, tileY, false
                                 }
                             }
+                        }
+
+                    case LocationTypeDisenchant:
+                        // return if the tile has a stack, town, or is a magic node
+
+                        if entityInfo.FindStack(tileX, tileY, game.Plane) != nil ||
+                           entityInfo.FindCity(tileX, tileY, game.Plane) != nil ||
+                           overworld.Map.GetMagicNode(tileX, tileY) != nil {
+
+                            return tileX, tileY, false
                         }
 
                     case LocationTypeEnemyCity:
