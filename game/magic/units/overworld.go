@@ -180,6 +180,10 @@ func (unit *OverworldUnit) IsSwimmer() bool {
 }
 
 func (unit *OverworldUnit) AddExperience(amount int) {
+    if unit.GetRace() == data.RaceFantastic {
+        return
+    }
+
     unit.Experience += amount
 
     // normal units max out at 120 experience
@@ -195,6 +199,9 @@ func (unit *OverworldUnit) AddExperience(amount int) {
 }
 
 func (unit *OverworldUnit) GetExperience() int {
+    if unit.GetRace() == data.RaceFantastic {
+        return 0
+    }
     return unit.Experience
 }
 
@@ -355,6 +362,10 @@ func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
     }
 
     return power
+}
+
+func (unit *OverworldUnit) GetHeroExperienceLevel() HeroExperienceLevel {
+    return ExperienceHero
 }
 
 func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {

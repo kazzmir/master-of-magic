@@ -499,7 +499,7 @@ func (hero *Hero) GetHireFee() int {
 
     levelInt := 1
 
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     switch level {
         case units.ExperienceHero: levelInt = 1
         case units.ExperienceMyrmidon: levelInt = 2
@@ -668,7 +668,7 @@ func (hero *Hero) GetToHitMelee() int {
     // FIXME: add in equipment tohit bonuses
     base := 30
 
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     switch level {
         case units.ExperienceHero:
         case units.ExperienceMyrmidon:
@@ -890,11 +890,15 @@ func (hero *Hero) GetProductionCost() int {
 }
 
 func (hero *Hero) GetExperienceData() units.ExperienceData {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     return &level
 }
 
-func (hero *Hero) GetExperienceLevel() units.HeroExperienceLevel {
+func (hero *Hero) GetExperienceLevel() units.NormalExperienceLevel {
+    return units.ExperienceRecruit
+}
+
+func (hero *Hero) GetHeroExperienceLevel() units.HeroExperienceLevel {
 
     experience := hero.Unit.Experience
 
@@ -919,7 +923,7 @@ func (hero *Hero) ResetOwner() {
 
 // force hero to go up one level
 func (hero *Hero) GainLevel(maxLevel units.HeroExperienceLevel) {
-    if hero.GetExperienceLevel() >= maxLevel {
+    if hero.GetHeroExperienceLevel() >= maxLevel {
         return
     }
 
@@ -931,7 +935,7 @@ func (hero *Hero) GainLevel(maxLevel units.HeroExperienceLevel) {
         units.ExperienceDemiGod,
     }
 
-    currentLevel := hero.GetExperienceLevel()
+    currentLevel := hero.GetHeroExperienceLevel()
 
     // add just enough experience to make it to the next level
     for i := range len(levels) - 1 {
@@ -943,7 +947,7 @@ func (hero *Hero) GainLevel(maxLevel units.HeroExperienceLevel) {
 }
 
 func (hero *Hero) GetBaseMeleeAttackPower() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     return hero.Unit.GetBaseMeleeAttackPower() + hero.getBaseMeleeAttackPowerProgression(level)
 }
 
@@ -1000,7 +1004,7 @@ func (hero *Hero) GetBaseRangedAttackPower() int {
         return 0
     }
 
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     return base + hero.getBaseRangedAttackPowerProgression(level)
 }
 
@@ -1044,7 +1048,7 @@ func (hero *Hero) GetRangedAttackPower() int {
 }
 
 func (hero *Hero) GetBaseDefense() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     return hero.Unit.GetBaseDefense() + hero.getBaseDefenseProgression(level)
 }
 
@@ -1076,7 +1080,7 @@ func (hero *Hero) GetDefense() int {
 }
 
 func (hero *Hero) GetBaseResistance() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     return hero.Unit.GetBaseResistance() + hero.getBaseResistanceProgression(level)
 }
 
@@ -1097,7 +1101,7 @@ func (hero *Hero) getBaseResistanceProgression(level units.HeroExperienceLevel) 
 
 // any added resistance from abilities (agility)
 func (hero *Hero) GetAbilityDefense() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     extra := 0
     if hero.HasAbility(data.AbilityAgility) {
         extra = level.ToInt() + 1
@@ -1109,7 +1113,7 @@ func (hero *Hero) GetAbilityDefense() int {
 }
 
 func (hero *Hero) GetAbilityToHit() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
 
     if hero.HasAbility(data.AbilityBlademaster) {
         switch level {
@@ -1141,7 +1145,7 @@ func (hero *Hero) GetAbilityToHit() int {
 }
 
 func (hero *Hero) GetAbilityMagicRangedAttack() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     extra := 0
 
     if hero.HasAbility(data.AbilityArcanePower) {
@@ -1155,7 +1159,7 @@ func (hero *Hero) GetAbilityMagicRangedAttack() int {
 
 // extra experience points to apply to all normal units in the same stack as the hero
 func (hero *Hero) GetAbilityExperienceBonus() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     extra := 0
 
     if hero.HasAbility(data.AbilityArmsmaster) {
@@ -1168,7 +1172,7 @@ func (hero *Hero) GetAbilityExperienceBonus() int {
 }
 
 func (hero *Hero) GetAbilityHealth() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     extra := 0
 
     if hero.HasAbility(data.AbilityConstitution) {
@@ -1181,7 +1185,7 @@ func (hero *Hero) GetAbilityHealth() int {
 }
 
 func (hero *Hero) GetAbilityLeadership() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
 
     if hero.HasAbility(data.AbilityLeadership) {
         switch level {
@@ -1214,7 +1218,7 @@ func (hero *Hero) GetAbilityLeadership() int {
 
 // added fame to the wizard
 func (hero *Hero) GetAbilityFame() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     extra := 0
 
     if hero.HasAbility(data.AbilityLegendary) {
@@ -1227,7 +1231,7 @@ func (hero *Hero) GetAbilityFame() int {
 }
 
 func (hero *Hero) GetAbilityMelee() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     extra := 0
 
     if hero.HasAbility(data.AbilityMight) {
@@ -1244,7 +1248,7 @@ func (hero *Hero) GetAbilityRangedAttack() int {
 }
 
 func (hero *Hero) GetAbilityResistance() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     extra := 0
 
     if hero.HasAbility(data.AbilityPrayermaster) {
@@ -1258,7 +1262,7 @@ func (hero *Hero) GetAbilityResistance() int {
 
 // extra research points to apply at each turn
 func (hero *Hero) GetAbilityResearch() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     extra := 0
 
     if hero.HasAbility(data.AbilitySage) {
@@ -1289,7 +1293,7 @@ func (hero *Hero) GetHitPoints() int {
 }
 
 func (hero *Hero) GetBaseHitPoints() int {
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     return hero.Unit.GetBaseHitPoints() + hero.getBaseHitPointsProgression(level)
 }
 
@@ -1311,7 +1315,7 @@ func (hero *Hero) getBaseHitPointsProgression(level units.HeroExperienceLevel) i
 func (hero *Hero) GetBaseProgression() []string {
     var improvements []string
 
-    level := hero.GetExperienceLevel()
+    level := hero.GetHeroExperienceLevel()
     if level <= units.ExperienceHero {
         return improvements
     }
