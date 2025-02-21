@@ -4039,6 +4039,9 @@ func createScenario47(cache *lbx.LbxCache) *gamelib.Game {
     player.Gold = 1000
     player.Mana = 10000
 
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, player.GetBanner(), player.MakeExperienceInfo()))
+    drake.AddEnchantment(data.UnitEnchantmentGiantStrength)
+
     player.LiftFog(x, y, 4, data.PlaneArcanus)
 
     enemyWizard := setup.WizardCustom{
@@ -4048,11 +4051,6 @@ func createScenario47(cache *lbx.LbxCache) *gamelib.Game {
     }
 
     enemy := game.AddPlayer(enemyWizard, false)
-
-    enemy1Unit := enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
-    enemy1Unit.AddEnchantment(data.UnitEnchantmentGiantStrength)
-    enemy1Unit.AddEnchantment(data.UnitEnchantmentLionHeart)
-    enemy1Unit.AddEnchantment(data.UnitEnchantmentHaste)
 
     x, y, _ = game.FindValidCityLocation(game.Plane)
 
@@ -4068,6 +4066,11 @@ func createScenario47(cache *lbx.LbxCache) *gamelib.Game {
     city2.Workers = 4
     city2.ResetCitizens(nil)
     enemy.AddCity(city2)
+
+    enemy1Unit := enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, enemy.GetBanner(), enemy.MakeExperienceInfo()))
+    enemy1Unit.AddEnchantment(data.UnitEnchantmentGiantStrength)
+    enemy1Unit.AddEnchantment(data.UnitEnchantmentLionHeart)
+    enemy1Unit.AddEnchantment(data.UnitEnchantmentHaste)
 
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x + 2, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
