@@ -903,6 +903,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                         }
                         yes := func(){
                             player.GlobalEnchantments.Remove(enchantment.Enchantment)
+                            player.UpdateUnrest()
                             setupEnchantments()
                             ui.RemoveGroup(group)
                         }
