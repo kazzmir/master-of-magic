@@ -2414,8 +2414,6 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
 
                 localOptions.GeoM.Translate(float64(3 * data.ScreenScale), float64(-2 * data.ScreenScale))
 
-                // FIXME: Unrest is currently only updated at the start of the turn, not when selling
-                //        buildings or adding/removing enchantments
                 for range city.Rebels {
                     screen.DrawImage(rebel, &localOptions)
                     localOptions.GeoM.Translate(float64(rebel.Bounds().Dx()), 0)
