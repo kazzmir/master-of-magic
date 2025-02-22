@@ -2014,6 +2014,9 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                     case *CombatEventCastEnchantment:
                         use := event.(*CombatEventCastEnchantment)
                         combat.doCastEnchantment(yield, use.Caster, use.Enchantment)
+                    case *CombatEventMessage:
+                        use := event.(*CombatEventMessage)
+                        combat.UI.AddElement(uilib.MakeErrorElement(combat.UI, combat.Cache, &combat.ImageCache, use.Message, func(){ yield() }))
                 }
             default:
                 return
