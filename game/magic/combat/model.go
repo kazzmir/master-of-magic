@@ -658,6 +658,12 @@ func (unit *ArmyUnit) GetEnchantments() []data.UnitEnchantment {
 }
 
 func (unit *ArmyUnit) AddEnchantment(enchantment data.UnitEnchantment) {
+    // skip duplicates
+    for _, check := range unit.Enchantments {
+        if check == enchantment {
+            return
+        }
+    }
     unit.Enchantments = append(unit.Enchantments, enchantment)
 }
 
@@ -996,6 +1002,11 @@ type Army struct {
 }
 
 func (army *Army) AddEnchantment(enchantment data.CombatEnchantment) {
+    for _, check := range army.Enchantments {
+        if check == enchantment {
+            return
+        }
+    }
     army.Enchantments = append(army.Enchantments, enchantment)
 }
 

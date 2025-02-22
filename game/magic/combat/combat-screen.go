@@ -1149,6 +1149,7 @@ Animate Dead - need picture
         case "Blur":
             combat.CastEnchantment(player, data.CombatEnchantmentBlur)
         case "Counter Magic":
+            // FIXME: include the cost of the spell because the caster may have pumped more mana into it
             combat.CastEnchantment(player, data.CombatEnchantmentCounterMagic)
         case "Mass Invisibility":
             combat.CastEnchantment(player, data.CombatEnchantmentMassInvisibility)
