@@ -1001,13 +1001,14 @@ type Army struct {
     Enchantments []data.CombatEnchantment
 }
 
-func (army *Army) AddEnchantment(enchantment data.CombatEnchantment) {
+func (army *Army) AddEnchantment(enchantment data.CombatEnchantment) bool {
     for _, check := range army.Enchantments {
         if check == enchantment {
-            return
+            return false
         }
     }
     army.Enchantments = append(army.Enchantments, enchantment)
+    return true
 }
 
 func (army *Army) HasEnchantment(enchantment data.CombatEnchantment) bool {
@@ -1444,11 +1445,11 @@ func (model *CombatModel) AddProjectile(projectile *Projectile){
     model.Projectiles = append(model.Projectiles, projectile)
 }
 
-func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment) {
+func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment) bool {
     if player == model.DefendingArmy.Player {
-        model.DefendingArmy.AddEnchantment(enchantment)
+        return model.DefendingArmy.AddEnchantment(enchantment)
     } else {
-        model.AttackingArmy.AddEnchantment(enchantment)
+        return model.AttackingArmy.AddEnchantment(enchantment)
     }
 }
 

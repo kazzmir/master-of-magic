@@ -81,6 +81,10 @@ type CombatEventSelectUnit struct {
     SelectTeam Team
 }
 
+type CombatEventMessage struct {
+    Message string
+}
+
 type MouseState int
 const (
     CombatClickHud MouseState = iota
@@ -1142,58 +1146,64 @@ Animate Dead - need picture
 
         case "High Prayer":
             // FIXME: implement enchantment mechanics
-            combat.CastEnchantment(player, data.CombatEnchantmentHighPrayer)
+            combat.CastEnchantment(player, data.CombatEnchantmentHighPrayer, successCallback)
         case "Prayer":
             // FIXME: implement enchantment mechanics
-            combat.CastEnchantment(player, data.CombatEnchantmentPrayer)
+            combat.CastEnchantment(player, data.CombatEnchantmentPrayer, successCallback)
         case "True Light":
-            combat.CastEnchantment(player, data.CombatEnchantmentTrueLight)
+            combat.CastEnchantment(player, data.CombatEnchantmentTrueLight, successCallback)
         case "Call Lightning":
             // FIXME: implement enchantment mechanics
-            combat.CastEnchantment(player, data.CombatEnchantmentCallLightning)
+            combat.CastEnchantment(player, data.CombatEnchantmentCallLightning, successCallback)
         case "Entangle":
             // FIXME: implement enchantment mechanics
-            combat.CastEnchantment(player, data.CombatEnchantmentEntangle)
+            combat.CastEnchantment(player, data.CombatEnchantmentEntangle, successCallback)
         case "Blur":
             // FIXME: implement enchantment mechanics
-            combat.CastEnchantment(player, data.CombatEnchantmentBlur)
+            combat.CastEnchantment(player, data.CombatEnchantmentBlur, successCallback)
         case "Counter Magic":
             // FIXME: implement enchantment mechanics
             // FIXME: include the cost of the spell because the caster may have pumped more mana into it
-            combat.CastEnchantment(player, data.CombatEnchantmentCounterMagic)
+            combat.CastEnchantment(player, data.CombatEnchantmentCounterMagic, successCallback)
         case "Mass Invisibility":
             // FIXME: implement enchantment mechanics
-            combat.CastEnchantment(player, data.CombatEnchantmentMassInvisibility)
+            combat.CastEnchantment(player, data.CombatEnchantmentMassInvisibility, successCallback)
         case "Metal Fires":
             // FIXME: implement enchantment mechanics
-            combat.CastEnchantment(player, data.CombatEnchantmentMetalFires)
+            combat.CastEnchantment(player, data.CombatEnchantmentMetalFires, successCallback)
         case "Warp Reality":
             // FIXME: implement enchantment mechanics
-            combat.CastEnchantment(player, data.CombatEnchantmentWarpReality)
+            combat.CastEnchantment(player, data.CombatEnchantmentWarpReality, successCallback)
         case "Black Prayer":
             // FIXME: implement enchantment mechanics
-            combat.CastEnchantment(player, data.CombatEnchantmentBlackPrayer)
+            combat.CastEnchantment(player, data.CombatEnchantmentBlackPrayer, successCallback)
         case "Darkness":
             // FIXME: implement enchantment mechanics
-            combat.CastEnchantment(player, data.CombatEnchantmentDarkness)
+            combat.CastEnchantment(player, data.CombatEnchantmentDarkness, successCallback)
         case "Mana Leak":
             // FIXME: implement enchantment mechanics
-            combat.CastEnchantment(player, data.CombatEnchantmentManaLeak)
+            combat.CastEnchantment(player, data.CombatEnchantmentManaLeak, successCallback)
         case "Terror":
             // FIXME: implement enchantment mechanics
-            combat.CastEnchantment(player, data.CombatEnchantmentTerror)
+            combat.CastEnchantment(player, data.CombatEnchantmentTerror, successCallback)
         case "Wrack":
             // FIXME: implement enchantment mechanics
-            combat.CastEnchantment(player, data.CombatEnchantmentWrack)
+            combat.CastEnchantment(player, data.CombatEnchantmentWrack, successCallback)
     }
 }
 
-func (combat *CombatScreen) CastEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment){
-    combat.Events <- &CombatEventCastEnchantment{
-        Enchantment: enchantment,
-        Caster: player,
+func (combat *CombatScreen) CastEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment, successCallback func()){
+    if combat.Model.AddEnchantment(player, enchantment) {
+        combat.Events <- &CombatEventCastEnchantment{
+            Enchantment: enchantment,
+            Caster: player,
+        }
+        successCallback()
+    } else {
+        combat.Events <- &CombatEventMessage{
+            Message: "That combat enchantment is already in effect",
+        }
     }
-    combat.Model.AddEnchantment(player, enchantment)
 }
 
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
