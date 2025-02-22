@@ -64,6 +64,7 @@ func (provider *NoCities) PlagueActive(city *City) bool {
 type NoReign struct {
     NumberOfBooks int
     TaxRate fraction.Fraction
+    GlobalEnchantments *set.Set[data.Enchantment]
 }
 
 func (reign *NoReign) HasDivinePower() bool {
@@ -99,7 +100,11 @@ func (reign *NoReign) GetBanner() data.BannerType {
 }
 
 func (reign *NoReign) GetGlobalEnchantments() *set.Set[data.Enchantment] {
-    return nil
+    if reign.GlobalEnchantments == nil {
+        reign.GlobalEnchantments = set.MakeSet[data.Enchantment]()
+    }
+
+    return reign.GlobalEnchantments
 }
 
 func TestBasicCity(test *testing.T){
