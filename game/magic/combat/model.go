@@ -1433,6 +1433,14 @@ func (model *CombatModel) AddProjectile(projectile *Projectile){
     model.Projectiles = append(model.Projectiles, projectile)
 }
 
+func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment) {
+    if player == model.DefendingArmy.Player {
+        model.DefendingArmy.AddEnchantment(enchantment)
+    } else {
+        model.AttackingArmy.AddEnchantment(enchantment)
+    }
+}
+
 func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing) {
     newUnit := ArmyUnit{
         Unit: &units.OverworldUnit{

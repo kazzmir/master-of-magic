@@ -549,6 +549,8 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
     }
     */
 
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerRed,
@@ -558,10 +560,13 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.CastingSkillPower = 10
     attackingPlayer.TaxRate = fraction.Zero()
 
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("True Light"))
+    attackingPlayer.Mana = 10000
+    attackingPlayer.CastingSkillPower = 10000
+
     attackingArmy := createArchAngelArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    attackingArmy.AddEnchantment(data.CombatEnchantmentTrueLight)
     attackingArmy.AddEnchantment(data.CombatEnchantmentWrack)
 
     defendingArmy.AddEnchantment(data.CombatEnchantmentEntangle)

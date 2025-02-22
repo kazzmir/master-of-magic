@@ -68,6 +68,11 @@ type CombatEventSelectTile struct {
 type CombatEventNextUnit struct {
 }
 
+type CombatEventCastEnchantment struct {
+    Enchantment data.CombatEnchantment
+    Caster *playerlib.Player
+}
+
 type CombatEventSelectUnit struct {
     SelectTarget func(*ArmyUnit)
     CanTarget func(*ArmyUnit) bool
@@ -127,8 +132,11 @@ func computeTileDistance(x1 int, y1 int, x2 int, y2 int) int {
     return distance
 }
 
+type CombatDrawFunc func(*ebiten.Image)
+
 type CombatScreen struct {
     Events chan CombatEvent
+    Drawer CombatDrawFunc
     ImageCache util.ImageCache
     Cache *lbx.LbxCache
     Mouse *mouse.MouseData
@@ -289,6 +297,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Model: MakeCombatModel(cache, defendingArmy, attackingArmy, landscape, plane, zone),
     }
 
+    combat.Drawer = combat.NormalDraw
     combat.TopDownOrder = combat.computeTopDownOrder()
 
     /*
@@ -1127,6 +1136,13 @@ Call Chaos - need picture
 Animate Dead - need picture
             */
 
+        case "True Light":
+            combat.Events <- &CombatEventCastEnchantment{
+                Enchantment: data.CombatEnchantmentTrueLight,
+                Caster: player,
+            }
+            combat.Model.AddEnchantment(player, data.CombatEnchantmentTrueLight)
+
     }
 }
 
@@ -1874,6 +1890,40 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
     }
 }
 
+func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster *playerlib.Player, enchantment data.CombatEnchantment) {
+    oldDrawer := combat.Drawer
+    defer func(){
+        combat.Drawer = oldDrawer
+    }()
+
+    value := color.RGBA{R: 0, G: 0, B: 255, A: 255}
+
+    counter := 0
+    counterMax := 90
+
+    maxAlpha := 150
+
+    interpolate := func (counter int) uint8 {
+        if counter < counterMax / 2 {
+            return uint8(counter * maxAlpha / (counterMax / 2))
+        } else {
+            return uint8((counterMax - counter) * maxAlpha / (counterMax / 2))
+        }
+    }
+
+    combat.Drawer = func (screen *ebiten.Image){
+        oldDrawer(screen)
+        value.A = interpolate(counter)
+        vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), util.PremultiplyAlpha(value), false)
+    }
+
+    for counter < counterMax {
+        combat.Counter += 1
+        counter += 1
+        yield()
+    }
+}
+
 func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
     for {
         select {
@@ -1887,6 +1937,9 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         combat.doSelectUnit(yield, use.Selecter, use.Spell, use.SelectTarget, use.CanTarget, use.SelectTeam)
                     case *CombatEventNextUnit:
                         combat.Model.NextUnit()
+                    case *CombatEventCastEnchantment:
+                        use := event.(*CombatEventCastEnchantment)
+                        combat.doCastEnchantment(yield, use.Caster, use.Enchantment)
                 }
             default:
                 return
@@ -2840,6 +2893,10 @@ func (combat *CombatScreen) DrawWall(screen *ebiten.Image, x int, y int, tilePos
 }
 
 func (combat *CombatScreen) Draw(screen *ebiten.Image){
+    combat.Drawer(screen)
+}
+
+func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
     animationIndex := combat.Counter / 8
 
