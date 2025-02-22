@@ -300,12 +300,7 @@ func (ai *EnemyAI) PostUpdate(self *playerlib.Player, enemies []*playerlib.Playe
 func (ai *EnemyAI) NewTurn(player *playerlib.Player) {
     // make sure cities have enough farmers
     for _, city := range player.Cities {
-        stack := player.FindStack(city.X, city.Y, city.Plane)
-        var units []units.StackUnit
-        if stack != nil {
-            units = stack.Units()
-        }
-        city.ResetCitizens(units)
+        city.ResetCitizens()
     }
 
     // keep going as long as there is more food available
