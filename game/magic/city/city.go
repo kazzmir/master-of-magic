@@ -94,6 +94,7 @@ type ReignProvider interface {
     GetTaxRate() fraction.Fraction
     GetBanner() data.BannerType
     GetGlobalEnchantments() *set.Set[data.Enchantment]
+    GetUnits(x int, y int, plane data.Plane) []units.StackUnit
 }
 
 const MAX_CITY_CITIZENS = 25
@@ -556,7 +557,7 @@ func (city *City) NonRebels() int {
     return city.Citizens() - city.Rebels
 }
 
-func (city *City) ResetCitizens(garrison []units.StackUnit) {
+func (city *City) ResetCitizens() {
     // try to leave farmers alone, but adjust them if necessary
     minimumFarmers := city.ComputeSubsistenceFarmers()
     if city.Farmers < minimumFarmers {
@@ -567,7 +568,7 @@ func (city *City) ResetCitizens(garrison []units.StackUnit) {
     }
     city.Workers = city.Citizens() - city.Farmers
     city.Rebels = 0
-    city.UpdateUnrest(garrison)
+    city.UpdateUnrest()
 }
 
 /* FIXME: take enchantments into account
@@ -777,8 +778,8 @@ func (city *City) ComputePower() int {
     return power + int(religiousPower)
 }
 
-func (city *City) UpdateUnrest(garrison []units.StackUnit) {
-    rebels := city.ComputeUnrest(garrison)
+func (city *City) UpdateUnrest() {
+    rebels := city.ComputeUnrest()
 
     if rebels > city.Rebels {
         for i := city.Rebels; i < rebels && city.Workers > 0; i++ {
@@ -976,7 +977,7 @@ func (city *City) InteracialUnrest() float64 {
     return unrest[city.Race][city.ReignProvider.GetRulingRace()]
 }
 
-func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
+func (city *City) ComputeUnrest() int {
 
     if city.HasEnchantment(data.CityEnchantmentStreamOfLife) {
         return 0
@@ -1027,6 +1028,7 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
     // unrest from spells
     // supression from units
     garrisonSupression := float64(0)
+    garrison := city.ReignProvider.GetUnits(city.X, city.Y, city.Plane)
     for _, unit := range garrison {
         if unit.GetRace() != data.RaceFantastic {
             garrisonSupression += 1
@@ -1619,7 +1621,7 @@ func (city *City) GetWeaponBonus() data.WeaponBonus {
 
 // do all the stuff needed per turn
 // increase population, add production, add food/money, etc
-func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) []CityEvent {
+func (city *City) DoNextTurn(mapObject *maplib.Map) []CityEvent {
     // FIXME: heal all units if StreamOfLife active
     var cityEvents []CityEvent
     if city.Outpost {
@@ -1724,7 +1726,7 @@ func (city *City) DoNextTurn(garrison []units.StackUnit, mapObject *maplib.Map) 
     }
 
     // update minimum farmers
-    city.ResetCitizens(garrison)
+    city.ResetCitizens()
 
     return cityEvents
 }

@@ -7,6 +7,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/set"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
@@ -30,7 +31,6 @@ type Engine struct {
     CityScreen *cityview.CityScreen
     ImageCache util.ImageCache
     Map *maplib.Map
-    Garrison []units.StackUnit
     Player *playerlib.Player
 }
 
@@ -72,6 +72,7 @@ func NewEngine() (*Engine, error) {
             },
         },
         TaxRate: fraction.Make(2, 1),
+        GlobalEnchantments: set.MakeSet[data.Enchantment](),
     }
 
     player.Gold = 500
@@ -126,7 +127,7 @@ func NewEngine() (*Engine, error) {
 
     city.ProducingBuilding = buildinglib.BuildingHousing
     // city.ProducingUnit = units.HighElfSpearmen
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
         // ProducingUnit: units.UnitNone,
 
     city.AddEnchantment(data.CityEnchantmentWallOfFire, data.BannerRed)
@@ -141,19 +142,16 @@ func NewEngine() (*Engine, error) {
     city.AddEnchantment(data.CityEnchantmentDarkRituals, data.BannerRed)
     city.AddEnchantment(data.CityEnchantmentEvilPresence, data.BannerGreen)
 
-    var garrison []units.StackUnit
     for i := 0; i < 2; i++ {
         unit := units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo())
         player.AddUnit(unit)
-        garrison = append(garrison, unit)
     }
     for i := 0; i < 4; i++ {
         unit := units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo())
         player.AddUnit(unit)
-        garrison = append(garrison, unit)
     }
 
-    city.UpdateUnrest(garrison)
+    city.UpdateUnrest()
 
     cityScreen := cityview.MakeCityScreen(cache, city, &player, buildinglib.BuildingWizardsGuild)
 
@@ -162,7 +160,6 @@ func NewEngine() (*Engine, error) {
         CityScreen: cityScreen,
         ImageCache: util.MakeImageCache(cache),
         Map: &gameMap,
-        Garrison: garrison,
         Player: &player,
     }, nil
 }
@@ -181,7 +178,7 @@ func (engine *Engine) toggleEnchantment(enchantment data.CityEnchantment) {
     } else {
         engine.CityScreen.City.AddEnchantment(enchantment, data.BannerBlue)
     }
-    engine.CityScreen.City.UpdateUnrest(engine.Garrison)
+    engine.CityScreen.City.UpdateUnrest()
     engine.CityScreen.UI = engine.CityScreen.MakeUI(buildinglib.BuildingNone)
 }
 
