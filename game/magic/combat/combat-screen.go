@@ -1136,14 +1136,45 @@ Call Chaos - need picture
 Animate Dead - need picture
             */
 
+        case "High Prayer":
+            combat.CastEnchantment(player, data.CombatEnchantmentHighPrayer)
+        case "Prayer":
+            combat.CastEnchantment(player, data.CombatEnchantmentPrayer)
         case "True Light":
-            combat.Events <- &CombatEventCastEnchantment{
-                Enchantment: data.CombatEnchantmentTrueLight,
-                Caster: player,
-            }
-            combat.Model.AddEnchantment(player, data.CombatEnchantmentTrueLight)
-
+            combat.CastEnchantment(player, data.CombatEnchantmentTrueLight)
+        case "Call Lightning":
+            combat.CastEnchantment(player, data.CombatEnchantmentCallLightning)
+        case "Entangle":
+            combat.CastEnchantment(player, data.CombatEnchantmentEntangle)
+        case "Blur":
+            combat.CastEnchantment(player, data.CombatEnchantmentBlur)
+        case "Counter Magic":
+            combat.CastEnchantment(player, data.CombatEnchantmentCounterMagic)
+        case "Mass Invisibility":
+            combat.CastEnchantment(player, data.CombatEnchantmentMassInvisibility)
+        case "Metal Fires":
+            combat.CastEnchantment(player, data.CombatEnchantmentMetalFires)
+        case "Warp Reality":
+            combat.CastEnchantment(player, data.CombatEnchantmentWarpReality)
+        case "Black Prayer":
+            combat.CastEnchantment(player, data.CombatEnchantmentBlackPrayer)
+        case "Darkness":
+            combat.CastEnchantment(player, data.CombatEnchantmentDarkness)
+        case "Mana Leak":
+            combat.CastEnchantment(player, data.CombatEnchantmentManaLeak)
+        case "Terror":
+            combat.CastEnchantment(player, data.CombatEnchantmentTerror)
+        case "Wrack":
+            combat.CastEnchantment(player, data.CombatEnchantmentWrack)
     }
+}
+
+func (combat *CombatScreen) CastEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment){
+    combat.Events <- &CombatEventCastEnchantment{
+        Enchantment: enchantment,
+        Caster: player,
+    }
+    combat.Model.AddEnchantment(player, enchantment)
 }
 
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
@@ -1896,7 +1927,7 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
         combat.Drawer = oldDrawer
     }()
 
-    value := color.RGBA{R: 0, G: 0, B: 255, A: 255}
+    value := data.GetMagicColor(enchantment.Magic())
 
     counter := 0
     counterMax := 90
@@ -1913,13 +1944,13 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
 
     combat.Drawer = func (screen *ebiten.Image){
         oldDrawer(screen)
-        value.A = interpolate(counter)
         vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), util.PremultiplyAlpha(value), false)
     }
 
     for counter < counterMax {
         combat.Counter += 1
         counter += 1
+        value.A = interpolate(counter)
         yield()
     }
 }

@@ -560,7 +560,15 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.CastingSkillPower = 10
     attackingPlayer.TaxRate = fraction.Zero()
 
-    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("True Light"))
+    spells := []string{"High Prayer", "Prayer", "True Light", "Call Lightning", "Entangle",
+                       "Blur", "Counter Magic", "Mass Invisibility", "Metal Fires", "Warp Reality",
+                       "Black Prayer", "Darkness", "Mana Leak", "Terror", "Wrack"}
+
+
+    for _, spellName := range spells {
+        attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName(spellName))
+    }
+
     attackingPlayer.Mana = 10000
     attackingPlayer.CastingSkillPower = 10000
 

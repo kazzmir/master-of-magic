@@ -179,7 +179,7 @@ var sorceryColor = color.RGBA{R: 0, G: 0, B: 180, A: 255}
 var deathColor = color.RGBA{R: 0x62, G: 0x11, B: 0xba, A: 255}
 var lifeColor = color.RGBA{R: 180, G: 180, B: 180, A: 255}
 
-func GetMagicColor(magic MagicType) color.Color {
+func GetMagicColor(magic MagicType) color.RGBA {
     switch magic {
         case NatureMagic: return natureColor
         case ChaosMagic: return chaosColor
@@ -718,4 +718,26 @@ func (enchantment CombatEnchantment) LbxIndex() int {
     }
 
     return -1
+}
+
+func (enchantment CombatEnchantment) Magic() MagicType {
+    switch enchantment {
+        case CombatEnchantmentHighPrayer: return LifeMagic
+        case CombatEnchantmentPrayer: return LifeMagic
+        case CombatEnchantmentTrueLight: return LifeMagic
+        case CombatEnchantmentCallLightning: return NatureMagic
+        case CombatEnchantmentEntangle: return NatureMagic
+        case CombatEnchantmentBlur: return SorceryMagic
+        case CombatEnchantmentCounterMagic: return SorceryMagic
+        case CombatEnchantmentMassInvisibility: return SorceryMagic
+        case CombatEnchantmentMetalFires: return ChaosMagic
+        case CombatEnchantmentWarpReality: return ChaosMagic
+        case CombatEnchantmentBlackPrayer: return DeathMagic
+        case CombatEnchantmentDarkness: return DeathMagic
+        case CombatEnchantmentManaLeak: return DeathMagic
+        case CombatEnchantmentTerror: return DeathMagic
+        case CombatEnchantmentWrack: return DeathMagic
+    }
+
+    return MagicNone
 }
