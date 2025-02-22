@@ -179,7 +179,7 @@ var sorceryColor = color.RGBA{R: 0, G: 0, B: 180, A: 255}
 var deathColor = color.RGBA{R: 0x62, G: 0x11, B: 0xba, A: 255}
 var lifeColor = color.RGBA{R: 180, G: 180, B: 180, A: 255}
 
-func GetMagicColor(magic MagicType) color.Color {
+func GetMagicColor(magic MagicType) color.RGBA {
     switch magic {
         case NatureMagic: return natureColor
         case ChaosMagic: return chaosColor
@@ -696,3 +696,70 @@ const (
     CombatEnchantmentTerror
     CombatEnchantmentWrack
 )
+
+// in compix.lbx
+func (enchantment CombatEnchantment) LbxIndex() int {
+    switch enchantment {
+        case CombatEnchantmentHighPrayer: return 12
+        case CombatEnchantmentPrayer: return 11
+        case CombatEnchantmentTrueLight: return 5
+        case CombatEnchantmentCallLightning: return 14
+        case CombatEnchantmentEntangle: return 60
+        case CombatEnchantmentBlur: return 80
+        case CombatEnchantmentCounterMagic: return 15
+        case CombatEnchantmentMassInvisibility: return 41
+        case CombatEnchantmentMetalFires: return 10
+        case CombatEnchantmentWarpReality: return 7
+        case CombatEnchantmentBlackPrayer: return 8
+        case CombatEnchantmentDarkness: return 6
+        case CombatEnchantmentManaLeak: return 79
+        case CombatEnchantmentTerror: return 13
+        case CombatEnchantmentWrack: return 9
+    }
+
+    return -1
+}
+
+func (enchantment CombatEnchantment) Magic() MagicType {
+    switch enchantment {
+        case CombatEnchantmentHighPrayer: return LifeMagic
+        case CombatEnchantmentPrayer: return LifeMagic
+        case CombatEnchantmentTrueLight: return LifeMagic
+        case CombatEnchantmentCallLightning: return NatureMagic
+        case CombatEnchantmentEntangle: return NatureMagic
+        case CombatEnchantmentBlur: return SorceryMagic
+        case CombatEnchantmentCounterMagic: return SorceryMagic
+        case CombatEnchantmentMassInvisibility: return SorceryMagic
+        case CombatEnchantmentMetalFires: return ChaosMagic
+        case CombatEnchantmentWarpReality: return ChaosMagic
+        case CombatEnchantmentBlackPrayer: return DeathMagic
+        case CombatEnchantmentDarkness: return DeathMagic
+        case CombatEnchantmentManaLeak: return DeathMagic
+        case CombatEnchantmentTerror: return DeathMagic
+        case CombatEnchantmentWrack: return DeathMagic
+    }
+
+    return MagicNone
+}
+
+func (enchantment CombatEnchantment) Name() string {
+    switch enchantment {
+        case CombatEnchantmentHighPrayer: return "High Prayer"
+        case CombatEnchantmentPrayer: return "Prayer"
+        case CombatEnchantmentTrueLight: return "True Light"
+        case CombatEnchantmentCallLightning: return "Call Lightning"
+        case CombatEnchantmentEntangle: return "Entangle"
+        case CombatEnchantmentBlur: return "Blur"
+        case CombatEnchantmentCounterMagic: return "Counter Magic"
+        case CombatEnchantmentMassInvisibility: return "Mass Invisibility"
+        case CombatEnchantmentMetalFires: return "Metal Fires"
+        case CombatEnchantmentWarpReality: return "Warp Reality"
+        case CombatEnchantmentBlackPrayer: return "Black Prayer"
+        case CombatEnchantmentDarkness: return "Darkness"
+        case CombatEnchantmentManaLeak: return "Mana Leak"
+        case CombatEnchantmentTerror: return "Terror"
+        case CombatEnchantmentWrack: return "Wrack"
+    }
+
+    return ""
+}
