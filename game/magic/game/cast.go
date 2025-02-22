@@ -308,7 +308,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Detect Magic
                 Charm of Life
                 Holy Arms
-                Just Cause
                 Life Force
                 Planar Seal
                 Tranquility
@@ -350,6 +349,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentCrusade}
 
                 player.GlobalEnchantments.Insert(data.EnchantmentCrusade)
+
+                game.RefreshUI()
+            }
+        case "Just Cause":
+            if !player.GlobalEnchantments.Contains(data.EnchantmentJustCause) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentJustCause}
+
+                player.GlobalEnchantments.Insert(data.EnchantmentJustCause)
 
                 game.RefreshUI()
             }

@@ -377,6 +377,10 @@ func (player *Player) MakeExperienceInfo() units.ExperienceInfo {
     }
 }
 
+func (player *Player) GetGlobalEnchantments() *set.Set[data.Enchantment] {
+    return player.GlobalEnchantments
+}
+
 func (player *Player) GetFame() int {
     fame := player.Fame
 
@@ -386,7 +390,13 @@ func (player *Player) GetFame() int {
         }
     }
 
-    // FIXME: add fame from just cause spell
+    if fame < 0 {
+        fame = 0
+    }
+
+    if player.GlobalEnchantments.Contains(data.EnchantmentJustCause) {
+        fame += 10
+    }
 
     return fame
 }

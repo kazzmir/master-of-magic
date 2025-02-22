@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/set"
 )
 
 func makeSimpleMap() map[image.Point]maplib.FullTile {
@@ -95,6 +96,10 @@ func (reign *NoReign) GetTaxRate() fraction.Fraction {
 
 func (reign *NoReign) GetBanner() data.BannerType {
     return data.BannerBlue
+}
+
+func (reign *NoReign) GetGlobalEnchantments() *set.Set[data.Enchantment] {
+    return nil
 }
 
 func TestBasicCity(test *testing.T){
