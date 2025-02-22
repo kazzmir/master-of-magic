@@ -632,9 +632,8 @@ func (enchantment CityEnchantment) SoundIndex() int {
     // FIXME: Add other sound indexes
     switch enchantment {
         case CityEnchantmentAltarOfBattle, CityEnchantmentHeavenlyLight, CityEnchantmentInspirations,
-            CityEnchantmentProsperity, CityEnchantmentStreamOfLife:
+            CityEnchantmentProsperity, CityEnchantmentStreamOfLife, CityEnchantmentAstralGate:
             return 31
-        // case CityEnchantmentAstralGate: return 0
         // case CityEnchantmentChaosRift: return 0
         case CityEnchantmentCloudOfShadow, CityEnchantmentEvilPresence, CityEnchantmentFamine,
             CityEnchantmentPestilence, CityEnchantmentWallOfDarkness:
