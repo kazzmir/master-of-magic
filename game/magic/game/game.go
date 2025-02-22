@@ -3444,8 +3444,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     raze, gold := game.defeatCity(yield, player, stack, defenderPlayer, otherCity)
 
                     // FIXME: show a notice about any fame won
-                    player.Fame += otherCity.FameForCaptureOrRaze(!raze)
-                    defenderPlayer.Fame += otherCity.FameForCaptureOrRaze(false)
+                    player.Fame = max(0, player.Fame + otherCity.FameForCaptureOrRaze(!raze))
+                    defenderPlayer.Fame = max(0, defenderPlayer.Fame + otherCity.FameForCaptureOrRaze(false))
                     player.Gold += gold
                     defenderPlayer.Gold -= gold
 
@@ -3772,8 +3772,8 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
             if city != nil {
                 raze, gold := game.defeatCity(yield, player, stack, enemy, city)
 
-                player.Fame += city.FameForCaptureOrRaze(!raze)
-                enemy.Fame += city.FameForCaptureOrRaze(false)
+                player.Fame = max(0, player.Fame + city.FameForCaptureOrRaze(!raze))
+                enemy.Fame = max(0, enemy.Fame + city.FameForCaptureOrRaze(false))
                 player.Gold += gold
                 enemy.Gold -= gold
 

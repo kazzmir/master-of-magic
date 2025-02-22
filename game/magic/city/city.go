@@ -93,6 +93,7 @@ type ReignProvider interface {
     GetRulingRace() data.Race
     GetTaxRate() fraction.Fraction
     GetBanner() data.BannerType
+    GetGlobalEnchantments() *set.Set[data.Enchantment]
 }
 
 const MAX_CITY_CITIZENS = 25
@@ -1069,6 +1070,10 @@ func (city *City) ComputeUnrest(garrison []units.StackUnit) int {
     // pacification from enchantments
     if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
         pacification += 2
+    }
+
+    if city.ReignProvider.GetGlobalEnchantments().Contains(data.EnchantmentJustCause) {
+        pacification += 1
     }
 
     total := unrestPercent * float64(city.Citizens()) + unrestAbsolute - pacification - garrisonSupression / 2
