@@ -741,3 +741,25 @@ func (enchantment CombatEnchantment) Magic() MagicType {
 
     return MagicNone
 }
+
+func (enchantment CombatEnchantment) Name() string {
+    switch enchantment {
+        case CombatEnchantmentHighPrayer: return "High Prayer"
+        case CombatEnchantmentPrayer: return "Prayer"
+        case CombatEnchantmentTrueLight: return "True Light"
+        case CombatEnchantmentCallLightning: return "Call Lightning"
+        case CombatEnchantmentEntangle: return "Entangle"
+        case CombatEnchantmentBlur: return "Blur"
+        case CombatEnchantmentCounterMagic: return "Counter Magic"
+        case CombatEnchantmentMassInvisibility: return "Mass Invisibility"
+        case CombatEnchantmentMetalFires: return "Metal Fires"
+        case CombatEnchantmentWarpReality: return "Warp Reality"
+        case CombatEnchantmentBlackPrayer: return "Black Prayer"
+        case CombatEnchantmentDarkness: return "Darkness"
+        case CombatEnchantmentManaLeak: return "Mana Leak"
+        case CombatEnchantmentTerror: return "Terror"
+        case CombatEnchantmentWrack: return "Wrack"
+    }
+
+    return ""
+}

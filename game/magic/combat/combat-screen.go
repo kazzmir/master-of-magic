@@ -142,6 +142,7 @@ type CombatScreen struct {
     Mouse *mouse.MouseData
     AttackingWizardFont *font.Font
     DefendingWizardFont *font.Font
+    EnchantmentFont *font.Font
     WhitePixel *ebiten.Image
     UI *uilib.UI
     DebugFont *font.Font
@@ -249,6 +250,8 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     infoFont := font.MakeOptimizedFontWithPalette(fonts[0], orangePalette)
 
+    enchantmentFont := font.MakeOptimizedFontWithPalette(fonts[1], orangePalette)
+
     whiteFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
 
     defendingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(defendingArmy.Player.Wizard.Banner))
@@ -288,6 +291,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         HudFont: hudFont,
         InfoFont: infoFont,
         WhiteFont: whiteFont,
+        EnchantmentFont: enchantmentFont,
         Coordinates: coordinates,
         // ScreenToTile: screenToTile,
         WhitePixel: whitePixel,
@@ -1949,6 +1953,10 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
 
     maxAlpha := 150
 
+    castDescription := fmt.Sprintf("%v cast %v", caster.Wizard.Name, enchantment.Name())
+
+    text := combat.EnchantmentFont.MeasureTextWidth(castDescription, float64(data.ScreenScale))
+
     interpolate := func (counter int) uint8 {
         if counter < counterMax / 2 {
             return uint8(counter * maxAlpha / (counterMax / 2))
@@ -1959,6 +1967,16 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
 
     combat.Drawer = func (screen *ebiten.Image){
         oldDrawer(screen)
+
+        x1 := float64(data.ScreenWidth / 2) - text / 2 - float64(1 * data.ScreenScale)
+        x2 := float64(data.ScreenWidth / 2) + text / 2 + float64(1 * data.ScreenScale)
+        y := 4
+
+        vector.DrawFilledRect(screen, float32(x1), float32(y * data.ScreenScale), float32(x2 - x1), float32((combat.EnchantmentFont.Height() + 1) * data.ScreenScale), color.RGBA{R: 0, G: 0, B: 0x0, A: 120}, false)
+        combat.EnchantmentFont.PrintCenter(screen, float64(data.ScreenWidth / 2), float64((y + 1) * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, castDescription)
+
+        vector.StrokeRect(screen, float32(x1), float32(y * data.ScreenScale), float32(x2 - x1), float32((combat.EnchantmentFont.Height() + 1) * data.ScreenScale), 1, color.RGBA{R: 0xff, G: 0xff, B: 0x0, A: 0xff}, false)
+
         vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), util.PremultiplyAlpha(value), false)
     }
 
