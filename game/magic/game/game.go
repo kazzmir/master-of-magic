@@ -2561,6 +2561,7 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     }
 }
 
+// FIXME: add a "reason" of fizzling, like "Spell X was fizzled because of Y"
 func (game *Game) ShowFizzleSpell(spell spellbook.Spell, caster *playerlib.Player) {
     if caster.IsHuman() {
         beep, err := audio.LoadSound(game.Cache, 0)
@@ -5229,6 +5230,37 @@ func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
     return slices.ContainsFunc(game.Players, func (player *playerlib.Player) bool {
         return player.GlobalEnchantments.Contains(enchantment)
     })
+}
+
+// Returns true if dispel is successful. This func is just a check and by itself doesn't change anything in the game.
+// TargetSpellCost may be either a base cost or an effective cost (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
+// FIXME: add Runemaster check here (it should increase the dispel strength)
+func (game *Game) RollDispelChance(dispelStrength int, targetSpellCost int, targetSpellRealm data.MagicType, targetSpellOwner *playerlib.Player, 
+    checkArchmageRetort bool, checkRealmMasteryRetorts bool) bool {
+
+    dispelResistanceModifier := 1
+
+    if checkArchmageRetort && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityArchmage) {
+        dispelResistanceModifier += 1
+    }
+
+    if checkRealmMasteryRetorts {
+        if targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityChaosMastery) && targetSpellRealm == data.ChaosMagic {
+            dispelResistanceModifier += 1
+        }
+
+        if targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityNatureMastery) && targetSpellRealm == data.NatureMagic {
+            dispelResistanceModifier += 1
+        }
+
+        if targetSpellOwner.Wizard.AbilityEnabled(setup.AbilitySorceryMastery) && targetSpellRealm == data.SorceryMagic {
+            dispelResistanceModifier += 1
+        }
+    }
+
+    // The original game uses the check in multiples of 250, and not as a percentage (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
+    dispelChance := (250 * dispelStrength) / (dispelStrength + (targetSpellCost * dispelResistanceModifier))
+    return rand.N(250) < dispelChance
 }
 
 // stores information about every stack and city for fast lookups

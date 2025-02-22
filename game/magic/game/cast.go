@@ -50,6 +50,20 @@ const (
 func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
     // FIXME: if the player is AI then invoke some callback that the AI will use to select targets instead of using the GameEventSelectLocationForSpell
 
+    // Tranquility effect: if it's a chaos spell, it should either resist a strength 500 dispel check or fizzle right away.
+    if spell.IsOfRealm(data.ChaosMagic) {
+        for _, checkingPlayer := range game.Players {
+            // FIXME: Not sure if multiple instances of Tranquility stack or are checked separately.
+            if checkingPlayer != player && player.GlobalEnchantments.Contains(data.EnchantmentTranquility) {
+                if game.RollDispelChance(500, spell.Cost(true), spell.Magic, player, true, true) {
+                    // Fizzle the spell and return
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
+            }
+        }
+    }
+
     switch spell.Name {
         /*
             SUMMONING SPELLS
@@ -358,6 +372,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 player.GlobalEnchantments.Insert(data.EnchantmentJustCause)
                 player.UpdateUnrest()
+
+                game.RefreshUI()
+            }
+        case "Tranquility":
+            if !player.GlobalEnchantments.Contains(data.EnchantmentTranquility) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentTranquility}
+
+                player.GlobalEnchantments.Insert(data.EnchantmentTranquility)
 
                 game.RefreshUI()
             }
