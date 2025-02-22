@@ -3489,7 +3489,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     // update unrest for new units in the city
     newCity := player.FindCity(stack.X(), stack.Y(), stack.Plane())
     if newCity != nil {
-        newCity.UpdateUnrest(stack.Units())
+        newCity.UpdateUnrest()
     }
 
     if stepsTaken > 0 {
@@ -4512,8 +4512,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         for _, building := range cityBuildingLoss {
             zone.City.Buildings.Remove(building)
         }
-        // there cant be any units defending because they were all defeated
-        zone.City.ResetCitizens(nil)
+        zone.City.ResetCitizens()
     }
 
     // Show end screen
@@ -6502,7 +6501,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     var removeCities []*citylib.City
 
     for _, city := range player.Cities {
-        cityEvents := city.DoNextTurn(player.GetUnits(city.X, city.Y, city.Plane), game.GetMap(city.Plane))
+        cityEvents := city.DoNextTurn(game.GetMap(city.Plane))
         for _, event := range cityEvents {
             switch event.(type) {
             case *citylib.CityEventPopulationGrowth:
@@ -6737,7 +6736,6 @@ func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (i
     city.Population -= killedCitizens * 1000
 
     stack := player.FindStack(city.X, city.Y, city.Plane)
-    var garrison []units.StackUnit
     killedUnits := 0
     if stack != nil {
         for _, unit := range stack.Units() {
@@ -6754,11 +6752,9 @@ func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (i
                 }
             }
         }
-
-        garrison = stack.Units()
     }
 
-    city.ResetCitizens(garrison)
+    city.ResetCitizens()
 
     mapUse := game.GetMap(city.Plane)
 
@@ -6789,12 +6785,7 @@ func ChangeCityOwner(city *citylib.City, owner *playerlib.Player, newOwner *play
     city.Buildings.Remove(buildinglib.BuildingFortress)
     city.Buildings.Remove(buildinglib.BuildingSummoningCircle)
 
-    var newUnits []units.StackUnit
-    stack := newOwner.FindStack(city.X, city.Y, city.Plane)
-    if stack != nil {
-        newUnits = stack.Units()
-    }
-    city.UpdateUnrest(newUnits)
+    city.UpdateUnrest()
 
     switch enchantmentChange {
         case ChangeCityKeepEnchantments:

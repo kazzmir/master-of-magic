@@ -72,12 +72,12 @@ func TestChangeCityOwner(test *testing.T){
 
     city := citylib.MakeCity("xyz", 1, 1, player1.Wizard.Race, nil, &NoCatchment{}, &NoServices{}, player1)
     city.Population = 6000
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
     city.AddBuilding(buildinglib.BuildingFortress)
     city.AddEnchantment(data.CityEnchantmentAltarOfBattle, player1.GetBanner())
     player1.AddCity(city)
 
-    if city.ComputeUnrest(nil) != 0 {
+    if city.ComputeUnrest() != 0 {
         test.Errorf("Unrest is unexpected")
     }
 
@@ -99,7 +99,7 @@ func TestChangeCityOwner(test *testing.T){
         test.Errorf("City still has the fortress")
     }
 
-    if city.ComputeUnrest(nil) != 3 {
+    if city.ComputeUnrest() != 3 {
         test.Errorf("Unrest is not updated")
     }
 

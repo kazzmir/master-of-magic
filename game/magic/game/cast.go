@@ -357,6 +357,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentJustCause}
 
                 player.GlobalEnchantments.Insert(data.EnchantmentJustCause)
+                player.UpdateUnrest()
 
                 game.RefreshUI()
             }
@@ -1110,6 +1111,7 @@ func (game *Game) doCastCityEnchantment(yield coroutine.YieldFunc, tileX int, ti
     }
 
     chosenCity.AddEnchantment(enchantment, player.GetBanner())
+    chosenCity.UpdateUnrest()
 
     yield()
 

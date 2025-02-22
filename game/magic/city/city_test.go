@@ -107,13 +107,18 @@ func (reign *NoReign) GetGlobalEnchantments() *set.Set[data.Enchantment] {
     return reign.GlobalEnchantments
 }
 
+func (reign *NoReign) GetUnits(x int, y int, plane data.Plane) []units.StackUnit {
+    return nil
+}
+
+
 func TestBasicCity(test *testing.T){
     reign := NoReign{TaxRate: fraction.Make(3, 2)}
     city := MakeCity("Test City", 10, 10, data.RaceHighMen, nil, &Catchment{Map: makeSimpleMap()}, &NoCities{}, &reign)
     city.Population = 6000
     city.Farmers = 6
     city.Workers = 0
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
     if city.Name != "Test City" {
         test.Error("City name is not correct")
     }
@@ -132,8 +137,8 @@ func TestBasicCity(test *testing.T){
         test.Errorf("Subsistence farmers should have been 3 but was %v", city.ComputeSubsistenceFarmers())
     }
 
-    if city.ComputeUnrest(nil) != 1 {
-        test.Errorf("Unrest should have been 1 but was %v", city.ComputeUnrest(nil))
+    if city.ComputeUnrest() != 1 {
+        test.Errorf("Unrest should have been 1 but was %v", city.ComputeUnrest())
     }
 
     if city.Rebels != 1 {
@@ -141,10 +146,10 @@ func TestBasicCity(test *testing.T){
     }
 
     reign.TaxRate = fraction.Make(3, 1)
-    city.UpdateUnrest(nil)
+    city.UpdateUnrest()
 
-    if city.ComputeUnrest(nil) != 4 {
-        test.Errorf("Unrest should have been 4 but was %v", city.ComputeUnrest(nil))
+    if city.ComputeUnrest() != 4 {
+        test.Errorf("Unrest should have been 4 but was %v", city.ComputeUnrest())
     }
 
     if city.Rebels != 3 {
@@ -202,13 +207,13 @@ func TestForeignTrade(test *testing.T){
     city1.Population = 6000
     city1.Farmers = 6
     city1.Workers = 0
-    city1.ResetCitizens(nil)
+    city1.ResetCitizens()
 
     city2 := MakeCity("Test City 2", 10, 10, data.RaceHighMen, nil, &Catchment{Map: makeSimpleMap()}, &connected, &NoReign{TaxRate: fraction.Make(3, 2)})
     city2.Population = 7000
     city2.Farmers = 7
     city2.Workers = 0
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens()
 
     connected.Cities = []*City{city1, city2}
 
@@ -222,7 +227,7 @@ func TestForeignTrade(test *testing.T){
     city3.Population = 5000
     city3.Farmers = 5
     city3.Workers = 0
-    city3.ResetCitizens(nil)
+    city3.ResetCitizens()
 
     connected.Cities = []*City{city1, city2, city3}
 
@@ -256,8 +261,6 @@ func TestEnchantments(test *testing.T){
     city.BuildingInfo = make([]building.BuildingInfo, 35)
     city.AddBuilding(building.BuildingShrine)
 
-    stack := []units.StackUnit{}
-
     if city.FoodProductionRate() != 10 {
         // 5 * 2 farmer
         test.Errorf("City FoodProductionRate is not correct: %v", city.FoodProductionRate())
@@ -273,9 +276,9 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
-    if city.ComputeUnrest(stack) != 1 {
+    if city.ComputeUnrest() != 1 {
         // 0.2 * 10 race - 1 shrine
-        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
     if city.PopulationGrowthRate() != 15 {
@@ -306,9 +309,9 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
-    if city.ComputeUnrest(stack) != 1 {
+    if city.ComputeUnrest() != 1 {
         // 0.2 * 10 race - 1 shrine
-        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
     if city.PopulationGrowthRate() != 15 {
@@ -339,9 +342,9 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
-    if city.ComputeUnrest(stack) != 1 {
+    if city.ComputeUnrest() != 1 {
         // 0.2 * 10 race - 1 shrine
-        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
     if city.PopulationGrowthRate() != 15 {
@@ -372,9 +375,9 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
-    if city.ComputeUnrest(stack) != 2 {
+    if city.ComputeUnrest() != 2 {
         // 0.2 * 10 race - 1 shrine + 1 cursed lands
-        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
     if city.PopulationGrowthRate() != 15 {
@@ -405,9 +408,9 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
-    if city.ComputeUnrest(stack) != 0 {
+    if city.ComputeUnrest() != 0 {
         // 0.2 * 10 race - 1 shrine + 1 cursed lands - 2 gaias blessing
-        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
     if city.PopulationGrowthRate() != 85 {
@@ -438,9 +441,9 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
-    if city.ComputeUnrest(stack) != 1 {
+    if city.ComputeUnrest() != 1 {
         // 0.2 * 10 race - 1 shrine + 1 cursed lands - 2 gaias blessing + 1 dark rituals
-        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
     if city.PopulationGrowthRate() != 63 {
@@ -470,9 +473,9 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
-    if city.ComputeUnrest(stack) != 0 {
+    if city.ComputeUnrest() != 0 {
         // 0 stream of life
-        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
     if city.PopulationGrowthRate() != 127 {
@@ -505,9 +508,9 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
-    if city.ComputeUnrest(stack) != 3 {
+    if city.ComputeUnrest() != 3 {
         // (0.2 race + 0.25 famine) * 10 - 1 shrine + 1 cursed lands - 2 gaias blessing + 1 dark rituals
-        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
     if city.PopulationGrowthRate() != -250 {
@@ -538,9 +541,9 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
-    if city.ComputeUnrest(stack) != 5 {
+    if city.ComputeUnrest() != 5 {
         // (0.2 race + 0.25 famine) * 10 - 1 shrine + 1 cursed lands - 2 gaias blessing + 1 dark rituals + 2 pestilence
-        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
     if city.PopulationGrowthRate() != -250 {
@@ -571,9 +574,9 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
-    if city.ComputeUnrest(stack) != 6 {
+    if city.ComputeUnrest() != 6 {
         // (0.2 race + 0.25 famine) * 10 + 1 cursed lands - 2 gaias blessing + 1 dark rituals + 2 pestilence
-        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
     if city.PopulationGrowthRate() != -250 {
@@ -604,9 +607,9 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
-    if city.ComputeUnrest(stack) != 5 {
+    if city.ComputeUnrest() != 5 {
         // (0.2 race + 0.25 famine) * 10 + 1 cursed lands - 2 gaias blessing + 1 dark rituals + 2 pestilence - 1 just cause
-        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest(stack))
+        test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
     if city.PopulationGrowthRate() != -250 {
@@ -673,7 +676,7 @@ func TestScenario1(test *testing.T) {
     city.AddBuilding(building.BuildingSmithy)
     city.AddBuilding(building.BuildingFortress)
     city.ProducingBuilding = building.BuildingHousing
-    // maybe add 2 units garrison and call city.ResetCitizens(nil)
+    // maybe add 2 units garrison and call city.ResetCitizens()
 
     // Food
     if city.FarmerFoodProduction(city.Farmers) != 6 {
@@ -735,7 +738,7 @@ func TestScenario2(test *testing.T) {
     city.AddBuilding(building.BuildingMarketplace)
     city.AddBuilding(building.BuildingMinersGuild)
     city.ProducingBuilding = building.BuildingTradeGoods
-    // maybe add 6 units garrison and call city.ResetCitizens(nil)
+    // maybe add 6 units garrison and call city.ResetCitizens()
 
     // Food
     if city.FarmerFoodProduction(city.Farmers) != 14 {

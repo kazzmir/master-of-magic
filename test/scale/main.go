@@ -85,7 +85,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 

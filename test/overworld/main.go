@@ -110,7 +110,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -247,7 +247,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     introCity.AddBuilding(buildinglib.BuildingShrine)
     introCity.AddBuilding(buildinglib.BuildingGranary)
 
-    introCity.ResetCitizens(nil)
+    introCity.ResetCitizens()
 
     player.AddCity(introCity)
 
@@ -317,7 +317,7 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
 
     introCity.AddBuilding(buildinglib.BuildingShrine)
 
-    introCity.ResetCitizens(nil)
+    introCity.ResetCitizens()
 
     player.AddCity(introCity)
 
@@ -396,7 +396,7 @@ func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
 
     introCity.AddBuilding(buildinglib.BuildingShrine)
 
-    introCity.ResetCitizens(nil)
+    introCity.ResetCitizens()
 
     player.AddCity(introCity)
 
@@ -459,7 +459,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
 
     introCity.AddBuilding(buildinglib.BuildingShrine)
 
-    introCity.ResetCitizens(nil)
+    introCity.ResetCitizens()
 
     player.AddCity(introCity)
 
@@ -492,7 +492,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
     city2.ProducingBuilding = buildinglib.BuildingShrine
     city2.ProducingUnit = units.UnitNone
 
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens()
 
     player.AddCity(city2)
 
@@ -543,7 +543,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
 
         introCity.AddBuilding(buildinglib.BuildingShrine)
 
-        introCity.ResetCitizens(nil)
+        introCity.ResetCitizens()
 
         player.AddCity(introCity)
     }
@@ -560,7 +560,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
 
         introCity.AddBuilding(buildinglib.BuildingShrine)
 
-        introCity.ResetCitizens(nil)
+        introCity.ResetCitizens()
 
         player.AddCity(introCity)
     }
@@ -616,7 +616,7 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -694,7 +694,7 @@ func createScenario9(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -768,7 +768,7 @@ func createScenario10(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -842,7 +842,7 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -910,7 +910,7 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -1098,7 +1098,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city.AddBuilding(buildinglib.BuildingShrine)
     city.AddBuilding(buildinglib.BuildingGranary)
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -1133,7 +1133,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city2.AddBuilding(buildinglib.BuildingBank)
     city2.Farmers = 10
     city2.Workers = 4
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens()
     enemy.AddCity(city2)
 
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
@@ -1163,7 +1163,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city3.AddBuilding(buildinglib.BuildingBank)
     city3.Farmers = 10
     city3.Workers = 4
-    city3.ResetCitizens(nil)
+    city3.ResetCitizens()
     city3.AddEnchantment(data.CityEnchantmentConsecration, enemy2.GetBanner())
     enemy2.AddCity(city3)
 
@@ -1253,7 +1253,7 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -1318,7 +1318,7 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 20
     city.Workers = 0
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -1399,7 +1399,7 @@ func createScenario16(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = city.Citizens() - 1
     city.Workers = 0
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -1484,7 +1484,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -1636,7 +1636,7 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 5
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -1721,7 +1721,7 @@ func createScenario19(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -1796,7 +1796,7 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = city.Citizens() - 1
     city.Workers = 0
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -1855,7 +1855,7 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
     city2.Workers = 2
     city2.Rebels = 1
 
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens()
 
     for range 1 {
         // randomUnit := units.ChooseRandomUnit(enemy.Wizard.Race)
@@ -1914,7 +1914,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = city.Citizens() - 1
     city.Workers = 0
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -1963,7 +1963,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
     city2.Buildings.Insert(buildinglib.BuildingSmithy)
     city2.Buildings.Insert(buildinglib.BuildingOracle)
 
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens()
 
     city2.Farmers = 5
     city2.Workers = 2
@@ -2027,7 +2027,7 @@ func createScenario22(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -2101,7 +2101,7 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = city.Citizens() - 1
     city.Workers = 0
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -2184,7 +2184,7 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
     city2.Buildings.Insert(buildinglib.BuildingSmithy)
     city2.Buildings.Insert(buildinglib.BuildingOracle)
 
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens()
 
     city2.Farmers = 5
     city2.Workers = 2
@@ -2245,7 +2245,7 @@ func createScenario24(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 5
     city.Workers = 1
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -2318,7 +2318,7 @@ func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
     city.Race = wizard.Race
     city.Farmers = 5
     city.Workers = 1
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
     player.AddCity(city)
 
     player.AddHero(hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther"))
@@ -2383,7 +2383,7 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
     city.Race = wizard.Race
     city.Farmers = 5
     city.Workers = 1
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
     player.AddCity(city)
 
     gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther")
@@ -2456,7 +2456,7 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 7
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -2545,7 +2545,7 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
     city.Race = wizard.Race
     city.Farmers = 10
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -2684,7 +2684,7 @@ func createScenario30(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 9
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -2693,14 +2693,14 @@ func createScenario30(cache *lbx.LbxCache) *gamelib.Game {
     city2 := citylib.MakeCity("City2", x2, y2, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
     city2.Plane = city.Plane
     city2.Population = 6000
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens()
 
     player.AddCity(city2)
 
     city3 := citylib.MakeCity("City3", x + 1, y2+2, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
     city3.Plane = city.Plane
     city3.Population = 6000
-    city3.ResetCitizens(nil)
+    city3.ResetCitizens()
 
     player.AddCity(city3)
 
@@ -2772,7 +2772,7 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -2871,7 +2871,7 @@ func createScenario32(cache *lbx.LbxCache) *gamelib.Game {
     city.Workers = 3
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -2972,7 +2972,7 @@ func createScenario33(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 13
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -3034,7 +3034,7 @@ func createScenario34(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player1.AddCity(city)
 
@@ -3111,7 +3111,7 @@ func createScenario35(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player1.AddCity(city)
 
@@ -3187,7 +3187,7 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 8
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     enemy1.AddCity(city)
 
@@ -3273,7 +3273,7 @@ func createScenario38(cache *lbx.LbxCache) *gamelib.Game {
     city1.Race = wizard1.Race
     city1.Farmers = 3
     city1.Workers = 3
-    city1.ResetCitizens(nil)
+    city1.ResetCitizens()
     player1.AddCity(city1)
     player1.LiftFog(x, y, 3, data.PlaneArcanus)
 
@@ -3354,7 +3354,7 @@ func createScenario39(cache *lbx.LbxCache) *gamelib.Game {
     city.Farmers = 3
     city.Workers = 3
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -3436,7 +3436,7 @@ func createScenario40(cache *lbx.LbxCache) *gamelib.Game {
     city.AddBuilding(buildinglib.BuildingShrine)
     city.AddBuilding(buildinglib.BuildingGranary)
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -3491,7 +3491,7 @@ func createScenario41(cache *lbx.LbxCache) *gamelib.Game {
     city.ProducingUnit = units.TrollSettlers
     city.Production = float32(city.ProducingUnit.ProductionCost)
     city.Farmers = 1
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
     player.Gold = 1000
@@ -3554,7 +3554,7 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
     city.AddBuilding(buildinglib.BuildingGranary)
     city.AddBuilding(buildinglib.BuildingOracle)
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -3590,7 +3590,7 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
     city2.AddBuilding(buildinglib.BuildingGranary)
     city2.AddBuilding(buildinglib.BuildingFarmersMarket)
 
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens()
 
     enemy1.AddCity(city2)
 
@@ -3657,7 +3657,7 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
     city.AddBuilding(buildinglib.BuildingShrine)
     city.AddBuilding(buildinglib.BuildingTemple)
     city.Farmers = 1
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
     player.Gold = 1000
@@ -3762,8 +3762,7 @@ func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.ShadowDemons, x-1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
-    stack := player.FindStack(x, y, city.Plane)
-    city.ResetCitizens(stack.Units())
+    city.ResetCitizens()
 
     enemy1 := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",
@@ -3843,7 +3842,7 @@ func createScenario45(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 200, data.PlaneArcanus)
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     enemy1 := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",
@@ -3938,7 +3937,7 @@ func createScenario46(cache *lbx.LbxCache) *gamelib.Game {
     city.AddBuilding(buildinglib.BuildingFightersGuild)
     city.AddBuilding(buildinglib.BuildingWarCollege)
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -4008,7 +4007,7 @@ func createScenario47(cache *lbx.LbxCache) *gamelib.Game {
     city.AddBuilding(buildinglib.BuildingShrine)
     city.AddBuilding(buildinglib.BuildingGranary)
 
-    city.ResetCitizens(nil)
+    city.ResetCitizens()
 
     player.AddCity(city)
 
@@ -4041,7 +4040,7 @@ func createScenario47(cache *lbx.LbxCache) *gamelib.Game {
     city2.AddBuilding(buildinglib.BuildingBank)
     city2.Farmers = 10
     city2.Workers = 4
-    city2.ResetCitizens(nil)
+    city2.ResetCitizens()
     enemy.AddCity(city2)
 
     enemy1Unit := enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, enemy.GetBanner(), enemy.MakeExperienceInfo()))
@@ -4076,7 +4075,7 @@ func createScenario47(cache *lbx.LbxCache) *gamelib.Game {
     city3.AddBuilding(buildinglib.BuildingBank)
     city3.Farmers = 10
     city3.Workers = 4
-    city3.ResetCitizens(nil)
+    city3.ResetCitizens()
     city3.AddEnchantment(data.CityEnchantmentConsecration, enemy2.GetBanner())
     enemy2.AddCity(city3)
 
