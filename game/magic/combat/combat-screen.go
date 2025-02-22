@@ -1137,35 +1137,49 @@ Animate Dead - need picture
             */
 
         case "High Prayer":
+            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentHighPrayer)
         case "Prayer":
+            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentPrayer)
         case "True Light":
             combat.CastEnchantment(player, data.CombatEnchantmentTrueLight)
         case "Call Lightning":
+            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentCallLightning)
         case "Entangle":
+            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentEntangle)
         case "Blur":
+            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentBlur)
         case "Counter Magic":
+            // FIXME: implement enchantment mechanics
             // FIXME: include the cost of the spell because the caster may have pumped more mana into it
             combat.CastEnchantment(player, data.CombatEnchantmentCounterMagic)
         case "Mass Invisibility":
+            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentMassInvisibility)
         case "Metal Fires":
+            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentMetalFires)
         case "Warp Reality":
+            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentWarpReality)
         case "Black Prayer":
+            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentBlackPrayer)
         case "Darkness":
+            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentDarkness)
         case "Mana Leak":
+            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentManaLeak)
         case "Terror":
+            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentTerror)
         case "Wrack":
+            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentWrack)
     }
 }
