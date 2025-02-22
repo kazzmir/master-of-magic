@@ -19,7 +19,7 @@ type Spell struct {
     AiValue int
     SpellType int
     Section Section
-    Realm int
+    Realm int // FIXME: Realm is equal to LBX magic realm constant, but is unused. This var may be removed, as the Magic var below is the only one being used
     Eligibility EligibilityType
     CastCost int
     OverrideCost int
@@ -31,6 +31,7 @@ type Spell struct {
     Flag3 int
 
     // which book of magic this spell is a part of
+    // FIXME: MagicType as a value is not equal to LBX magic realm constant. This var may be renamed to Realm, and the Realm var above can be removed
     Magic data.MagicType
     Rarity SpellRarity
 }
@@ -45,6 +46,10 @@ func (spell Spell) Invalid() bool {
 
 func (spell Spell) Valid() bool {
     return spell.Name != ""
+}
+
+func (spell Spell) IsOfRealm(realm data.MagicType) bool {
+    return spell.Magic == realm
 }
 
 // overland=true if casting in overland, otherwise casting in combat
@@ -466,7 +471,7 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
         buffer := bytes.NewBuffer(data[0:n])
 
         nameData := buffer.Next(19)
-        // fmt.Printf("Spell %v\n", i)
+        fmt.Printf("Spell %v: ", i)
 
         name, err := bytes.NewBuffer(nameData).ReadString(0)
         if err != nil {
@@ -474,7 +479,7 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
         } else {
             name = name[0:len(name)-1]
         }
-        // fmt.Printf("  Name: %v\n", string(name))
+        fmt.Printf("  Name: %v ", string(name))
 
         aiGroup, err := buffer.ReadByte()
         if err != nil {
@@ -507,7 +512,7 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
             return Spells{}, err
         }
 
-        // fmt.Printf("  Magic Realm: %v\n", realm)
+        fmt.Printf("  Magic Realm: %v\n", realm)
 
         eligibility, err := buffer.ReadByte()
         if err != nil {
