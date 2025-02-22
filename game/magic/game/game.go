@@ -5232,35 +5232,40 @@ func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
     })
 }
 
-// Returns true if dispel is successful. This func is just a check and by itself doesn't change anything in the game.
+// Returns dispel chance against 250. 
 // TargetSpellCost may be either a base cost or an effective cost (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
+// If checkTargetSpellOwnerRetorts is true, then Archmage and Mastery retorts will be taken into consideration for dispel resistance
 // FIXME: add Runemaster check here (it should increase the dispel strength)
-func (game *Game) RollDispelChance(dispelStrength int, targetSpellCost int, targetSpellRealm data.MagicType, targetSpellOwner *playerlib.Player, 
-    checkArchmageRetort bool, checkRealmMasteryRetorts bool) bool {
+func (game *Game) CalcDispelChance(dispelStrength int, targetSpellCost int, targetSpellRealm data.MagicType, targetSpellOwner *playerlib.Player, checkTargetSpellOwnerRetorts bool) int {
 
     dispelResistanceModifier := 1
 
-    if checkArchmageRetort && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityArchmage) {
-        dispelResistanceModifier += 1
-    }
-
-    if checkRealmMasteryRetorts {
-        if targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityChaosMastery) && targetSpellRealm == data.ChaosMagic {
+    if checkTargetSpellOwnerRetorts {
+        if targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityArchmage) {
             dispelResistanceModifier += 1
         }
 
-        if targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityNatureMastery) && targetSpellRealm == data.NatureMagic {
+        if targetSpellRealm == data.NatureMagic && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityNatureMastery) {
             dispelResistanceModifier += 1
         }
 
-        if targetSpellOwner.Wizard.AbilityEnabled(setup.AbilitySorceryMastery) && targetSpellRealm == data.SorceryMagic {
+        if targetSpellRealm == data.SorceryMagic && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilitySorceryMastery) {
+            dispelResistanceModifier += 1
+        }
+
+        if targetSpellRealm == data.ChaosMagic && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityChaosMastery) {
             dispelResistanceModifier += 1
         }
     }
 
     // The original game uses the check in multiples of 250, and not as a percentage (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
-    dispelChance := (250 * dispelStrength) / (dispelStrength + (targetSpellCost * dispelResistanceModifier))
-    return rand.N(250) < dispelChance
+    return (250 * dispelStrength) / (dispelStrength + (targetSpellCost * dispelResistanceModifier))
+}
+
+// Returns true if dispel is successful.
+// The original game uses the check in multiples of 250, and not as a percentage (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
+func (game *Game) RollDispelChance(chanceAgainst250 int) bool {
+    return rand.N(250) < chanceAgainst250
 }
 
 // stores information about every stack and city for fast lookups
