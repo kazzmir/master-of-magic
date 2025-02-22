@@ -1048,6 +1048,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Evil Presence"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Stream of Life"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Altar of Battle"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Astral Gate"))
 
     // global enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
