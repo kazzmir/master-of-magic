@@ -696,3 +696,26 @@ const (
     CombatEnchantmentTerror
     CombatEnchantmentWrack
 )
+
+// in compix.lbx
+func (enchantment CombatEnchantment) LbxIndex() int {
+    switch enchantment {
+        case CombatEnchantmentHighPrayer: return 12
+        case CombatEnchantmentPrayer: return 11
+        case CombatEnchantmentTrueLight: return 5
+        case CombatEnchantmentCallLightning: return 14
+        case CombatEnchantmentEntangle: return 60
+        case CombatEnchantmentBlur: return 80
+        case CombatEnchantmentCounterMagic: return 15
+        case CombatEnchantmentMassInvisibility: return 41
+        case CombatEnchantmentMetalFires: return 10
+        case CombatEnchantmentWarpReality: return 7
+        case CombatEnchantmentBlackPrayer: return 8
+        case CombatEnchantmentDarkness: return 6
+        case CombatEnchantmentManaLeak: return 79
+        case CombatEnchantmentTerror: return 13
+        case CombatEnchantmentWrack: return 9
+    }
+
+    return -1
+}
