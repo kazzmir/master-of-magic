@@ -74,6 +74,24 @@ func (spell Spell) Cost(overland bool) int {
     return spell.CastCost
 }
 
+func (spell Spell) SpentAdditionalCost(overland bool) int {
+    if overland {
+        switch spell.Eligibility {
+            case EligibilityBoth: return spell.CastCost * 5
+            case EligibilityOverlandOnly: return spell.CastCost
+            case EligibilityBoth2: return spell.CastCost * 5
+            case EligibilityOverlandOnlyFriendlyCity: return spell.CastCost * 5
+            case EligibilityBothSameCost: return spell.CastCost
+            case EligibilityOverlandWhileBanished: return spell.CastCost
+        }
+    }
+
+    if spell.OverrideCost != 0 {
+        return spell.OverrideCost - spell.CastCost
+    }
+    return 0
+}
+
 type EligibilityType int
 const (
     EligibilityCombatOnly EligibilityType = 0xff
