@@ -1732,7 +1732,16 @@ func (city *City) DoNextTurn(mapObject *maplib.Map) []CityEvent {
 }
 
 func (city *City) AllowedBuildings(what buildinglib.Building) []buildinglib.Building {
-    return city.BuildingInfo.Allows(what)
+    buildable := city.GetBuildableBuildings()
+
+    var out []buildinglib.Building
+    for _, building := range city.BuildingInfo.Allows(what) {
+        if buildable.Contains(building) {
+            out = append(out, building)
+        }
+    }
+
+    return out
 }
 
 func (city *City) AllowedUnits(what buildinglib.Building) []units.Unit {
