@@ -562,6 +562,9 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     attackingArmy.AddEnchantment(data.CombatEnchantmentTrueLight)
+    attackingArmy.AddEnchantment(data.CombatEnchantmentWrack)
+
+    defendingArmy.AddEnchantment(data.CombatEnchantmentEntangle)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)

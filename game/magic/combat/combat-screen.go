@@ -1146,9 +1146,25 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 combat.AttackingWizardFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, combat.Model.AttackingArmy.Player.Wizard.Name)
             }
 
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(246 * data.ScreenScale), float64(179 * data.ScreenScale))
+            for _, enchantment := range combat.Model.AttackingArmy.Enchantments {
+                image, _ := combat.ImageCache.GetImage("compix.lbx", enchantment.LbxIndex(), 0)
+                screen.DrawImage(image, &options)
+                options.GeoM.Translate(float64(image.Bounds().Dx()), 0)
+            }
+
             if combat.Model.DefendingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
                 combat.DefendingWizardFont.PrintCenter(screen, float64(40 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, combat.Model.DefendingArmy.Player.Wizard.Name)
+            }
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(float64(7 * data.ScreenScale), float64(179 * data.ScreenScale))
+            for _, enchantment := range combat.Model.DefendingArmy.Enchantments {
+                image, _ := combat.ImageCache.GetImage("compix.lbx", enchantment.LbxIndex(), 0)
+                screen.DrawImage(image, &options)
+                options.GeoM.Translate(float64(image.Bounds().Dx()), 0)
             }
 
             if combat.Model.SelectedUnit != nil {
