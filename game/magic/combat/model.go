@@ -1484,6 +1484,8 @@ func (model *CombatModel) NextTurn() {
         defenderLeakMana = true
     }
 
+    defenderTerror := model.IsEnchantmentActive(data.CombatEnchantmentTerror, TeamAttacker)
+
     /* reset movement */
     for _, unit := range model.DefendingArmy.Units {
         unit.ResetTurnData()
@@ -1491,6 +1493,12 @@ func (model *CombatModel) NextTurn() {
         if defenderLeakMana {
             // FIXME: magic ranged attacks should go down by 1 as well
             unit.CastingSkill = max(0, unit.CastingSkill - 5)
+        }
+
+        if defenderTerror {
+            if rand.N(10) + 1 > unit.GetResistance() + 1 {
+                unit.MovesLeft = fraction.Zero()
+            }
         }
     }
 
@@ -1501,6 +1509,8 @@ func (model *CombatModel) NextTurn() {
         model.AttackingArmy.Player.Mana = max(0, model.AttackingArmy.Player.Mana - 5)
         attackerLeakMana = true
     }
+
+    attackerTerror := model.IsEnchantmentActive(data.CombatEnchantmentTerror, TeamDefender)
 
     for _, unit := range model.AttackingArmy.Units {
         // increase collateral damage to the town for each unit that is within the town area
@@ -1513,6 +1523,12 @@ func (model *CombatModel) NextTurn() {
         if attackerLeakMana {
             // FIXME: magic ranged attacks should go down by 1 as well
             unit.CastingSkill = max(0, unit.CastingSkill - 5)
+        }
+
+        if attackerTerror {
+            if rand.N(10) + 1 > unit.GetResistance() + 1 {
+                unit.MovesLeft = fraction.Zero()
+            }
         }
     }
 }

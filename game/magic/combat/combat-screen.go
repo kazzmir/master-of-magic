@@ -1174,7 +1174,6 @@ Animate Dead - need picture
         case "Mana Leak":
             combat.CastEnchantment(player, data.CombatEnchantmentManaLeak, successCallback)
         case "Terror":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentTerror, successCallback)
         case "Wrack":
             // FIXME: implement enchantment mechanics
