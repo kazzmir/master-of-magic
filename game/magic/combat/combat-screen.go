@@ -1145,10 +1145,8 @@ Animate Dead - need picture
             */
 
         case "High Prayer":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentHighPrayer, successCallback)
         case "Prayer":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentPrayer, successCallback)
         case "True Light":
             combat.CastEnchantment(player, data.CombatEnchantmentTrueLight, successCallback)
@@ -1159,7 +1157,6 @@ Animate Dead - need picture
             // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentEntangle, successCallback)
         case "Blur":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentBlur, successCallback)
         case "Counter Magic":
             // FIXME: implement enchantment mechanics
