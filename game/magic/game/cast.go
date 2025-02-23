@@ -365,6 +365,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 player.GlobalEnchantments.Insert(data.EnchantmentArmageddon)
 
+                for _, player := range game.Players {
+                    player.UpdateUnrest()
+                }
+
                 game.RefreshUI()
             }
         case "Great Wasting":
@@ -372,6 +376,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentGreatWasting}
 
                 player.GlobalEnchantments.Insert(data.EnchantmentGreatWasting)
+
+                for _, player := range game.Players {
+                    player.UpdateUnrest()
+                }
 
                 game.RefreshUI()
             }

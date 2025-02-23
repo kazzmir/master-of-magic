@@ -7762,3 +7762,11 @@ func (game *Game) DrawGame(screen *ebiten.Image){
 
     game.HudUI.Draw(game.HudUI, screen)
 }
+
+func (game *Game) GetAllGlobalEnchantments() map[data.BannerType]set.Set[data.Enchantment] {
+    enchantments := make(map[data.BannerType]set.Set[data.Enchantment])
+    for _, player := range game.Players {
+        enchantments[player.GetBanner()] = *player.GlobalEnchantments
+    }
+    return enchantments
+}
