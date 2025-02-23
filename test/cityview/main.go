@@ -57,6 +57,11 @@ func (provider *NoCityProvider) PlagueActive(city *citylib.City) bool {
     return false
 }
 
+func (provider *NoCityProvider) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment] {
+    enchantments := make(map[data.BannerType]*set.Set[data.Enchantment])
+    return enchantments
+}
+
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 

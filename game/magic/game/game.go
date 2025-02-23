@@ -5232,7 +5232,7 @@ func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
     })
 }
 
-// Returns dispel chance against 250. 
+// Returns dispel chance against 250.
 // TargetSpellCost may be either a base cost or an effective cost (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
 // If checkTargetSpellOwnerRetorts is true, then Archmage and Mastery retorts will be taken into consideration for dispel resistance
 // FIXME: add Runemaster check here (it should increase the dispel strength)
@@ -6799,6 +6799,7 @@ func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (i
 
 // raises 4 to 6 volcanoes on random tiles
 func (game *Game) doArmageddon() {
+    info := game.ComputeCityStackInfo()
     for _, player := range game.Players {
         if player.GlobalEnchantments.Contains(data.EnchantmentArmageddon) {
             // get a list of valid map tiles on both planes
@@ -6810,9 +6811,16 @@ func (game *Game) doArmageddon() {
                     for y := range mapObject.Map.Rows() {
                         point := data.PlanePoint{X: x, Y: y, Plane: mapObject.Plane}
                         tile := terrain.GetTile(mapObject.Map.Terrain[x][y])
-                        if !tile.IsWater() && !tile.IsRiver() && !mapObject.HasVolcano(x, y) && !mapObject.HasMagicNode(x, y) && !catchment.Contains(point) {
-                            points = append(points, point)
+                        if tile.IsWater() || tile.IsRiver() || mapObject.HasVolcano(x, y) || mapObject.HasMagicNode(x, y) || catchment.Contains(point) {
+                            continue
                         }
+
+                        city := info.FindCity(x, y, mapObject.Plane)
+                        if city != nil && (city.HasEnchantment(data.CityEnchantmentConsecration) || city.HasEnchantment(data.CityEnchantmentChaosWard)) {
+                            continue
+                        }
+
+                        points = append(points, point)
                     }
                 }
             }
@@ -6828,6 +6836,7 @@ func (game *Game) doArmageddon() {
 
 // corrupts 3-6 random tiles
 func (game *Game) doGreatWasting() {
+    info := game.ComputeCityStackInfo()
     for _, player := range game.Players {
         if player.GlobalEnchantments.Contains(data.EnchantmentGreatWasting) {
             // get a list of valid map tiles on both planes
@@ -6839,9 +6848,16 @@ func (game *Game) doGreatWasting() {
                     for y := range mapObject.Map.Rows() {
                         point := data.PlanePoint{X: x, Y: y, Plane: mapObject.Plane}
                         tile := terrain.GetTile(mapObject.Map.Terrain[x][y])
-                        if !tile.IsWater() && !tile.IsRiver() && !mapObject.HasCorruption(x, y) && !catchment.Contains(point) {
-                            points = append(points, point)
+                        if tile.IsWater() || tile.IsRiver() || mapObject.HasCorruption(x, y) || catchment.Contains(point) {
+                            continue
                         }
+
+                        city := info.FindCity(x, y, mapObject.Plane)
+                        if city != nil && (city.HasEnchantment(data.CityEnchantmentConsecration) || city.HasEnchantment(data.CityEnchantmentChaosWard)) {
+                            continue
+                        }
+
+                        points = append(points, point)
                     }
                 }
             }
@@ -7796,4 +7812,12 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     */
 
     game.HudUI.Draw(game.HudUI, screen)
+}
+
+func (game *Game) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment] {
+    enchantments := make(map[data.BannerType]*set.Set[data.Enchantment])
+    for _, player := range game.Players {
+        enchantments[player.GetBanner()] = player.GlobalEnchantments.Clone()
+    }
+    return enchantments
 }

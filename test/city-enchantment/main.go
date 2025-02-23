@@ -17,6 +17,7 @@ import (
     // "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -50,6 +51,11 @@ func (provider *NoCityProvider) PopulationBoomActive(city *citylib.City) bool {
 
 func (provider *NoCityProvider) PlagueActive(city *citylib.City) bool {
     return false
+}
+
+func (provider *NoCityProvider) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment] {
+    enchantments := make(map[data.BannerType]*set.Set[data.Enchantment])
+    return enchantments
 }
 
 func NewEngine() (*Engine, error) {
