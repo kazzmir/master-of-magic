@@ -557,13 +557,34 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
     if ability == data.AbilityThrown {
         value := unit.Unit.GetAbilityValue(ability)
         if value > 0 {
+            modifier := float32(0)
 
-            if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
-                return value + 1
+            if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
+                modifier -= 1
             }
 
-            return value
+            if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
+                modifier += 1
+            }
+
+            return max(0, value + modifier)
         }
+    }
+
+    if ability == data.AbilityPoisonTouch /* || ability == data.AbilityLifeSteal */ || ability == data.AbilityStoningTouch ||
+       ability == data.AbilityDispelEvil || ability == data.AbilityDeathTouch /* || ability == data.AbilityDestruction */ {
+
+        // FIXME: how does the value get used for dispel evil, death touch, destruction?
+        // FIXME: life steal is already negative, so subtracting 1 would make it even more powerful
+
+        value := unit.Unit.GetAbilityValue(ability)
+        modifier := float32(0)
+
+        if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
+            modifier -= 1
+        }
+
+        return max(0, value + modifier)
     }
 
     return unit.Unit.GetAbilityValue(ability)
@@ -595,6 +616,10 @@ func (unit *ArmyUnit) GetToHitMelee() int {
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
+        modifier -= 2
+    }
+
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) ||
        unit.Model.IsEnchantmentActive(data.CombatEnchantmentPrayer, unit.Team) {
         modifier += 3
@@ -615,6 +640,10 @@ func (unit *ArmyUnit) GetDefense() int {
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
         modifier += 2
+    }
+
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
+        modifier -= 1
     }
 
     if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
@@ -659,6 +688,10 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
             case data.LifeMagic: modifier += 1
             case data.DeathMagic: modifier -= 1
         }
+    }
+
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
+        modifier -= 1
     }
 
     return max(0, unit.Unit.GetMeleeAttackPower() + modifier)

@@ -1169,7 +1169,6 @@ Animate Dead - need picture
         case "Warp Reality":
             combat.CastEnchantment(player, data.CombatEnchantmentWarpReality, successCallback)
         case "Black Prayer":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentBlackPrayer, successCallback)
         case "Darkness":
             // FIXME: implement enchantment mechanics
