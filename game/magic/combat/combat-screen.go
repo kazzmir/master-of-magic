@@ -1171,7 +1171,6 @@ Animate Dead - need picture
         case "Black Prayer":
             combat.CastEnchantment(player, data.CombatEnchantmentBlackPrayer, successCallback)
         case "Darkness":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentDarkness, successCallback)
         case "Mana Leak":
             // FIXME: implement enchantment mechanics

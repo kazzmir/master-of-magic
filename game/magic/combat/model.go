@@ -542,6 +542,14 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+func (unit *ArmyUnit) GetRealm() data.MagicType {
+    if unit.Unit.IsUndead() {
+        return data.DeathMagic
+    }
+
+    return unit.Unit.GetRealm()
+}
+
 func (unit *ArmyUnit) GetWeaponBonus() data.WeaponBonus {
     if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade){
         if unit.Unit.GetWeaponBonus() == data.WeaponNone {
@@ -567,8 +575,33 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                 modifier += 1
             }
 
+            if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
+                switch unit.GetRealm() {
+                    case data.DeathMagic: modifier += 1
+                    case data.LifeMagic: modifier -= 1
+                }
+            }
+
             return max(0, value + modifier)
         }
+    }
+
+    if ability == data.AbilityFireBreath || ability == data.AbilityLightningBreath {
+        value := unit.Unit.GetAbilityValue(ability)
+        if value > 0 {
+            modifier := float32(0)
+
+            if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
+                switch unit.GetRealm() {
+                    case data.DeathMagic: modifier += 1
+                    case data.LifeMagic: modifier -= 1
+                }
+            }
+
+            return max(0, value + modifier)
+        }
+
+        return value
     }
 
     if ability == data.AbilityPoisonTouch /* || ability == data.AbilityLifeSteal */ || ability == data.AbilityStoningTouch ||
@@ -578,13 +611,17 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
         // FIXME: life steal is already negative, so subtracting 1 would make it even more powerful
 
         value := unit.Unit.GetAbilityValue(ability)
-        modifier := float32(0)
+        if value > 0 {
+            modifier := float32(0)
 
-        if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
-            modifier -= 1
+            if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
+                modifier -= 1
+            }
+
+            return max(0, value + modifier)
         }
 
-        return max(0, value + modifier)
+        return value
     }
 
     return unit.Unit.GetAbilityValue(ability)
@@ -604,7 +641,7 @@ func (unit *ArmyUnit) GetToHitMelee() int {
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentWarpReality, TeamEither) {
         // all non chaos fantastic units get -10 to hit
-        isChaos := unit.Unit.GetRace() == data.RaceFantastic && unit.Unit.GetRealm() == data.ChaosMagic
+        isChaos := unit.Unit.GetRace() == data.RaceFantastic && unit.GetRealm() == data.ChaosMagic
         if !isChaos {
             modifier -= 10
         }
@@ -625,8 +662,15 @@ func (unit *ArmyUnit) GetResistance() int {
         modifier += 3
     }
 
-    if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
-        switch unit.Unit.GetRealm() {
+    if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
+        switch unit.GetRealm() {
+            case data.DeathMagic: modifier += 1
+            case data.LifeMagic: modifier -= 1
+        }
+    }
+
+    if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
+        switch unit.GetRealm() {
             case data.LifeMagic: modifier += 1
             case data.DeathMagic: modifier -= 1
         }
@@ -646,8 +690,15 @@ func (unit *ArmyUnit) GetDefense() int {
         modifier -= 1
     }
 
-    if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
-        switch unit.Unit.GetRealm() {
+    if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
+        switch unit.GetRealm() {
+            case data.DeathMagic: modifier += 1
+            case data.LifeMagic: modifier -= 1
+        }
+    }
+
+    if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
+        switch unit.GetRealm() {
             case data.LifeMagic: modifier += 1
             case data.DeathMagic: modifier -= 1
         }
@@ -677,14 +728,24 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
         }
     }
 
+    if ((unit.Unit.GetRace() == data.RaceFantastic && unit.GetRealm() == data.DeathMagic) || unit.Unit.IsUndead()) &&
+        unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
+        modifier += 1
+    }
+
+    if (unit.Unit.GetRace() == data.RaceFantastic && unit.GetRealm() == data.LifeMagic) &&
+        unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
+        modifier -= 1
+    }
+
     if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
         if unit.Unit.GetMeleeAttackPower() > 0 {
             modifier += 1
         }
     }
 
-    if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
-        switch unit.Unit.GetRealm() {
+    if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
+        switch unit.GetRealm() {
             case data.LifeMagic: modifier += 1
             case data.DeathMagic: modifier -= 1
         }
@@ -2013,7 +2074,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
         immune := true
 
         if defender.Unit.GetRace() == data.RaceFantastic {
-            if defender.Unit.GetRealm() == data.ChaosMagic || defender.Unit.GetRealm() == data.DeathMagic {
+            if defender.GetRealm() == data.ChaosMagic || defender.GetRealm() == data.DeathMagic {
                 immune = false
             }
         }
