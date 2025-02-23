@@ -75,19 +75,20 @@ func (spell Spell) Cost(overland bool) int {
 }
 
 func (spell Spell) SpentAdditionalCost(overland bool) int {
+    castCost := spell.CastCost
     if overland {
         switch spell.Eligibility {
-            case EligibilityBoth: return spell.CastCost * 5
-            case EligibilityOverlandOnly: return spell.CastCost
-            case EligibilityBoth2: return spell.CastCost * 5
-            case EligibilityOverlandOnlyFriendlyCity: return spell.CastCost * 5
-            case EligibilityBothSameCost: return spell.CastCost
-            case EligibilityOverlandWhileBanished: return spell.CastCost
+            case EligibilityBoth: castCost *= 5
+            // case EligibilityOverlandOnly: no change
+            case EligibilityBoth2: castCost *= 5
+            case EligibilityOverlandOnlyFriendlyCity: castCost *= 5
+            // case EligibilityBothSameCost: no change
+            // case EligibilityOverlandWhileBanished: no change
         }
     }
 
     if spell.OverrideCost != 0 {
-        return spell.OverrideCost - spell.CastCost
+        return spell.OverrideCost - castCost
     }
     return 0
 }

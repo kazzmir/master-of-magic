@@ -5236,26 +5236,24 @@ func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
 // TargetSpellCost may be either a base cost or an effective cost (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
 // If checkTargetSpellOwnerRetorts is true, then Archmage and Mastery retorts will be taken into consideration for dispel resistance
 // FIXME: add Runemaster check here (it should increase the dispel strength)
-func (game *Game) CalcDispelChance(dispelStrength int, targetSpellCost int, targetSpellRealm data.MagicType, targetSpellOwner *playerlib.Player, checkTargetSpellOwnerRetorts bool) int {
+func (game *Game) ComputeDispelChance(dispelStrength int, targetSpellCost int, targetSpellRealm data.MagicType, targetSpellOwner *playerlib.Player) int {
 
     dispelResistanceModifier := 1
 
-    if checkTargetSpellOwnerRetorts {
-        if targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityArchmage) {
-            dispelResistanceModifier += 1
-        }
+    if targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityArchmage) {
+        dispelResistanceModifier += 1
+    }
 
-        if targetSpellRealm == data.NatureMagic && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityNatureMastery) {
-            dispelResistanceModifier += 1
-        }
+    if targetSpellRealm == data.NatureMagic && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityNatureMastery) {
+        dispelResistanceModifier += 1
+    }
 
-        if targetSpellRealm == data.SorceryMagic && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilitySorceryMastery) {
-            dispelResistanceModifier += 1
-        }
+    if targetSpellRealm == data.SorceryMagic && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilitySorceryMastery) {
+        dispelResistanceModifier += 1
+    }
 
-        if targetSpellRealm == data.ChaosMagic && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityChaosMastery) {
-            dispelResistanceModifier += 1
-        }
+    if targetSpellRealm == data.ChaosMagic && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityChaosMastery) {
+        dispelResistanceModifier += 1
     }
 
     // The original game uses the check in multiples of 250, and not as a percentage (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
