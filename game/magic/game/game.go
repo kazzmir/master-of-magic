@@ -706,7 +706,7 @@ func (game *Game) FindValidCityLocation(plane data.Plane) (int, int, bool) {
             y := continent[index].Y
 
             tile := terrain.GetTile(mapUse.Map.Terrain[x][y])
-            if y > 3 && y < mapUse.Map.Columns() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
+            if y > 3 && y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
                 return x, y, true
             }
         }
@@ -729,7 +729,7 @@ func (game *Game) FindValidCityLocationOnShore(plane data.Plane) (int, int, bool
                 x := point.X
                 y := point.Y
                 tile := terrain.GetTile(mapUse.Map.Terrain[x][y])
-                if y > 3 && y < mapUse.Map.Columns() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
+                if y > 3 && y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
 
                     found := false
                     for dx := -1; dx <= 1; dx++ {
@@ -6639,9 +6639,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 func (game *Game) revertVolcanos() {
     mapObjects := []*maplib.Map{game.ArcanusMap, game.MyrrorMap}
     for _, mapObject := range mapObjects {
-        for location, extras := range mapObject.ExtraMap {
-            _, ok := extras[maplib.ExtraKindVolcano]
-            if ok {
+        for location, _ := range mapObject.ExtraMap {
+            if mapObject.HasVolcano(location.X, location.Y) {
                 if rand.N(100) < 2 {
                     mapObject.RemoveVolcano(location.X, location.Y)
                 }
@@ -6688,19 +6687,6 @@ func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (in
     }
 
     return people, len(killedUnits), len(destroyedBuildings)
-}
-
-// At the beginning of each turn, all tiles in a 5x5 square (minus corners) around any city with Consecration should lose corruption
-func (game *Game) doCleanCorruptionForConsecratedCities() {
-    for _, city := range game.AllCities() {
-        if !city.HasEnchantment(data.CityEnchantmentConsecration) {
-            continue
-        }
-        useMap := game.GetMap(city.Plane)
-        for point, _ := range useMap.GetCatchmentArea(city.X, city.Y) {
-            useMap.RemoveCorruption(point.X, point.Y)
-        }
-    }
 }
 
 // At the beginning of each turn, Awareness clears the fog from all cities for enchantment's owner (newly built included)
@@ -6774,6 +6760,64 @@ func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (i
     }
 
     return killedCitizens, killedUnits, len(destroyedBuildings)
+}
+
+// raises 4 to 6 volcanoes on random tiles
+func (game *Game) doArmageddon() {
+    for _, player := range game.Players {
+        if player.GlobalEnchantments.Contains(data.EnchantmentArmageddon) {
+            // get a list of valid map tiles on both planes
+            var points []data.PlanePoint
+            catchment := player.GetAllCatchmentArea()
+            mapObjects := []*maplib.Map{game.ArcanusMap, game.MyrrorMap}
+            for _, mapObject := range mapObjects {
+                for x := range mapObject.Map.Columns() {
+                    for y := range mapObject.Map.Rows() {
+                        point := data.PlanePoint{X: x, Y: y, Plane: mapObject.Plane}
+                        tile := terrain.GetTile(mapObject.Map.Terrain[x][y])
+                        if !tile.IsWater() && !tile.IsRiver() && !mapObject.HasVolcano(x, y) && !mapObject.HasMagicNode(x, y) && !catchment.Contains(point) {
+                            points = append(points, point)
+                        }
+                    }
+                }
+            }
+
+            // create 4 to 6 volcanoes
+            for _, index := range rand.Perm(len(points))[:min(len(points), 4 + rand.IntN(2))] {
+                point := points[index]
+                game.GetMap(point.Plane).SetVolcano(point.X, point.Y, player)
+            }
+        }
+    }
+}
+
+// corrupts 3-6 random tiles
+func (game *Game) doGreatWasting() {
+    for _, player := range game.Players {
+        if player.GlobalEnchantments.Contains(data.EnchantmentGreatWasting) {
+            // get a list of valid map tiles on both planes
+            var points []data.PlanePoint
+            catchment := player.GetAllCatchmentArea()
+            mapObjects := []*maplib.Map{game.ArcanusMap, game.MyrrorMap}
+            for _, mapObject := range mapObjects {
+                for x := range mapObject.Map.Columns() {
+                    for y := range mapObject.Map.Rows() {
+                        point := data.PlanePoint{X: x, Y: y, Plane: mapObject.Plane}
+                        tile := terrain.GetTile(mapObject.Map.Terrain[x][y])
+                        if !tile.IsWater() && !tile.IsRiver() && !mapObject.HasCorruption(x, y) && !catchment.Contains(point) {
+                            points = append(points, point)
+                        }
+                    }
+                }
+            }
+
+            // corrupt 3 to 6 tiles
+            for _, index := range rand.Perm(len(points))[:min(len(points), 3 + rand.IntN(3))] {
+                point := points[index]
+                game.GetMap(point.Plane).SetCorruption(point.X, point.Y)
+            }
+        }
+    }
 }
 
 // city is controlled by the newOwner instead of owner
@@ -7232,11 +7276,13 @@ func (game *Game) EndOfTurn() {
 
     game.revertVolcanos()
 
+    game.doArmageddon()
+
+    game.doGreatWasting()
+
     game.TurnNumber += 1
 
     game.DoRandomEvents()
-
-    game.doCleanCorruptionForConsecratedCities() // FIXME: I'm not fully sure if it should occur after random events and not before.
 }
 
 func (game *Game) DoNextTurn(){
