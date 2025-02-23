@@ -6690,19 +6690,6 @@ func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (in
     return people, len(killedUnits), len(destroyedBuildings)
 }
 
-// At the beginning of each turn, all tiles in a 5x5 square (minus corners) around any city with Consecration should lose corruption
-func (game *Game) doCleanCorruptionForConsecratedCities() {
-    for _, city := range game.AllCities() {
-        if !city.HasEnchantment(data.CityEnchantmentConsecration) {
-            continue
-        }
-        useMap := game.GetMap(city.Plane)
-        for point, _ := range useMap.GetCatchmentArea(city.X, city.Y) {
-            useMap.RemoveCorruption(point.X, point.Y)
-        }
-    }
-}
-
 // At the beginning of each turn, Awareness clears the fog from all cities for enchantment's owner (newly built included)
 func (game *Game) doExploreFogForAwareness(awarenessOwner *playerlib.Player) {
     for _, city := range game.AllCities() {
@@ -7235,8 +7222,6 @@ func (game *Game) EndOfTurn() {
     game.TurnNumber += 1
 
     game.DoRandomEvents()
-
-    game.doCleanCorruptionForConsecratedCities() // FIXME: I'm not fully sure if it should occur after random events and not before.
 }
 
 func (game *Game) DoNextTurn(){
