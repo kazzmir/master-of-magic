@@ -82,7 +82,7 @@ type CityServicesProvider interface {
     BadMoonActive() bool
     PopulationBoomActive(city *City) bool
     PlagueActive(city *City) bool
-    GetAllGlobalEnchantments() map[data.BannerType]set.Set[data.Enchantment]
+    GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment]
 }
 
 type ReignProvider interface {

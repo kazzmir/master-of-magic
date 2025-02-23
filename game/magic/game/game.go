@@ -5232,7 +5232,7 @@ func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
     })
 }
 
-// Returns dispel chance against 250. 
+// Returns dispel chance against 250.
 // TargetSpellCost may be either a base cost or an effective cost (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
 // If checkTargetSpellOwnerRetorts is true, then Archmage and Mastery retorts will be taken into consideration for dispel resistance
 // FIXME: add Runemaster check here (it should increase the dispel strength)
@@ -7812,10 +7812,10 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     game.HudUI.Draw(game.HudUI, screen)
 }
 
-func (game *Game) GetAllGlobalEnchantments() map[data.BannerType]set.Set[data.Enchantment] {
-    enchantments := make(map[data.BannerType]set.Set[data.Enchantment])
+func (game *Game) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment] {
+    enchantments := make(map[data.BannerType]*set.Set[data.Enchantment])
     for _, player := range game.Players {
-        enchantments[player.GetBanner()] = *player.GlobalEnchantments
+        enchantments[player.GetBanner()] = player.GlobalEnchantments.Clone()
     }
     return enchantments
 }

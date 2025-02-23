@@ -65,8 +65,8 @@ func (no *NoServices) PlagueActive(city *citylib.City) bool {
     return false
 }
 
-func (no *NoServices) GetAllGlobalEnchantments() map[data.BannerType]set.Set[data.Enchantment] {
-    enchantments := make(map[data.BannerType]set.Set[data.Enchantment])
+func (no *NoServices) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment] {
+    enchantments := make(map[data.BannerType]*set.Set[data.Enchantment])
     return enchantments
 }
 
