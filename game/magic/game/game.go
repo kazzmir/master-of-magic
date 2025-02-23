@@ -6775,9 +6775,16 @@ func (game *Game) doArmageddon() {
                     for y := range mapObject.Map.Rows() {
                         point := data.PlanePoint{X: x, Y: y, Plane: mapObject.Plane}
                         tile := terrain.GetTile(mapObject.Map.Terrain[x][y])
-                        if !tile.IsWater() && !tile.IsRiver() && !mapObject.HasVolcano(x, y) && !mapObject.HasMagicNode(x, y) && !catchment.Contains(point) {
-                            points = append(points, point)
+                        if tile.IsWater() || tile.IsRiver() || mapObject.HasVolcano(x, y) || mapObject.HasMagicNode(x, y) || catchment.Contains(point) {
+                            continue
                         }
+
+                        city, _ := game.FindCity(x, y, mapObject.Plane)
+                        if city != nil && (city.HasEnchantment(data.CityEnchantmentConsecration) || city.HasEnchantment(data.CityEnchantmentChaosWard)) {
+                            continue
+                        }
+
+                        points = append(points, point)
                     }
                 }
             }
@@ -6804,9 +6811,16 @@ func (game *Game) doGreatWasting() {
                     for y := range mapObject.Map.Rows() {
                         point := data.PlanePoint{X: x, Y: y, Plane: mapObject.Plane}
                         tile := terrain.GetTile(mapObject.Map.Terrain[x][y])
-                        if !tile.IsWater() && !tile.IsRiver() && !mapObject.HasCorruption(x, y) && !catchment.Contains(point) {
-                            points = append(points, point)
+                        if tile.IsWater() || tile.IsRiver() || mapObject.HasCorruption(x, y) || catchment.Contains(point) {
+                            continue
                         }
+
+                        city, _ := game.FindCity(x, y, mapObject.Plane)
+                        if city != nil && (city.HasEnchantment(data.CityEnchantmentConsecration) || city.HasEnchantment(data.CityEnchantmentChaosWard)) {
+                            continue
+                        }
+
+                        points = append(points, point)
                     }
                 }
             }
