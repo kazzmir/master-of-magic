@@ -54,7 +54,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
     if spell.IsOfRealm(data.ChaosMagic) {
         for _, checkingPlayer := range game.Players {
             // FIXME: Not sure if multiple instances of Tranquility stack or are checked separately.
-            if checkingPlayer != player && player.GlobalEnchantments.Contains(data.EnchantmentTranquility) {
+            if checkingPlayer != player && checkingPlayer.GlobalEnchantments.Contains(data.EnchantmentTranquility) {
                 dispelChance := game.ComputeDispelChance(500, spell.Cost(true), spell.Magic, player)
                 if game.RollDispelChance(dispelChance) {
                     // Fizzle the spell and return
