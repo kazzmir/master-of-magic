@@ -544,7 +544,8 @@ type ArmyUnit struct {
 func (unit *ArmyUnit) GetToHitMelee() int {
     modifier := 0
 
-    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) ||
+       unit.Model.IsEnchantmentActive(data.CombatEnchantmentPrayer, unit.Team) {
         modifier += 10
     }
 
@@ -554,7 +555,8 @@ func (unit *ArmyUnit) GetToHitMelee() int {
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
-    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) ||
+       unit.Model.IsEnchantmentActive(data.CombatEnchantmentPrayer, unit.Team) {
         modifier += 3
     }
 
@@ -1005,7 +1007,8 @@ func (unit *ArmyUnit) CauseFear() int {
 func (unit *ArmyUnit) ToDefend() int {
     modifier := 0
 
-    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) ||
+       unit.Model.IsEnchantmentActive(data.CombatEnchantmentPrayer, unit.Team) {
         modifier += 10
     }
 
