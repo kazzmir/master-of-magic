@@ -365,6 +365,7 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.Mana = 10000
 
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Entangle"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Terror"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createHeroArmy(attackingPlayer, cache)
