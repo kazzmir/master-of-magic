@@ -5,6 +5,7 @@ import (
     "testing"
     "math"
 
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 )
@@ -144,6 +145,8 @@ func TestBasicMelee(test *testing.T){
         AttackingArmy: attackingArmy,
     }
 
+    combat.Initialize(spellbook.Spells{})
+
     attackerMelee := false
     defenderMelee := false
 
@@ -188,6 +191,8 @@ func TestAttackerHaste(test *testing.T){
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
     }
+
+    combat.Initialize(spellbook.Spells{})
 
     attackerMelee := 0
     defenderMelee := 0
@@ -241,6 +246,8 @@ func TestFirstStrike(test *testing.T){
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
     }
+
+    combat.Initialize(spellbook.Spells{})
 
     attackerMelee := 0
     defenderMelee := 0
@@ -298,6 +305,8 @@ func TestFirstStrikeNegate(test *testing.T){
         AttackingArmy: attackingArmy,
     }
 
+    combat.Initialize(spellbook.Spells{})
+
     attackerMelee := 0
     defenderMelee := 0
 
@@ -350,6 +359,8 @@ func TestThrowAttack(test *testing.T){
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
     }
+
+    combat.Initialize(spellbook.Spells{})
 
     attackerMelee := 0
     defenderMelee := 0
@@ -417,6 +428,8 @@ func TestThrownTouchAttack(test *testing.T){
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
     }
+
+    combat.Initialize(spellbook.Spells{})
 
     attackerMelee := 0
     defenderMelee := 0
@@ -491,6 +504,8 @@ func TestFear(test *testing.T){
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
     }
+
+    combat.Initialize(spellbook.Spells{})
 
     attackerMelee := 0
     defenderMelee := 0

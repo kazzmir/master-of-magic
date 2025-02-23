@@ -1261,26 +1261,30 @@ func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
         allSpells = spellbook.Spells{}
     }
 
-    for _, unit := range defendingArmy.Units {
-        unit.Model = model
-        unit.Team = TeamDefender
-        unit.RangedAttacks = unit.Unit.GetRangedAttacks()
-        unit.InitializeSpells(allSpells, defendingArmy.Player)
-        model.Tiles[unit.Y][unit.X].Unit = unit
-    }
-
-    for _, unit := range attackingArmy.Units {
-        unit.Model = model
-        unit.Team = TeamAttacker
-        unit.RangedAttacks = unit.Unit.GetRangedAttacks()
-        unit.InitializeSpells(allSpells, attackingArmy.Player)
-        model.Tiles[unit.Y][unit.X].Unit = unit
-    }
+    model.Initialize(allSpells)
 
     model.NextTurn()
     model.SelectedUnit = model.ChooseNextUnit(TeamDefender)
 
     return model
+}
+
+func (model *CombatModel) Initialize(allSpells spellbook.Spells) {
+    for _, unit := range model.DefendingArmy.Units {
+        unit.Model = model
+        unit.Team = TeamDefender
+        unit.RangedAttacks = unit.Unit.GetRangedAttacks()
+        unit.InitializeSpells(allSpells, model.DefendingArmy.Player)
+        model.Tiles[unit.Y][unit.X].Unit = unit
+    }
+
+    for _, unit := range model.AttackingArmy.Units {
+        unit.Model = model
+        unit.Team = TeamAttacker
+        unit.RangedAttacks = unit.Unit.GetRangedAttacks()
+        unit.InitializeSpells(allSpells, model.AttackingArmy.Player)
+        model.Tiles[unit.Y][unit.X].Unit = unit
+    }
 }
 
 func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
