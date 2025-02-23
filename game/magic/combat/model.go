@@ -549,6 +549,10 @@ func (unit *ArmyUnit) GetToHitMelee() int {
         modifier += 10
     }
 
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlur, oppositeTeam(unit.Team)) {
+        modifier -= 10
+    }
+
     return max(0, unit.Unit.GetToHitMelee() + modifier)
 }
 
