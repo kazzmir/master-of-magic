@@ -379,6 +379,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentTranquility}
 
                 player.GlobalEnchantments.Insert(data.EnchantmentTranquility)
+                game.RefreshUI()
+            }
         case "Armageddon":
             if !player.GlobalEnchantments.Contains(data.EnchantmentJustCause) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentArmageddon}
