@@ -1336,6 +1336,8 @@ type CombatModel struct {
     OtherUnits []*OtherUnit
     Projectiles []*Projectile
 
+    Events chan CombatEvent
+
     TurnAttacker int
     TurnDefender int
 
@@ -1361,7 +1363,7 @@ type CombatModel struct {
     CollateralDamage int
 }
 
-func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType) *CombatModel {
+func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, events chan CombatEvent) *CombatModel {
     model := &CombatModel{
         Turn: TeamDefender,
         SelectedUnit: nil,
@@ -1371,6 +1373,7 @@ func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
         AttackingArmy: attackingArmy,
         DefendingArmy: defendingArmy,
         CurrentTurn: 0,
+        Events: events,
     }
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -1559,20 +1562,32 @@ func (model *CombatModel) NextTurn() {
             }
         }
     }
+}
 
-    if model.IsEnchantmentActive(data.CombatEnchantmentCallLightning, TeamAttacker) {
-        model.doCallLightning(model.DefendingArmy)
-    }
-
-    if model.IsEnchantmentActive(data.CombatEnchantmentCallLightning, TeamDefender) {
-        model.doCallLightning(model.AttackingArmy)
+// one side finished its turn
+func (model *CombatModel) FinishTurn(team Team) {
+    if model.IsEnchantmentActive(data.CombatEnchantmentCallLightning, team) {
+        switch team {
+            case TeamDefender: model.doCallLightning(model.AttackingArmy)
+            case TeamAttacker: model.doCallLightning(model.DefendingArmy)
+        }
     }
 }
 
 func (model *CombatModel) doCallLightning(army *Army) {
+    if len(army.Units) == 0 {
+        return
+    }
+
     count := rand.N(3) + 3
 
     for range count {
+        choice := rand.N(len(army.Units))
+
+        model.Events <- &CombatEventCreateLightningBolt{
+            Target: army.Units[choice],
+            Strength: 8,
+        }
     }
 }
 
@@ -1825,6 +1840,7 @@ func (model *CombatModel) NextUnit() {
         // find a unit on the same team
         nextChoice = model.ChooseNextUnit(model.Turn)
         if nextChoice == nil {
+            model.FinishTurn(model.Turn)
             // if there are no available units then the team must be out of moves, so try the next team
             model.Turn = oppositeTeam(model.Turn)
             nextChoice = model.ChooseNextUnit(model.Turn)

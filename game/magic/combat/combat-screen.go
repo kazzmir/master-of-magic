@@ -17,6 +17,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/set"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     globalMouse "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
@@ -85,6 +86,12 @@ type CombatEventMessage struct {
     Message string
 }
 
+// FIXME: kind of ugly to need a specific event like this for one projectile type
+type CombatEventCreateLightningBolt struct {
+    Target *ArmyUnit
+    Strength int
+}
+
 type MouseState int
 const (
     CombatClickHud MouseState = iota
@@ -93,6 +100,10 @@ const (
     CombatRangeAttackOk
     CombatNotOk
     CombatCast
+)
+
+const (
+    LightningBoltSound int = 19
 )
 
 
@@ -284,8 +295,10 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     coordinates.Scale(float64(tile0.Bounds().Dx()) * 3 / 4 - 2, float64(tile0.Bounds().Dy()) * 3 / 4 - 1)
     coordinates.Translate(float64(-220 * data.ScreenScale), float64(80 * data.ScreenScale))
 
+    events := make(chan CombatEvent, 1000)
+
     combat := &CombatScreen{
-        Events: make(chan CombatEvent, 1000),
+        Events: events,
         Cache: cache,
         ImageCache: imageCache,
         Mouse: mouseData,
@@ -302,7 +315,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         AttackingWizardFont: attackingWizardFont,
         DefendingWizardFont: defendingWizardFont,
 
-        Model: MakeCombatModel(cache, defendingArmy, attackingArmy, landscape, plane, zone),
+        Model: MakeCombatModel(cache, defendingArmy, attackingArmy, landscape, plane, zone, events),
     }
 
     combat.Drawer = combat.NormalDraw
@@ -1996,6 +2009,17 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
 }
 
 func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
+
+    sounds := set.MakeSet[int]()
+    defer func(){
+        for _, index := range sounds.Values() {
+            sound, err := audio.LoadSound(combat.Cache, index)
+            if err == nil {
+                sound.Play()
+            }
+        }
+    }()
+
     for {
         select {
             case event := <-combat.Events:
@@ -2014,6 +2038,10 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                     case *CombatEventMessage:
                         use := event.(*CombatEventMessage)
                         combat.UI.AddElement(uilib.MakeErrorElement(combat.UI, combat.Cache, &combat.ImageCache, use.Message, func(){ yield() }))
+                    case *CombatEventCreateLightningBolt:
+                        bolt := event.(*CombatEventCreateLightningBolt)
+                        combat.CreateLightningBoltProjectile(bolt.Target, bolt.Strength)
+                        sounds.Insert(LightningBoltSound)
                 }
             default:
                 return
