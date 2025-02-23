@@ -5236,7 +5236,7 @@ func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
 // TargetSpellCost may be either a base cost or an effective cost (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
 // If checkTargetSpellOwnerRetorts is true, then Archmage and Mastery retorts will be taken into consideration for dispel resistance
 // FIXME: add Runemaster check here (it should increase the dispel strength)
-func (game *Game) ComputeDispelChance(dispelStrength int, targetSpellCost int, targetSpellRealm data.MagicType, targetSpellOwner *playerlib.Player) int {
+func ComputeDispelChance(dispelStrength int, targetSpellCost int, targetSpellRealm data.MagicType, targetSpellOwner *playerlib.Player) int {
 
     dispelResistanceModifier := 1
 
@@ -5262,7 +5262,7 @@ func (game *Game) ComputeDispelChance(dispelStrength int, targetSpellCost int, t
 
 // Returns true if dispel is successful.
 // The original game uses the check in multiples of 250, and not as a percentage (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
-func (game *Game) RollDispelChance(chanceAgainst250 int) bool {
+func RollDispelChance(chanceAgainst250 int) bool {
     return rand.N(250) < chanceAgainst250
 }
 

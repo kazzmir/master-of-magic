@@ -55,8 +55,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         for _, checkingPlayer := range game.Players {
             // FIXME: Not sure if multiple instances of Tranquility stack or are checked separately.
             if checkingPlayer != player && checkingPlayer.GlobalEnchantments.Contains(data.EnchantmentTranquility) {
-                dispelChance := game.ComputeDispelChance(500, spell.Cost(true), spell.Magic, player)
-                if game.RollDispelChance(dispelChance) {
+                dispelChance := ComputeDispelChance(500, spell.Cost(true), spell.Magic, player)
+                if RollDispelChance(dispelChance) {
                     // Fizzle the spell and return
                     game.ShowFizzleSpell(spell, player)
                     return
