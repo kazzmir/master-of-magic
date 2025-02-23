@@ -1198,6 +1198,7 @@ func (unit *ArmyUnit) Figures() int {
 
 type Army struct {
     Player *playerlib.Player
+    ManaPool int
     Units []*ArmyUnit
     Auto bool
     Fled bool
@@ -1387,6 +1388,9 @@ func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
 }
 
 func (model *CombatModel) Initialize(allSpells spellbook.Spells) {
+    model.AttackingArmy.ManaPool = min(model.AttackingArmy.Player.Mana, model.AttackingArmy.Player.ComputeCastingSkill())
+    model.DefendingArmy.ManaPool = min(model.DefendingArmy.Player.Mana, model.DefendingArmy.Player.ComputeCastingSkill())
+
     for _, unit := range model.DefendingArmy.Units {
         unit.Model = model
         unit.Team = TeamDefender
@@ -2566,6 +2570,14 @@ func (model *CombatModel) IsAIControlled(unit *ArmyUnit) bool {
     } else {
         return model.AttackingArmy.IsAI()
     }
+}
+
+func (model *CombatModel) GetArmyForPlayer(player *playerlib.Player) *Army {
+    if model.DefendingArmy.Player == player {
+        return model.DefendingArmy
+    }
+
+    return model.AttackingArmy
 }
 
 func (model *CombatModel) GetArmy(unit *ArmyUnit) *Army {

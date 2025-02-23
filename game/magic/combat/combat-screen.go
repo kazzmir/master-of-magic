@@ -1316,11 +1316,14 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // spell
     elements = append(elements, makeButton(1, 0, 0, func(){
+        army := combat.Model.GetArmyForPlayer(player)
+
         doPlayerSpell := func(){
-            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(), make(map[spellbook.Spell]int), player.ComputeCastingSkill(), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(), make(map[spellbook.Spell]int), army.ManaPool, spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
                 if picked {
                     // player mana and skill should go down accordingly
                     combat.InvokeSpell(player, spell, func(){
+                        army.ManaPool -= spell.Cost(false)
                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
                     })
                 }
@@ -1351,7 +1354,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                                     if hasCharge && charge > 0 {
                                         caster.SpellCharges[spell] -= 1
                                     } else {
-                                        caster.CastingSkill -= float32(spell.CastCost)
+                                        caster.CastingSkill -= float32(spell.Cost(false))
                                     }
                                     caster.Casted = true
                                     combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
