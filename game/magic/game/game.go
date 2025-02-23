@@ -6799,6 +6799,7 @@ func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (i
 
 // raises 4 to 6 volcanoes on random tiles
 func (game *Game) doArmageddon() {
+    info := game.ComputeCityStackInfo()
     for _, player := range game.Players {
         if player.GlobalEnchantments.Contains(data.EnchantmentArmageddon) {
             // get a list of valid map tiles on both planes
@@ -6814,7 +6815,7 @@ func (game *Game) doArmageddon() {
                             continue
                         }
 
-                        city, _ := game.FindCity(x, y, mapObject.Plane)
+                        city := info.FindCity(x, y, mapObject.Plane)
                         if city != nil && (city.HasEnchantment(data.CityEnchantmentConsecration) || city.HasEnchantment(data.CityEnchantmentChaosWard)) {
                             continue
                         }
@@ -6835,6 +6836,7 @@ func (game *Game) doArmageddon() {
 
 // corrupts 3-6 random tiles
 func (game *Game) doGreatWasting() {
+    info := game.ComputeCityStackInfo()
     for _, player := range game.Players {
         if player.GlobalEnchantments.Contains(data.EnchantmentGreatWasting) {
             // get a list of valid map tiles on both planes
@@ -6850,7 +6852,7 @@ func (game *Game) doGreatWasting() {
                             continue
                         }
 
-                        city, _ := game.FindCity(x, y, mapObject.Plane)
+                        city := info.FindCity(x, y, mapObject.Plane)
                         if city != nil && (city.HasEnchantment(data.CityEnchantmentConsecration) || city.HasEnchantment(data.CityEnchantmentChaosWard)) {
                             continue
                         }
