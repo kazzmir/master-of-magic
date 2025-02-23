@@ -549,6 +549,8 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
     }
     */
 
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerRed,
@@ -558,10 +560,24 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.CastingSkillPower = 10
     attackingPlayer.TaxRate = fraction.Zero()
 
+    spells := []string{"High Prayer", "Prayer", "True Light", "Call Lightning", "Entangle",
+                       "Blur", "Counter Magic", "Mass Invisibility", "Metal Fires", "Warp Reality",
+                       "Black Prayer", "Darkness", "Mana Leak", "Terror", "Wrack"}
+
+
+    for _, spellName := range spells {
+        attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName(spellName))
+    }
+
+    attackingPlayer.Mana = 10000
+    attackingPlayer.CastingSkillPower = 10000
+
     attackingArmy := createArchAngelArmy(attackingPlayer)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    attackingArmy.AddEnchantment(data.CombatEnchantmentTrueLight)
+    attackingArmy.AddEnchantment(data.CombatEnchantmentWrack)
+
+    defendingArmy.AddEnchantment(data.CombatEnchantmentEntangle)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
