@@ -5,6 +5,10 @@ import (
     "testing"
     "math"
 
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 )
@@ -125,9 +129,11 @@ func (observer *TestObserver) UnitKilled(unit *ArmyUnit){
 
 func TestBasicMelee(test *testing.T){
     defendingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     attackingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     defender := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
@@ -143,6 +149,8 @@ func TestBasicMelee(test *testing.T){
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
     }
+
+    combat.Initialize(spellbook.Spells{})
 
     attackerMelee := false
     defenderMelee := false
@@ -168,9 +176,11 @@ func TestBasicMelee(test *testing.T){
 
 func TestAttackerHaste(test *testing.T){
     defendingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     attackingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     defender := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
@@ -188,6 +198,8 @@ func TestAttackerHaste(test *testing.T){
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
     }
+
+    combat.Initialize(spellbook.Spells{})
 
     attackerMelee := 0
     defenderMelee := 0
@@ -218,9 +230,11 @@ func TestAttackerHaste(test *testing.T){
 // attacker should melee first and cause enough damage to kill the defender
 func TestFirstStrike(test *testing.T){
     defendingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     attackingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     attackerUnit := units.LizardSpearmen
@@ -241,6 +255,8 @@ func TestFirstStrike(test *testing.T){
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
     }
+
+    combat.Initialize(spellbook.Spells{})
 
     attackerMelee := 0
     defenderMelee := 0
@@ -271,9 +287,11 @@ func TestFirstStrike(test *testing.T){
 // first strike is negated, so units attack each other at the same time
 func TestFirstStrikeNegate(test *testing.T){
     defendingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     attackingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     attackerUnit := units.LizardSpearmen
@@ -297,6 +315,8 @@ func TestFirstStrikeNegate(test *testing.T){
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
     }
+
+    combat.Initialize(spellbook.Spells{})
 
     attackerMelee := 0
     defenderMelee := 0
@@ -325,9 +345,11 @@ func TestFirstStrikeNegate(test *testing.T){
 
 func TestThrowAttack(test *testing.T){
     defendingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     attackingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     attackerUnit := units.LizardSpearmen
@@ -350,6 +372,8 @@ func TestThrowAttack(test *testing.T){
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
     }
+
+    combat.Initialize(spellbook.Spells{})
 
     attackerMelee := 0
     defenderMelee := 0
@@ -388,9 +412,11 @@ func TestThrowAttack(test *testing.T){
 
 func TestThrownTouchAttack(test *testing.T){
     defendingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     attackingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     attackerUnit := units.LizardSpearmen
@@ -417,6 +443,8 @@ func TestThrownTouchAttack(test *testing.T){
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
     }
+
+    combat.Initialize(spellbook.Spells{})
 
     attackerMelee := 0
     defenderMelee := 0
@@ -466,9 +494,11 @@ func TestThrownTouchAttack(test *testing.T){
 // attacker causes fear in defender, so defender does not attack
 func TestFear(test *testing.T){
     defendingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     attackingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
     }
 
     attackerUnit := units.LizardSpearmen
@@ -491,6 +521,8 @@ func TestFear(test *testing.T){
         DefendingArmy: defendingArmy,
         AttackingArmy: attackingArmy,
     }
+
+    combat.Initialize(spellbook.Spells{})
 
     attackerMelee := 0
     defenderMelee := 0

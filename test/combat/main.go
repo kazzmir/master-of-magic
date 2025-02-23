@@ -350,20 +350,23 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
-    /*
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
     if err != nil {
         log.Printf("Unable to read spells: %v", err)
         allSpells = spellbook.Spells{}
     }
-    */
 
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerRed,
         }, true, 0, 0, nil)
 
-    attackingPlayer.CastingSkillPower = 10
+    attackingPlayer.CastingSkillPower = 10000
+    attackingPlayer.Mana = 10000
+
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Entangle"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Terror"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wrack"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createHeroArmy(attackingPlayer, cache)

@@ -1145,10 +1145,8 @@ Animate Dead - need picture
             */
 
         case "High Prayer":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentHighPrayer, successCallback)
         case "Prayer":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentPrayer, successCallback)
         case "True Light":
             combat.CastEnchantment(player, data.CombatEnchantmentTrueLight, successCallback)
@@ -1156,38 +1154,28 @@ Animate Dead - need picture
             // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentCallLightning, successCallback)
         case "Entangle":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentEntangle, successCallback)
         case "Blur":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentBlur, successCallback)
         case "Counter Magic":
             // FIXME: implement enchantment mechanics
             // FIXME: include the cost of the spell because the caster may have pumped more mana into it
             combat.CastEnchantment(player, data.CombatEnchantmentCounterMagic, successCallback)
         case "Mass Invisibility":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentMassInvisibility, successCallback)
         case "Metal Fires":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentMetalFires, successCallback)
         case "Warp Reality":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentWarpReality, successCallback)
         case "Black Prayer":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentBlackPrayer, successCallback)
         case "Darkness":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentDarkness, successCallback)
         case "Mana Leak":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentManaLeak, successCallback)
         case "Terror":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentTerror, successCallback)
         case "Wrack":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentWrack, successCallback)
     }
 }
@@ -1325,11 +1313,15 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // spell
     elements = append(elements, makeButton(1, 0, 0, func(){
+        army := combat.Model.GetArmyForPlayer(player)
+
         doPlayerSpell := func(){
-            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(), make(map[spellbook.Spell]int), player.ComputeCastingSkill(), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(), make(map[spellbook.Spell]int), army.ManaPool, spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
                 if picked {
                     // player mana and skill should go down accordingly
                     combat.InvokeSpell(player, spell, func(){
+                        army.ManaPool -= spell.Cost(false)
+                        player.Mana -= spell.Cost(false)
                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
                     })
                 }
@@ -1360,7 +1352,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                                     if hasCharge && charge > 0 {
                                         caster.SpellCharges[spell] -= 1
                                     } else {
-                                        caster.CastingSkill -= float32(spell.CastCost)
+                                        caster.CastingSkill -= float32(spell.Cost(false))
                                     }
                                     caster.Casted = true
                                     combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
@@ -2181,7 +2173,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
     // attacking takes 50% of movement points
     // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
 
-    pointsUsed := fraction.FromInt(attacker.Unit.GetMovementSpeed()).Divide(fraction.FromInt(2))
+    pointsUsed := fraction.FromInt(attacker.GetMovementSpeed()).Divide(fraction.FromInt(2))
     if pointsUsed.LessThan(fraction.FromInt(1)) {
         pointsUsed = fraction.FromInt(1)
     }
