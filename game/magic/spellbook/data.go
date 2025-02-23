@@ -482,7 +482,7 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
         buffer := bytes.NewBuffer(data[0:n])
 
         nameData := buffer.Next(19)
-        fmt.Printf("Spell %v: ", i)
+        // fmt.Printf("Spell %v\n", i)
 
         name, err := bytes.NewBuffer(nameData).ReadString(0)
         if err != nil {
@@ -490,7 +490,7 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
         } else {
             name = name[0:len(name)-1]
         }
-        fmt.Printf("  Name: %v ", string(name))
+        // fmt.Printf("  Name: %v\n", string(name))
 
         aiGroup, err := buffer.ReadByte()
         if err != nil {
@@ -523,7 +523,7 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
             return Spells{}, err
         }
 
-        fmt.Printf("  Magic Realm: %v\n", realm)
+        // fmt.Printf("  Magic Realm: %v\n", realm)
 
         eligibility, err := buffer.ReadByte()
         if err != nil {
