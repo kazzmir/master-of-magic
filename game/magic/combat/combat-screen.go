@@ -1165,7 +1165,6 @@ Animate Dead - need picture
         case "Mass Invisibility":
             combat.CastEnchantment(player, data.CombatEnchantmentMassInvisibility, successCallback)
         case "Metal Fires":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentMetalFires, successCallback)
         case "Warp Reality":
             // FIXME: implement enchantment mechanics

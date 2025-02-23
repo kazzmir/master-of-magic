@@ -480,6 +480,7 @@ type CombatUnit interface {
     GetMeleeAttackPower() int
     GetMaxHealth() int
     GetHitPoints() int
+    GetWeaponBonus() data.WeaponBonus
     GetEnchantments() []data.UnitEnchantment
     HasEnchantment(data.UnitEnchantment) bool
     GetCount() int
@@ -541,6 +542,33 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+func (unit *ArmyUnit) GetWeaponBonus() data.WeaponBonus {
+    if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade){
+        if unit.Unit.GetWeaponBonus() == data.WeaponNone {
+            return data.WeaponMagic
+        }
+    }
+
+    return unit.Unit.GetWeaponBonus()
+}
+
+func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
+    // metal fires adds 1 to thrown attacks
+    if ability == data.AbilityThrown {
+        value := unit.Unit.GetAbilityValue(ability)
+        if value > 0 {
+
+            if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
+                return value + 1
+            }
+
+            return value
+        }
+    }
+
+    return unit.Unit.GetAbilityValue(ability)
+}
+
 func (unit *ArmyUnit) GetToHitMelee() int {
     modifier := 0
 
@@ -591,12 +619,30 @@ func (unit *ArmyUnit) GetDefense() int {
     return max(0, unit.Unit.GetDefense() + modifier)
 }
 
+func (unit *ArmyUnit) GetRangedAttackPower() int {
+    modifier := 0
+
+    if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
+        if unit.Unit.GetRangedAttackPower() > 0 {
+            modifier += 1
+        }
+    }
+
+    return max(0, unit.Unit.GetRangedAttackPower() + modifier)
+}
+
 func (unit *ArmyUnit) GetMeleeAttackPower() int {
     modifier := 0
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
         if unit.Unit.GetMeleeAttackPower() > 0 {
             modifier += 2
+        }
+    }
+
+    if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
+        if unit.Unit.GetMeleeAttackPower() > 0 {
+            modifier += 1
         }
     }
 
@@ -651,7 +697,7 @@ func (unit *ArmyUnit) GetPower() int {
     power += unit.Unit.GetMaxHealth()
     power += unit.GetDefense()
     power += unit.GetResistance()
-    power += unit.Unit.GetRangedAttackPower() * unit.Figures()
+    power += unit.GetRangedAttackPower() * unit.Figures()
     power += unit.GetMeleeAttackPower() * unit.Figures()
 
     return power
@@ -956,7 +1002,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
 
     damage := 0
     for range unit.Figures() {
-        for range unit.Unit.GetRangedAttackPower() {
+        for range unit.GetRangedAttackPower() {
             if rand.N(100) < toHit {
                 damage += 1
             }
@@ -1733,7 +1779,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
     hit := false
 
     if attacker.HasAbility(data.AbilityFireBreath) {
-        strength := int(attacker.Unit.GetAbilityValue(data.AbilityFireBreath))
+        strength := int(attacker.GetAbilityValue(data.AbilityFireBreath))
         hit = true
 
         damage = append(damage, func(){
@@ -1745,7 +1791,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
     }
 
     if attacker.HasAbility(data.AbilityLightningBreath) {
-        strength := int(attacker.Unit.GetAbilityValue(data.AbilityLightningBreath))
+        strength := int(attacker.GetAbilityValue(data.AbilityLightningBreath))
         hit = true
 
         damage = append(damage, func(){
@@ -1766,7 +1812,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
     hit := false
     if attacker.HasAbility(data.AbilityStoningGaze) {
         if !defender.HasAbility(data.AbilityStoningImmunity) && !defender.HasAbility(data.AbilityMagicImmunity) {
-            resistance := int(attacker.Unit.GetAbilityValue(data.AbilityStoningGaze))
+            resistance := int(attacker.GetAbilityValue(data.AbilityStoningGaze))
 
             stoneDamage := 0
 
@@ -1788,7 +1834,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
 
     if attacker.HasAbility(data.AbilityDeathGaze) {
         if !defender.HasAbility(data.AbilityDeathImmunity) && !defender.HasAbility(data.AbilityMagicImmunity) {
-            resistance := int(attacker.Unit.GetAbilityValue(data.AbilityDeathGaze))
+            resistance := int(attacker.GetAbilityValue(data.AbilityDeathGaze))
 
             deathDamage := 0
 
@@ -1808,7 +1854,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
     }
 
     if attacker.HasAbility(data.AbilityDoomGaze) {
-        doomDamage := int(attacker.Unit.GetAbilityValue(data.AbilityDoomGaze))
+        doomDamage := int(attacker.GetAbilityValue(data.AbilityDoomGaze))
         damage += doomDamage
         hit = true
         model.Observer.DoomGazeAttack(attacker, defender, doomDamage)
@@ -1820,7 +1866,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
 
 func (model *CombatModel) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit) (int, bool) {
     if attacker.HasAbility(data.AbilityThrown) {
-        strength := int(attacker.Unit.GetAbilityValue(data.AbilityThrown))
+        strength := int(attacker.GetAbilityValue(data.AbilityThrown))
         damage := 0
         for range attacker.Figures() {
             if rand.N(100) < attacker.GetToHitMelee() {
@@ -1850,7 +1896,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
     if attacker.HasAbility(data.AbilityPoisonTouch) && !defender.HasAbility(data.AbilityPoisonImmunity) {
         damage := 0
-        for range int(attacker.Unit.GetAbilityValue(data.AbilityPoisonTouch)) {
+        for range int(attacker.GetAbilityValue(data.AbilityPoisonTouch)) {
             if rand.N(10) + 1 > defender.GetResistance() {
                 damage += 1
             }
@@ -1865,7 +1911,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
     if attacker.HasAbility(data.AbilityLifeSteal) {
         if !defender.HasAbility(data.AbilityDeathImmunity) && !defender.HasAbility(data.AbilityMagicImmunity) {
-            modifier := int(attacker.Unit.GetAbilityValue(data.AbilityLifeSteal))
+            modifier := int(attacker.GetAbilityValue(data.AbilityLifeSteal))
             // if vampiric, modifier will just be 0
             damage := 0
             defenderResistance := defender.GetResistance() + defender.GetResistances(data.UnitEnchantmentResistMagic, data.UnitEnchantmentBless, data.UnitEnchantmentRighteousness)
@@ -1899,7 +1945,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             defenderResistance := defender.GetResistance() + defender.GetResistances(data.UnitEnchantmentElementalArmor, data.UnitEnchantmentResistElements, data.UnitEnchantmentResistMagic)
 
-            modifier := int(attacker.Unit.GetAbilityValue(data.AbilityStoningTouch))
+            modifier := int(attacker.GetAbilityValue(data.AbilityStoningTouch))
 
             // for each failed resistance roll, the defender takes damage equal to one figure's hit points
             for range attacker.Figures() - fearFigure {
