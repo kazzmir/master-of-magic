@@ -1145,10 +1145,8 @@ Animate Dead - need picture
             */
 
         case "High Prayer":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentHighPrayer, successCallback)
         case "Prayer":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentPrayer, successCallback)
         case "True Light":
             combat.CastEnchantment(player, data.CombatEnchantmentTrueLight, successCallback)
@@ -1159,26 +1157,20 @@ Animate Dead - need picture
             // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentEntangle, successCallback)
         case "Blur":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentBlur, successCallback)
         case "Counter Magic":
             // FIXME: implement enchantment mechanics
             // FIXME: include the cost of the spell because the caster may have pumped more mana into it
             combat.CastEnchantment(player, data.CombatEnchantmentCounterMagic, successCallback)
         case "Mass Invisibility":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentMassInvisibility, successCallback)
         case "Metal Fires":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentMetalFires, successCallback)
         case "Warp Reality":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentWarpReality, successCallback)
         case "Black Prayer":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentBlackPrayer, successCallback)
         case "Darkness":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentDarkness, successCallback)
         case "Mana Leak":
             // FIXME: implement enchantment mechanics
