@@ -192,6 +192,7 @@ const (
 type MagicType int
 
 const (
+    // FIXME: Those constants are not equal to LBX ones. The proper order is Nature, Sorcery, Chaos, Life, Death, Arcane.
     MagicNone MagicType = iota
     LifeMagic
     SorceryMagic
