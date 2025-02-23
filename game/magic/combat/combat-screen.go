@@ -588,7 +588,7 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createVerticalSkyProjectile(target, loopImages, explodeImages, effect))
 }
 
-func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, strength int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 24)
     // loopImages := images
     explodeImages := images
@@ -610,6 +610,12 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit) {
         Animation: util.MakeAnimation(images, true),
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
+        Effect: func(unit *ArmyUnit) {
+            unit.ApplyDamage(strength, units.DamageRangedMagical, true, 0)
+            if unit.Unit.GetHealth() <= 0 {
+                combat.Model.RemoveUnit(unit)
+            }
+        },
     }
 
     combat.Model.Projectiles = append(combat.Model.Projectiles, projectile)
@@ -972,7 +978,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             }, targetAny)
         case "Lightning Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateLightningBoltProjectile(target)
+                combat.CreateLightningBoltProjectile(target, spell.Cost(false) - 5)
                 successCallback()
             }, targetAny)
         case "Warp Lightning":
@@ -1151,7 +1157,6 @@ Animate Dead - need picture
         case "True Light":
             combat.CastEnchantment(player, data.CombatEnchantmentTrueLight, successCallback)
         case "Call Lightning":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentCallLightning, successCallback)
         case "Entangle":
             combat.CastEnchantment(player, data.CombatEnchantmentEntangle, successCallback)

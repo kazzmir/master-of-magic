@@ -1558,7 +1558,21 @@ func (model *CombatModel) NextTurn() {
                 model.RemoveUnit(unit)
             }
         }
+    }
 
+    if model.IsEnchantmentActive(data.CombatEnchantmentCallLightning, TeamAttacker) {
+        model.doCallLightning(model.DefendingArmy)
+    }
+
+    if model.IsEnchantmentActive(data.CombatEnchantmentCallLightning, TeamDefender) {
+        model.doCallLightning(model.AttackingArmy)
+    }
+}
+
+func (model *CombatModel) doCallLightning(army *Army) {
+    count := rand.N(3) + 3
+
+    for range count {
     }
 }
 
