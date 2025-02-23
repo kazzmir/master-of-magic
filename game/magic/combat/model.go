@@ -1564,9 +1564,18 @@ func (model *CombatModel) NextTurn() {
     }
 }
 
+func (model *CombatModel) IsTeamAlive(team Team) bool {
+    switch team {
+        case TeamDefender: return len(model.DefendingArmy.Units) > 0
+        case TeamAttacker: return len(model.AttackingArmy.Units) > 0
+    }
+
+    return false
+}
+
 // one side finished its turn
 func (model *CombatModel) FinishTurn(team Team) {
-    if model.IsEnchantmentActive(data.CombatEnchantmentCallLightning, team) {
+    if model.IsTeamAlive(team) && model.IsEnchantmentActive(data.CombatEnchantmentCallLightning, team) {
         switch team {
             case TeamDefender: model.doCallLightning(model.AttackingArmy)
             case TeamAttacker: model.doCallLightning(model.DefendingArmy)
