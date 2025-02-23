@@ -47,8 +47,8 @@ func TestComputeDispelChance(test *testing.T) {
                 ComputeDispelChance(10, 3*cost, data.ChaosMagic, playerWithoutRetorts))
         // Non-matching realm should make no effect
         expect("Non-matching realm mastery",
-                ComputeDispelChance(10, cost, data.DeathMagic, playerChaosMastery), 
-                ComputeDispelChance(10, cost, data.DeathMagic, playerWithoutRetorts))
+                ComputeDispelChance(10, cost, data.NatureMagic, playerChaosMastery), 
+                ComputeDispelChance(10, cost, data.NatureMagic, playerWithoutRetorts))
     }
 }
 
