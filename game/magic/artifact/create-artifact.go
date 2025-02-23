@@ -84,9 +84,9 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
         4: PowerTypeSpellSave,
         5: PowerTypeMovement,
         6: PowerTypeResistance,
-        7: PowerTypeAbility1, // TODO: mutually exlusive abilities 1 (Resists Elements or Elemental Armor)
-        8: PowerTypeAbility2, // TODO: mutually exlusive abilities 2 (Resist Magic or Magic Immunity)
-        9: PowerTypeAbility3, // TODO: all other abilitites
+        7: PowerTypeAbility1,
+        8: PowerTypeAbility2,
+        9: PowerTypeAbility3,
     }
 
     magicTypeMap := map[byte]data.MagicType{
