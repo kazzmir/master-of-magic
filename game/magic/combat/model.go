@@ -637,6 +637,10 @@ func (unit *ArmyUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
         }
     }
 
+    if enchantment == data.UnitEnchantmentInvisibility && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMassInvisibility, unit.Team) {
+        return true
+    }
+
     return false
 }
 

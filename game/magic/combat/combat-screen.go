@@ -1163,7 +1163,6 @@ Animate Dead - need picture
             // FIXME: include the cost of the spell because the caster may have pumped more mana into it
             combat.CastEnchantment(player, data.CombatEnchantmentCounterMagic, successCallback)
         case "Mass Invisibility":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentMassInvisibility, successCallback)
         case "Metal Fires":
             // FIXME: implement enchantment mechanics
