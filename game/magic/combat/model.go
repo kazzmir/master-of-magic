@@ -541,8 +541,22 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+func (unit *ArmyUnit) GetToHitMelee() int {
+    modifier := 0
+
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
+        modifier += 10
+    }
+
+    return max(0, unit.Unit.GetToHitMelee() + modifier)
+}
+
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
+
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
+        modifier += 3
+    }
 
     if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
         switch unit.Unit.GetRealm() {
@@ -557,6 +571,10 @@ func (unit *ArmyUnit) GetResistance() int {
 func (unit *ArmyUnit) GetDefense() int {
     modifier := 0
 
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
+        modifier += 2
+    }
+
     if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
         switch unit.Unit.GetRealm() {
             case data.LifeMagic: modifier += 1
@@ -569,6 +587,12 @@ func (unit *ArmyUnit) GetDefense() int {
 
 func (unit *ArmyUnit) GetMeleeAttackPower() int {
     modifier := 0
+
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
+        if unit.Unit.GetMeleeAttackPower() > 0 {
+            modifier += 2
+        }
+    }
 
     if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
         switch unit.Unit.GetRealm() {
@@ -899,7 +923,7 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playe
 // given the distance to the target in tiles, return the amount of range damage done
 func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
 
-    toHit := unit.Unit.GetToHitMelee()
+    toHit := unit.GetToHitMelee()
 
     // magical attacks don't suffer a to-hit penalty
     if unit.Unit.GetRangedAttackDamageType() != units.DamageRangedMagical {
@@ -944,7 +968,7 @@ func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int) (int, bool) {
         // even if all figures fail to cause damage, it still counts as a hit for touch purposes
         hit = true
         for range unit.GetMeleeAttackPower() {
-            if rand.N(100) < unit.Unit.GetToHitMelee() {
+            if rand.N(100) < unit.GetToHitMelee() {
                 damage += 1
             }
         }
@@ -979,7 +1003,13 @@ func (unit *ArmyUnit) CauseFear() int {
 }
 
 func (unit *ArmyUnit) ToDefend() int {
-    return 30
+    modifier := 0
+
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
+        modifier += 10
+    }
+
+    return 30 + modifier
 }
 
 // number of alive figures in this unit
@@ -1782,7 +1812,7 @@ func (model *CombatModel) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit) 
         strength := int(attacker.Unit.GetAbilityValue(data.AbilityThrown))
         damage := 0
         for range attacker.Figures() {
-            if rand.N(100) < attacker.Unit.GetToHitMelee() {
+            if rand.N(100) < attacker.GetToHitMelee() {
                 // damage += defender.ApplyDamage(strength, units.DamageThrown, false)
                 damage += strength
             }
