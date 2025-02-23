@@ -1485,6 +1485,7 @@ func (model *CombatModel) NextTurn() {
     }
 
     defenderTerror := model.IsEnchantmentActive(data.CombatEnchantmentTerror, TeamAttacker)
+    defenderWrack := model.IsEnchantmentActive(data.CombatEnchantmentWrack, TeamAttacker)
 
     /* reset movement */
     for _, unit := range model.DefendingArmy.Units {
@@ -1500,6 +1501,19 @@ func (model *CombatModel) NextTurn() {
                 unit.MovesLeft = fraction.Zero()
             }
         }
+
+        if defenderWrack {
+            damage := 0
+            for range unit.Figures() {
+                if rand.N(10) + 1 > unit.GetResistance() + 1 {
+                    damage += 1
+                }
+            }
+            unit.TakeDamage(damage)
+            if unit.Unit.GetHealth() <= 0 {
+                model.RemoveUnit(unit)
+            }
+        }
     }
 
     attackerLeakMana := false
@@ -1511,6 +1525,7 @@ func (model *CombatModel) NextTurn() {
     }
 
     attackerTerror := model.IsEnchantmentActive(data.CombatEnchantmentTerror, TeamDefender)
+    attackerWrack := model.IsEnchantmentActive(data.CombatEnchantmentWrack, TeamDefender)
 
     for _, unit := range model.AttackingArmy.Units {
         // increase collateral damage to the town for each unit that is within the town area
@@ -1530,6 +1545,20 @@ func (model *CombatModel) NextTurn() {
                 unit.MovesLeft = fraction.Zero()
             }
         }
+
+        if attackerWrack {
+            damage := 0
+            for range unit.Figures() {
+                if rand.N(10) + 1 > unit.GetResistance() + 1 {
+                    damage += 1
+                }
+            }
+            unit.TakeDamage(damage)
+            if unit.Unit.GetHealth() <= 0 {
+                model.RemoveUnit(unit)
+            }
+        }
+
     }
 }
 

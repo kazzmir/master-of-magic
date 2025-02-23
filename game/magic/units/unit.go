@@ -4680,7 +4680,7 @@ var HighElfSettlers Unit = Unit{
     MovementSpeed: 1,
     Resistance: 6,
     MeleeAttackPower: 1,
-    HitPoints: 1,
+    HitPoints: 10,
     Defense: 1,
     AttackSound: AttackSoundNormal,
     MovementSound: MovementSoundShuffle,

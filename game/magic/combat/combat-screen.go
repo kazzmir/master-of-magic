@@ -1176,7 +1176,6 @@ Animate Dead - need picture
         case "Terror":
             combat.CastEnchantment(player, data.CombatEnchantmentTerror, successCallback)
         case "Wrack":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentWrack, successCallback)
     }
 }
