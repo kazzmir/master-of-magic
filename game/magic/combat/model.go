@@ -658,6 +658,12 @@ func (unit *ArmyUnit) GetEnchantments() []data.UnitEnchantment {
 }
 
 func (unit *ArmyUnit) AddEnchantment(enchantment data.UnitEnchantment) {
+    // skip duplicates
+    for _, check := range unit.Enchantments {
+        if check == enchantment {
+            return
+        }
+    }
     unit.Enchantments = append(unit.Enchantments, enchantment)
 }
 
@@ -995,8 +1001,14 @@ type Army struct {
     Enchantments []data.CombatEnchantment
 }
 
-func (army *Army) AddEnchantment(enchantment data.CombatEnchantment) {
+func (army *Army) AddEnchantment(enchantment data.CombatEnchantment) bool {
+    for _, check := range army.Enchantments {
+        if check == enchantment {
+            return false
+        }
+    }
     army.Enchantments = append(army.Enchantments, enchantment)
+    return true
 }
 
 func (army *Army) HasEnchantment(enchantment data.CombatEnchantment) bool {
@@ -1431,6 +1443,14 @@ func (model *CombatModel) AddLogEvent(text string) {
 
 func (model *CombatModel) AddProjectile(projectile *Projectile){
     model.Projectiles = append(model.Projectiles, projectile)
+}
+
+func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment) bool {
+    if player == model.DefendingArmy.Player {
+        return model.DefendingArmy.AddEnchantment(enchantment)
+    } else {
+        return model.AttackingArmy.AddEnchantment(enchantment)
+    }
 }
 
 func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing) {

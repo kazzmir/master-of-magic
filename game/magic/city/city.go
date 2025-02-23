@@ -1725,6 +1725,13 @@ func (city *City) DoNextTurn(mapObject *maplib.Map) []CityEvent {
         }
     }
 
+    if city.HasEnchantment(data.CityEnchantmentConsecration) {
+        // At the beginning of each turn, all tiles in a 5x5 square (minus corners) around any city with Consecration should lose corruption
+        for point, _ := range mapObject.GetCatchmentArea(city.X, city.Y) {
+            mapObject.RemoveCorruption(point.X, point.Y)
+        }
+    }
+
     // update minimum farmers
     city.ResetCitizens()
 
@@ -1732,7 +1739,16 @@ func (city *City) DoNextTurn(mapObject *maplib.Map) []CityEvent {
 }
 
 func (city *City) AllowedBuildings(what buildinglib.Building) []buildinglib.Building {
-    return city.BuildingInfo.Allows(what)
+    buildable := city.GetBuildableBuildings()
+
+    var out []buildinglib.Building
+    for _, building := range city.BuildingInfo.Allows(what) {
+        if buildable.Contains(building) {
+            out = append(out, building)
+        }
+    }
+
+    return out
 }
 
 func (city *City) AllowedUnits(what buildinglib.Building) []units.Unit {

@@ -20,6 +20,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/game"
     "github.com/kazzmir/master-of-magic/game/magic/hero"
+    "github.com/kazzmir/master-of-magic/game/magic/building"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
 )
 
@@ -182,6 +183,19 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool, 
             fmt.Printf("Entry %v: %+v\n", i, entry)
         }
 
+    } else if lbxName == "builddat.lbx" && !rawDump {
+        files := make(map[string]*lbx.LbxFile)
+        files["builddat.lbx"] = &file
+        cache := lbx.MakeCacheFromLbxFiles(files)
+        buildings, err := building.ReadBuildingInfo(cache)
+
+        if err != nil {
+            return err
+        }
+
+        for _, building := range buildings {
+            fmt.Printf("%+v\n", building)
+        }
     } else if soundFiles.Contains(lbxName) && !rawDump {
         for i := range len(file.Data) {
             func (){

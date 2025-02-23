@@ -5108,7 +5108,7 @@ var StagBeetle Unit = Unit{
     CombatLbxFile: "figures8.lbx",
     CombatIndex: 112,
     Name: "Stag Beetle",
-    RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingFantasticStable},
+    RequiredBuildings: []building.Building{building.BuildingArmorersGuild, building.BuildingStables},
     ProductionCost: 160,
     UpkeepGold: 4,
     UpkeepFood: 1,

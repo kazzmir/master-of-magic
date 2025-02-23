@@ -156,6 +156,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             ui.AddDelay(fadeSpeed, func(){
                 ui.RemoveGroup(uiGroup)
                 action(false)
+                onFadeOut()
             })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){

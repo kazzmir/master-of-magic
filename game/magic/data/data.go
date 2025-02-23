@@ -352,3 +352,9 @@ func (fog FogMap) GetFog(x int, y int) FogType {
 
     return fog[x][y]
 }
+
+type PlanePoint struct {
+    X int
+    Y int
+    Plane Plane
+}

@@ -942,3 +942,15 @@ func (player *Player) GetRulingRace() data.Race {
 func (player *Player) GetTaxRate() fraction.Fraction {
     return player.TaxRate
 }
+
+func (player *Player) GetAllCatchmentArea() *set.Set[data.PlanePoint] {
+    catchment := set.MakeSet[data.PlanePoint]()
+
+    for _, city := range player.Cities {
+        for point, _ := range city.CatchmentProvider.GetCatchmentArea(city.X, city.Y) {
+            catchment.Insert(data.PlanePoint{X: point.X, Y: point.Y, Plane: city.Plane})
+        }
+    }
+
+    return catchment
+}
