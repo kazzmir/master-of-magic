@@ -82,6 +82,7 @@ type CityServicesProvider interface {
     BadMoonActive() bool
     PopulationBoomActive(city *City) bool
     PlagueActive(city *City) bool
+    GetAllGlobalEnchantments() map[data.BannerType]set.Set[data.Enchantment]
 }
 
 type ReignProvider interface {
@@ -1022,6 +1023,18 @@ func (city *City) ComputeUnrest() int {
 
     if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
         unrestAbsolute += 1
+    }
+
+    for banner, enchantments := range city.CityServices.GetAllGlobalEnchantments() {
+        if banner != city.ReignProvider.GetBanner() {
+            if enchantments.Contains(data.EnchantmentGreatWasting) {
+                unrestAbsolute += 1
+            }
+
+            if enchantments.Contains(data.EnchantmentArmageddon) {
+                unrestAbsolute += 2
+            }
+        }
     }
 
     // capital race vs town race modifier

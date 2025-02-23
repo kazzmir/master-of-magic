@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/set"
 )
 
 func TestCityName(test *testing.T){
@@ -62,6 +63,11 @@ func (no *NoServices) PopulationBoomActive(city *citylib.City) bool {
 
 func (no *NoServices) PlagueActive(city *citylib.City) bool {
     return false
+}
+
+func (no *NoServices) GetAllGlobalEnchantments() map[data.BannerType]set.Set[data.Enchantment] {
+    enchantments := make(map[data.BannerType]set.Set[data.Enchantment])
+    return enchantments
 }
 
 func TestChangeCityOwner(test *testing.T){

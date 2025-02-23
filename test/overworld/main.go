@@ -1152,6 +1152,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy2 := game.AddPlayer(enemyWizard2, false)
     enemy2.TaxRate = fraction.Make(1, 1)
+    enemy2.Mana = 3000
 
     x2, y2, _ := game.FindValidCityLocation(game.Plane)
 
