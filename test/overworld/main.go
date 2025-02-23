@@ -4108,7 +4108,7 @@ func createScenario47(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
-// overland cast, but enemy has Tranquility active
+// overland cast, but enemy has Tranquility and Life Force active
 func createScenario48(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 48: enemy Tranquility")
     wizard := setup.WizardCustom{
@@ -4257,6 +4257,7 @@ func createScenario48(cache *lbx.LbxCache) *gamelib.Game {
     enemy := game.AddPlayer(enemyWizard, false)
     enemy.TaxRate = fraction.Make(1, 1)
     enemy.GlobalEnchantments.Insert(data.EnchantmentTranquility)
+    enemy.GlobalEnchantments.Insert(data.EnchantmentLifeForce)
     enemy.Mana += 10000
 
     x, y, _ = game.FindValidCityLocation(game.Plane)

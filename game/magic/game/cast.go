@@ -50,19 +50,10 @@ const (
 func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
     // FIXME: if the player is AI then invoke some callback that the AI will use to select targets instead of using the GameEventSelectLocationForSpell
 
-    // Tranquility effect: if it's a chaos spell, it should either resist a strength 500 dispel check or fizzle right away.
-    if spell.IsOfRealm(data.ChaosMagic) {
-        for _, checkingPlayer := range game.Players {
-            // FIXME: Not sure if multiple instances of Tranquility stack or are checked separately.
-            if checkingPlayer != player && checkingPlayer.GlobalEnchantments.Contains(data.EnchantmentTranquility) {
-                dispelChance := ComputeDispelChance(500, spell.Cost(true), spell.Magic, player)
-                if RollDispelChance(dispelChance) {
-                    // Fizzle the spell and return
-                    game.ShowFizzleSpell(spell, player)
-                    return
-                }
-            }
-        }
+    if game.checkInstantFizzleForCastSpell(player, spell) {
+        // Fizzle the spell and return
+        game.ShowFizzleSpell(spell, player)
+        return
     }
 
     switch spell.Name {
@@ -323,9 +314,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Detect Magic
                 Charm of Life
                 Holy Arms
-                Life Force
                 Planar Seal
-                Tranquility
                 Herb Mastery
                 Nature's Wrath
                 Aura of Majesty
@@ -372,6 +361,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 player.GlobalEnchantments.Insert(data.EnchantmentJustCause)
                 player.UpdateUnrest()
 
+                game.RefreshUI()
+            }
+        case "Life Force":
+            if !player.GlobalEnchantments.Contains(data.EnchantmentLifeForce) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentLifeForce}
+
+                player.GlobalEnchantments.Insert(data.EnchantmentLifeForce)
                 game.RefreshUI()
             }
         case "Tranquility":
@@ -543,6 +539,29 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         default:
             log.Printf("Warning: casting unhandled spell '%v'", spell.Name)
     }
+}
+
+// Returns true if the spell is rolled to be instantly fizzled on cast (caused by spells like Life Force)
+func (game *Game) checkInstantFizzleForCastSpell(player *playerlib.Player, spell spellbook.Spell) bool {
+    // Tranquility effect: if it's a chaos spell, it should either resist a strength 500 dispel check or fizzle right away.
+    if spell.IsOfRealm(data.ChaosMagic) {
+        for _, checkingPlayer := range game.Players {
+            // FIXME: Not sure if multiple instances of Tranquility stack or are checked separately.
+            if checkingPlayer != player && checkingPlayer.GlobalEnchantments.Contains(data.EnchantmentTranquility) {
+                return RollDispelChance(ComputeDispelChance(500, spell.Cost(true), spell.Magic, player))
+            }
+        }
+    }
+    // Life Force effect: if it's a death spell, it should either resist a strength 500 dispel check or fizzle right away.
+    if spell.IsOfRealm(data.DeathMagic) {
+        for _, checkingPlayer := range game.Players {
+            // FIXME: Not sure if multiple instances of Life Force stack or are checked separately.
+            if checkingPlayer != player && checkingPlayer.GlobalEnchantments.Contains(data.EnchantmentLifeForce) {
+                return RollDispelChance(ComputeDispelChance(500, spell.Cost(true), spell.Magic, player))
+            }
+        }
+    }
+    return false
 }
 
 func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, disenchantTrue bool, tileX int, tileY int) {
