@@ -3,9 +3,9 @@ package game
 import (
 	"testing"
 
-	"github.com/kazzmir/master-of-magic/game/magic/data"
 	herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
 	playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 	"github.com/kazzmir/master-of-magic/game/magic/setup"
 )
 
