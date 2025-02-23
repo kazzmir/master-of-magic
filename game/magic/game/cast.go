@@ -317,10 +317,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Suppress Magic
                 Time Stop
                 Wind Mastery
-                Armageddon
                 Chaos Surge
                 Doom Mastery
-                Great Wasting
                 Meteor Storm
                 Eternal Night
                 Evil Omens
@@ -358,6 +356,22 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 player.GlobalEnchantments.Insert(data.EnchantmentJustCause)
                 player.UpdateUnrest()
+
+                game.RefreshUI()
+            }
+        case "Armageddon":
+            if !player.GlobalEnchantments.Contains(data.EnchantmentJustCause) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentArmageddon}
+
+                player.GlobalEnchantments.Insert(data.EnchantmentArmageddon)
+
+                game.RefreshUI()
+            }
+        case "Great Wasting":
+            if !player.GlobalEnchantments.Contains(data.EnchantmentJustCause) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentGreatWasting}
+
+                player.GlobalEnchantments.Insert(data.EnchantmentGreatWasting)
 
                 game.RefreshUI()
             }

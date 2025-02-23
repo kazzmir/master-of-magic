@@ -335,6 +335,13 @@ func (tile Tile) IsLakeWithFlow() bool {
     return false
 }
 
+func (tile Tile) IsRiver() bool {
+    switch tile.TerrainType() {
+        case River: return true
+        default: return false
+    }
+}
+
 // match the given match to a terrain
 // terrain can contain compatibilites than what the match has
 func (tile *Tile) matches(match map[Direction]TerrainType) bool {
