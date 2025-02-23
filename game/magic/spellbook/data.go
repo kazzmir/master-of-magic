@@ -19,7 +19,7 @@ type Spell struct {
     AiValue int
     SpellType int
     Section Section
-    Realm int
+    Realm int // FIXME: Realm is equal to LBX magic realm constant, but is unused. This var may be removed, as the Magic var below is the only one being used
     Eligibility EligibilityType
     CastCost int
     OverrideCost int
@@ -31,6 +31,7 @@ type Spell struct {
     Flag3 int
 
     // which book of magic this spell is a part of
+    // FIXME: MagicType as a value is not equal to LBX magic realm constant. This var may be renamed to Realm, and the Realm var above can be removed
     Magic data.MagicType
     Rarity SpellRarity
 }
@@ -47,19 +48,26 @@ func (spell Spell) Valid() bool {
     return spell.Name != ""
 }
 
-// overland=true if casting in overland, otherwise casting in combat
-func (spell Spell) Cost(overland bool) int {
+func (spell Spell) IsOfRealm(realm data.MagicType) bool {
+    return spell.Magic == realm
+}
 
-    // for create artifact and spells that have variable cost
+func (spell Spell) Cost(overland bool) int {
     if spell.OverrideCost != 0 {
         return spell.OverrideCost
     }
 
+    return spell.BaseCost(overland)
+}
+
+// overland=true if casting in overland, otherwise casting in combat
+// this does not include any additional costs for the spell
+func (spell Spell) BaseCost(overland bool) int {
+
     if overland {
         switch spell.Eligibility {
-            case EligibilityBoth: return spell.CastCost * 5
+            case EligibilityBoth, EligibilityBoth2: return spell.CastCost * 5
             case EligibilityOverlandOnly: return spell.CastCost
-            case EligibilityBoth2: return spell.CastCost * 5
             case EligibilityOverlandOnlyFriendlyCity: return spell.CastCost * 5
             case EligibilityBothSameCost: return spell.CastCost
             case EligibilityOverlandWhileBanished: return spell.CastCost
@@ -67,6 +75,14 @@ func (spell Spell) Cost(overland bool) int {
     }
 
     return spell.CastCost
+}
+
+func (spell Spell) SpentAdditionalCost(overland bool) int {
+    if spell.OverrideCost != 0 {
+        return spell.OverrideCost - spell.BaseCost(overland)
+    }
+
+    return 0
 }
 
 type EligibilityType int
