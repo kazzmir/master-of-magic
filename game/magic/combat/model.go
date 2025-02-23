@@ -1476,9 +1476,30 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
 func (model *CombatModel) NextTurn() {
     model.CurrentTurn += 1
 
+    defenderLeakMana := false
+
+    if model.IsEnchantmentActive(data.CombatEnchantmentManaLeak, TeamAttacker) {
+        model.DefendingArmy.ManaPool = max(0, model.DefendingArmy.ManaPool - 5)
+        model.DefendingArmy.Player.Mana = max(0, model.DefendingArmy.Player.Mana - 5)
+        defenderLeakMana = true
+    }
+
     /* reset movement */
     for _, unit := range model.DefendingArmy.Units {
         unit.ResetTurnData()
+
+        if defenderLeakMana {
+            // FIXME: magic ranged attacks should go down by 1 as well
+            unit.CastingSkill = max(0, unit.CastingSkill - 5)
+        }
+    }
+
+    attackerLeakMana := false
+
+    if model.IsEnchantmentActive(data.CombatEnchantmentManaLeak, TeamDefender) {
+        model.AttackingArmy.ManaPool = max(0, model.AttackingArmy.ManaPool - 5)
+        model.AttackingArmy.Player.Mana = max(0, model.AttackingArmy.Player.Mana - 5)
+        attackerLeakMana = true
     }
 
     for _, unit := range model.AttackingArmy.Units {
@@ -1488,6 +1509,11 @@ func (model *CombatModel) NextTurn() {
         }
 
         unit.ResetTurnData()
+
+        if attackerLeakMana {
+            // FIXME: magic ranged attacks should go down by 1 as well
+            unit.CastingSkill = max(0, unit.CastingSkill - 5)
+        }
     }
 }
 

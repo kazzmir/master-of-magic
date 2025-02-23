@@ -1172,7 +1172,6 @@ Animate Dead - need picture
         case "Darkness":
             combat.CastEnchantment(player, data.CombatEnchantmentDarkness, successCallback)
         case "Mana Leak":
-            // FIXME: implement enchantment mechanics
             combat.CastEnchantment(player, data.CombatEnchantmentManaLeak, successCallback)
         case "Terror":
             // FIXME: implement enchantment mechanics
@@ -1324,6 +1323,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                     // player mana and skill should go down accordingly
                     combat.InvokeSpell(player, spell, func(){
                         army.ManaPool -= spell.Cost(false)
+                        player.Mana -= spell.Cost(false)
                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
                     })
                 }
