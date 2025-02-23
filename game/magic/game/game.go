@@ -706,7 +706,7 @@ func (game *Game) FindValidCityLocation(plane data.Plane) (int, int, bool) {
             y := continent[index].Y
 
             tile := terrain.GetTile(mapUse.Map.Terrain[x][y])
-            if y > 3 && y < mapUse.Map.Columns() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
+            if y > 3 && y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
                 return x, y, true
             }
         }
@@ -729,7 +729,7 @@ func (game *Game) FindValidCityLocationOnShore(plane data.Plane) (int, int, bool
                 x := point.X
                 y := point.Y
                 tile := terrain.GetTile(mapUse.Map.Terrain[x][y])
-                if y > 3 && y < mapUse.Map.Columns() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
+                if y > 3 && y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
 
                     found := false
                     for dx := -1; dx <= 1; dx++ {
