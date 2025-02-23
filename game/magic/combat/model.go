@@ -888,8 +888,23 @@ func (unit *ArmyUnit) CanCast() bool {
     return false
 }
 
+func (unit *ArmyUnit) GetMovementSpeed() int {
+    modifier := 0
+    base := unit.Unit.GetMovementSpeed()
+
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentEntangle, oppositeTeam(unit.Team)) {
+        unaffected := unit.Unit.IsFlying() || unit.HasAbility(data.AbilityNonCorporeal)
+
+        if !unaffected {
+            modifier -= 1
+        }
+    }
+
+    return max(0, base + modifier)
+}
+
 func (unit *ArmyUnit) ResetTurnData() {
-    unit.MovesLeft = fraction.FromInt(unit.Unit.GetMovementSpeed())
+    unit.MovesLeft = fraction.FromInt(unit.GetMovementSpeed())
     unit.Paths = make(map[image.Point]pathfinding.Path)
     unit.Casted = false
 }
