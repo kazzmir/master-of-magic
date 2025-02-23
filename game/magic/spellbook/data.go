@@ -52,19 +52,22 @@ func (spell Spell) IsOfRealm(realm data.MagicType) bool {
     return spell.Magic == realm
 }
 
-// overland=true if casting in overland, otherwise casting in combat
 func (spell Spell) Cost(overland bool) int {
-
-    // for create artifact and spells that have variable cost
     if spell.OverrideCost != 0 {
         return spell.OverrideCost
     }
 
+    return spell.BaseCost(overland)
+}
+
+// overland=true if casting in overland, otherwise casting in combat
+// this does not include any additional costs for the spell
+func (spell Spell) BaseCost(overland bool) int {
+
     if overland {
         switch spell.Eligibility {
-            case EligibilityBoth: return spell.CastCost * 5
+            case EligibilityBoth, EligibilityBoth2: return spell.CastCost * 5
             case EligibilityOverlandOnly: return spell.CastCost
-            case EligibilityBoth2: return spell.CastCost * 5
             case EligibilityOverlandOnlyFriendlyCity: return spell.CastCost * 5
             case EligibilityBothSameCost: return spell.CastCost
             case EligibilityOverlandWhileBanished: return spell.CastCost
@@ -75,21 +78,10 @@ func (spell Spell) Cost(overland bool) int {
 }
 
 func (spell Spell) SpentAdditionalCost(overland bool) int {
-    castCost := spell.CastCost
-    if overland {
-        switch spell.Eligibility {
-            case EligibilityBoth: castCost *= 5
-            // case EligibilityOverlandOnly: no change
-            case EligibilityBoth2: castCost *= 5
-            case EligibilityOverlandOnlyFriendlyCity: castCost *= 5
-            // case EligibilityBothSameCost: no change
-            // case EligibilityOverlandWhileBanished: no change
-        }
+    if spell.OverrideCost != 0 {
+        return spell.OverrideCost - spell.BaseCost(overland)
     }
 
-    if spell.OverrideCost != 0 {
-        return spell.OverrideCost - castCost
-    }
     return 0
 }
 
