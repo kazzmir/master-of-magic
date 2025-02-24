@@ -952,24 +952,46 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
     }
 }
 
-func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell, successCallback func()){
+func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell, castedCallback func()){
     targetAny := func (target *ArmyUnit) bool { return true }
+
+    // higher order function that automatically applies dispel logic
+    checkDispel := func (onTarget func(*ArmyUnit)) func(*ArmyUnit) {
+        return func(target *ArmyUnit) {
+            opposite := combat.Model.GetOppositeArmyForPlayer(player)
+            if opposite.CounterMagic > 0 {
+                chance := spellbook.ComputeDispelChance(opposite.CounterMagic, spell.Cost(false), spell.Magic, &player.Wizard)
+                opposite.CounterMagic = max(0, opposite.CounterMagic - 5)
+
+                if spellbook.RollDispelChance(chance) {
+                    combat.Events <- &CombatEventMessage{
+                        Message: fmt.Sprintf("%v fizzled", spell.Name),
+                    }
+                    castedCallback()
+                    return
+                }
+            }
+
+            // didn't dispel, so call the original spell function
+            onTarget(target)
+        }
+    }
 
     switch spell.Name {
         case "Fireball":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, checkDispel(func(target *ArmyUnit){
                 combat.CreateFireballProjectile(target)
-                successCallback()
-            }, targetAny)
+                castedCallback()
+            }), targetAny)
         case "Ice Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateIceBoltProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Star Fires":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateStarFiresProjectile(target)
-                successCallback()
+                castedCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target fantastic creatures that are death or chaos
                 return true
@@ -977,42 +999,42 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Psionic Blast":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreatePsionicBlastProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Doom Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDoomBoltProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Fire Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFireBoltProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Lightning Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateLightningBoltProjectile(target, spell.Cost(false) - 5)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Warp Lightning":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWarpLightningProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Flame Strike":
             combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFlameStrikeProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Life Drain":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateLifeDrainProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Dispel Evil":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDispelEvilProjectile(target)
-                successCallback()
+                castedCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target units that are death or chaos
                 return true
@@ -1020,7 +1042,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Healing":
             combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateHealingProjectile(target)
-                successCallback()
+                castedCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target units that are not death
                 return true
@@ -1028,7 +1050,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Holy Word":
             combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateHolyWordProjectile(target)
-                successCallback()
+                castedCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target fantastic units, chaos channeled and undead
                 return true
@@ -1036,7 +1058,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Recall Hero":
             combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateRecallHeroProjectile(target)
-                successCallback()
+                castedCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: can only target heros
                 return true
@@ -1044,27 +1066,27 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Mass Healing":
             combat.DoAllUnitsSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateHealingProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Cracks Call":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateCracksCallProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Earth to Mud":
             combat.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.Model.CreateEarthToMud(x, y)
-                successCallback()
+                castedCallback()
             })
         case "Web":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWebProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Banish":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateBanishProjectile(target)
-                successCallback()
+                castedCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: must be a fantastic unit
                 return true
@@ -1072,33 +1094,33 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Dispel Magic True":
             combat.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
                 combat.CreateDispelMagicProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Word of Recall":
             combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateWordOfRecallProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Disintegrate":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDisintegrateProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Disrupt":
             // FIXME: can only target city walls
             combat.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.CreateDisruptProjectile(x, y)
-                successCallback()
+                castedCallback()
             })
         case "Magic Vortex":
             combat.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.CreateMagicVortex(x, y)
-                successCallback()
+                castedCallback()
             })
         case "Warp Wood":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWarpWoodProjectile(target)
-                successCallback()
+                castedCallback()
             }, func (target *ArmyUnit) bool {
                 // FIXME: can be cast on a normal unit or hero that has a ranged missle attack
                 return true
@@ -1106,37 +1128,37 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Death Spell":
             combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDeathSpellProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Word of Death":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWordOfDeathProjectile(target)
-                successCallback()
+                castedCallback()
             }, targetAny)
         case "Phantom Warriors":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreatePhantomWarriors(player, x, y)
-                successCallback()
+                castedCallback()
             })
         case "Phantom Beast":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreatePhantomBeast(player, x, y)
-                successCallback()
+                castedCallback()
             })
         case "Earth Elemental":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreateEarthElemental(player, x, y)
-                successCallback()
+                castedCallback()
             })
         case "Air Elemental":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreateAirElemental(player, x, y)
-                successCallback()
+                castedCallback()
             })
         case "Fire Elemental":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreateFireElemental(player, x, y)
-                successCallback()
+                castedCallback()
             })
         case "Summon Demon":
             // FIXME: the tile should be near the middle of the map
@@ -1144,13 +1166,13 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             if err == nil {
                 combat.CreateSummoningCircle(x, y)
                 combat.CreateDemon(player, x, y)
-                successCallback()
+                castedCallback()
             }
         case "Resist Elements":
             combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateResistElementsProjectile(target)
                 target.AddEnchantment(data.UnitEnchantmentResistElements)
-                successCallback()
+                castedCallback()
             }, targetAny)
 
             /*
@@ -1164,47 +1186,47 @@ Animate Dead - need picture
             */
 
         case "High Prayer":
-            combat.CastEnchantment(player, data.CombatEnchantmentHighPrayer, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentHighPrayer, castedCallback)
         case "Prayer":
-            combat.CastEnchantment(player, data.CombatEnchantmentPrayer, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentPrayer, castedCallback)
         case "True Light":
-            combat.CastEnchantment(player, data.CombatEnchantmentTrueLight, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentTrueLight, castedCallback)
         case "Call Lightning":
-            combat.CastEnchantment(player, data.CombatEnchantmentCallLightning, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentCallLightning, castedCallback)
         case "Entangle":
-            combat.CastEnchantment(player, data.CombatEnchantmentEntangle, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentEntangle, castedCallback)
         case "Blur":
-            combat.CastEnchantment(player, data.CombatEnchantmentBlur, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentBlur, castedCallback)
         case "Counter Magic":
-            // FIXME: implement enchantment mechanics
-            // FIXME: include the cost of the spell because the caster may have pumped more mana into it
-            combat.CastEnchantment(player, data.CombatEnchantmentCounterMagic, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentCounterMagic, castedCallback)
+            // set counter magic counter for the player to be the spell strength
+            combat.Model.GetArmyForPlayer(player).CounterMagic = spell.Cost(false)
         case "Mass Invisibility":
-            combat.CastEnchantment(player, data.CombatEnchantmentMassInvisibility, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentMassInvisibility, castedCallback)
         case "Metal Fires":
-            combat.CastEnchantment(player, data.CombatEnchantmentMetalFires, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentMetalFires, castedCallback)
         case "Warp Reality":
-            combat.CastEnchantment(player, data.CombatEnchantmentWarpReality, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentWarpReality, castedCallback)
         case "Black Prayer":
-            combat.CastEnchantment(player, data.CombatEnchantmentBlackPrayer, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentBlackPrayer, castedCallback)
         case "Darkness":
-            combat.CastEnchantment(player, data.CombatEnchantmentDarkness, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentDarkness, castedCallback)
         case "Mana Leak":
-            combat.CastEnchantment(player, data.CombatEnchantmentManaLeak, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentManaLeak, castedCallback)
         case "Terror":
-            combat.CastEnchantment(player, data.CombatEnchantmentTerror, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentTerror, castedCallback)
         case "Wrack":
-            combat.CastEnchantment(player, data.CombatEnchantmentWrack, successCallback)
+            combat.CastEnchantment(player, data.CombatEnchantmentWrack, castedCallback)
     }
 }
 
-func (combat *CombatScreen) CastEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment, successCallback func()){
+func (combat *CombatScreen) CastEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment, castedCallback func()){
     if combat.Model.AddEnchantment(player, enchantment) {
         combat.Events <- &CombatEventCastEnchantment{
             Enchantment: enchantment,
             Caster: player,
         }
-        successCallback()
+        castedCallback()
     } else {
         combat.Events <- &CombatEventMessage{
             Message: "That combat enchantment is already in effect",

@@ -487,7 +487,7 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
     allSpells := game.AllSpells()
 
     startingSpells := []string{"Magic Spirit", "Spell of Return"}
-    if wizard.AbilityEnabled(setup.AbilityArtificer) {
+    if wizard.RetortEnabled(data.RetortArtificer) {
         startingSpells = append(startingSpells, "Enchant Item", "Create Artifact")
     }
 
@@ -511,7 +511,7 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
     // log.Printf("Research spells: %v", newPlayer.ResearchPoolSpells)
 
     // famous wizards get a head start of 10 fame
-    if wizard.AbilityEnabled(setup.AbilityFamous) {
+    if wizard.RetortEnabled(data.RetortFamous) {
         newPlayer.Fame += 10
     }
 
@@ -2243,7 +2243,7 @@ func (game *Game) maybeHireHero(player *playerlib.Player) {
     // every 25 fame increases chance by 1
     // every hero reduces chance by a fraction (1 hero = halve chance. 2 heroes = 1/3 chance)
     chance := (3 + player.GetFame() / 25) / ((len(player.AliveHeroes()) + 3) / 2)
-    if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
+    if player.Wizard.RetortEnabled(data.RetortFamous) {
         chance *= 2
     }
 
@@ -2340,7 +2340,7 @@ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
 
     // chance to create an event
     chance := 1 + player.GetFame() / 20
-    if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
+    if player.Wizard.RetortEnabled(data.RetortFamous) {
         chance *= 2
     }
     if chance > 10 {
@@ -2429,7 +2429,7 @@ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
 
     // cost
     cost := count * unit.ProductionCost * (level + 3) / 2
-    if player.Wizard.AbilityEnabled(setup.AbilityCharismatic) {
+    if player.Wizard.RetortEnabled(data.RetortCharismatic) {
         cost /= 2
     }
     if player.Gold < cost {
@@ -2488,7 +2488,7 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
 func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     // chance to create an event
     chance := 2 + player.GetFame() / 25
-    if player.Wizard.AbilityEnabled(setup.AbilityFamous) {
+    if player.Wizard.RetortEnabled(data.RetortFamous) {
         chance *= 2
     }
     if chance > 10 {
@@ -2522,7 +2522,7 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
 
     // cost
     cost := artifact.Cost
-    if player.Wizard.AbilityEnabled(setup.AbilityCharismatic) {
+    if player.Wizard.RetortEnabled(data.RetortCharismatic) {
         cost /= 2
     }
     if player.Gold < cost {
@@ -2990,7 +2990,7 @@ func ChooseUniqueWizard(players []*playerlib.Player, allSpells spellbook.Spells)
         return setup.WizardCustom{}, false
     }
 
-    race, ok := chooseRace(wizard.ExtraAbility == setup.AbilityMyrran)
+    race, ok := chooseRace(wizard.ExtraAbility == data.RetortMyrran)
     if !ok {
         return setup.WizardCustom{}, false
     }
@@ -3000,9 +3000,9 @@ func ChooseUniqueWizard(players []*playerlib.Player, allSpells spellbook.Spells)
         return setup.WizardCustom{}, false
     }
 
-    var abilities []setup.WizardAbility
-    if wizard.ExtraAbility != setup.AbilityNone {
-        abilities = []setup.WizardAbility{wizard.ExtraAbility}
+    var abilities []data.Retort
+    if wizard.ExtraAbility != data.RetortNone {
+        abilities = []data.Retort{wizard.ExtraAbility}
     }
 
     customWizard := setup.WizardCustom{
@@ -4856,7 +4856,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                     case "Enchant Item": creation = artifact.CreationEnchantItem
                 }
 
-                created, cancel := artifact.ShowCreateArtifactScreen(yield, game.Cache, creation, &player.Wizard, player.Wizard.AbilityEnabled(setup.AbilityArtificer), player.Wizard.AbilityEnabled(setup.AbilityRunemaster), player.KnownSpells.CombatSpells(), &drawFunc)
+                created, cancel := artifact.ShowCreateArtifactScreen(yield, game.Cache, creation, &player.Wizard, player.Wizard.RetortEnabled(data.RetortArtificer), player.Wizard.RetortEnabled(data.RetortRunemaster), player.KnownSpells.CombatSpells(), &drawFunc)
                 if cancel {
                     return
                 }
@@ -5230,40 +5230,6 @@ func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
     return slices.ContainsFunc(game.Players, func (player *playerlib.Player) bool {
         return player.GlobalEnchantments.Contains(enchantment)
     })
-}
-
-// Returns dispel chance against 250.
-// TargetSpellCost may be either a base cost or an effective cost (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
-// If checkTargetSpellOwnerRetorts is true, then Archmage and Mastery retorts will be taken into consideration for dispel resistance
-// FIXME: add Runemaster check here (it should increase the dispel strength)
-func ComputeDispelChance(dispelStrength int, targetSpellCost int, targetSpellRealm data.MagicType, targetSpellOwner *playerlib.Player) int {
-
-    dispelResistanceModifier := 1
-
-    if targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityArchmage) {
-        dispelResistanceModifier += 1
-    }
-
-    if targetSpellRealm == data.NatureMagic && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityNatureMastery) {
-        dispelResistanceModifier += 1
-    }
-
-    if targetSpellRealm == data.SorceryMagic && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilitySorceryMastery) {
-        dispelResistanceModifier += 1
-    }
-
-    if targetSpellRealm == data.ChaosMagic && targetSpellOwner.Wizard.AbilityEnabled(setup.AbilityChaosMastery) {
-        dispelResistanceModifier += 1
-    }
-
-    // The original game uses the check in multiples of 250, and not as a percentage (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
-    return (250 * dispelStrength) / (dispelStrength + (targetSpellCost * dispelResistanceModifier))
-}
-
-// Returns true if dispel is successful.
-// The original game uses the check in multiples of 250, and not as a percentage (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
-func RollDispelChance(chanceAgainst250 int) bool {
-    return rand.N(250) < chanceAgainst250
 }
 
 // stores information about every stack and city for fast lookups

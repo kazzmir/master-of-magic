@@ -14,7 +14,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/data"
-    "github.com/kazzmir/master-of-magic/game/magic/setup"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -556,7 +555,7 @@ func (game *Game) checkInstantFizzleForCastSpell(player *playerlib.Player, spell
         for _, checkingPlayer := range game.Players {
             // FIXME: Not sure if multiple instances of Tranquility stack or are checked separately.
             if checkingPlayer != player && checkingPlayer.GlobalEnchantments.Contains(data.EnchantmentTranquility) {
-                return RollDispelChance(ComputeDispelChance(500, spell.Cost(true), spell.Magic, player))
+                return spellbook.RollDispelChance(spellbook.ComputeDispelChance(500, spell.Cost(true), spell.Magic, &player.Wizard))
             }
         }
     }
@@ -565,7 +564,7 @@ func (game *Game) checkInstantFizzleForCastSpell(player *playerlib.Player, spell
         for _, checkingPlayer := range game.Players {
             // FIXME: Not sure if multiple instances of Life Force stack or are checked separately.
             if checkingPlayer != player && checkingPlayer.GlobalEnchantments.Contains(data.EnchantmentLifeForce) {
-                return RollDispelChance(ComputeDispelChance(500, spell.Cost(true), spell.Magic, player))
+                return spellbook.RollDispelChance(spellbook.ComputeDispelChance(500, spell.Cost(true), spell.Magic, &player.Wizard))
             }
         }
     }
@@ -581,7 +580,7 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
         disenchantStrength = spell.CastCost + (spell.Cost(true) - spell.CastCost) * 3
     }
 
-    if player.Wizard.AbilityEnabled(setup.AbilityRunemaster) {
+    if player.Wizard.RetortEnabled(data.RetortRunemaster) {
         disenchantStrength *= 2
     }
 
@@ -590,19 +589,19 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
     applyResistance := func (owner *playerlib.Player, cost int, magic data.MagicType) int {
         modifier := 1
 
-        if owner.Wizard.AbilityEnabled(setup.AbilityArchmage) {
+        if owner.Wizard.RetortEnabled(data.RetortArchmage) {
             modifier += 1
         }
 
-        if owner.Wizard.AbilityEnabled(setup.AbilityChaosMastery) && magic == data.ChaosMagic {
+        if owner.Wizard.RetortEnabled(data.RetortChaosMastery) && magic == data.ChaosMagic {
             modifier += 1
         }
 
-        if owner.Wizard.AbilityEnabled(setup.AbilityNatureMastery) && magic == data.NatureMagic {
+        if owner.Wizard.RetortEnabled(data.RetortNatureMastery) && magic == data.NatureMagic {
             modifier += 1
         }
 
-        if owner.Wizard.AbilityEnabled(setup.AbilitySorceryMastery) && magic == data.SorceryMagic {
+        if owner.Wizard.RetortEnabled(data.RetortSorceryMastery) && magic == data.SorceryMagic {
             modifier += 1
         }
 

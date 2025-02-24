@@ -68,9 +68,9 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -157,9 +157,9 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -213,9 +213,9 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
         Name: "player",
         Banner: data.BannerRed,
         Race: data.RaceLizard,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -284,9 +284,9 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
         Name: "player",
         Banner: data.BannerBlue,
         Race: data.RaceHighMen,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -364,9 +364,9 @@ func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
         Name: "player",
         Banner: data.BannerBlue,
         Race: data.RaceHighMen,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -426,9 +426,9 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
         Name: "player",
         Banner: data.BannerBlue,
         Race: data.RaceHighMen,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -509,9 +509,9 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
         Name: "player",
         Banner: data.BannerBlue,
         Race: data.RaceHighMen,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -580,9 +580,9 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -658,9 +658,9 @@ func createScenario9(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -732,9 +732,9 @@ func createScenario10(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -806,9 +806,9 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -874,9 +874,9 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -941,9 +941,9 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -1183,9 +1183,9 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
         Race: data.RaceTroll,
         Base: data.WizardAriel,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -1283,9 +1283,9 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -1364,9 +1364,9 @@ func createScenario16(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -1438,9 +1438,9 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -1599,13 +1599,13 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
-            setup.AbilityWarlord,
-            setup.AbilityChanneler,
-            setup.AbilityMyrran,
-            setup.AbilityFamous,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+            data.RetortWarlord,
+            data.RetortChanneler,
+            data.RetortMyrran,
+            data.RetortFamous,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -1690,9 +1690,9 @@ func createScenario19(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -1761,9 +1761,9 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -1879,9 +1879,9 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -1991,9 +1991,9 @@ func createScenario22(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -2066,9 +2066,9 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
         Base: data.WizardRaven,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -2214,9 +2214,9 @@ func createScenario24(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -2285,9 +2285,9 @@ func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             {
@@ -2350,9 +2350,9 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             {
@@ -2417,9 +2417,9 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -2513,9 +2513,9 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -2582,9 +2582,9 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -2651,9 +2651,9 @@ func createScenario30(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -2734,9 +2734,9 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -2834,9 +2834,9 @@ func createScenario32(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -2938,9 +2938,9 @@ func createScenario33(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -3315,9 +3315,9 @@ func createScenario39(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -3397,9 +3397,9 @@ func createScenario40(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -3473,7 +3473,7 @@ func createScenario41(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{},
+        Abilities: []data.Retort{},
         Books: []data.WizardBook{},
     }
 
@@ -3514,9 +3514,9 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -3631,7 +3631,7 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{},
+        Abilities: []data.Retort{},
         Books: []data.WizardBook{
             data.WizardBook{
                 Magic: data.DeathMagic,
@@ -3704,9 +3704,9 @@ func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -3789,9 +3789,9 @@ func createScenario45(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -3895,8 +3895,8 @@ func createScenario46(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityWarlord,
+        Abilities: []data.Retort{
+            data.RetortWarlord,
         },
         Books: []data.WizardBook{
             {
@@ -3961,9 +3961,9 @@ func createScenario47(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{
@@ -4116,9 +4116,9 @@ func createScenario48(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilitySageMaster,
+        Abilities: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{

@@ -14,7 +14,6 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
-    "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/mirror"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
@@ -88,7 +87,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     totalMana := player.Mana
 
     alchemyConversion := 0.5
-    if player.Wizard.AbilityEnabled(setup.AbilityAlchemy) {
+    if player.Wizard.RetortEnabled(data.RetortAlchemy) {
         alchemyConversion = 1
     }
 

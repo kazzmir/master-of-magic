@@ -165,7 +165,7 @@ func euclideanDistance(x1, y1, x2, y2 int) float64 {
 
 func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman bool) {
     startingPlane := data.PlaneArcanus
-    if wizard.AbilityEnabled(setup.AbilityMyrran) {
+    if wizard.RetortEnabled(data.RetortMyrran) {
         startingPlane = data.PlaneMyrror
     }
 

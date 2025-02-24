@@ -32,64 +32,16 @@ type WizardSlot struct {
     // the portrait of the wizard shown when the user's cursor is on top of their name
     Portrait int
     Books []data.WizardBook
-    ExtraAbility WizardAbility
-}
-
-type WizardAbility int
-const (
-    AbilityAlchemy WizardAbility = iota
-    AbilityWarlord
-    AbilityChanneler
-    AbilityArchmage
-    AbilityArtificer
-    AbilityConjurer
-    AbilitySageMaster
-    AbilityMyrran
-    AbilityDivinePower
-    AbilityFamous
-    AbilityRunemaster
-    AbilityCharismatic
-    AbilityChaosMastery
-    AbilityNatureMastery
-    AbilitySorceryMastery
-    AbilityInfernalPower
-    AbilityManaFocusing
-    AbilityNodeMastery
-    AbilityNone
-)
-
-func (ability WizardAbility) DependencyExplanation() string {
-    switch ability {
-        case AbilityAlchemy: return ""
-        case AbilityWarlord: return ""
-        case AbilityChanneler: return ""
-        case AbilityArchmage: return "To select Archmage you need: 4 picks in any Realm of Magic"
-        case AbilityArtificer: return ""
-        case AbilityConjurer: return ""
-        case AbilitySageMaster: return "To select Sage Master you need: 1 pick in any 2 Realms of Magic"
-        case AbilityMyrran: return ""
-        case AbilityDivinePower: return "To select Divine Power you need: 4 picks in Life Magic"
-        case AbilityFamous: return ""
-        case AbilityRunemaster: return "To select Runemaster you need: 2 picks in any 3 Realms of Magic"
-        case AbilityCharismatic: return ""
-        case AbilityChaosMastery: return "To select Chaos Mastery you need: 4 picks in Chaos Magic"
-        case AbilityNatureMastery: return "To select Nature Mastery you need: 4 picks in Nature Magic"
-        case AbilitySorceryMastery: return "To select Sorcery Mastery you need: 4 picks in Sorcery Magic"
-        case AbilityInfernalPower: return "To select Infernal Power you need: 4 picks in Death Magic"
-        case AbilityManaFocusing: return "To select Mana Focusing you need: 4 picks in any Realm of Magic"
-        case AbilityNodeMastery: return "To select Node Mastery you need: 1 pick in Chaos Magic, 1 pick in Nature Magic, 1 pick in Sorcery Magic"
-        case AbilityNone: return ""
-        default: return ""
-    }
+    ExtraAbility data.Retort
 }
 
 // some abilities can only be selected if other properties of the wizard are set
-func (ability WizardAbility) SatisifiedDependencies(wizard *WizardCustom) bool {
-    switch ability {
-        case AbilityAlchemy: return true
-        case AbilityWarlord: return true
-        case AbilityChanneler: return true
-        case AbilityArchmage:
+func SatisifiedDependencies(retort data.Retort, wizard *WizardCustom) bool {
+    switch retort {
+        case data.RetortAlchemy: return true
+        case data.RetortWarlord: return true
+        case data.RetortChanneler: return true
+        case data.RetortArchmage:
             // need at least 4 books of some magic type
             for _, book := range wizard.Books {
                 if book.Count >= 4 {
@@ -97,9 +49,9 @@ func (ability WizardAbility) SatisifiedDependencies(wizard *WizardCustom) bool {
                 }
             }
             return false
-        case AbilityArtificer: return true
-        case AbilityConjurer: return true
-        case AbilitySageMaster:
+        case data.RetortArtificer: return true
+        case data.RetortConjurer: return true
+        case data.RetortSageMaster:
             // need at least 2 books of different magic types
             count := 0
             for _, book := range wizard.Books {
@@ -108,10 +60,10 @@ func (ability WizardAbility) SatisifiedDependencies(wizard *WizardCustom) bool {
                 }
             }
             return count >= 2
-        case AbilityMyrran: return true
-        case AbilityDivinePower: return wizard.MagicLevel(data.LifeMagic) >= 4
-        case AbilityFamous: return true
-        case AbilityRunemaster:
+        case data.RetortMyrran: return true
+        case data.RetortDivinePower: return wizard.MagicLevel(data.LifeMagic) >= 4
+        case data.RetortFamous: return true
+        case data.RetortRunemaster:
             // need at least 3 books of different magic types with 2 picks per type
             count := 0
             for _, book := range wizard.Books {
@@ -120,12 +72,12 @@ func (ability WizardAbility) SatisifiedDependencies(wizard *WizardCustom) bool {
                 }
             }
             return count >= 3
-        case AbilityCharismatic: return true
-        case AbilityChaosMastery: return wizard.MagicLevel(data.ChaosMagic) >= 4
-        case AbilityNatureMastery: return wizard.MagicLevel(data.NatureMagic) >= 4
-        case AbilitySorceryMastery: return wizard.MagicLevel(data.SorceryMagic) >= 4
-        case AbilityInfernalPower: return wizard.MagicLevel(data.DeathMagic) >= 4
-        case AbilityManaFocusing:
+        case data.RetortCharismatic: return true
+        case data.RetortChaosMastery: return wizard.MagicLevel(data.ChaosMagic) >= 4
+        case data.RetortNatureMastery: return wizard.MagicLevel(data.NatureMagic) >= 4
+        case data.RetortSorceryMastery: return wizard.MagicLevel(data.SorceryMagic) >= 4
+        case data.RetortInfernalPower: return wizard.MagicLevel(data.DeathMagic) >= 4
+        case data.RetortManaFocusing:
             // need at least 4 books of some magic type
             for _, book := range wizard.Books {
                 if book.Count >= 4 {
@@ -133,66 +85,13 @@ func (ability WizardAbility) SatisifiedDependencies(wizard *WizardCustom) bool {
                 }
             }
             return false
-        case AbilityNodeMastery:
+        case data.RetortNodeMastery:
             // one pick in chaos, nature, and sorcery
             return wizard.MagicLevel(data.ChaosMagic) >= 1 && wizard.MagicLevel(data.NatureMagic) >= 1 && wizard.MagicLevel(data.SorceryMagic) >= 1
-        case AbilityNone: return true
+        case data.RetortNone: return true
     }
 
     return true
-}
-
-func (ability WizardAbility) String() string {
-    switch ability {
-        case AbilityAlchemy: return "Alchemy"
-        case AbilityWarlord: return "Warlord"
-        case AbilityChanneler: return "Channeler"
-        case AbilityArchmage: return "Archmage"
-        case AbilityArtificer: return "Artificer"
-        case AbilityConjurer: return "Conjurer"
-        case AbilitySageMaster: return "Sage Master"
-        case AbilityMyrran: return "Myrran"
-        case AbilityDivinePower: return "Divine Power"
-        case AbilityFamous: return "Famous"
-        case AbilityRunemaster: return "Runemaster"
-        case AbilityCharismatic: return "Charismatic"
-        case AbilityChaosMastery: return "Chaos Mastery"
-        case AbilityNatureMastery: return "Nature Mastery"
-        case AbilitySorceryMastery: return "Sorcery Mastery"
-        case AbilityInfernalPower: return "Infernal Power"
-        case AbilityManaFocusing: return "Mana Focusing"
-        case AbilityNodeMastery: return "Node Mastery"
-        case AbilityNone: return "invalid"
-    }
-
-    return "?"
-}
-
-// number of picks this ability costs when choosing a custom wizard
-func (ability WizardAbility) PickCost() int {
-    switch ability {
-        case AbilityAlchemy: return 1
-        case AbilityWarlord: return 2
-        case AbilityChanneler: return 2
-        case AbilityArchmage: return 1
-        case AbilityArtificer: return 1
-        case AbilityConjurer: return 1
-        case AbilitySageMaster: return 1
-        case AbilityMyrran: return 3
-        case AbilityDivinePower: return 2
-        case AbilityFamous: return 2
-        case AbilityRunemaster: return 1
-        case AbilityCharismatic: return 1
-        case AbilityChaosMastery: return 1
-        case AbilityNatureMastery: return 1
-        case AbilitySorceryMastery: return 1
-        case AbilityInfernalPower: return 2
-        case AbilityManaFocusing: return 1
-        case AbilityNodeMastery: return 1
-        case AbilityNone: return 0
-    }
-
-    return 1
 }
 
 type NewWizardScreenState int
@@ -235,7 +134,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.LifeMagic, Count: 5},
                 data.WizardBook{Magic: data.NatureMagic, Count: 5},
             },
-            ExtraAbility: AbilitySageMaster,
+            ExtraAbility: data.RetortSageMaster,
         },
         WizardSlot{
             Name: "Raven",
@@ -246,7 +145,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.SorceryMagic, Count: 6},
                 data.WizardBook{Magic: data.NatureMagic, Count: 5},
             },
-            ExtraAbility: AbilityNone,
+            ExtraAbility: data.RetortNone,
         },
         WizardSlot{
             Name: "Sharee",
@@ -257,7 +156,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.DeathMagic, Count: 5},
                 data.WizardBook{Magic: data.ChaosMagic, Count: 5},
             },
-            ExtraAbility: AbilityConjurer,
+            ExtraAbility: data.RetortConjurer,
         },
         WizardSlot{
             Name: "Lo Pan",
@@ -268,7 +167,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.SorceryMagic, Count: 5},
                 data.WizardBook{Magic: data.ChaosMagic, Count: 5},
             },
-            ExtraAbility: AbilityChanneler,
+            ExtraAbility: data.RetortChanneler,
         },
         WizardSlot{
             Name: "Jafar",
@@ -278,7 +177,7 @@ func DefaultWizardSlots() []WizardSlot {
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.SorceryMagic, Count: 10},
             },
-            ExtraAbility: AbilityAlchemy,
+            ExtraAbility: data.RetortAlchemy,
         },
         WizardSlot{
             Name: "Oberic",
@@ -289,7 +188,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.NatureMagic, Count: 5},
                 data.WizardBook{Magic: data.ChaosMagic, Count: 5},
             },
-            ExtraAbility: AbilityManaFocusing,
+            ExtraAbility: data.RetortManaFocusing,
         },
         WizardSlot{
             Name: "Rjak",
@@ -299,7 +198,7 @@ func DefaultWizardSlots() []WizardSlot {
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.DeathMagic, Count: 9},
             },
-            ExtraAbility: AbilityInfernalPower,
+            ExtraAbility: data.RetortInfernalPower,
         },
         WizardSlot{
             Name: "Sss'ra",
@@ -310,7 +209,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.LifeMagic, Count: 4},
                 data.WizardBook{Magic: data.ChaosMagic, Count: 4},
             },
-            ExtraAbility: AbilityMyrran,
+            ExtraAbility: data.RetortMyrran,
         },
         WizardSlot{
             Name: "Tauron",
@@ -320,7 +219,7 @@ func DefaultWizardSlots() []WizardSlot {
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.ChaosMagic, Count: 10},
             },
-            ExtraAbility: AbilityChaosMastery,
+            ExtraAbility: data.RetortChaosMastery,
         },
         WizardSlot{
             Name: "Freya",
@@ -330,7 +229,7 @@ func DefaultWizardSlots() []WizardSlot {
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.NatureMagic, Count: 10},
             },
-            ExtraAbility: AbilityNatureMastery,
+            ExtraAbility: data.RetortNatureMastery,
         },
         WizardSlot{
             Name: "Horus",
@@ -341,7 +240,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.LifeMagic, Count: 5},
                 data.WizardBook{Magic: data.SorceryMagic, Count: 5},
             },
-            ExtraAbility: AbilityArchmage,
+            ExtraAbility: data.RetortArchmage,
         },
         WizardSlot{
             Name: "Ariel",
@@ -351,7 +250,7 @@ func DefaultWizardSlots() []WizardSlot {
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.LifeMagic, Count: 10},
             },
-            ExtraAbility: AbilityCharismatic,
+            ExtraAbility: data.RetortCharismatic,
         },
         WizardSlot{
             Name: "Tlaloc",
@@ -362,7 +261,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.NatureMagic, Count: 4},
                 data.WizardBook{Magic: data.DeathMagic, Count: 5},
             },
-            ExtraAbility: AbilityWarlord,
+            ExtraAbility: data.RetortWarlord,
         },
         WizardSlot{
             Name: "Kali",
@@ -373,7 +272,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.SorceryMagic, Count: 5},
                 data.WizardBook{Magic: data.DeathMagic, Count: 5},
             },
-            ExtraAbility: AbilityArtificer,
+            ExtraAbility: data.RetortArtificer,
         },
         WizardSlot{
             Name: "Custom",
@@ -388,7 +287,7 @@ type WizardCustom struct {
     // FIXME: remove portrait
     Portrait int
     Base data.WizardBase
-    Abilities []WizardAbility
+    Abilities []data.Retort
     Books []data.WizardBook
     StartingSpells spellbook.Spells
     Race data.Race
@@ -420,7 +319,7 @@ func (wizard *WizardCustom) TotalBooks() int {
     return count
 }
 
-func (wizard *WizardCustom) AbilityEnabled(ability WizardAbility) bool {
+func (wizard *WizardCustom) RetortEnabled(ability data.Retort) bool {
     for _, check := range wizard.Abilities {
         if check == ability {
             return true
@@ -430,31 +329,31 @@ func (wizard *WizardCustom) AbilityEnabled(ability WizardAbility) bool {
     return false
 }
 
-func (wizard *WizardCustom) EnableAbility(ability WizardAbility) {
+func (wizard *WizardCustom) EnableAbility(retort data.Retort){
     for _, check := range wizard.Abilities {
-        if check == ability {
+        if check == retort {
             return
         }
     }
 
-    wizard.Abilities = append(wizard.Abilities, ability)
+    wizard.Abilities = append(wizard.Abilities, retort)
 }
 
-func (wizard *WizardCustom) ToggleAbility(ability WizardAbility, picksLeft int){
-    var out []WizardAbility
+func (wizard *WizardCustom) ToggleAbility(retort data.Retort, picksLeft int){
+    var out []data.Retort
 
     found := false
 
     for _, check := range wizard.Abilities {
-        if check == ability {
+        if check == retort {
             found = true
         } else {
             out = append(out, check)
         }
     }
 
-    if !found && ability.PickCost() <= picksLeft {
-        out = append(out, ability)
+    if !found && retort.PickCost() <= picksLeft {
+        out = append(out, retort)
     }
 
     wizard.Abilities = out
@@ -781,9 +680,9 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
         screen.CustomWizard.Name = screen.WizardSlots[wizard].Name
         screen.CustomWizard.Books = screen.WizardSlots[wizard].Books
         screen.CustomWizard.Base = screen.WizardSlots[wizard].Base
-        screen.CustomWizard.Abilities = make([]WizardAbility, 0)
+        screen.CustomWizard.Abilities = make([]data.Retort, 0)
         screen.CustomWizard.Portrait = screen.WizardSlots[wizard].Portrait
-        if screen.WizardSlots[wizard].ExtraAbility != AbilityNone {
+        if screen.WizardSlots[wizard].ExtraAbility != data.RetortNone {
             screen.CustomWizard.Abilities = append(screen.CustomWizard.Abilities, screen.WizardSlots[wizard].ExtraAbility)
         }
 
@@ -854,7 +753,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                     options.GeoM.Reset()
                     options.GeoM.Translate(float64(34 * data.ScreenScale), float64(135 * data.ScreenScale))
                     draw.DrawBooks(window, options, &screen.ImageCache, screen.WizardSlots[screen.CurrentWizard].Books, screen.BooksOrderRandom())
-                    if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != AbilityNone {
+                    if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != data.RetortNone {
                         screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
                     }
                 }
@@ -1076,7 +975,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
     return nil
 }
 
-func JoinAbilities(abilities []WizardAbility) string {
+func JoinAbilities(abilities []data.Retort) string {
     // this could be simplified by iterating backwards through the array and
     // preprending 'and' or ', ' for each element, depending on its index
 
@@ -1105,7 +1004,7 @@ func JoinAbilities(abilities []WizardAbility) string {
 
 func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
-    screen.CustomWizard.Abilities = []WizardAbility{}
+    screen.CustomWizard.Abilities = []data.Retort{}
     screen.CustomWizard.Books = []data.WizardBook{}
 
     imageCache := util.MakeImageCache(screen.LbxCache)
@@ -1293,32 +1192,32 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
         })
     }
 
-    abilities := []WizardAbility{
-        AbilityAlchemy,
-        AbilityWarlord,
-        AbilityChanneler,
-        AbilityArchmage,
-        AbilityArtificer,
-        AbilityConjurer,
-        AbilitySageMaster,
-        AbilityMyrran,
-        AbilityDivinePower,
-        AbilityFamous,
-        AbilityRunemaster,
-        AbilityCharismatic,
-        AbilityChaosMastery,
-        AbilityNatureMastery,
-        AbilitySorceryMastery,
-        AbilityInfernalPower,
-        AbilityManaFocusing,
-        AbilityNodeMastery,
+    abilities := []data.Retort{
+        data.RetortAlchemy,
+        data.RetortWarlord,
+        data.RetortChanneler,
+        data.RetortArchmage,
+        data.RetortArtificer,
+        data.RetortConjurer,
+        data.RetortSageMaster,
+        data.RetortMyrran,
+        data.RetortDivinePower,
+        data.RetortFamous,
+        data.RetortRunemaster,
+        data.RetortCharismatic,
+        data.RetortChaosMastery,
+        data.RetortNatureMastery,
+        data.RetortSorceryMastery,
+        data.RetortInfernalPower,
+        data.RetortManaFocusing,
+        data.RetortNodeMastery,
     }
 
     // FIXME: compute this based on the largest string in a single column
     tabs := []float64{172, 210, 260, 320}
 
     type abilityUI struct {
-        Ability WizardAbility
+        Ability data.Retort
         Length int
         X float64
         Y float64
@@ -1356,26 +1255,26 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
         return out
     }
 
-    isAbilityAvailable := func(ability WizardAbility) bool {
+    isAbilityAvailable := func(ability data.Retort) bool {
         if picksLeft() < ability.PickCost() {
             return false
         }
 
-        return ability.SatisifiedDependencies(&screen.CustomWizard)
+        return SatisifiedDependencies(ability, &screen.CustomWizard)
     }
 
     for ability := range produceAbilityPositions() {
         elements = append(elements, &uilib.UIElement{
             Rect: image.Rect(int(ability.X) * data.ScreenScale, int(ability.Y) * data.ScreenScale, (int(ability.X) + ability.Length) * data.ScreenScale, (int(ability.Y) + screen.AbilityFont.Height()) * data.ScreenScale),
             LeftClick: func(this *uilib.UIElement){
-                if screen.CustomWizard.AbilityEnabled(ability.Ability) {
+                if screen.CustomWizard.RetortEnabled(ability.Ability) {
                     screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
                 } else if isAbilityAvailable(ability.Ability) {
                     screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
                 } else if picksLeft() == 0 {
                     screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You have already made all your picks", func(){}))
                 } else {
-                    if ability.Ability.SatisifiedDependencies(&screen.CustomWizard) {
+                    if SatisifiedDependencies(ability.Ability, &screen.CustomWizard) {
                         screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, fmt.Sprintf("You don't have enough picks left to make this selection. You need %v picks", 3 - picksLeft()), func(){}))
                     } else {
                         screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, ability.Ability.DependencyExplanation(), func(){}))
@@ -1390,7 +1289,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                 }
 
                 // Hack! There are two FAMOUS entries in help.lbx, one for the ability and one for the spell
-                if ability.Ability == AbilityFamous {
+                if ability.Ability == data.RetortFamous {
                     helpEntries = []helplib.HelpEntry{screen.Help.GetRawEntry(702)}
                 }
 
@@ -1399,7 +1298,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 font := screen.AbilityFont
 
-                if screen.CustomWizard.AbilityEnabled(ability.Ability) {
+                if screen.CustomWizard.RetortEnabled(ability.Ability) {
                     var options ebiten.DrawImageOptions
                     checkMark, _ := screen.ImageCache.GetImage("newgame.lbx", 52, 0)
                     options.GeoM.Translate((ability.X - 1) * float64(data.ScreenScale) - float64(checkMark.Bounds().Dx()), (ability.Y + 1) * float64(data.ScreenScale))
@@ -2025,7 +1924,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
         yPos := 145 + 1 + i * (raceFont.Height() + 1)
         fontUse := raceUnavailable
 
-        if screen.CustomWizard.AbilityEnabled(AbilityMyrran){
+        if screen.CustomWizard.RetortEnabled(data.RetortMyrran){
             fontUse = raceAvailable
         }
 
@@ -2040,7 +1939,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
                 highlight = false
             },
             LeftClick: func(this *uilib.UIElement){
-                if screen.CustomWizard.AbilityEnabled(AbilityMyrran) {
+                if screen.CustomWizard.RetortEnabled(data.RetortMyrran) {
                     screen.CustomWizard.Race = race
                     screen.UI = screen.MakeSelectBannerUI()
                     screen.State = NewWizardScreenStateSelectBanner
@@ -2059,7 +1958,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 fontDraw := fontUse
-                if screen.CustomWizard.AbilityEnabled(AbilityMyrran) {
+                if screen.CustomWizard.RetortEnabled(data.RetortMyrran) {
                     if highlight {
                         fontDraw = raceSelect
                     } else {

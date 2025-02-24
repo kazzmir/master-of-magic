@@ -35,7 +35,7 @@ func NewEngine() (*Engine, error) {
     player.Gold = 234
     player.Mana = 981
 
-    player.Wizard.ToggleAbility(setup.AbilityAlchemy, 2)
+    player.Wizard.ToggleAbility(data.RetortAlchemy, 2)
 
     enemy1 := &playerlib.Player{
         Human: false,

@@ -15,7 +15,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/fonts"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
-    "github.com/kazzmir/master-of-magic/game/magic/setup"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -184,7 +183,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                     group := uilib.MakeGroup()
 
                     gainedMana := selectedItem.Cost
-                    if !player.Wizard.AbilityEnabled(setup.AbilityArtificer) {
+                    if !player.Wizard.RetortEnabled(data.RetortArtificer) {
                         gainedMana /= 2
                     }
 

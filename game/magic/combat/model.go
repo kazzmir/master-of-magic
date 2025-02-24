@@ -1199,6 +1199,8 @@ func (unit *ArmyUnit) Figures() int {
 type Army struct {
     Player *playerlib.Player
     ManaPool int
+    // when counter magic is cast, this field tracks how much 'counter magic' strength is available to dispel
+    CounterMagic int
     Units []*ArmyUnit
     Auto bool
     Fled bool
@@ -2688,6 +2690,14 @@ func (model *CombatModel) GetArmyForPlayer(player *playerlib.Player) *Army {
     }
 
     return model.AttackingArmy
+}
+
+func (model *CombatModel) GetOppositeArmyForPlayer(player *playerlib.Player) *Army {
+    if model.DefendingArmy.Player == player {
+        return model.AttackingArmy
+    }
+
+    return model.DefendingArmy
 }
 
 func (model *CombatModel) GetArmy(unit *ArmyUnit) *Army {
