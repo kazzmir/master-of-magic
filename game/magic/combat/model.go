@@ -1790,6 +1790,8 @@ func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, uni
         LastTurn: model.CurrentTurn-1,
     }
 
+    newUnit.Model = model
+
     model.Tiles[y][x].Unit = &newUnit
 
     if player == model.DefendingArmy.Player {
