@@ -1214,7 +1214,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         screen.DrawImage(animal, &iconOptions)
 
         x, y := options.GeoM.Apply(float64(8 * data.ScreenScale + animal.Bounds().Dx()), float64(9 * data.ScreenScale))
-        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
+        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, font.FontOptions{})
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
         screen.DrawImage(rightSide, &options)
@@ -1321,7 +1321,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
         x, y := options.GeoM.Apply(float64(pageBackground.Bounds().Dx()) / 2, float64(middleY) - wrappedText.TotalHeight / 2 - float64(fonts.BigFont.Height() * data.ScreenScale) / 2 + 5)
         fonts.BigFont.PrintCenter(screen, x, y, float64(data.ScreenScale), textScale, title)
         y += float64(fonts.BigFont.Height() * data.ScreenScale) + 1
-        fonts.SmallFont.RenderWrapped(screen, x, y, wrappedText, textScale, true)
+        fonts.SmallFont.RenderWrapped(screen, x, y, wrappedText, textScale, font.FontOptions{Justify: font.FontJustifyCenter})
 
         scrollOptions := options
         scrollOptions.GeoM.Translate(float64(-63 * data.ScreenScale), float64(-20 * data.ScreenScale))
@@ -2733,7 +2733,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
         screen.DrawImage(animal, &iconOptions)
 
         x, y := options.GeoM.Apply(float64(75 * data.ScreenScale), float64(9 * data.ScreenScale))
-        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
+        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, font.FontOptions{})
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
 
