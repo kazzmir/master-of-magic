@@ -18,6 +18,7 @@ import (
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -108,8 +109,9 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 2)
             screen.DrawImage(background, &options)
 
-            fonts.ResourceFont.PrintRight(screen, float64(190 * data.ScreenScale), float64(166 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v GP", player.Gold))
-            fonts.ResourceFont.PrintRight(screen, float64(233 * data.ScreenScale), float64(166 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v MP", player.Mana))
+            fontOptions := font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}
+            fonts.ResourceFont.PrintOptions(screen, float64(190 * data.ScreenScale), float64(166 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fontOptions, fmt.Sprintf("%v GP", player.Gold))
+            fonts.ResourceFont.PrintOptions(screen, float64(233 * data.ScreenScale), float64(166 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fontOptions, fmt.Sprintf("%v MP", player.Mana))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
