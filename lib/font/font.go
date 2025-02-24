@@ -107,6 +107,53 @@ func (font *Font) getGlyphImage(index int) *ebiten.Image {
     return font.Image.SubImage(image.Rect(x1, y1, x2, y2)).(*ebiten.Image)
 }
 
+func toFloatArray(color color.Color) []float32 {
+    r, g, b, a := color.RGBA()
+    var max float32 = 65535.0
+    return []float32{float32(r) / max, float32(g) / max, float32(b) / max, float32(a) / max}
+}
+
+func (font *Font) PrintOutline(destination *ebiten.Image, edgeShader *ebiten.Shader, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
+    useX := x
+
+    black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
+    var shaderOptions ebiten.DrawRectShaderOptions
+    shaderOptions.Uniforms = make(map[string]interface{})
+    shaderOptions.Uniforms["Color1"] = toFloatArray(black)
+    shaderOptions.Uniforms["Color2"] = toFloatArray(black)
+    shaderOptions.Uniforms["Color3"] = toFloatArray(black)
+    shaderOptions.Uniforms["Time"] = float32(0)
+    shaderOptions.ColorScale = colorScale
+
+    for _, c := range text {
+        if c == '\n' {
+            y += float64(font.GlyphHeight + font.internalFont.VerticalSpacing)
+            useX = 0
+            continue
+        }
+
+        glyphIndex := int(c) - 32
+        if glyphIndex >= len(font.Glyphs) || glyphIndex < 0 {
+            continue
+        }
+
+        glyph := font.Glyphs[glyphIndex]
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Scale(scale, scale)
+        options.GeoM.Translate(useX, y)
+        options.ColorScale = colorScale
+        glyphImage := font.getGlyphImage(glyphIndex)
+        destination.DrawImage(glyphImage, &options)
+
+        shaderOptions.GeoM = options.GeoM
+        shaderOptions.Images[0] = glyphImage
+        destination.DrawRectShader(glyphImage.Bounds().Dx(), glyphImage.Bounds().Dy(), edgeShader, &shaderOptions)
+
+        useX += float64(glyph.Width + font.internalFont.HorizontalSpacing) * scale
+    }
+}
+
 func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
     useX := x
     for _, c := range text {
