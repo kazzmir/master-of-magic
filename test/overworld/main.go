@@ -1032,6 +1032,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Disenchant True"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Spell Blast"))
 
     // city spells
     player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
@@ -1171,6 +1172,8 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     enemy2.AddCity(city3)
 
     player.LiftFog(x2, y2, 4, city3.Plane)
+    player.AwarePlayer(enemy)
+    player.AwarePlayer(enemy2)
 
     return game
 }

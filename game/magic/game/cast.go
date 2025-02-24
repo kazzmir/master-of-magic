@@ -417,7 +417,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Disjunction True
                 Great Unsummoning
                 Spell Binding
-                Spell Blast
                 Stasis
                 Word of Recall
                 Fire Storm
@@ -498,6 +497,12 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeRaiseVolcano, SelectedFunc: selected}
+        case "Spell Blast":
+            game.HudUI.AddGroup(
+                makeSelectSpellBlastTargetUI(game.Cache, &game.ImageCache, player,
+                    func(selectedPlayer *playerlib.Player) {},
+                ),
+            )
         case "Enchant Road":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: game.doCastEnchantRoad}
         case "Corruption":

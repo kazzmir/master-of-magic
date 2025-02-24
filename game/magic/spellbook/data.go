@@ -585,11 +585,6 @@ func ReadSpells(lbxFile *lbx.LbxFile, entry int) (Spells, error) {
 
         magicData := <-spellMagicIterator
 
-        // hacks to fix some spells that are not marked as variable cost
-        if name == "Spell Blast" {
-            spellType = 18
-        }
-
         spells.AddSpell(Spell{
             Name: name,
             Index: i,
