@@ -1,0 +1,16 @@
+//kage:unit pixels
+
+package main
+
+func Fragment(destPosition vec4, srcPosition vec2, color vec4) vec4 {
+
+    current := imageSrc0At(srcPosition)
+    left := imageSrc0At(srcPosition - vec2(1, 0))
+    up := imageSrc0At(srcPosition - vec2(0, 1))
+
+    if current.a != 0 || (left.a == 0 && up.a == 0) {
+        return vec4(0, 0, 0, 0)
+    }
+
+    return vec4(0, 0, 0, 1)
+}
