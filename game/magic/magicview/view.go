@@ -338,6 +338,15 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     blue2Palette[1] = color.RGBA{R: 0x52, G: 0x61, B: 0xca, A: 0xff}
     smallerFont := font.MakeOptimizedFontWithPalette(fonts[1], blue2Palette)
 
+    yellowishPalette := color.Palette{
+        color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x00},
+        color.RGBA{R: 0xa6, G: 0x6d, B: 0x1c, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xb6, B: 0x2c, A: 0xff},
+    }
+
+    // FIXME: font with black outline
+    spellFont := font.MakeOptimizedFontWithPalette(fonts[0], yellowishPalette)
+
     translucentWhite := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 80})
     transmutePalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -389,11 +398,11 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     for i := range 4 {
 
         gemPositions := []image.Point{
-                image.Pt(24, 4),
-                image.Pt(101, 4),
-                image.Pt(178, 4),
-                image.Pt(255, 4),
-            }
+            image.Pt(24, 4),
+            image.Pt(101, 4),
+            image.Pt(178, 4),
+            image.Pt(255, 4),
+        }
 
         // the treaty icon is the scroll/peace/war icon between the wizard being rendered and another wizard
         // each enemy wizard can have a treaty with any other wizard
@@ -456,6 +465,13 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                         portrait, _ := magic.ImageCache.GetImage("lilwiz.lbx", portraitIndex, 0)
                         if portrait != nil {
                             screen.DrawImage(portrait, &options)
+                        }
+                        if player.GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
+                            text := enemy.CastingSpell.Name
+                            if text == "" {
+                                text = "None"
+                            }
+                            spellFont.PrintCenter(screen, float64((position.X + 21) * data.ScreenScale), float64(position.Y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, text)
                         }
                     }
                 } else {

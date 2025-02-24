@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -24,6 +25,8 @@ type Engine struct {
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
     player := playerlib.MakePlayer(setup.WizardCustom{
         Base: data.WizardHorus,
         Name: "Horus",
@@ -36,6 +39,7 @@ func NewEngine() (*Engine, error) {
 
     player.Wizard.ToggleRetort(data.RetortAlchemy, 2)
     player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
+    player.GlobalEnchantments.Insert(data.EnchantmentDetectMagic)
 
     enemy1 := playerlib.MakePlayer(setup.WizardCustom{
         Base: data.WizardMerlin,
@@ -44,6 +48,7 @@ func NewEngine() (*Engine, error) {
     }, false, 0, 0, nil)
 
     enemy1.GlobalEnchantments.Insert(data.EnchantmentCrusade)
+    enemy1.CastingSpell = allSpells.FindByName("Eldritch Weapon")
 
     player.AwarePlayer(enemy1)
 

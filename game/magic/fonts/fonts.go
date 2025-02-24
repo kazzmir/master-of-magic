@@ -1021,7 +1021,7 @@ func MakeGameFonts(cache *lbx.LbxCache) *GameFonts {
 
     whitePalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},  // FIXME: should probably more like color.RGBA{R: 0x90, G: 0x86, B: 0x81, A: 0},
         color.White, color.White, color.White, color.White,
     }
 
