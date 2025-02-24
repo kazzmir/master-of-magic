@@ -1355,12 +1355,21 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
         army := combat.Model.GetArmyForPlayer(player)
 
         doPlayerSpell := func(){
-            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(), make(map[spellbook.Spell]int), army.ManaPool, spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+            // FIXME: this check should be done earlier so that we don't even let the player pick a spell
+            if army.Casted {
+                return
+            }
+
+            // the lower of the mana pool (casting skill) or the wizard's mana divided by the range
+            minimumMana := min(army.ManaPool, int(float64(army.Player.Mana) / army.Range.ToFloat()))
+
+            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
                 if picked {
+                    army.Casted = true
                     // player mana and skill should go down accordingly
                     combat.InvokeSpell(player, spell, func(){
                         army.ManaPool -= spell.Cost(false)
-                        player.Mana -= spell.Cost(false)
+                        player.Mana -= int(float64(spell.Cost(false)) * army.Range.ToFloat())
                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
                     })
                 }
@@ -1384,6 +1393,8 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                         Action: func(){
                             unitSpells := combat.Model.SelectedUnit.Spells
                             caster := combat.Model.SelectedUnit
+
+                            // spell casting range for a unit is always 1
 
                             doCast := func(spell spellbook.Spell){
                                 combat.InvokeSpell(player, spell, func(){

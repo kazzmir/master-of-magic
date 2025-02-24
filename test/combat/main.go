@@ -272,8 +272,10 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
+    /*
     defendingArmy.AddEnchantment(data.CombatEnchantmentCounterMagic)
     defendingArmy.CounterMagic = 50
+    */
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
     if err != nil {
@@ -291,7 +293,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.AddCity(fortressCity)
 
     attackingPlayer.CastingSkillPower = 10000
-    attackingPlayer.Mana = 1000
+    attackingPlayer.Mana = 100
 
     // attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
 
@@ -332,7 +334,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createWarlockArmyN(attackingPlayer, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 20)
+    return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
 }
 
 func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {

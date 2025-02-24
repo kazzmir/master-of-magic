@@ -1205,6 +1205,7 @@ type Army struct {
     Units []*ArmyUnit
     Auto bool
     Fled bool
+    Casted bool
 
     Enchantments []data.CombatEnchantment
 }
@@ -1516,6 +1517,9 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
 
 func (model *CombatModel) NextTurn() {
     model.CurrentTurn += 1
+
+    model.DefendingArmy.Casted = false
+    model.AttackingArmy.Casted = false
 
     defenderLeakMana := false
 
