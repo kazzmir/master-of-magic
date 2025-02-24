@@ -55,7 +55,8 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
         return
     }
 
-    engine.VaultFonts.ItemName.PrintOutline(screen, shader, 10, 10, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+    // engine.VaultFonts.ItemName.PrintOutline(screen, shader, 10, 10, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+    engine.VaultFonts.ItemName.PrintDropShadow(screen, 10, 10, 4, ebiten.ColorScale{}, "This is a test of font outlines")
     engine.VaultFonts.ItemName.Print(screen, 10, 80, 4, ebiten.ColorScale{}, "This is a test of font outlines")
 
     engine.VaultFonts.PowerFont.PrintOutline(screen, shader, 10, 150, 4, ebiten.ColorScale{}, "This is a test of font outlines")

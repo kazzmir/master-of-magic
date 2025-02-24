@@ -154,6 +154,43 @@ func (font *Font) PrintOutline(destination *ebiten.Image, edgeShader *ebiten.Sha
     }
 }
 
+func (font *Font) PrintDropShadow(destination *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
+    useX := x
+
+    black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
+
+    distance := 3.0/4
+
+    for _, c := range text {
+        if c == '\n' {
+            y += float64(font.GlyphHeight + font.internalFont.VerticalSpacing)
+            useX = 0
+            continue
+        }
+
+        glyphIndex := int(c) - 32
+        if glyphIndex >= len(font.Glyphs) || glyphIndex < 0 {
+            continue
+        }
+
+        glyph := font.Glyphs[glyphIndex]
+
+        var options ebiten.DrawImageOptions
+        options.GeoM.Scale(scale, scale)
+        options.GeoM.Translate(useX+scale*distance, y+scale*distance)
+        options.ColorScale = colorScale
+        options.ColorScale.ScaleWithColor(black)
+        glyphImage := font.getGlyphImage(glyphIndex)
+        destination.DrawImage(glyphImage, &options)
+
+        options.ColorScale = colorScale
+        options.GeoM.Translate(-scale*distance, -scale*distance)
+        destination.DrawImage(glyphImage, &options)
+
+        useX += float64(glyph.Width + font.internalFont.HorizontalSpacing) * scale
+    }
+}
+
 func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
     useX := x
     for _, c := range text {
