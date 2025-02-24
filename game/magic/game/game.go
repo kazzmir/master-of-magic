@@ -2841,7 +2841,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.ResearchNewSpell(yield, researchSpell.Player)
                     case *GameEventCastGlobalEnchantment:
                         castGlobal := event.(*GameEventCastGlobalEnchantment)
-                        game.doCastGlobalEnchantment(yield, castGlobal.Player, castGlobal.Enchantment)
+                        if castGlobal.Player.IsHuman() || game.GetHumanPlayer().GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
+                            game.doCastGlobalEnchantment(yield, castGlobal.Player, castGlobal.Enchantment)
+                        }
                     case *GameEventSelectLocationForSpell:
                         selectLocation := event.(*GameEventSelectLocationForSpell)
                         tileX, tileY, cancel := game.selectLocationForSpell(yield, selectLocation.Spell, selectLocation.Player, selectLocation.LocationType)

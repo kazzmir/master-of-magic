@@ -4374,7 +4374,39 @@ func createScenario49(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y, _ = game.FindValidCityLocation(game.Plane)
 
-    city = citylib.MakeCity("City 1", x, y, enemy.Wizard.Race, game.BuildingInfo, game.CurrentMap(), game, enemy)
+    city = citylib.MakeCity("City 2", x, y, enemy.Wizard.Race, game.BuildingInfo, game.CurrentMap(), game, enemy)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = enemy.Wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.ResetCitizens()
+
+    enemy.AddCity(city)
+
+    player.LiftFog(x, y, 4, data.PlaneArcanus)
+    player.AwarePlayer(enemy)
+
+    enemy = game.AddPlayer(
+        setup.WizardCustom{
+            Name: "Freya",
+            Base: data.WizardFreya,
+            Banner: data.BannerGreen,
+            Race: data.RaceHalfling,
+        },
+        false,
+    )
+    enemy.CastingSkillPower += 500000
+    enemy.CastingSpell = allSpells.FindByName("Awareness")
+    enemy.Gold = 1000
+    enemy.Mana = 10000
+
+    x, y, _ = game.FindValidCityLocation(game.Plane)
+
+    city = citylib.MakeCity("City 3", x, y, enemy.Wizard.Race, game.BuildingInfo, game.CurrentMap(), game, enemy)
     city.Population = 6190
     city.Plane = data.PlaneArcanus
     city.Buildings.Insert(buildinglib.BuildingSummoningCircle)

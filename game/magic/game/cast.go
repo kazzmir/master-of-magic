@@ -1457,8 +1457,12 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
             options.GeoM.Translate(float64(13 * data.ScreenScale), float64(13 * data.ScreenScale))
             screen.DrawImage(mood, &options)
 
-            // FIXME: if another wizard is casting the spell should their name be shown instead of 'You' ?
-            fonts.InfoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, "You have finished casting")
+            text := "You have finished casting"
+            if !player.IsHuman() {
+                text = fmt.Sprintf("%v has cast", player.Wizard.Name)
+            }
+
+            fonts.InfoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, text)
         } else {
             // then draw the spell image
             options.GeoM.Translate(float64(9 * data.ScreenScale), float64(8 * data.ScreenScale))
