@@ -956,20 +956,14 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
     targetAny := func (target *ArmyUnit) bool { return true }
 
     // higher order function that automatically applies dispel logic
-    checkDispel := func (onTarget func(*ArmyUnit)) func(*ArmyUnit) {
+    checkTargetDispel := func (onTarget func(*ArmyUnit)) func(*ArmyUnit) {
         return func(target *ArmyUnit) {
-            opposite := combat.Model.GetOppositeArmyForPlayer(player)
-            if opposite.CounterMagic > 0 {
-                chance := spellbook.ComputeDispelChance(opposite.CounterMagic, spell.Cost(false), spell.Magic, &player.Wizard)
-                opposite.CounterMagic = max(0, opposite.CounterMagic - 5)
-
-                if spellbook.RollDispelChance(chance) {
-                    combat.Events <- &CombatEventMessage{
-                        Message: fmt.Sprintf("%v fizzled", spell.Name),
-                    }
-                    castedCallback()
-                    return
+            if combat.Model.CheckDispel(spell, player) {
+                combat.Events <- &CombatEventMessage{
+                    Message: fmt.Sprintf("%v fizzled", spell.Name),
                 }
+                castedCallback()
+                return
             }
 
             // didn't dispel, so call the original spell function
@@ -979,7 +973,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
 
     switch spell.Name {
         case "Fireball":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, checkDispel(func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, checkTargetDispel(func(target *ArmyUnit){
                 combat.CreateFireballProjectile(target)
                 castedCallback()
             }), targetAny)

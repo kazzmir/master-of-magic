@@ -2770,3 +2770,18 @@ func (model *CombatModel) flee(army *Army) {
         }
     }
 }
+
+// returns true if the spell should be dispelled (due to counter magic, magic nodes, etc)
+func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.Player) bool {
+    opposite := model.GetOppositeArmyForPlayer(caster)
+    if opposite.CounterMagic > 0 {
+        chance := spellbook.ComputeDispelChance(opposite.CounterMagic, spell.Cost(false), spell.Magic, &caster.Wizard)
+        opposite.CounterMagic = max(0, opposite.CounterMagic - 5)
+
+        return spellbook.RollDispelChance(chance)
+    }
+
+    // FIXME: check dispel from magic nodes
+
+    return false
+}
