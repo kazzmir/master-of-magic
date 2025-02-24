@@ -6,6 +6,7 @@ import (
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -79,10 +80,11 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
             }
 
-            fonts.NormalFont.PrintCenter(screen, float64(30 * data.ScreenScale), float64(162 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "UPKEEP")
-            fonts.NormalFont.PrintCenter(screen, float64(45 * data.ScreenScale), float64(172 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", upkeepGold))
-            fonts.NormalFont.PrintCenter(screen, float64(45 * data.ScreenScale), float64(182 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", upkeepMana))
-            fonts.NormalFont.PrintCenter(screen, float64(45 * data.ScreenScale), float64(192 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v", upkeepFood))
+            shadow := font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true}
+            fonts.NormalFont.PrintOptions(screen, float64(30 * data.ScreenScale), float64(162 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, shadow, "UPKEEP")
+            fonts.NormalFont.PrintOptions(screen, float64(45 * data.ScreenScale), float64(172 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, shadow, fmt.Sprintf("%v", upkeepGold))
+            fonts.NormalFont.PrintOptions(screen, float64(45 * data.ScreenScale), float64(182 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, shadow, fmt.Sprintf("%v", upkeepMana))
+            fonts.NormalFont.PrintOptions(screen, float64(45 * data.ScreenScale), float64(192 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, shadow, fmt.Sprintf("%v", upkeepFood))
 
             minimapRect := image.Rect(85 * data.ScreenScale, 163 * data.ScreenScale, 135 * data.ScreenScale, 197 * data.ScreenScale)
             minimapArea := screen.SubImage(minimapRect).(*ebiten.Image)
