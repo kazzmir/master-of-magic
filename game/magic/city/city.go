@@ -74,7 +74,6 @@ func (citySize CitySize) String() string {
 type CatchmentProvider interface {
     GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile
     OnShore(x int, y int) bool
-    // distance to a tile from where the city is
     TileDistance(x1 int, y1 int, x2 int, y2 int) int
 }
 
@@ -202,6 +201,7 @@ func (city *City) ProducingString() string {
     return ""
 }
 
+// distance to a tile from where the city is
 func (city *City) TileDistance(x int, y int) int {
     return city.CatchmentProvider.TileDistance(city.X, city.Y, x, y)
 }
