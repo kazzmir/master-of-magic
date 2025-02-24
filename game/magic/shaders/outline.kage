@@ -1,0 +1,21 @@
+//kage:unit pixels
+
+package main
+
+var OutlineColor vec4
+
+func Fragment(destPosition vec4, srcPosition vec2, color vec4) vec4 {
+    current := imageSrc0At(srcPosition)
+
+    if current.a != 0 {
+        return current
+    }
+
+    average := nearbyAlpha(srcPosition)
+
+    if average < 0.1 {
+        return current
+    }
+
+    return OutlineColor
+}
