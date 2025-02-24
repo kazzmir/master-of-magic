@@ -32,7 +32,7 @@ type WizardSlot struct {
     // the portrait of the wizard shown when the user's cursor is on top of their name
     Portrait int
     Books []data.WizardBook
-    ExtraAbility data.Retort
+    ExtraRetort data.Retort
 }
 
 // some abilities can only be selected if other properties of the wizard are set
@@ -134,7 +134,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.LifeMagic, Count: 5},
                 data.WizardBook{Magic: data.NatureMagic, Count: 5},
             },
-            ExtraAbility: data.RetortSageMaster,
+            ExtraRetort: data.RetortSageMaster,
         },
         WizardSlot{
             Name: "Raven",
@@ -145,7 +145,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.SorceryMagic, Count: 6},
                 data.WizardBook{Magic: data.NatureMagic, Count: 5},
             },
-            ExtraAbility: data.RetortNone,
+            ExtraRetort: data.RetortNone,
         },
         WizardSlot{
             Name: "Sharee",
@@ -156,7 +156,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.DeathMagic, Count: 5},
                 data.WizardBook{Magic: data.ChaosMagic, Count: 5},
             },
-            ExtraAbility: data.RetortConjurer,
+            ExtraRetort: data.RetortConjurer,
         },
         WizardSlot{
             Name: "Lo Pan",
@@ -167,7 +167,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.SorceryMagic, Count: 5},
                 data.WizardBook{Magic: data.ChaosMagic, Count: 5},
             },
-            ExtraAbility: data.RetortChanneler,
+            ExtraRetort: data.RetortChanneler,
         },
         WizardSlot{
             Name: "Jafar",
@@ -177,7 +177,7 @@ func DefaultWizardSlots() []WizardSlot {
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.SorceryMagic, Count: 10},
             },
-            ExtraAbility: data.RetortAlchemy,
+            ExtraRetort: data.RetortAlchemy,
         },
         WizardSlot{
             Name: "Oberic",
@@ -188,7 +188,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.NatureMagic, Count: 5},
                 data.WizardBook{Magic: data.ChaosMagic, Count: 5},
             },
-            ExtraAbility: data.RetortManaFocusing,
+            ExtraRetort: data.RetortManaFocusing,
         },
         WizardSlot{
             Name: "Rjak",
@@ -198,7 +198,7 @@ func DefaultWizardSlots() []WizardSlot {
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.DeathMagic, Count: 9},
             },
-            ExtraAbility: data.RetortInfernalPower,
+            ExtraRetort: data.RetortInfernalPower,
         },
         WizardSlot{
             Name: "Sss'ra",
@@ -209,7 +209,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.LifeMagic, Count: 4},
                 data.WizardBook{Magic: data.ChaosMagic, Count: 4},
             },
-            ExtraAbility: data.RetortMyrran,
+            ExtraRetort: data.RetortMyrran,
         },
         WizardSlot{
             Name: "Tauron",
@@ -219,7 +219,7 @@ func DefaultWizardSlots() []WizardSlot {
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.ChaosMagic, Count: 10},
             },
-            ExtraAbility: data.RetortChaosMastery,
+            ExtraRetort: data.RetortChaosMastery,
         },
         WizardSlot{
             Name: "Freya",
@@ -229,7 +229,7 @@ func DefaultWizardSlots() []WizardSlot {
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.NatureMagic, Count: 10},
             },
-            ExtraAbility: data.RetortNatureMastery,
+            ExtraRetort: data.RetortNatureMastery,
         },
         WizardSlot{
             Name: "Horus",
@@ -240,7 +240,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.LifeMagic, Count: 5},
                 data.WizardBook{Magic: data.SorceryMagic, Count: 5},
             },
-            ExtraAbility: data.RetortArchmage,
+            ExtraRetort: data.RetortArchmage,
         },
         WizardSlot{
             Name: "Ariel",
@@ -250,7 +250,7 @@ func DefaultWizardSlots() []WizardSlot {
             Books: []data.WizardBook{
                 data.WizardBook{Magic: data.LifeMagic, Count: 10},
             },
-            ExtraAbility: data.RetortCharismatic,
+            ExtraRetort: data.RetortCharismatic,
         },
         WizardSlot{
             Name: "Tlaloc",
@@ -261,7 +261,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.NatureMagic, Count: 4},
                 data.WizardBook{Magic: data.DeathMagic, Count: 5},
             },
-            ExtraAbility: data.RetortWarlord,
+            ExtraRetort: data.RetortWarlord,
         },
         WizardSlot{
             Name: "Kali",
@@ -272,7 +272,7 @@ func DefaultWizardSlots() []WizardSlot {
                 data.WizardBook{Magic: data.SorceryMagic, Count: 5},
                 data.WizardBook{Magic: data.DeathMagic, Count: 5},
             },
-            ExtraAbility: data.RetortArtificer,
+            ExtraRetort: data.RetortArtificer,
         },
         WizardSlot{
             Name: "Custom",
@@ -682,8 +682,8 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
         screen.CustomWizard.Base = screen.WizardSlots[wizard].Base
         screen.CustomWizard.Abilities = make([]data.Retort, 0)
         screen.CustomWizard.Portrait = screen.WizardSlots[wizard].Portrait
-        if screen.WizardSlots[wizard].ExtraAbility != data.RetortNone {
-            screen.CustomWizard.Abilities = append(screen.CustomWizard.Abilities, screen.WizardSlots[wizard].ExtraAbility)
+        if screen.WizardSlots[wizard].ExtraRetort != data.RetortNone {
+            screen.CustomWizard.Abilities = append(screen.CustomWizard.Abilities, screen.WizardSlots[wizard].ExtraRetort)
         }
 
         screen.CustomWizard.StartingSpells.AddAllSpells(GetStartingSpells(&screen.CustomWizard, screen.Spells))
@@ -753,8 +753,8 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                     options.GeoM.Reset()
                     options.GeoM.Translate(float64(34 * data.ScreenScale), float64(135 * data.ScreenScale))
                     draw.DrawBooks(window, options, &screen.ImageCache, screen.WizardSlots[screen.CurrentWizard].Books, screen.BooksOrderRandom())
-                    if screen.WizardSlots[screen.CurrentWizard].ExtraAbility != data.RetortNone {
-                        screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraAbility.String())
+                    if screen.WizardSlots[screen.CurrentWizard].ExtraRetort != data.RetortNone {
+                        screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraRetort.String())
                     }
                 }
             }

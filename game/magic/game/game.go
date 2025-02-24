@@ -2990,7 +2990,7 @@ func ChooseUniqueWizard(players []*playerlib.Player, allSpells spellbook.Spells)
         return setup.WizardCustom{}, false
     }
 
-    race, ok := chooseRace(wizard.ExtraAbility == data.RetortMyrran)
+    race, ok := chooseRace(wizard.ExtraRetort == data.RetortMyrran)
     if !ok {
         return setup.WizardCustom{}, false
     }
@@ -3001,8 +3001,8 @@ func ChooseUniqueWizard(players []*playerlib.Player, allSpells spellbook.Spells)
     }
 
     var abilities []data.Retort
-    if wizard.ExtraAbility != data.RetortNone {
-        abilities = []data.Retort{wizard.ExtraAbility}
+    if wizard.ExtraRetort != data.RetortNone {
+        abilities = []data.Retort{wizard.ExtraRetort}
     }
 
     customWizard := setup.WizardCustom{
