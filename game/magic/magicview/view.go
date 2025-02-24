@@ -44,7 +44,7 @@ type MagicScreen struct {
     SkillLocked bool
 }
 
-func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, enemies []*playerlib.Player, power int) *MagicScreen {
+func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, power int) *MagicScreen {
     magic := &MagicScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
@@ -57,7 +57,7 @@ func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, enemies []*p
         SkillLocked: false,
     }
 
-    magic.UI = magic.MakeUI(player, enemies)
+    magic.UI = magic.MakeUI(player)
 
     return magic
 }
@@ -310,7 +310,8 @@ func randomizeBookOrder(books int) []int {
     return order
 }
 
-func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.Player) *uilib.UI {
+func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
+    enemies := player.GetKnownPlayers()
 
     fontLbx, err := magic.Cache.GetLbxFile("fonts.lbx")
     if err != nil {
