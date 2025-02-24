@@ -525,7 +525,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                     }
 
                     wrapped := getSpellDescriptionNormalText(spell.Index)
-                    spellTextNormalFont.RenderWrapped(pageImage, x, y, wrapped, scale, false)
+                    spellTextNormalFont.RenderWrapped(pageImage, x, y, wrapped, scale, font.FontOptions{})
 
                     if !flipping && learnedSpell.Name == spell.Name && !learnSpellAnimation.Done() {
                         animationOptions := options
@@ -537,7 +537,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                 } else {
                     spellTitleAlienFont.Print(pageImage, x, y, float64(data.ScreenScale), options.ColorScale, spell.Name)
                     wrapped := getSpellDescriptionAlienText(spell.Index)
-                    spellTextAlienFont.RenderWrapped(pageImage, x, y + float64(10 * data.ScreenScale), wrapped, options.ColorScale, false)
+                    spellTextAlienFont.RenderWrapped(pageImage, x, y + float64(10 * data.ScreenScale), wrapped, options.ColorScale, font.FontOptions{})
                 }
             }
         }

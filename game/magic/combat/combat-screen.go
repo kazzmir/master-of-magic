@@ -1834,7 +1834,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
 
     selectElement := &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            combat.WhiteFont.PrintWrap(screen, float64(x * data.ScreenScale), float64(y * data.ScreenScale), float64(75 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+            combat.WhiteFont.PrintWrap(screen, float64(x * data.ScreenScale), float64(y * data.ScreenScale), float64(75 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
         },
     }
 
@@ -1920,7 +1920,7 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
 
     selectElement := &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            combat.WhiteFont.PrintWrap(screen, float64(x * data.ScreenScale), float64(y * data.ScreenScale), float64(75 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+            combat.WhiteFont.PrintWrap(screen, float64(x * data.ScreenScale), float64(y * data.ScreenScale), float64(75 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
         },
     }
 

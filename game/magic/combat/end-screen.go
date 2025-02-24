@@ -201,7 +201,7 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             if extraText2 != "" {
                 extraY += float64((extraFont.Height() + 1) * data.ScreenScale)
                 // extraFont.PrintCenter(screen, extraX, extraY, float64(data.ScreenScale), options.ColorScale, extraText2)
-                extraFont.RenderWrapped(screen, extraX, extraY, extraText2Render, options.ColorScale, true)
+                extraFont.RenderWrapped(screen, extraX, extraY, extraText2Render, options.ColorScale, font.FontOptions{Justify: font.FontJustifyCenter})
             }
         },
     }

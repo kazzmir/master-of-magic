@@ -13,6 +13,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -1567,7 +1568,7 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
 
                     printX, printY := baseGeoM.Apply(float64(x + use.Bounds().Dx() / 2) + roadX, float64(y + 1 * data.ScreenScale) + roadY)
 
-                    useFont.PrintCenter(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, text)
+                    useFont.PrintOptions(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true}, text)
                 }
             }
         }
@@ -2178,7 +2179,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             screen.DrawImage(producingPics[index], &options)
         }
 
-        cityScreen.Fonts.ProducingFont.PrintCenter(screen, float64(237 * data.ScreenScale), float64(179 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding))
+        cityScreen.Fonts.ProducingFont.PrintOptions(screen, float64(237 * data.ScreenScale), float64(179 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true}, cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding))
 
         // for all buildings besides trade goods and housing, show amount of work required to build
 
@@ -2196,7 +2197,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
                 case buildinglib.BuildingHousing: description = "Increases population growth rate."
             }
 
-            cityScreen.Fonts.ProducingFont.PrintWrapCenter(screen, float64(285 * data.ScreenScale), float64(155 * data.ScreenScale), float64(60 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, description)
+            cityScreen.Fonts.ProducingFont.PrintWrap(screen, float64(285 * data.ScreenScale), float64(155 * data.ScreenScale), float64(60 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true}, description)
         } else {
             showWork = true
             workRequired = cityScreen.City.BuildingInfo.ProductionCost(cityScreen.City.ProducingBuilding)
@@ -2210,7 +2211,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             options.GeoM.Translate(float64(238 * data.ScreenScale), float64(168 * data.ScreenScale))
             combat.RenderCombatTile(screen, &cityScreen.ImageCache, options)
             combat.RenderCombatUnit(screen, use, options, cityScreen.City.ProducingUnit.Count, data.UnitEnchantmentNone, 0, nil)
-            cityScreen.Fonts.ProducingFont.PrintCenter(screen, float64(237 * data.ScreenScale), float64(179 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, cityScreen.City.ProducingUnit.Name)
+            cityScreen.Fonts.ProducingFont.PrintOptions(screen, float64(237 * data.ScreenScale), float64(179 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true}, cityScreen.City.ProducingUnit.Name)
         }
 
         showWork = true

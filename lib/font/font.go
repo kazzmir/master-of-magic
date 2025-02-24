@@ -23,8 +23,6 @@ const (
 type FontOptions struct {
     // left is default
     Justify FontJustify
-    // no wrap is default
-    // Wrap bool
     // no shadow is default
     DropShadow bool
 }
@@ -297,14 +295,17 @@ func (font *Font) splitText(text string, maxWidth float64, scale float64) (strin
     return "", text
 }
 
-func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, colorScale ebiten.ColorScale, text string) {
+func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, colorScale ebiten.ColorScale, options FontOptions, text string) {
     wrapped := font.CreateWrappedText(maxWidth, scale, text)
-    font.RenderWrapped(image, x, y, wrapped, colorScale, false)
+    font.RenderWrapped(image, x, y, wrapped, colorScale, options)
 }
 
 func (font *Font) PrintWrapCenter(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, colorScale ebiten.ColorScale, text string) {
+    font.PrintWrap(image, x, y, maxWidth, scale, colorScale, FontOptions{Justify: FontJustifyCenter}, text)
+    /*
     wrapped := font.CreateWrappedText(maxWidth, scale, text)
-    font.RenderWrapped(image, x, y, wrapped, colorScale, true)
+    font.RenderWrapped(image, x, y, wrapped, colorScale, FontOptions{Justify: FontJustifyCenter})
+    */
 }
 
 type WrappedText struct {
@@ -318,14 +319,11 @@ func (text *WrappedText) Clear() {
     text.Lines = nil
 }
 
-func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, colorScale ebiten.ColorScale, center bool) {
+func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, colorScale ebiten.ColorScale, options FontOptions) {
     yPos := y
+    useOptions := options
     for _, line := range wrapped.Lines {
-        if center {
-            font.PrintCenter(image, x, yPos, wrapped.Scale, colorScale, line)
-        } else {
-            font.Print(image, x, yPos, wrapped.Scale, colorScale, line)
-        }
+        font.PrintOptions(image, x, yPos, wrapped.Scale, colorScale, useOptions, line)
         yPos += float64(font.Height()) * wrapped.Scale + 1
     }
 }
