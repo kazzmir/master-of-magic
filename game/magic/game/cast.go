@@ -574,7 +574,7 @@ func (game *Game) checkInstantFizzleForCastSpell(player *playerlib.Player, spell
 func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, disenchantTrue bool, tileX int, tileY int) {
     game.doCastOnMap(yield, tileX, tileY, 9, false, spell.Sound, func (x int, y int, animationFrame int){})
 
-    disenchantStrength := spell.OverrideCost
+    disenchantStrength := spell.Cost(true)
     if disenchantTrue {
         // each additional point of mana spent increases the disenchant strength by 3
         disenchantStrength = spell.BaseCost(true) + spell.SpentAdditionalCost(true) * 3
