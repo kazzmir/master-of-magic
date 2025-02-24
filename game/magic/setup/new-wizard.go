@@ -339,7 +339,7 @@ func (wizard *WizardCustom) EnableRetort(retort data.Retort){
     wizard.Abilities = append(wizard.Abilities, retort)
 }
 
-func (wizard *WizardCustom) ToggleAbility(retort data.Retort, picksLeft int){
+func (wizard *WizardCustom) ToggleRetort(retort data.Retort, picksLeft int){
     var out []data.Retort
 
     found := false
@@ -1268,9 +1268,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             Rect: image.Rect(int(ability.X) * data.ScreenScale, int(ability.Y) * data.ScreenScale, (int(ability.X) + ability.Length) * data.ScreenScale, (int(ability.Y) + screen.AbilityFont.Height()) * data.ScreenScale),
             LeftClick: func(this *uilib.UIElement){
                 if screen.CustomWizard.RetortEnabled(ability.Ability) {
-                    screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
+                    screen.CustomWizard.ToggleRetort(ability.Ability, picksLeft())
                 } else if isAbilityAvailable(ability.Ability) {
-                    screen.CustomWizard.ToggleAbility(ability.Ability, picksLeft())
+                    screen.CustomWizard.ToggleRetort(ability.Ability, picksLeft())
                 } else if picksLeft() == 0 {
                     screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You have already made all your picks", func(){}))
                 } else {

@@ -34,7 +34,7 @@ func NewEngine() (*Engine, error) {
     player.Gold = 234
     player.Mana = 981
 
-    player.Wizard.ToggleAbility(data.RetortAlchemy, 2)
+    player.Wizard.ToggleRetort(data.RetortAlchemy, 2)
     player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
 
     enemy1 := playerlib.MakePlayer(setup.WizardCustom{
