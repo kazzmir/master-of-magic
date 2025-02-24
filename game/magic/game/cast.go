@@ -310,7 +310,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /*
             GLOBAL ENCHANTMENTS
                 TODO:
-                Detect Magic
                 Charm of Life
                 Holy Arms
                 Planar Seal
@@ -397,6 +396,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 for _, player := range game.Players {
                     player.UpdateUnrest()
                 }
+
+                game.RefreshUI()
+            }
+        case "Detect Magic":
+            if !player.GlobalEnchantments.Contains(data.EnchantmentJustCause) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentDetectMagic}
+
+                player.GlobalEnchantments.Insert(data.EnchantmentDetectMagic)
 
                 game.RefreshUI()
             }
