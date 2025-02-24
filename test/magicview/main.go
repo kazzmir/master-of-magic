@@ -37,17 +37,25 @@ func NewEngine() (*Engine, error) {
     player.Wizard.ToggleRetort(data.RetortAlchemy, 2)
     player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
 
-    enemy := playerlib.MakePlayer(setup.WizardCustom{
+    enemy1 := playerlib.MakePlayer(setup.WizardCustom{
         Base: data.WizardMerlin,
         Name: "Merlin",
         Banner: data.BannerPurple,
     }, false, 0, 0, nil)
 
-    enemy.GlobalEnchantments.Insert(data.EnchantmentCrusade)
+    enemy1.GlobalEnchantments.Insert(data.EnchantmentCrusade)
 
-    player.AwarePlayer(enemy)
+    player.AwarePlayer(enemy1)
 
-    magicScreen := magicview.MakeMagicScreen(cache, player, 100)
+    enemy2 := playerlib.MakePlayer(setup.WizardCustom{
+        Base: data.WizardFreya,
+        Name: "Freya",
+        Banner: data.BannerGreen,
+    }, false, 0, 0, nil)
+
+    enemy2.GlobalEnchantments.Insert(data.EnchantmentNaturesWrath)
+
+    magicScreen := magicview.MakeMagicScreen(cache, player, []*playerlib.Player{enemy1, enemy2}, 100)
 
     return &Engine{
         LbxCache: cache,

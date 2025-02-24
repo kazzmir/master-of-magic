@@ -44,7 +44,7 @@ type MagicScreen struct {
     SkillLocked bool
 }
 
-func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, power int) *MagicScreen {
+func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, enemies []*playerlib.Player, power int) *MagicScreen {
     magic := &MagicScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
@@ -57,7 +57,7 @@ func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, power int) *
         SkillLocked: false,
     }
 
-    magic.UI = magic.MakeUI(player)
+    magic.UI = magic.MakeUI(player, enemies)
 
     return magic
 }
@@ -310,8 +310,8 @@ func randomizeBookOrder(books int) []int {
     return order
 }
 
-func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
-    enemies := player.GetKnownPlayers()
+func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.Player) *uilib.UI {
+    knownPlayers := player.GetKnownPlayers()
 
     fontLbx, err := magic.Cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -403,7 +403,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             }
 
             // only show treaties for other wizards that the main player already knows about
-            if otherPlayer == player || slices.Contains(enemies, otherPlayer) {
+            if otherPlayer == player || slices.Contains(knownPlayers, otherPlayer) {
                 base := 0
                 // show the treaty icon in the color of the other player
                 switch otherPlayer.GetBanner() {
@@ -436,8 +436,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             RightClick: func(element *uilib.UIElement){
                 // show mirror ui with extra enemy info: relations, treaties, personality, objective
 
-                if i < len(enemies) && !enemies[i].Defeated {
-                    mirrorElement := mirror.MakeMirrorUI(magic.Cache, enemies[i], ui)
+                if i < len(knownPlayers) && !knownPlayers[i].Defeated {
+                    mirrorElement := mirror.MakeMirrorUI(magic.Cache, knownPlayers[i], ui)
                     ui.AddElement(mirrorElement)
                 }
             },
@@ -445,8 +445,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
 
-                if i < len(enemies) {
-                    enemy := enemies[i]
+                if i < len(knownPlayers) {
+                    enemy := knownPlayers[i]
 
                     if enemy.Defeated {
                         screen.DrawImage(gemDefeated, &options)
@@ -463,8 +463,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             },
         })
 
-        if i < len(enemies) {
-            enemy := enemies[i]
+        if i < len(knownPlayers) {
+            enemy := knownPlayers[i]
             if !enemy.Defeated {
                 positionStart := gemPositions[i]
                 positionStart.X += gemUnknown.Bounds().Dx() + 2 * data.ScreenScale
@@ -862,7 +862,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             })
         }
 
-        for _, enemy := range enemies {
+        for _, enemy := range knownPlayers {
             for _, enchantment := range enemy.GlobalEnchantments.Values() {
                 out = append(out, EnchantmentElement{
                     Enchantment: enchantment,
@@ -904,6 +904,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                         yes := func(){
                             player.GlobalEnchantments.Remove(enchantment.Enchantment)
                             player.UpdateUnrest()
+                            for _, enemy := range enemies {
+                                enemy.UpdateUnrest()
+                            }
                             setupEnchantments()
                             ui.RemoveGroup(group)
                         }
