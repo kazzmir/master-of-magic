@@ -6018,7 +6018,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 if !minMoves.IsZero() {
                     x := float64(246.0 * data.ScreenScale)
                     y := float64(167.0 * data.ScreenScale)
-                    game.Fonts.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
+                    game.Fonts.WhiteFont.PrintOptions(screen, x, y, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{DropShadow: true}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
 
                     sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
                     swimmingIcon, _ := game.ImageCache.GetImage("main.lbx", 19, 0)
