@@ -22,4 +22,10 @@ func TestLoadShaders(test *testing.T) {
     if err != nil {
         test.Errorf("Error loading drop shadow shader: %v", err)
     }
+
+    _, err = LoadOutlineShader()
+
+    if err != nil {
+        test.Errorf("Error loading outline shader: %v", err)
+    }
 }
