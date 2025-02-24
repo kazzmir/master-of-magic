@@ -2778,6 +2778,10 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
         chance := spellbook.ComputeDispelChance(opposite.CounterMagic, spell.Cost(false), spell.Magic, &caster.Wizard)
         opposite.CounterMagic = max(0, opposite.CounterMagic - 5)
 
+        if opposite.CounterMagic == 0 {
+            opposite.RemoveEnchantment(data.CombatEnchantmentCounterMagic)
+        }
+
         return spellbook.RollDispelChance(chance)
     }
 
