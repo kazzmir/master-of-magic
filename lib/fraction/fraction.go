@@ -149,6 +149,14 @@ func (fraction Fraction) LessThan(other Fraction) bool {
     return rest.Numerator > 0
 }
 
+// returns the minimum of two fractions
+func (fraction Fraction) Min(other Fraction) Fraction {
+    if fraction.LessThan(other) {
+        return fraction
+    }
+    return other
+}
+
 func (fraction Fraction) GreaterThan(other Fraction) bool {
     return !fraction.LessThanEqual(other)
 }

@@ -222,7 +222,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
 }
 
 // player is always the human player
-func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, landscape CombatLandscape, plane data.Plane, zone ZoneType) *CombatScreen {
+func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, landscape CombatLandscape, plane data.Plane, zone ZoneType, overworldX int, overworldY int) *CombatScreen {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -315,7 +315,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         AttackingWizardFont: attackingWizardFont,
         DefendingWizardFont: defendingWizardFont,
 
-        Model: MakeCombatModel(cache, defendingArmy, attackingArmy, landscape, plane, zone, events),
+        Model: MakeCombatModel(cache, defendingArmy, attackingArmy, landscape, plane, zone, overworldX, overworldY, events),
     }
 
     combat.Drawer = combat.NormalDraw
