@@ -119,22 +119,27 @@ func (cache *ImageCache) GetShader(shader shaders.Shader) (*ebiten.Shader, error
         return out, nil
     }
 
+    type ShaderLoader func() (*ebiten.Shader, error)
+    loaderMap := map[shaders.Shader]ShaderLoader{
+        shaders.ShaderEdgeGlow: shaders.LoadEdgeGlowShader,
+        shaders.ShaderWarp: shaders.LoadWarpShader,
+        shaders.ShaderDropShadow: shaders.LoadDropShadowShader,
+        shaders.ShaderOutline: shaders.LoadOutlineShader,
+    }
+
     var err error
-    switch shader {
-        case shaders.ShaderEdgeGlow:
-            out, err = shaders.LoadEdgeGlowShader()
-            if err != nil {
-                return nil, err
-            }
-        case shaders.ShaderWarp:
-            out, err = shaders.LoadWarpShader()
-            if err != nil {
-                return nil, err
-            }
+    loader, ok := loaderMap[shader]
+    if !ok {
+        return nil, fmt.Errorf("unknown shader: %v", shader)
+    }
+
+    out, err = loader()
+    if err != nil {
+        return nil, err
     }
 
     if out == nil {
-        return nil, fmt.Errorf("unknown shader: %v", shader)
+        return nil, fmt.Errorf("unknown error loading shader: %v", shader)
     }
 
     cache.ShaderCache[shader] = out

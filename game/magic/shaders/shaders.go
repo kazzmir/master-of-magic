@@ -9,6 +9,8 @@ type Shader int
 const (
     ShaderEdgeGlow Shader = iota
     ShaderWarp
+    ShaderDropShadow
+    ShaderOutline
 )
 
 //go:embed edge-glow.kage
