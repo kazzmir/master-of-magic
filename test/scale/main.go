@@ -46,7 +46,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },

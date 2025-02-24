@@ -287,7 +287,7 @@ type WizardCustom struct {
     // FIXME: remove portrait
     Portrait int
     Base data.WizardBase
-    Abilities []data.Retort
+    Retorts []data.Retort
     Books []data.WizardBook
     StartingSpells spellbook.Spells
     Race data.Race
@@ -320,7 +320,7 @@ func (wizard *WizardCustom) TotalBooks() int {
 }
 
 func (wizard *WizardCustom) RetortEnabled(ability data.Retort) bool {
-    for _, check := range wizard.Abilities {
+    for _, check := range wizard.Retorts {
         if check == ability {
             return true
         }
@@ -330,13 +330,13 @@ func (wizard *WizardCustom) RetortEnabled(ability data.Retort) bool {
 }
 
 func (wizard *WizardCustom) EnableRetort(retort data.Retort){
-    for _, check := range wizard.Abilities {
+    for _, check := range wizard.Retorts {
         if check == retort {
             return
         }
     }
 
-    wizard.Abilities = append(wizard.Abilities, retort)
+    wizard.Retorts = append(wizard.Retorts, retort)
 }
 
 func (wizard *WizardCustom) ToggleRetort(retort data.Retort, picksLeft int){
@@ -344,7 +344,7 @@ func (wizard *WizardCustom) ToggleRetort(retort data.Retort, picksLeft int){
 
     found := false
 
-    for _, check := range wizard.Abilities {
+    for _, check := range wizard.Retorts {
         if check == retort {
             found = true
         } else {
@@ -356,7 +356,7 @@ func (wizard *WizardCustom) ToggleRetort(retort data.Retort, picksLeft int){
         out = append(out, retort)
     }
 
-    wizard.Abilities = out
+    wizard.Retorts = out
 }
 
 func (wizard *WizardCustom) AddMagicLevel(kind data.MagicType, count int){
@@ -680,10 +680,10 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
         screen.CustomWizard.Name = screen.WizardSlots[wizard].Name
         screen.CustomWizard.Books = screen.WizardSlots[wizard].Books
         screen.CustomWizard.Base = screen.WizardSlots[wizard].Base
-        screen.CustomWizard.Abilities = make([]data.Retort, 0)
+        screen.CustomWizard.Retorts = make([]data.Retort, 0)
         screen.CustomWizard.Portrait = screen.WizardSlots[wizard].Portrait
         if screen.WizardSlots[wizard].ExtraRetort != data.RetortNone {
-            screen.CustomWizard.Abilities = append(screen.CustomWizard.Abilities, screen.WizardSlots[wizard].ExtraRetort)
+            screen.CustomWizard.Retorts = append(screen.CustomWizard.Retorts, screen.WizardSlots[wizard].ExtraRetort)
         }
 
         screen.CustomWizard.StartingSpells.AddAllSpells(GetStartingSpells(&screen.CustomWizard, screen.Spells))
@@ -1004,7 +1004,7 @@ func JoinAbilities(abilities []data.Retort) string {
 
 func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
-    screen.CustomWizard.Abilities = []data.Retort{}
+    screen.CustomWizard.Retorts = []data.Retort{}
     screen.CustomWizard.Books = []data.WizardBook{}
 
     imageCache := util.MakeImageCache(screen.LbxCache)
@@ -1012,7 +1012,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
     picksLeft := func() int {
         picks := MaxPicks
 
-        for _, ability := range screen.CustomWizard.Abilities {
+        for _, ability := range screen.CustomWizard.Retorts {
             picks -= ability.PickCost()
         }
 
@@ -1373,7 +1373,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                 }
             })
 
-            screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
+            screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Retorts))
             screen.NameFontBright.PrintCenter(window, float64(223 * data.ScreenScale), float64(185 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v picks", picksLeft()))
         },
         HandleKeys: func(keys []ebiten.Key){
@@ -1722,7 +1722,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 windyBorder, _ := screen.ImageCache.GetImage("newgame.lbx", 47, 0)
                 window.DrawImage(windyBorder, &options)
 
-                screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
+                screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Retorts))
                 screen.NameFontBright.PrintCenter(window, float64(223 * data.ScreenScale), float64(185 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v picks", picksLeft()))
 
                 showDescription := func(y float64, text string, background *ebiten.Image){
@@ -2009,7 +2009,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             raceShadowFont.PrintCenter(window, float64((243 + 1) * data.ScreenScale), float64(132 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Myrran Races:")
             raceFont.PrintCenter(window, float64(243 * data.ScreenScale), float64(132 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Myrran Races:")
 
-            screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
+            screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Retorts))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -2096,7 +2096,7 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
 
             screen.SelectFont.PrintCenter(window, float64(245 * data.ScreenScale), float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Select Banner")
 
-            screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Abilities))
+            screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Retorts))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {

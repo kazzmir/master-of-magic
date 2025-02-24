@@ -3000,9 +3000,9 @@ func ChooseUniqueWizard(players []*playerlib.Player, allSpells spellbook.Spells)
         return setup.WizardCustom{}, false
     }
 
-    var abilities []data.Retort
+    var retorts []data.Retort
     if wizard.ExtraRetort != data.RetortNone {
-        abilities = []data.Retort{wizard.ExtraRetort}
+        retorts = []data.Retort{wizard.ExtraRetort}
     }
 
     customWizard := setup.WizardCustom{
@@ -3011,7 +3011,7 @@ func ChooseUniqueWizard(players []*playerlib.Player, allSpells spellbook.Spells)
         Race: race,
         Books: slices.Clone(wizard.Books),
         Banner: banner,
-        Abilities: abilities,
+        Retorts: retorts,
     }
 
     customWizard.StartingSpells.AddAllSpells(setup.GetStartingSpells(&customWizard, allSpells))

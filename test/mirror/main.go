@@ -40,7 +40,7 @@ func NewEngine(scenario int) (*Engine, error) {
                     Count: 4,
                 },
             },
-            Abilities: []data.Retort{
+            Retorts: []data.Retort{
                 data.RetortArchmage,
                 data.RetortFamous,
             },

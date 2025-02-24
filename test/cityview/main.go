@@ -72,7 +72,7 @@ func NewEngine() (*Engine, error) {
             Books: []data.WizardBook{
                 {Magic: data.ChaosMagic, Count: 11},
             },
-            Abilities: []data.Retort{
+            Retorts: []data.Retort{
                 data.RetortInfernalPower,
             },
         },

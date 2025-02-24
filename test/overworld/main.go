@@ -68,7 +68,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -157,7 +157,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
     wizard := setup.WizardCustom{
         Name: "player",
         Banner: data.BannerBlue,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -213,7 +213,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
         Name: "player",
         Banner: data.BannerRed,
         Race: data.RaceLizard,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -284,7 +284,7 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
         Name: "player",
         Banner: data.BannerBlue,
         Race: data.RaceHighMen,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -364,7 +364,7 @@ func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
         Name: "player",
         Banner: data.BannerBlue,
         Race: data.RaceHighMen,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -426,7 +426,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
         Name: "player",
         Banner: data.BannerBlue,
         Race: data.RaceHighMen,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -509,7 +509,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
         Name: "player",
         Banner: data.BannerBlue,
         Race: data.RaceHighMen,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -580,7 +580,7 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -658,7 +658,7 @@ func createScenario9(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -732,7 +732,7 @@ func createScenario10(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -806,7 +806,7 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -874,7 +874,7 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -941,7 +941,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -1183,7 +1183,7 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
         Race: data.RaceTroll,
         Base: data.WizardAriel,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -1283,7 +1283,7 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -1364,7 +1364,7 @@ func createScenario16(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -1438,7 +1438,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -1599,7 +1599,7 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
             data.RetortWarlord,
@@ -1690,7 +1690,7 @@ func createScenario19(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -1761,7 +1761,7 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -1879,7 +1879,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -1991,7 +1991,7 @@ func createScenario22(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -2066,7 +2066,7 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
         Base: data.WizardRaven,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -2214,7 +2214,7 @@ func createScenario24(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -2285,7 +2285,7 @@ func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -2350,7 +2350,7 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -2417,7 +2417,7 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -2513,7 +2513,7 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -2582,7 +2582,7 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -2651,7 +2651,7 @@ func createScenario30(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -2734,7 +2734,7 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -2834,7 +2834,7 @@ func createScenario32(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -2938,7 +2938,7 @@ func createScenario33(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -3315,7 +3315,7 @@ func createScenario39(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerBlue,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -3397,7 +3397,7 @@ func createScenario40(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -3473,7 +3473,7 @@ func createScenario41(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{},
+        Retorts: []data.Retort{},
         Books: []data.WizardBook{},
     }
 
@@ -3514,7 +3514,7 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -3631,7 +3631,7 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{},
+        Retorts: []data.Retort{},
         Books: []data.WizardBook{
             data.WizardBook{
                 Magic: data.DeathMagic,
@@ -3704,7 +3704,7 @@ func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -3789,7 +3789,7 @@ func createScenario45(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -3895,7 +3895,7 @@ func createScenario46(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortWarlord,
         },
         Books: []data.WizardBook{
@@ -3961,7 +3961,7 @@ func createScenario47(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
@@ -4116,7 +4116,7 @@ func createScenario48(cache *lbx.LbxCache) *gamelib.Game {
         Name: "bob",
         Banner: data.BannerRed,
         Race: data.RaceTroll,
-        Abilities: []data.Retort{
+        Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
         },
