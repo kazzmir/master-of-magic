@@ -113,6 +113,9 @@ func toFloatArray(color color.Color) []float32 {
     return []float32{float32(r) / max, float32(g) / max, float32(b) / max, float32(a) / max}
 }
 
+// draws a 1px outline around each glyph
+// the edge shader should be shaders.ShaderEdgeGlow, although it should probably be changed to shaders.ShaderOutline
+// just use PrintDropShadow for now
 func (font *Font) PrintOutline(destination *ebiten.Image, edgeShader *ebiten.Shader, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
     useX := x
 
@@ -175,6 +178,7 @@ func (font *Font) PrintDropShadow(destination *ebiten.Image, x float64, y float6
 
         glyph := font.Glyphs[glyphIndex]
 
+        // draw the shadow first
         var options ebiten.DrawImageOptions
         options.GeoM.Scale(scale, scale)
         options.GeoM.Translate(useX+scale*distance, y+scale*distance)
@@ -183,6 +187,7 @@ func (font *Font) PrintDropShadow(destination *ebiten.Image, x float64, y float6
         glyphImage := font.getGlyphImage(glyphIndex)
         destination.DrawImage(glyphImage, &options)
 
+        // then draw the normal glyph on top
         options.ColorScale = colorScale
         options.GeoM.Translate(-scale*distance, -scale*distance)
         destination.DrawImage(glyphImage, &options)
@@ -191,6 +196,7 @@ func (font *Font) PrintDropShadow(destination *ebiten.Image, x float64, y float6
     }
 }
 
+// print the text with no border/outline
 func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
     useX := x
     for _, c := range text {
