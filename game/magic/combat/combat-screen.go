@@ -222,7 +222,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
 }
 
 // player is always the human player
-func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, landscape CombatLandscape, plane data.Plane, zone ZoneType) *CombatScreen {
+func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, landscape CombatLandscape, plane data.Plane, zone ZoneType, overworldX int, overworldY int) *CombatScreen {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -315,7 +315,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         AttackingWizardFont: attackingWizardFont,
         DefendingWizardFont: defendingWizardFont,
 
-        Model: MakeCombatModel(cache, defendingArmy, attackingArmy, landscape, plane, zone, events),
+        Model: MakeCombatModel(cache, defendingArmy, attackingArmy, landscape, plane, zone, overworldX, overworldY, events),
     }
 
     combat.Drawer = combat.NormalDraw
@@ -1236,6 +1236,19 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 combat.AttackingWizardFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, combat.Model.AttackingArmy.Player.Wizard.Name)
             }
 
+            y := 173
+            right := 239
+            combat.HudFont.Print(screen, float64(200 * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Skill:")
+            combat.HudFont.PrintRight(screen, float64(right * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.AttackingArmy.ManaPool))
+            y += combat.HudFont.Height() + 2
+
+            combat.HudFont.Print(screen, float64(200 * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Mana:")
+            combat.HudFont.PrintRight(screen, float64(right * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.AttackingArmy.Player.Mana))
+            y += combat.HudFont.Height() + 2
+
+            combat.HudFont.Print(screen, float64(200 * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Range:")
+            combat.HudFont.PrintRight(screen, float64(right * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%vx", combat.Model.AttackingArmy.Range.ToFloat()))
+
             options.GeoM.Reset()
             options.GeoM.Translate(float64(246 * data.ScreenScale), float64(179 * data.ScreenScale))
             for _, enchantment := range combat.Model.AttackingArmy.Enchantments {
@@ -1342,12 +1355,21 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
         army := combat.Model.GetArmyForPlayer(player)
 
         doPlayerSpell := func(){
-            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(), make(map[spellbook.Spell]int), army.ManaPool, spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+            // FIXME: this check should be done earlier so that we don't even let the player pick a spell
+            if army.Casted {
+                return
+            }
+
+            // the lower of the mana pool (casting skill) or the wizard's mana divided by the range
+            minimumMana := min(army.ManaPool, int(float64(army.Player.Mana) / army.Range.ToFloat()))
+
+            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
                 if picked {
+                    army.Casted = true
                     // player mana and skill should go down accordingly
                     combat.InvokeSpell(player, spell, func(){
                         army.ManaPool -= spell.Cost(false)
-                        player.Mana -= spell.Cost(false)
+                        player.Mana -= int(float64(spell.Cost(false)) * army.Range.ToFloat())
                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
                     })
                 }
@@ -1371,6 +1393,8 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                         Action: func(){
                             unitSpells := combat.Model.SelectedUnit.Spells
                             caster := combat.Model.SelectedUnit
+
+                            // spell casting range for a unit is always 1
 
                             doCast := func(spell spellbook.Spell){
                                 combat.InvokeSpell(player, spell, func(){

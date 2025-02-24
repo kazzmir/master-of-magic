@@ -4393,7 +4393,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-        combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
+        combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone, attackerStack.X(), attackerStack.Y())
 
         // ebiten.SetCursorMode(ebiten.CursorModeHidden)
 

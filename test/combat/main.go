@@ -4,6 +4,8 @@ import (
     "log"
     "strconv"
     "os"
+    "math"
+    "image"
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -18,6 +20,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -242,6 +245,23 @@ func createWeakArmy(player *player.Player) *combat.Army {
     }
 }
 
+type BasicCatchment struct {
+}
+
+func (basic *BasicCatchment) GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile {
+    return map[image.Point]maplib.FullTile{}
+}
+
+func (basic *BasicCatchment) OnShore(x int, y int) bool {
+    return false
+}
+
+func (basic *BasicCatchment) TileDistance(x1 int, y1 int, x2 int, y2 int) int {
+    dx := x1 - x2
+    dy := y1 - y2
+    return int(math.Sqrt(float64(dx * dx + dy * dy)))
+}
+
 func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
@@ -252,8 +272,10 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
+    /*
     defendingArmy.AddEnchantment(data.CombatEnchantmentCounterMagic)
     defendingArmy.CounterMagic = 50
+    */
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
     if err != nil {
@@ -266,8 +288,12 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
             Banner: data.BannerGreen,
         }, true, 0, 0, nil)
 
+    fortressCity := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, &BasicCatchment{}, nil, attackingPlayer)
+    fortressCity.Buildings.Insert(buildinglib.BuildingFortress)
+    attackingPlayer.AddCity(fortressCity)
+
     attackingPlayer.CastingSkillPower = 10000
-    attackingPlayer.Mana = 1000
+    attackingPlayer.Mana = 100
 
     // attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
 
@@ -308,7 +334,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createWarlockArmyN(attackingPlayer, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{})
+    return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
 }
 
 func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
@@ -340,7 +366,7 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createSettlerArmy(attackingPlayer, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{})
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 0, 0)
 }
 
 func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
@@ -376,7 +402,7 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createHeroArmy(attackingPlayer, cache)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{})
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 0, 0)
 }
 
 // fight in an unwalled city with a fortress
@@ -421,7 +447,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     city.AddEnchantment(data.CityEnchantmentWallOfFire, defendingPlayer.Wizard.Banner)
     // city.AddEnchantment(data.CityEnchantmentWallOfDarkness, defendingPlayer.Wizard.Banner)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city})
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, 0, 0)
 }
 
 // fight in a tower of wizardy
@@ -459,7 +485,7 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{ChaosNode: true})
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{ChaosNode: true}, 0, 0)
 }
 
 func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
@@ -496,7 +522,7 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{ChaosNode: true})
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{ChaosNode: true}, 0, 0)
 }
 
 // combat on water
@@ -534,7 +560,7 @@ func makeScenario7(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeWater, data.PlaneArcanus, combat.ZoneType{})
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeWater, data.PlaneArcanus, combat.ZoneType{}, 0, 0)
 }
 
 // life fantastic creatures vs death
@@ -589,7 +615,7 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{ChaosNode: true})
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{ChaosNode: true}, 0, 0)
 }
 
 func NewEngine(scenario int) (*Engine, error) {
