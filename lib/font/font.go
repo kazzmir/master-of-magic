@@ -12,6 +12,23 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+type FontJustify int
+const (
+    FontJustifyLeft FontJustify = iota
+    FontJustifyCenter
+    FontJustifyRight
+)
+
+// for rendering, to specify justification, wrapping and shadows
+type FontOptions struct {
+    // left is default
+    Justify FontJustify
+    // no wrap is default
+    // Wrap bool
+    // no shadow is default
+    DropShadow bool
+}
+
 type Font struct {
     Image *ebiten.Image
     GlyphWidth int
@@ -157,7 +174,7 @@ func (font *Font) PrintOutline(destination *ebiten.Image, edgeShader *ebiten.Sha
     }
 }
 
-func (font *Font) PrintDropShadow(destination *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
+func (font *Font) doPrint(destination *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, dropShadow bool, text string) {
     useX := x
 
     black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
@@ -177,51 +194,37 @@ func (font *Font) PrintDropShadow(destination *ebiten.Image, x float64, y float6
         }
 
         glyph := font.Glyphs[glyphIndex]
+        glyphImage := font.getGlyphImage(glyphIndex)
 
         // draw the shadow first
         var options ebiten.DrawImageOptions
         options.GeoM.Scale(scale, scale)
-        options.GeoM.Translate(useX+scale*distance, y+scale*distance)
-        options.ColorScale = colorScale
-        options.ColorScale.ScaleWithColor(black)
-        glyphImage := font.getGlyphImage(glyphIndex)
-        destination.DrawImage(glyphImage, &options)
 
-        // then draw the normal glyph on top
+        options.GeoM.Translate(useX, y)
+        if dropShadow {
+            options.GeoM.Translate(scale*distance, scale*distance)
+            options.ColorScale = colorScale
+            options.ColorScale.ScaleWithColor(black)
+            destination.DrawImage(glyphImage, &options)
+
+            // then draw the normal glyph on top
+            options.GeoM.Translate(-scale*distance, -scale*distance)
+        }
+
         options.ColorScale = colorScale
-        options.GeoM.Translate(-scale*distance, -scale*distance)
         destination.DrawImage(glyphImage, &options)
 
         useX += float64(glyph.Width + font.internalFont.HorizontalSpacing) * scale
     }
 }
 
+func (font *Font) PrintDropShadow(destination *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
+    font.doPrint(destination, x, y, scale, colorScale, true, text)
+}
+
 // print the text with no border/outline
 func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
-    useX := x
-    for _, c := range text {
-        if c == '\n' {
-            y += float64(font.GlyphHeight + font.internalFont.VerticalSpacing)
-            useX = 0
-            continue
-        }
-
-        glyphIndex := int(c) - 32
-        if glyphIndex >= len(font.Glyphs) || glyphIndex < 0 {
-            continue
-        }
-
-        glyph := font.Glyphs[glyphIndex]
-
-        var options ebiten.DrawImageOptions
-        options.GeoM.Scale(scale, scale)
-        options.GeoM.Translate(useX, y)
-        options.ColorScale = colorScale
-        glyphImage := font.getGlyphImage(glyphIndex)
-        image.DrawImage(glyphImage, &options)
-
-        useX += float64(glyph.Width + font.internalFont.HorizontalSpacing) * scale
-    }
+    font.doPrint(image, x, y, scale, colorScale, false, text)
 }
 
 func (font *Font) MeasureTextWidth(text string, scale float64) float64 {
@@ -252,6 +255,27 @@ func (font *Font) PrintCenter(image *ebiten.Image, x float64, y float64, scale f
 func (font *Font) PrintRight(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
     width := font.MeasureTextWidth(text, scale)
     font.Print(image, x - width, y, scale, colorScale, text)
+}
+
+func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, options FontOptions, text string) {
+    useX := x
+    useY := y
+
+    switch options.Justify {
+        case FontJustifyLeft:
+        case FontJustifyCenter:
+            width := font.MeasureTextWidth(text, scale)
+            useX = x - width / 2
+        case FontJustifyRight:
+            width := font.MeasureTextWidth(text, scale)
+            useX = x - width
+    }
+
+    if options.DropShadow {
+        font.doPrint(image, useX, useY, scale, colorScale, true, text)
+    } else {
+        font.doPrint(image, useX, useY, scale, colorScale, false, text)
+    }
 }
 
 /* split the input text ABCD into two substrings AB and CD such that the pixel width of AB is less than maxWidth */
