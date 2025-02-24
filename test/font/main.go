@@ -55,6 +55,8 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
     } else {
         engine.VaultFonts.ItemName.PrintOutline(screen, shader, 10, 10, 4, ebiten.ColorScale{}, "This is a test of font outlines")
     }
+
+    engine.VaultFonts.ItemName.Print(screen, 10, 80, 4, ebiten.ColorScale{}, "This is a test of font outlines")
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
