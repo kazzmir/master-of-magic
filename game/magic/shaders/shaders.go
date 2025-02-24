@@ -17,10 +17,17 @@ var edgeGlowShader []byte
 //go:embed warp.kage
 var warpShader []byte
 
+//go:embed drop-shadow.kage
+var dropShadowShader []byte
+
 func LoadEdgeGlowShader() (*ebiten.Shader, error) {
     return ebiten.NewShader(edgeGlowShader)
 }
 
 func LoadWarpShader() (*ebiten.Shader, error) {
     return ebiten.NewShader(warpShader)
+}
+
+func LoadDropShadowShader() (*ebiten.Shader, error) {
+    return ebiten.NewShader(dropShadowShader)
 }

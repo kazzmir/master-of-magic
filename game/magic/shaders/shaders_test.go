@@ -16,4 +16,10 @@ func TestLoadShaders(test *testing.T) {
     if err != nil {
         test.Errorf("Error loading warp shader: %v", err)
     }
+
+    _, err = LoadDropShadowShader()
+
+    if err != nil {
+        test.Errorf("Error loading drop shadow shader: %v", err)
+    }
 }
