@@ -955,28 +955,20 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
 func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell, castedCallback func()){
     targetAny := func (target *ArmyUnit) bool { return true }
 
-    // higher order function that automatically applies dispel logic
-    checkTargetDispel := func (onTarget func(*ArmyUnit)) func(*ArmyUnit) {
-        return func(target *ArmyUnit) {
-            if combat.Model.CheckDispel(spell, player) {
-                combat.Events <- &CombatEventMessage{
-                    Message: fmt.Sprintf("%v fizzled", spell.Name),
-                }
-                castedCallback()
-                return
-            }
-
-            // didn't dispel, so call the original spell function
-            onTarget(target)
+    if combat.Model.CheckDispel(spell, player) {
+        combat.Events <- &CombatEventMessage{
+            Message: fmt.Sprintf("%v fizzled", spell.Name),
         }
+        castedCallback()
+        return
     }
 
     switch spell.Name {
         case "Fireball":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, checkTargetDispel(func(target *ArmyUnit){
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFireballProjectile(target)
                 castedCallback()
-            }), targetAny)
+            }, targetAny)
         case "Ice Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateIceBoltProjectile(target)
