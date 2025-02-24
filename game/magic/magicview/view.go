@@ -445,6 +445,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
 
+                // FIXME: should defeated players been shown regardless of if they are known?
                 if i < len(knownPlayers) {
                     enemy := knownPlayers[i]
 

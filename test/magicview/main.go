@@ -55,7 +55,25 @@ func NewEngine() (*Engine, error) {
 
     enemy2.GlobalEnchantments.Insert(data.EnchantmentNaturesWrath)
 
-    magicScreen := magicview.MakeMagicScreen(cache, player, []*playerlib.Player{enemy1, enemy2}, 100)
+    enemy3 := playerlib.MakePlayer(setup.WizardCustom{
+        Base: data.WizardHorus,
+        Name: "Horus",
+        Banner: data.BannerYellow,
+    }, false, 0, 0, nil)
+
+    enemy3.Defeated = true
+
+    player.AwarePlayer(enemy3)
+
+    enemy4 := playerlib.MakePlayer(setup.WizardCustom{
+        Base: data.WizardJafar,
+        Name: "Jafar",
+        Banner: data.BannerBlue,
+    }, false, 0, 0, nil)
+
+    enemy4.Defeated = true
+
+    magicScreen := magicview.MakeMagicScreen(cache, player, []*playerlib.Player{enemy1, enemy2, enemy3, enemy4}, 100)
 
     return &Engine{
         LbxCache: cache,
