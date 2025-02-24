@@ -52,11 +52,17 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
     shader, err := engine.ImageCache.GetShader(shaders.ShaderEdgeGlow)
     if err != nil {
         log.Printf("Error getting shader: %v", err)
-    } else {
-        engine.VaultFonts.ItemName.PrintOutline(screen, shader, 10, 10, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+        return
     }
 
+    engine.VaultFonts.ItemName.PrintOutline(screen, shader, 10, 10, 4, ebiten.ColorScale{}, "This is a test of font outlines")
     engine.VaultFonts.ItemName.Print(screen, 10, 80, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+
+    engine.VaultFonts.PowerFont.PrintOutline(screen, shader, 10, 150, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+    engine.VaultFonts.PowerFont.Print(screen, 10, 200, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+
+    engine.VaultFonts.ResourceFont.PrintOutline(screen, shader, 10, 260, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+    engine.VaultFonts.ResourceFont.Print(screen, 10, 300, 4, ebiten.ColorScale{}, "This is a test of font outlines")
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
