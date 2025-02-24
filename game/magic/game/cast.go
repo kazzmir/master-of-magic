@@ -577,7 +577,7 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
     disenchantStrength := spell.OverrideCost
     if disenchantTrue {
         // each additional point of mana spent increases the disenchant strength by 3
-        disenchantStrength = spell.CastCost + (spell.Cost(true) - spell.CastCost) * 3
+        disenchantStrength = spell.BaseCost(true) + spell.SpentAdditionalCost(true) * 3
     }
 
     if player.Wizard.RetortEnabled(data.RetortRunemaster) {
