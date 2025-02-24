@@ -69,7 +69,7 @@ func (spellbook *TreasureSpellbook) String() string {
 }
 
 type TreasureRetort struct {
-    Retort setup.WizardAbility
+    Retort data.Retort
 }
 
 func (retort *TreasureRetort) String() string {
@@ -151,36 +151,36 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
         TreasureTypeRetort
     )
 
-    chooseRetort := func () (setup.WizardAbility, bool) {
-        choices := []setup.WizardAbility{
-            setup.AbilityAlchemy,
-            setup.AbilityWarlord,
-            setup.AbilityChanneler,
-            setup.AbilityArchmage,
-            setup.AbilityArtificer,
-            setup.AbilityConjurer,
-            setup.AbilitySageMaster,
-            setup.AbilityDivinePower,
-            setup.AbilityFamous,
-            setup.AbilityRunemaster,
-            setup.AbilityCharismatic,
-            setup.AbilityChaosMastery,
-            setup.AbilityNatureMastery,
-            setup.AbilitySorceryMastery,
-            setup.AbilityInfernalPower,
-            setup.AbilityManaFocusing,
-            setup.AbilityNodeMastery,
+    chooseRetort := func () (data.Retort, bool) {
+        choices := []data.Retort{
+            data.RetortAlchemy,
+            data.RetortWarlord,
+            data.RetortChanneler,
+            data.RetortArchmage,
+            data.RetortArtificer,
+            data.RetortConjurer,
+            data.RetortSageMaster,
+            data.RetortDivinePower,
+            data.RetortFamous,
+            data.RetortRunemaster,
+            data.RetortCharismatic,
+            data.RetortChaosMastery,
+            data.RetortNatureMastery,
+            data.RetortSorceryMastery,
+            data.RetortInfernalPower,
+            data.RetortManaFocusing,
+            data.RetortNodeMastery,
         }
 
-        choices = slices.DeleteFunc(choices, func (ability setup.WizardAbility) bool {
-            return wizard.AbilityEnabled(ability)
+        choices = slices.DeleteFunc(choices, func (ability data.Retort) bool {
+            return wizard.RetortEnabled(ability)
         })
 
         if len(choices) > 0 {
             return choices[rand.N(len(choices))], true
         }
 
-        return setup.AbilityNone, false
+        return data.RetortNone, false
     }
 
     chooseSpell := func (rarity spellbook.SpellRarity) (spellbook.Spell, bool) {

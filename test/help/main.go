@@ -6,7 +6,6 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/data"
-    "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -55,25 +54,25 @@ func main() {
     }
 
     // abilities
-    abilities := []setup.WizardAbility{
-        setup.AbilityAlchemy,
-        setup.AbilityWarlord,
-        setup.AbilityChanneler,
-        setup.AbilityArchmage,
-        setup.AbilityArtificer,
-        setup.AbilityConjurer,
-        setup.AbilitySageMaster,
-        setup.AbilityMyrran,
-        setup.AbilityDivinePower,
-        setup.AbilityFamous,
-        setup.AbilityRunemaster,
-        setup.AbilityCharismatic,
-        setup.AbilityChaosMastery,
-        setup.AbilityNatureMastery,
-        setup.AbilitySorceryMastery,
-        setup.AbilityInfernalPower,
-        setup.AbilityManaFocusing,
-        setup.AbilityNodeMastery,
+    abilities := []data.Retort{
+        data.RetortAlchemy,
+        data.RetortWarlord,
+        data.RetortChanneler,
+        data.RetortArchmage,
+        data.RetortArtificer,
+        data.RetortConjurer,
+        data.RetortSageMaster,
+        data.RetortMyrran,
+        data.RetortDivinePower,
+        data.RetortFamous,
+        data.RetortRunemaster,
+        data.RetortCharismatic,
+        data.RetortChaosMastery,
+        data.RetortNatureMastery,
+        data.RetortSorceryMastery,
+        data.RetortInfernalPower,
+        data.RetortManaFocusing,
+        data.RetortNodeMastery,
     }
 
     for _, ability := range abilities {

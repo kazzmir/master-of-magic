@@ -72,8 +72,8 @@ func NewEngine() (*Engine, error) {
             Books: []data.WizardBook{
                 {Magic: data.ChaosMagic, Count: 11},
             },
-            Abilities: []setup.WizardAbility{
-                setup.AbilityInfernalPower,
+            Retorts: []data.Retort{
+                data.RetortInfernalPower,
             },
         },
         TaxRate: fraction.Make(2, 1),

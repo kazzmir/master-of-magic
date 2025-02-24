@@ -97,7 +97,7 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *
         })
     }
 
-    wrappedAbilities := smallFont.CreateWrappedText(float64(160 * data.ScreenScale), float64(data.ScreenScale), setup.JoinAbilities(player.Wizard.Abilities))
+    wrappedAbilities := smallFont.CreateWrappedText(float64(160 * data.ScreenScale), float64(data.ScreenScale), setup.JoinAbilities(player.Wizard.Retorts))
 
     element = &uilib.UIElement{
         Layer: 1,

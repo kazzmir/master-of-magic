@@ -40,9 +40,9 @@ func NewEngine(scenario int) (*Engine, error) {
                     Count: 4,
                 },
             },
-            Abilities: []setup.WizardAbility{
-                setup.AbilityArchmage,
-                setup.AbilityFamous,
+            Retorts: []data.Retort{
+                data.RetortArchmage,
+                data.RetortFamous,
             },
         },
         Fame: 100,

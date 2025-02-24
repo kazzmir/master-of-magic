@@ -1199,6 +1199,8 @@ func (unit *ArmyUnit) Figures() int {
 type Army struct {
     Player *playerlib.Player
     ManaPool int
+    // when counter magic is cast, this field tracks how much 'counter magic' strength is available to dispel
+    CounterMagic int
     Units []*ArmyUnit
     Auto bool
     Fled bool
@@ -2690,6 +2692,14 @@ func (model *CombatModel) GetArmyForPlayer(player *playerlib.Player) *Army {
     return model.AttackingArmy
 }
 
+func (model *CombatModel) GetOppositeArmyForPlayer(player *playerlib.Player) *Army {
+    if model.DefendingArmy.Player == player {
+        return model.AttackingArmy
+    }
+
+    return model.DefendingArmy
+}
+
 func (model *CombatModel) GetArmy(unit *ArmyUnit) *Army {
     if unit.Team == TeamDefender {
         return model.DefendingArmy
@@ -2759,4 +2769,23 @@ func (model *CombatModel) flee(army *Army) {
             model.DiedWhileFleeing += 1
         }
     }
+}
+
+// returns true if the spell should be dispelled (due to counter magic, magic nodes, etc)
+func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.Player) bool {
+    opposite := model.GetOppositeArmyForPlayer(caster)
+    if opposite.CounterMagic > 0 {
+        chance := spellbook.ComputeDispelChance(opposite.CounterMagic, spell.Cost(false), spell.Magic, &caster.Wizard)
+        opposite.CounterMagic = max(0, opposite.CounterMagic - 5)
+
+        if opposite.CounterMagic == 0 {
+            opposite.RemoveEnchantment(data.CombatEnchantmentCounterMagic)
+        }
+
+        return spellbook.RollDispelChance(chance)
+    }
+
+    // FIXME: check dispel from magic nodes
+
+    return false
 }

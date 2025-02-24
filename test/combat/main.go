@@ -252,6 +252,9 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
+    defendingArmy.AddEnchantment(data.CombatEnchantmentCounterMagic)
+    defendingArmy.CounterMagic = 50
+
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
     if err != nil {
         log.Printf("Unable to read spells: %v", err)

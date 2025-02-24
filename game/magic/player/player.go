@@ -364,7 +364,7 @@ type playerExperience struct {
 }
 
 func (experience *playerExperience) HasWarlord() bool {
-    return experience.Player.Wizard.AbilityEnabled(setup.AbilityWarlord)
+    return experience.Player.Wizard.RetortEnabled(data.RetortWarlord)
 }
 
 func (experience *playerExperience) Crusade() bool {
@@ -506,7 +506,7 @@ func (player *Player) ComputeCastingSkill() int {
     }
 
     bonus := 0
-    if player.Wizard.AbilityEnabled(setup.AbilityArchmage) {
+    if player.Wizard.RetortEnabled(data.RetortArchmage) {
         bonus = 10
     }
 
@@ -516,7 +516,7 @@ func (player *Player) ComputeCastingSkill() int {
 func (player *Player) CastingSkillPerTurn(power int) int {
     bonus := 1.0
 
-    if player.Wizard.AbilityEnabled(setup.AbilityArchmage) {
+    if player.Wizard.RetortEnabled(data.RetortArchmage) {
         bonus = 1.5
     }
 
@@ -596,7 +596,7 @@ func (player *Player) ManaPerTurn(power int, cityEnchantmentsProvider CityEnchan
 
     manaFocusingBonus := float64(1)
 
-    if player.Wizard.AbilityEnabled(setup.AbilityManaFocusing) {
+    if player.Wizard.RetortEnabled(data.RetortManaFocusing) {
         manaFocusingBonus = 1.25
     }
 
@@ -904,11 +904,11 @@ func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {
 }
 
 func (player *Player) HasDivinePower() bool {
-    return player.Wizard.AbilityEnabled(setup.AbilityDivinePower)
+    return player.Wizard.RetortEnabled(data.RetortDivinePower)
 }
 
 func (player *Player) HasInfernalPower() bool {
-    return player.Wizard.AbilityEnabled(setup.AbilityInfernalPower)
+    return player.Wizard.RetortEnabled(data.RetortInfernalPower)
 }
 
 func (player *Player) HasLifeBooks() bool {
