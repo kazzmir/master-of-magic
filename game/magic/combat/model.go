@@ -1199,6 +1199,7 @@ func (unit *ArmyUnit) Figures() int {
 type Army struct {
     Player *playerlib.Player
     ManaPool int
+    Range fraction.Fraction
     // when counter magic is cast, this field tracks how much 'counter magic' strength is available to dispel
     CounterMagic int
     Units []*ArmyUnit
@@ -1395,6 +1396,9 @@ func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
 func (model *CombatModel) Initialize(allSpells spellbook.Spells) {
     model.AttackingArmy.ManaPool = min(model.AttackingArmy.Player.Mana, model.AttackingArmy.Player.ComputeCastingSkill())
     model.DefendingArmy.ManaPool = min(model.DefendingArmy.Player.Mana, model.DefendingArmy.Player.ComputeCastingSkill())
+
+    model.DefendingArmy.Range = fraction.FromInt(1)
+    model.AttackingArmy.Range = fraction.Make(3, 2)
 
     for _, unit := range model.DefendingArmy.Units {
         unit.Model = model
