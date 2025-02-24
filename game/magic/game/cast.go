@@ -574,10 +574,10 @@ func (game *Game) checkInstantFizzleForCastSpell(player *playerlib.Player, spell
 func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, disenchantTrue bool, tileX int, tileY int) {
     game.doCastOnMap(yield, tileX, tileY, 9, false, spell.Sound, func (x int, y int, animationFrame int){})
 
-    disenchantStrength := spell.OverrideCost
+    disenchantStrength := spell.Cost(true)
     if disenchantTrue {
         // each additional point of mana spent increases the disenchant strength by 3
-        disenchantStrength = spell.CastCost + (spell.Cost(true) - spell.CastCost) * 3
+        disenchantStrength = spell.BaseCost(true) + spell.SpentAdditionalCost(true) * 3
     }
 
     if player.Wizard.RetortEnabled(data.RetortRunemaster) {
@@ -586,46 +586,14 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
 
     allSpells := game.AllSpells()
 
-    applyResistance := func (owner *playerlib.Player, cost int, magic data.MagicType) int {
-        modifier := 1
-
-        if owner.Wizard.RetortEnabled(data.RetortArchmage) {
-            modifier += 1
-        }
-
-        if owner.Wizard.RetortEnabled(data.RetortChaosMastery) && magic == data.ChaosMagic {
-            modifier += 1
-        }
-
-        if owner.Wizard.RetortEnabled(data.RetortNatureMastery) && magic == data.NatureMagic {
-            modifier += 1
-        }
-
-        if owner.Wizard.RetortEnabled(data.RetortSorceryMastery) && magic == data.SorceryMagic {
-            modifier += 1
-        }
-
-        return cost * modifier
-    }
-
-    citySpellCost := func (enchantment citylib.Enchantment) int {
-        spell := allSpells.FindByName(enchantment.Enchantment.SpellName())
-        cost := spell.Cost(true)
-        return applyResistance(game.GetPlayerByBanner(enchantment.Owner), cost, spell.Magic)
-    }
-
-    unitSpellCost := func (enchantment data.UnitEnchantment, owner *playerlib.Player) int {
-        spell := allSpells.FindByName(enchantment.SpellName())
-        cost := spell.Cost(true)
-        return applyResistance(owner, cost, enchantment.Magic())
-    }
-
     city, _ := game.FindCity(tileX, tileY, game.Plane)
     if city != nil {
         for _, enchantment := range city.Enchantments.Values() {
             if enchantment.Owner != player.GetBanner() {
-                dispellChance := disenchantStrength * 100 / (disenchantStrength + citySpellCost(enchantment))
-                if rand.N(100) < dispellChance {
+                spell := allSpells.FindByName(enchantment.Enchantment.SpellName())
+                cost := spell.Cost(true)
+                dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &game.GetPlayerByBanner(enchantment.Owner).Wizard)
+                if spellbook.RollDispelChance(dispellChance) {
                     city.RemoveEnchantments(enchantment.Enchantment)
                 }
             }
@@ -637,7 +605,9 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
         for _, unit := range stack.Units() {
             var toRemove []data.UnitEnchantment
             for _, enchantment := range unit.GetEnchantments() {
-                dispellChance := disenchantStrength * 100 / (disenchantStrength + unitSpellCost(enchantment, owner))
+                spell := allSpells.FindByName(enchantment.SpellName())
+                cost := spell.Cost(true)
+                dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
                 if rand.N(100) < dispellChance {
                     toRemove = append(toRemove, enchantment)
                 }
@@ -653,9 +623,9 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
     magicNode := mapUse.GetMagicNode(tileX, tileY)
     if magicNode != nil && magicNode.Warped && magicNode.WarpedOwner != player {
         warpNode := allSpells.FindByName("Warp Node")
-        cost := applyResistance(game.GetPlayerByBanner(magicNode.WarpedOwner.GetBanner()), warpNode.Cost(true), warpNode.Magic)
+        cost := warpNode.Cost(true)
+        dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, warpNode.Magic, &game.GetPlayerByBanner(magicNode.WarpedOwner.GetBanner()).Wizard)
 
-        dispellChance := disenchantStrength * 100 / (disenchantStrength + cost)
         if rand.N(100) < dispellChance {
             magicNode.Warped = false
         }
