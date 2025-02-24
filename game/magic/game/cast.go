@@ -436,7 +436,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Subversion
         */
         case "Create Artifact", "Enchant Item":
-            game.Events <- &GameEventSummonArtifact{Wizard: player.Wizard.Base}
+            game.Events <- &GameEventSummonArtifact{Player: player}
             game.Events <- &GameEventVault{CreatedArtifact: player.CreateArtifact}
             player.CreateArtifact = nil
         case "Earth Lore":
@@ -734,7 +734,7 @@ func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
         hero := choices[rand.N(len(choices))]
 
         summonEvent := GameEventSummonHero{
-            Wizard: player.Wizard.Base,
+            Player: player,
             Champion: false,
         }
 

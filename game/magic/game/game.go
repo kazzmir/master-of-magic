@@ -163,11 +163,11 @@ type GameEventSummonUnit struct {
 }
 
 type GameEventSummonArtifact struct {
-    Wizard data.WizardBase
+    Player *playerlib.Player
 }
 
 type GameEventSummonHero struct {
-    Wizard data.WizardBase
+    Player *playerlib.Player
     Champion bool
 }
 
@@ -2876,21 +2876,29 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         summonUnit := event.(*GameEventSummonUnit)
                         player := summonUnit.Player
 
-                        if player.IsHuman() {
+                        if player.IsHuman() || game.GetHumanPlayer().GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
                             game.Music.PushSong(music.SongCommonSummoningSpell)
-                            game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, player.Wizard.Base))
+                            game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, player.Wizard.Base, !player.IsHuman()))
                             game.Music.PopSong()
                         }
                     case *GameEventSummonArtifact:
                         summonArtifact := event.(*GameEventSummonArtifact)
-                        game.Music.PushSong(music.SongVeryRareSummoningSpell)
-                        game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, summonArtifact.Wizard))
-                        game.Music.PopSong()
+                        player := summonArtifact.Player
+
+                        if player.IsHuman() || game.GetHumanPlayer().GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
+                            game.Music.PushSong(music.SongVeryRareSummoningSpell)
+                            game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, player.Wizard.Base, !player.IsHuman()))
+                            game.Music.PopSong()
+                        }
                     case *GameEventSummonHero:
                         summonHero := event.(*GameEventSummonHero)
-                        game.Music.PushSong(music.SongVeryRareSummoningSpell)
-                        game.doSummon(yield, summon.MakeSummonHero(game.Cache, summonHero.Wizard, summonHero.Champion))
-                        game.Music.PopSong()
+                        player := summonHero.Player
+
+                        if player.IsHuman() || game.GetHumanPlayer().GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
+                            game.Music.PushSong(music.SongVeryRareSummoningSpell)
+                            game.doSummon(yield, summon.MakeSummonHero(game.Cache, player.Wizard.Base, summonHero.Champion, !player.IsHuman()))
+                            game.Music.PopSong()
+                        }
                     case *GameEventGameMenu:
                         game.doGameMenu(yield)
                     case *GameEventHeroLevelUp:
@@ -7786,4 +7794,13 @@ func (game *Game) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.E
         enchantments[player.GetBanner()] = player.GlobalEnchantments.Clone()
     }
     return enchantments
+}
+
+func (game *Game) GetHumanPlayer() *playerlib.Player {
+    for _, player := range game.Players {
+        if player.IsHuman() {
+            return player
+        }
+    }
+    return nil
 }
