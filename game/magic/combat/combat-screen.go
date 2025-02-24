@@ -1234,20 +1234,20 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             if combat.Model.AttackingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
                 combat.AttackingWizardFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, combat.Model.AttackingArmy.Player.Wizard.Name)
-
-                y := 173
-                right := 239
-                combat.HudFont.Print(screen, float64(200 * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Skill:")
-                combat.HudFont.PrintRight(screen, float64(right * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.AttackingArmy.ManaPool))
-                y += combat.HudFont.Height() + 2
-
-                combat.HudFont.Print(screen, float64(200 * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Mana:")
-                combat.HudFont.PrintRight(screen, float64(right * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.AttackingArmy.Player.Mana))
-                y += combat.HudFont.Height() + 2
-
-                combat.HudFont.Print(screen, float64(200 * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Range:")
-                combat.HudFont.PrintRight(screen, float64(right * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%vx", combat.Model.AttackingArmy.Range.ToFloat()))
             }
+
+            y := 173
+            right := 239
+            combat.HudFont.Print(screen, float64(200 * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Skill:")
+            combat.HudFont.PrintRight(screen, float64(right * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.AttackingArmy.ManaPool))
+            y += combat.HudFont.Height() + 2
+
+            combat.HudFont.Print(screen, float64(200 * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Mana:")
+            combat.HudFont.PrintRight(screen, float64(right * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.AttackingArmy.Player.Mana))
+            y += combat.HudFont.Height() + 2
+
+            combat.HudFont.Print(screen, float64(200 * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Range:")
+            combat.HudFont.PrintRight(screen, float64(right * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%vx", combat.Model.AttackingArmy.Range.ToFloat()))
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(246 * data.ScreenScale), float64(179 * data.ScreenScale))
