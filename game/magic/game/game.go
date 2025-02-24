@@ -5636,7 +5636,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                             // draw the first enchantment on the unit
                             for _, enchantment := range unit.GetEnchantments() {
-                                util.DrawOutline(screen, &game.ImageCache, unitImage, options.GeoM, options.ColorScale, game.Counter/10, enchantment.Color())
+                                util.DrawOutline(screen, &game.ImageCache, unitImage, options.GeoM, options.ColorScale, game.Counter/8, enchantment.Color())
                                 break
                             }
                         }
@@ -7646,7 +7646,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
                 enchantment := util.First(leader.GetEnchantments(), data.UnitEnchantmentNone)
                 if enchantment != data.UnitEnchantmentNone {
-                    util.DrawOutline(screen, overworld.ImageCache, pic, options.GeoM, options.ColorScale, overworld.Counter/10, enchantment.Color())
+                    util.DrawOutline(screen, overworld.ImageCache, pic, options.GeoM, options.ColorScale, overworld.Counter/8, enchantment.Color())
                 }
             }
 

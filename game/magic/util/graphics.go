@@ -41,8 +41,8 @@ func toFloatArray(color color.Color) []float32 {
 }
 
 func DrawOutline(screen *ebiten.Image, imageCache *ImageCache, pic *ebiten.Image, geom ebiten.GeoM, scale ebiten.ColorScale, time uint64, baseColor color.Color) {
-    color1 := baseColor
-    color2 := Lighten(baseColor, 30)
+    color1 := Lighten(baseColor, -20)
+    color2 := Lighten(baseColor, 10)
     color3 := Lighten(baseColor, 50)
 
     shader, err := imageCache.GetShader(shaders.ShaderEdgeGlow)
