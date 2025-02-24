@@ -2841,8 +2841,10 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.ResearchNewSpell(yield, researchSpell.Player)
                     case *GameEventCastGlobalEnchantment:
                         castGlobal := event.(*GameEventCastGlobalEnchantment)
-                        if castGlobal.Player.IsHuman() || game.GetHumanPlayer().GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
-                            game.doCastGlobalEnchantment(yield, castGlobal.Player, castGlobal.Enchantment)
+                        player := castGlobal.Player
+
+                        if player.IsHuman() || game.CastingDetectableByHuman(player) {
+                            game.doCastGlobalEnchantment(yield, player, castGlobal.Enchantment)
                         }
                     case *GameEventSelectLocationForSpell:
                         selectLocation := event.(*GameEventSelectLocationForSpell)
@@ -2878,7 +2880,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         summonUnit := event.(*GameEventSummonUnit)
                         player := summonUnit.Player
 
-                        if player.IsHuman() || game.GetHumanPlayer().GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
+                        if player.IsHuman() || game.CastingDetectableByHuman(player) {
                             game.Music.PushSong(music.SongCommonSummoningSpell)
                             game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, player.Wizard.Base, !player.IsHuman()))
                             game.Music.PopSong()
@@ -2887,7 +2889,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         summonArtifact := event.(*GameEventSummonArtifact)
                         player := summonArtifact.Player
 
-                        if player.IsHuman() || game.GetHumanPlayer().GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
+                        if player.IsHuman() || game.CastingDetectableByHuman(player) {
                             game.Music.PushSong(music.SongVeryRareSummoningSpell)
                             game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, player.Wizard.Base, !player.IsHuman()))
                             game.Music.PopSong()
@@ -2896,7 +2898,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         summonHero := event.(*GameEventSummonHero)
                         player := summonHero.Player
 
-                        if player.IsHuman() || game.GetHumanPlayer().GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
+                        if player.IsHuman() || game.CastingDetectableByHuman(player) {
                             game.Music.PushSong(music.SongVeryRareSummoningSpell)
                             game.doSummon(yield, summon.MakeSummonHero(game.Cache, player.Wizard.Base, summonHero.Champion, !player.IsHuman()))
                             game.Music.PopSong()
@@ -7798,11 +7800,17 @@ func (game *Game) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.E
     return enchantments
 }
 
-func (game *Game) GetHumanPlayer() *playerlib.Player {
+func (game *Game) CastingDetectableByHuman(caster *playerlib.Player) bool {
     for _, player := range game.Players {
         if player.IsHuman() {
-            return player
+            if player.GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
+                for _, enemy := range player.GetKnownPlayers() {
+                    if enemy == caster {
+                        return true
+                    }
+                }
+            }
         }
     }
-    return nil
+    return false
 }
