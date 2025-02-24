@@ -26,12 +26,12 @@ func TestComputeDispelChance(test *testing.T) {
     // Archmage
     // playerArchmage := playerlib.MakePlayer(setup.WizardCustom{Banner: data.BannerRed, Race: data.RaceDraconian}, true, 1, 1, make(map[herolib.HeroType]string))
     playerArchmage := setup.WizardCustom{Banner: data.BannerRed, Race: data.RaceDraconian}
-    playerArchmage.EnableAbility(data.RetortArchmage)
+    playerArchmage.EnableRetort(data.RetortArchmage)
     playerChaosMastery := setup.WizardCustom{Banner: data.BannerRed, Race: data.RaceDraconian}
-    playerChaosMastery.EnableAbility(data.RetortChaosMastery)
+    playerChaosMastery.EnableRetort(data.RetortChaosMastery)
     playerArchmageAndChaosMastery := setup.WizardCustom{Banner: data.BannerRed, Race: data.RaceDraconian}
-    playerArchmageAndChaosMastery.EnableAbility(data.RetortArchmage)
-    playerArchmageAndChaosMastery.EnableAbility(data.RetortChaosMastery)
+    playerArchmageAndChaosMastery.EnableRetort(data.RetortArchmage)
+    playerArchmageAndChaosMastery.EnableRetort(data.RetortChaosMastery)
 
     for cost := 100; cost <= 1000; cost += 300 {
         // Archmage and Mastery should both double the cost for calculation relative to no-retorts mage.

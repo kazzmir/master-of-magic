@@ -4313,7 +4313,7 @@ func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Pla
                 player.Wizard.AddMagicLevel(spellbook.Magic, spellbook.Count)
             case *TreasureRetort:
                 retort := item.(*TreasureRetort)
-                player.Wizard.EnableAbility(retort.Retort)
+                player.Wizard.EnableRetort(retort.Retort)
         }
     }
 }

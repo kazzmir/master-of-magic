@@ -329,7 +329,7 @@ func (wizard *WizardCustom) RetortEnabled(ability data.Retort) bool {
     return false
 }
 
-func (wizard *WizardCustom) EnableAbility(retort data.Retort){
+func (wizard *WizardCustom) EnableRetort(retort data.Retort){
     for _, check := range wizard.Abilities {
         if check == retort {
             return
