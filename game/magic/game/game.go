@@ -4388,6 +4388,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentHeavenlyLight) {
         defendingArmy.AddEnchantment(data.CombatEnchantmentTrueLight)
     }
+    if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentCloudOfShadow) {
+        defendingArmy.AddEnchantment(data.CombatEnchantmentDarkness)
+    }
 
     attackingArmy.LayoutUnits(combat.TeamAttacker)
     defendingArmy.LayoutUnits(combat.TeamDefender)
