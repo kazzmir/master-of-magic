@@ -1366,6 +1366,10 @@ type CombatModel struct {
 
     // incremented for each unit that is inside the town area (when fighting in a town)
     CollateralDamage int
+
+    // enchantments applied to the battle usually by a town enchantment (heavenly light or cloud of darkness)
+    // these enchantments cannot be removed by Dispel, but can be removed by Disenchant Area/True
+    GlobalEnchantments []data.CombatEnchantment
 }
 
 func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
@@ -1784,6 +1788,13 @@ func (model *CombatModel) GetObserver() CombatObserver {
 }
 
 func (model *CombatModel) IsEnchantmentActive(enchantment data.CombatEnchantment, team Team) bool {
+    // global enchantments affect both sides no matter what
+    if slices.ContainsFunc(model.GlobalEnchantments, func(check data.CombatEnchantment) bool {
+        return enchantment == check
+    }) {
+        return true
+    }
+
     if team == TeamEither {
         return model.DefendingArmy.HasEnchantment(enchantment) || model.AttackingArmy.HasEnchantment(enchantment)
     }
@@ -1806,6 +1817,10 @@ func (model *CombatModel) AddLogEvent(text string) {
 
 func (model *CombatModel) AddProjectile(projectile *Projectile){
     model.Projectiles = append(model.Projectiles, projectile)
+}
+
+func (model *CombatModel) AddGlobalEnchantment(enchantment data.CombatEnchantment) {
+    model.GlobalEnchantments = append(model.GlobalEnchantments, enchantment)
 }
 
 func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment) bool {

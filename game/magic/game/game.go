@@ -4385,14 +4385,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     attackingArmy := createArmy(attacker, attackerStack)
     defendingArmy := createArmy(defender, defenderStack)
 
-    // FIXME: these two enchantments should not be dispellable during combat
-    if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentHeavenlyLight) {
-        defendingArmy.AddEnchantment(data.CombatEnchantmentTrueLight)
-    }
-    if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentCloudOfShadow) {
-        defendingArmy.AddEnchantment(data.CombatEnchantmentDarkness)
-    }
-
     attackingArmy.LayoutUnits(combat.TeamAttacker)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
@@ -4411,6 +4403,13 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
         combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone, attackerStack.X(), attackerStack.Y())
+
+        if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentHeavenlyLight) {
+            combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentTrueLight)
+        }
+        if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentCloudOfShadow) {
+            combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
+        }
 
         // ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
