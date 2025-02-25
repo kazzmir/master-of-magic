@@ -178,6 +178,7 @@ var chaosColor = color.RGBA{R: 180, G: 0, B: 0, A: 255}
 var sorceryColor = color.RGBA{R: 0, G: 0, B: 180, A: 255}
 var deathColor = color.RGBA{R: 0x62, G: 0x11, B: 0xba, A: 255}
 var lifeColor = color.RGBA{R: 180, G: 180, B: 180, A: 255}
+var arcaneColor = color.RGBA{R: 255, G: 255, B: 255, A: 255}
 
 func GetMagicColor(magic MagicType) color.RGBA {
     switch magic {
@@ -186,6 +187,7 @@ func GetMagicColor(magic MagicType) color.RGBA {
         case SorceryMagic: return sorceryColor
         case DeathMagic: return deathColor
         case LifeMagic: return lifeColor
+        case ArcaneMagic: return arcaneColor
     }
 
     return color.RGBA{}

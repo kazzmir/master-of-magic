@@ -69,9 +69,10 @@ type CombatEventSelectTile struct {
 type CombatEventNextUnit struct {
 }
 
-type CombatEventCastEnchantment struct {
-    Enchantment data.CombatEnchantment
+type CombatEventGlobalSpell struct {
     Caster *playerlib.Player
+    Magic data.MagicType
+    Name string
 }
 
 type CombatEventSelectUnit struct {
@@ -1174,6 +1175,12 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         case "Disenchant Area", "Disenchant True":
             // show some animation and play sound
 
+            combat.Events <- &CombatEventGlobalSpell{
+                Caster: player,
+                Magic: spell.Magic,
+                Name: spell.Name,
+            }
+
             disenchantStrength := spell.Cost(false)
             if spell.Name == "Disenchant True" {
                 // each additional point of mana spent increases the disenchant strength by 3
@@ -1231,9 +1238,10 @@ Animate Dead - need picture
 
 func (combat *CombatScreen) CastEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment, castedCallback func()){
     if combat.Model.AddEnchantment(player, enchantment) {
-        combat.Events <- &CombatEventCastEnchantment{
-            Enchantment: enchantment,
+        combat.Events <- &CombatEventGlobalSpell{
             Caster: player,
+            Magic: enchantment.Magic(),
+            Name: enchantment.Name(),
         }
         castedCallback()
     } else {
@@ -2015,20 +2023,20 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
     }
 }
 
-func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster *playerlib.Player, enchantment data.CombatEnchantment) {
+func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster *playerlib.Player, magic data.MagicType, spellName string) {
     oldDrawer := combat.Drawer
     defer func(){
         combat.Drawer = oldDrawer
     }()
 
-    value := data.GetMagicColor(enchantment.Magic())
+    value := data.GetMagicColor(magic)
 
     counter := 0
     counterMax := 90
 
     maxAlpha := 150
 
-    castDescription := fmt.Sprintf("%v cast %v", caster.Wizard.Name, enchantment.Name())
+    castDescription := fmt.Sprintf("%v cast %v", caster.Wizard.Name, spellName)
 
     text := combat.EnchantmentFont.MeasureTextWidth(castDescription, float64(data.ScreenScale))
 
@@ -2087,9 +2095,9 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         combat.doSelectUnit(yield, use.Selecter, use.Spell, use.SelectTarget, use.CanTarget, use.SelectTeam)
                     case *CombatEventNextUnit:
                         combat.Model.NextUnit()
-                    case *CombatEventCastEnchantment:
-                        use := event.(*CombatEventCastEnchantment)
-                        combat.doCastEnchantment(yield, use.Caster, use.Enchantment)
+                    case *CombatEventGlobalSpell:
+                        use := event.(*CombatEventGlobalSpell)
+                        combat.doCastEnchantment(yield, use.Caster, use.Magic, use.Name)
                     case *CombatEventMessage:
                         use := event.(*CombatEventMessage)
                         combat.UI.AddElement(uilib.MakeErrorElement(combat.UI, combat.Cache, &combat.ImageCache, use.Message, func(){ yield() }))
