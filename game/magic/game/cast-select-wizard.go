@@ -19,8 +19,8 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
 
     var layer uilib.UILayer = 2
 
-    x := 15
-    y := 15
+    x := 77
+    y := 10
 
     fonts := fontslib.MakeSpellbookFonts(cache)
 
@@ -32,7 +32,7 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
             options.GeoM.Translate(float64(x * data.ScreenScale), float64(y * data.ScreenScale))
             screen.DrawImage(background, &options)
 
-            mx, my := options.GeoM.Apply(float64(80 * data.ScreenScale), float64(10 * data.ScreenScale))
+            mx, my := options.GeoM.Apply(float64(84 * data.ScreenScale), float64(10 * data.ScreenScale))
             fonts.BigOrange.PrintWrapCenter(screen, mx, my, 120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Choose target for a Spell Blast spell")
             // mx, my = options.GeoM.Apply(float64((x + 34) * data.ScreenScale), float64((y + 20) * data.ScreenScale))
             // fonts.BigOrange.Print(screen, mx, my, float64(data.ScreenScale), options.ColorScale, "Spell Blast spell")
