@@ -1143,6 +1143,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 }
 
 func (game *Game) doCastCityEnchantment(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player, enchantment data.CityEnchantment) {
+    // FIXME: Show this only for enemies if detect magic is active and the city is known to the human player
     game.doMoveCamera(yield, tileX, tileY)
     chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
     if chosenCity == nil {
