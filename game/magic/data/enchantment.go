@@ -171,6 +171,10 @@ const (
     UnitEnchantmentBerserk
     UnitEnchantmentBlackChannels
     UnitEnchantmentWraithForm
+
+    // curses
+    UnitEnchantmentVertigo
+    UnitEnchantmentShatter
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -217,6 +221,7 @@ func (enchantment UnitEnchantment) Magic() MagicType {
         case UnitEnchantmentMagicImmunity: return SorceryMagic
         case UnitEnchantmentSpellLock: return SorceryMagic
         case UnitEnchantmentWindWalking: return SorceryMagic
+        case UnitEnchantmentVertigo: return SorceryMagic
 
         case UnitEnchantmentCloakOfFear: return DeathMagic
         case UnitEnchantmentBerserk: return DeathMagic
@@ -229,6 +234,7 @@ func (enchantment UnitEnchantment) Magic() MagicType {
         case UnitEnchantmentChaosChannelsFireBreath: return ChaosMagic
         case UnitEnchantmentEldritchWeapon: return ChaosMagic
         case UnitEnchantmentFlameBlade: return ChaosMagic
+        case UnitEnchantmentShatter: return ChaosMagic
 
         case UnitEnchantmentBless: return LifeMagic
         case UnitEnchantmentLionHeart: return LifeMagic
@@ -359,6 +365,9 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentBerserk: return "Berserk"
         case UnitEnchantmentBlackChannels: return "Black Channels"
         case UnitEnchantmentWraithForm: return "Wraith Form"
+
+        case UnitEnchantmentVertigo: return "Vertigo"
+        case UnitEnchantmentShatter: return "Shatter"
     }
 
     return ""

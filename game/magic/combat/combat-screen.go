@@ -3266,6 +3266,9 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
             // _ = index
             enchantment := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
+            if enchantment == data.UnitEnchantmentNone {
+                enchantment = util.First(unit.GetCurses(), data.UnitEnchantmentNone)
+            }
             RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), enchantment, combat.Counter, &combat.ImageCache)
         }
     }

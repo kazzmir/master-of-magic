@@ -846,6 +846,15 @@ func (unit *ArmyUnit) HasCurse(curse data.UnitEnchantment) bool {
     return slices.Contains(unit.Curses, curse)
 }
 
+func (unit *ArmyUnit) AddCurse(curse data.UnitEnchantment) {
+    // skip duplicates
+    if unit.HasCurse(curse) {
+        return
+    }
+
+    unit.Curses = append(unit.Curses, curse)
+}
+
 func (unit *ArmyUnit) RemoveCurse(curse data.UnitEnchantment) {
     unit.Curses = slices.DeleteFunc(unit.Curses, func(check data.UnitEnchantment) bool {
         return check == curse
