@@ -2,6 +2,7 @@ package combat
 
 import (
     "image"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -83,7 +84,11 @@ func combatPoints(count int) []image.Point {
     return nil
 }
 
-func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, enchantment data.UnitEnchantment, timeCounter uint64, imageCache *util.ImageCache){
+type Enchanted interface {
+    Color() color.Color
+}
+
+func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, enchantment Enchanted, timeCounter uint64, imageCache *util.ImageCache){
     // the ground is always 6 pixels above the bottom of the unit image
     groundHeight := float64(6 * data.ScreenScale)
 
@@ -106,7 +111,7 @@ func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
         // options.GeoM.Translate(-13, -22)
         screen.DrawImage(use, &options)
 
-        if enchantment != data.UnitEnchantmentNone {
+        if enchantment != nil {
             util.DrawOutline(screen, imageCache, use, options.GeoM, options.ColorScale, timeCounter/10, enchantment.Color())
         }
     }

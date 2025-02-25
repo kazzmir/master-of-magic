@@ -7,6 +7,7 @@ import (
     "math"
     "image"
     // "image/color"
+    "runtime/pprof"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -595,7 +596,8 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
 
     spells := []string{"High Prayer", "Prayer", "True Light", "Call Lightning", "Entangle",
                        "Blur", "Counter Magic", "Mass Invisibility", "Metal Fires", "Warp Reality",
-                       "Black Prayer", "Darkness", "Mana Leak", "Terror", "Wrack"}
+                       "Black Prayer", "Darkness", "Mana Leak", "Terror", "Wrack",
+                       "Disenchant Area", "Disenchant True"}
 
 
     for _, spellName := range spells {
@@ -610,7 +612,17 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
 
     attackingArmy.AddEnchantment(data.CombatEnchantmentWrack)
 
+    for _, unit := range attackingArmy.Units {
+        unit.AddCurse(data.CurseVertigo)
+        unit.AddCurse(data.CurseShatter)
+    }
+
     defendingArmy.AddEnchantment(data.CombatEnchantmentEntangle)
+
+    for _, unit := range defendingArmy.Units {
+        unit.AddEnchantment(data.UnitEnchantmentGiantStrength)
+        unit.AddEnchantment(data.UnitEnchantmentHolyArmor)
+    }
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
@@ -712,6 +724,15 @@ func main(){
     scenario := 1
     if len(os.Args) > 1 {
         scenario, _ = strconv.Atoi(os.Args[1])
+    }
+
+    profile, err := os.Create("profile.cpu.combat")
+    if err != nil {
+        log.Printf("Error creating profile: %v", err)
+    } else {
+        defer profile.Close()
+        pprof.StartCPUProfile(profile)
+        defer pprof.StopCPUProfile()
     }
 
     monitorWidth, _ := ebiten.Monitor().Size()

@@ -2210,7 +2210,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
             options.GeoM.Translate(float64(238 * data.ScreenScale), float64(168 * data.ScreenScale))
             combat.RenderCombatTile(screen, &cityScreen.ImageCache, options)
-            combat.RenderCombatUnit(screen, use, options, cityScreen.City.ProducingUnit.Count, data.UnitEnchantmentNone, 0, nil)
+            combat.RenderCombatUnit(screen, use, options, cityScreen.City.ProducingUnit.Count, nil, 0, nil)
             cityScreen.Fonts.ProducingFont.PrintOptions(screen, float64(237 * data.ScreenScale), float64(179 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true}, cityScreen.City.ProducingUnit.Name)
         }
 

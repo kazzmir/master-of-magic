@@ -1500,17 +1500,24 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
         if picked && spell.IsVariableCost() {
             var powerGroup *uilib.UIElementGroup
+            // on the overland the user might take multiple turns to cast the spell, but the cost can be anything
             extraStrength := spell.Cost(overland) * 4
             if !overland {
-                extraStrength = min(spell.Cost(overland) * 4, castingSkill)
+                // in combat, the cost of the spell cannot exceed the casting skill
+                // maximum additional strength is whatever the casting skill is minus the cost of the spell
+                extraStrength = min(spell.Cost(overland) * 4, castingSkill - spell.Cost(overland))
             }
 
-            powerGroup = makeAdditionalPowerElements(cache, &imageCache, extraStrength, func(amount int){
-                spell.OverrideCost = spell.Cost(overland) + amount
-                ui.RemoveGroup(powerGroup)
+            if extraStrength > 0 {
+                powerGroup = makeAdditionalPowerElements(cache, &imageCache, extraStrength, func(amount int){
+                    spell.OverrideCost = spell.Cost(overland) + amount
+                    ui.RemoveGroup(powerGroup)
+                    shutdownFinal()
+                })
+                ui.AddGroup(powerGroup)
+            } else {
                 shutdownFinal()
-            })
-            ui.AddGroup(powerGroup)
+            }
         } else {
             shutdownFinal()
         }
