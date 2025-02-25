@@ -42,6 +42,7 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
 
     // Wizard faces
     wizardFacesOffsets := [][2]int {{24, 37}, {101, 37}, {24, 98}, {101, 98}}
+    drawnWizardFaces := 0
     for index, target := range castingPlayer.GetKnownPlayers() {
         portrait, _ := imageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(target.Wizard.Base, target.Wizard.Banner), 0)
         faceRect := util.ImageRect((x + wizardFacesOffsets[index][0]) * data.ScreenScale, (y + wizardFacesOffsets[index][1]) * data.ScreenScale, portrait)
@@ -54,6 +55,21 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(faceRect.Min.X), float64(faceRect.Min.Y))
                 screen.DrawImage(portrait, &options)
+            },
+        })
+        drawnWizardFaces++
+    }
+    // Empty crystals
+    for emptyPlaceIndex := drawnWizardFaces; emptyPlaceIndex < 4; emptyPlaceIndex++ {
+        crystalPicture, _ := imageCache.GetImage("magic.lbx", 6, 0)
+        faceRect := util.ImageRect((x + wizardFacesOffsets[emptyPlaceIndex][0]) * data.ScreenScale, (y + wizardFacesOffsets[emptyPlaceIndex][1]) * data.ScreenScale, crystalPicture)
+        group.AddElement(&uilib.UIElement{
+            Layer: 5,
+            Rect: faceRect,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(faceRect.Min.X), float64(faceRect.Min.Y))
+                screen.DrawImage(crystalPicture, &options)
             },
         })
     }
