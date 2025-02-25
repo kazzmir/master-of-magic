@@ -2,12 +2,7 @@ package main
 
 import (
     "log"
-    "os"
     "fmt"
-    // "sync"
-    // "math"
-    // "bytes"
-    // _ "embed"
 
     "image/color"
 
@@ -17,7 +12,6 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/vector"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
-    // "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 const ScreenWidth = 1024
@@ -31,7 +25,15 @@ type Viewer struct {
     Scale float64
 }
 
-func MakeViewer(lbxFile *lbx.LbxFile) (*Viewer, error) {
+func MakeViewer() (*Viewer, error) {
+    cache := lbx.AutoCache()
+
+    lbxFile, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        fmt.Printf("Could not load fonts.lbx: %v\n", err)
+        return nil, err
+    }
+
     fonts, err := font.ReadFonts(lbxFile, 0)
     if err != nil {
         return nil, err
@@ -145,35 +147,11 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    if len(os.Args) < 2 {
-        log.Printf("Give an lbx font file to view")
-        return
-    }
-
-    file := os.Args[1]
-
     ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
     ebiten.SetWindowTitle("lbx font viewer")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    var lbxFile lbx.LbxFile
-
-    func(){
-        open, err := os.Open(file)
-        if err != nil {
-            log.Printf("Error: %v", err)
-            return
-        }
-        defer open.Close()
-        lbxFile, err = lbx.ReadLbx(open)
-        if err != nil {
-            log.Printf("Error: %v\n", err)
-            return
-        }
-        log.Printf("Loaded lbx file: %v\n", file)
-    }()
-
-    viewer, err := MakeViewer(&lbxFile)
+    viewer, err := MakeViewer()
     if err != nil {
         log.Printf("Error: %v", err)
         return

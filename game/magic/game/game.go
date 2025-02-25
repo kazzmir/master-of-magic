@@ -164,11 +164,11 @@ type GameEventSummonUnit struct {
 }
 
 type GameEventSummonArtifact struct {
-    Wizard data.WizardBase
+    Player *playerlib.Player
 }
 
 type GameEventSummonHero struct {
-    Wizard data.WizardBase
+    Player *playerlib.Player
     Champion bool
 }
 
@@ -1040,7 +1040,7 @@ func (game *Game) GetEnemyWizards() []*playerlib.Player {
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
 
     oldDrawer := game.Drawer
-    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Players[0], game.Players[0].GetKnownPlayers(), game.ComputePower(game.Players[0]))
+    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Players[0], game.GetEnemies(game.Players[0]), game.ComputePower(game.Players[0]))
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         magicScreen.Draw(screen)
@@ -2842,7 +2842,11 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.ResearchNewSpell(yield, researchSpell.Player)
                     case *GameEventCastGlobalEnchantment:
                         castGlobal := event.(*GameEventCastGlobalEnchantment)
-                        game.doCastGlobalEnchantment(yield, castGlobal.Player, castGlobal.Enchantment)
+                        player := castGlobal.Player
+
+                        if player.IsHuman() || game.CastingDetectableByHuman(player) {
+                            game.doCastGlobalEnchantment(yield, player, castGlobal.Enchantment)
+                        }
                     case *GameEventSelectLocationForSpell:
                         selectLocation := event.(*GameEventSelectLocationForSpell)
                         tileX, tileY, cancel := game.selectLocationForSpell(yield, selectLocation.Spell, selectLocation.Player, selectLocation.LocationType)
@@ -2877,21 +2881,29 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         summonUnit := event.(*GameEventSummonUnit)
                         player := summonUnit.Player
 
-                        if player.IsHuman() {
+                        if player.IsHuman() || game.CastingDetectableByHuman(player) {
                             game.Music.PushSong(music.SongCommonSummoningSpell)
-                            game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, player.Wizard.Base))
+                            game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, player.Wizard.Base, !player.IsHuman()))
                             game.Music.PopSong()
                         }
                     case *GameEventSummonArtifact:
                         summonArtifact := event.(*GameEventSummonArtifact)
-                        game.Music.PushSong(music.SongVeryRareSummoningSpell)
-                        game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, summonArtifact.Wizard))
-                        game.Music.PopSong()
+                        player := summonArtifact.Player
+
+                        if player.IsHuman() || game.CastingDetectableByHuman(player) {
+                            game.Music.PushSong(music.SongVeryRareSummoningSpell)
+                            game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, player.Wizard.Base, !player.IsHuman()))
+                            game.Music.PopSong()
+                        }
                     case *GameEventSummonHero:
                         summonHero := event.(*GameEventSummonHero)
-                        game.Music.PushSong(music.SongVeryRareSummoningSpell)
-                        game.doSummon(yield, summon.MakeSummonHero(game.Cache, summonHero.Wizard, summonHero.Champion))
-                        game.Music.PopSong()
+                        player := summonHero.Player
+
+                        if player.IsHuman() || game.CastingDetectableByHuman(player) {
+                            game.Music.PushSong(music.SongVeryRareSummoningSpell)
+                            game.doSummon(yield, summon.MakeSummonHero(game.Cache, player.Wizard.Base, summonHero.Champion, !player.IsHuman()))
+                            game.Music.PopSong()
+                        }
                     case *GameEventGameMenu:
                         game.doGameMenu(yield)
                     case *GameEventHeroLevelUp:
@@ -7787,4 +7799,19 @@ func (game *Game) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.E
         enchantments[player.GetBanner()] = player.GlobalEnchantments.Clone()
     }
     return enchantments
+}
+
+func (game *Game) CastingDetectableByHuman(caster *playerlib.Player) bool {
+    for _, player := range game.Players {
+        if player.IsHuman() {
+            if player.GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
+                for _, enemy := range player.GetKnownPlayers() {
+                    if enemy == caster {
+                        return true
+                    }
+                }
+            }
+        }
+    }
+    return false
 }

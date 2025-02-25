@@ -37,7 +37,7 @@ type Summon struct {
     SummonHeight int
 }
 
-func makeSummon(cache *lbx.LbxCache, title string, wizard data.WizardBase, summonPic *ebiten.Image, baseColor color.Color) *Summon {
+func makeSummon(cache *lbx.LbxCache, title string, wizard data.WizardBase, summonPic *ebiten.Image, baseColor color.Color, short bool) *Summon {
     summon := &Summon{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
@@ -45,6 +45,11 @@ func makeSummon(cache *lbx.LbxCache, title string, wizard data.WizardBase, summo
         Title: title,
         SummonPic: summonPic,
         State: SummonStateRunning,
+    }
+
+    if short {
+        summon.SummonHeight = summon.SummonPic.Bounds().Dy()
+        summon.Counter = 300
     }
 
     // FIXME: some of the pixels still have the wrong color, like the outer edges of the summoning circle
@@ -208,7 +213,7 @@ func getRealmColor(unit units.Unit) color.Color {
     return baseColor
 }
 
-func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase) *Summon {
+func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase, short bool) *Summon {
     imageCache := util.MakeImageCache(cache)
 
     monsterIndex := getMonsterIndex(unit)
@@ -217,10 +222,10 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
         log.Printf("Error: could not load monster image at index %v: %v", monsterIndex, err)
     }
 
-    return makeSummon(cache, fmt.Sprintf("%v Summoned", unit.Name), wizard, monsterPicture, getRealmColor(unit))
+    return makeSummon(cache, fmt.Sprintf("%v Summoned", unit.Name), wizard, monsterPicture, getRealmColor(unit), short)
 }
 
-func MakeSummonArtifact(cache *lbx.LbxCache, wizard data.WizardBase) *Summon {
+func MakeSummonArtifact(cache *lbx.LbxCache, wizard data.WizardBase, short bool) *Summon {
     imageCache := util.MakeImageCache(cache)
 
     artifactIndex := 46
@@ -229,10 +234,10 @@ func MakeSummonArtifact(cache *lbx.LbxCache, wizard data.WizardBase) *Summon {
         log.Printf("Error: could not load artifact image at index %v: %v", artifactIndex, err)
     }
 
-    return makeSummon(cache, "Artifact Summoned", wizard, monsterPicture, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+    return makeSummon(cache, "Artifact Summoned", wizard, monsterPicture, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, short)
 }
 
-func MakeSummonHero(cache *lbx.LbxCache, wizard data.WizardBase, champion bool) *Summon {
+func MakeSummonHero(cache *lbx.LbxCache, wizard data.WizardBase, champion bool, short bool) *Summon {
     imageCache := util.MakeImageCache(cache)
 
     // female 44
@@ -256,7 +261,7 @@ func MakeSummonHero(cache *lbx.LbxCache, wizard data.WizardBase, champion bool) 
         title = "Champion Summoned"
     }
 
-    return makeSummon(cache, title, wizard, heroPicture, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+    return makeSummon(cache, title, wizard, heroPicture, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, short)
 }
 
 func (summon *Summon) Update() SummonState {
