@@ -154,6 +154,7 @@ type CombatScreen struct {
     Drawer CombatDrawFunc
     ImageCache util.ImageCache
     Cache *lbx.LbxCache
+    AudioCache *audio.AudioCache
     Mouse *mouse.MouseData
     AttackingWizardFont *font.Font
     DefendingWizardFont *font.Font
@@ -300,6 +301,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     combat := &CombatScreen{
         Events: events,
         Cache: cache,
+        AudioCache: audio.MakeAudioCache(cache),
         ImageCache: imageCache,
         Mouse: mouseData,
         CameraScale: 1,
@@ -867,7 +869,7 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
         SelectTeam: teamAttacked,
         CanTarget: canTarget,
         SelectTarget: func(target *ArmyUnit){
-            sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+            sound, err := combat.AudioCache.GetSound(spell.Sound)
             if err == nil {
                 sound.Play()
             } else {
@@ -897,7 +899,7 @@ func (combat *CombatScreen) DoTargetTileSpell(player *playerlib.Player, spell sp
         Selecter: selecter,
         Spell: spell,
         SelectTile: func(x int, y int){
-            sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+            sound, err := combat.AudioCache.GetSound(spell.Sound)
             if err == nil {
                 sound.Play()
             } else {
@@ -938,7 +940,7 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
         units = combat.Model.AttackingArmy.Units
     }
 
-    sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+    sound, err := combat.AudioCache.GetSound(spell.Sound)
     if err == nil {
         sound.Play()
     } else {
@@ -2045,7 +2047,7 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
     sounds := set.MakeSet[int]()
     defer func(){
         for _, index := range sounds.Values() {
-            sound, err := audio.LoadSound(combat.Cache, index)
+            sound, err := combat.AudioCache.GetSound(index)
             if err == nil {
                 sound.Play()
             }
@@ -2102,7 +2104,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     quit, cancel := context.WithCancel(context.Background())
     defer cancel()
 
-    sound, err := audio.LoadSound(combat.Cache, mover.Unit.GetMovementSound().LbxIndex())
+    sound, err := combat.AudioCache.GetSound(mover.Unit.GetMovementSound().LbxIndex())
     if err == nil {
         // keep playing movement sound in a loop until the unit stops moving
         go func(){
@@ -2219,7 +2221,7 @@ func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *A
     // FIXME: could use a for/yield loop here to update projectiles
     combat.createRangeAttack(attacker, defender)
 
-    sound, err := audio.LoadSound(combat.Cache, attacker.Unit.GetRangeAttackSound().LbxIndex())
+    sound, err := combat.AudioCache.GetSound(attacker.Unit.GetRangeAttackSound().LbxIndex())
     if err == nil {
         sound.Play()
     }
@@ -2252,7 +2254,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
     defender.Facing = faceTowards(defender.X, defender.Y, attacker.X, attacker.Y)
 
     // FIXME: sound is based on attacker type, and possibly defender type
-    sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.GetAttackSound().LbxIndex())
+    sound, err := combat.AudioCache.GetCombatSound(attacker.Unit.GetAttackSound().LbxIndex())
     if err == nil {
         sound.Play()
     }
