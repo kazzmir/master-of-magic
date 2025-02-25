@@ -595,7 +595,6 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         Rect: transmuteRect,
         PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
-            // FIXME:
             transmuteGroup := MakeTransmuteElements(ui, fonts.TransmuteFont, player, &help, magic.Cache, &magic.ImageCache)
             ui.AddGroup(transmuteGroup)
         },
