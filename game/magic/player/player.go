@@ -500,6 +500,12 @@ func (player *Player) UpdateResearchCandidates() {
     // log.Printf("Research candidates: %v", player.ResearchCandidateSpells)
 }
 
+// This forces the player to stop casting a spell. Resets progress to 0 and resets the spell being cast.
+func (player *Player) InterruptCastingSpell() {
+    player.CastingSpell = spellbook.Spell{}
+    player.CastingSpellProgress = 0
+}
+
 func (player *Player) ComputeCastingSkill() int {
     if player.CastingSkillPower == 0 {
         return 0

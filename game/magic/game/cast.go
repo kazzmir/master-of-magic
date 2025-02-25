@@ -498,11 +498,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeRaiseVolcano, SelectedFunc: selected}
         case "Spell Blast":
-            game.HudUI.AddGroup(
-                makeSelectSpellBlastTargetUI(game.Cache, &game.ImageCache, player,
-                    func(selectedPlayer *playerlib.Player) {},
-                ),
-            )
+            game.doCastSpellBlast(player)
         case "Enchant Road":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: game.doCastEnchantRoad}
         case "Corruption":
@@ -1327,6 +1323,22 @@ func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY i
 
     game.doCastOnMap(yield, tileX, tileY, 7, false, 103, update)
     game.RefreshUI()
+}
+
+func (game *Game) doCastSpellBlast(player *playerlib.Player) {
+    var wizSelectionUiGroup *uilib.UIElementGroup
+    spellBlastCallback := func(targetPlayer *playerlib.Player) {
+        if targetPlayer != nil {
+            if targetPlayer.Defeated || targetPlayer.Banished || !targetPlayer.CastingSpell.Valid() || targetPlayer.CastingSpellProgress > player.Mana {
+                return
+            }
+            player.Mana -= targetPlayer.CastingSpellProgress
+            targetPlayer.InterruptCastingSpell()
+        }
+        game.HudUI.RemoveGroup(wizSelectionUiGroup)
+    }
+    wizSelectionUiGroup = makeSelectSpellBlastTargetUI(game.Cache, &game.ImageCache, player, spellBlastCallback)
+    game.HudUI.AddGroup(wizSelectionUiGroup)
 }
 
 func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int, caster *playerlib.Player) {

@@ -1,6 +1,8 @@
 package game
 
 import (
+	"fmt"
+
 	"github.com/kazzmir/master-of-magic/game/magic/data"
 	fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
 	"github.com/kazzmir/master-of-magic/game/magic/mirror"
@@ -14,7 +16,7 @@ import (
 
 // selectedCallback MAY return nil, that means the spell was canceled after cast.
 // TODO: transform this into more unversal reusable form.
-func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCache, castingPlayer *playerlib.Player, selectedCallback func(selectedPlayer *playerlib.Player)) *uilib.UIElementGroup {
+func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCache, castingPlayer *playerlib.Player, onPlayerSelectedCallback func(selectedPlayer *playerlib.Player)) *uilib.UIElementGroup {
     group := uilib.MakeGroup()
 
     var layer uilib.UILayer = 2
@@ -40,9 +42,13 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
         Order: 0,
     })
 
-    // Wizard faces
+    // Wizard faces/gems/broken gems
+    crystalPicture, _ := imageCache.GetImage("magic.lbx", 6, 0)
+    brokenCrystalPicture, _ := imageCache.GetImage("magic.lbx", 51, 0)
     wizardFacesOffsets := [][2]int {{24, 37}, {101, 37}, {24, 98}, {101, 98}}
+
     drawnWizardFaces := 0
+    var currentMouseoverPlayer *playerlib.Player
     for index, target := range castingPlayer.GetKnownPlayers() {
         portrait, _ := imageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(target.Wizard.Base, target.Wizard.Banner), 0)
         faceRect := util.ImageRect((x + wizardFacesOffsets[index][0]) * data.ScreenScale, (y + wizardFacesOffsets[index][1]) * data.ScreenScale, portrait)
@@ -51,17 +57,33 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
             Rect: faceRect,
             LeftClickRelease: func(element *uilib.UIElement){
             },
+            Inside: func(element *uilib.UIElement, x int, y int){
+                // Draw current spent cost
+                currentMouseoverPlayer = target
+            },
+            NotInside: func(element *uilib.UIElement){
+                // Draw current spent cost
+                if currentMouseoverPlayer == target {
+                    currentMouseoverPlayer = nil
+                }
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(faceRect.Min.X), float64(faceRect.Min.Y))
-                screen.DrawImage(portrait, &options)
+                if target.Defeated {
+                    screen.DrawImage(brokenCrystalPicture, &options)
+                } else {
+                    screen.DrawImage(portrait, &options)
+                    if currentMouseoverPlayer == target {
+                        fonts.BigOrange.PrintWrapCenter(screen, float64((x + 47) * data.ScreenScale), float64((y + 159) * data.ScreenScale), 120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%d MP", target.CastingSpellProgress))
+                    }
+                }
             },
         })
         drawnWizardFaces++
     }
     // Empty crystals
     for emptyPlaceIndex := drawnWizardFaces; emptyPlaceIndex < 4; emptyPlaceIndex++ {
-        crystalPicture, _ := imageCache.GetImage("magic.lbx", 6, 0)
         faceRect := util.ImageRect((x + wizardFacesOffsets[emptyPlaceIndex][0]) * data.ScreenScale, (y + wizardFacesOffsets[emptyPlaceIndex][1]) * data.ScreenScale, crystalPicture)
         group.AddElement(&uilib.UIElement{
             Layer: 5,
@@ -86,6 +108,7 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
         },
         LeftClickRelease: func(element *uilib.UIElement){
             cancelIndex = 0
+            onPlayerSelectedCallback(nil)
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
