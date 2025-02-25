@@ -167,7 +167,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Earth Gate
                 Flying Fortress
                 Spell Ward
-                Cloud of Shadow
         */
         case "Astral Gate":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
@@ -179,6 +178,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         case "Heavenly Light":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentHeavenlyLight)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
+
+        case "Cloud of Shadow":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentCloudOfShadow)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}

@@ -4385,8 +4385,12 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     attackingArmy := createArmy(attacker, attackerStack)
     defendingArmy := createArmy(defender, defenderStack)
 
+    // FIXME: these two enchantments should not be dispellable during combat
     if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentHeavenlyLight) {
         defendingArmy.AddEnchantment(data.CombatEnchantmentTrueLight)
+    }
+    if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentCloudOfShadow) {
+        defendingArmy.AddEnchantment(data.CombatEnchantmentDarkness)
     }
 
     attackingArmy.LayoutUnits(combat.TeamAttacker)
