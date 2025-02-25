@@ -64,6 +64,8 @@ func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, enemies []*p
 func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib.Player, help *helplib.Help, cache *lbx.LbxCache, imageCache *util.ImageCache) *uilib.UIElementGroup {
     group := uilib.MakeGroup()
 
+    fontOptions := font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}
+
     ok, _ := imageCache.GetImages("magic.lbx", 54)
     okRect := util.ImageRect(176 * data.ScreenScale, 99 * data.ScreenScale, ok[0])
     okIndex := 0
@@ -168,11 +170,11 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
             leftSide := float64(122 * data.ScreenScale)
             rightSide := float64(224 * data.ScreenScale)
             if isRight {
-                smallFont.PrintRight(screen, leftSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", int(float64(totalMana) * changePercent * alchemyConversion)))
-                smallFont.PrintRight(screen, rightSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v PP", int(float64(totalMana) * changePercent)))
+                smallFont.PrintOptions(screen, leftSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fontOptions, fmt.Sprintf("%v GP", int(float64(totalMana) * changePercent * alchemyConversion)))
+                smallFont.PrintOptions(screen, rightSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fontOptions, fmt.Sprintf("%v PP", int(float64(totalMana) * changePercent)))
             } else {
-                smallFont.PrintRight(screen, leftSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", int(float64(totalGold) * changePercent)))
-                smallFont.PrintRight(screen, rightSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v PP", int(float64(totalGold) * changePercent * alchemyConversion)))
+                smallFont.PrintOptions(screen, leftSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fontOptions, fmt.Sprintf("%v GP", int(float64(totalGold) * changePercent)))
+                smallFont.PrintOptions(screen, rightSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fontOptions, fmt.Sprintf("%v PP", int(float64(totalGold) * changePercent * alchemyConversion)))
             }
         },
     })
@@ -313,6 +315,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     knownPlayers := player.GetKnownPlayers()
 
     fonts := fontslib.MakeMagicViewFonts(magic.Cache)
+    leftShadow := font.FontOptions{Justify: font.FontJustifyLeft, DropShadow: true}
+    centerShadow := font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true}
+    rightShadow := font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}
 
     helpLbx, err := magic.Cache.GetLbxFile("help.lbx")
     if err != nil {
@@ -337,9 +342,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             research := int(math.Round(player.PowerDistribution.Research * float64(magic.Power)))
             skill := magic.Power - (mana + research)
 
-            fonts.NormalFont.PrintRight(screen, float64(56 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", mana))
-            fonts.NormalFont.PrintRight(screen, float64(103 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v RP", research))
-            fonts.NormalFont.PrintRight(screen, float64(151 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v SP", skill))
+            fonts.NormalFont.PrintOptions(screen, float64(56 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, rightShadow, fmt.Sprintf("%v MP", mana))
+            fonts.NormalFont.PrintOptions(screen, float64(103 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, rightShadow, fmt.Sprintf("%v RP", research))
+            fonts.NormalFont.PrintOptions(screen, float64(151 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, rightShadow, fmt.Sprintf("%v SP", skill))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -428,7 +433,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                             if text == "" {
                                 text = "None"
                             }
-                            fonts.SpellFont.PrintCenter(screen, float64((position.X + 21) * data.ScreenScale), float64(position.Y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, text)
+                            fonts.SpellFont.PrintOptions(screen, float64((position.X + 21) * data.ScreenScale), float64(position.Y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, centerShadow, text)
                         }
                     }
                 } else {
@@ -590,6 +595,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         Rect: transmuteRect,
         PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
+            // FIXME:
             transmuteGroup := MakeTransmuteElements(ui, fonts.TransmuteFont, player, &help, magic.Cache, &magic.ImageCache)
             ui.AddGroup(transmuteGroup)
         },
@@ -763,9 +769,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // vector.StrokeRect(screen, float32(spellCastUIRect.Min.X), float32(spellCastUIRect.Min.Y), float32(spellCastUIRect.Dx()), float32(spellCastUIRect.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
 
-            fonts.SmallerFont.Print(screen, float64(5 * data.ScreenScale), float64(176 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Casting Skill: %v(%v)", player.RemainingCastingSkill, player.ComputeCastingSkill()))
-            fonts.SmallerFont.Print(screen, float64(5 * data.ScreenScale), float64(183 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Magic Reserve: %v", player.Mana))
-            fonts.SmallerFont.Print(screen, float64(5 * data.ScreenScale), float64(190 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Power Base: %v", magic.Power))
+            fonts.SmallerFont.PrintOptions(screen, float64(5 * data.ScreenScale), float64(176 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, fmt.Sprintf("Casting Skill: %v(%v)", player.RemainingCastingSkill, player.ComputeCastingSkill()))
+            fonts.SmallerFont.PrintOptions(screen, float64(5 * data.ScreenScale), float64(183 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, fmt.Sprintf("Magic Reserve: %v", player.Mana))
+            fonts.SmallerFont.PrintOptions(screen, float64(5 * data.ScreenScale), float64(190 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, fmt.Sprintf("Power Base: %v", magic.Power))
         },
     })
 
@@ -780,8 +786,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // util.DrawRect(screen, castingRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
-            fonts.SmallerFont.Print(screen, float64(100 * data.ScreenScale), float64(176 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Casting: %v", player.CastingSpell.Name))
-            fonts.SmallerFont.Print(screen, float64(100 * data.ScreenScale), float64(183 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Researching: %v", player.ResearchingSpell.Name))
+            fonts.SmallerFont.PrintOptions(screen, float64(100 * data.ScreenScale), float64(176 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, fmt.Sprintf("Casting: %v", player.CastingSpell.Name))
+            fonts.SmallerFont.PrintOptions(screen, float64(100 * data.ScreenScale), float64(183 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, fmt.Sprintf("Researching: %v", player.ResearchingSpell.Name))
 
             summonCity := player.FindSummoningCity()
             if summonCity == nil {
@@ -790,7 +796,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 }
             }
 
-            fonts.SmallerFont.Print(screen, float64(100 * data.ScreenScale), float64(190 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Summon To: %v", summonCity.Name))
+            fonts.SmallerFont.PrintOptions(screen, float64(100 * data.ScreenScale), float64(190 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, fmt.Sprintf("Summon To: %v", summonCity.Name))
         },
     })
 
@@ -846,7 +852,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             globalEnchantments = append(globalEnchantments, &uilib.UIElement{
                 Rect: rect,
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    useFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, name)
+                    useFont.PrintOptions(screen, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, name)
                 },
                 LeftClick: func(element *uilib.UIElement){
                     // can only cancel the player's enchantments
