@@ -176,14 +176,11 @@ func (font *Font) PrintOutline(destination *ebiten.Image, edgeShader *ebiten.Sha
 func (font *Font) doPrint(destination *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, dropShadow bool, shadowColor color.Color, text string) {
     useX := x
 
-    if dropShadow {
-        // as a special case if the color is the zero value then set it to full black
-        r, g, b, a := shadowColor.RGBA()
-        if r == 0 && g == 0 && b == 0 && a == 0 {
-            shadowColor = color.RGBA{R: 0, G: 0, B: 0, A: 255}
-        }
+    if shadowColor == nil {
+        shadowColor = color.Black
     }
 
+    // TODO: this shadow distance could be a parameter
     distance := 3.0/4
 
     for _, c := range text {
