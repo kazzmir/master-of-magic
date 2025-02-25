@@ -25,6 +25,7 @@ type FontOptions struct {
     Justify FontJustify
     // no shadow is default
     DropShadow bool
+    // if DropShadow is true, this is the color of the shadow, which defaults to black
     ShadowColor color.Color
 }
 
