@@ -1193,6 +1193,8 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
 
             combat.Model.DoDisenchantArea(combat.AllSpells, player, disenchantStrength)
 
+            castedCallback()
+
             /*
 Dispel Magic - need picture
 Raise Dead - need picture
