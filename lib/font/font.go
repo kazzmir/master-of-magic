@@ -25,6 +25,8 @@ type FontOptions struct {
     Justify FontJustify
     // no shadow is default
     DropShadow bool
+    // if DropShadow is true, this is the color of the shadow, which defaults to black
+    ShadowColor color.Color
 }
 
 type Font struct {
@@ -172,11 +174,14 @@ func (font *Font) PrintOutline(destination *ebiten.Image, edgeShader *ebiten.Sha
     }
 }
 
-func (font *Font) doPrint(destination *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, dropShadow bool, text string) {
+func (font *Font) doPrint(destination *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, dropShadow bool, shadowColor color.Color, text string) {
     useX := x
 
-    black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
+    if shadowColor == nil {
+        shadowColor = color.Black
+    }
 
+    // TODO: this shadow distance could be a parameter
     distance := 3.0/4
 
     for _, c := range text {
@@ -202,7 +207,7 @@ func (font *Font) doPrint(destination *ebiten.Image, x float64, y float64, scale
         if dropShadow {
             options.GeoM.Translate(scale*distance, scale*distance)
             options.ColorScale = colorScale
-            options.ColorScale.ScaleWithColor(black)
+            options.ColorScale.ScaleWithColor(shadowColor)
             destination.DrawImage(glyphImage, &options)
 
             // then draw the normal glyph on top
@@ -217,12 +222,12 @@ func (font *Font) doPrint(destination *ebiten.Image, x float64, y float64, scale
 }
 
 func (font *Font) PrintDropShadow(destination *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
-    font.doPrint(destination, x, y, scale, colorScale, true, text)
+    font.doPrint(destination, x, y, scale, colorScale, true, color.Black, text)
 }
 
 // print the text with no border/outline
 func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
-    font.doPrint(image, x, y, scale, colorScale, false, text)
+    font.doPrint(image, x, y, scale, colorScale, false, color.Black, text)
 }
 
 func (font *Font) MeasureTextWidth(text string, scale float64) float64 {
@@ -270,9 +275,9 @@ func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, scale 
     }
 
     if options.DropShadow {
-        font.doPrint(image, useX, useY, scale, colorScale, true, text)
+        font.doPrint(image, useX, useY, scale, colorScale, true, options.ShadowColor, text)
     } else {
-        font.doPrint(image, useX, useY, scale, colorScale, false, text)
+        font.doPrint(image, useX, useY, scale, colorScale, false, options.ShadowColor, text)
     }
 }
 
