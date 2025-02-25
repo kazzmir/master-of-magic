@@ -14,7 +14,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// selectedCallback MAY return nil, that means the spell was canceled after cast.
+// onPlayerSelectedCallback MAY return nil, that means the spell was canceled after cast.
 // TODO: transform this into more unversal reusable form.
 func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCache, castingPlayer *playerlib.Player, onPlayerSelectedCallback func(selectedPlayer *playerlib.Player)) *uilib.UIElementGroup {
     group := uilib.MakeGroup()
@@ -24,7 +24,7 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
     x := 77
     y := 10
 
-    fonts := fontslib.MakeSpellbookFonts(cache)
+    fonts := fontslib.MakeSpellSpecialUIFonts(cache)
 
     group.AddElement(&uilib.UIElement{
         Layer: layer,
@@ -36,8 +36,6 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
 
             mx, my := options.GeoM.Apply(float64(84 * data.ScreenScale), float64(10 * data.ScreenScale))
             fonts.BigOrange.PrintWrapCenter(screen, mx, my, 120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Choose target for a Spell Blast spell")
-            // mx, my = options.GeoM.Apply(float64((x + 34) * data.ScreenScale), float64((y + 20) * data.ScreenScale))
-            // fonts.BigOrange.Print(screen, mx, my, float64(data.ScreenScale), options.ColorScale, "Spell Blast spell")
         },
         Order: 0,
     })
@@ -56,13 +54,12 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
             Layer: 5,
             Rect: faceRect,
             LeftClickRelease: func(element *uilib.UIElement){
+                onPlayerSelectedCallback(target)
             },
             Inside: func(element *uilib.UIElement, x int, y int){
-                // Draw current spent cost
                 currentMouseoverPlayer = target
             },
             NotInside: func(element *uilib.UIElement){
-                // Draw current spent cost
                 if currentMouseoverPlayer == target {
                     currentMouseoverPlayer = nil
                 }
@@ -74,8 +71,23 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
                     screen.DrawImage(brokenCrystalPicture, &options)
                 } else {
                     screen.DrawImage(portrait, &options)
-                    if currentMouseoverPlayer == target {
-                        fonts.BigOrange.PrintWrapCenter(screen, float64((x + 47) * data.ScreenScale), float64((y + 159) * data.ScreenScale), 120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%d MP", target.CastingSpellProgress))
+                    // Draw current spell being cast
+                    if target.CastingSpell.Valid() {
+                        fonts.InfoOrange.PrintWrapCenter(
+                            screen, 
+                            float64(faceRect.Min.X + faceRect.Dx()/2), float64(faceRect.Max.Y + 6 * data.ScreenScale),
+                            120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, target.CastingSpell.Name,
+                        )
+                        // Draw current spell cost/progress
+                        if currentMouseoverPlayer == target {
+                            fonts.BigOrange.PrintWrapCenter(screen, float64((x + 47) * data.ScreenScale), float64((y + 159) * data.ScreenScale), 120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%d MP", target.CastingSpellProgress))
+                        }
+                    } else {
+                        // fonts.InfoOrange.PrintWrapCenter(
+                        //     screen, 
+                        //     float64(faceRect.Min.X + faceRect.Dx()/2), float64(faceRect.Max.Y + 6 * data.ScreenScale), 
+                        //     120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "No spell",
+                        // )
                     }
                 }
             },

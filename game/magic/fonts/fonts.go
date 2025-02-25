@@ -1045,3 +1045,18 @@ func MakeSpellbookFonts(cache *lbx.LbxCache) *SpellbookFonts {
         BigOrange: treasureFonts.TreasureFont,
     }
 }
+
+type SpellSpecialUIFonts struct {
+    BigOrange *font.Font
+    InfoOrange *font.Font
+}
+
+func MakeSpellSpecialUIFonts(cache *lbx.LbxCache) *SpellSpecialUIFonts {
+    treasureFonts := MakeTreasureFonts(cache)
+    gameFonts := MakeGameFonts(cache)
+
+    return &SpellSpecialUIFonts{
+        BigOrange: treasureFonts.TreasureFont,
+        InfoOrange: gameFonts.InfoFontYellow,
+    }
+}
