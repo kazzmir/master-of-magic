@@ -177,8 +177,15 @@ type UnitCurse int
 
 const (
     CurseNone UnitCurse = iota
+    CurseConfusion
+    CurseCreatureBinding
+    CurseMindStorm
     CurseVertigo
     CurseShatter
+    CurseWarpCreature
+    CurseBlackSleep
+    CursePossession
+    CurseWeakness
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -207,8 +214,15 @@ func (enchantment UnitEnchantment) Color() color.Color {
 
 func (curse UnitCurse) Magic() MagicType {
     switch curse {
+        case CurseConfusion: return SorceryMagic
+        case CurseCreatureBinding: return SorceryMagic
+        case CurseMindStorm: return SorceryMagic
         case CurseVertigo: return SorceryMagic
         case CurseShatter: return ChaosMagic
+        case CurseWarpCreature: return DeathMagic
+        case CurseBlackSleep: return DeathMagic
+        case CursePossession: return DeathMagic
+        case CurseWeakness: return DeathMagic
     }
 
     return MagicNone
@@ -224,8 +238,15 @@ func (curse UnitCurse) SpellName() string {
 
 func (curse UnitCurse) Name() string {
     switch curse {
+        case CurseConfusion: return "Confusion"
+        case CurseCreatureBinding: return "Creature Binding"
+        case CurseMindStorm: return "Mind Storm"
         case CurseVertigo: return "Vertigo"
         case CurseShatter: return "Shatter"
+        case CurseWarpCreature: return "Warp Creature"
+        case CurseBlackSleep: return "Black Sleep"
+        case CursePossession: return "Possession"
+        case CurseWeakness: return "Weakness"
     }
 
     return ""
