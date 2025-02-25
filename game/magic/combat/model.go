@@ -539,7 +539,7 @@ type ArmyUnit struct {
     // enchantments applied to the unit during combat, usually by a spell
     Enchantments []data.UnitEnchantment
     // separate list of enchantments cast by the opposite wizard
-    Curses []data.UnitEnchantment
+    Curses []data.UnitCurse
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
@@ -838,15 +838,15 @@ func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
     return true
 }
 
-func (unit *ArmyUnit) GetCurses() []data.UnitEnchantment {
+func (unit *ArmyUnit) GetCurses() []data.UnitCurse {
     return unit.Curses
 }
 
-func (unit *ArmyUnit) HasCurse(curse data.UnitEnchantment) bool {
+func (unit *ArmyUnit) HasCurse(curse data.UnitCurse) bool {
     return slices.Contains(unit.Curses, curse)
 }
 
-func (unit *ArmyUnit) AddCurse(curse data.UnitEnchantment) {
+func (unit *ArmyUnit) AddCurse(curse data.UnitCurse) {
     // skip duplicates
     if unit.HasCurse(curse) {
         return
@@ -855,8 +855,8 @@ func (unit *ArmyUnit) AddCurse(curse data.UnitEnchantment) {
     unit.Curses = append(unit.Curses, curse)
 }
 
-func (unit *ArmyUnit) RemoveCurse(curse data.UnitEnchantment) {
-    unit.Curses = slices.DeleteFunc(unit.Curses, func(check data.UnitEnchantment) bool {
+func (unit *ArmyUnit) RemoveCurse(curse data.UnitCurse) {
+    unit.Curses = slices.DeleteFunc(unit.Curses, func(check data.UnitCurse) bool {
         return check == curse
     })
 }
@@ -1872,7 +1872,7 @@ func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *Arm
 }
 
 func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
-    var removedEnchantments []data.UnitEnchantment
+    var removedEnchantments []data.UnitCurse
     for _, enchantment := range unit.GetCurses() {
         spell := allSpells.FindByName(enchantment.SpellName())
         cost := spell.Cost(false)

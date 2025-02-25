@@ -38,7 +38,11 @@ func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit U
 
         combat.RenderCombatTile(screen, imageCache, options)
 
-        enchantment := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
+        var enchantment combat.Enchanted
+        first := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
+        if first != data.UnitEnchantmentNone {
+            enchantment = first
+        }
         combat.RenderCombatUnit(screen, use, options, unit.GetCount(), enchantment, counter, imageCache)
     }
 }

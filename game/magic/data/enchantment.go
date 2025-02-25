@@ -171,10 +171,14 @@ const (
     UnitEnchantmentBerserk
     UnitEnchantmentBlackChannels
     UnitEnchantmentWraithForm
+)
 
-    // curses
-    UnitEnchantmentVertigo
-    UnitEnchantmentShatter
+type UnitCurse int
+
+const (
+    CurseNone UnitCurse = iota
+    CurseVertigo
+    CurseShatter
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -201,6 +205,32 @@ func (enchantment UnitEnchantment) Color() color.Color {
     return GetMagicColor(enchantment.Magic())
 }
 
+func (curse UnitCurse) Magic() MagicType {
+    switch curse {
+        case CurseVertigo: return SorceryMagic
+        case CurseShatter: return ChaosMagic
+    }
+
+    return MagicNone
+}
+
+func (curse UnitCurse) Color() color.Color {
+    return GetMagicColor(curse.Magic())
+}
+
+func (curse UnitCurse) SpellName() string {
+    return curse.Name()
+}
+
+func (curse UnitCurse) Name() string {
+    switch curse {
+        case CurseVertigo: return "Vertigo"
+        case CurseShatter: return "Shatter"
+    }
+
+    return ""
+}
+
 // the magic realm this enchantment belongs to
 func (enchantment UnitEnchantment) Magic() MagicType {
     switch enchantment {
@@ -221,7 +251,6 @@ func (enchantment UnitEnchantment) Magic() MagicType {
         case UnitEnchantmentMagicImmunity: return SorceryMagic
         case UnitEnchantmentSpellLock: return SorceryMagic
         case UnitEnchantmentWindWalking: return SorceryMagic
-        case UnitEnchantmentVertigo: return SorceryMagic
 
         case UnitEnchantmentCloakOfFear: return DeathMagic
         case UnitEnchantmentBerserk: return DeathMagic
@@ -234,7 +263,6 @@ func (enchantment UnitEnchantment) Magic() MagicType {
         case UnitEnchantmentChaosChannelsFireBreath: return ChaosMagic
         case UnitEnchantmentEldritchWeapon: return ChaosMagic
         case UnitEnchantmentFlameBlade: return ChaosMagic
-        case UnitEnchantmentShatter: return ChaosMagic
 
         case UnitEnchantmentBless: return LifeMagic
         case UnitEnchantmentLionHeart: return LifeMagic
@@ -366,8 +394,6 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentBlackChannels: return "Black Channels"
         case UnitEnchantmentWraithForm: return "Wraith Form"
 
-        case UnitEnchantmentVertigo: return "Vertigo"
-        case UnitEnchantmentShatter: return "Shatter"
     }
 
     return ""

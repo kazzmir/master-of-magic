@@ -612,8 +612,8 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy.AddEnchantment(data.CombatEnchantmentWrack)
 
     for _, unit := range attackingArmy.Units {
-        unit.AddCurse(data.UnitEnchantmentVertigo)
-        unit.AddCurse(data.UnitEnchantmentShatter)
+        unit.AddCurse(data.CurseVertigo)
+        unit.AddCurse(data.CurseShatter)
     }
 
     defendingArmy.AddEnchantment(data.CombatEnchantmentEntangle)
