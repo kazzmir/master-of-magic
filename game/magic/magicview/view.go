@@ -445,7 +445,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         if i < len(knownPlayers) {
             enemy := knownPlayers[i]
             if !enemy.Defeated {
-                positionStart := gemPositions[i]
+                positionStart := gemPositions[i].Mul(data.ScreenScale)
                 positionStart.X += gemUnknown.Bounds().Dx() + 2 * data.ScreenScale
                 positionStart.Y -= 2 * data.ScreenScale
                 for otherPlayer, relationship := range enemy.PlayerRelations {
