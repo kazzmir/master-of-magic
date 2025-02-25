@@ -2,9 +2,7 @@ package magicview
 
 import (
     "fmt"
-    "log"
     "image"
-    "image/color"
     "cmp"
     "math"
     "math/rand/v2"
@@ -19,6 +17,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/hajimehoshi/ebiten/v2"
     // "github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -313,49 +312,7 @@ func randomizeBookOrder(books int) []int {
 func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.Player) *uilib.UI {
     knownPlayers := player.GetKnownPlayers()
 
-    fontLbx, err := magic.Cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
-    }
-
-    blue := color.RGBA{R: 0x6e, G: 0x79, B: 0xe6, A: 0xff}
-    bluishPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        blue, blue, blue, blue,
-    }
-
-    normalFont := font.MakeOptimizedFontWithPalette(fonts[2], bluishPalette)
-
-    blue2Palette := bluishPalette
-    blue2Palette[1] = color.RGBA{R: 0x52, G: 0x61, B: 0xca, A: 0xff}
-    smallerFont := font.MakeOptimizedFontWithPalette(fonts[1], blue2Palette)
-
-    yellowishPalette := color.Palette{
-        color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x00},
-        color.RGBA{R: 0xa6, G: 0x6d, B: 0x1c, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xb6, B: 0x2c, A: 0xff},
-    }
-
-    // FIXME: font with black outline
-    spellFont := font.MakeOptimizedFontWithPalette(fonts[0], yellowishPalette)
-
-    translucentWhite := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 80})
-    transmutePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        translucentWhite, translucentWhite, translucentWhite,
-        translucentWhite, translucentWhite, translucentWhite,
-    }
-
-    transmuteFont := font.MakeOptimizedFontWithPalette(fonts[0], transmutePalette)
+    fonts := fontslib.MakeMagicViewFonts(magic.Cache)
 
     helpLbx, err := magic.Cache.GetLbxFile("help.lbx")
     if err != nil {
@@ -380,9 +337,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             research := int(math.Round(player.PowerDistribution.Research * float64(magic.Power)))
             skill := magic.Power - (mana + research)
 
-            normalFont.PrintRight(screen, float64(56 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", mana))
-            normalFont.PrintRight(screen, float64(103 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v RP", research))
-            normalFont.PrintRight(screen, float64(151 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v SP", skill))
+            fonts.NormalFont.PrintRight(screen, float64(56 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", mana))
+            fonts.NormalFont.PrintRight(screen, float64(103 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v RP", research))
+            fonts.NormalFont.PrintRight(screen, float64(151 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v SP", skill))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -471,7 +428,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                             if text == "" {
                                 text = "None"
                             }
-                            spellFont.PrintCenter(screen, float64((position.X + 21) * data.ScreenScale), float64(position.Y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, text)
+                            fonts.SpellFont.PrintCenter(screen, float64((position.X + 21) * data.ScreenScale), float64(position.Y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, text)
                         }
                     }
                 } else {
@@ -633,7 +590,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         Rect: transmuteRect,
         PlaySoundLeftClick: true,
         LeftClick: func(element *uilib.UIElement){
-            transmuteGroup := MakeTransmuteElements(ui, transmuteFont, player, &help, magic.Cache, &magic.ImageCache)
+            transmuteGroup := MakeTransmuteElements(ui, fonts.TransmuteFont, player, &help, magic.Cache, &magic.ImageCache)
             ui.AddGroup(transmuteGroup)
         },
         RightClick: func(element *uilib.UIElement){
@@ -806,9 +763,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // vector.StrokeRect(screen, float32(spellCastUIRect.Min.X), float32(spellCastUIRect.Min.Y), float32(spellCastUIRect.Dx()), float32(spellCastUIRect.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
 
-            smallerFont.Print(screen, float64(5 * data.ScreenScale), float64(176 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Casting Skill: %v(%v)", player.RemainingCastingSkill, player.ComputeCastingSkill()))
-            smallerFont.Print(screen, float64(5 * data.ScreenScale), float64(183 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Magic Reserve: %v", player.Mana))
-            smallerFont.Print(screen, float64(5 * data.ScreenScale), float64(190 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Power Base: %v", magic.Power))
+            fonts.SmallerFont.Print(screen, float64(5 * data.ScreenScale), float64(176 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Casting Skill: %v(%v)", player.RemainingCastingSkill, player.ComputeCastingSkill()))
+            fonts.SmallerFont.Print(screen, float64(5 * data.ScreenScale), float64(183 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Magic Reserve: %v", player.Mana))
+            fonts.SmallerFont.Print(screen, float64(5 * data.ScreenScale), float64(190 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Power Base: %v", magic.Power))
         },
     })
 
@@ -823,8 +780,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // util.DrawRect(screen, castingRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
-            smallerFont.Print(screen, float64(100 * data.ScreenScale), float64(176 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Casting: %v", player.CastingSpell.Name))
-            smallerFont.Print(screen, float64(100 * data.ScreenScale), float64(183 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Researching: %v", player.ResearchingSpell.Name))
+            fonts.SmallerFont.Print(screen, float64(100 * data.ScreenScale), float64(176 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Casting: %v", player.CastingSpell.Name))
+            fonts.SmallerFont.Print(screen, float64(100 * data.ScreenScale), float64(183 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Researching: %v", player.ResearchingSpell.Name))
 
             summonCity := player.FindSummoningCity()
             if summonCity == nil {
@@ -833,37 +790,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 }
             }
 
-            smallerFont.Print(screen, float64(100 * data.ScreenScale), float64(190 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Summon To: %v", summonCity.Name))
+            fonts.SmallerFont.Print(screen, float64(100 * data.ScreenScale), float64(190 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Summon To: %v", summonCity.Name))
         },
     })
-
-    // dynamically compute a font and cache the result
-    bannerFonts := make(map[data.BannerType]*font.Font)
-    bannerFont := func (banner data.BannerType) *font.Font {
-        if font, ok := bannerFonts[banner]; ok {
-            return font
-        }
-
-        var use color.RGBA
-        switch banner {
-            case data.BannerBlue: use = color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}
-            case data.BannerGreen: use = color.RGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff}
-            case data.BannerPurple: use = color.RGBA{R: 0x8f, G: 0x30, B: 0xff, A: 0xff}
-            case data.BannerRed: use = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
-            case data.BannerYellow: use = color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}
-        }
-
-        palette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            use, use, use,
-            use, use, use,
-        }
-
-        out := font.MakeOptimizedFontWithPalette(fonts[2], palette)
-        bannerFonts[banner] = out
-        return out
-    }
 
     type EnchantmentElement struct {
         Enchantment data.Enchantment
@@ -903,7 +832,15 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
         for i, enchantment := range allEnchantments() {
             name := enchantment.Enchantment.String()
-            useFont := bannerFont(enchantment.Banner)
+            var useFont *font.Font
+            switch enchantment.Banner {
+                case data.BannerBlue: useFont = fonts.BannerBlueFont
+                case data.BannerGreen: useFont = fonts.BannerGreenFont
+                case data.BannerPurple: useFont = fonts.BannerPurpleFont
+                case data.BannerRed: useFont = fonts.BannerRedFont
+                case data.BannerYellow: useFont = fonts.BannerYellowFont
+            }
+
             yStart := 80
             rect := image.Rect(170 * data.ScreenScale, (yStart + i * useFont.Height()) * data.ScreenScale, 310 * data.ScreenScale, (yStart + (i + 1) * useFont.Height()) * data.ScreenScale)
             globalEnchantments = append(globalEnchantments, &uilib.UIElement{
