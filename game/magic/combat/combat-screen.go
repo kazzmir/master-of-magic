@@ -1173,7 +1173,18 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
 
         case "Disenchant Area", "Disenchant True":
             // show some animation and play sound
-            combat.Model.DoDisenchantArea(combat.AllSpells, player, spell, spell.Name == "Disenchant True")
+
+            disenchantStrength := spell.Cost(false)
+            if spell.Name == "Disenchant True" {
+                // each additional point of mana spent increases the disenchant strength by 3
+                disenchantStrength = spell.BaseCost(false) + spell.SpentAdditionalCost(false) * 3
+            }
+
+            if player.Wizard.RetortEnabled(data.RetortRunemaster) {
+                disenchantStrength *= 2
+            }
+
+            combat.Model.DoDisenchantArea(combat.AllSpells, player, disenchantStrength)
 
             /*
 Dispel Magic - need picture

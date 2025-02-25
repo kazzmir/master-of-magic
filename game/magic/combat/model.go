@@ -482,6 +482,7 @@ type CombatUnit interface {
     GetHitPoints() int
     GetWeaponBonus() data.WeaponBonus
     GetEnchantments() []data.UnitEnchantment
+    RemoveEnchantment(data.UnitEnchantment)
     HasEnchantment(data.UnitEnchantment) bool
     GetCount() int
     GetHealth() int
@@ -537,6 +538,8 @@ type ArmyUnit struct {
 
     // enchantments applied to the unit during combat, usually by a spell
     Enchantments []data.UnitEnchantment
+    // separate list of enchantments cast by the opposite wizard
+    Curses []data.UnitEnchantment
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
@@ -839,13 +842,20 @@ func (unit *ArmyUnit) GetEnchantments() []data.UnitEnchantment {
     return append(slices.Clone(unit.Unit.GetEnchantments()), unit.Enchantments...)
 }
 
+func (unit *ArmyUnit) RemoveEnchantment(enchantment data.UnitEnchantment) {
+    unit.Enchantments = slices.DeleteFunc(unit.Enchantments, func(check data.UnitEnchantment) bool {
+        return enchantment == check
+    })
+
+    unit.Unit.RemoveEnchantment(enchantment)
+}
+
 func (unit *ArmyUnit) AddEnchantment(enchantment data.UnitEnchantment) {
     // skip duplicates
-    for _, check := range unit.Enchantments {
-        if check == enchantment {
-            return
-        }
+    if unit.HasEnchantment(enchantment) {
+        return
     }
+
     unit.Enchantments = append(unit.Enchantments, enchantment)
 }
 
@@ -1788,17 +1798,7 @@ func (model *CombatModel) GetObserver() CombatObserver {
 }
 
 // do a dispel roll on all enchantments owned by the other player
-func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *playerlib.Player, spell spellbook.Spell, disenchantTrue bool) {
-    disenchantStrength := spell.Cost(false)
-    if disenchantTrue {
-        // each additional point of mana spent increases the disenchant strength by 3
-        disenchantStrength = spell.BaseCost(false) + spell.SpentAdditionalCost(false) * 3
-    }
-
-    if caster.Wizard.RetortEnabled(data.RetortRunemaster) {
-        disenchantStrength *= 2
-    }
-
+func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *playerlib.Player, disenchantStrength int) {
     targetArmy := model.GetOppositeArmyForPlayer(caster)
 
     // enemy combat enchantments
@@ -1817,8 +1817,29 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
     }
 
     // enemy unit enchantments
+    for _, unit := range targetArmy.Units {
+        if unit.Unit.GetHealth() > 0 {
+            model.DoDisenchantUnit(allSpells, unit, targetArmy.Player, disenchantStrength)
+        }
+    }
 
     // friendly unit curses
+}
+
+func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
+    var removedEnchantments []data.UnitEnchantment
+    for _, enchantment := range unit.GetEnchantments() {
+        spell := allSpells.FindByName(enchantment.SpellName())
+        cost := spell.Cost(false)
+        dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
+        if spellbook.RollDispelChance(dispellChance) {
+            removedEnchantments = append(removedEnchantments, enchantment)
+        }
+    }
+
+    for _, enchantment := range removedEnchantments {
+        unit.RemoveEnchantment(enchantment)
+    }
 }
 
 func (model *CombatModel) IsEnchantmentActive(enchantment data.CombatEnchantment, team Team) bool {
