@@ -1787,6 +1787,40 @@ func (model *CombatModel) GetObserver() CombatObserver {
     return &model.Observer
 }
 
+// do a dispel roll on all enchantments owned by the other player
+func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *playerlib.Player, spell spellbook.Spell, disenchantTrue bool) {
+    disenchantStrength := spell.Cost(false)
+    if disenchantTrue {
+        // each additional point of mana spent increases the disenchant strength by 3
+        disenchantStrength = spell.BaseCost(false) + spell.SpentAdditionalCost(false) * 3
+    }
+
+    if caster.Wizard.RetortEnabled(data.RetortRunemaster) {
+        disenchantStrength *= 2
+    }
+
+    targetArmy := model.GetOppositeArmyForPlayer(caster)
+
+    // enemy combat enchantments
+    var removedEnchantments []data.CombatEnchantment
+    for _, enchantment := range targetArmy.Enchantments {
+        spell := allSpells.FindByName(enchantment.SpellName())
+        cost := spell.Cost(false)
+        dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &targetArmy.Player.Wizard)
+        if spellbook.RollDispelChance(dispellChance) {
+            removedEnchantments = append(removedEnchantments, enchantment)
+        }
+    }
+
+    for _, enchantment := range removedEnchantments {
+        targetArmy.RemoveEnchantment(enchantment)
+    }
+
+    // enemy unit enchantments
+
+    // friendly unit curses
+}
+
 func (model *CombatModel) IsEnchantmentActive(enchantment data.CombatEnchantment, team Team) bool {
     // global enchantments affect both sides no matter what
     if slices.ContainsFunc(model.GlobalEnchantments, func(check data.CombatEnchantment) bool {

@@ -742,6 +742,10 @@ func (enchantment CombatEnchantment) Magic() MagicType {
     return MagicNone
 }
 
+func (enchantment CombatEnchantment) SpellName() string {
+    return enchantment.Name()
+}
+
 func (enchantment CombatEnchantment) Name() string {
     switch enchantment {
         case CombatEnchantmentHighPrayer: return "High Prayer"

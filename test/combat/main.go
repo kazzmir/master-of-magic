@@ -595,7 +595,7 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
 
     spells := []string{"High Prayer", "Prayer", "True Light", "Call Lightning", "Entangle",
                        "Blur", "Counter Magic", "Mass Invisibility", "Metal Fires", "Warp Reality",
-                       "Black Prayer", "Darkness", "Mana Leak", "Terror", "Wrack"}
+                       "Black Prayer", "Darkness", "Mana Leak", "Terror", "Wrack", "Disenchant Area"}
 
 
     for _, spellName := range spells {

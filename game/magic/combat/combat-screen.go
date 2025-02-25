@@ -166,6 +166,7 @@ type CombatScreen struct {
     InfoFont *font.Font
     WhiteFont *font.Font
     DrawRoad bool
+    AllSpells spellbook.Spells
     // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
     TopDownOrder []image.Point
 
@@ -298,11 +299,18 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     events := make(chan CombatEvent, 1000)
 
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Error reading spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+
     combat := &CombatScreen{
         Events: events,
         Cache: cache,
         AudioCache: audio.MakeAudioCache(cache),
         ImageCache: imageCache,
+        AllSpells: allSpells,
         Mouse: mouseData,
         CameraScale: 1,
         DrawRoad: zone.City != nil,
@@ -1163,12 +1171,14 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 castedCallback()
             }, targetAny)
 
+        case "Disenchant Area", "Disenchant True":
+            // show some animation and play sound
+            combat.Model.DoDisenchantArea(combat.AllSpells, player, spell, spell.Name == "Disenchant True")
+
             /*
-Disenchant Area - need picture
 Dispel Magic - need picture
 Raise Dead - need picture
 Petrify	- need picture
-Disenchant True - need picture
 Call Chaos - need picture
 Animate Dead - need picture
             */
