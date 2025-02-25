@@ -1,0 +1,34 @@
+//kage:unit pixels
+
+package main
+
+func nearbyAlpha(src vec2) float {
+    left := imageSrc0At(src - vec2(1, 0))
+    right := imageSrc0At(src + vec2(1, 0))
+    up_left := imageSrc0At(src - vec2(1, 1))
+    up := imageSrc0At(src - vec2(0, 1))
+    up_right := imageSrc0At(src + vec2(1, -1))
+    down_left := imageSrc0At(src + vec2(-1, 1))
+    down := imageSrc0At(src + vec2(0, 1))
+    down_right := imageSrc0At(src + vec2(1, 1))
+
+    return (left.a + right.a + up_left.a + up.a + up_right.a + down_left.a + down.a + down_right.a) / 8
+}
+
+var OutlineColor vec4
+
+func Fragment(destPosition vec4, srcPosition vec2, color vec4) vec4 {
+    current := imageSrc0At(srcPosition)
+
+    if current.a != 0 {
+        return current
+    }
+
+    average := nearbyAlpha(srcPosition)
+
+    if average < 0.1 {
+        return current
+    }
+
+    return OutlineColor
+}

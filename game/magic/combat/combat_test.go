@@ -150,7 +150,7 @@ func TestBasicMelee(test *testing.T){
         AttackingArmy: attackingArmy,
     }
 
-    combat.Initialize(spellbook.Spells{})
+    combat.Initialize(spellbook.Spells{}, 0, 0)
 
     attackerMelee := false
     defenderMelee := false
@@ -199,7 +199,7 @@ func TestAttackerHaste(test *testing.T){
         AttackingArmy: attackingArmy,
     }
 
-    combat.Initialize(spellbook.Spells{})
+    combat.Initialize(spellbook.Spells{}, 0, 0)
 
     attackerMelee := 0
     defenderMelee := 0
@@ -256,7 +256,7 @@ func TestFirstStrike(test *testing.T){
         AttackingArmy: attackingArmy,
     }
 
-    combat.Initialize(spellbook.Spells{})
+    combat.Initialize(spellbook.Spells{}, 0, 0)
 
     attackerMelee := 0
     defenderMelee := 0
@@ -316,7 +316,7 @@ func TestFirstStrikeNegate(test *testing.T){
         AttackingArmy: attackingArmy,
     }
 
-    combat.Initialize(spellbook.Spells{})
+    combat.Initialize(spellbook.Spells{}, 0, 0)
 
     attackerMelee := 0
     defenderMelee := 0
@@ -373,7 +373,7 @@ func TestThrowAttack(test *testing.T){
         AttackingArmy: attackingArmy,
     }
 
-    combat.Initialize(spellbook.Spells{})
+    combat.Initialize(spellbook.Spells{}, 0, 0)
 
     attackerMelee := 0
     defenderMelee := 0
@@ -444,7 +444,7 @@ func TestThrownTouchAttack(test *testing.T){
         AttackingArmy: attackingArmy,
     }
 
-    combat.Initialize(spellbook.Spells{})
+    combat.Initialize(spellbook.Spells{}, 0, 0)
 
     attackerMelee := 0
     defenderMelee := 0
@@ -522,7 +522,7 @@ func TestFear(test *testing.T){
         AttackingArmy: attackingArmy,
     }
 
-    combat.Initialize(spellbook.Spells{})
+    combat.Initialize(spellbook.Spells{}, 0, 0)
 
     attackerMelee := 0
     defenderMelee := 0

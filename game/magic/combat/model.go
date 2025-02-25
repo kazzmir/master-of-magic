@@ -1199,11 +1199,13 @@ func (unit *ArmyUnit) Figures() int {
 type Army struct {
     Player *playerlib.Player
     ManaPool int
+    Range fraction.Fraction
     // when counter magic is cast, this field tracks how much 'counter magic' strength is available to dispel
     CounterMagic int
     Units []*ArmyUnit
     Auto bool
     Fled bool
+    Casted bool
 
     Enchantments []data.CombatEnchantment
 }
@@ -1337,6 +1339,7 @@ type CombatModel struct {
     HighlightedUnit *ArmyUnit
     OtherUnits []*OtherUnit
     Projectiles []*Projectile
+    Plane data.Plane
 
     Events chan CombatEvent
 
@@ -1365,9 +1368,10 @@ type CombatModel struct {
     CollateralDamage int
 }
 
-func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, events chan CombatEvent) *CombatModel {
+func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
     model := &CombatModel{
         Turn: TeamDefender,
+        Plane: plane,
         SelectedUnit: nil,
         Tiles: makeTiles(30, 30, landscape, plane, zone),
         TurnAttacker: 0,
@@ -1384,7 +1388,7 @@ func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
         allSpells = spellbook.Spells{}
     }
 
-    model.Initialize(allSpells)
+    model.Initialize(allSpells, overworldX, overworldY)
 
     model.NextTurn()
     model.SelectedUnit = model.ChooseNextUnit(TeamDefender)
@@ -1392,9 +1396,42 @@ func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
     return model
 }
 
-func (model *CombatModel) Initialize(allSpells spellbook.Spells) {
+// distance -> cost multiplier:
+// 0 -> 0.5
+// <=5 -> 1
+// <=10 -> 1.5
+// <=15 -> 2
+// <=20 -> 2.5
+// >20 or other plane -> 3.0
+func computeRangeToFortress(plane data.Plane, x int, y int, player *playerlib.Player) fraction.Fraction {
+    // channeler menas the maximum range is 1.0
+    minRange := fraction.FromInt(3)
+    if player.Wizard.RetortEnabled(data.RetortChanneler) {
+        minRange = fraction.FromInt(1)
+    }
+
+    fortressCity := player.FindFortressCity()
+    if fortressCity == nil || fortressCity.Plane != plane {
+        return fraction.FromInt(3).Min(minRange)
+    }
+
+    distance := fortressCity.TileDistance(x, y)
+    switch {
+        case distance == 0: return fraction.Make(1, 2)
+        case distance <= 5: return fraction.FromInt(1)
+        case distance <= 10: return fraction.Make(3, 2).Min(minRange)
+        case distance <= 15: return fraction.Make(2, 1).Min(minRange)
+        case distance <= 20: return fraction.Make(5, 2).Min(minRange)
+        default: return fraction.Make(3, 1).Min(minRange)
+    }
+}
+
+func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int, overworldY int) {
     model.AttackingArmy.ManaPool = min(model.AttackingArmy.Player.Mana, model.AttackingArmy.Player.ComputeCastingSkill())
     model.DefendingArmy.ManaPool = min(model.DefendingArmy.Player.Mana, model.DefendingArmy.Player.ComputeCastingSkill())
+
+    model.DefendingArmy.Range = computeRangeToFortress(model.Plane, overworldX, overworldY, model.DefendingArmy.Player)
+    model.AttackingArmy.Range = computeRangeToFortress(model.Plane, overworldX, overworldY, model.AttackingArmy.Player)
 
     for _, unit := range model.DefendingArmy.Units {
         unit.Model = model
@@ -1480,6 +1517,9 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
 
 func (model *CombatModel) NextTurn() {
     model.CurrentTurn += 1
+
+    model.DefendingArmy.Casted = false
+    model.AttackingArmy.Casted = false
 
     defenderLeakMana := false
 

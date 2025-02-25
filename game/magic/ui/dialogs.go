@@ -155,12 +155,12 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
             }
 
             helpTitleFont.Print(window, float64(titleX), infoY + float64(infoTopMargin * data.ScreenScale + titleYAdjust), float64(data.ScreenScale), options.ColorScale, help.Headline)
-            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin) * float64(data.ScreenScale), float64(helpTextY) + infoY, wrapped, options.ColorScale, false)
+            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin) * float64(data.ScreenScale), float64(helpTextY) + infoY, wrapped, options.ColorScale, font.FontOptions{})
 
             yPos := float64(helpTextY) + infoY + wrapped.TotalHeight + 2
             for i, moreWrapped := range moreHelp {
                 helpTitleFont.Print(window, float64(titleX), float64(yPos), float64(data.ScreenScale), options.ColorScale, helpEntries[i].Headline)
-                helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin) * float64(data.ScreenScale), yPos + float64(helpTitleFont.Height() * data.ScreenScale) + 1, moreWrapped, options.ColorScale, false)
+                helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin) * float64(data.ScreenScale), yPos + float64(helpTitleFont.Height() * data.ScreenScale) + 1, moreWrapped, options.ColorScale, font.FontOptions{})
                 yPos += float64(helpTitleFont.Height() * data.ScreenScale) + 1 + float64(moreWrapped.TotalHeight) + 2
             }
 
@@ -238,7 +238,7 @@ func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.Imag
             options.GeoM.Translate(float64(errorX * data.ScreenScale), float64(errorY * data.ScreenScale))
             window.DrawImage(topDraw, &options)
 
-            errorFont.RenderWrapped(window, float64((errorX + errorMargin) * data.ScreenScale + maxWidth / 2), float64(errorY + errorTopMargin) * float64(data.ScreenScale), wrapped, ebiten.ColorScale{}, true)
+            errorFont.RenderWrapped(window, float64((errorX + errorMargin) * data.ScreenScale + maxWidth / 2), float64(errorY + errorTopMargin) * float64(data.ScreenScale), wrapped, ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyCenter})
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(errorX * data.ScreenScale), float64(bottom))
@@ -330,9 +330,9 @@ func MakeConfirmDialogWithLayerFull(container UIContainer, cache *lbx.LbxCache, 
             window.DrawImage(topDraw, &options)
 
             if center {
-                confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, true)
+                confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, font.FontOptions{Justify: font.FontJustifyCenter})
             } else {
-                confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, false)
+                confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, font.FontOptions{})
             }
 
             options.GeoM.Reset()
@@ -489,7 +489,7 @@ func MakeLairConfirmDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCa
             options.GeoM.Translate(float64(7 * data.ScreenScale), float64(7 * data.ScreenScale))
             window.DrawImage(lairPicture.Frame(), &options)
 
-            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, true)
+            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, font.FontOptions{Justify: font.FontJustifyCenter})
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(confirmX - 1 * data.ScreenScale), float64(bottom))
@@ -646,7 +646,7 @@ func MakeLairShowDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCache
             options.GeoM.Translate(float64(7 * data.ScreenScale), float64(7 * data.ScreenScale))
             window.DrawImage(lairPicture.Frame(), &options)
 
-            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, true)
+            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, options.ColorScale, font.FontOptions{Justify: font.FontJustifyCenter})
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(confirmX), float64(bottom))

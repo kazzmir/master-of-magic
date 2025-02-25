@@ -43,6 +43,7 @@ import (
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/functional"
@@ -1213,7 +1214,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         screen.DrawImage(animal, &iconOptions)
 
         x, y := options.GeoM.Apply(float64(8 * data.ScreenScale + animal.Bounds().Dx()), float64(9 * data.ScreenScale))
-        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
+        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, font.FontOptions{})
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
         screen.DrawImage(rightSide, &options)
@@ -1320,7 +1321,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
         x, y := options.GeoM.Apply(float64(pageBackground.Bounds().Dx()) / 2, float64(middleY) - wrappedText.TotalHeight / 2 - float64(fonts.BigFont.Height() * data.ScreenScale) / 2 + 5)
         fonts.BigFont.PrintCenter(screen, x, y, float64(data.ScreenScale), textScale, title)
         y += float64(fonts.BigFont.Height() * data.ScreenScale) + 1
-        fonts.SmallFont.RenderWrapped(screen, x, y, wrappedText, textScale, true)
+        fonts.SmallFont.RenderWrapped(screen, x, y, wrappedText, textScale, font.FontOptions{Justify: font.FontJustifyCenter})
 
         scrollOptions := options
         scrollOptions.GeoM.Translate(float64(-63 * data.ScreenScale), float64(-20 * data.ScreenScale))
@@ -2732,7 +2733,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
         screen.DrawImage(animal, &iconOptions)
 
         x, y := options.GeoM.Apply(float64(75 * data.ScreenScale), float64(9 * data.ScreenScale))
-        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, false)
+        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, font.FontOptions{})
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
 
@@ -4263,7 +4264,7 @@ func (game *Game) doTreasurePopup(yield coroutine.YieldFunc, player *playerlib.P
             options.GeoM = rightGeom
             screen.DrawImage(right, &options)
 
-            fonts.TreasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, treasure.String())
+            fonts.TreasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, font.FontOptions{DropShadow: true}, treasure.String())
         },
     }
 
@@ -4405,7 +4406,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-        combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone)
+        combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone, attackerStack.X(), attackerStack.Y())
 
         // ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
@@ -5648,7 +5649,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                             // draw the first enchantment on the unit
                             for _, enchantment := range unit.GetEnchantments() {
-                                util.DrawOutline(screen, &game.ImageCache, unitImage, options.GeoM, options.ColorScale, game.Counter/10, enchantment.Color())
+                                util.DrawOutline(screen, &game.ImageCache, unitImage, options.GeoM, options.ColorScale, game.Counter/8, enchantment.Color())
                                 break
                             }
                         }
@@ -6029,7 +6030,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 if !minMoves.IsZero() {
                     x := float64(246.0 * data.ScreenScale)
                     y := float64(167.0 * data.ScreenScale)
-                    game.Fonts.WhiteFont.Print(screen, x, y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
+                    game.Fonts.WhiteFont.PrintOptions(screen, x, y, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{DropShadow: true}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
 
                     sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
                     swimmingIcon, _ := game.ImageCache.GetImage("main.lbx", 19, 0)
@@ -6158,13 +6159,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.Fonts.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.Fonts.WhiteFont.PrintOptions(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v GP", game.Players[0].Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.Fonts.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.Fonts.WhiteFont.PrintOptions(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v MP", game.Players[0].Mana))
         },
     })
 
@@ -7658,7 +7659,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
                 enchantment := util.First(leader.GetEnchantments(), data.UnitEnchantmentNone)
                 if enchantment != data.UnitEnchantmentNone {
-                    util.DrawOutline(screen, overworld.ImageCache, pic, options.GeoM, options.ColorScale, overworld.Counter/10, enchantment.Color())
+                    util.DrawOutline(screen, overworld.ImageCache, pic, options.GeoM, options.ColorScale, overworld.Counter/8, enchantment.Color())
                 }
             }
 

@@ -43,6 +43,10 @@ func (no *NoCatchment) OnShore(x int, y int) bool {
     return false
 }
 
+func (no *NoCatchment) TileDistance(x1 int, y1 int, x2 int, y2 int) int {
+    return 0
+}
+
 type NoServices struct {}
 
 func (no *NoServices) FindRoadConnectedCities(city *citylib.City) []*citylib.City {

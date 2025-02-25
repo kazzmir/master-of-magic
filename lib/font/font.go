@@ -12,6 +12,21 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+type FontJustify int
+const (
+    FontJustifyLeft FontJustify = iota
+    FontJustifyCenter
+    FontJustifyRight
+)
+
+// for rendering, to specify justification, wrapping and shadows
+type FontOptions struct {
+    // left is default
+    Justify FontJustify
+    // no shadow is default
+    DropShadow bool
+}
+
 type Font struct {
     Image *ebiten.Image
     GlyphWidth int
@@ -107,8 +122,27 @@ func (font *Font) getGlyphImage(index int) *ebiten.Image {
     return font.Image.SubImage(image.Rect(x1, y1, x2, y2)).(*ebiten.Image)
 }
 
-func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
+func toFloatArray(color color.Color) []float32 {
+    r, g, b, a := color.RGBA()
+    var max float32 = 65535.0
+    return []float32{float32(r) / max, float32(g) / max, float32(b) / max, float32(a) / max}
+}
+
+// draws a 1px outline around each glyph
+// the edge shader should be shaders.ShaderEdgeGlow, although it should probably be changed to shaders.ShaderOutline
+// just use PrintDropShadow for now
+func (font *Font) PrintOutline(destination *ebiten.Image, edgeShader *ebiten.Shader, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
     useX := x
+
+    black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
+    var shaderOptions ebiten.DrawRectShaderOptions
+    shaderOptions.Uniforms = make(map[string]interface{})
+    shaderOptions.Uniforms["Color1"] = toFloatArray(black)
+    shaderOptions.Uniforms["Color2"] = toFloatArray(black)
+    shaderOptions.Uniforms["Color3"] = toFloatArray(black)
+    shaderOptions.Uniforms["Time"] = float32(0)
+    shaderOptions.ColorScale = colorScale
+
     for _, c := range text {
         if c == '\n' {
             y += float64(font.GlyphHeight + font.internalFont.VerticalSpacing)
@@ -128,10 +162,67 @@ func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64
         options.GeoM.Translate(useX, y)
         options.ColorScale = colorScale
         glyphImage := font.getGlyphImage(glyphIndex)
-        image.DrawImage(glyphImage, &options)
+        destination.DrawImage(glyphImage, &options)
+
+        shaderOptions.GeoM = options.GeoM
+        shaderOptions.Images[0] = glyphImage
+        destination.DrawRectShader(glyphImage.Bounds().Dx(), glyphImage.Bounds().Dy(), edgeShader, &shaderOptions)
 
         useX += float64(glyph.Width + font.internalFont.HorizontalSpacing) * scale
     }
+}
+
+func (font *Font) doPrint(destination *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, dropShadow bool, text string) {
+    useX := x
+
+    black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
+
+    distance := 3.0/4
+
+    for _, c := range text {
+        if c == '\n' {
+            y += float64(font.GlyphHeight + font.internalFont.VerticalSpacing)
+            useX = 0
+            continue
+        }
+
+        glyphIndex := int(c) - 32
+        if glyphIndex >= len(font.Glyphs) || glyphIndex < 0 {
+            continue
+        }
+
+        glyph := font.Glyphs[glyphIndex]
+        glyphImage := font.getGlyphImage(glyphIndex)
+
+        // draw the shadow first
+        var options ebiten.DrawImageOptions
+        options.GeoM.Scale(scale, scale)
+
+        options.GeoM.Translate(useX, y)
+        if dropShadow {
+            options.GeoM.Translate(scale*distance, scale*distance)
+            options.ColorScale = colorScale
+            options.ColorScale.ScaleWithColor(black)
+            destination.DrawImage(glyphImage, &options)
+
+            // then draw the normal glyph on top
+            options.GeoM.Translate(-scale*distance, -scale*distance)
+        }
+
+        options.ColorScale = colorScale
+        destination.DrawImage(glyphImage, &options)
+
+        useX += float64(glyph.Width + font.internalFont.HorizontalSpacing) * scale
+    }
+}
+
+func (font *Font) PrintDropShadow(destination *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
+    font.doPrint(destination, x, y, scale, colorScale, true, text)
+}
+
+// print the text with no border/outline
+func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
+    font.doPrint(image, x, y, scale, colorScale, false, text)
 }
 
 func (font *Font) MeasureTextWidth(text string, scale float64) float64 {
@@ -164,6 +255,27 @@ func (font *Font) PrintRight(image *ebiten.Image, x float64, y float64, scale fl
     font.Print(image, x - width, y, scale, colorScale, text)
 }
 
+func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, options FontOptions, text string) {
+    useX := x
+    useY := y
+
+    switch options.Justify {
+        case FontJustifyLeft:
+        case FontJustifyCenter:
+            width := font.MeasureTextWidth(text, scale)
+            useX = x - width / 2
+        case FontJustifyRight:
+            width := font.MeasureTextWidth(text, scale)
+            useX = x - width
+    }
+
+    if options.DropShadow {
+        font.doPrint(image, useX, useY, scale, colorScale, true, text)
+    } else {
+        font.doPrint(image, useX, useY, scale, colorScale, false, text)
+    }
+}
+
 /* split the input text ABCD into two substrings AB and CD such that the pixel width of AB is less than maxWidth */
 func (font *Font) splitText(text string, maxWidth float64, scale float64) (string, string) {
     size := font.MeasureTextWidth(text, scale)
@@ -183,14 +295,17 @@ func (font *Font) splitText(text string, maxWidth float64, scale float64) (strin
     return "", text
 }
 
-func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, colorScale ebiten.ColorScale, text string) {
+func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, colorScale ebiten.ColorScale, options FontOptions, text string) {
     wrapped := font.CreateWrappedText(maxWidth, scale, text)
-    font.RenderWrapped(image, x, y, wrapped, colorScale, false)
+    font.RenderWrapped(image, x, y, wrapped, colorScale, options)
 }
 
 func (font *Font) PrintWrapCenter(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, colorScale ebiten.ColorScale, text string) {
+    font.PrintWrap(image, x, y, maxWidth, scale, colorScale, FontOptions{Justify: FontJustifyCenter}, text)
+    /*
     wrapped := font.CreateWrappedText(maxWidth, scale, text)
-    font.RenderWrapped(image, x, y, wrapped, colorScale, true)
+    font.RenderWrapped(image, x, y, wrapped, colorScale, FontOptions{Justify: FontJustifyCenter})
+    */
 }
 
 type WrappedText struct {
@@ -204,14 +319,11 @@ func (text *WrappedText) Clear() {
     text.Lines = nil
 }
 
-func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, colorScale ebiten.ColorScale, center bool) {
+func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, colorScale ebiten.ColorScale, options FontOptions) {
     yPos := y
+    useOptions := options
     for _, line := range wrapped.Lines {
-        if center {
-            font.PrintCenter(image, x, yPos, wrapped.Scale, colorScale, line)
-        } else {
-            font.Print(image, x, yPos, wrapped.Scale, colorScale, line)
-        }
+        font.PrintOptions(image, x, yPos, wrapped.Scale, colorScale, useOptions, line)
         yPos += float64(font.Height()) * wrapped.Scale + 1
     }
 }
