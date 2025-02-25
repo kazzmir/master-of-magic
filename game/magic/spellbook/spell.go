@@ -981,7 +981,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
 
     fonts := fontslib.MakeSpellbookFonts(cache)
 
-    amount := 0
+    amount := float64(0)
 
     fadeSpeed := uint64(7)
 
@@ -999,7 +999,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
             mx, my := options.GeoM.Apply(float64(8 * data.ScreenScale), float64(6 * data.ScreenScale))
             fonts.BigOrange.Print(screen, mx, my, float64(data.ScreenScale), options.ColorScale, "Additional Power:")
             mx, _ = options.GeoM.Apply(float64(background.Bounds().Dx() - 6 * data.ScreenScale), 0)
-            fonts.BigOrange.PrintRight(screen, mx, my, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("+%v", amount))
+            fonts.BigOrange.PrintRight(screen, mx, my, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("+%v", math.Round(amount)))
         },
         Order: 0,
     })
@@ -1018,7 +1018,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
         Inside: func(element *uilib.UIElement, x int, y int){
             conveyorX = x
             if doUpdate {
-                amount = maximum * conveyorX / conveyor.Bounds().Dx()
+                amount = float64(maximum) * float64(conveyorX) / float64(conveyor.Bounds().Dx())
             }
         },
         LeftClick: func(element *uilib.UIElement){
@@ -1044,7 +1044,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
 
             star, _ := imageCache.GetImage("spellscr.lbx", 3, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(conveyorRect.Min.X + conveyor.Bounds().Dx() * amount / maximum - 3 * data.ScreenScale), float64(conveyorRect.Min.Y - 1 * data.ScreenScale))
+            options.GeoM.Translate(float64(conveyorRect.Min.X) + float64(conveyor.Bounds().Dx()) * amount / float64(maximum) - float64(3 * data.ScreenScale), float64(conveyorRect.Min.Y - 1 * data.ScreenScale))
             screen.DrawImage(star, &options)
 
             // vector.StrokeRect(area, float32(conveyorRect.Min.X), float32(conveyorRect.Min.Y), float32(conveyorRect.Bounds().Dx()), float32(conveyorRect.Bounds().Dy()), 2, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
@@ -1072,7 +1072,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
 
             getAlpha = group.MakeFadeOut(fadeSpeed)
             group.AddDelay(fadeSpeed, func(){
-                okCallback(amount)
+                okCallback(int(math.Round(amount)))
             })
         },
         Order: 1,
