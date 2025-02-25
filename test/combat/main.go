@@ -7,6 +7,7 @@ import (
     "math"
     "image"
     // "image/color"
+    "runtime/pprof"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -723,6 +724,15 @@ func main(){
     scenario := 1
     if len(os.Args) > 1 {
         scenario, _ = strconv.Atoi(os.Args[1])
+    }
+
+    profile, err := os.Create("profile.cpu.combat")
+    if err != nil {
+        log.Printf("Error creating profile: %v", err)
+    } else {
+        defer profile.Close()
+        pprof.StartCPUProfile(profile)
+        defer pprof.StopCPUProfile()
     }
 
     monitorWidth, _ := ebiten.Monitor().Size()
