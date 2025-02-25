@@ -838,6 +838,20 @@ func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
     return true
 }
 
+func (unit *ArmyUnit) GetCurses() []data.UnitEnchantment {
+    return unit.Curses
+}
+
+func (unit *ArmyUnit) HasCurse(curse data.UnitEnchantment) bool {
+    return slices.Contains(unit.Curses, curse)
+}
+
+func (unit *ArmyUnit) RemoveCurse(curse data.UnitEnchantment) {
+    unit.Curses = slices.DeleteFunc(unit.Curses, func(check data.UnitEnchantment) bool {
+        return check == curse
+    })
+}
+
 func (unit *ArmyUnit) GetEnchantments() []data.UnitEnchantment {
     return append(slices.Clone(unit.Unit.GetEnchantments()), unit.Enchantments...)
 }
@@ -1824,6 +1838,12 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
     }
 
     // friendly unit curses
+    playerArmy := model.GetArmyForPlayer(caster)
+    for _, unit := range playerArmy.Units {
+        if unit.Unit.GetHealth() > 0 {
+            model.DoDisenchantUnitCurses(allSpells, unit, targetArmy.Player, disenchantStrength)
+        }
+    }
 }
 
 func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
@@ -1839,6 +1859,22 @@ func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *Arm
 
     for _, enchantment := range removedEnchantments {
         unit.RemoveEnchantment(enchantment)
+    }
+}
+
+func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
+    var removedEnchantments []data.UnitEnchantment
+    for _, enchantment := range unit.GetCurses() {
+        spell := allSpells.FindByName(enchantment.SpellName())
+        cost := spell.Cost(false)
+        dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
+        if spellbook.RollDispelChance(dispellChance) {
+            removedEnchantments = append(removedEnchantments, enchantment)
+        }
+    }
+
+    for _, enchantment := range removedEnchantments {
+        unit.RemoveCurse(enchantment)
     }
 }
 
