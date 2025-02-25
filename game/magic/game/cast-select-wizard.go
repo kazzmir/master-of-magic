@@ -2,6 +2,7 @@ package game
 
 import (
 	"fmt"
+	"image"
 
 	"github.com/kazzmir/master-of-magic/game/magic/data"
 	fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
@@ -16,7 +17,7 @@ import (
 
 // onPlayerSelectedCallback MAY return nil, that means the spell was canceled after cast.
 // TODO: transform this into more unversal reusable form.
-func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCache, castingPlayer *playerlib.Player, onPlayerSelectedCallback func(selectedPlayer *playerlib.Player)) *uilib.UIElementGroup {
+func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCache, castingPlayer *playerlib.Player, playersInGame int, onPlayerSelectedCallback func(selectedPlayer *playerlib.Player)) *uilib.UIElementGroup {
     group := uilib.MakeGroup()
 
     var layer uilib.UILayer = 2
@@ -48,6 +49,9 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
     drawnWizardFaces := 0
     var currentMouseoverPlayer *playerlib.Player
     for index, target := range castingPlayer.GetKnownPlayers() {
+        if target.Defeated || target.Banished {
+            continue
+        }
         portrait, _ := imageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(target.Wizard.Base, target.Wizard.Banner), 0)
         faceRect := util.ImageRect((x + wizardFacesOffsets[index][0]) * data.ScreenScale, (y + wizardFacesOffsets[index][1]) * data.ScreenScale, portrait)
         group.AddElement(&uilib.UIElement{
@@ -72,22 +76,18 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
                 } else {
                     screen.DrawImage(portrait, &options)
                     // Draw current spell being cast
+                    spellText := "None"
                     if target.CastingSpell.Valid() {
-                        fonts.InfoOrange.PrintWrapCenter(
-                            screen, 
-                            float64(faceRect.Min.X + faceRect.Dx()/2), float64(faceRect.Max.Y + 6 * data.ScreenScale),
-                            120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, target.CastingSpell.Name,
-                        )
-                        // Draw current spell cost/progress
-                        if currentMouseoverPlayer == target {
-                            fonts.BigOrange.PrintWrapCenter(screen, float64((x + 47) * data.ScreenScale), float64((y + 159) * data.ScreenScale), 120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%d MP", target.CastingSpellProgress))
-                        }
-                    } else {
-                        // fonts.InfoOrange.PrintWrapCenter(
-                        //     screen, 
-                        //     float64(faceRect.Min.X + faceRect.Dx()/2), float64(faceRect.Max.Y + 6 * data.ScreenScale), 
-                        //     120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "No spell",
-                        // )
+                        spellText = target.CastingSpell.Name   
+                    }
+                    fonts.InfoOrange.PrintWrapCenter(
+                        screen, 
+                        float64(faceRect.Min.X + faceRect.Dx()/2), float64(faceRect.Max.Y + 6 * data.ScreenScale),
+                        120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, spellText,
+                    )
+                    // Draw current spell cost/progress
+                    if currentMouseoverPlayer == target {
+                        fonts.BigOrange.PrintWrapCenter(screen, float64((x + 47) * data.ScreenScale), float64((y + 159) * data.ScreenScale), 120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%d MP", target.CastingSpellProgress))
                     }
                 }
             },
@@ -96,14 +96,19 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
     }
     // Empty crystals
     for emptyPlaceIndex := drawnWizardFaces; emptyPlaceIndex < 4; emptyPlaceIndex++ {
-        faceRect := util.ImageRect((x + wizardFacesOffsets[emptyPlaceIndex][0]) * data.ScreenScale, (y + wizardFacesOffsets[emptyPlaceIndex][1]) * data.ScreenScale, crystalPicture)
+        crystalRect := util.ImageRect((x + wizardFacesOffsets[emptyPlaceIndex][0]) * data.ScreenScale, (y + wizardFacesOffsets[emptyPlaceIndex][1]) * data.ScreenScale, crystalPicture)
+        crystalToDraw := crystalPicture
+        if emptyPlaceIndex > playersInGame - 1 {
+            crystalToDraw = brokenCrystalPicture
+            crystalRect = crystalRect.Add(image.Point{-1 * data.ScreenScale, -1 * data.ScreenScale})
+        }
         group.AddElement(&uilib.UIElement{
             Layer: 5,
-            Rect: faceRect,
+            Rect: crystalRect,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(faceRect.Min.X), float64(faceRect.Min.Y))
-                screen.DrawImage(crystalPicture, &options)
+                options.GeoM.Translate(float64(crystalRect.Min.X), float64(crystalRect.Min.Y))
+                screen.DrawImage(crystalToDraw, &options)
             },
         })
     }
