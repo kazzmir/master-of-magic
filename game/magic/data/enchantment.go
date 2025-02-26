@@ -178,7 +178,9 @@ const (
     UnitCurseMindStorm
     UnitCurseVertigo
     UnitCurseShatter
-    UnitCurseWarpCreature
+    UnitCurseWarpCreatureMelee
+    UnitCurseWarpCreatureDefense
+    UnitCurseWarpCreatureResistance
     UnitCurseBlackSleep
     UnitCursePossession
     UnitCurseWeakness
@@ -258,7 +260,9 @@ func (enchantment UnitEnchantment) Magic() MagicType {
         case UnitCurseMindStorm: return SorceryMagic
         case UnitCurseVertigo: return SorceryMagic
         case UnitCurseShatter: return ChaosMagic
-        case UnitCurseWarpCreature: return DeathMagic
+        case UnitCurseWarpCreatureMelee: return ChaosMagic
+        case UnitCurseWarpCreatureDefense: return ChaosMagic
+        case UnitCurseWarpCreatureResistance: return ChaosMagic
         case UnitCurseBlackSleep: return DeathMagic
         case UnitCursePossession: return DeathMagic
         case UnitCurseWeakness: return DeathMagic
@@ -271,7 +275,10 @@ func (enchantment UnitEnchantment) IsCurse() bool {
     switch enchantment {
         case UnitCurseConfusion, UnitCurseCreatureBinding,
              UnitCurseMindStorm, UnitCurseVertigo,
-             UnitCurseShatter, UnitCurseWarpCreature,
+             UnitCurseShatter,
+             UnitCurseWarpCreatureMelee,
+             UnitCurseWarpCreatureDefense,
+             UnitCurseWarpCreatureResistance,
              UnitCurseBlackSleep, UnitCursePossession,
              UnitCurseWeakness: return true
     }
@@ -399,7 +406,11 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitCurseMindStorm: return "Mind Storm"
         case UnitCurseVertigo: return "Vertigo"
         case UnitCurseShatter: return "Shatter"
-        case UnitCurseWarpCreature: return "Warp Creature"
+
+        case UnitCurseWarpCreatureMelee,
+             UnitCurseWarpCreatureDefense,
+             UnitCurseWarpCreatureResistance: return "Warp Creature"
+
         case UnitCurseBlackSleep: return "Black Sleep"
         case UnitCursePossession: return "Possession"
         case UnitCurseWeakness: return "Weakness"
@@ -452,7 +463,9 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitCurseMindStorm: return "special2.lbx"
         case UnitCurseVertigo: return "special.lbx"
         case UnitCurseShatter: return "special.lbx"
-        case UnitCurseWarpCreature: return ""
+        case UnitCurseWarpCreatureMelee: return "special2.lbx"
+        case UnitCurseWarpCreatureDefense: return "special2.lbx"
+        case UnitCurseWarpCreatureResistance: return "special2.lbx"
         case UnitCurseBlackSleep: return "special2.lbx"
         case UnitCursePossession: return "special.lbx"
         case UnitCurseWeakness: return "special.lbx"
@@ -505,7 +518,9 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitCurseMindStorm: return 2
         case UnitCurseVertigo: return 101
         case UnitCurseShatter: return 95
-        case UnitCurseWarpCreature: return -1
+        case UnitCurseWarpCreatureMelee: return 11
+        case UnitCurseWarpCreatureDefense: return 12
+        case UnitCurseWarpCreatureResistance: return 13
         case UnitCurseBlackSleep: return 3
         case UnitCursePossession: return 98
         case UnitCurseWeakness: return 96
