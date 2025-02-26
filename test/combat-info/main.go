@@ -56,6 +56,7 @@ func NewEngine(scenario int) (*Engine, error) {
     }
 
     unit.AddCurse(data.CurseMindStorm)
+    unit.TakeDamage(5)
 
     ui := &uilib.UI{
         Draw: func(this *uilib.UI, screen *ebiten.Image) {

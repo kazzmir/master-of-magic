@@ -201,7 +201,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
         index := 0
         for index < count {
             if index == count + count2 + negativeCount {
-                options.ColorScale.ScaleWithColor(color.RGBA{R: 0, G: 0, B: 0, A: 128})
+                options.ColorScale.ScaleWithColor(color.RGBA{R: 128, G: 128, B: 128, A: 255})
             }
 
             draw(index, icon)
@@ -210,7 +210,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
         for index < (count + count2) {
             if index == count + count2 + negativeCount {
-                options.ColorScale.ScaleWithColor(color.RGBA{R: 0, G: 0, B: 0, A: 128})
+                options.ColorScale.ScaleWithColor(color.RGBA{R: 128, G: 128, B: 128, A: 255})
             }
 
             draw(index, icon2)
