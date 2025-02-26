@@ -352,14 +352,22 @@ func (unit *OverworldUnit) GetProductionCost() int {
 func (unit *OverworldUnit) MeleeEnchantmentBonus(enchantment data.UnitEnchantment) int {
     switch enchantment {
         case data.UnitEnchantmentGiantStrength: return 1
-        // TODO: rest
+        case data.UnitEnchantmentBlackChannels: return 2
+        case data.UnitEnchantmentFlameBlade: return 2
+        case data.UnitEnchantmentLionHeart: return 3
     }
 
     return 0
 }
 
 func (unit *OverworldUnit) DefenseEnchantmentBonus(enchantment data.UnitEnchantment) int {
-    // TODO
+    switch enchantment {
+        case data.UnitEnchantmentBlackChannels: return 1
+        case data.UnitEnchantmentHolyArmor: return 2
+        // FIXME: iron/stone skin are mutually exclusive
+        case data.UnitEnchantmentIronSkin: return 5
+        case data.UnitEnchantmentStoneSkin: return 1
+    }
     return 0
 }
 
@@ -411,6 +419,10 @@ func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
 
 func (unit *OverworldUnit) GetMeleeAttackPower() int {
     base := unit.GetBaseMeleeAttackPower()
+
+    if base == 0 {
+        return 0
+    }
 
     modifier := 0
 

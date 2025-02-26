@@ -802,6 +802,10 @@ func (unit *ArmyUnit) GetFullDefense() int {
 }
 
 func (unit *ArmyUnit) GetDefense() int {
+    if unit.HasEnchantment(data.UnitEnchantmentBlackChannels) {
+        return 0
+    }
+
     modifier := 0
 
     for _, enchantment := range unit.Enchantments {
@@ -909,7 +913,12 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
         modifier -= 1
     }
 
-    return max(0, unit.Unit.GetMeleeAttackPower() + modifier)
+    berserkModifier := 1
+    if unit.HasEnchantment(data.UnitEnchantmentBerserk) {
+        berserkModifier = 2
+    }
+
+    return max(0, (unit.Unit.GetMeleeAttackPower() + modifier) * berserkModifier)
 }
 
 func (unit *ArmyUnit) HasAbility(ability data.AbilityType) bool {
