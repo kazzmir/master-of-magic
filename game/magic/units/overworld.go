@@ -366,7 +366,7 @@ func (unit *OverworldUnit) MovementSpeedEnchantmentBonus(base int, enchantments 
     flying := false
     haste := false
 
-    for _, enchantment := range unit.Enchantments {
+    for _, enchantment := range enchantments {
         switch enchantment {
             case data.UnitEnchantmentEndurance: endurance = true
             case data.UnitEnchantmentFlight: flying = true
