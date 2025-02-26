@@ -352,8 +352,14 @@ func (unit *OverworldUnit) GetProductionCost() int {
 func (unit *OverworldUnit) MeleeEnchantmentBonus(enchantment data.UnitEnchantment) int {
     switch enchantment {
         case data.UnitEnchantmentGiantStrength: return 1
+        // TODO: rest
     }
 
+    return 0
+}
+
+func (unit *OverworldUnit) DefenseEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    // TODO
     return 0
 }
 
@@ -480,12 +486,18 @@ func (unit *OverworldUnit) GetFullDefense() int {
 func (unit *OverworldUnit) GetDefense() int {
     base := unit.GetBaseDefense()
 
+    modifier := 0
+
     switch unit.WeaponBonus {
-        case data.WeaponMythril: base += 1
-        case data.WeaponAdamantium: base += 2
+        case data.WeaponMythril: modifier += 1
+        case data.WeaponAdamantium: modifier += 2
     }
 
-    return base
+    for _, enchantment := range unit.Enchantments {
+        modifier += unit.DefenseEnchantmentBonus(enchantment)
+    }
+
+    return base + modifier
 }
 
 func (unit *OverworldUnit) GetFullResistance() int {

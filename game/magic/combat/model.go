@@ -484,6 +484,7 @@ type CombatUnit interface {
     GetLbxIndex() int
 
     MeleeEnchantmentBonus(data.UnitEnchantment) int
+    DefenseEnchantmentBonus(data.UnitEnchantment) int
 
     GetFullName() string
     GetDefense() int
@@ -803,8 +804,14 @@ func (unit *ArmyUnit) GetFullDefense() int {
 func (unit *ArmyUnit) GetDefense() int {
     modifier := 0
 
-    if unit.HasCurse(data.UnitCurseMindStorm) {
-        modifier -= 5
+    for _, enchantment := range unit.Enchantments {
+        modifier += unit.Unit.DefenseEnchantmentBonus(enchantment)
+    }
+
+    for _, curse := range unit.Curses {
+        switch curse {
+            case data.UnitCurseMindStorm: modifier -= 5
+        }
     }
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {

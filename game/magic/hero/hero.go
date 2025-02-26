@@ -974,6 +974,10 @@ func (hero *Hero) MeleeEnchantmentBonus(enchantment data.UnitEnchantment) int {
     return hero.Unit.MeleeEnchantmentBonus(enchantment)
 }
 
+func (hero *Hero) DefenseEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    return hero.Unit.DefenseEnchantmentBonus(enchantment)
+}
+
 func (hero *Hero) GetMeleeAttackPower() int {
     base := hero.GetBaseMeleeAttackPower()
 
@@ -983,6 +987,7 @@ func (hero *Hero) GetMeleeAttackPower() int {
         }
     }
 
+    // FIXME: include enchantments from artifacts
     for _, enchantment := range hero.GetEnchantments() {
         base += hero.MeleeEnchantmentBonus(enchantment)
     }
@@ -1094,6 +1099,11 @@ func (hero *Hero) GetDefense() int {
         if item != nil {
             base += item.DefenseBonus()
         }
+    }
+
+    // FIXME: handle artifact enchantments
+    for _, enchantment := range hero.GetEnchantments() {
+        base += hero.DefenseEnchantmentBonus(enchantment)
     }
 
     return base
