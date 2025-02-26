@@ -558,8 +558,22 @@ func (unit *OverworldUnit) GetFullHitPoints() int {
     return unit.GetHitPoints()
 }
 
+func (unit *OverworldUnit) HitPointsEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    switch enchantment {
+        case data.UnitEnchantmentBlackChannels: return 1
+        case data.UnitEnchantmentLionHeart: return 3
+    }
+    return 0
+}
+
 func (unit *OverworldUnit) GetHitPoints() int {
-    return unit.GetBaseHitPoints()
+    base := unit.GetBaseHitPoints()
+
+    for _, enchantment := range unit.Enchantments {
+        base += unit.HitPointsEnchantmentBonus(enchantment)
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetBaseHitPoints() int {

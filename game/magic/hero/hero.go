@@ -1337,8 +1337,17 @@ func (hero *Hero) GetFullHitPoints() int {
     return hero.GetHitPoints()
 }
 
+func (hero *Hero) HitPointsEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    return hero.Unit.HitPointsEnchantmentBonus(enchantment)
+}
+
 func (hero *Hero) GetHitPoints() int {
-    base := hero.Unit.GetBaseHitPoints()
+    base := hero.GetBaseHitPoints()
+
+    // FIXME: include artifact enchantments
+    for _, enchantment := range hero.GetEnchantments() {
+        base += hero.HitPointsEnchantmentBonus(enchantment)
+    }
 
     return base
 }
