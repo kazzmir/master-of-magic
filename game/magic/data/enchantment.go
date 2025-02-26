@@ -447,15 +447,15 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentBlackChannels: return "special.lbx"
         case UnitEnchantmentWraithForm: return "special.lbx"
 
-        case UnitCurseConfusion: return ""
-        case UnitCurseCreatureBinding: return ""
+        case UnitCurseConfusion: return "special2.lbx"
+        case UnitCurseCreatureBinding: return "special.lbx"
         case UnitCurseMindStorm: return "special2.lbx"
-        case UnitCurseVertigo: return ""
-        case UnitCurseShatter: return ""
+        case UnitCurseVertigo: return "special.lbx"
+        case UnitCurseShatter: return "special.lbx"
         case UnitCurseWarpCreature: return ""
-        case UnitCurseBlackSleep: return ""
-        case UnitCursePossession: return ""
-        case UnitCurseWeakness: return ""
+        case UnitCurseBlackSleep: return "special2.lbx"
+        case UnitCursePossession: return "special.lbx"
+        case UnitCurseWeakness: return "special.lbx"
     }
 
     return ""
@@ -500,15 +500,15 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentBlackChannels: return 67
         case UnitEnchantmentWraithForm: return 68
 
-        case UnitCurseConfusion: return -1
-        case UnitCurseCreatureBinding: return -1
+        case UnitCurseConfusion: return 0
+        case UnitCurseCreatureBinding: return 100
         case UnitCurseMindStorm: return 2
-        case UnitCurseVertigo: return -1
-        case UnitCurseShatter: return -1
+        case UnitCurseVertigo: return 101
+        case UnitCurseShatter: return 95
         case UnitCurseWarpCreature: return -1
-        case UnitCurseBlackSleep: return -1
-        case UnitCursePossession: return -1
-        case UnitCurseWeakness: return -1
+        case UnitCurseBlackSleep: return 3
+        case UnitCursePossession: return 98
+        case UnitCurseWeakness: return 96
     }
 
     return -1
