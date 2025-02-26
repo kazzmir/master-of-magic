@@ -2698,7 +2698,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
        mouseY < hudY {
 
        showUnit := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
-       combat.UI.AddGroup(unitview.MakeUnitContextMenu(combat.Cache, combat.UI, showUnit.Unit, func(){}))
+       combat.UI.AddGroup(MakeUnitView(combat.Cache, combat.UI, showUnit))
    }
 
     // the unit died or is out of moves
