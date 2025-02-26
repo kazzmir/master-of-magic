@@ -2,6 +2,7 @@ package combat
 
 import (
     "log"
+    "fmt"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -14,20 +15,23 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIElementGroup {
+type UnitViewFonts struct {
+    DescriptionFont *font.Font
+    SmallFont *font.Font
+    MediumFont *font.Font
+    YellowGradient *font.Font
+}
+
+func MakeFonts(cache *lbx.LbxCache) (*UnitViewFonts, error) {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil
+        return nil, err
     }
 
     fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
+        return nil, err
     }
-
-    imageCache := util.MakeImageCache(cache)
 
     descriptionPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -46,21 +50,21 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
     smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
     mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
 
-    yellowGradient := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
-        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+    return &UnitViewFonts{
+        DescriptionFont: descriptionFont,
+        SmallFont: smallFont,
+        MediumFont: mediumFont,
+    }, nil
+}
+
+func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIElementGroup {
+    fonts, err := MakeFonts(cache)
+    if err != nil {
+        log.Printf("Unable to make fonts: %v", err)
+        return nil
     }
 
-    _ = descriptionFont
-    _ = smallFont
-    _ = mediumFont
-    _ = yellowGradient
+    imageCache := util.MakeImageCache(cache)
 
     group := uilib.MakeGroup()
 
@@ -100,12 +104,12 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
             options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
             options.GeoM.Translate(float64(51 * data.ScreenScale), float64(6 * data.ScreenScale))
 
-            // RenderUnitInfoNormal(screen, &imageCache, unit, unit.GetTitle(), "", descriptionFont, smallFont, options)
+            RenderUnitInfo(screen, &imageCache, unit, fonts, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
             options.GeoM.Translate(float64(10 * data.ScreenScale), float64(50 * data.ScreenScale))
-            unitview.RenderUnitInfoStats(screen, &imageCache, unit, 15, descriptionFont, smallFont, options)
+            unitview.RenderUnitInfoStats(screen, &imageCache, unit, 15, fonts.DescriptionFont, fonts.SmallFont, options)
 
             /*
             options.GeoM.Translate(0, 60)
@@ -115,4 +119,35 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
     })
 
     return group
+}
+
+func RenderUnitInfo(screen *ebiten.Image, imageCache *util.ImageCache, unit *ArmyUnit, fonts *UnitViewFonts, defaultOptions ebiten.DrawImageOptions) {
+    x, y := defaultOptions.GeoM.Apply(0, 0)
+
+    name := unit.Unit.GetFullName()
+
+    fonts.DescriptionFont.PrintOptions(screen, x, y + float64(2 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, name)
+
+    y += float64((fonts.DescriptionFont.Height() + 6) * data.ScreenScale)
+
+    fonts.SmallFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Moves")
+
+    unitMoves := unit.GetMovementSpeed()
+
+    // FIXME: show wings if flying, or the water thing if can walk on water
+    smallBoot, err := imageCache.GetImage("unitview.lbx", 24, 0)
+    if err == nil {
+        var options ebiten.DrawImageOptions
+        options = defaultOptions
+        options.GeoM.Reset()
+        options.GeoM.Translate(x + fonts.SmallFont.MeasureTextWidth("Damage ", float64(data.ScreenScale)), y)
+
+        for i := 0; i < unitMoves; i++ {
+            screen.DrawImage(smallBoot, &options)
+            options.GeoM.Translate(float64(smallBoot.Bounds().Dx()), 0)
+        }
+    }
+
+    y += float64((fonts.SmallFont.Height() + 3) * data.ScreenScale)
+    fonts.SmallFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, fmt.Sprintf("Damage %v", unit.GetDamage()))
 }

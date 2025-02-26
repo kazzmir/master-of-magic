@@ -312,6 +312,10 @@ func (unit *OverworldUnit) GetName() string {
     return unit.Unit.GetName()
 }
 
+func (unit *OverworldUnit) GetFullName() string {
+    return unit.GetName()
+}
+
 func (unit *OverworldUnit) GetCombatLbxFile() string {
     return unit.Unit.GetCombatLbxFile()
 }

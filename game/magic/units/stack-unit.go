@@ -16,6 +16,7 @@ type StackUnit interface {
     IsSailing() bool
     IsLandWalker() bool
     GetName() string
+    GetFullName() string
     GetTitle() string
     GetPlane() data.Plane
     SetPlane(data.Plane)

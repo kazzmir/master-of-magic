@@ -442,7 +442,7 @@ func (hero *Hero) SetName(name string) {
     hero.Name = name
 }
 
-func (hero *Hero) FullName() string {
+func (hero *Hero) GetFullName() string {
     return fmt.Sprintf("%v the %v", hero.GetName(), hero.GetTitle())
 }
 

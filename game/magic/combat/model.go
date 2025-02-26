@@ -491,6 +491,7 @@ type CombatUnit interface {
     GetArtifacts() []*artifact.Artifact
     */
 
+    GetFullName() string
     GetDefense() int
     GetResistance() int
     AdjustHealth(int)
@@ -608,6 +609,10 @@ func (unit *ArmyUnit) GetHitPoints() int {
 
 func (unit *ArmyUnit) GetRangedAttackDamageType() units.Damage {
     return unit.Unit.GetRangedAttackDamageType()
+}
+
+func (unit *ArmyUnit) GetDamage() int {
+    return unit.Unit.GetMaxHealth() - unit.Unit.GetHealth()
 }
 
 func (unit *ArmyUnit) GetRealm() data.MagicType {
