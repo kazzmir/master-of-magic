@@ -344,12 +344,49 @@ func (unit *OverworldUnit) GetUpkeepMana() int {
     return unit.Unit.GetUpkeepMana()
 }
 
-func (unit *OverworldUnit) GetMovementSpeed() int {
+func (unit *OverworldUnit) GetBaseMovementSpeed() int {
     return unit.Unit.GetMovementSpeed()
+}
+
+func (unit *OverworldUnit) GetMovementSpeed() int {
+    base := unit.GetBaseMovementSpeed()
+
+    base = unit.MovementSpeedEnchantmentBonus(base, unit.Enchantments)
+
+    return base
 }
 
 func (unit *OverworldUnit) GetProductionCost() int {
     return unit.Unit.GetProductionCost()
+}
+
+func (unit *OverworldUnit) MovementSpeedEnchantmentBonus(base int, enchantments []data.UnitEnchantment) int {
+
+    endurance := false
+    flying := false
+    haste := false
+
+    for _, enchantment := range unit.Enchantments {
+        switch enchantment {
+            case data.UnitEnchantmentEndurance: endurance = true
+            case data.UnitEnchantmentFlight: flying = true
+            case data.UnitEnchantmentHaste: haste = true
+        }
+    }
+
+    if endurance {
+        base += 1
+    }
+
+    if flying {
+        base = 3
+    }
+
+    if haste {
+        base *= 2
+    }
+
+    return base
 }
 
 // apply modifiers for melee power

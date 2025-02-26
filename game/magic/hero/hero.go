@@ -885,8 +885,15 @@ func (hero *Hero) GetUpkeepMana() int {
     return hero.Unit.GetUpkeepMana()
 }
 
+func (hero *Hero) MovementSpeedEnchantmentBonus(base int, enchantments []data.UnitEnchantment) int {
+    return hero.Unit.MovementSpeedEnchantmentBonus(base, enchantments)
+}
+
 func (hero *Hero) GetMovementSpeed() int {
-    return hero.Unit.GetMovementSpeed()
+    base := hero.Unit.GetBaseMovementSpeed()
+
+    // FIXME: include artifact enchantments
+    return hero.Unit.MovementSpeedEnchantmentBonus(base, hero.GetEnchantments())
 }
 
 func (hero *Hero) GetProductionCost() int {

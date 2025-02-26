@@ -487,6 +487,7 @@ type CombatUnit interface {
     DefenseEnchantmentBonus(data.UnitEnchantment) int
     RangedEnchantmentBonus(data.UnitEnchantment) int
     ResistanceEnchantmentBonus(data.UnitEnchantment) int
+    MovementSpeedEnchantmentBonus(int, []data.UnitEnchantment) int
 
     GetFullName() string
     GetDefense() int
@@ -1098,6 +1099,8 @@ func (unit *ArmyUnit) CanCast() bool {
 func (unit *ArmyUnit) GetMovementSpeed() int {
     modifier := 0
     base := unit.Unit.GetMovementSpeed()
+
+    base = unit.Unit.MovementSpeedEnchantmentBonus(base, unit.Enchantments)
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentEntangle, oppositeTeam(unit.Team)) {
         unaffected := unit.Unit.IsFlying() || unit.HasAbility(data.AbilityNonCorporeal)

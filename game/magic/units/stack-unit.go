@@ -36,6 +36,7 @@ type StackUnit interface {
     DefenseEnchantmentBonus(data.UnitEnchantment) int
     RangedEnchantmentBonus(data.UnitEnchantment) int
     ResistanceEnchantmentBonus(data.UnitEnchantment) int
+    MovementSpeedEnchantmentBonus(int, []data.UnitEnchantment) int
 
     IsUndead() bool
     GetBanner() data.BannerType
