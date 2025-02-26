@@ -34,6 +34,10 @@ func (catchment *Catchment) GetCatchmentArea(x int, y int) map[image.Point]mapli
     return catchment.Map
 }
 
+func (catchment *Catchment) GetGoldBonus(x int, y int) int {
+    return 0
+}
+
 func (catchment *Catchment) OnShore(x int, y int) bool {
     return false
 }

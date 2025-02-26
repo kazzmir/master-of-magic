@@ -39,6 +39,10 @@ func (no *NoCatchment) GetCatchmentArea(x int, y int) map[image.Point]maplib.Ful
     return make(map[image.Point]maplib.FullTile)
 }
 
+func (catchment *NoCatchment) GetGoldBonus(x int, y int) int {
+    return 0
+}
+
 func (no *NoCatchment) OnShore(x int, y int) bool {
     return false
 }

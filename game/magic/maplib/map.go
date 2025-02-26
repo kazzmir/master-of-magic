@@ -1348,6 +1348,11 @@ func (mapObject *Map) ByRiver(x int, y int) bool {
     return tile.IsByRiver(mapObject)
 }
 
+func (mapObject *Map) GetGoldBonus(x int, y int) int {
+    tile := mapObject.GetTile(x, y)
+    return tile.GoldBonus(mapObject)
+}
+
 // Returns city catchment area (5x5 square minus the corners)
 func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]FullTile {
 
