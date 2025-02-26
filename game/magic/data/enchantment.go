@@ -171,21 +171,18 @@ const (
     UnitEnchantmentBerserk
     UnitEnchantmentBlackChannels
     UnitEnchantmentWraithForm
-)
 
-type UnitCurse int
+    // curses
+    UnitCurseConfusion
+    UnitCurseCreatureBinding
+    UnitCurseMindStorm
+    UnitCurseVertigo
+    UnitCurseShatter
+    UnitCurseWarpCreature
+    UnitCurseBlackSleep
+    UnitCursePossession
+    UnitCurseWeakness
 
-const (
-    CurseNone UnitCurse = iota
-    CurseConfusion
-    CurseCreatureBinding
-    CurseMindStorm
-    CurseVertigo
-    CurseShatter
-    CurseWarpCreature
-    CurseBlackSleep
-    CursePossession
-    CurseWeakness
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
@@ -210,46 +207,6 @@ func GetMagicColor(magic MagicType) color.RGBA {
 
 func (enchantment UnitEnchantment) Color() color.Color {
     return GetMagicColor(enchantment.Magic())
-}
-
-func (curse UnitCurse) Magic() MagicType {
-    switch curse {
-        case CurseConfusion: return SorceryMagic
-        case CurseCreatureBinding: return SorceryMagic
-        case CurseMindStorm: return SorceryMagic
-        case CurseVertigo: return SorceryMagic
-        case CurseShatter: return ChaosMagic
-        case CurseWarpCreature: return DeathMagic
-        case CurseBlackSleep: return DeathMagic
-        case CursePossession: return DeathMagic
-        case CurseWeakness: return DeathMagic
-    }
-
-    return MagicNone
-}
-
-func (curse UnitCurse) Color() color.Color {
-    return GetMagicColor(curse.Magic())
-}
-
-func (curse UnitCurse) SpellName() string {
-    return curse.Name()
-}
-
-func (curse UnitCurse) Name() string {
-    switch curse {
-        case CurseConfusion: return "Confusion"
-        case CurseCreatureBinding: return "Creature Binding"
-        case CurseMindStorm: return "Mind Storm"
-        case CurseVertigo: return "Vertigo"
-        case CurseShatter: return "Shatter"
-        case CurseWarpCreature: return "Warp Creature"
-        case CurseBlackSleep: return "Black Sleep"
-        case CursePossession: return "Possession"
-        case CurseWeakness: return "Weakness"
-    }
-
-    return ""
 }
 
 // the magic realm this enchantment belongs to
@@ -295,6 +252,16 @@ func (enchantment UnitEnchantment) Magic() MagicType {
         case UnitEnchantmentHolyWeapon: return LifeMagic
         case UnitEnchantmentInvulnerability: return LifeMagic
         case UnitEnchantmentPlanarTravel: return LifeMagic
+
+        case UnitCurseConfusion: return SorceryMagic
+        case UnitCurseCreatureBinding: return SorceryMagic
+        case UnitCurseMindStorm: return SorceryMagic
+        case UnitCurseVertigo: return SorceryMagic
+        case UnitCurseShatter: return ChaosMagic
+        case UnitCurseWarpCreature: return DeathMagic
+        case UnitCurseBlackSleep: return DeathMagic
+        case UnitCursePossession: return DeathMagic
+        case UnitCurseWeakness: return DeathMagic
     }
 
     return MagicNone
@@ -415,6 +382,15 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitEnchantmentBlackChannels: return "Black Channels"
         case UnitEnchantmentWraithForm: return "Wraith Form"
 
+        case UnitCurseConfusion: return "Confusion"
+        case UnitCurseCreatureBinding: return "Creature Binding"
+        case UnitCurseMindStorm: return "Mind Storm"
+        case UnitCurseVertigo: return "Vertigo"
+        case UnitCurseShatter: return "Shatter"
+        case UnitCurseWarpCreature: return "Warp Creature"
+        case UnitCurseBlackSleep: return "Black Sleep"
+        case UnitCursePossession: return "Possession"
+        case UnitCurseWeakness: return "Weakness"
     }
 
     return ""
@@ -458,6 +434,16 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentBerserk: return "special2.lbx"
         case UnitEnchantmentBlackChannels: return "special.lbx"
         case UnitEnchantmentWraithForm: return "special.lbx"
+
+        case UnitCurseConfusion: return ""
+        case UnitCurseCreatureBinding: return ""
+        case UnitCurseMindStorm: return ""
+        case UnitCurseVertigo: return ""
+        case UnitCurseShatter: return ""
+        case UnitCurseWarpCreature: return ""
+        case UnitCurseBlackSleep: return ""
+        case UnitCursePossession: return ""
+        case UnitCurseWeakness: return ""
     }
 
     return ""
@@ -501,6 +487,16 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitEnchantmentBerserk: return 17
         case UnitEnchantmentBlackChannels: return 67
         case UnitEnchantmentWraithForm: return 68
+
+        case UnitCurseConfusion: return -1
+        case UnitCurseCreatureBinding: return -1
+        case UnitCurseMindStorm: return -1
+        case UnitCurseVertigo: return -1
+        case UnitCurseShatter: return -1
+        case UnitCurseWarpCreature: return -1
+        case UnitCurseBlackSleep: return -1
+        case UnitCursePossession: return -1
+        case UnitCurseWeakness: return -1
     }
 
     return -1

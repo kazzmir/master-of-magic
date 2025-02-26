@@ -55,7 +55,7 @@ func NewEngine(scenario int) (*Engine, error) {
         Model: model,
     }
 
-    unit.AddCurse(data.CurseMindStorm)
+    unit.AddCurse(data.UnitCurseMindStorm)
     unit.TakeDamage(5)
 
     ui := &uilib.UI{

@@ -561,7 +561,7 @@ type ArmyUnit struct {
     // enchantments applied to the unit during combat, usually by a spell
     Enchantments []data.UnitEnchantment
     // separate list of enchantments cast by the opposite wizard
-    Curses []data.UnitCurse
+    Curses []data.UnitEnchantment
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
@@ -668,7 +668,7 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
         if value > 0 {
             modifier := float32(0)
 
-            if unit.HasCurse(data.CurseMindStorm) {
+            if unit.HasCurse(data.UnitCurseMindStorm) {
                 modifier -= 5
             }
 
@@ -696,7 +696,7 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
         if value > 0 {
             modifier := float32(0)
 
-            if unit.HasCurse(data.CurseMindStorm) {
+            if unit.HasCurse(data.UnitCurseMindStorm) {
                 modifier -= 5
             }
 
@@ -766,7 +766,7 @@ func (unit *ArmyUnit) GetFullResistance() int {
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
-    if unit.HasCurse(data.CurseMindStorm) {
+    if unit.HasCurse(data.UnitCurseMindStorm) {
         modifier -= 5
     }
 
@@ -803,7 +803,7 @@ func (unit *ArmyUnit) GetFullDefense() int {
 func (unit *ArmyUnit) GetDefense() int {
     modifier := 0
 
-    if unit.HasCurse(data.CurseMindStorm) {
+    if unit.HasCurse(data.UnitCurseMindStorm) {
         modifier -= 5
     }
 
@@ -839,7 +839,7 @@ func (unit *ArmyUnit) GetFullRangedAttackPower() int {
 func (unit *ArmyUnit) GetRangedAttackPower() int {
     modifier := 0
 
-    if unit.HasCurse(data.CurseMindStorm) {
+    if unit.HasCurse(data.UnitCurseMindStorm) {
         modifier -= 5
     }
 
@@ -859,7 +859,7 @@ func (unit *ArmyUnit) GetFullMeleeAttackPower() int {
 func (unit *ArmyUnit) GetMeleeAttackPower() int {
     modifier := 0
 
-    if unit.HasCurse(data.CurseMindStorm) {
+    if unit.HasCurse(data.UnitCurseMindStorm) {
         modifier -= 5
     }
 
@@ -976,15 +976,15 @@ func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
     return true
 }
 
-func (unit *ArmyUnit) GetCurses() []data.UnitCurse {
+func (unit *ArmyUnit) GetCurses() []data.UnitEnchantment{
     return unit.Curses
 }
 
-func (unit *ArmyUnit) HasCurse(curse data.UnitCurse) bool {
+func (unit *ArmyUnit) HasCurse(curse data.UnitEnchantment) bool {
     return slices.Contains(unit.Curses, curse)
 }
 
-func (unit *ArmyUnit) AddCurse(curse data.UnitCurse) {
+func (unit *ArmyUnit) AddCurse(curse data.UnitEnchantment) {
     // skip duplicates
     if unit.HasCurse(curse) {
         return
@@ -993,14 +993,14 @@ func (unit *ArmyUnit) AddCurse(curse data.UnitCurse) {
     unit.Curses = append(unit.Curses, curse)
 }
 
-func (unit *ArmyUnit) RemoveCurse(curse data.UnitCurse) {
-    unit.Curses = slices.DeleteFunc(unit.Curses, func(check data.UnitCurse) bool {
+func (unit *ArmyUnit) RemoveCurse(curse data.UnitEnchantment) {
+    unit.Curses = slices.DeleteFunc(unit.Curses, func(check data.UnitEnchantment) bool {
         return check == curse
     })
 }
 
 func (unit *ArmyUnit) GetEnchantments() []data.UnitEnchantment {
-    return append(slices.Clone(unit.Unit.GetEnchantments()), unit.Enchantments...)
+    return append(append(slices.Clone(unit.Unit.GetEnchantments()), unit.Enchantments...), unit.Curses...)
 }
 
 func (unit *ArmyUnit) RemoveEnchantment(enchantment data.UnitEnchantment) {
@@ -1999,7 +1999,10 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
 
 func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
     var removedEnchantments []data.UnitEnchantment
-    for _, enchantment := range unit.GetEnchantments() {
+
+    choices := append(unit.Unit.GetEnchantments(), unit.Enchantments...)
+
+    for _, enchantment := range choices {
         spell := allSpells.FindByName(enchantment.SpellName())
         cost := spell.Cost(false)
         dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
@@ -2014,7 +2017,7 @@ func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *Arm
 }
 
 func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
-    var removedEnchantments []data.UnitCurse
+    var removedEnchantments []data.UnitEnchantment
     for _, enchantment := range unit.GetCurses() {
         spell := allSpells.FindByName(enchantment.SpellName())
         cost := spell.Cost(false)
@@ -2027,7 +2030,7 @@ func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, uni
     // if the unit had Creature Bind then when it is dispelled the unit should be moved to the other army
     swapArmy := false
     for _, enchantment := range removedEnchantments {
-        if enchantment == data.CurseCreatureBinding {
+        if enchantment == data.UnitCurseCreatureBinding {
             swapArmy = true
         }
         unit.RemoveCurse(enchantment)
@@ -3095,13 +3098,13 @@ func (model *CombatModel) flee(army *Army) {
 // called when the battle ends
 func (model *CombatModel) Finish() {
     for _, unit := range model.DefendingArmy.Units {
-        if unit.Unit.GetHealth() > 0 && unit.HasCurse(data.CurseCreatureBinding) {
+        if unit.Unit.GetHealth() > 0 && unit.HasCurse(data.UnitCurseCreatureBinding) {
             unit.TakeDamage(unit.Unit.GetHealth())
         }
     }
 
     for _, unit := range model.AttackingArmy.Units {
-        if unit.Unit.GetHealth() > 0 && unit.HasCurse(data.CurseCreatureBinding) {
+        if unit.Unit.GetHealth() > 0 && unit.HasCurse(data.UnitCurseCreatureBinding) {
             unit.TakeDamage(unit.Unit.GetHealth())
         }
     }
@@ -3127,7 +3130,7 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
 }
 
 func (model *CombatModel) ApplyCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
-    target.AddCurse(data.CurseCreatureBinding)
+    target.AddCurse(data.UnitCurseCreatureBinding)
     oldArmy := model.GetArmy(target)
     oldArmy.RemoveUnit(target)
 

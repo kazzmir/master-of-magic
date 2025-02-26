@@ -790,7 +790,7 @@ func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) {
     explodeImages := images
 
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){
-        target.AddCurse(data.CurseMindStorm)
+        target.AddCurse(data.UnitCurseMindStorm)
     }))
 }
 
@@ -3359,16 +3359,13 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
             if use != data.UnitEnchantmentNone {
                 enchantment = use
-            } else {
-                use := util.First(unit.GetCurses(), data.CurseNone)
-                enchantment = use
             }
             unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), enchantment, combat.Counter, &combat.ImageCache)
 
             unitOptions.GeoM.Translate(float64(-combatImages[index].Bounds().Dx()/2), float64(-combatImages[0].Bounds().Dy()*3/4))
             for _, curse := range unit.GetCurses() {
                 switch curse {
-                    case data.CurseMindStorm:
+                    case data.UnitCurseMindStorm:
                         images, _ := combat.ImageCache.GetImages("resource.lbx", 78)
                         index := animationIndex % uint64(len(images))
                         use := images[index]
