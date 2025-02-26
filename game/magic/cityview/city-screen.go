@@ -1482,21 +1482,25 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
     }
 
     // river / shore
-    // FIXME: make this configurable
-    // FIXME: 4/116 is shore
-    spriteIndex = 3
-    if onMyrror {
-        spriteIndex = 115
+    spriteIndex = -1
+    onRiver := city.ByRiver()
+    onShore := city.OnShore()
+    switch {
+        case onRiver && onMyrror: spriteIndex = 115
+        case onRiver: spriteIndex = 3
+        case onShore && onMyrror: spriteIndex = 116
+        case onShore: spriteIndex = 4
     }
-
-    river, err := imageCache.GetImages("cityscap.lbx", spriteIndex)
-    if err == nil {
-        var options ebiten.DrawImageOptions
-        options.ColorScale.ScaleAlpha(alphaScale)
-        options.GeoM = baseGeoM
-        options.GeoM.Translate(float64(0 * data.ScreenScale), float64(-2 * data.ScreenScale))
-        index := animationCounter % uint64(len(river))
-        screen.DrawImage(river[index], &options)
+    if spriteIndex != -1 {
+        river, err := imageCache.GetImages("cityscap.lbx", spriteIndex)
+        if err == nil {
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(alphaScale)
+            options.GeoM = baseGeoM
+            options.GeoM.Translate(float64(0 * data.ScreenScale), float64(-2 * data.ScreenScale))
+            index := animationCounter % uint64(len(river))
+            screen.DrawImage(river[index], &options)
+        }
     }
 
     // buildings

@@ -74,6 +74,7 @@ func (citySize CitySize) String() string {
 type CatchmentProvider interface {
     GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile
     OnShore(x int, y int) bool
+    ByRiver(x int, y int) bool
     TileDistance(x1 int, y1 int, x2 int, y2 int) int
 }
 
@@ -432,6 +433,10 @@ func (city *City) FameForCaptureOrRaze(captured bool) int {
 // true if the city is adjacent to a water tile
 func (city *City) OnShore() bool {
     return city.CatchmentProvider.OnShore(city.X, city.Y)
+}
+
+func (city *City) ByRiver() bool {
+    return city.CatchmentProvider.ByRiver(city.X, city.Y)
 }
 
 func (city *City) AddEnchantment(enchantment data.CityEnchantment, owner data.BannerType) {

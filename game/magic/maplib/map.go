@@ -672,6 +672,19 @@ func (tile *FullTile) IsTouchingShore(mapObject *Map) bool {
     return false
 }
 
+func (tile *FullTile) IsByRiver(mapObject *Map) bool {
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            tile := mapObject.GetTile(tile.X + dx, tile.Y + dy)
+            if tile.Tile.IsRiver() {
+                return true
+            }
+        }
+    }
+
+    return false
+}
+
 func (tile *FullTile) GetBonus() data.BonusType {
     if tile.Corrupted() {
         return data.BonusNone
@@ -1328,6 +1341,11 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
 func (mapObject *Map) OnShore(x int, y int) bool {
     tile := mapObject.GetTile(x, y)
     return tile.IsTouchingShore(mapObject)
+}
+
+func (mapObject *Map) ByRiver(x int, y int) bool {
+    tile := mapObject.GetTile(x, y)
+    return tile.IsByRiver(mapObject)
 }
 
 // Returns city catchment area (5x5 square minus the corners)

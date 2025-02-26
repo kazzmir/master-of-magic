@@ -38,6 +38,10 @@ func (catchment *Catchment) OnShore(x int, y int) bool {
     return false
 }
 
+func (catchment *Catchment) ByRiver(x int, y int) bool {
+    return false
+}
+
 func (catchment *Catchment) TileDistance(x1 int, y1 int, x2 int, y2 int) int {
     return 0
 }
