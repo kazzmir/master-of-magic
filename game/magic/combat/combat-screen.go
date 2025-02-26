@@ -1292,8 +1292,6 @@ Animate Dead - need picture
 
         /*
         CurseConfusion
-        CurseCreatureBinding
-        CurseMindStorm
         CurseVertigo
         CurseShatter
         CurseWarpCreature
