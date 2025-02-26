@@ -18,7 +18,24 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+type UnitStats interface {
+    GetWeaponBonus() data.WeaponBonus
+    GetBaseMeleeAttackPower() int
+    GetMeleeAttackPower() int
+    GetBaseRangedAttackPower() int
+    GetRangedAttackPower() int
+    GetRangedAttackDamageType() units.Damage
+    GetBaseDefense() int
+    GetDefense() int
+    GetResistance() int
+    GetBaseResistance() int
+    GetHitPoints() int
+    GetBaseHitPoints() int
+}
+
 type UnitView interface {
+    UnitStats
+
     GetName() string
     GetTitle() string // for heroes. normal units will not have a title
     GetBanner() data.BannerType
@@ -34,20 +51,8 @@ type UnitView interface {
     GetProductionCost() int
     GetEnchantments() []data.UnitEnchantment
     RemoveEnchantment(data.UnitEnchantment)
-    GetWeaponBonus() data.WeaponBonus
     GetExperience() int
     GetExperienceData() units.ExperienceData
-    GetBaseMeleeAttackPower() int
-    GetMeleeAttackPower() int
-    GetBaseRangedAttackPower() int
-    GetRangedAttackPower() int
-    GetRangedAttackDamageType() units.Damage
-    GetBaseDefense() int
-    GetDefense() int
-    GetResistance() int
-    GetBaseResistance() int
-    GetHitPoints() int
-    GetBaseHitPoints() int
     GetAbilities() []data.Ability
     GetArtifactSlots() []artifact.ArtifactSlot
     GetArtifacts() []*artifact.Artifact

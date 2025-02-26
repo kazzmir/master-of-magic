@@ -471,13 +471,13 @@ type CombatUnit interface {
     HasAbility(data.AbilityType) bool
     HasItemAbility(data.ItemAbility) bool
     GetAbilityValue(data.AbilityType) float32
-
-    /*
     GetBaseDefense() int
     GetBaseHitPoints() int
     GetBaseMeleeAttackPower() int
     GetBaseRangedAttackPower() int
     GetBaseResistance() int
+
+    /*
     GetExperience() int
     GetExperienceData() units.ExperienceData
     GetLbxFile() string
@@ -564,6 +564,50 @@ type ArmyUnit struct {
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
+}
+
+func (unit *ArmyUnit) GetBanner() data.BannerType {
+    return unit.Unit.GetBanner()
+}
+
+func (unit *ArmyUnit) GetCombatIndex(facing units.Facing) int {
+    return unit.Unit.GetCombatIndex(facing)
+}
+
+func (unit *ArmyUnit) GetCombatLbxFile() string {
+    return unit.Unit.GetCombatLbxFile()
+}
+
+func (unit *ArmyUnit) GetCount() int {
+    return unit.Unit.GetCount()
+}
+
+func (unit *ArmyUnit) GetBaseDefense() int {
+    return unit.Unit.GetBaseDefense()
+}
+
+func (unit *ArmyUnit) GetBaseHitPoints() int {
+    return unit.Unit.GetBaseHitPoints()
+}
+
+func (unit *ArmyUnit) GetBaseMeleeAttackPower() int {
+    return unit.Unit.GetBaseMeleeAttackPower()
+}
+
+func (unit *ArmyUnit) GetBaseRangedAttackPower() int {
+    return unit.Unit.GetBaseRangedAttackPower()
+}
+
+func (unit *ArmyUnit) GetBaseResistance() int {
+    return unit.Unit.GetBaseResistance()
+}
+
+func (unit *ArmyUnit) GetHitPoints() int {
+    return unit.Unit.GetHitPoints()
+}
+
+func (unit *ArmyUnit) GetRangedAttackDamageType() units.Damage {
+    return unit.Unit.GetRangedAttackDamageType()
 }
 
 func (unit *ArmyUnit) GetRealm() data.MagicType {
