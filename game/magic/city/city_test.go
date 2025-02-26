@@ -28,6 +28,7 @@ func makeSimpleMap() map[image.Point]maplib.FullTile {
 
 type Catchment struct {
     Map map[image.Point]maplib.FullTile
+    GoldBonus int
 }
 
 func (catchment *Catchment) GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile {
@@ -35,7 +36,7 @@ func (catchment *Catchment) GetCatchmentArea(x int, y int) map[image.Point]mapli
 }
 
 func (catchment *Catchment) GetGoldBonus(x int, y int) int {
-    return 0
+    return catchment.GoldBonus
 }
 
 func (catchment *Catchment) OnShore(x int, y int) bool {
@@ -689,7 +690,7 @@ func TestScenario1(test *testing.T) {
     // Test against values from a city screen of original MoM v1.60
 
     // City
-    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, nil, &Catchment{Map: makeScenarioMap()}, &NoCities{}, &NoReign{NumberOfBooks: 11, TaxRate: fraction.FromInt(1)})
+    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, nil, &Catchment{Map: makeScenarioMap(), GoldBonus: 30}, &NoCities{}, &NoReign{NumberOfBooks: 11, TaxRate: fraction.FromInt(1)})
     city.Population = 4600
     city.Farmers = 3
     city.Workers = 1
@@ -747,7 +748,7 @@ func TestScenario2(test *testing.T) {
     // Test against values from a city screen of original MoM v1.60
 
     // City
-    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, nil, &Catchment{Map: makeScenarioMap()}, &NoCities{}, &NoReign{NumberOfBooks: 11, TaxRate: fraction.FromInt(1)})
+    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, nil, &Catchment{Map: makeScenarioMap(), GoldBonus: 30}, &NoCities{}, &NoReign{NumberOfBooks: 11, TaxRate: fraction.FromInt(1)})
     city.Population = 10110
     city.Farmers = 7
     city.Workers = 3
@@ -803,8 +804,7 @@ func TestScenario2(test *testing.T) {
         test.Errorf("City GoldMinerals is not correct: %v", city.GoldMinerals())
     }
     if city.GoldBonus(city.ComputeTotalBonusPercent()) != 4 {
-        // see "FIXME: add river/shore bonus"
-        test.Logf("City GoldBonus is not correct: %v", city.GoldBonus(city.ComputeTotalBonusPercent()))
+        test.Errorf("City GoldBonus is not correct: %v", city.GoldBonus(city.ComputeTotalBonusPercent()))
     }
     if city.GoldMarketplace() != 7 {
         test.Errorf("City GoldMarketplace is not correct: %v", city.GoldMarketplace())
