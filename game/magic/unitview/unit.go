@@ -1,12 +1,12 @@
 package unitview
 
 import (
-    // "image/color"
     "log"
     "fmt"
     "math"
     "slices"
     "image"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -175,7 +175,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     descriptionFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Melee")
 
     // show rows of icons. the second row is offset a bit to the right and down
-    showNIcons := func(icon *ebiten.Image, count int, icon2 *ebiten.Image, count2 int, x, y float64) {
+    showNIcons := func(icon *ebiten.Image, count int, icon2 *ebiten.Image, count2 int, negativeCount int, x, y float64) {
         var options ebiten.DrawImageOptions
         options = defaultOptions
         options.GeoM.Reset()
@@ -200,11 +200,19 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
         index := 0
         for index < count {
+            if index == count + count2 + negativeCount {
+                options.ColorScale.ScaleWithColor(color.RGBA{R: 0, G: 0, B: 0, A: 128})
+            }
+
             draw(index, icon)
             index += 1
         }
 
         for index < (count + count2) {
+            if index == count + count2 + negativeCount {
+                options.ColorScale.ScaleWithColor(color.RGBA{R: 0, G: 0, B: 0, A: 128})
+            }
+
             draw(index, icon2)
             index += 1
         }
@@ -227,7 +235,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
             weaponGold, _ = imageCache.GetImage("unitview.lbx", 39, 0)
     }
 
-    showNIcons(weaponIcon, unit.GetBaseMeleeAttackPower(), weaponGold, unit.GetMeleeAttackPower() - unit.GetBaseMeleeAttackPower(), x, y)
+    showNIcons(weaponIcon, unit.GetBaseMeleeAttackPower(), weaponGold, unit.GetFullMeleeAttackPower() - unit.GetBaseMeleeAttackPower(), unit.GetMeleeAttackPower() - unit.GetFullMeleeAttackPower(), x, y)
 
     y += float64(descriptionFont.Height() * data.ScreenScale)
     descriptionFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Range")
@@ -235,28 +243,28 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     // FIXME: use the rock icon for sling, or the magic icon fire magic damage
     rangeBow, _ := imageCache.GetImage("unitview.lbx", 18, 0)
     rangeBowGold, _ := imageCache.GetImage("unitview.lbx", 40, 0)
-    showNIcons(rangeBow, unit.GetBaseRangedAttackPower(), rangeBowGold, unit.GetRangedAttackPower() - unit.GetBaseRangedAttackPower(), x, y)
+    showNIcons(rangeBow, unit.GetBaseRangedAttackPower(), rangeBowGold, unit.GetFullRangedAttackPower() - unit.GetBaseRangedAttackPower(), unit.GetRangedAttackPower() - unit.GetFullRangedAttackPower(), x, y)
 
     y += float64(descriptionFont.Height() * data.ScreenScale)
     descriptionFont.PrintOptions(screen, x, float64(y), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Armor")
 
     armorIcon, _ := imageCache.GetImage("unitview.lbx", 22, 0)
     armorGold, _ := imageCache.GetImage("unitview.lbx", 44, 0)
-    showNIcons(armorIcon, unit.GetBaseDefense(), armorGold, unit.GetDefense() - unit.GetBaseDefense(), x, y)
+    showNIcons(armorIcon, unit.GetBaseDefense(), armorGold, unit.GetFullDefense() - unit.GetBaseDefense(), unit.GetDefense() - unit.GetFullDefense(), x, y)
 
     y += float64(descriptionFont.Height() * data.ScreenScale)
     descriptionFont.PrintOptions(screen, x, float64(y), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Resist")
 
     resistIcon, _ := imageCache.GetImage("unitview.lbx", 27, 0)
     resistGold, _ := imageCache.GetImage("unitview.lbx", 49, 0)
-    showNIcons(resistIcon, unit.GetResistance(), resistGold, unit.GetResistance() - unit.GetBaseResistance(), x, y)
+    showNIcons(resistIcon, unit.GetResistance(), resistGold, unit.GetFullResistance() - unit.GetBaseResistance(), unit.GetResistance() - unit.GetFullResistance(), x, y)
 
     y += float64(descriptionFont.Height() * data.ScreenScale)
     descriptionFont.PrintOptions(screen, x, float64(y), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Hits")
 
     healthIcon, _ := imageCache.GetImage("unitview.lbx", 23, 0)
     healthIconGold, _ := imageCache.GetImage("unitview.lbx", 45, 0)
-    showNIcons(healthIcon, unit.GetBaseHitPoints(), healthIconGold, unit.GetHitPoints() - unit.GetBaseHitPoints(), x, y)
+    showNIcons(healthIcon, unit.GetBaseHitPoints(), healthIconGold, unit.GetFullHitPoints() - unit.GetBaseHitPoints(), unit.GetHitPoints() - unit.GetFullHitPoints(), x, y)
 }
 
 func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, showFont *font.Font, defaultOptions ebiten.DrawImageOptions, showExperience bool) (float64) {

@@ -603,8 +603,12 @@ func (unit *ArmyUnit) GetBaseResistance() int {
     return unit.Unit.GetBaseResistance()
 }
 
-func (unit *ArmyUnit) GetHitPoints() int {
+func (unit *ArmyUnit) GetFullHitPoints() int {
     return unit.Unit.GetHitPoints()
+}
+
+func (unit *ArmyUnit) GetHitPoints() int {
+    return unit.Unit.GetHealth() / unit.Unit.GetCount()
 }
 
 func (unit *ArmyUnit) GetRangedAttackDamageType() units.Damage {
@@ -731,6 +735,10 @@ func (unit *ArmyUnit) GetToHitMelee() int {
     return max(0, unit.Unit.GetToHitMelee() + modifier)
 }
 
+func (unit *ArmyUnit) GetFullResistance() int {
+    return unit.Unit.GetResistance()
+}
+
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
@@ -762,6 +770,10 @@ func (unit *ArmyUnit) GetResistance() int {
     }
 
     return max(0, unit.Unit.GetResistance() + modifier)
+}
+
+func (unit *ArmyUnit) GetFullDefense() int {
+    return unit.Unit.GetDefense()
 }
 
 func (unit *ArmyUnit) GetDefense() int {
@@ -796,6 +808,10 @@ func (unit *ArmyUnit) GetDefense() int {
     return max(0, unit.Unit.GetDefense() + modifier)
 }
 
+func (unit *ArmyUnit) GetFullRangedAttackPower() int {
+    return unit.Unit.GetRangedAttackPower()
+}
+
 func (unit *ArmyUnit) GetRangedAttackPower() int {
     modifier := 0
 
@@ -810,6 +826,10 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
     }
 
     return max(0, unit.Unit.GetRangedAttackPower() + modifier)
+}
+
+func (unit *ArmyUnit) GetFullMeleeAttackPower() int {
+    return unit.Unit.GetMeleeAttackPower()
 }
 
 func (unit *ArmyUnit) GetMeleeAttackPower() int {

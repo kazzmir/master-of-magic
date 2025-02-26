@@ -966,6 +966,10 @@ func (hero *Hero) getBaseMeleeAttackPowerProgression(level units.HeroExperienceL
     return 0
 }
 
+func (hero *Hero) GetFullMeleeAttackPower() int {
+    return hero.GetMeleeAttackPower()
+}
+
 func (hero *Hero) GetMeleeAttackPower() int {
     base := hero.GetBaseMeleeAttackPower()
 
@@ -1023,6 +1027,10 @@ func (hero *Hero) getBaseRangedAttackPowerProgression(level units.HeroExperience
     return 0
 }
 
+func (hero *Hero) GetFullRangedAttackPower() int {
+    return hero.GetRangedAttackPower()
+}
+
 func (hero *Hero) GetRangedAttackPower() int {
     base := hero.Unit.GetBaseRangedAttackPower()
 
@@ -1065,6 +1073,10 @@ func (hero *Hero) getBaseDefenseProgression(level units.HeroExperienceLevel) int
         case units.ExperienceDemiGod: return 4
     }
     return 0
+}
+
+func (hero *Hero) GetFullDefense() int {
+    return hero.GetDefense()
 }
 
 func (hero *Hero) GetDefense() int {
@@ -1274,6 +1286,10 @@ func (hero *Hero) GetAbilityResearch() int {
     return extra
 }
 
+func (hero *Hero) GetFullResistance() int {
+    return hero.GetResistance()
+}
+
 func (hero *Hero) GetResistance() int {
     base := hero.Unit.GetBaseResistance()
 
@@ -1284,6 +1300,10 @@ func (hero *Hero) GetResistance() int {
     }
 
     return base + hero.GetAbilityResistance()
+}
+
+func (hero *Hero) GetFullHitPoints() int {
+    return hero.GetHitPoints()
 }
 
 func (hero *Hero) GetHitPoints() int {

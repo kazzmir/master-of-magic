@@ -348,6 +348,10 @@ func (unit *OverworldUnit) GetProductionCost() int {
     return unit.Unit.GetProductionCost()
 }
 
+func (unit *OverworldUnit) GetFullMeleeAttackPower() int {
+    return unit.GetMeleeAttackPower()
+}
+
 func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
     power := unit.Unit.GetMeleeAttackPower()
 
@@ -421,6 +425,10 @@ func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
     return base
 }
 
+func (unit *OverworldUnit) GetFullRangedAttackPower() int {
+    return unit.GetRangedAttackPower()
+}
+
 func (unit *OverworldUnit) GetRangedAttackPower() int {
     base := unit.GetBaseRangedAttackPower()
 
@@ -450,6 +458,10 @@ func (unit *OverworldUnit) GetBaseDefense() int {
     return defense
 }
 
+func (unit *OverworldUnit) GetFullDefense() int {
+    return unit.GetDefense()
+}
+
 func (unit *OverworldUnit) GetDefense() int {
     base := unit.GetBaseDefense()
 
@@ -459,6 +471,10 @@ func (unit *OverworldUnit) GetDefense() int {
     }
 
     return base
+}
+
+func (unit *OverworldUnit) GetFullResistance() int {
+    return unit.GetResistance()
 }
 
 func (unit *OverworldUnit) GetResistance() int {
@@ -479,6 +495,10 @@ func (unit *OverworldUnit) GetBaseResistance() int {
     }
 
     return base
+}
+
+func (unit *OverworldUnit) GetFullHitPoints() int {
+    return unit.GetHitPoints()
 }
 
 func (unit *OverworldUnit) GetHitPoints() int {
