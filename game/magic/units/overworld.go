@@ -474,14 +474,33 @@ func (unit *OverworldUnit) GetFullRangedAttackPower() int {
     return unit.GetRangedAttackPower()
 }
 
+func (unit *OverworldUnit) RangedEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    switch enchantment {
+        case data.UnitEnchantmentBlackChannels: return 1
+        case data.UnitEnchantmentFlameBlade: return 2
+        case data.UnitEnchantmentLionHeart: return 3
+        case data.UnitEnchantmentGiantStrength: return 1
+    }
+
+    return 0
+}
+
 func (unit *OverworldUnit) GetRangedAttackPower() int {
     base := unit.GetBaseRangedAttackPower()
+
+    if base == 0 {
+        return 0
+    }
 
     if unit.GetRangedAttackDamageType() == DamageRangedPhysical || unit.GetRangedAttackDamageType() == DamageRangedBoulder {
         switch unit.WeaponBonus {
             case data.WeaponMythril: base += 1
             case data.WeaponAdamantium: base += 2
         }
+    }
+
+    for _, enchantment := range unit.Enchantments {
+        base += unit.RangedEnchantmentBonus(enchantment)
     }
 
     return base

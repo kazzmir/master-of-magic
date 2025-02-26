@@ -1052,6 +1052,10 @@ func (hero *Hero) GetFullRangedAttackPower() int {
     return hero.GetRangedAttackPower()
 }
 
+func (hero *Hero) RangedEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    return hero.Unit.RangedEnchantmentBonus(enchantment)
+}
+
 func (hero *Hero) GetRangedAttackPower() int {
     base := hero.Unit.GetBaseRangedAttackPower()
 
@@ -1071,6 +1075,11 @@ func (hero *Hero) GetRangedAttackPower() int {
         bonus += hero.GetAbilityMagicRangedAttack()
     } else {
         bonus += hero.GetAbilityRangedAttack()
+    }
+
+    // FIXME: include enchantments from artifacts
+    for _, enchantment := range hero.GetEnchantments() {
+        base += hero.RangedEnchantmentBonus(enchantment)
     }
 
     return base + bonus

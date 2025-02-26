@@ -485,6 +485,8 @@ type CombatUnit interface {
 
     MeleeEnchantmentBonus(data.UnitEnchantment) int
     DefenseEnchantmentBonus(data.UnitEnchantment) int
+    RangedEnchantmentBonus(data.UnitEnchantment) int
+    ResistanceEnchantmentBonus(data.UnitEnchantment) int
 
     GetFullName() string
     GetDefense() int
@@ -768,7 +770,7 @@ func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
     for _, enchantment := range unit.Enchantments {
-        modifier += unit.Unit.DefenseEnchantmentBonus(enchantment)
+        modifier += unit.Unit.ResistanceEnchantmentBonus(enchantment)
     }
 
     for _, curse := range unit.Curses {
@@ -856,8 +858,14 @@ func (unit *ArmyUnit) GetFullRangedAttackPower() int {
 func (unit *ArmyUnit) GetRangedAttackPower() int {
     modifier := 0
 
-    if unit.HasCurse(data.UnitCurseMindStorm) {
-        modifier -= 5
+    for _, enchantment := range unit.Enchantments {
+        modifier += unit.Unit.RangedEnchantmentBonus(enchantment)
+    }
+
+    for _, curse := range unit.Curses {
+        switch curse {
+            case data.UnitCurseMindStorm: modifier -= 5
+        }
     }
 
     if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
