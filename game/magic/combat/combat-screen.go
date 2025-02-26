@@ -784,6 +784,15 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
+func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 21)
+    explodeImages := images
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){
+        target.AddCurse(data.CurseMindStorm)
+    }))
+}
+
 func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 1)
 
@@ -1259,6 +1268,24 @@ Animate Dead - need picture
 
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CastCreatureBinding(target, player)
+                castedCallback()
+            }, selectable)
+
+        case "Mind Storm":
+            selectable := func(target *ArmyUnit) bool {
+                if target != nil {
+                    if target.HasAbility(data.AbilityIllusionsImmunity) || target.HasAbility(data.AbilityMagicImmunity) {
+                        return false
+                    }
+
+                    return true
+                }
+
+                return false
+            }
+
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateMindStormProjectile(target)
                 castedCallback()
             }, selectable)
 
@@ -3271,7 +3298,6 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
         if combatImages != nil {
             var unitOptions ebiten.DrawImageOptions
-            unitOptions.GeoM.Reset()
             var tx float64
             var ty float64
 
@@ -3329,6 +3355,18 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 enchantment = use
             }
             RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), enchantment, combat.Counter, &combat.ImageCache)
+
+            unitOptions.GeoM.Translate(float64(-combatImages[index].Bounds().Dx()/2), float64(-combatImages[0].Bounds().Dy()*3/4))
+            for _, curse := range unit.GetCurses() {
+                switch curse {
+                    case data.CurseMindStorm:
+                        images, _ := combat.ImageCache.GetImages("resource.lbx", 78)
+                        index := animationIndex % uint64(len(images))
+                        use := images[index]
+
+                        screen.DrawImage(use, &unitOptions)
+                }
+            }
         }
     }
 

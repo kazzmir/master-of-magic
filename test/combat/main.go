@@ -601,11 +601,17 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
     spells := []string{"High Prayer", "Prayer", "True Light", "Call Lightning", "Entangle",
                        "Blur", "Counter Magic", "Mass Invisibility", "Metal Fires", "Warp Reality",
                        "Black Prayer", "Darkness", "Mana Leak", "Terror", "Wrack",
-                       "Disenchant Area", "Disenchant True", "Creature Binding"}
+                       "Disenchant Area", "Disenchant True",
+                       "Creature Binding", "Mind Storm"}
 
 
     for _, spellName := range spells {
-        attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName(spellName))
+        spell := allSpells.FindByName(spellName)
+        if spell.Invalid() {
+            log.Printf("Unknown spell: %v", spellName)
+        } else {
+            attackingPlayer.KnownSpells.AddSpell(spell)
+        }
     }
 
     attackingPlayer.Mana = 10000
