@@ -386,6 +386,39 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
         }
     }
 
+    // FIXME: handle more than 4 abilities by using more columns
+    for _, ability := range unit.GetAbilities() {
+        pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
+        if err == nil {
+            rect := util.ImageRect(x, y, pic)
+            elements = append(elements, &uilib.UIElement{
+                Layer: layer,
+                Rect: rect,
+                RightClick: func(element *uilib.UIElement){
+                    helpEntries := help.GetEntriesByName(ability.Name())
+                    if helpEntries != nil {
+                        uiGroup.AddElement(uilib.MakeHelpElementWithLayer(uiGroup, cache, imageCache, layer+1, helpEntries[0], helpEntries[1:]...))
+                    }
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha((*getAlpha)())
+                    options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                    screen.DrawImage(pic, &options)
+                    x, y := options.GeoM.Apply(0, 0)
+
+                    printX := x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale)
+                    printY := y + float64(5 * data.ScreenScale)
+                    mediumFont.PrintOptions(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, font.FontOptions{DropShadow: true}, ability.Name())
+                },
+            })
+
+            y += pic.Bounds().Dy() + 1
+        } else {
+            log.Printf("Error: unable to render ability %#v %v", ability, ability.Name())
+        }
+    }
+
     for _, enchantment := range unit.GetEnchantments() {
         pic, err := imageCache.GetImage(enchantment.LbxFile(), enchantment.LbxIndex(), 0)
 
@@ -430,39 +463,6 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
             y += pic.Bounds().Dy() + 1
         } else {
             log.Printf("Error: unable to render enchantment %#v %v", enchantment, enchantment.Name())
-        }
-    }
-
-    // FIXME: handle more than 4 abilities by using more columns
-    for _, ability := range unit.GetAbilities() {
-        pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
-        if err == nil {
-            rect := util.ImageRect(x, y, pic)
-            elements = append(elements, &uilib.UIElement{
-                Layer: layer,
-                Rect: rect,
-                RightClick: func(element *uilib.UIElement){
-                    helpEntries := help.GetEntriesByName(ability.Name())
-                    if helpEntries != nil {
-                        uiGroup.AddElement(uilib.MakeHelpElementWithLayer(uiGroup, cache, imageCache, layer+1, helpEntries[0], helpEntries[1:]...))
-                    }
-                },
-                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                    var options ebiten.DrawImageOptions
-                    options.ColorScale.ScaleAlpha((*getAlpha)())
-                    options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
-                    screen.DrawImage(pic, &options)
-                    x, y := options.GeoM.Apply(0, 0)
-
-                    printX := x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale)
-                    printY := y + float64(5 * data.ScreenScale)
-                    mediumFont.PrintOptions(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, font.FontOptions{DropShadow: true}, ability.Name())
-                },
-            })
-
-            y += pic.Bounds().Dy() + 1
-        } else {
-            log.Printf("Error: unable to render ability %#v %v", ability, ability.Name())
         }
     }
 

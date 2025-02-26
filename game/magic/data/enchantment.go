@@ -267,6 +267,18 @@ func (enchantment UnitEnchantment) Magic() MagicType {
     return MagicNone
 }
 
+func (enchantment UnitEnchantment) IsCurse() bool {
+    switch enchantment {
+        case UnitCurseConfusion, UnitCurseCreatureBinding,
+             UnitCurseMindStorm, UnitCurseVertigo,
+             UnitCurseShatter, UnitCurseWarpCreature,
+             UnitCurseBlackSleep, UnitCursePossession,
+             UnitCurseWeakness: return true
+    }
+
+    return false
+}
+
 // granted abilities, if any
 func (enchantment UnitEnchantment) Abilities() []Ability {
     switch enchantment {
@@ -437,7 +449,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
 
         case UnitCurseConfusion: return ""
         case UnitCurseCreatureBinding: return ""
-        case UnitCurseMindStorm: return ""
+        case UnitCurseMindStorm: return "special2.lbx"
         case UnitCurseVertigo: return ""
         case UnitCurseShatter: return ""
         case UnitCurseWarpCreature: return ""
@@ -490,7 +502,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
 
         case UnitCurseConfusion: return -1
         case UnitCurseCreatureBinding: return -1
-        case UnitCurseMindStorm: return -1
+        case UnitCurseMindStorm: return 2
         case UnitCurseVertigo: return -1
         case UnitCurseShatter: return -1
         case UnitCurseWarpCreature: return -1
