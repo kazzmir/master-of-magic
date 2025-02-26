@@ -189,6 +189,11 @@ func createDeathCreatureArmy(player *player.Player) *combat.Army {
         Unit: units.MakeOverworldUnitFromUnit(units.DemonLord, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
     })
 
+    // not death, but whatever
+    armyUnits = append(armyUnits, &combat.ArmyUnit{
+        Unit: units.MakeOverworldUnitFromUnit(units.HellHounds, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
+    })
+
     return &combat.Army{
         Player: player,
         Units: armyUnits,
@@ -591,13 +596,12 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
             Race: data.RaceHighMen,
         }, true, 0, 0, nil)
 
-    attackingPlayer.CastingSkillPower = 10
     attackingPlayer.TaxRate = fraction.Zero()
 
     spells := []string{"High Prayer", "Prayer", "True Light", "Call Lightning", "Entangle",
                        "Blur", "Counter Magic", "Mass Invisibility", "Metal Fires", "Warp Reality",
                        "Black Prayer", "Darkness", "Mana Leak", "Terror", "Wrack",
-                       "Disenchant Area", "Disenchant True"}
+                       "Disenchant Area", "Disenchant True", "Creature Binding"}
 
 
     for _, spellName := range spells {

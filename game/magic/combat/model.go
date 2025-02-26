@@ -1284,11 +1284,15 @@ func (army *Army) IsAI() bool {
  * the units are laid out correctly
  */
 func (army *Army) AddUnit(unit CombatUnit){
-    army.Units = append(army.Units, &ArmyUnit{
+    army.AddArmyUnit(&ArmyUnit{
         Unit: unit,
         Facing: units.FacingDownRight,
         // Health: unit.GetMaxHealth(),
     })
+}
+
+func (army *Army) AddArmyUnit(unit *ArmyUnit){
+    army.Units = append(army.Units, unit)
 }
 
 func (army *Army) LayoutUnits(team Team){
@@ -1882,8 +1886,22 @@ func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, uni
         }
     }
 
+    // if the unit had Creature Bind then when it is dispelled the unit should be moved to the other army
+    swapArmy := false
     for _, enchantment := range removedEnchantments {
+        if enchantment == data.CurseCreatureBinding {
+            swapArmy = true
+        }
         unit.RemoveCurse(enchantment)
+    }
+
+    if swapArmy {
+        oldArmy := model.GetArmy(unit)
+        newArmy := model.GetOtherArmy(unit)
+
+        oldArmy.RemoveUnit(unit)
+        newArmy.AddArmyUnit(unit)
+        unit.Team = model.GetTeamForArmy(newArmy)
     }
 }
 
@@ -2857,6 +2875,14 @@ func (model *CombatModel) GetOppositeArmyForPlayer(player *playerlib.Player) *Ar
     return model.DefendingArmy
 }
 
+func (model *CombatModel) GetTeamForArmy(army *Army) Team {
+    if army == model.DefendingArmy {
+        return TeamDefender
+    }
+
+    return TeamAttacker
+}
+
 func (model *CombatModel) GetArmy(unit *ArmyUnit) *Army {
     if unit.Team == TeamDefender {
         return model.DefendingArmy
@@ -2928,6 +2954,21 @@ func (model *CombatModel) flee(army *Army) {
     }
 }
 
+// called when the battle ends
+func (model *CombatModel) Finish() {
+    for _, unit := range model.DefendingArmy.Units {
+        if unit.Unit.GetHealth() > 0 && unit.HasCurse(data.CurseCreatureBinding) {
+            unit.TakeDamage(unit.Unit.GetHealth())
+        }
+    }
+
+    for _, unit := range model.AttackingArmy.Units {
+        if unit.Unit.GetHealth() > 0 && unit.HasCurse(data.CurseCreatureBinding) {
+            unit.TakeDamage(unit.Unit.GetHealth())
+        }
+    }
+}
+
 // returns true if the spell should be dispelled (due to counter magic, magic nodes, etc)
 func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.Player) bool {
     opposite := model.GetOppositeArmyForPlayer(caster)
@@ -2945,4 +2986,14 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
     // FIXME: check dispel from magic nodes
 
     return false
+}
+
+func (model *CombatModel) ApplyCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
+    target.AddCurse(data.CurseCreatureBinding)
+    oldArmy := model.GetArmy(target)
+    oldArmy.RemoveUnit(target)
+
+    newArmy := model.GetArmyForPlayer(newOwner)
+    newArmy.AddArmyUnit(target)
+    target.Team = model.GetTeamForArmy(newArmy)
 }

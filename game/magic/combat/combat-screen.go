@@ -965,6 +965,9 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
 
 func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell, castedCallback func()){
     targetAny := func (target *ArmyUnit) bool { return true }
+    targetFantastic := func (target *ArmyUnit) bool {
+        return target != nil && target.Unit.GetRace() == data.RaceFantastic
+    }
 
     if combat.Model.CheckDispel(spell, player) {
         combat.Events <- &CombatEventMessage{
@@ -1084,10 +1087,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateBanishProjectile(target)
                 castedCallback()
-            }, func (target *ArmyUnit) bool {
-                // FIXME: must be a fantastic unit
-                return true
-            })
+            }, targetFantastic)
         case "Dispel Magic True":
             combat.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
                 combat.CreateDispelMagicProjectile(target)
@@ -1235,6 +1235,53 @@ Animate Dead - need picture
             combat.CastEnchantment(player, data.CombatEnchantmentTerror, castedCallback)
         case "Wrack":
             combat.CastEnchantment(player, data.CombatEnchantmentWrack, castedCallback)
+
+        case "Creature Binding":
+            selectable := func(target *ArmyUnit) bool {
+                if target == nil {
+                    return false
+                }
+
+                if target.Unit.GetRace() == data.RaceFantastic {
+                    if target.HasAbility(data.AbilityIllusionsImmunity) {
+                        return false
+                    }
+
+                    if target.HasAbility(data.AbilityMagicImmunity) {
+                        return false
+                    }
+
+                    return true
+                }
+
+                return false
+            }
+
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CastCreatureBinding(target, player)
+                castedCallback()
+            }, selectable)
+
+
+        /*
+        CurseConfusion
+        CurseCreatureBinding
+        CurseMindStorm
+        CurseVertigo
+        CurseShatter
+        CurseWarpCreature
+        CurseBlackSleep
+        CursePossession
+        CurseWeakness
+        */
+
+    }
+}
+
+func (combat *CombatScreen) CastCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
+    if rand.N(10) + 1 > target.GetResistance() - 20 {
+        // FIXME: make creature bind animation
+        combat.Model.ApplyCreatureBinding(target, newOwner)
     }
 }
 
@@ -1267,6 +1314,14 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             if combat.Model.AttackingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
                 combat.AttackingWizardFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, combat.Model.AttackingArmy.Player.Wizard.Name)
+
+                options.GeoM.Reset()
+                options.GeoM.Translate(float64(246 * data.ScreenScale), float64(179 * data.ScreenScale))
+                for _, enchantment := range combat.Model.AttackingArmy.Enchantments {
+                    image, _ := combat.ImageCache.GetImage("compix.lbx", enchantment.LbxIndex(), 0)
+                    screen.DrawImage(image, &options)
+                    options.GeoM.Translate(float64(image.Bounds().Dx()), 0)
+                }
             }
 
             y := 173
@@ -1282,25 +1337,17 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             combat.HudFont.Print(screen, float64(200 * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Range:")
             combat.HudFont.PrintRight(screen, float64(right * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%vx", combat.Model.AttackingArmy.Range.ToFloat()))
 
-            options.GeoM.Reset()
-            options.GeoM.Translate(float64(246 * data.ScreenScale), float64(179 * data.ScreenScale))
-            for _, enchantment := range combat.Model.AttackingArmy.Enchantments {
-                image, _ := combat.ImageCache.GetImage("compix.lbx", enchantment.LbxIndex(), 0)
-                screen.DrawImage(image, &options)
-                options.GeoM.Translate(float64(image.Bounds().Dx()), 0)
-            }
-
             if combat.Model.DefendingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
                 combat.DefendingWizardFont.PrintCenter(screen, float64(40 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, combat.Model.DefendingArmy.Player.Wizard.Name)
-            }
 
-            options.GeoM.Reset()
-            options.GeoM.Translate(float64(7 * data.ScreenScale), float64(179 * data.ScreenScale))
-            for _, enchantment := range combat.Model.DefendingArmy.Enchantments {
-                image, _ := combat.ImageCache.GetImage("compix.lbx", enchantment.LbxIndex(), 0)
-                screen.DrawImage(image, &options)
-                options.GeoM.Translate(float64(image.Bounds().Dx()), 0)
+                options.GeoM.Reset()
+                options.GeoM.Translate(float64(7 * data.ScreenScale), float64(179 * data.ScreenScale))
+                for _, enchantment := range combat.Model.DefendingArmy.Enchantments {
+                    image, _ := combat.ImageCache.GetImage("compix.lbx", enchantment.LbxIndex(), 0)
+                    screen.DrawImage(image, &options)
+                    options.GeoM.Translate(float64(image.Bounds().Dx()), 0)
+                }
             }
 
             if combat.Model.SelectedUnit != nil {
@@ -2019,6 +2066,8 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
             }
         }
 
+        combat.UpdateMouseState()
+
         if yield() != nil {
             return
         }
@@ -2468,21 +2517,25 @@ func (combat *CombatScreen) UpdateMouseState() {
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     if combat.Model.AttackingArmy.Fled {
         combat.Model.flee(combat.Model.AttackingArmy)
+        combat.Model.Finish()
         return CombatStateAttackerFlee
     }
 
     if combat.Model.DefendingArmy.Fled {
         combat.Model.flee(combat.Model.DefendingArmy)
+        combat.Model.Finish()
         return CombatStateDefenderFlee
     }
 
     if len(combat.Model.AttackingArmy.Units) == 0 {
         combat.Model.AddLogEvent("Defender wins!")
+        combat.Model.Finish()
         return CombatStateDefenderWin
     }
 
     if len(combat.Model.DefendingArmy.Units) == 0 {
         combat.Model.AddLogEvent("Attacker wins!")
+        combat.Model.Finish()
         return CombatStateAttackerWin
     }
 
