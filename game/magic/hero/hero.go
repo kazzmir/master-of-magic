@@ -681,6 +681,10 @@ func (hero *Hero) GetToHitMelee() int {
         case units.ExperienceDemiGod: base += 30
     }
 
+    if unit.HasEnchantment(data.UnitEnchantmentHolyWeapon) {
+        base += 10
+    }
+
     return base + hero.GetAbilityToHit()
 }
 

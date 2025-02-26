@@ -268,6 +268,10 @@ func (unit *OverworldUnit) GetToHitMelee() int {
         case data.WeaponAdamantium: base += 10
     }
 
+    if unit.HasEnchantment(data.UnitEnchantmentHolyWeapon) {
+        base += 10
+    }
+
     return base
 }
 
