@@ -83,8 +83,7 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
             screen.DrawImage(background, &options)
 
             options.GeoM.Translate(float64(25 * data.ScreenScale), float64(30 * data.ScreenScale))
-            var generic interface{} = unit
-            portaitUnit, ok := generic.(unitview.PortraitUnit)
+            portaitUnit, ok := unit.Unit.(unitview.PortraitUnit)
             if ok {
                 lbxFile, index := portaitUnit.GetPortraitLbxInfo()
                 portait, err := imageCache.GetImage(lbxFile, index, 0)
