@@ -970,6 +970,10 @@ func (hero *Hero) GetFullMeleeAttackPower() int {
     return hero.GetMeleeAttackPower()
 }
 
+func (hero *Hero) MeleeEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    return hero.Unit.MeleeEnchantmentBonus(enchantment)
+}
+
 func (hero *Hero) GetMeleeAttackPower() int {
     base := hero.GetBaseMeleeAttackPower()
 
@@ -977,6 +981,10 @@ func (hero *Hero) GetMeleeAttackPower() int {
         if item != nil {
             base += item.MeleeBonus()
         }
+    }
+
+    for _, enchantment := range hero.GetEnchantments() {
+        base += hero.MeleeEnchantmentBonus(enchantment)
     }
 
     return base + hero.GetAbilityMelee()

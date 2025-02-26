@@ -483,13 +483,7 @@ type CombatUnit interface {
     GetLbxFile() string
     GetLbxIndex() int
 
-    /*
-    GetProductionCost() int
-    GetTitle() string
-    GetUpkeepFood() int
-    GetUpkeepGold() int
-    GetUpkeepMana() int
-    */
+    MeleeEnchantmentBonus(data.UnitEnchantment) int
 
     GetFullName() string
     GetDefense() int
@@ -668,8 +662,14 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
         if value > 0 {
             modifier := float32(0)
 
-            if unit.HasCurse(data.UnitCurseMindStorm) {
-                modifier -= 5
+            for _, enchantment := range unit.Enchantments {
+                modifier += float32(unit.Unit.MeleeEnchantmentBonus(enchantment))
+            }
+
+            for _, curse := range unit.Curses {
+                switch curse {
+                    case data.UnitCurseMindStorm: modifier -= 5
+                }
             }
 
             if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
@@ -859,8 +859,14 @@ func (unit *ArmyUnit) GetFullMeleeAttackPower() int {
 func (unit *ArmyUnit) GetMeleeAttackPower() int {
     modifier := 0
 
-    if unit.HasCurse(data.UnitCurseMindStorm) {
-        modifier -= 5
+    for _, enchantment := range unit.Enchantments {
+        modifier += unit.Unit.MeleeEnchantmentBonus(enchantment)
+    }
+
+    for _, curse := range unit.Curses {
+        switch curse {
+            case data.UnitCurseMindStorm: modifier -= 5
+        }
     }
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {

@@ -348,6 +348,15 @@ func (unit *OverworldUnit) GetProductionCost() int {
     return unit.Unit.GetProductionCost()
 }
 
+// apply modifiers for melee power
+func (unit *OverworldUnit) MeleeEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    switch enchantment {
+        case data.UnitEnchantmentGiantStrength: return 1
+    }
+
+    return 0
+}
+
 func (unit *OverworldUnit) GetFullMeleeAttackPower() int {
     return unit.GetMeleeAttackPower()
 }
@@ -397,12 +406,18 @@ func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
 func (unit *OverworldUnit) GetMeleeAttackPower() int {
     base := unit.GetBaseMeleeAttackPower()
 
+    modifier := 0
+
     switch unit.WeaponBonus {
-        case data.WeaponMythril: base += 1
-        case data.WeaponAdamantium: base += 2
+        case data.WeaponMythril: modifier += 1
+        case data.WeaponAdamantium: modifier += 2
     }
 
-    return base
+    for _, enchantment := range unit.Enchantments {
+        modifier += unit.MeleeEnchantmentBonus(enchantment)
+    }
+
+    return base + modifier
 }
 
 func (unit *OverworldUnit) GetBaseRangedAttackPower() int {

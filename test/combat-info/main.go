@@ -55,6 +55,8 @@ func NewEngine(scenario int) (*Engine, error) {
         Model: model,
     }
 
+    unit.AddEnchantment(data.UnitEnchantmentBless)
+    unit.AddEnchantment(data.UnitEnchantmentGiantStrength)
     unit.AddCurse(data.UnitCurseMindStorm)
     unit.TakeDamage(5)
 
