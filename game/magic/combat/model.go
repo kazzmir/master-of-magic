@@ -767,8 +767,14 @@ func (unit *ArmyUnit) GetFullResistance() int {
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
-    if unit.HasCurse(data.UnitCurseMindStorm) {
-        modifier -= 5
+    for _, enchantment := range unit.Enchantments {
+        modifier += unit.Unit.DefenseEnchantmentBonus(enchantment)
+    }
+
+    for _, curse := range unit.Curses {
+        switch curse {
+            case data.UnitCurseMindStorm: modifier -= 5
+        }
     }
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {

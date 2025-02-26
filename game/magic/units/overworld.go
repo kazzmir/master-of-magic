@@ -364,6 +364,14 @@ func (unit *OverworldUnit) MeleeEnchantmentBonus(enchantment data.UnitEnchantmen
     return 0
 }
 
+func (unit *OverworldUnit) ResistanceEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    switch enchantment {
+        case data.UnitEnchantmentBlackChannels: return 1
+        case data.UnitEnchantmentLionHeart: return 3
+    }
+    return 0
+}
+
 func (unit *OverworldUnit) DefenseEnchantmentBonus(enchantment data.UnitEnchantment) int {
     switch enchantment {
         case data.UnitEnchantmentBlackChannels: return 1
@@ -521,7 +529,13 @@ func (unit *OverworldUnit) GetFullResistance() int {
 }
 
 func (unit *OverworldUnit) GetResistance() int {
-    return unit.GetBaseResistance()
+    base := unit.GetBaseResistance()
+
+    for _, enchantment := range unit.Enchantments {
+        base += unit.ResistanceEnchantmentBonus(enchantment)
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetBaseResistance() int {

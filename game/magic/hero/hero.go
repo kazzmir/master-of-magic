@@ -681,7 +681,7 @@ func (hero *Hero) GetToHitMelee() int {
         case units.ExperienceDemiGod: base += 30
     }
 
-    if unit.HasEnchantment(data.UnitEnchantmentHolyWeapon) {
+    if hero.HasEnchantment(data.UnitEnchantmentHolyWeapon) {
         base += 10
     }
 
@@ -980,6 +980,10 @@ func (hero *Hero) MeleeEnchantmentBonus(enchantment data.UnitEnchantment) int {
 
 func (hero *Hero) DefenseEnchantmentBonus(enchantment data.UnitEnchantment) int {
     return hero.Unit.DefenseEnchantmentBonus(enchantment)
+}
+
+func (hero *Hero) ResistanceEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    return hero.Unit.ResistanceEnchantmentBonus(enchantment)
 }
 
 func (hero *Hero) GetMeleeAttackPower() int {
@@ -1319,6 +1323,11 @@ func (hero *Hero) GetResistance() int {
         if item != nil {
             base += item.ResistanceBonus()
         }
+    }
+
+    // FIXME: include artifact enchantments
+    for _, enchantment := range hero.GetEnchantments() {
+        base += hero.ResistanceEnchantmentBonus(enchantment)
     }
 
     return base + hero.GetAbilityResistance()
