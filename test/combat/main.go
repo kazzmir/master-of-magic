@@ -203,8 +203,23 @@ func createDeathCreatureArmy(player *player.Player) *combat.Army {
 func createHeroArmy(player *player.Player, cache *lbx.LbxCache) *combat.Army{
     var armyUnits []*combat.ArmyUnit
 
+    rakir := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroRakir, "bubba")
+
+    rakir.Equipment[0] = &artifact.Artifact{
+        Type: artifact.ArtifactTypeSword,
+        Name: "Sword of Sharpness",
+        Image: 2,
+        Powers: []artifact.Power{
+            artifact.Power{
+                Type: artifact.PowerTypeAttack,
+                Amount: 3,
+                Name: "+3 Attack",
+            },
+        },
+    }
+
     armyUnits = append(armyUnits, &combat.ArmyUnit{
-        Unit: herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroRakir, "bubba"),
+        Unit: rakir,
     })
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)

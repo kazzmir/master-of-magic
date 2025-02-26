@@ -126,6 +126,7 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
 func RenderUnitInfo(screen *ebiten.Image, imageCache *util.ImageCache, unit *ArmyUnit, fonts *UnitViewFonts, defaultOptions ebiten.DrawImageOptions) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
+    // FIXME: if the unit is a hero and has a title then the title should show up on the next line after the name
     name := unit.Unit.GetFullName()
 
     fonts.DescriptionFont.PrintOptions(screen, x, y + float64(2 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, name)
