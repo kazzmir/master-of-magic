@@ -570,6 +570,10 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
         if value > 0 {
             modifier := float32(0)
 
+            if unit.HasCurse(data.CurseMindStorm) {
+                modifier -= 5
+            }
+
             if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
                 modifier -= 1
             }
@@ -593,6 +597,10 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
         value := unit.Unit.GetAbilityValue(ability)
         if value > 0 {
             modifier := float32(0)
+
+            if unit.HasCurse(data.CurseMindStorm) {
+                modifier -= 5
+            }
 
             if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
                 switch unit.GetRealm() {
@@ -656,6 +664,10 @@ func (unit *ArmyUnit) GetToHitMelee() int {
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
+    if unit.HasCurse(data.CurseMindStorm) {
+        modifier -= 5
+    }
+
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
         modifier -= 2
     }
@@ -685,6 +697,10 @@ func (unit *ArmyUnit) GetResistance() int {
 func (unit *ArmyUnit) GetDefense() int {
     modifier := 0
 
+    if unit.HasCurse(data.CurseMindStorm) {
+        modifier -= 5
+    }
+
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
         modifier += 2
     }
@@ -713,6 +729,10 @@ func (unit *ArmyUnit) GetDefense() int {
 func (unit *ArmyUnit) GetRangedAttackPower() int {
     modifier := 0
 
+    if unit.HasCurse(data.CurseMindStorm) {
+        modifier -= 5
+    }
+
     if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
         if unit.Unit.GetRangedAttackPower() > 0 {
             modifier += 1
@@ -724,6 +744,10 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
 
 func (unit *ArmyUnit) GetMeleeAttackPower() int {
     modifier := 0
+
+    if unit.HasCurse(data.CurseMindStorm) {
+        modifier -= 5
+    }
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
         if unit.Unit.GetMeleeAttackPower() > 0 {
