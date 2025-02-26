@@ -790,7 +790,7 @@ func createScenario10(cache *lbx.LbxCache) *gamelib.Game {
     player.SetSelectedStack(stack)
 
     game.Events <- &gamelib.GameEventSummonHero{
-        Wizard: wizard.Base,
+        Player: player,
         Champion: false,
     }
 
@@ -1050,6 +1050,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Stream of Life"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Altar of Battle"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Astral Gate"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Cloud of Shadow"))
 
     // global enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
@@ -1058,6 +1059,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Just Cause"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Armageddon"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Great Wasting"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Detect Magic"))
 
     // unit enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Bless"))
@@ -4446,6 +4448,118 @@ func createScenario49(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x2, y2, 4, city3.Plane)
     player.AwarePlayer(enemy)
     player.AwarePlayer(enemy2)
+
+    return game
+}
+
+// detect magic
+func createScenario49(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 49")
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+    game.Plane = data.PlaneArcanus
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player := game.AddPlayer(
+        setup.WizardCustom{
+            Name: "Merlin",
+            Base: data.WizardMerlin,
+            Banner: data.BannerRed,
+            Race: data.RaceHalfling,
+        },
+        true,
+    )
+
+    player.CastingSkillPower += 500000
+    player.KnownSpells.AddSpell(allSpells.FindByName("Detect Magic"))
+    player.ResearchingSpell = allSpells.FindByName("Spell of Mastery")
+    player.Gold = 1000
+    player.Mana = 10000
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("City 1", x, y, player.Wizard.Race, game.BuildingInfo, game.CurrentMap(), game, player)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingWizardsGuild
+    city.ProducingUnit = units.UnitNone
+    city.Race = player.Wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.ResetCitizens()
+
+    player.AddCity(city)
+    player.LiftFog(x, y, 4, data.PlaneArcanus)
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+
+    enemy := game.AddPlayer(
+        setup.WizardCustom{
+            Name: "Horus",
+            Base: data.WizardHorus,
+            Banner: data.BannerYellow,
+            Race: data.RaceHalfling,
+        },
+        false,
+    )
+    enemy.CastingSkillPower += 500000
+    enemy.CastingSpell = allSpells.FindByName("Guardian Spirit")
+    enemy.Gold = 1000
+    enemy.Mana = 10000
+
+    x, y, _ = game.FindValidCityLocation(game.Plane)
+
+    city = citylib.MakeCity("City 2", x, y, enemy.Wizard.Race, game.BuildingInfo, game.CurrentMap(), game, enemy)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = enemy.Wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.ResetCitizens()
+
+    enemy.AddCity(city)
+
+    player.LiftFog(x, y, 4, data.PlaneArcanus)
+    player.AwarePlayer(enemy)
+
+    enemy = game.AddPlayer(
+        setup.WizardCustom{
+            Name: "Freya",
+            Base: data.WizardFreya,
+            Banner: data.BannerGreen,
+            Race: data.RaceHalfling,
+        },
+        false,
+    )
+    enemy.CastingSkillPower += 500000
+    enemy.CastingSpell = allSpells.FindByName("Awareness")
+    enemy.Gold = 1000
+    enemy.Mana = 10000
+
+    x, y, _ = game.FindValidCityLocation(game.Plane)
+
+    city = citylib.MakeCity("City 3", x, y, enemy.Wizard.Race, game.BuildingInfo, game.CurrentMap(), game, enemy)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = enemy.Wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.ResetCitizens()
+
+    enemy.AddCity(city)
+
+    player.LiftFog(x, y, 4, data.PlaneArcanus)
+    player.AwarePlayer(enemy)
 
     return game
 }

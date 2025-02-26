@@ -1021,7 +1021,7 @@ func MakeGameFonts(cache *lbx.LbxCache) *GameFonts {
 
     whitePalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0x90, G: 0x86, B: 0x81, A: 0xff},
         color.White, color.White, color.White, color.White,
     }
 
@@ -1046,6 +1046,117 @@ func MakeSpellbookFonts(cache *lbx.LbxCache) *SpellbookFonts {
     }
 }
 
+type MagicViewFonts struct {
+    NormalFont *font.Font
+    SmallerFont *font.Font
+    SpellFont *font.Font
+    TransmuteFont *font.Font
+    BannerBlueFont *font.Font
+    BannerGreenFont *font.Font
+    BannerPurpleFont *font.Font
+    BannerRedFont *font.Font
+    BannerYellowFont *font.Font
+}
+
+func MakeMagicViewFonts(cache *lbx.LbxCache) *MagicViewFonts {
+    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
+
+    blue := color.RGBA{R: 146, G: 146, B: 166, A: 0xff}
+    bluishPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        blue, blue, blue, blue,
+    }
+
+    normalFont := font.MakeOptimizedFontWithPalette(fonts[2], bluishPalette)
+
+    blue2Palette := bluishPalette
+    blue2Palette[1] = color.RGBA{R: 97, G: 97, B: 125, A: 0xff}
+    smallerFont := font.MakeOptimizedFontWithPalette(fonts[1], blue2Palette)
+
+    yellowishPalette := color.Palette{
+        color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x00},
+        color.RGBA{R: 0xa6, G: 0x6d, B: 0x1c, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xb6, B: 0x2c, A: 0xff},
+    }
+
+    spellFont := font.MakeOptimizedFontWithPalette(fonts[0], yellowishPalette)
+
+    transmute := util.PremultiplyAlpha(color.RGBA{R: 223, G: 150, B: 28, A: 255})
+    transmutePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        transmute, transmute, transmute,
+        transmute, transmute, transmute,
+    }
+
+    transmuteFont := font.MakeOptimizedFontWithPalette(fonts[0], transmutePalette)
+
+    bannerBlue := color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}
+    bannerGreen := color.RGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff}
+    bannerPurple := color.RGBA{R: 0x8f, G: 0x30, B: 0xff, A: 0xff}
+    bannerRed := color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
+    bannerYellow := color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}
+
+    bannerBluePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        bannerBlue, bannerBlue, bannerBlue,
+        bannerBlue, bannerBlue, bannerBlue,
+    }
+    bannerGreenPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        bannerGreen, bannerGreen, bannerGreen,
+        bannerGreen, bannerGreen, bannerGreen,
+    }
+    bannerPurplePalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        bannerPurple, bannerPurple, bannerPurple,
+        bannerPurple, bannerPurple, bannerPurple,
+    }
+    bannerRedPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        bannerRed, bannerRed, bannerRed,
+        bannerRed, bannerRed, bannerRed,
+    }
+    bannerYellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        bannerYellow, bannerYellow, bannerYellow,
+        bannerYellow, bannerYellow, bannerYellow,
+    }
+
+    bannerBlueFont := font.MakeOptimizedFontWithPalette(fonts[2], bannerBluePalette)
+    bannerGreenFont := font.MakeOptimizedFontWithPalette(fonts[2], bannerGreenPalette)
+    bannerPurpleFont := font.MakeOptimizedFontWithPalette(fonts[2], bannerPurplePalette)
+    bannerRedFont := font.MakeOptimizedFontWithPalette(fonts[2], bannerRedPalette)
+    bannerYellowFont := font.MakeOptimizedFontWithPalette(fonts[2], bannerYellowPalette)
+
+    return &MagicViewFonts{
+        NormalFont: normalFont,
+        SmallerFont: smallerFont,
+        SpellFont: spellFont,
+        TransmuteFont: transmuteFont,
+        BannerBlueFont: bannerBlueFont,
+        BannerGreenFont: bannerGreenFont,
+        BannerPurpleFont: bannerPurpleFont,
+        BannerRedFont: bannerRedFont,
+        BannerYellowFont: bannerYellowFont,
+    }
+}
 type SpellSpecialUIFonts struct {
     BigOrange *font.Font
     InfoOrange *font.Font

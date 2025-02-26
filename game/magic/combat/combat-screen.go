@@ -69,9 +69,10 @@ type CombatEventSelectTile struct {
 type CombatEventNextUnit struct {
 }
 
-type CombatEventCastEnchantment struct {
-    Enchantment data.CombatEnchantment
+type CombatEventGlobalSpell struct {
     Caster *playerlib.Player
+    Magic data.MagicType
+    Name string
 }
 
 type CombatEventSelectUnit struct {
@@ -154,6 +155,7 @@ type CombatScreen struct {
     Drawer CombatDrawFunc
     ImageCache util.ImageCache
     Cache *lbx.LbxCache
+    AudioCache *audio.AudioCache
     Mouse *mouse.MouseData
     AttackingWizardFont *font.Font
     DefendingWizardFont *font.Font
@@ -165,6 +167,7 @@ type CombatScreen struct {
     InfoFont *font.Font
     WhiteFont *font.Font
     DrawRoad bool
+    AllSpells spellbook.Spells
     // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
     TopDownOrder []image.Point
 
@@ -297,10 +300,18 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
 
     events := make(chan CombatEvent, 1000)
 
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Error reading spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+
     combat := &CombatScreen{
         Events: events,
         Cache: cache,
+        AudioCache: audio.MakeAudioCache(cache),
         ImageCache: imageCache,
+        AllSpells: allSpells,
         Mouse: mouseData,
         CameraScale: 1,
         DrawRoad: zone.City != nil,
@@ -773,6 +784,15 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
 }
 
+func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 21)
+    explodeImages := images
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){
+        target.AddCurse(data.CurseMindStorm)
+    }))
+}
+
 func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 1)
 
@@ -867,7 +887,7 @@ func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell sp
         SelectTeam: teamAttacked,
         CanTarget: canTarget,
         SelectTarget: func(target *ArmyUnit){
-            sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+            sound, err := combat.AudioCache.GetSound(spell.Sound)
             if err == nil {
                 sound.Play()
             } else {
@@ -897,7 +917,7 @@ func (combat *CombatScreen) DoTargetTileSpell(player *playerlib.Player, spell sp
         Selecter: selecter,
         Spell: spell,
         SelectTile: func(x int, y int){
-            sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+            sound, err := combat.AudioCache.GetSound(spell.Sound)
             if err == nil {
                 sound.Play()
             } else {
@@ -938,7 +958,7 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
         units = combat.Model.AttackingArmy.Units
     }
 
-    sound, err := audio.LoadSound(combat.Cache, spell.Sound)
+    sound, err := combat.AudioCache.GetSound(spell.Sound)
     if err == nil {
         sound.Play()
     } else {
@@ -954,6 +974,9 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
 
 func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell, castedCallback func()){
     targetAny := func (target *ArmyUnit) bool { return true }
+    targetFantastic := func (target *ArmyUnit) bool {
+        return target != nil && target.Unit.GetRace() == data.RaceFantastic
+    }
 
     if combat.Model.CheckDispel(spell, player) {
         combat.Events <- &CombatEventMessage{
@@ -1073,10 +1096,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateBanishProjectile(target)
                 castedCallback()
-            }, func (target *ArmyUnit) bool {
-                // FIXME: must be a fantastic unit
-                return true
-            })
+            }, targetFantastic)
         case "Dispel Magic True":
             combat.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
                 combat.CreateDispelMagicProjectile(target)
@@ -1161,12 +1181,33 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 castedCallback()
             }, targetAny)
 
+        case "Disenchant Area", "Disenchant True":
+            // show some animation and play sound
+
+            combat.Events <- &CombatEventGlobalSpell{
+                Caster: player,
+                Magic: spell.Magic,
+                Name: spell.Name,
+            }
+
+            disenchantStrength := spell.Cost(false)
+            if spell.Name == "Disenchant True" {
+                // each additional point of mana spent increases the disenchant strength by 3
+                disenchantStrength = spell.BaseCost(false) + spell.SpentAdditionalCost(false) * 3
+            }
+
+            if player.Wizard.RetortEnabled(data.RetortRunemaster) {
+                disenchantStrength *= 2
+            }
+
+            combat.Model.DoDisenchantArea(combat.AllSpells, player, disenchantStrength)
+
+            castedCallback()
+
             /*
-Disenchant Area - need picture
 Dispel Magic - need picture
 Raise Dead - need picture
 Petrify	- need picture
-Disenchant True - need picture
 Call Chaos - need picture
 Animate Dead - need picture
             */
@@ -1203,14 +1244,78 @@ Animate Dead - need picture
             combat.CastEnchantment(player, data.CombatEnchantmentTerror, castedCallback)
         case "Wrack":
             combat.CastEnchantment(player, data.CombatEnchantmentWrack, castedCallback)
+
+        case "Creature Binding":
+            selectable := func(target *ArmyUnit) bool {
+                if target == nil {
+                    return false
+                }
+
+                if target.Unit.GetRace() == data.RaceFantastic {
+                    if target.HasAbility(data.AbilityIllusionsImmunity) {
+                        return false
+                    }
+
+                    if target.HasAbility(data.AbilityMagicImmunity) {
+                        return false
+                    }
+
+                    return true
+                }
+
+                return false
+            }
+
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CastCreatureBinding(target, player)
+                castedCallback()
+            }, selectable)
+
+        case "Mind Storm":
+            selectable := func(target *ArmyUnit) bool {
+                if target != nil {
+                    if target.HasAbility(data.AbilityIllusionsImmunity) || target.HasAbility(data.AbilityMagicImmunity) {
+                        return false
+                    }
+
+                    return true
+                }
+
+                return false
+            }
+
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateMindStormProjectile(target)
+                castedCallback()
+            }, selectable)
+
+
+        /*
+        CurseConfusion
+        CurseVertigo
+        CurseShatter
+        CurseWarpCreature
+        CurseBlackSleep
+        CursePossession
+        CurseWeakness
+        */
+
+    }
+}
+
+func (combat *CombatScreen) CastCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
+    if rand.N(10) + 1 > target.GetResistance() - 20 {
+        // FIXME: make creature bind animation
+        combat.Model.ApplyCreatureBinding(target, newOwner)
     }
 }
 
 func (combat *CombatScreen) CastEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment, castedCallback func()){
     if combat.Model.AddEnchantment(player, enchantment) {
-        combat.Events <- &CombatEventCastEnchantment{
-            Enchantment: enchantment,
+        combat.Events <- &CombatEventGlobalSpell{
             Caster: player,
+            Magic: enchantment.Magic(),
+            Name: enchantment.Name(),
         }
         castedCallback()
     } else {
@@ -1234,6 +1339,14 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             if combat.Model.AttackingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
                 combat.AttackingWizardFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, combat.Model.AttackingArmy.Player.Wizard.Name)
+
+                options.GeoM.Reset()
+                options.GeoM.Translate(float64(246 * data.ScreenScale), float64(179 * data.ScreenScale))
+                for _, enchantment := range combat.Model.AttackingArmy.Enchantments {
+                    image, _ := combat.ImageCache.GetImage("compix.lbx", enchantment.LbxIndex(), 0)
+                    screen.DrawImage(image, &options)
+                    options.GeoM.Translate(float64(image.Bounds().Dx()), 0)
+                }
             }
 
             y := 173
@@ -1249,25 +1362,17 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             combat.HudFont.Print(screen, float64(200 * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Range:")
             combat.HudFont.PrintRight(screen, float64(right * data.ScreenScale), float64(y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%vx", combat.Model.AttackingArmy.Range.ToFloat()))
 
-            options.GeoM.Reset()
-            options.GeoM.Translate(float64(246 * data.ScreenScale), float64(179 * data.ScreenScale))
-            for _, enchantment := range combat.Model.AttackingArmy.Enchantments {
-                image, _ := combat.ImageCache.GetImage("compix.lbx", enchantment.LbxIndex(), 0)
-                screen.DrawImage(image, &options)
-                options.GeoM.Translate(float64(image.Bounds().Dx()), 0)
-            }
-
             if combat.Model.DefendingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
                 combat.DefendingWizardFont.PrintCenter(screen, float64(40 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, combat.Model.DefendingArmy.Player.Wizard.Name)
-            }
 
-            options.GeoM.Reset()
-            options.GeoM.Translate(float64(7 * data.ScreenScale), float64(179 * data.ScreenScale))
-            for _, enchantment := range combat.Model.DefendingArmy.Enchantments {
-                image, _ := combat.ImageCache.GetImage("compix.lbx", enchantment.LbxIndex(), 0)
-                screen.DrawImage(image, &options)
-                options.GeoM.Translate(float64(image.Bounds().Dx()), 0)
+                options.GeoM.Reset()
+                options.GeoM.Translate(float64(7 * data.ScreenScale), float64(179 * data.ScreenScale))
+                for _, enchantment := range combat.Model.DefendingArmy.Enchantments {
+                    image, _ := combat.ImageCache.GetImage("compix.lbx", enchantment.LbxIndex(), 0)
+                    screen.DrawImage(image, &options)
+                    options.GeoM.Translate(float64(image.Bounds().Dx()), 0)
+                }
             }
 
             if combat.Model.SelectedUnit != nil {
@@ -1986,26 +2091,28 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
             }
         }
 
+        combat.UpdateMouseState()
+
         if yield() != nil {
             return
         }
     }
 }
 
-func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster *playerlib.Player, enchantment data.CombatEnchantment) {
+func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster *playerlib.Player, magic data.MagicType, spellName string) {
     oldDrawer := combat.Drawer
     defer func(){
         combat.Drawer = oldDrawer
     }()
 
-    value := data.GetMagicColor(enchantment.Magic())
+    value := data.GetMagicColor(magic)
 
     counter := 0
     counterMax := 90
 
     maxAlpha := 150
 
-    castDescription := fmt.Sprintf("%v cast %v", caster.Wizard.Name, enchantment.Name())
+    castDescription := fmt.Sprintf("%v cast %v", caster.Wizard.Name, spellName)
 
     text := combat.EnchantmentFont.MeasureTextWidth(castDescription, float64(data.ScreenScale))
 
@@ -2045,7 +2152,7 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
     sounds := set.MakeSet[int]()
     defer func(){
         for _, index := range sounds.Values() {
-            sound, err := audio.LoadSound(combat.Cache, index)
+            sound, err := combat.AudioCache.GetSound(index)
             if err == nil {
                 sound.Play()
             }
@@ -2064,9 +2171,9 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         combat.doSelectUnit(yield, use.Selecter, use.Spell, use.SelectTarget, use.CanTarget, use.SelectTeam)
                     case *CombatEventNextUnit:
                         combat.Model.NextUnit()
-                    case *CombatEventCastEnchantment:
-                        use := event.(*CombatEventCastEnchantment)
-                        combat.doCastEnchantment(yield, use.Caster, use.Enchantment)
+                    case *CombatEventGlobalSpell:
+                        use := event.(*CombatEventGlobalSpell)
+                        combat.doCastEnchantment(yield, use.Caster, use.Magic, use.Name)
                     case *CombatEventMessage:
                         use := event.(*CombatEventMessage)
                         combat.UI.AddElement(uilib.MakeErrorElement(combat.UI, combat.Cache, &combat.ImageCache, use.Message, func(){ yield() }))
@@ -2102,7 +2209,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     quit, cancel := context.WithCancel(context.Background())
     defer cancel()
 
-    sound, err := audio.LoadSound(combat.Cache, mover.Unit.GetMovementSound().LbxIndex())
+    sound, err := combat.AudioCache.GetSound(mover.Unit.GetMovementSound().LbxIndex())
     if err == nil {
         // keep playing movement sound in a loop until the unit stops moving
         go func(){
@@ -2219,7 +2326,7 @@ func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *A
     // FIXME: could use a for/yield loop here to update projectiles
     combat.createRangeAttack(attacker, defender)
 
-    sound, err := audio.LoadSound(combat.Cache, attacker.Unit.GetRangeAttackSound().LbxIndex())
+    sound, err := combat.AudioCache.GetSound(attacker.Unit.GetRangeAttackSound().LbxIndex())
     if err == nil {
         sound.Play()
     }
@@ -2252,7 +2359,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
     defender.Facing = faceTowards(defender.X, defender.Y, attacker.X, attacker.Y)
 
     // FIXME: sound is based on attacker type, and possibly defender type
-    sound, err := audio.LoadCombatSound(combat.Cache, attacker.Unit.GetAttackSound().LbxIndex())
+    sound, err := combat.AudioCache.GetCombatSound(attacker.Unit.GetAttackSound().LbxIndex())
     if err == nil {
         sound.Play()
     }
@@ -2435,21 +2542,25 @@ func (combat *CombatScreen) UpdateMouseState() {
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     if combat.Model.AttackingArmy.Fled {
         combat.Model.flee(combat.Model.AttackingArmy)
+        combat.Model.Finish()
         return CombatStateAttackerFlee
     }
 
     if combat.Model.DefendingArmy.Fled {
         combat.Model.flee(combat.Model.DefendingArmy)
+        combat.Model.Finish()
         return CombatStateDefenderFlee
     }
 
     if len(combat.Model.AttackingArmy.Units) == 0 {
         combat.Model.AddLogEvent("Defender wins!")
+        combat.Model.Finish()
         return CombatStateDefenderWin
     }
 
     if len(combat.Model.DefendingArmy.Units) == 0 {
         combat.Model.AddLogEvent("Attacker wins!")
+        combat.Model.Finish()
         return CombatStateAttackerWin
     }
 
@@ -3185,7 +3296,6 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
         if combatImages != nil {
             var unitOptions ebiten.DrawImageOptions
-            unitOptions.GeoM.Reset()
             var tx float64
             var ty float64
 
@@ -3234,8 +3344,27 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             */
 
             // _ = index
-            enchantment := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
+            var enchantment Enchanted
+            use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
+            if use != data.UnitEnchantmentNone {
+                enchantment = use
+            } else {
+                use := util.First(unit.GetCurses(), data.CurseNone)
+                enchantment = use
+            }
             RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), enchantment, combat.Counter, &combat.ImageCache)
+
+            unitOptions.GeoM.Translate(float64(-combatImages[index].Bounds().Dx()/2), float64(-combatImages[0].Bounds().Dy()*3/4))
+            for _, curse := range unit.GetCurses() {
+                switch curse {
+                    case data.CurseMindStorm:
+                        images, _ := combat.ImageCache.GetImages("resource.lbx", 78)
+                        index := animationIndex % uint64(len(images))
+                        use := images[index]
+
+                        screen.DrawImage(use, &unitOptions)
+                }
+            }
         }
     }
 

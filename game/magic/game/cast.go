@@ -167,7 +167,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Earth Gate
                 Flying Fortress
                 Spell Ward
-                Cloud of Shadow
         */
         case "Astral Gate":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
@@ -179,6 +178,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         case "Heavenly Light":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentHeavenlyLight)
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
+
+        case "Cloud of Shadow":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastCityEnchantment(yield, tileX, tileY, player, data.CityEnchantmentCloudOfShadow)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
@@ -310,7 +316,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /*
             GLOBAL ENCHANTMENTS
                 TODO:
-                Detect Magic
                 Charm of Life
                 Holy Arms
                 Planar Seal
@@ -400,6 +405,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 game.RefreshUI()
             }
+        case "Detect Magic":
+            if !player.GlobalEnchantments.Contains(data.EnchantmentJustCause) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentDetectMagic}
+
+                player.GlobalEnchantments.Insert(data.EnchantmentDetectMagic)
+
+                game.RefreshUI()
+            }
 
         /*
             INSTANT SPELLS
@@ -428,7 +441,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Subversion
         */
         case "Create Artifact", "Enchant Item":
-            game.Events <- &GameEventSummonArtifact{Wizard: player.Wizard.Base}
+            game.Events <- &GameEventSummonArtifact{Player: player}
             game.Events <- &GameEventVault{CreatedArtifact: player.CreateArtifact}
             player.CreateArtifact = nil
         case "Earth Lore":
@@ -728,7 +741,7 @@ func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
         hero := choices[rand.N(len(choices))]
 
         summonEvent := GameEventSummonHero{
-            Wizard: player.Wizard.Base,
+            Player: player,
             Champion: false,
         }
 
@@ -1137,6 +1150,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 }
 
 func (game *Game) doCastCityEnchantment(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player, enchantment data.CityEnchantment) {
+    // FIXME: Show this only for enemies if detect magic is active and the city is known to the human player
     game.doMoveCamera(yield, tileX, tileY)
     chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
     if chosenCity == nil {
@@ -1468,8 +1482,12 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
             options.GeoM.Translate(float64(13 * data.ScreenScale), float64(13 * data.ScreenScale))
             screen.DrawImage(mood, &options)
 
-            // FIXME: if another wizard is casting the spell should their name be shown instead of 'You' ?
-            fonts.InfoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, "You have finished casting")
+            text := "You have finished casting"
+            if !player.IsHuman() {
+                text = fmt.Sprintf("%v has cast", player.Wizard.Name)
+            }
+
+            fonts.InfoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, text)
         } else {
             // then draw the spell image
             options.GeoM.Translate(float64(9 * data.ScreenScale), float64(8 * data.ScreenScale))

@@ -7,6 +7,7 @@ import (
     "math"
     "image"
     // "image/color"
+    "runtime/pprof"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -186,6 +187,11 @@ func createDeathCreatureArmy(player *player.Player) *combat.Army {
 
     armyUnits = append(armyUnits, &combat.ArmyUnit{
         Unit: units.MakeOverworldUnitFromUnit(units.DemonLord, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
+    })
+
+    // not death, but whatever
+    armyUnits = append(armyUnits, &combat.ArmyUnit{
+        Unit: units.MakeOverworldUnitFromUnit(units.HellHounds, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
     })
 
     return &combat.Army{
@@ -590,16 +596,22 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
             Race: data.RaceHighMen,
         }, true, 0, 0, nil)
 
-    attackingPlayer.CastingSkillPower = 10
     attackingPlayer.TaxRate = fraction.Zero()
 
     spells := []string{"High Prayer", "Prayer", "True Light", "Call Lightning", "Entangle",
                        "Blur", "Counter Magic", "Mass Invisibility", "Metal Fires", "Warp Reality",
-                       "Black Prayer", "Darkness", "Mana Leak", "Terror", "Wrack"}
+                       "Black Prayer", "Darkness", "Mana Leak", "Terror", "Wrack",
+                       "Disenchant Area", "Disenchant True",
+                       "Creature Binding", "Mind Storm"}
 
 
     for _, spellName := range spells {
-        attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName(spellName))
+        spell := allSpells.FindByName(spellName)
+        if spell.Invalid() {
+            log.Printf("Unknown spell: %v", spellName)
+        } else {
+            attackingPlayer.KnownSpells.AddSpell(spell)
+        }
     }
 
     attackingPlayer.Mana = 10000
@@ -610,7 +622,17 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
 
     attackingArmy.AddEnchantment(data.CombatEnchantmentWrack)
 
+    for _, unit := range attackingArmy.Units {
+        unit.AddCurse(data.CurseVertigo)
+        unit.AddCurse(data.CurseShatter)
+    }
+
     defendingArmy.AddEnchantment(data.CombatEnchantmentEntangle)
+
+    for _, unit := range defendingArmy.Units {
+        unit.AddEnchantment(data.UnitEnchantmentGiantStrength)
+        unit.AddEnchantment(data.UnitEnchantmentHolyArmor)
+    }
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
@@ -712,6 +734,15 @@ func main(){
     scenario := 1
     if len(os.Args) > 1 {
         scenario, _ = strconv.Atoi(os.Args[1])
+    }
+
+    profile, err := os.Create("profile.cpu.combat")
+    if err != nil {
+        log.Printf("Error creating profile: %v", err)
+    } else {
+        defer profile.Close()
+        pprof.StartCPUProfile(profile)
+        defer pprof.StopCPUProfile()
     }
 
     monitorWidth, _ := ebiten.Monitor().Size()

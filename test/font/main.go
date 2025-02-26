@@ -5,7 +5,7 @@ import (
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
-    // "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/fonts"
@@ -56,14 +56,26 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
     }
 
     // engine.VaultFonts.ItemName.PrintOutline(screen, shader, 10, 10, 4, ebiten.ColorScale{}, "This is a test of font outlines")
-    engine.VaultFonts.ItemName.PrintDropShadow(screen, 10, 10, 4, ebiten.ColorScale{}, "This is a test of font outlines")
-    engine.VaultFonts.ItemName.Print(screen, 10, 80, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+    y := float64(10)
+    engine.VaultFonts.ItemName.PrintDropShadow(screen, 10, y, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+    y += 60
+    engine.VaultFonts.ItemName.Print(screen, 10, y, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+    y += 60
+    engine.VaultFonts.ItemName.PrintOptions(screen, 10, y, 4, ebiten.ColorScale{}, font.FontOptions{DropShadow: true, ShadowColor: color.RGBA{R: 255, G: 0, B: 0, A: 255}}, "This is a test of font outlines")
+    y += 60
+    engine.VaultFonts.ItemName.PrintOptions(screen, 10, y, 4, ebiten.ColorScale{}, font.FontOptions{DropShadow: true}, "This is a test of font outlines")
 
-    engine.VaultFonts.PowerFont.PrintOutline(screen, shader, 10, 150, 4, ebiten.ColorScale{}, "This is a test of font outlines")
-    engine.VaultFonts.PowerFont.Print(screen, 10, 200, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+    y += 60
 
-    engine.VaultFonts.ResourceFont.PrintOutline(screen, shader, 10, 260, 4, ebiten.ColorScale{}, "This is a test of font outlines")
-    engine.VaultFonts.ResourceFont.Print(screen, 10, 300, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+    engine.VaultFonts.PowerFont.PrintOutline(screen, shader, 10, y, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+    y += 50
+    engine.VaultFonts.PowerFont.Print(screen, 10, y, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+
+    y += 50
+
+    engine.VaultFonts.ResourceFont.PrintOutline(screen, shader, 10, y, 4, ebiten.ColorScale{}, "This is a test of font outlines")
+    y += 50
+    engine.VaultFonts.ResourceFont.Print(screen, 10, y, 4, ebiten.ColorScale{}, "This is a test of font outlines")
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {

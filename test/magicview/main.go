@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -24,6 +25,8 @@ type Engine struct {
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
     player := playerlib.MakePlayer(setup.WizardCustom{
         Base: data.WizardHorus,
         Name: "Horus",
@@ -36,6 +39,7 @@ func NewEngine() (*Engine, error) {
 
     player.Wizard.ToggleRetort(data.RetortAlchemy, 2)
     player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
+    player.GlobalEnchantments.Insert(data.EnchantmentDetectMagic)
 
     enemy1 := playerlib.MakePlayer(setup.WizardCustom{
         Base: data.WizardMerlin,
@@ -44,8 +48,37 @@ func NewEngine() (*Engine, error) {
     }, false, 0, 0, nil)
 
     enemy1.GlobalEnchantments.Insert(data.EnchantmentCrusade)
+    enemy1.CastingSpell = allSpells.FindByName("Eldritch Weapon")
 
-    magicScreen := magicview.MakeMagicScreen(cache, player, []*playerlib.Player{enemy1}, 100)
+    player.AwarePlayer(enemy1)
+
+    enemy2 := playerlib.MakePlayer(setup.WizardCustom{
+        Base: data.WizardFreya,
+        Name: "Freya",
+        Banner: data.BannerGreen,
+    }, false, 0, 0, nil)
+
+    enemy2.GlobalEnchantments.Insert(data.EnchantmentNaturesWrath)
+
+    enemy3 := playerlib.MakePlayer(setup.WizardCustom{
+        Base: data.WizardHorus,
+        Name: "Horus",
+        Banner: data.BannerYellow,
+    }, false, 0, 0, nil)
+
+    enemy3.Defeated = true
+
+    player.AwarePlayer(enemy3)
+
+    enemy4 := playerlib.MakePlayer(setup.WizardCustom{
+        Base: data.WizardJafar,
+        Name: "Jafar",
+        Banner: data.BannerBlue,
+    }, false, 0, 0, nil)
+
+    enemy4.Defeated = true
+
+    magicScreen := magicview.MakeMagicScreen(cache, player, []*playerlib.Player{enemy1, enemy2, enemy3, enemy4}, 100)
 
     return &Engine{
         LbxCache: cache,

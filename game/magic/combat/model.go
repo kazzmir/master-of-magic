@@ -348,7 +348,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
                 screen.DrawImage(base, options)
 
                 top, _ := imageCache.GetImage("chriver.lbx", 24 + int((counter / 4) % 8), 0)
-                options.GeoM.Translate(16, -3)
+                options.GeoM.Translate(float64(16 * data.ScreenScale), float64(-3 * data.ScreenScale))
                 screen.DrawImage(top, options)
 
             },
@@ -482,6 +482,7 @@ type CombatUnit interface {
     GetHitPoints() int
     GetWeaponBonus() data.WeaponBonus
     GetEnchantments() []data.UnitEnchantment
+    RemoveEnchantment(data.UnitEnchantment)
     HasEnchantment(data.UnitEnchantment) bool
     GetCount() int
     GetHealth() int
@@ -537,6 +538,8 @@ type ArmyUnit struct {
 
     // enchantments applied to the unit during combat, usually by a spell
     Enchantments []data.UnitEnchantment
+    // separate list of enchantments cast by the opposite wizard
+    Curses []data.UnitCurse
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
@@ -567,6 +570,10 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
         if value > 0 {
             modifier := float32(0)
 
+            if unit.HasCurse(data.CurseMindStorm) {
+                modifier -= 5
+            }
+
             if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
                 modifier -= 1
             }
@@ -590,6 +597,10 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
         value := unit.Unit.GetAbilityValue(ability)
         if value > 0 {
             modifier := float32(0)
+
+            if unit.HasCurse(data.CurseMindStorm) {
+                modifier -= 5
+            }
 
             if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
                 switch unit.GetRealm() {
@@ -653,6 +664,10 @@ func (unit *ArmyUnit) GetToHitMelee() int {
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
+    if unit.HasCurse(data.CurseMindStorm) {
+        modifier -= 5
+    }
+
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
         modifier -= 2
     }
@@ -682,6 +697,10 @@ func (unit *ArmyUnit) GetResistance() int {
 func (unit *ArmyUnit) GetDefense() int {
     modifier := 0
 
+    if unit.HasCurse(data.CurseMindStorm) {
+        modifier -= 5
+    }
+
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
         modifier += 2
     }
@@ -710,6 +729,10 @@ func (unit *ArmyUnit) GetDefense() int {
 func (unit *ArmyUnit) GetRangedAttackPower() int {
     modifier := 0
 
+    if unit.HasCurse(data.CurseMindStorm) {
+        modifier -= 5
+    }
+
     if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
         if unit.Unit.GetRangedAttackPower() > 0 {
             modifier += 1
@@ -721,6 +744,10 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
 
 func (unit *ArmyUnit) GetMeleeAttackPower() int {
     modifier := 0
+
+    if unit.HasCurse(data.CurseMindStorm) {
+        modifier -= 5
+    }
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
         if unit.Unit.GetMeleeAttackPower() > 0 {
@@ -835,17 +862,47 @@ func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
     return true
 }
 
+func (unit *ArmyUnit) GetCurses() []data.UnitCurse {
+    return unit.Curses
+}
+
+func (unit *ArmyUnit) HasCurse(curse data.UnitCurse) bool {
+    return slices.Contains(unit.Curses, curse)
+}
+
+func (unit *ArmyUnit) AddCurse(curse data.UnitCurse) {
+    // skip duplicates
+    if unit.HasCurse(curse) {
+        return
+    }
+
+    unit.Curses = append(unit.Curses, curse)
+}
+
+func (unit *ArmyUnit) RemoveCurse(curse data.UnitCurse) {
+    unit.Curses = slices.DeleteFunc(unit.Curses, func(check data.UnitCurse) bool {
+        return check == curse
+    })
+}
+
 func (unit *ArmyUnit) GetEnchantments() []data.UnitEnchantment {
     return append(slices.Clone(unit.Unit.GetEnchantments()), unit.Enchantments...)
 }
 
+func (unit *ArmyUnit) RemoveEnchantment(enchantment data.UnitEnchantment) {
+    unit.Enchantments = slices.DeleteFunc(unit.Enchantments, func(check data.UnitEnchantment) bool {
+        return enchantment == check
+    })
+
+    unit.Unit.RemoveEnchantment(enchantment)
+}
+
 func (unit *ArmyUnit) AddEnchantment(enchantment data.UnitEnchantment) {
     // skip duplicates
-    for _, check := range unit.Enchantments {
-        if check == enchantment {
-            return
-        }
+    if unit.HasEnchantment(enchantment) {
+        return
     }
+
     unit.Enchantments = append(unit.Enchantments, enchantment)
 }
 
@@ -1251,11 +1308,15 @@ func (army *Army) IsAI() bool {
  * the units are laid out correctly
  */
 func (army *Army) AddUnit(unit CombatUnit){
-    army.Units = append(army.Units, &ArmyUnit{
+    army.AddArmyUnit(&ArmyUnit{
         Unit: unit,
         Facing: units.FacingDownRight,
         // Health: unit.GetMaxHealth(),
     })
+}
+
+func (army *Army) AddArmyUnit(unit *ArmyUnit){
+    army.Units = append(army.Units, unit)
 }
 
 func (army *Army) LayoutUnits(team Team){
@@ -1366,6 +1427,10 @@ type CombatModel struct {
 
     // incremented for each unit that is inside the town area (when fighting in a town)
     CollateralDamage int
+
+    // enchantments applied to the battle usually by a town enchantment (heavenly light or cloud of darkness)
+    // these enchantments cannot be removed by Dispel, but can be removed by Disenchant Area/True
+    GlobalEnchantments []data.CombatEnchantment
 }
 
 func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
@@ -1783,7 +1848,95 @@ func (model *CombatModel) GetObserver() CombatObserver {
     return &model.Observer
 }
 
+// do a dispel roll on all enchantments owned by the other player
+func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *playerlib.Player, disenchantStrength int) {
+    targetArmy := model.GetOppositeArmyForPlayer(caster)
+
+    // enemy combat enchantments
+    var removedEnchantments []data.CombatEnchantment
+    for _, enchantment := range targetArmy.Enchantments {
+        spell := allSpells.FindByName(enchantment.SpellName())
+        cost := spell.Cost(false)
+        dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &targetArmy.Player.Wizard)
+        if spellbook.RollDispelChance(dispellChance) {
+            removedEnchantments = append(removedEnchantments, enchantment)
+        }
+    }
+
+    for _, enchantment := range removedEnchantments {
+        targetArmy.RemoveEnchantment(enchantment)
+    }
+
+    // enemy unit enchantments
+    for _, unit := range targetArmy.Units {
+        if unit.Unit.GetHealth() > 0 {
+            model.DoDisenchantUnit(allSpells, unit, targetArmy.Player, disenchantStrength)
+        }
+    }
+
+    // friendly unit curses
+    playerArmy := model.GetArmyForPlayer(caster)
+    for _, unit := range playerArmy.Units {
+        if unit.Unit.GetHealth() > 0 {
+            model.DoDisenchantUnitCurses(allSpells, unit, targetArmy.Player, disenchantStrength)
+        }
+    }
+}
+
+func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
+    var removedEnchantments []data.UnitEnchantment
+    for _, enchantment := range unit.GetEnchantments() {
+        spell := allSpells.FindByName(enchantment.SpellName())
+        cost := spell.Cost(false)
+        dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
+        if spellbook.RollDispelChance(dispellChance) {
+            removedEnchantments = append(removedEnchantments, enchantment)
+        }
+    }
+
+    for _, enchantment := range removedEnchantments {
+        unit.RemoveEnchantment(enchantment)
+    }
+}
+
+func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
+    var removedEnchantments []data.UnitCurse
+    for _, enchantment := range unit.GetCurses() {
+        spell := allSpells.FindByName(enchantment.SpellName())
+        cost := spell.Cost(false)
+        dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
+        if spellbook.RollDispelChance(dispellChance) {
+            removedEnchantments = append(removedEnchantments, enchantment)
+        }
+    }
+
+    // if the unit had Creature Bind then when it is dispelled the unit should be moved to the other army
+    swapArmy := false
+    for _, enchantment := range removedEnchantments {
+        if enchantment == data.CurseCreatureBinding {
+            swapArmy = true
+        }
+        unit.RemoveCurse(enchantment)
+    }
+
+    if swapArmy {
+        oldArmy := model.GetArmy(unit)
+        newArmy := model.GetOtherArmy(unit)
+
+        oldArmy.RemoveUnit(unit)
+        newArmy.AddArmyUnit(unit)
+        unit.Team = model.GetTeamForArmy(newArmy)
+    }
+}
+
 func (model *CombatModel) IsEnchantmentActive(enchantment data.CombatEnchantment, team Team) bool {
+    // global enchantments affect both sides no matter what
+    if slices.ContainsFunc(model.GlobalEnchantments, func(check data.CombatEnchantment) bool {
+        return enchantment == check
+    }) {
+        return true
+    }
+
     if team == TeamEither {
         return model.DefendingArmy.HasEnchantment(enchantment) || model.AttackingArmy.HasEnchantment(enchantment)
     }
@@ -1806,6 +1959,10 @@ func (model *CombatModel) AddLogEvent(text string) {
 
 func (model *CombatModel) AddProjectile(projectile *Projectile){
     model.Projectiles = append(model.Projectiles, projectile)
+}
+
+func (model *CombatModel) AddGlobalEnchantment(enchantment data.CombatEnchantment) {
+    model.GlobalEnchantments = append(model.GlobalEnchantments, enchantment)
 }
 
 func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment) bool {
@@ -2742,6 +2899,14 @@ func (model *CombatModel) GetOppositeArmyForPlayer(player *playerlib.Player) *Ar
     return model.DefendingArmy
 }
 
+func (model *CombatModel) GetTeamForArmy(army *Army) Team {
+    if army == model.DefendingArmy {
+        return TeamDefender
+    }
+
+    return TeamAttacker
+}
+
 func (model *CombatModel) GetArmy(unit *ArmyUnit) *Army {
     if unit.Team == TeamDefender {
         return model.DefendingArmy
@@ -2813,6 +2978,21 @@ func (model *CombatModel) flee(army *Army) {
     }
 }
 
+// called when the battle ends
+func (model *CombatModel) Finish() {
+    for _, unit := range model.DefendingArmy.Units {
+        if unit.Unit.GetHealth() > 0 && unit.HasCurse(data.CurseCreatureBinding) {
+            unit.TakeDamage(unit.Unit.GetHealth())
+        }
+    }
+
+    for _, unit := range model.AttackingArmy.Units {
+        if unit.Unit.GetHealth() > 0 && unit.HasCurse(data.CurseCreatureBinding) {
+            unit.TakeDamage(unit.Unit.GetHealth())
+        }
+    }
+}
+
 // returns true if the spell should be dispelled (due to counter magic, magic nodes, etc)
 func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.Player) bool {
     opposite := model.GetOppositeArmyForPlayer(caster)
@@ -2830,4 +3010,14 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
     // FIXME: check dispel from magic nodes
 
     return false
+}
+
+func (model *CombatModel) ApplyCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
+    target.AddCurse(data.CurseCreatureBinding)
+    oldArmy := model.GetArmy(target)
+    oldArmy.RemoveUnit(target)
+
+    newArmy := model.GetArmyForPlayer(newOwner)
+    newArmy.AddArmyUnit(target)
+    target.Team = model.GetTeamForArmy(newArmy)
 }
