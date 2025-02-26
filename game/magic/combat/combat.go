@@ -125,3 +125,4 @@ func RenderCombatTile(screen *ebiten.Image, imageCache *util.ImageCache, options
         screen.DrawImage(grass, &options)
     }
 }
+

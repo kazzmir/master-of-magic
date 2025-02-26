@@ -8,7 +8,6 @@ import (
     "slices"
     "image"
 
-    "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -23,7 +22,13 @@ import (
     // "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-func RenderCombatImage(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, options ebiten.DrawImageOptions, counter uint64) {
+type CombatView interface {
+    GetCombatLbxFile() string
+    GetCombatIndex(facing units.Facing) int
+    GetBanner() data.Banner
+}
+
+func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit CombatView, options ebiten.DrawImageOptions, counter uint64) {
     images, err := imageCache.GetImagesTransform(unit.GetCombatLbxFile(), unit.GetCombatIndex(units.FacingRight), unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
     if err == nil && len(images) > 2 {
         use := images[2]

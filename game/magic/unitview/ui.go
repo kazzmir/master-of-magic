@@ -147,7 +147,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
                     screen.DrawImage(portait, &options)
                 }
             } else {
-                RenderCombatImage(screen, &imageCache, unit, options, ui.Counter)
+                RenderUnitViewImage(screen, &imageCache, unit, options, ui.Counter)
             }
 
             options.GeoM.Reset()

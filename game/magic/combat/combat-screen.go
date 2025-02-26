@@ -25,6 +25,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -2691,6 +2692,14 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            }
        }
     }
+
+    if combat.UI.GetHighestLayerValue() == 0 &&
+       inputmanager.RightClick() &&
+       mouseY < hudY {
+
+       showUnit := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
+       combat.UI.AddGroup(unitview.MakeUnitContextMenu(combat.Cache, combat.UI, showUnit.Unit, func(){}))
+   }
 
     // the unit died or is out of moves
     if combat.Model.SelectedUnit != nil && (combat.Model.SelectedUnit.Unit.GetHealth() <= 0 || combat.Model.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
