@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -470,6 +471,20 @@ type CombatUnit interface {
     HasAbility(data.AbilityType) bool
     HasItemAbility(data.ItemAbility) bool
     GetAbilityValue(data.AbilityType) float32
+    GetBaseDefense() int
+    GetBaseHitPoints() int
+    GetBaseMeleeAttackPower() int
+    GetBaseRangedAttackPower() int
+    GetBaseResistance() int
+    GetExperience() int
+    GetExperienceData() units.ExperienceData
+    GetLbxFile() string
+    GetLbxIndex() int
+    GetProductionCost() int
+    GetTitle() string
+    GetUpkeepFood() int
+    GetUpkeepGold() int
+    GetUpkeepMana() int
     GetDefense() int
     GetResistance() int
     AdjustHealth(int)
@@ -484,6 +499,8 @@ type CombatUnit interface {
     GetEnchantments() []data.UnitEnchantment
     RemoveEnchantment(data.UnitEnchantment)
     HasEnchantment(data.UnitEnchantment) bool
+    GetArtifactSlots() []artifact.ArtifactSlot
+    GetArtifacts() []*artifact.Artifact
     GetCount() int
     GetHealth() int
     GetToHitMelee() int

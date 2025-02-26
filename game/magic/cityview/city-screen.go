@@ -17,7 +17,6 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
-    "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -2209,8 +2208,8 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             use := images[2]
 
             options.GeoM.Translate(float64(238 * data.ScreenScale), float64(168 * data.ScreenScale))
-            combat.RenderCombatTile(screen, &cityScreen.ImageCache, options)
-            combat.RenderCombatUnit(screen, use, options, cityScreen.City.ProducingUnit.Count, nil, 0, nil)
+            unitview.RenderCombatTile(screen, &cityScreen.ImageCache, options)
+            unitview.RenderCombatUnit(screen, use, options, cityScreen.City.ProducingUnit.Count, nil, 0, nil)
             cityScreen.Fonts.ProducingFont.PrintOptions(screen, float64(237 * data.ScreenScale), float64(179 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true}, cityScreen.City.ProducingUnit.Name)
         }
 

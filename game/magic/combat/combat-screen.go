@@ -1906,7 +1906,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         }
     }
 
-    for _, offset := range combatPoints(attacker.Figures()) {
+    for _, offset := range unitview.CombatPoints(attacker.Figures()) {
         combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitToUnitProjectile(attacker, defender, offset, animation, explode, effect))
     }
 }
@@ -3353,7 +3353,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             */
 
             // _ = index
-            var enchantment Enchanted
+            var enchantment unitview.Enchanted
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
             if use != data.UnitEnchantmentNone {
                 enchantment = use
@@ -3361,7 +3361,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 use := util.First(unit.GetCurses(), data.CurseNone)
                 enchantment = use
             }
-            RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), enchantment, combat.Counter, &combat.ImageCache)
+            unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), enchantment, combat.Counter, &combat.ImageCache)
 
             unitOptions.GeoM.Translate(float64(-combatImages[index].Bounds().Dx()/2), float64(-combatImages[0].Bounds().Dy()*3/4))
             for _, curse := range unit.GetCurses() {

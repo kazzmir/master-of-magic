@@ -25,7 +25,9 @@ import (
 type CombatView interface {
     GetCombatLbxFile() string
     GetCombatIndex(facing units.Facing) int
-    GetBanner() data.Banner
+    GetBanner() data.BannerType
+    GetEnchantments() []data.UnitEnchantment
+    GetCount() int
 }
 
 func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit CombatView, options ebiten.DrawImageOptions, counter uint64) {
@@ -41,14 +43,14 @@ func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit
         vector.DrawFilledCircle(screen, float32(x), float32(y), 3, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         */
 
-        combat.RenderCombatTile(screen, imageCache, options)
+        RenderCombatTile(screen, imageCache, options)
 
-        var enchantment combat.Enchanted
+        var enchantment Enchanted
         first := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
         if first != data.UnitEnchantmentNone {
             enchantment = first
         }
-        combat.RenderCombatUnit(screen, use, options, unit.GetCount(), enchantment, counter, imageCache)
+        RenderCombatUnit(screen, use, options, unit.GetCount(), enchantment, counter, imageCache)
     }
 }
 

@@ -1,4 +1,4 @@
-package combat
+package unitview
 
 import (
     "image"
@@ -12,7 +12,7 @@ import (
 // hard coding the points is what the real master of magic does
 // see Unit_Figure_Position() in UnitView.C
 // https://github.com/jbalcomb/ReMoM/blob/8642bb8c46433cc31c058759b28f297947b3b501/src/UnitView.C#L2685
-func combatPoints(count int) []image.Point {
+func CombatPoints(count int) []image.Point {
     switch count {
         case 0: return nil
         case 1: return []image.Point{image.Pt(0, 0)}
@@ -93,7 +93,7 @@ func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
     groundHeight := float64(6 * data.ScreenScale)
 
     geoM := options.GeoM
-    for _, point := range combatPoints(count) {
+    for _, point := range CombatPoints(count) {
         options.GeoM.Reset()
         options.GeoM.Translate(float64(point.X * data.ScreenScale), float64(point.Y * data.ScreenScale))
         options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
