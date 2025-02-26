@@ -484,6 +484,10 @@ type CombatUnit interface {
     GetLbxIndex() int
 
     MeleeEnchantmentBonus(data.UnitEnchantment) int
+    DefenseEnchantmentBonus(data.UnitEnchantment) int
+    RangedEnchantmentBonus(data.UnitEnchantment) int
+    ResistanceEnchantmentBonus(data.UnitEnchantment) int
+    MovementSpeedEnchantmentBonus(int, []data.UnitEnchantment) int
 
     GetFullName() string
     GetDefense() int
@@ -766,8 +770,14 @@ func (unit *ArmyUnit) GetFullResistance() int {
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
-    if unit.HasCurse(data.UnitCurseMindStorm) {
-        modifier -= 5
+    for _, enchantment := range unit.Enchantments {
+        modifier += unit.Unit.ResistanceEnchantmentBonus(enchantment)
+    }
+
+    for _, curse := range unit.Curses {
+        switch curse {
+            case data.UnitCurseMindStorm: modifier -= 5
+        }
     }
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
@@ -801,10 +811,20 @@ func (unit *ArmyUnit) GetFullDefense() int {
 }
 
 func (unit *ArmyUnit) GetDefense() int {
+    if unit.HasEnchantment(data.UnitEnchantmentBlackChannels) {
+        return 0
+    }
+
     modifier := 0
 
-    if unit.HasCurse(data.UnitCurseMindStorm) {
-        modifier -= 5
+    for _, enchantment := range unit.Enchantments {
+        modifier += unit.Unit.DefenseEnchantmentBonus(enchantment)
+    }
+
+    for _, curse := range unit.Curses {
+        switch curse {
+            case data.UnitCurseMindStorm: modifier -= 5
+        }
     }
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) {
@@ -839,8 +859,14 @@ func (unit *ArmyUnit) GetFullRangedAttackPower() int {
 func (unit *ArmyUnit) GetRangedAttackPower() int {
     modifier := 0
 
-    if unit.HasCurse(data.UnitCurseMindStorm) {
-        modifier -= 5
+    for _, enchantment := range unit.Enchantments {
+        modifier += unit.Unit.RangedEnchantmentBonus(enchantment)
+    }
+
+    for _, curse := range unit.Curses {
+        switch curse {
+            case data.UnitCurseMindStorm: modifier -= 5
+        }
     }
 
     if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
@@ -902,7 +928,12 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
         modifier -= 1
     }
 
-    return max(0, unit.Unit.GetMeleeAttackPower() + modifier)
+    berserkModifier := 1
+    if unit.HasEnchantment(data.UnitEnchantmentBerserk) {
+        berserkModifier = 2
+    }
+
+    return max(0, (unit.Unit.GetMeleeAttackPower() + modifier) * berserkModifier)
 }
 
 func (unit *ArmyUnit) HasAbility(ability data.AbilityType) bool {
@@ -1068,6 +1099,8 @@ func (unit *ArmyUnit) CanCast() bool {
 func (unit *ArmyUnit) GetMovementSpeed() int {
     modifier := 0
     base := unit.Unit.GetMovementSpeed()
+
+    base = unit.Unit.MovementSpeedEnchantmentBonus(base, unit.Enchantments)
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentEntangle, oppositeTeam(unit.Team)) {
         unaffected := unit.Unit.IsFlying() || unit.HasAbility(data.AbilityNonCorporeal)

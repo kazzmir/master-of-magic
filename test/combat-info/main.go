@@ -58,6 +58,8 @@ func NewEngine(scenario int) (*Engine, error) {
     unit.AddEnchantment(data.UnitEnchantmentBless)
     unit.AddEnchantment(data.UnitEnchantmentGiantStrength)
     unit.AddCurse(data.UnitCurseMindStorm)
+    unit.AddEnchantment(data.UnitEnchantmentEndurance)
+    unit.AddEnchantment(data.UnitEnchantmentLionHeart)
     unit.TakeDamage(5)
 
     ui := &uilib.UI{

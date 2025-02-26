@@ -268,6 +268,10 @@ func (unit *OverworldUnit) GetToHitMelee() int {
         case data.WeaponAdamantium: base += 10
     }
 
+    if unit.HasEnchantment(data.UnitEnchantmentHolyWeapon) {
+        base += 10
+    }
+
     return base
 }
 
@@ -340,20 +344,79 @@ func (unit *OverworldUnit) GetUpkeepMana() int {
     return unit.Unit.GetUpkeepMana()
 }
 
-func (unit *OverworldUnit) GetMovementSpeed() int {
+func (unit *OverworldUnit) GetBaseMovementSpeed() int {
     return unit.Unit.GetMovementSpeed()
+}
+
+func (unit *OverworldUnit) GetMovementSpeed() int {
+    base := unit.GetBaseMovementSpeed()
+
+    base = unit.MovementSpeedEnchantmentBonus(base, unit.Enchantments)
+
+    return base
 }
 
 func (unit *OverworldUnit) GetProductionCost() int {
     return unit.Unit.GetProductionCost()
 }
 
+func (unit *OverworldUnit) MovementSpeedEnchantmentBonus(base int, enchantments []data.UnitEnchantment) int {
+
+    endurance := false
+    flying := false
+    haste := false
+
+    for _, enchantment := range enchantments {
+        switch enchantment {
+            case data.UnitEnchantmentEndurance: endurance = true
+            case data.UnitEnchantmentFlight: flying = true
+            case data.UnitEnchantmentHaste: haste = true
+        }
+    }
+
+    if endurance {
+        base += 1
+    }
+
+    if flying {
+        base = 3
+    }
+
+    if haste {
+        base *= 2
+    }
+
+    return base
+}
+
 // apply modifiers for melee power
 func (unit *OverworldUnit) MeleeEnchantmentBonus(enchantment data.UnitEnchantment) int {
     switch enchantment {
         case data.UnitEnchantmentGiantStrength: return 1
+        case data.UnitEnchantmentBlackChannels: return 2
+        case data.UnitEnchantmentFlameBlade: return 2
+        case data.UnitEnchantmentLionHeart: return 3
     }
 
+    return 0
+}
+
+func (unit *OverworldUnit) ResistanceEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    switch enchantment {
+        case data.UnitEnchantmentBlackChannels: return 1
+        case data.UnitEnchantmentLionHeart: return 3
+    }
+    return 0
+}
+
+func (unit *OverworldUnit) DefenseEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    switch enchantment {
+        case data.UnitEnchantmentBlackChannels: return 1
+        case data.UnitEnchantmentHolyArmor: return 2
+        // FIXME: iron/stone skin are mutually exclusive
+        case data.UnitEnchantmentIronSkin: return 5
+        case data.UnitEnchantmentStoneSkin: return 1
+    }
     return 0
 }
 
@@ -406,6 +469,10 @@ func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
 func (unit *OverworldUnit) GetMeleeAttackPower() int {
     base := unit.GetBaseMeleeAttackPower()
 
+    if base == 0 {
+        return 0
+    }
+
     modifier := 0
 
     switch unit.WeaponBonus {
@@ -444,14 +511,33 @@ func (unit *OverworldUnit) GetFullRangedAttackPower() int {
     return unit.GetRangedAttackPower()
 }
 
+func (unit *OverworldUnit) RangedEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    switch enchantment {
+        case data.UnitEnchantmentBlackChannels: return 1
+        case data.UnitEnchantmentFlameBlade: return 2
+        case data.UnitEnchantmentLionHeart: return 3
+        case data.UnitEnchantmentGiantStrength: return 1
+    }
+
+    return 0
+}
+
 func (unit *OverworldUnit) GetRangedAttackPower() int {
     base := unit.GetBaseRangedAttackPower()
+
+    if base == 0 {
+        return 0
+    }
 
     if unit.GetRangedAttackDamageType() == DamageRangedPhysical || unit.GetRangedAttackDamageType() == DamageRangedBoulder {
         switch unit.WeaponBonus {
             case data.WeaponMythril: base += 1
             case data.WeaponAdamantium: base += 2
         }
+    }
+
+    for _, enchantment := range unit.Enchantments {
+        base += unit.RangedEnchantmentBonus(enchantment)
     }
 
     return base
@@ -480,12 +566,18 @@ func (unit *OverworldUnit) GetFullDefense() int {
 func (unit *OverworldUnit) GetDefense() int {
     base := unit.GetBaseDefense()
 
+    modifier := 0
+
     switch unit.WeaponBonus {
-        case data.WeaponMythril: base += 1
-        case data.WeaponAdamantium: base += 2
+        case data.WeaponMythril: modifier += 1
+        case data.WeaponAdamantium: modifier += 2
     }
 
-    return base
+    for _, enchantment := range unit.Enchantments {
+        modifier += unit.DefenseEnchantmentBonus(enchantment)
+    }
+
+    return base + modifier
 }
 
 func (unit *OverworldUnit) GetFullResistance() int {
@@ -493,7 +585,13 @@ func (unit *OverworldUnit) GetFullResistance() int {
 }
 
 func (unit *OverworldUnit) GetResistance() int {
-    return unit.GetBaseResistance()
+    base := unit.GetBaseResistance()
+
+    for _, enchantment := range unit.Enchantments {
+        base += unit.ResistanceEnchantmentBonus(enchantment)
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetBaseResistance() int {
@@ -516,8 +614,22 @@ func (unit *OverworldUnit) GetFullHitPoints() int {
     return unit.GetHitPoints()
 }
 
+func (unit *OverworldUnit) HitPointsEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    switch enchantment {
+        case data.UnitEnchantmentBlackChannels: return 1
+        case data.UnitEnchantmentLionHeart: return 3
+    }
+    return 0
+}
+
 func (unit *OverworldUnit) GetHitPoints() int {
-    return unit.GetBaseHitPoints()
+    base := unit.GetBaseHitPoints()
+
+    for _, enchantment := range unit.Enchantments {
+        base += unit.HitPointsEnchantmentBonus(enchantment)
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) GetBaseHitPoints() int {
