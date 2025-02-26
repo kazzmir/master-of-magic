@@ -267,7 +267,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     showNIcons(healthIcon, unit.GetBaseHitPoints(), healthIconGold, unit.GetFullHitPoints() - unit.GetBaseHitPoints(), unit.GetHitPoints() - unit.GetFullHitPoints(), x, y)
 }
 
-func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, showFont *font.Font, defaultOptions ebiten.DrawImageOptions, showExperience bool) (float64) {
+func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitExperience, showFont *font.Font, defaultOptions ebiten.DrawImageOptions, showExperience bool) (float64) {
     experience := unit.GetExperienceData()
     experienceIndex := 102 + experience.ToInt()
     pic, _ := imageCache.GetImage("special.lbx", experienceIndex, 0)
@@ -306,7 +306,7 @@ func makeItemPopup(uiGroup *uilib.UIElementGroup, cache *lbx.LbxCache, imageCach
     return element
 }
 
-func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCache, uiGroup *uilib.UIElementGroup, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool, page uint32, help *helplib.Help, updateAbilities func()) []*uilib.UIElement {
+func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCache, uiGroup *uilib.UIElementGroup, unit UnitAbilities, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool, page uint32, help *helplib.Help, allowDismiss bool, updateAbilities func()) []*uilib.UIElement {
     xStart := x
     yStart := y
 
@@ -405,16 +405,18 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
                     }
                 },
                 LeftClick: func(element *uilib.UIElement){
-                    message := fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Name())
-                    confirm := func(){
-                        unit.RemoveEnchantment(enchantment)
-                        updateAbilities()
-                    }
+                    if allowDismiss {
+                        message := fmt.Sprintf("Do you wish to turn off the %v spell?", enchantment.Name())
+                        confirm := func(){
+                            unit.RemoveEnchantment(enchantment)
+                            updateAbilities()
+                        }
 
-                    cancel := func(){
-                    }
+                        cancel := func(){
+                        }
 
-                    uiGroup.AddElements(uilib.MakeConfirmDialogWithLayer(uiGroup, cache, imageCache, layer+1, message, false, confirm, cancel))
+                        uiGroup.AddElements(uilib.MakeConfirmDialogWithLayer(uiGroup, cache, imageCache, layer+1, message, false, confirm, cancel))
+                    }
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                     var options ebiten.DrawImageOptions
@@ -491,7 +493,8 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
     return outElements
 }
 
-func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, unit UnitView, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool, page uint32) []*uilib.UIElement {
+// if allowDismiss is true then enchantments can be dispelled when the user left clicks on them
+func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, unit UnitAbilities, mediumFont *font.Font, x int, y int, counter *uint64, layer uilib.UILayer, getAlpha *util.AlphaFadeFunc, pureAbilities bool, page uint32, allowDismiss bool) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     var abilityElements []*uilib.UIElement
@@ -512,10 +515,10 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
         group.RemoveElements(elements)
         group.RemoveElements(abilityElements)
         // pass in the current page so the ui doesn't jump around
-        group.AddElements(MakeUnitAbilitiesElements(group, cache, imageCache, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page))
+        group.AddElements(MakeUnitAbilitiesElements(group, cache, imageCache, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, allowDismiss))
     }
 
-    abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, &help, updateAbilities)
+    abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, &help, allowDismiss, updateAbilities)
 
     elements = append(elements, abilityElements...)
 
@@ -546,7 +549,7 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
                 page -= 1
 
                 group.RemoveElements(abilityElements)
-                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, &help, updateAbilities)
+                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, &help, allowDismiss, updateAbilities)
                 group.AddElements(abilityElements)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
@@ -570,7 +573,7 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
                 page += 1
 
                 group.RemoveElements(abilityElements)
-                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, &help, updateAbilities)
+                abilityElements = createUnitAbilitiesElements(cache, imageCache, group, unit, mediumFont, x, y, counter, layer, getAlpha, pureAbilities, page, &help, allowDismiss, updateAbilities)
                 group.AddElements(abilityElements)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {

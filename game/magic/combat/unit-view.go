@@ -118,6 +118,8 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
         },
     })
 
+    group.AddElements(unitview.MakeUnitAbilitiesElements(group, cache, &imageCache, unit, fonts.MediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, true, 0, false))
+
     return group
 }
 

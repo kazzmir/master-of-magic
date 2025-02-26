@@ -14,7 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
-    // "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -476,19 +476,19 @@ type CombatUnit interface {
     GetBaseMeleeAttackPower() int
     GetBaseRangedAttackPower() int
     GetBaseResistance() int
-
-    /*
+    GetArtifactSlots() []artifact.ArtifactSlot
+    GetArtifacts() []*artifact.Artifact
     GetExperience() int
     GetExperienceData() units.ExperienceData
     GetLbxFile() string
     GetLbxIndex() int
+
+    /*
     GetProductionCost() int
     GetTitle() string
     GetUpkeepFood() int
     GetUpkeepGold() int
     GetUpkeepMana() int
-    GetArtifactSlots() []artifact.ArtifactSlot
-    GetArtifacts() []*artifact.Artifact
     */
 
     GetFullName() string
@@ -565,6 +565,30 @@ type ArmyUnit struct {
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
+}
+
+func (unit *ArmyUnit) GetAbilities() []data.Ability {
+    return unit.Unit.GetAbilities()
+}
+
+func (unit *ArmyUnit) GetArtifactSlots() []artifact.ArtifactSlot {
+    return unit.Unit.GetArtifactSlots()
+}
+
+func (unit *ArmyUnit) GetExperience() int {
+    return unit.Unit.GetExperience()
+}
+
+func (unit *ArmyUnit) GetExperienceData() units.ExperienceData {
+    return unit.Unit.GetExperienceData()
+}
+
+func (unit *ArmyUnit) GetRace() data.Race {
+    return unit.Unit.GetRace()
+}
+
+func (unit *ArmyUnit) GetArtifacts() []*artifact.Artifact {
+    return unit.Unit.GetArtifacts()
 }
 
 func (unit *ArmyUnit) GetBanner() data.BannerType {

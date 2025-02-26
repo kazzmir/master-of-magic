@@ -38,30 +38,40 @@ type UnitStats interface {
     GetFullHitPoints() int
 }
 
+type UnitExperience interface {
+    GetExperience() int
+    GetExperienceData() units.ExperienceData
+}
+
+type UnitAbilities interface {
+    UnitExperience
+
+    GetRace() data.Race
+    GetArtifactSlots() []artifact.ArtifactSlot
+    GetArtifacts() []*artifact.Artifact
+    GetAbilities() []data.Ability
+    GetEnchantments() []data.UnitEnchantment
+    RemoveEnchantment(data.UnitEnchantment)
+}
+
 type UnitView interface {
     UnitStats
+    UnitAbilities
+    UnitExperience
 
-    GetName() string
-    GetTitle() string // for heroes. normal units will not have a title
+    GetCount() int
     GetBanner() data.BannerType
-    GetCombatLbxFile() string
-    GetCombatIndex(units.Facing) int
+    GetName() string
     GetLbxFile() string
     GetLbxIndex() int
-    GetCount() int
+    GetCombatIndex(units.Facing) int
+    GetCombatLbxFile() string
+    GetTitle() string // for heroes. normal units will not have a title
     GetUpkeepGold() int
     GetUpkeepFood() int
     GetUpkeepMana() int
     GetMovementSpeed() int
     GetProductionCost() int
-    GetEnchantments() []data.UnitEnchantment
-    RemoveEnchantment(data.UnitEnchantment)
-    GetExperience() int
-    GetExperienceData() units.ExperienceData
-    GetAbilities() []data.Ability
-    GetArtifactSlots() []artifact.ArtifactSlot
-    GetArtifacts() []*artifact.Artifact
-    GetRace() data.Race
 }
 
 type PortraitUnit interface {
@@ -178,7 +188,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
         },
     })
 
-    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false, 0))
+    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false, 0, true))
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,

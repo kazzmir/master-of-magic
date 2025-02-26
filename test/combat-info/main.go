@@ -117,7 +117,7 @@ func main(){
 
     ebiten.SetWindowTitle("combat info")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-    ebiten.SetCursorMode(ebiten.CursorModeHidden)
+    // ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
     engine, err := NewEngine(scenario)
 
