@@ -16,6 +16,7 @@ type StackUnit interface {
     IsSailing() bool
     IsLandWalker() bool
     GetName() string
+    GetFullName() string
     GetTitle() string
     GetPlane() data.Plane
     SetPlane(data.Plane)
@@ -30,6 +31,7 @@ type StackUnit interface {
     AddEnchantment(data.UnitEnchantment)
     HasEnchantment(data.UnitEnchantment) bool
     RemoveEnchantment(data.UnitEnchantment)
+    MeleeEnchantmentBonus(data.UnitEnchantment) int
     IsUndead() bool
     GetBanner() data.BannerType
     SetBanner(data.BannerType)
@@ -48,10 +50,13 @@ type StackUnit interface {
     HasItemAbility(data.ItemAbility) bool
     GetAbilityValue(data.AbilityType) float32
     GetAbilities() []data.Ability
+    GetFullDefense() int
     GetBaseDefense() int
     GetDefense() int
+    GetFullHitPoints() int
     GetBaseHitPoints() int
     GetHitPoints() int
+    GetFullMeleeAttackPower() int
     GetBaseMeleeAttackPower() int
     GetMeleeAttackPower() int
     GetBaseRangedAttackPower() int
@@ -61,7 +66,9 @@ type StackUnit interface {
     GetCount() int
     GetMovementSpeed() int
     GetProductionCost() int
+    GetFullRangedAttackPower() int
     GetRangedAttackPower() int
+    GetFullResistance() int
     GetResistance() int
     AdjustHealth(amount int)
     GetAttackSound() AttackSound

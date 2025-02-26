@@ -18,40 +18,60 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+type UnitStats interface {
+    GetWeaponBonus() data.WeaponBonus
+    GetFullMeleeAttackPower() int
+    GetBaseMeleeAttackPower() int
+    GetMeleeAttackPower() int
+    GetFullRangedAttackPower() int
+    GetBaseRangedAttackPower() int
+    GetRangedAttackPower() int
+    GetRangedAttackDamageType() units.Damage
+    GetFullDefense() int
+    GetBaseDefense() int
+    GetDefense() int
+    GetFullResistance() int
+    GetResistance() int
+    GetBaseResistance() int
+    GetHitPoints() int
+    GetBaseHitPoints() int
+    GetFullHitPoints() int
+}
+
+type UnitExperience interface {
+    GetExperience() int
+    GetExperienceData() units.ExperienceData
+}
+
+type UnitAbilities interface {
+    UnitExperience
+
+    GetRace() data.Race
+    GetArtifactSlots() []artifact.ArtifactSlot
+    GetArtifacts() []*artifact.Artifact
+    GetAbilities() []data.Ability
+    GetEnchantments() []data.UnitEnchantment
+    RemoveEnchantment(data.UnitEnchantment)
+}
+
 type UnitView interface {
-    GetName() string
-    GetTitle() string // for heroes. normal units will not have a title
+    UnitStats
+    UnitAbilities
+    UnitExperience
+
+    GetCount() int
     GetBanner() data.BannerType
-    GetCombatLbxFile() string
-    GetCombatIndex(units.Facing) int
+    GetName() string
     GetLbxFile() string
     GetLbxIndex() int
-    GetCount() int
+    GetCombatIndex(units.Facing) int
+    GetCombatLbxFile() string
+    GetTitle() string // for heroes. normal units will not have a title
     GetUpkeepGold() int
     GetUpkeepFood() int
     GetUpkeepMana() int
     GetMovementSpeed() int
     GetProductionCost() int
-    GetEnchantments() []data.UnitEnchantment
-    RemoveEnchantment(data.UnitEnchantment)
-    GetWeaponBonus() data.WeaponBonus
-    GetExperience() int
-    GetExperienceData() units.ExperienceData
-    GetBaseMeleeAttackPower() int
-    GetMeleeAttackPower() int
-    GetBaseRangedAttackPower() int
-    GetRangedAttackPower() int
-    GetRangedAttackDamageType() units.Damage
-    GetBaseDefense() int
-    GetDefense() int
-    GetResistance() int
-    GetBaseResistance() int
-    GetHitPoints() int
-    GetBaseHitPoints() int
-    GetAbilities() []data.Ability
-    GetArtifactSlots() []artifact.ArtifactSlot
-    GetArtifacts() []*artifact.Artifact
-    GetRace() data.Race
 }
 
 type PortraitUnit interface {
@@ -147,7 +167,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
                     screen.DrawImage(portait, &options)
                 }
             } else {
-                RenderCombatImage(screen, &imageCache, unit, options, ui.Counter)
+                RenderUnitViewImage(screen, &imageCache, unit, options, ui.Counter)
             }
 
             options.GeoM.Reset()
@@ -168,7 +188,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
         },
     })
 
-    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false, 0))
+    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false, 0, true))
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,

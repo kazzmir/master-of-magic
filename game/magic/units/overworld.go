@@ -312,6 +312,10 @@ func (unit *OverworldUnit) GetName() string {
     return unit.Unit.GetName()
 }
 
+func (unit *OverworldUnit) GetFullName() string {
+    return unit.GetName()
+}
+
 func (unit *OverworldUnit) GetCombatLbxFile() string {
     return unit.Unit.GetCombatLbxFile()
 }
@@ -342,6 +346,19 @@ func (unit *OverworldUnit) GetMovementSpeed() int {
 
 func (unit *OverworldUnit) GetProductionCost() int {
     return unit.Unit.GetProductionCost()
+}
+
+// apply modifiers for melee power
+func (unit *OverworldUnit) MeleeEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    switch enchantment {
+        case data.UnitEnchantmentGiantStrength: return 1
+    }
+
+    return 0
+}
+
+func (unit *OverworldUnit) GetFullMeleeAttackPower() int {
+    return unit.GetMeleeAttackPower()
 }
 
 func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
@@ -389,12 +406,18 @@ func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
 func (unit *OverworldUnit) GetMeleeAttackPower() int {
     base := unit.GetBaseMeleeAttackPower()
 
+    modifier := 0
+
     switch unit.WeaponBonus {
-        case data.WeaponMythril: base += 1
-        case data.WeaponAdamantium: base += 2
+        case data.WeaponMythril: modifier += 1
+        case data.WeaponAdamantium: modifier += 2
     }
 
-    return base
+    for _, enchantment := range unit.Enchantments {
+        modifier += unit.MeleeEnchantmentBonus(enchantment)
+    }
+
+    return base + modifier
 }
 
 func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
@@ -415,6 +438,10 @@ func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
     }
 
     return base
+}
+
+func (unit *OverworldUnit) GetFullRangedAttackPower() int {
+    return unit.GetRangedAttackPower()
 }
 
 func (unit *OverworldUnit) GetRangedAttackPower() int {
@@ -446,6 +473,10 @@ func (unit *OverworldUnit) GetBaseDefense() int {
     return defense
 }
 
+func (unit *OverworldUnit) GetFullDefense() int {
+    return unit.GetDefense()
+}
+
 func (unit *OverworldUnit) GetDefense() int {
     base := unit.GetBaseDefense()
 
@@ -455,6 +486,10 @@ func (unit *OverworldUnit) GetDefense() int {
     }
 
     return base
+}
+
+func (unit *OverworldUnit) GetFullResistance() int {
+    return unit.GetResistance()
 }
 
 func (unit *OverworldUnit) GetResistance() int {
@@ -475,6 +510,10 @@ func (unit *OverworldUnit) GetBaseResistance() int {
     }
 
     return base
+}
+
+func (unit *OverworldUnit) GetFullHitPoints() int {
+    return unit.GetHitPoints()
 }
 
 func (unit *OverworldUnit) GetHitPoints() int {

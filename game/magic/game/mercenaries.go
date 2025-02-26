@@ -40,7 +40,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
             screen.DrawImage(background, &options)
 
             options.GeoM.Translate(float64(24 * data.ScreenScale), float64(28 * data.ScreenScale))
-            unitview.RenderCombatImage(screen, &imageCache, unit, options, 0)
+            unitview.RenderUnitViewImage(screen, &imageCache, unit, options, 0)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
@@ -56,7 +56,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
         },
     })
 
-    uiGroup.AddElements(unitview.MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, fonts.MediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false, 0))
+    uiGroup.AddElements(unitview.MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, fonts.MediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false, 0, false))
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
