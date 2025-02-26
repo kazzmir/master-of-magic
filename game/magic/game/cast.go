@@ -1341,18 +1341,16 @@ func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY i
 
 func (game *Game) doCastSpellBlast(player *playerlib.Player) {
     var wizSelectionUiGroup *uilib.UIElementGroup
-    onTargetSelectCallback := func(targetPlayer *playerlib.Player) {
-        if targetPlayer != nil {
-            if targetPlayer.Defeated || targetPlayer.Banished || !targetPlayer.CastingSpell.Valid() || targetPlayer.CastingSpellProgress > player.Mana {
-                return
-            }
-            player.Mana -= targetPlayer.CastingSpellProgress
-            targetPlayer.InterruptCastingSpell()
+    onTargetSelectCallback := func(targetPlayer *playerlib.Player) bool {
+        if targetPlayer.Defeated || targetPlayer.Banished || !targetPlayer.CastingSpell.Valid() || targetPlayer.CastingSpellProgress > player.Mana {
+            return false
         }
-        game.HudUI.RemoveGroup(wizSelectionUiGroup)
+        player.Mana -= targetPlayer.CastingSpellProgress
+        targetPlayer.InterruptCastingSpell()
+        return true
     }
     playersInGame := len(game.Players)
-    wizSelectionUiGroup = makeSelectSpellBlastTargetUI(game.Cache, &game.ImageCache, player, playersInGame, onTargetSelectCallback)
+    wizSelectionUiGroup = makeSelectSpellBlastTargetUI(game.HudUI, game.Cache, &game.ImageCache, player, playersInGame, onTargetSelectCallback)
     game.HudUI.AddGroup(wizSelectionUiGroup)
 }
 

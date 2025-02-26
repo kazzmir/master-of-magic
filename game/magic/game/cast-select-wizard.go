@@ -4,20 +4,20 @@ import (
 	"fmt"
 	"image"
 
-	"github.com/kazzmir/master-of-magic/game/magic/data"
 	fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
-	"github.com/kazzmir/master-of-magic/game/magic/mirror"
 	playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 	uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+
+    "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/mirror"
 	"github.com/kazzmir/master-of-magic/game/magic/util"
 	"github.com/kazzmir/master-of-magic/lib/lbx"
-
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// onPlayerSelectedCallback MAY return nil, that means the spell was canceled after cast.
+// onPlayerSelectedCallback CAN'T receive nil as argument
 // TODO: transform this into more unversal reusable form.
-func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCache, castingPlayer *playerlib.Player, playersInGame int, onPlayerSelectedCallback func(selectedPlayer *playerlib.Player)) *uilib.UIElementGroup {
+func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, castingPlayer *playerlib.Player, playersInGame int, onPlayerSelectedCallback func(selectedPlayer *playerlib.Player) bool) *uilib.UIElementGroup {
     group := uilib.MakeGroup()
 
     var layer uilib.UILayer = 2
@@ -58,7 +58,9 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
             Layer: 5,
             Rect: faceRect,
             LeftClickRelease: func(element *uilib.UIElement){
-                onPlayerSelectedCallback(target)
+                if onPlayerSelectedCallback(target) {
+                    ui.RemoveGroup(group)
+                }
             },
             Inside: func(element *uilib.UIElement, x int, y int){
                 currentMouseoverPlayer = target
@@ -125,7 +127,7 @@ func makeSelectSpellBlastTargetUI(cache *lbx.LbxCache, imageCache *util.ImageCac
         },
         LeftClickRelease: func(element *uilib.UIElement){
             cancelIndex = 0
-            onPlayerSelectedCallback(nil)
+            ui.RemoveGroup(group)
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
