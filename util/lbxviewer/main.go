@@ -374,7 +374,14 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
         if image.IsLoaded() && len(image.Images) > 0 {
             var options ebiten.DrawImageOptions
 
-            draw := viewer.ImageCache.GetImage(image.Keys[0], image.Images[0], viewer.Time)
+            var draw *ebiten.Image
+            if i == viewer.CurrentTile && viewer.AnimationFrame != -1 && viewer.AnimationFrame < len(image.Images) {
+                draw = viewer.ImageCache.GetImage(image.Keys[viewer.AnimationFrame], image.Images[viewer.AnimationFrame], viewer.Time)
+            } else {
+                draw = viewer.ImageCache.GetImage(image.Keys[0], image.Images[0], viewer.Time)
+            }
+
+            // draw := viewer.ImageCache.GetImage(image.Keys[0], image.Images[0], viewer.Time)
 
             scaleX, scaleY := aspectScale(draw.Bounds().Dx(), draw.Bounds().Dy(), TileWidth, TileHeight)
 
