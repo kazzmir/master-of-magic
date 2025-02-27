@@ -1573,9 +1573,17 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
             {
                 Type: artifact.PowerTypeAbility1,
                 Amount: 2,
+                Ability: data.ItemAbilityHaste,
+                Name: "Haste",
+            },
+            /*
+            {
+                Type: artifact.PowerTypeAbility1,
+                Amount: 2,
                 Ability: data.ItemAbilityFlaming,
                 Name: "Flaming",
             },
+            */
             /*
             {
                 Type: artifact.PowerTypeSpellCharges,

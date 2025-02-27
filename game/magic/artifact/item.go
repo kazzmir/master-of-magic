@@ -230,6 +230,21 @@ func (artifact *Artifact) HasAbility(ability data.AbilityType) bool {
     return false
 }
 
+func (artifact *Artifact) GetEnchantments() []data.UnitEnchantment {
+    var out []data.UnitEnchantment
+    for _, check := range artifact.Powers {
+        isAbility := check.Type == PowerTypeAbility1 || check.Type == PowerTypeAbility2 || check.Type == PowerTypeAbility3
+        if isAbility {
+            enchantment := check.Ability.Enchantment()
+            if enchantment != data.UnitEnchantmentNone {
+                out = append(out, enchantment)
+            }
+        }
+    }
+
+    return out
+}
+
 func (artifact *Artifact) AddPower(power Power) {
     artifact.Powers = append(artifact.Powers, power)
     slices.SortFunc(artifact.Powers, func (a, b Power) int {
