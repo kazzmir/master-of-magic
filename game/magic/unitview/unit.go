@@ -236,10 +236,22 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     y += float64(descriptionFont.Height() * data.ScreenScale)
     descriptionFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Range")
 
-    // FIXME: use the rock icon for sling, or the magic icon fire magic damage
-    rangeBow, _ := imageCache.GetImage("unitview.lbx", 18, 0)
-    rangeBowGold, _ := imageCache.GetImage("unitview.lbx", 40, 0)
-    showNIcons(rangeBow, unit.GetBaseRangedAttackPower(), rangeBowGold, unit.GetFullRangedAttackPower() - unit.GetBaseRangedAttackPower(), unit.GetRangedAttackPower() - unit.GetFullRangedAttackPower(), x, y)
+    var rangeIcon *ebiten.Image
+    var rangeIconGold *ebiten.Image
+
+    switch unit.GetRangedAttackDamageType() {
+        case units.DamageRangedMagical:
+            rangeIcon, _ = imageCache.GetImage("unitview.lbx", 14, 0)
+            rangeIconGold, _ = imageCache.GetImage("unitview.lbx", 36, 0)
+        case units.DamageRangedPhysical:
+            rangeIcon, _ = imageCache.GetImage("unitview.lbx", 18, 0)
+            rangeIconGold, _ = imageCache.GetImage("unitview.lbx", 40, 0)
+        case units.DamageRangedBoulder:
+            rangeIcon, _ = imageCache.GetImage("unitview.lbx", 19, 0)
+            rangeIconGold, _ = imageCache.GetImage("unitview.lbx", 41, 0)
+    }
+
+    showNIcons(rangeIcon, unit.GetBaseRangedAttackPower(), rangeIconGold, unit.GetFullRangedAttackPower() - unit.GetBaseRangedAttackPower(), unit.GetRangedAttackPower() - unit.GetFullRangedAttackPower(), x, y)
 
     y += float64(descriptionFont.Height() * data.ScreenScale)
     descriptionFont.PrintOptions(screen, x, float64(y), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Armor")
