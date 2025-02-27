@@ -88,8 +88,12 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
             // Try casting the spell on click.
             LeftClickRelease: func(element *uilib.UIElement){
                 if onPlayerSelectedCallback(target) {
-                    // Spell cast successfully. Change header, add delay and remove this uigroup.
+                    // Spell cast successfully. Change header, create sound, add delay, draw the sparks and remove this uigroup.
                     group.AddElement(createSparksElement(faceRect))
+                    sound, err := audio.LoadSound(cache, 29)
+                    if err == nil {
+                        sound.Play()
+                    }
                     ui.AddDelay(80, func(){
                         header = fmt.Sprintf("%s has been spell blasted", target.Wizard.Name)
                         ui.AddDelay(100, func(){
