@@ -146,6 +146,10 @@ func (stack *UnitStack) AllLandWalkers() bool {
     return true
 }
 
+func (stack *UnitStack) AnyLandWalkers() bool {
+    return slices.ContainsFunc(stack.ActiveUnits(), units.StackUnit.IsLandWalker)
+}
+
 func (stack *UnitStack) AllFlyers() bool {
     // wind walking gives every unit in the stack the ability to fly
     if stack.ActiveUnitsHasAbility(data.AbilityWindWalking) {
