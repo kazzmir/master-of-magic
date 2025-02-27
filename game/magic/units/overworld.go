@@ -176,7 +176,7 @@ func (unit *OverworldUnit) IsLandWalker() bool {
 }
 
 func (unit *OverworldUnit) IsSwimmer() bool {
-    return unit.Unit.Swimming
+    return unit.Unit.Swimming || unit.HasEnchantment(data.UnitEnchantmentWaterWalking)
 }
 
 func (unit *OverworldUnit) AddExperience(amount int) {
