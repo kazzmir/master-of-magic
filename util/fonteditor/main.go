@@ -4,14 +4,14 @@ import (
     "log"
     "fmt"
 
-    // "image"
+    "image"
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
 
     "github.com/hajimehoshi/ebiten/v2"
-    // "github.com/hajimehoshi/ebiten/v2/vector"
+    "github.com/hajimehoshi/ebiten/v2/vector"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
@@ -21,10 +21,37 @@ const ScreenHeight = 768
 type Editor struct {
     Lbx *lbx.LbxFile
     Palette color.Palette
+    GlyphImage *image.Paletted
     FontIndex int
     Fonts []*font.LbxFont
     Optimized *font.Font
     Scale float64
+}
+
+// go through each glyph and find the highest palette index used, then make a palette of that many entries
+func makePaletteForFont(font *font.LbxFont) color.Palette {
+    highest := 0
+    for i, glyph := range font.Glyphs {
+        img := glyph.MakeImage()
+        if img != nil {
+            for _, pixel := range img.Pix {
+                if int(pixel) > highest {
+                    highest = int(pixel)
+                }
+            }
+        } else {
+            log.Printf("Warning: nil image for glyph %v", i)
+        }
+    }
+
+    out := make(color.Palette, highest + 1)
+
+    out[0] = color.RGBA{0, 0, 0, 0}
+    for i := range len(out) - 1 {
+        out[i+1] = color.RGBA{0, 0, 0, 0xff}
+    }
+
+    return out
 }
 
 func MakeEditor() (*Editor, error) {
@@ -41,25 +68,20 @@ func MakeEditor() (*Editor, error) {
         return nil, err
     }
 
-    optimized := font.MakeOptimizedFont(fonts[0])
+    palette := makePaletteForFont(fonts[0])
+    optimized := font.MakeOptimizedFontWithPalette(fonts[0], palette)
 
-    /*
-    pGlyph := fonts[0].GlyphForRune('p')
-    data := pGlyph.Data
-    log.Printf("Glyph data for 'p' width=%v height=%v", pGlyph.Width, pGlyph.Height)
-    for _, v := range data {
-        fmt.Printf("0x%x ", v)
-    }
-    fmt.Println()
-    pGlyph.MakeImage()
-    */
+    log.Printf("Palette length: %v", len(palette))
+    // log.Printf("Palette: %v", palette)
 
     return &Editor{
         Lbx: lbxFile,
         Optimized: optimized,
         FontIndex: 0,
         Fonts: fonts,
+        GlyphImage: fonts[0].GlyphForRune('T').MakeImage(),
         Scale: 4,
+        Palette: palette,
     }, nil
 }
 
@@ -113,6 +135,18 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
     screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
 
     // vector.DrawFilledRect(screen, 90, 90, 100, 100, &color.RGBA{R: 0xff, A: 0xff}, true)
+
+    paletteRect := image.Rect(800, 0, 1024, 768)
+    paletteArea := screen.SubImage(paletteRect).(*ebiten.Image)
+    paletteArea.Fill(color.RGBA{0xff, 0xff, 0xff, 0xff})
+
+    for i, c := range editor.Palette {
+        area := image.Rect(paletteRect.Min.X, paletteRect.Min.Y + 10 + i * 20, paletteRect.Max.X, paletteRect.Min.Y + 10 + (i + 1) * 20)
+        vector.DrawFilledRect(paletteArea, float32(area.Min.X), float32(area.Min.Y), float32(area.Dx()), float32(area.Dy()), c, true)
+        vector.StrokeRect(paletteArea, float32(area.Min.X), float32(area.Min.Y), float32(area.Dx()), float32(area.Dy()), 1, &color.RGBA{R: 0xff, A: 0xff}, true)
+    }
+
+    editor.Optimized.Print(screen, 50, 300, editor.Scale, ebiten.ColorScale{}, "This is a test")
 
     /*
     var options ebiten.DrawImageOptions
