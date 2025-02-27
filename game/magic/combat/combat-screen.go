@@ -707,6 +707,18 @@ func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, heal))
 }
 
+func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) {
+    // FIXME: the images should be mostly with with transparency
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
+    explodeImages := images
+
+    bless := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentBless)
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, bless))
+}
+
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
@@ -1205,14 +1217,6 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
 
             castedCallback()
 
-            /*
-Dispel Magic - need picture
-Raise Dead - need picture
-Petrify	- need picture
-Call Chaos - need picture
-Animate Dead - need picture
-            */
-
         case "High Prayer":
             combat.CastEnchantment(player, data.CombatEnchantmentHighPrayer, castedCallback)
         case "Prayer":
@@ -1290,8 +1294,15 @@ Animate Dead - need picture
                 castedCallback()
             }, selectable)
 
+        case "Bless":
+            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                combat.CreateBlessProjectile(target)
+                castedCallback()
+            }, targetAny)
 
         /*
+        unit curses:
+
         CurseConfusion
         CurseVertigo
         CurseShatter
@@ -1301,6 +1312,45 @@ Animate Dead - need picture
         CurseWeakness
         */
 
+        /*
+        combat instants:
+
+        Dispel Magic
+        Raise Dead 
+        Petrify 
+        Call Chaos 	
+        Animate Dead
+         */
+
+        /*
+        unit enchantments:
+        Heroism 
+        Holy Armor 
+        Holy Weapon 
+        Invulnerability
+        Lionheart 	
+        Righteousness
+        True Sight 	
+        Elemental Armor
+        Giant Strength 
+        Iron Skin 	
+        Regeneration 
+        Resist Elements 
+        Stone Skin 	
+        Flight 	
+        Guardian Wind
+        Haste 	
+        Invisibility
+        Magic Immunity
+        Resist Magic 
+        Spell Lock 	
+        Eldritch Weapon
+        Flame Blade 
+        Immolation 
+        Berserk 
+        Cloak of Fear 
+        Wraith Form
+         */
     }
 }
 
