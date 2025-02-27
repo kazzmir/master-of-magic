@@ -8,12 +8,12 @@ import (
 	playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 	uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
-	"github.com/hajimehoshi/ebiten/v2"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
 	"github.com/kazzmir/master-of-magic/game/magic/data"
 	"github.com/kazzmir/master-of-magic/game/magic/mirror"
 	"github.com/kazzmir/master-of-magic/game/magic/util"
 	"github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/hajimehoshi/ebiten/v2"
 )
 
 // onPlayerSelectedCallback CAN'T receive nil as argument
