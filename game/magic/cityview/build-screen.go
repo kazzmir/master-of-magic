@@ -239,7 +239,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(104 * data.ScreenScale), float64(28 * data.ScreenScale))
-                unitview.RenderCombatImage(screen, imageCache, bannerUnit, options, 0)
+                unitview.RenderUnitViewImage(screen, imageCache, bannerUnit, options, 0)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(float64(130 * data.ScreenScale), float64(7 * data.ScreenScale))
@@ -259,7 +259,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         var getAlpha util.AlphaFadeFunc = func () float32 {
             return 1
         }
-        mainGroup.AddElements(unitview.MakeUnitAbilitiesElements(mainGroup, cache, imageCache, bannerUnit, fonts.MediumFont, 85 * data.ScreenScale, 108 * data.ScreenScale, &ui.Counter, 0, &getAlpha, true, 0))
+        mainGroup.AddElements(unitview.MakeUnitAbilitiesElements(mainGroup, cache, imageCache, bannerUnit, fonts.MediumFont, 85 * data.ScreenScale, 108 * data.ScreenScale, &ui.Counter, 0, &getAlpha, true, 0, false))
         // ui.AddElements(mainElements)
     }
 

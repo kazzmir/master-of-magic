@@ -25,6 +25,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -789,7 +790,7 @@ func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) {
     explodeImages := images
 
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){
-        target.AddCurse(data.CurseMindStorm)
+        target.AddCurse(data.UnitCurseMindStorm)
     }))
 }
 
@@ -1905,7 +1906,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         }
     }
 
-    for _, offset := range combatPoints(attacker.Figures()) {
+    for _, offset := range unitview.CombatPoints(attacker.Figures()) {
         combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitToUnitProjectile(attacker, defender, offset, animation, explode, effect))
     }
 }
@@ -2692,6 +2693,16 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
        }
     }
 
+    if combat.UI.GetHighestLayerValue() == 0 &&
+       inputmanager.RightClick() &&
+       mouseY < hudY {
+
+       showUnit := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
+       if showUnit != nil {
+           combat.UI.AddGroup(MakeUnitView(combat.Cache, combat.UI, showUnit))
+       }
+   }
+
     // the unit died or is out of moves
     if combat.Model.SelectedUnit != nil && (combat.Model.SelectedUnit.Unit.GetHealth() <= 0 || combat.Model.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
         combat.Model.DoneTurn()
@@ -3344,20 +3355,13 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             */
 
             // _ = index
-            var enchantment Enchanted
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
-            if use != data.UnitEnchantmentNone {
-                enchantment = use
-            } else {
-                use := util.First(unit.GetCurses(), data.CurseNone)
-                enchantment = use
-            }
-            RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), enchantment, combat.Counter, &combat.ImageCache)
+            unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
 
             unitOptions.GeoM.Translate(float64(-combatImages[index].Bounds().Dx()/2), float64(-combatImages[0].Bounds().Dy()*3/4))
             for _, curse := range unit.GetCurses() {
                 switch curse {
-                    case data.CurseMindStorm:
+                    case data.UnitCurseMindStorm:
                         images, _ := combat.ImageCache.GetImages("resource.lbx", 78)
                         index := animationIndex % uint64(len(images))
                         use := images[index]

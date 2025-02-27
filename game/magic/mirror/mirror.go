@@ -140,7 +140,7 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *
             heroX := cornerX + 13 * data.ScreenScale
             heroY := cornerY + 142 * data.ScreenScale
             for _, hero := range player.AliveHeroes() {
-                smallFont.Print(screen, float64(heroX), float64(heroY), float64(data.ScreenScale), options.ColorScale, hero.FullName())
+                smallFont.Print(screen, float64(heroX), float64(heroY), float64(data.ScreenScale), options.ColorScale, hero.GetFullName())
                 heroY += smallFont.Height() * data.ScreenScale
             }
         },

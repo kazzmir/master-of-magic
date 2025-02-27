@@ -442,7 +442,7 @@ func (hero *Hero) SetName(name string) {
     hero.Name = name
 }
 
-func (hero *Hero) FullName() string {
+func (hero *Hero) GetFullName() string {
     return fmt.Sprintf("%v the %v", hero.GetName(), hero.GetTitle())
 }
 
@@ -681,6 +681,10 @@ func (hero *Hero) GetToHitMelee() int {
         case units.ExperienceDemiGod: base += 30
     }
 
+    if hero.HasEnchantment(data.UnitEnchantmentHolyWeapon) {
+        base += 10
+    }
+
     return base + hero.GetAbilityToHit()
 }
 
@@ -881,8 +885,15 @@ func (hero *Hero) GetUpkeepMana() int {
     return hero.Unit.GetUpkeepMana()
 }
 
+func (hero *Hero) MovementSpeedEnchantmentBonus(base int, enchantments []data.UnitEnchantment) int {
+    return hero.Unit.MovementSpeedEnchantmentBonus(base, enchantments)
+}
+
 func (hero *Hero) GetMovementSpeed() int {
-    return hero.Unit.GetMovementSpeed()
+    base := hero.Unit.GetBaseMovementSpeed()
+
+    // FIXME: include artifact enchantments
+    return hero.Unit.MovementSpeedEnchantmentBonus(base, hero.GetEnchantments())
 }
 
 func (hero *Hero) GetProductionCost() int {
@@ -966,6 +977,22 @@ func (hero *Hero) getBaseMeleeAttackPowerProgression(level units.HeroExperienceL
     return 0
 }
 
+func (hero *Hero) GetFullMeleeAttackPower() int {
+    return hero.GetMeleeAttackPower()
+}
+
+func (hero *Hero) MeleeEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    return hero.Unit.MeleeEnchantmentBonus(enchantment)
+}
+
+func (hero *Hero) DefenseEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    return hero.Unit.DefenseEnchantmentBonus(enchantment)
+}
+
+func (hero *Hero) ResistanceEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    return hero.Unit.ResistanceEnchantmentBonus(enchantment)
+}
+
 func (hero *Hero) GetMeleeAttackPower() int {
     base := hero.GetBaseMeleeAttackPower()
 
@@ -973,6 +1000,11 @@ func (hero *Hero) GetMeleeAttackPower() int {
         if item != nil {
             base += item.MeleeBonus()
         }
+    }
+
+    // FIXME: include enchantments from artifacts
+    for _, enchantment := range hero.GetEnchantments() {
+        base += hero.MeleeEnchantmentBonus(enchantment)
     }
 
     return base + hero.GetAbilityMelee()
@@ -1023,6 +1055,14 @@ func (hero *Hero) getBaseRangedAttackPowerProgression(level units.HeroExperience
     return 0
 }
 
+func (hero *Hero) GetFullRangedAttackPower() int {
+    return hero.GetRangedAttackPower()
+}
+
+func (hero *Hero) RangedEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    return hero.Unit.RangedEnchantmentBonus(enchantment)
+}
+
 func (hero *Hero) GetRangedAttackPower() int {
     base := hero.Unit.GetBaseRangedAttackPower()
 
@@ -1042,6 +1082,11 @@ func (hero *Hero) GetRangedAttackPower() int {
         bonus += hero.GetAbilityMagicRangedAttack()
     } else {
         bonus += hero.GetAbilityRangedAttack()
+    }
+
+    // FIXME: include enchantments from artifacts
+    for _, enchantment := range hero.GetEnchantments() {
+        base += hero.RangedEnchantmentBonus(enchantment)
     }
 
     return base + bonus
@@ -1067,6 +1112,10 @@ func (hero *Hero) getBaseDefenseProgression(level units.HeroExperienceLevel) int
     return 0
 }
 
+func (hero *Hero) GetFullDefense() int {
+    return hero.GetDefense()
+}
+
 func (hero *Hero) GetDefense() int {
     base := hero.Unit.GetBaseDefense()
 
@@ -1074,6 +1123,11 @@ func (hero *Hero) GetDefense() int {
         if item != nil {
             base += item.DefenseBonus()
         }
+    }
+
+    // FIXME: handle artifact enchantments
+    for _, enchantment := range hero.GetEnchantments() {
+        base += hero.DefenseEnchantmentBonus(enchantment)
     }
 
     return base
@@ -1274,6 +1328,10 @@ func (hero *Hero) GetAbilityResearch() int {
     return extra
 }
 
+func (hero *Hero) GetFullResistance() int {
+    return hero.GetResistance()
+}
+
 func (hero *Hero) GetResistance() int {
     base := hero.Unit.GetBaseResistance()
 
@@ -1283,11 +1341,29 @@ func (hero *Hero) GetResistance() int {
         }
     }
 
+    // FIXME: include artifact enchantments
+    for _, enchantment := range hero.GetEnchantments() {
+        base += hero.ResistanceEnchantmentBonus(enchantment)
+    }
+
     return base + hero.GetAbilityResistance()
 }
 
+func (hero *Hero) GetFullHitPoints() int {
+    return hero.GetHitPoints()
+}
+
+func (hero *Hero) HitPointsEnchantmentBonus(enchantment data.UnitEnchantment) int {
+    return hero.Unit.HitPointsEnchantmentBonus(enchantment)
+}
+
 func (hero *Hero) GetHitPoints() int {
-    base := hero.Unit.GetBaseHitPoints()
+    base := hero.GetBaseHitPoints()
+
+    // FIXME: include artifact enchantments
+    for _, enchantment := range hero.GetEnchantments() {
+        base += hero.HitPointsEnchantmentBonus(enchantment)
+    }
 
     return base
 }
