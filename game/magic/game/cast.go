@@ -154,12 +154,11 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentFlameBlade)
         case "Black Channels":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentBlackChannels)
+            // FIXME: unit should become undead
         case "Wraith Form":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWraithForm)
-
-        /*
-            UNIT CURSES
-        */
+        case "Lycanthropy":
+            game.doCastLycanthropy(player, spell)
 
         /*
             TOWN ENCHANTMENTS
@@ -437,7 +436,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Cruel Unminding
                 Death Wish
                 Drain Power
-                Lycanthropy
                 Subversion
         */
         case "Create Artifact", "Enchant Item":
@@ -1560,4 +1558,54 @@ func (game *Game) doCastFloatingIsland(yield coroutine.YieldFunc, player *player
     }
 
     game.doCastOnMap(yield, tileX, tileY, 1, false, 29, update)
+}
+
+func (game *Game) doCastLycanthropy(player *playerlib.Player, spell spellbook.Spell,) {
+    var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
+    selected = func (yield coroutine.YieldFunc, tileX int, tileY int){
+        game.doMoveCamera(yield, tileX, tileY)
+        stack := player.FindStack(tileX, tileY, game.Plane)
+        unit := game.doSelectUnit(yield, player, stack)
+
+        ok := true
+
+        // player didn't select a unit, let them pick a different stack
+        if unit == nil {
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+            return
+        }
+
+        // FIXME: "Summoned units may not have cast Lycanthropy on them"
+        if unit.GetRace() == data.RaceFantastic {
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+            return
+        }
+
+        // FIXME: "Heroes units may not have cast Lycanthropy on them"
+        if unit.GetRace() == data.RaceHero {
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+            return
+        }
+
+        // FIXME: "Chaos channeled and Undead units may not have cast Lycanthropy on them"
+        if unit.IsUndead() || unit.HasEnchantment(data.UnitEnchantmentBlackChannels) || unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonSkin) || unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings) || unit.HasEnchantment(data.UnitEnchantmentChaosChannelsFireBreath) {
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+            return
+        }
+
+        // FIXME: sound
+        game.doCastOnMap(yield, tileX, tileY, 4, false, 10, func (x int, y int, animationFrame int) {})
+        overworldUnit, ok := unit.(*units.OverworldUnit)
+        if ok {
+            damage := overworldUnit.GetMaxHealth() - overworldUnit.Health
+            overworldUnit.Unit = units.WereWolf
+            overworldUnit.Health = overworldUnit.GetMaxHealth() - damage
+            overworldUnit.Experience = 0
+            // unit keeps weapon bonus and enchantments
+        }
+
+        game.RefreshUI()
+    }
+
+    game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
 }
