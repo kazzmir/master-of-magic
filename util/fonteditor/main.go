@@ -3,6 +3,7 @@ package main
 import (
     "log"
     "fmt"
+    "math/rand/v2"
 
     "image"
     "image/color"
@@ -21,6 +22,7 @@ const ScreenHeight = 768
 type Editor struct {
     Lbx *lbx.LbxFile
     Palette color.Palette
+    PaletteIndex int
     GlyphImage *image.Paletted
     FontIndex int
     Fonts []*font.LbxFont
@@ -54,6 +56,10 @@ func makePaletteForFont(font *font.LbxFont) color.Palette {
     return out
 }
 
+func randomColor() color.RGBA {
+    return color.RGBA{R: uint8(rand.N(256)), G: uint8(rand.N(256)), B: uint8(rand.N(256)), A: 0xff}
+}
+
 func MakeEditor() (*Editor, error) {
     cache := lbx.AutoCache()
 
@@ -82,6 +88,7 @@ func MakeEditor() (*Editor, error) {
         GlyphImage: fonts[0].GlyphForRune('T').MakeImage(),
         Scale: 4,
         Palette: palette,
+        PaletteIndex: 0,
     }, nil
 }
 
@@ -91,13 +98,6 @@ func (editor *Editor) Update() error {
 
     for _, key := range keys {
         switch key {
-            case ebiten.KeyUp:
-                editor.Scale *= 1.05
-            case ebiten.KeyDown:
-                editor.Scale *= 0.95
-                if editor.Scale < 1 {
-                    editor.Scale = 1
-                }
         }
     }
 
@@ -121,6 +121,21 @@ func (editor *Editor) Update() error {
                 editor.FontIndex = (editor.FontIndex + 1) % len(editor.Fonts)
                 editor.Optimized = font.MakeOptimizedFont(editor.Fonts[editor.FontIndex])
                 fmt.Printf("Font: %v\n", editor.FontIndex)
+            case ebiten.KeyUp:
+                editor.PaletteIndex = max(0, editor.PaletteIndex - 1)
+                // editor.Scale *= 1.05
+            case ebiten.KeyDown:
+                editor.PaletteIndex = min(len(editor.Palette) - 1, editor.PaletteIndex + 1)
+                /*
+                editor.Scale *= 0.95
+                if editor.Scale < 1 {
+                    editor.Scale = 1
+                }
+                */
+            case ebiten.KeyEnter:
+                editor.Palette[editor.PaletteIndex] = randomColor()
+                editor.Optimized = font.MakeOptimizedFontWithPalette(editor.Fonts[editor.FontIndex], editor.Palette)
+
         }
     }
 
@@ -138,12 +153,20 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
     paletteRect := image.Rect(800, 0, 1024, 768)
     paletteArea := screen.SubImage(paletteRect).(*ebiten.Image)
-    paletteArea.Fill(color.RGBA{0xff, 0xff, 0xff, 0xff})
+    paletteArea.Fill(color.RGBA{32, 32, 32, 0xff})
+
+    colorSize := 20
 
     for i, c := range editor.Palette {
-        area := image.Rect(paletteRect.Min.X, paletteRect.Min.Y + 10 + i * 20, paletteRect.Max.X, paletteRect.Min.Y + 10 + (i + 1) * 20)
+        area := image.Rect(paletteRect.Min.X, paletteRect.Min.Y + 10 + i * colorSize, paletteRect.Max.X, paletteRect.Min.Y + 10 + (i + 1) * colorSize)
         vector.DrawFilledRect(paletteArea, float32(area.Min.X), float32(area.Min.Y), float32(area.Dx()), float32(area.Dy()), c, true)
-        vector.StrokeRect(paletteArea, float32(area.Min.X), float32(area.Min.Y), float32(area.Dx()), float32(area.Dy()), 1, &color.RGBA{R: 0xff, A: 0xff}, true)
+
+        borderColor := color.RGBA{R: 0xff, A: 0xff}
+        if i == editor.PaletteIndex {
+            borderColor = color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
+        }
+
+        vector.StrokeRect(paletteArea, float32(area.Min.X), float32(area.Min.Y), float32(area.Dx()), float32(area.Dy()), 1, borderColor, true)
     }
 
     editor.Optimized.Print(screen, 50, 300, editor.Scale, ebiten.ColorScale{}, "This is a test")
