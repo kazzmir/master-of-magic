@@ -680,7 +680,7 @@ func (unit *OverworldUnit) NaturalHeal(rate float64) {
 }
 
 func (unit *OverworldUnit) ResetMoves() {
-    unit.MovesLeft = fraction.FromInt(unit.Unit.MovementSpeed)
+    unit.MovesLeft = fraction.FromInt(unit.GetMovementSpeed())
 }
 
 func (unit *OverworldUnit) HasMovesLeft() bool {
