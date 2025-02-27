@@ -1316,10 +1316,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         combat instants:
 
         Dispel Magic
-        Raise        Dead 
-        Petri       fy 
-        Call        Chaos 	
-        Anima       te Dead
+        Raise Dead 
+        Petrify 
+        Call Chaos 	
+        Animate Dead
          */
 
         /*
