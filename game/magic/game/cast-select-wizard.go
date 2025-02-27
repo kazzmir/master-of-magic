@@ -8,11 +8,12 @@ import (
 	playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 	uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
-    "github.com/kazzmir/master-of-magic/game/magic/data"
-    "github.com/kazzmir/master-of-magic/game/magic/mirror"
+	"github.com/hajimehoshi/ebiten/v2"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
+	"github.com/kazzmir/master-of-magic/game/magic/data"
+	"github.com/kazzmir/master-of-magic/game/magic/mirror"
 	"github.com/kazzmir/master-of-magic/game/magic/util"
 	"github.com/kazzmir/master-of-magic/lib/lbx"
-	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // onPlayerSelectedCallback CAN'T receive nil as argument
@@ -33,21 +34,17 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
 
     // A func for creating a sparks element when a target is selected
     createSparksElement := func (faceRect image.Rectangle) *uilib.UIElement {
-        sparksTick := 0 // Needed for sparks animation
+        sparksCreationTick := ui.Counter // Needed for sparks animation
         return &uilib.UIElement{
             Layer: layer+2,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 const ticksPerFrame = 5
-                frameToShow := (sparksTick / ticksPerFrame) % 6
+                frameToShow := int((ui.Counter - sparksCreationTick) / ticksPerFrame) % 6
                 background, _ := imageCache.GetImage("specfx.lbx", 40, frameToShow)
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(getAlpha())
                 options.GeoM.Translate(float64(faceRect.Min.X - 5 * data.ScreenScale), float64(faceRect.Min.Y - 10 * data.ScreenScale))
                 screen.DrawImage(background, &options)
-                sparksTick++
-                if (sparksTick == ticksPerFrame * 6 * 6 - fadeSpeed) {
-                    getAlpha = ui.MakeFadeOut(fadeSpeed)
-                }
             },
         }
     }
@@ -94,10 +91,13 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
                     if err == nil {
                         sound.Play()
                     }
-                    ui.AddDelay(80, func(){
+                    ui.AddDelay(60, func(){
                         header = fmt.Sprintf("%s has been spell blasted", target.Wizard.Name)
-                        ui.AddDelay(100, func(){
-                            ui.RemoveGroup(group)
+                        ui.AddDelay(113, func(){
+                            getAlpha = ui.MakeFadeOut(fadeSpeed)
+                            ui.AddDelay(7, func(){
+                                ui.RemoveGroup(group)
+                            })
                         })
                     })
                 }
