@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/hero"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
@@ -50,8 +51,14 @@ func NewEngine(scenario int) (*Engine, error) {
 
     model := combat.MakeCombatModel(cache, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 0, 0, make(chan combat.CombatEvent))
 
+    rakir := hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, data.BannerRed, &ExperienceInfo{}), hero.HeroRakir, "Rakir")
+    rakir.AddExperience(100)
+    rakir.NaturalHeal(1)
+
+    // angel := units.MakeOverworldUnitFromUnit(units.ArchAngel, 1, 1, data.PlaneArcanus, data.BannerRed, &ExperienceInfo{})
+
     unit := &combat.ArmyUnit{
-        Unit: units.MakeOverworldUnitFromUnit(units.ArchAngel, 1, 1, data.PlaneArcanus, data.BannerRed, &ExperienceInfo{}),
+        Unit: rakir,
         Model: model,
     }
 
@@ -61,6 +68,8 @@ func NewEngine(scenario int) (*Engine, error) {
     unit.AddEnchantment(data.UnitEnchantmentEndurance)
     unit.AddEnchantment(data.UnitEnchantmentLionHeart)
     unit.TakeDamage(5)
+
+    // log.Printf("Base %v Defense %v Full Defense %v", unit.GetBaseDefense(), unit.GetDefense(), unit.GetFullDefense())
 
     ui := &uilib.UI{
         Draw: func(this *uilib.UI, screen *ebiten.Image) {
