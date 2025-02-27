@@ -584,7 +584,7 @@ func (hero *Hero) GetHealth() int {
 }
 
 func (hero *Hero) GetMaxHealth() int {
-    return hero.GetHitPoints() + hero.GetAbilityHealth()
+    return hero.GetHitPoints()
 }
 
 func (hero *Hero) AddExperience(amount int) {
@@ -1076,7 +1076,7 @@ func (hero *Hero) RangedEnchantmentBonus(enchantment data.UnitEnchantment) int {
 }
 
 func (hero *Hero) GetRangedAttackPower() int {
-    base := hero.Unit.GetBaseRangedAttackPower()
+    base := hero.GetBaseRangedAttackPower()
 
     if base == 0 {
         return 0
@@ -1128,7 +1128,7 @@ func (hero *Hero) GetFullDefense() int {
 }
 
 func (hero *Hero) GetDefense() int {
-    base := hero.Unit.GetBaseDefense()
+    base := hero.GetBaseDefense()
 
     for _, item := range hero.Equipment {
         if item != nil {
@@ -1343,7 +1343,7 @@ func (hero *Hero) GetFullResistance() int {
 }
 
 func (hero *Hero) GetResistance() int {
-    base := hero.Unit.GetBaseResistance()
+    base := hero.GetBaseResistance()
 
     for _, item := range hero.Equipment {
         if item != nil {
@@ -1373,7 +1373,7 @@ func (hero *Hero) GetHitPoints() int {
         base += hero.HitPointsEnchantmentBonus(enchantment)
     }
 
-    return base
+    return base + hero.GetAbilityHealth()
 }
 
 func (hero *Hero) GetBaseHitPoints() int {
