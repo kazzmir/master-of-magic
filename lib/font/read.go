@@ -96,11 +96,11 @@ var fontPalette = color.Palette {
     color.RGBA{R: 0x50, G: 0x3c, B: 0x30, A: 0xff},
 }
 
-func (glyph *Glyph) MakeImage() image.Image {
+func (glyph *Glyph) MakeImage() *image.Paletted {
     return glyph.MakeImageWithPalette(lbx.GetDefaultPalette())
 }
 
-func (glyph *Glyph) MakeImageWithPalette(palette color.Palette) image.Image {
+func (glyph *Glyph) MakeImageWithPalette(palette color.Palette) *image.Paletted {
     if glyph.Width == 0 {
         return nil
     }
