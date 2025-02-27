@@ -846,7 +846,7 @@ func (hero *Hero) IsLandWalker() bool {
 }
 
 func (hero *Hero) IsSwimmer() bool {
-    return hero.Unit.IsSwimmer()
+    return hero.Unit.IsSwimmer() || hero.HasEnchantment(data.UnitEnchantmentWaterWalking)
 }
 
 func (hero *Hero) GetBanner() data.BannerType {
