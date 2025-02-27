@@ -18,6 +18,9 @@ import (
 // onPlayerSelectedCallback CAN'T receive nil as argument
 // TODO: transform this into more unversal reusable form.
 func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, castingPlayer *playerlib.Player, playersInGame int, onPlayerSelectedCallback func(selectedPlayer *playerlib.Player) bool) *uilib.UIElementGroup {
+    const fadeSpeed = 7
+    getAlpha := ui.MakeFadeIn(fadeSpeed)
+    
     group := uilib.MakeGroup()
 
     var layer uilib.UILayer = 2
@@ -38,9 +41,13 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
                 frameToShow := (sparksTick / ticksPerFrame) % 6
                 background, _ := imageCache.GetImage("specfx.lbx", 40, frameToShow)
                 var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(getAlpha())
                 options.GeoM.Translate(float64(faceRect.Min.X - 5 * data.ScreenScale), float64(faceRect.Min.Y - 10 * data.ScreenScale))
                 screen.DrawImage(background, &options)
                 sparksTick++
+                if (sparksTick == ticksPerFrame * 6 * 6 - fadeSpeed) {
+                    getAlpha = ui.MakeFadeOut(fadeSpeed)
+                }
             },
         }
     }
@@ -52,6 +59,7 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("spellscr.lbx", 72, 0)
             var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(float64(x * data.ScreenScale), float64(y * data.ScreenScale))
             screen.DrawImage(background, &options)
 
@@ -100,6 +108,7 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(getAlpha())
                 options.GeoM.Translate(float64(faceRect.Min.X), float64(faceRect.Min.Y))
                 if target.Defeated {
                     screen.DrawImage(brokenCrystalPicture, &options)
@@ -137,6 +146,7 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
             Rect: crystalRect,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(getAlpha())
                 options.GeoM.Translate(float64(crystalRect.Min.X), float64(crystalRect.Min.Y))
                 screen.DrawImage(crystalToDraw, &options)
             },
@@ -159,6 +169,7 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
             screen.DrawImage(cancel[cancelIndex], &options)
         },
