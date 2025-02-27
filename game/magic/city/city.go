@@ -73,7 +73,9 @@ func (citySize CitySize) String() string {
 
 type CatchmentProvider interface {
     GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile
+    GetGoldBonus(x int, y int) int
     OnShore(x int, y int) bool
+    ByRiver(x int, y int) bool
     TileDistance(x1 int, y1 int, x2 int, y2 int) int
 }
 
@@ -432,6 +434,10 @@ func (city *City) FameForCaptureOrRaze(captured bool) int {
 // true if the city is adjacent to a water tile
 func (city *City) OnShore() bool {
     return city.CatchmentProvider.OnShore(city.X, city.Y)
+}
+
+func (city *City) ByRiver() bool {
+    return city.CatchmentProvider.ByRiver(city.X, city.Y)
 }
 
 func (city *City) AddEnchantment(enchantment data.CityEnchantment, owner data.BannerType) {
@@ -1379,10 +1385,7 @@ func (city *City) ComputeTotalBonusPercent() float64 {
         percent += 50
     }
 
-    // FIXME: add river/shore bonus
-    // +10 if adjacent to a shore
-    // +20 if on a river
-    // +30 if on a river and adjacent to a shore, or on a river mouth
+    percent += float64(city.CatchmentProvider.GetGoldBonus(city.X, city.Y))
 
     return min(percent, float64(city.Citizens() * 3))
 }

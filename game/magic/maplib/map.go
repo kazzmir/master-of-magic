@@ -624,8 +624,8 @@ func (tile *FullTile) GoldBonus(mapObject *Map) int {
 
     switch {
         case tile.IsRiverMouth(mapObject): return 30
-        case tile.IsTouchingShore(mapObject): return 10
         case tile.Tile.TerrainType() == terrain.River: return 20
+        case tile.IsTouchingShore(mapObject, false): return 10
     }
 
     return 0
@@ -652,18 +652,35 @@ func (tile *FullTile) ProductionBonus(hasGaiasBlessing bool) int {
 }
 
 func (tile *FullTile) IsRiverMouth(mapObject *Map) bool {
-    return tile.Tile.TerrainType() == terrain.River && tile.IsTouchingShore(mapObject)
+    return tile.Tile.TerrainType() == terrain.River && tile.IsTouchingShore(mapObject, true)
 }
 
-func (tile *FullTile) IsTouchingShore(mapObject *Map) bool {
+func (tile *FullTile) IsTouchingShore(mapObject *Map, cardinal bool) bool {
     for dx := -1; dx <= 1; dx++ {
         for dy := -1; dy <= 1; dy++ {
             if dx == 0 && dy == 0 {
                 continue
             }
 
+            if cardinal && dx != 0 && dy != 0 {
+                continue
+            }
+
             tile := mapObject.GetTile(tile.X + dx, tile.Y + dy)
             if tile.Tile.IsShore() {
+                return true
+            }
+        }
+    }
+
+    return false
+}
+
+func (tile *FullTile) IsByRiver(mapObject *Map) bool {
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            tile := mapObject.GetTile(tile.X + dx, tile.Y + dy)
+            if tile.Tile.IsRiver() {
                 return true
             }
         }
@@ -1327,7 +1344,17 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
 
 func (mapObject *Map) OnShore(x int, y int) bool {
     tile := mapObject.GetTile(x, y)
-    return tile.IsTouchingShore(mapObject)
+    return tile.IsTouchingShore(mapObject, false)
+}
+
+func (mapObject *Map) ByRiver(x int, y int) bool {
+    tile := mapObject.GetTile(x, y)
+    return tile.IsByRiver(mapObject)
+}
+
+func (mapObject *Map) GetGoldBonus(x int, y int) int {
+    tile := mapObject.GetTile(x, y)
+    return tile.GoldBonus(mapObject)
 }
 
 // Returns city catchment area (5x5 square minus the corners)
