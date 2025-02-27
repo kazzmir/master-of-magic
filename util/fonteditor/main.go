@@ -3,6 +3,7 @@ package main
 import (
     "log"
     "fmt"
+    "math"
     "math/rand/v2"
 
     "image"
@@ -12,12 +13,29 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/vector"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 const ScreenWidth = 1024
 const ScreenHeight = 768
+
+type State int
+const (
+    NormalState State = iota
+    ChooseColorState
+)
+
+type HSVColor struct {
+    H, S, V float64
+}
+
+func (hsv HSVColor) ToColor() color.Color {
+    var colorm colorm.ColorM
+    colorm.ChangeHSV(hsv.H, hsv.S, hsv.V)
+    return colorm.Apply(color.RGBA{R: 0xff, A: 0xff})
+}
 
 type Editor struct {
     Lbx *lbx.LbxFile
@@ -28,6 +46,9 @@ type Editor struct {
     Fonts []*font.LbxFont
     Optimized *font.Font
     Scale float64
+    State State
+
+    CurrentColor HSVColor
 }
 
 // go through each glyph and find the highest palette index used, then make a palette of that many entries
@@ -89,6 +110,7 @@ func MakeEditor() (*Editor, error) {
         Scale: 4,
         Palette: palette,
         PaletteIndex: 0,
+        CurrentColor: HSVColor{math.Pi * 90 / 180, 1, 1},
     }, nil
 }
 
@@ -98,6 +120,16 @@ func (editor *Editor) Update() error {
 
     for _, key := range keys {
         switch key {
+            case ebiten.KeyLeft:
+                switch editor.State {
+                    case ChooseColorState:
+                        editor.CurrentColor.H -= math.Pi * 1 / 180
+                }
+            case ebiten.KeyRight:
+                switch editor.State {
+                    case ChooseColorState:
+                        editor.CurrentColor.H += math.Pi * 1 / 180
+                }
         }
     }
 
@@ -109,18 +141,24 @@ func (editor *Editor) Update() error {
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
             case ebiten.KeyLeft:
-                editor.FontIndex -= 1
-                if editor.FontIndex < 0 {
-                    editor.FontIndex = len(editor.Fonts) - 1
+                switch editor.State {
+                    case NormalState:
+                        editor.FontIndex -= 1
+                        if editor.FontIndex < 0 {
+                            editor.FontIndex = len(editor.Fonts) - 1
+                        }
+
+                        editor.Optimized = font.MakeOptimizedFont(editor.Fonts[editor.FontIndex])
+
+                        fmt.Printf("Font: %v\n", editor.FontIndex)
                 }
-
-                editor.Optimized = font.MakeOptimizedFont(editor.Fonts[editor.FontIndex])
-
-                fmt.Printf("Font: %v\n", editor.FontIndex)
             case ebiten.KeyRight:
-                editor.FontIndex = (editor.FontIndex + 1) % len(editor.Fonts)
-                editor.Optimized = font.MakeOptimizedFont(editor.Fonts[editor.FontIndex])
-                fmt.Printf("Font: %v\n", editor.FontIndex)
+                switch editor.State {
+                    case NormalState:
+                        editor.FontIndex = (editor.FontIndex + 1) % len(editor.Fonts)
+                        editor.Optimized = font.MakeOptimizedFont(editor.Fonts[editor.FontIndex])
+                        fmt.Printf("Font: %v\n", editor.FontIndex)
+                }
             case ebiten.KeyUp:
                 editor.PaletteIndex = max(0, editor.PaletteIndex - 1)
                 // editor.Scale *= 1.05
@@ -133,8 +171,14 @@ func (editor *Editor) Update() error {
                 }
                 */
             case ebiten.KeyEnter:
-                editor.Palette[editor.PaletteIndex] = randomColor()
-                editor.Optimized = font.MakeOptimizedFontWithPalette(editor.Fonts[editor.FontIndex], editor.Palette)
+                switch editor.State {
+                    case NormalState:
+                        editor.State = ChooseColorState
+                    case ChooseColorState:
+                        editor.State = NormalState
+                        editor.Palette[editor.PaletteIndex] = editor.CurrentColor.ToColor()
+                        editor.Optimized = font.MakeOptimizedFontWithPalette(editor.Fonts[editor.FontIndex], editor.Palette)
+                }
 
         }
     }
@@ -170,6 +214,10 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
     }
 
     editor.Optimized.Print(screen, 50, 300, editor.Scale, ebiten.ColorScale{}, "This is a test")
+
+    if editor.State == ChooseColorState {
+        vector.DrawFilledRect(screen, 600, 50, 100, 50, editor.CurrentColor.ToColor(), true)
+    }
 
     /*
     var options ebiten.DrawImageOptions
