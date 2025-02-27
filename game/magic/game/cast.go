@@ -382,7 +382,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 game.RefreshUI()
             }
         case "Armageddon":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentJustCause) {
+            if !player.GlobalEnchantments.Contains(data.EnchantmentArmageddon) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentArmageddon}
 
                 player.GlobalEnchantments.Insert(data.EnchantmentArmageddon)
@@ -394,7 +394,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 game.RefreshUI()
             }
         case "Great Wasting":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentJustCause) {
+            if !player.GlobalEnchantments.Contains(data.EnchantmentGreatWasting) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentGreatWasting}
 
                 player.GlobalEnchantments.Insert(data.EnchantmentGreatWasting)
@@ -406,7 +406,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 game.RefreshUI()
             }
         case "Detect Magic":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentJustCause) {
+            if !player.GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentDetectMagic}
 
                 player.GlobalEnchantments.Insert(data.EnchantmentDetectMagic)
