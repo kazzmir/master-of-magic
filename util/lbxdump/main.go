@@ -313,82 +313,83 @@ func main(){
 
     positionalArgs := flag.Args()
 
-    if len(positionalArgs) != 1 {
+    if len(positionalArgs) < 1 {
         flag.Usage()
         return
     }
 
-    path := positionalArgs[0]
+    for _, path := range positionalArgs {
 
-    if zipName == "" {
-        fmt.Printf("Opening %v as an lbx file\n", path)
+        if zipName == "" {
+            fmt.Printf("Opening %v as an lbx file\n", path)
 
-        file, err := os.Open(path)
-        if err != nil {
-            log.Printf("Error opening %v: %v\n", path, err)
-            return
-        }
-
-        err = dumpLbx(file, strings.ToLower(filepath.Base(path)), onlyIndex, rawDump, voc)
-        if err != nil {
-            log.Printf("Error dumping lbx file: %v\n", err)
-        }
-    } else {
-        zipFile, err := zip.OpenReader(zipName)
-        if err != nil {
-            fmt.Printf("Error opening zip file: %s\n", err)
-            return
-        }
-        defer zipFile.Close()
-
-        var matches []string
-        for _, file := range zipFile.File {
-            // fmt.Printf("Entry: %s\n", file.Name)
-
-            lower := strings.ToLower(file.Name)
-            check := strings.ToLower(path)
-
-            // exact match
-            if lower == check {
-                matches = []string{file.Name}
-                break
+            file, err := os.Open(path)
+            if err != nil {
+                log.Printf("Error opening %v: %v\n", path, err)
+                return
             }
 
-            if strings.Contains(lower, check) {
-                matches = append(matches, file.Name)
+            err = dumpLbx(file, strings.ToLower(filepath.Base(path)), onlyIndex, rawDump, voc)
+            if err != nil {
+                log.Printf("Error dumping lbx file: %v\n", err)
             }
-        }
-
-        if len(matches) == 0 {
-            fmt.Printf("No such entry with name '%v'\n", path)
-            return
-        }
-
-        if len(matches) > 1 {
-            fmt.Printf("More than one match found for '%v'\n", path)
-            for _, name := range matches {
-                fmt.Printf("  %v\n", name)
+        } else {
+            zipFile, err := zip.OpenReader(zipName)
+            if err != nil {
+                fmt.Printf("Error opening zip file: %s\n", err)
+                return
             }
-            return
-        }
+            defer zipFile.Close()
 
-        match := matches[0]
-        for _, file := range zipFile.File {
-            if file.Name == match {
-                opened, err := file.Open()
-                if err != nil {
-                    fmt.Printf("Unable to open entry %v: %v\n", file.Name, err)
-                } else {
-                    fmt.Printf("Dumping %v\n", file.Name)
+            var matches []string
+            for _, file := range zipFile.File {
+                // fmt.Printf("Entry: %s\n", file.Name)
 
-                    var memory bytes.Buffer
-                    io.Copy(&memory, opened)
+                lower := strings.ToLower(file.Name)
+                check := strings.ToLower(path)
 
-                    err := dumpLbx(bytes.NewReader(memory.Bytes()), strings.ToLower(file.Name), onlyIndex, rawDump, voc)
+                // exact match
+                if lower == check {
+                    matches = []string{file.Name}
+                    break
+                }
+
+                if strings.Contains(lower, check) {
+                    matches = append(matches, file.Name)
+                }
+            }
+
+            if len(matches) == 0 {
+                fmt.Printf("No such entry with name '%v'\n", path)
+                return
+            }
+
+            if len(matches) > 1 {
+                fmt.Printf("More than one match found for '%v'\n", path)
+                for _, name := range matches {
+                    fmt.Printf("  %v\n", name)
+                }
+                return
+            }
+
+            match := matches[0]
+            for _, file := range zipFile.File {
+                if file.Name == match {
+                    opened, err := file.Open()
                     if err != nil {
-                        fmt.Printf("Error dumping lbx file: %v\n", err)
+                        fmt.Printf("Unable to open entry %v: %v\n", file.Name, err)
+                    } else {
+                        fmt.Printf("Dumping %v\n", file.Name)
+
+                        var memory bytes.Buffer
+                        io.Copy(&memory, opened)
+
+                        err := dumpLbx(bytes.NewReader(memory.Bytes()), strings.ToLower(file.Name), onlyIndex, rawDump, voc)
+                        if err != nil {
+                            fmt.Printf("Error dumping lbx file: %v\n", err)
+                        }
+                        opened.Close()
                     }
-                    opened.Close()
                 }
             }
         }
