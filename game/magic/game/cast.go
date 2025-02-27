@@ -442,7 +442,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         */
         case "Create Artifact", "Enchant Item":
             game.Events <- &GameEventSummonArtifact{Player: player}
-            game.Events <- &GameEventVault{CreatedArtifact: player.CreateArtifact}
+            game.Events <- &GameEventVault{CreatedArtifact: player.CreateArtifact, Player: player}
             player.CreateArtifact = nil
         case "Earth Lore":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
