@@ -430,7 +430,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Disjunction True
                 Great Unsummoning
                 Spell Binding
-                Spell Blast
                 Stasis
                 Word of Recall
                 Fire Storm
@@ -511,6 +510,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeRaiseVolcano, SelectedFunc: selected}
+        case "Spell Blast":
+            game.doCastSpellBlast(player)
         case "Enchant Road":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: game.doCastEnchantRoad}
         case "Corruption":
@@ -1336,6 +1337,21 @@ func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY i
 
     game.doCastOnMap(yield, tileX, tileY, 7, false, 103, update)
     game.RefreshUI()
+}
+
+func (game *Game) doCastSpellBlast(player *playerlib.Player) {
+    var wizSelectionUiGroup *uilib.UIElementGroup
+    onTargetSelectCallback := func(targetPlayer *playerlib.Player) bool {
+        if targetPlayer.Defeated || targetPlayer.Banished || !targetPlayer.CastingSpell.Valid() || targetPlayer.CastingSpellProgress > player.Mana {
+            return false
+        }
+        player.Mana -= targetPlayer.CastingSpellProgress
+        targetPlayer.InterruptCastingSpell()
+        return true
+    }
+    playersInGame := len(game.Players)
+    wizSelectionUiGroup = makeSelectSpellBlastTargetUI(game.HudUI, game.Cache, &game.ImageCache, player, playersInGame, onTargetSelectCallback)
+    game.HudUI.AddGroup(wizSelectionUiGroup)
 }
 
 func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int, caster *playerlib.Player) {
