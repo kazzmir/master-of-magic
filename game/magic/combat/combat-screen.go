@@ -410,7 +410,7 @@ func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebit
     y := -rand.Float64() * 40
 
     // FIXME: make this a parameter?
-    speed := 2.5
+    speed := 2.2 * float64(data.ScreenScale)
 
     angle := math.Atan2(screenY - y, screenX - x)
 
@@ -560,15 +560,14 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
-func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 23)
 
     loopImages := images[0:11]
     explodeImages := images[11:]
 
-    // FIXME: made up
     damage := func(unit *ArmyUnit) {
-        unit.TakeDamage(3)
+        unit.TakeDamage(strength)
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.RemoveUnit(unit)
         }
@@ -1002,7 +1001,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
     switch spell.Name {
         case "Fireball":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateFireballProjectile(target)
+                combat.CreateFireballProjectile(target, spell.Cost(false) / 3)
                 castedCallback()
             }, targetAny)
         case "Ice Bolt":

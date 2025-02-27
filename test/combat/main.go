@@ -93,6 +93,19 @@ func createWarlockArmyN(player *player.Player, count int) *combat.Army {
     return &army
 }
 
+func createArmyN(player *player.Player, unit units.Unit, count int) *combat.Army {
+    army := combat.Army{
+        Player: player,
+    }
+
+    for i := 0; i < count; i++ {
+        made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo())
+        army.AddUnit(made)
+    }
+
+    return &army
+}
+
 func createLizardmenArmy(player *player.Player) *combat.Army {
     army := combat.Army{
         Player: player,
@@ -361,7 +374,8 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Bless"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
-    attackingArmy := createWarlockArmyN(attackingPlayer, 3)
+    // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
+    attackingArmy := createArmyN(attackingPlayer, units.HighElfMagician, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)

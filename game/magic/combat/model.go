@@ -1282,6 +1282,9 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playe
                 unit.SpellCharges[doomBolt] = int(ability.Value)
                 // unit.Spells.AddSpell(doomBolt)
                 // unit.CastingSkill += float32(doomBolt.CastCost)
+            case data.AbilityFireballSpell:
+                fireball := allSpells.FindByName("Fireball")
+                unit.SpellCharges[fireball] = int(ability.Value)
             case data.AbilityCaster:
                 unit.CastingSkill = ability.Value
         }
