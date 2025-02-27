@@ -26,7 +26,27 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
     y := 10
 
     fonts := fontslib.MakeSpellSpecialUIFonts(cache)
+    header := "Choose target for a Spell Blast spell"
 
+    // A func for creating a sparks element when a target is selected
+    createSparksElement := func (faceRect image.Rectangle) *uilib.UIElement {
+        sparksTick := 0 // Needed for sparks animation
+        return &uilib.UIElement{
+            Layer: layer+2,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                const ticksPerFrame = 5
+                frameToShow := (sparksTick / ticksPerFrame) % 6
+                background, _ := imageCache.GetImage("specfx.lbx", 40, frameToShow)
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(faceRect.Min.X - 5 * data.ScreenScale), float64(faceRect.Min.Y - 10 * data.ScreenScale))
+                screen.DrawImage(background, &options)
+                sparksTick++
+            },
+        }
+    }
+
+
+    // The form itself
     group.AddElement(&uilib.UIElement{
         Layer: layer,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -36,7 +56,7 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
             screen.DrawImage(background, &options)
 
             mx, my := options.GeoM.Apply(float64(84 * data.ScreenScale), float64(10 * data.ScreenScale))
-            fonts.BigOrange.PrintWrapCenter(screen, mx, my, 120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Choose target for a Spell Blast spell")
+            fonts.BigOrange.PrintWrapCenter(screen, mx, my, 120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, header)
         },
         Order: 0,
     })
@@ -55,11 +75,19 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
         portrait, _ := imageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(target.Wizard.Base, target.Wizard.Banner), 0)
         faceRect := util.ImageRect((x + wizardFacesOffsets[index][0]) * data.ScreenScale, (y + wizardFacesOffsets[index][1]) * data.ScreenScale, portrait)
         group.AddElement(&uilib.UIElement{
-            Layer: 5,
+            Layer: layer+1,
             Rect: faceRect,
+            // Try casting the spell on click.
             LeftClickRelease: func(element *uilib.UIElement){
                 if onPlayerSelectedCallback(target) {
-                    ui.RemoveGroup(group)
+                    // Spell cast successfully. Change header, add delay and remove this uigroup.
+                    group.AddElement(createSparksElement(faceRect))
+                    ui.AddDelay(80, func(){
+                        header = fmt.Sprintf("%s has been spell blasted", target.Wizard.Name)
+                        ui.AddDelay(100, func(){
+                            ui.RemoveGroup(group)
+                        })
+                    })
                 }
             },
             Inside: func(element *uilib.UIElement, x int, y int){
@@ -105,7 +133,7 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
             crystalRect = crystalRect.Add(image.Point{-1 * data.ScreenScale, -1 * data.ScreenScale})
         }
         group.AddElement(&uilib.UIElement{
-            Layer: 5,
+            Layer: 3,
             Rect: crystalRect,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
@@ -120,7 +148,7 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
     cancelIndex := 0
     cancelRect := util.ImageRect((x + 83) * data.ScreenScale, (y + 155) * data.ScreenScale, cancel[0])
     group.AddElement(&uilib.UIElement{
-        Layer: 5,
+        Layer: layer+1,
         Rect: cancelRect,
         LeftClick: func(element *uilib.UIElement){
             cancelIndex = 1
