@@ -1486,10 +1486,10 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
     onRiver := city.ByRiver()
     onShore := city.OnShore()
     switch {
-        case onRiver && onMyrror: spriteIndex = 115
-        case onRiver: spriteIndex = 3
         case onShore && onMyrror: spriteIndex = 116
         case onShore: spriteIndex = 4
+        case onRiver && onMyrror: spriteIndex = 115
+        case onRiver: spriteIndex = 3
     }
     if spriteIndex != -1 {
         river, err := imageCache.GetImages("cityscap.lbx", spriteIndex)
