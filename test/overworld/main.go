@@ -1086,6 +1086,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Flame Blade"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Black Channels"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Wraith Form"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Lycanthropy"))
 
     x, y, _ := game.FindValidCityLocation(game.Plane)
 

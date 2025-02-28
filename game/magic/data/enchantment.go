@@ -171,6 +171,7 @@ const (
     UnitEnchantmentBerserk
     UnitEnchantmentBlackChannels
     UnitEnchantmentWraithForm
+    UnitEnchantmentLycanthropy
 
     // curses
     UnitCurseConfusion
@@ -457,6 +458,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitEnchantmentBerserk: return "special2.lbx"
         case UnitEnchantmentBlackChannels: return "special.lbx"
         case UnitEnchantmentWraithForm: return "special.lbx"
+        case UnitEnchantmentLycanthropy: return "special.lbx"
 
         case UnitCurseConfusion: return "special2.lbx"
         case UnitCurseCreatureBinding: return "special.lbx"
@@ -548,6 +550,7 @@ func (enchantment UnitEnchantment) CastAnimationIndex() int {
         case UnitEnchantmentBerserk: return 4
         case UnitEnchantmentBlackChannels: return 4
         case UnitEnchantmentWraithForm: return 4
+        case UnitEnchantmentLycanthropy: return 4
 
         // chaos
         case UnitEnchantmentImmolation: return 2
