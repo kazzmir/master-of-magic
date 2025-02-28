@@ -54,6 +54,8 @@ type Editor struct {
 
     CurrentColor HSVColor
     ColorBand *ebiten.Image
+    SaturationBand *ebiten.Image
+    ValueBand *ebiten.Image
 }
 
 // go through each glyph and find the highest palette index used, then make a palette of that many entries
@@ -168,12 +170,16 @@ func (editor *Editor) Update() error {
                     case ChooseColorState:
                         editor.CurrentColor.H -= math.Pi * speed / 180
                         editor.ColorBand = nil
+                        editor.SaturationBand = nil
+                        editor.ValueBand = nil
                 }
             case ebiten.KeyRight:
                 switch editor.State {
                     case ChooseColorState:
                         editor.CurrentColor.H += math.Pi * speed / 180
                         editor.ColorBand = nil
+                        editor.SaturationBand = nil
+                        editor.ValueBand = nil
                 }
         }
     }
@@ -297,6 +303,30 @@ func (editor *Editor) CreateColorBand(color HSVColor, width int, height int) *eb
     return out
 }
 
+func (editor *Editor) CreateSaturationBand(color HSVColor, width int, height int) *ebiten.Image {
+    out := ebiten.NewImage(width, height)
+
+    for x := range width {
+        use := color
+        use.S = float64(x) / float64(width)
+        vector.DrawFilledRect(out, float32(x), 0, float32(x+1), float32(height), use.ToColor(), true)
+    }
+
+    return out
+}
+
+func (editor *Editor) CreateValueBand(color HSVColor, width int, height int) *ebiten.Image {
+    out := ebiten.NewImage(width, height)
+
+    for x := range width {
+        use := color
+        use.V = float64(x) / float64(width)
+        vector.DrawFilledRect(out, float32(x), 0, float32(x+1), float32(height), use.ToColor(), true)
+    }
+
+    return out
+}
+
 func (editor *Editor) Draw(screen *ebiten.Image) {
     screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
 
@@ -380,13 +410,24 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
     editor.Optimized.Print(screen, 50, float64(yPos), editor.Scale, ebiten.ColorScale{}, "ABCDEFGHIJKL")
 
     if editor.State == ChooseColorState {
-        vector.DrawFilledRect(screen, 600, 50, 100, 50, editor.CurrentColor.ToColor(), true)
+        vector.DrawFilledRect(screen, 850, 50, 100, 50, editor.CurrentColor.ToColor(), true)
         if editor.ColorBand == nil {
             editor.ColorBand = editor.CreateColorBand(editor.CurrentColor, 200, 40)
         }
+        if editor.SaturationBand == nil {
+            editor.SaturationBand = editor.CreateSaturationBand(editor.CurrentColor, 200, 40)
+        }
+        if editor.ValueBand == nil {
+            editor.ValueBand = editor.CreateValueBand(editor.CurrentColor, 200, 40)
+        }
+
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(650 - editor.ColorBand.Bounds().Dx() / 2), float64(50 - editor.ColorBand.Bounds().Dy()))
+        options.GeoM.Translate(600, 50)
         screen.DrawImage(editor.ColorBand, &options)
+        options.GeoM.Translate(0, float64(editor.ColorBand.Bounds().Dy() + 1))
+        screen.DrawImage(editor.SaturationBand, &options)
+        options.GeoM.Translate(0, float64(editor.SaturationBand.Bounds().Dy() + 1))
+        screen.DrawImage(editor.ValueBand, &options)
     }
 
 }
