@@ -11,11 +11,13 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/util/common"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/vector"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
+    "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 const ScreenWidth = 1024
@@ -47,6 +49,7 @@ type Editor struct {
     Optimized *font.Font
     Scale float64
     State State
+    TextFont *text.GoTextFaceSource
 
     CurrentColor HSVColor
     ColorBand *ebiten.Image
@@ -102,16 +105,22 @@ func MakeEditor() (*Editor, error) {
     log.Printf("Palette length: %v", len(palette))
     // log.Printf("Palette: %v", palette)
 
+    textFont, err := common.LoadFont()
+    if err != nil {
+        fmt.Printf("Could not load font: %v\n", err)
+    }
+
     return &Editor{
         Lbx: lbxFile,
         Optimized: optimized,
         FontIndex: 0,
         Fonts: fonts,
-        GlyphImage: fonts[0].GlyphForRune('T').MakeImage(),
-        Scale: 4,
+        GlyphImage: fonts[0].GlyphForRune('F').MakeImage(),
+        Scale: 6,
         Palette: palette,
         PaletteIndex: 0,
         CurrentColor: HSVColor{math.Pi * 90 / 180, 1, 1},
+        TextFont: textFont,
     }, nil
 }
 
@@ -181,6 +190,7 @@ func (editor *Editor) Update() error {
                         editor.State = NormalState
                         editor.Palette[editor.PaletteIndex] = editor.CurrentColor.ToColor()
                         editor.Optimized = font.MakeOptimizedFontWithPalette(editor.Fonts[editor.FontIndex], editor.Palette)
+                        editor.GlyphImage = editor.Fonts[editor.FontIndex].GlyphForRune('F').MakeImageWithPalette(editor.Palette)
                 }
 
         }
@@ -217,8 +227,18 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
     colorSize := 20
 
+    minY := 20
+
+    {
+        var opts text.DrawOptions
+        opts.GeoM.Translate(float64(paletteRect.Min.X + 1), float64(paletteRect.Min.Y + 1))
+        opts.ColorScale.ScaleWithColor(color.White)
+        face := &text.GoTextFace{Source: editor.TextFont, Size: 15}
+        text.Draw(screen, fmt.Sprintf("Palette %v", len(editor.Palette)), face, &opts)
+    }
+
     for i, c := range editor.Palette {
-        area := image.Rect(paletteRect.Min.X, paletteRect.Min.Y + 10 + i * colorSize, paletteRect.Max.X, paletteRect.Min.Y + 10 + (i + 1) * colorSize)
+        area := image.Rect(paletteRect.Min.X, paletteRect.Min.Y + minY + i * colorSize, paletteRect.Max.X, paletteRect.Min.Y + minY + (i + 1) * colorSize)
         vector.DrawFilledRect(paletteArea, float32(area.Min.X), float32(area.Min.Y), float32(area.Dx()), float32(area.Dy()), c, true)
 
         borderColor := color.RGBA{R: 0xff, A: 0xff}
@@ -226,10 +246,33 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
             borderColor = color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
         }
 
-        vector.StrokeRect(paletteArea, float32(area.Min.X), float32(area.Min.Y), float32(area.Dx()), float32(area.Dy()), 1, borderColor, true)
+        vector.StrokeRect(screen, float32(area.Min.X-1), float32(area.Min.Y-1), float32(area.Dx()+2), float32(area.Dy()+2), 2, borderColor, true)
+
+        var opts text.DrawOptions
+        opts.GeoM.Translate(float64(area.Min.X - 15), float64(area.Min.Y + 1))
+        opts.ColorScale.ScaleWithColor(color.White)
+        face := &text.GoTextFace{Source: editor.TextFont, Size: 15}
+        text.Draw(screen, fmt.Sprintf("%v", i), face, &opts)
     }
 
-    editor.Optimized.Print(screen, 50, 300, editor.Scale, ebiten.ColorScale{}, "This is a test")
+    width := 10
+    height := 10
+    for x := range editor.GlyphImage.Bounds().Dx() {
+        for y := range editor.GlyphImage.Bounds().Dy() {
+
+            x1 := float32(50 + x * width * int(editor.Scale))
+            y1 := float32(10 + y * height * int(editor.Scale))
+            x2 := x1 + float32(width * int(editor.Scale))
+            y2 := y1 + float32(height * int(editor.Scale))
+
+            value := editor.GlyphImage.At(x, y)
+            vector.DrawFilledRect(screen, x1 + 2, y1 + 2, x2 - x1 - 4, y2 - y1 - 4, value, true)
+            vector.StrokeRect(screen, x1, y1, x2 - x1, y2 - y1, 1, color.RGBA{A: 0xff}, true)
+            // vector.StrokeRect(screen, x1, y1, 3, 3, 1, color.RGBA{A: 0xff}, true)
+        }
+    }
+
+    editor.Optimized.Print(screen, 50, 400, editor.Scale, ebiten.ColorScale{}, "This is a test")
 
     if editor.State == ChooseColorState {
         vector.DrawFilledRect(screen, 600, 50, 100, 50, editor.CurrentColor.ToColor(), true)
@@ -241,38 +284,6 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
         screen.DrawImage(editor.ColorBand, &options)
     }
 
-    /*
-    var options ebiten.DrawImageOptions
-    options.GeoM.Scale(editor.Scale, editor.Scale)
-    options.GeoM.Translate(50, 50)
-
-    screen.DrawImage(editor.Optimized.Image, &options)
-
-    vector.StrokeRect(screen, 50, 500, float32(float64(editor.Optimized.GlyphWidth) * 20 * editor.Scale), float32(float64(editor.Optimized.GlyphHeight) * editor.Scale), 1, &color.RGBA{R: 0xff, A: 0xff}, true)
-    editor.Optimized.Print(screen, 50, 500, editor.Scale, ebiten.ColorScale{}, "Hello, potato! money")
-    */
-
-    /*
-    yPos := 1
-
-    for _, font := range viewer.Fonts {
-
-        for i := 0; i < font.GlyphCount(); i++ {
-            raw := font.Glyphs[i].MakeImage()
-            if raw == nil {
-                continue
-            }
-            glyph1 := ebiten.NewImageFromImage(raw)
-            screen.DrawImage(glyph1, &options)
-            options.GeoM.Translate(25, 0)
-        }
-
-        yPos += 80
-        options.GeoM.Reset()
-        options.GeoM.Scale(4, 4)
-        options.GeoM.Translate(1, float64(yPos))
-    }
-    */
 }
 
 func main() {
