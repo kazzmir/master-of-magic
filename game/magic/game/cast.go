@@ -552,9 +552,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             COMBAT INSTANTS
         */
 
-        // FIXME: lycanthropy selects a friendly unit
-        // Lycanthropy	Icon DeathDeath	Uncommon	180	--	5	400	6 Regenerating Icon Melee Normal Melee creatures replace a target friendly Normal Unit.
-
         default:
             log.Printf("Warning: casting unhandled spell '%v'", spell.Name)
     }
@@ -1575,20 +1572,20 @@ func (game *Game) doCastLycanthropy(player *playerlib.Player, spell spellbook.Sp
             return
         }
 
-        // FIXME: "Summoned units may not have cast Lycanthropy on them"
         if unit.GetRace() == data.RaceFantastic {
+            game.Events <- &GameEventNotice{Message: "Summoned units may not have cast Lycanthropy on them"}
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
             return
         }
 
-        // FIXME: "Heroes units may not have cast Lycanthropy on them"
         if unit.GetRace() == data.RaceHero {
+            game.Events <- &GameEventNotice{Message: "Heroes units may not have cast Lycanthropy on them"}
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
             return
         }
 
-        // FIXME: "Chaos channeled and Undead units may not have cast Lycanthropy on them"
         if unit.IsUndead() || unit.HasEnchantment(data.UnitEnchantmentBlackChannels) || unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonSkin) || unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings) || unit.HasEnchantment(data.UnitEnchantmentChaosChannelsFireBreath) {
+            game.Events <- &GameEventNotice{Message: "Chaos channeled and Undead units may not have cast Lycanthropy on them"}
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
             return
         }
