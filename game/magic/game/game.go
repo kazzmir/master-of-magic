@@ -2565,11 +2565,6 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
 // FIXME: add a "reason" of fizzling, like "Spell X was fizzled because of Y"
 func (game *Game) ShowFizzleSpell(spell spellbook.Spell, caster *playerlib.Player) {
     if caster.IsHuman() {
-        beep, err := audio.LoadSound(game.Cache, 0)
-        if err == nil {
-            beep.Play()
-        }
-
         game.Events <- &GameEventNotice{
             // FIXME: align this message with how dos mom does it
             Message: fmt.Sprintf("The spell %v has fizzled.", spell.Name),
@@ -2580,6 +2575,11 @@ func (game *Game) ShowFizzleSpell(spell spellbook.Spell, caster *playerlib.Playe
 /* show the given message in an error popup on the screen
  */
 func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
+    beep, err := audio.LoadSound(game.Cache, 0)
+    if err == nil {
+        beep.Play()
+    }
+
     quit := false
     game.HudUI.AddElement(uilib.MakeErrorElement(game.HudUI, game.Cache, &game.ImageCache, message, func(){
         quit = true
