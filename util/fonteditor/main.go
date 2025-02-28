@@ -165,7 +165,7 @@ func (editor *Editor) UpdateFont() {
 func (editor *Editor) UpdateBandColor(delta float64) {
     switch editor.Band {
         case BandH:
-            editor.CurrentColor.H += math.Pi * delta / 180
+            editor.CurrentColor.H += math.Pi * delta / 180 / 2
             if editor.CurrentColor.H < 0 {
                 editor.CurrentColor.H += 2 * math.Pi
             }
@@ -173,14 +173,41 @@ func (editor *Editor) UpdateBandColor(delta float64) {
                 editor.CurrentColor.H -= 2 * math.Pi
             }
         case BandS:
-            editor.CurrentColor.S = max(0, editor.CurrentColor.S - 0.01 * delta)
+            editor.CurrentColor.S = min(1, max(0, editor.CurrentColor.S + 0.01 * delta))
         case BandV:
-            editor.CurrentColor.V = max(0, editor.CurrentColor.V - 0.01 * delta)
+            editor.CurrentColor.V = min(1, max(0, editor.CurrentColor.V + 0.01 * delta))
     }
 
     editor.ColorBand = nil
     editor.SaturationBand = nil
     editor.ValueBand = nil
+
+    /*
+    log.Printf("H: %.2f S: %.2f V: %.2f", editor.CurrentColor.H, editor.CurrentColor.S, editor.CurrentColor.V)
+    log.Printf("Color: %v", editor.CurrentColor.ToColor())
+    */
+}
+
+func (editor *Editor) NextBand() {
+    switch editor.Band {
+        case BandH:
+            editor.Band = BandS
+        case BandS:
+            editor.Band = BandV
+        case BandV:
+            editor.Band = BandH
+    }
+}
+
+func (editor *Editor) PreviousBand() {
+    switch editor.Band {
+        case BandH:
+            editor.Band = BandV
+        case BandS:
+            editor.Band = BandH
+        case BandV:
+            editor.Band = BandS
+    }
 }
 
 func (editor *Editor) Update() error {
@@ -285,6 +312,8 @@ func (editor *Editor) Update() error {
                         if editor.GlyphPosition.Y < 0 {
                             editor.GlyphPosition.Y = editor.GlyphImage.Bounds().Dy() - 1
                         }
+                    case ChooseColorState:
+                        editor.PreviousBand()
                 }
                 // editor.Scale *= 1.05
             case ebiten.KeyDown:
@@ -294,8 +323,8 @@ func (editor *Editor) Update() error {
                         if editor.GlyphPosition.Y >= editor.GlyphImage.Bounds().Dy() {
                             editor.GlyphPosition.Y = 0
                         }
-
-                        // editor.PaletteIndex = min(len(editor.Palette) - 1, editor.PaletteIndex + 1)
+                    case ChooseColorState:
+                        editor.NextBand()
                 }
                 /*
                 editor.Scale *= 0.95
@@ -475,6 +504,11 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
         options.GeoM.Translate(600, 50)
         screen.DrawImage(editor.ColorBand, &options)
 
+        if editor.Band == BandH {
+            x1, y1 := options.GeoM.Apply(-1, -1)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.ColorBand.Bounds().Dx() + 2), float32(editor.ColorBand.Bounds().Dy() + 2), 1, color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}, true)
+        }
+
         opts.GeoM = options.GeoM
         opts.GeoM.Translate(-20, 8)
         text.Draw(screen, "H", face, &opts)
@@ -482,12 +516,22 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
         options.GeoM.Translate(0, float64(editor.ColorBand.Bounds().Dy() + 1))
         screen.DrawImage(editor.SaturationBand, &options)
 
+        if editor.Band == BandS {
+            x1, y1 := options.GeoM.Apply(-1, -1)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.SaturationBand.Bounds().Dx() + 2), float32(editor.SaturationBand.Bounds().Dy() + 2), 1, color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}, true)
+        }
+
         opts.GeoM = options.GeoM
         opts.GeoM.Translate(-20, 8)
         text.Draw(screen, "S", face, &opts)
 
         options.GeoM.Translate(0, float64(editor.SaturationBand.Bounds().Dy() + 1))
         screen.DrawImage(editor.ValueBand, &options)
+
+        if editor.Band == BandV {
+            x1, y1 := options.GeoM.Apply(-1, -1)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.ValueBand.Bounds().Dx() + 2), float32(editor.ValueBand.Bounds().Dy() + 2), 1, color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}, true)
+        }
 
         opts.GeoM = options.GeoM
         opts.GeoM.Translate(-20, 8)
