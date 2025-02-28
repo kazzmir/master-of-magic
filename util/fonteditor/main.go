@@ -194,6 +194,21 @@ func (editor *Editor) UpdateFont() {
 }
 
 func (editor *Editor) UpdateBandColor(delta float64) {
+    updateRGB := func (deltaR int, deltaG int, deltaB int) {
+        r, g, b, _ := editor.CurrentColor.ToColor().RGBA()
+        r >>= 8
+        g >>= 8
+        b >>= 8
+        r = uint32(min(0xff, max(0, int(r) + int(deltaR))))
+        g = uint32(min(0xff, max(0, int(g) + int(deltaG))))
+        b = uint32(min(0xff, max(0, int(b) + int(deltaB))))
+
+        h, s, v := colorconv.RGBToHSV(uint8(r), uint8(g), uint8(b))
+        editor.CurrentColor.H = h * math.Pi / 180
+        editor.CurrentColor.S = s
+        editor.CurrentColor.V = v
+    }
+
     switch editor.Band {
         case BandH:
             editor.CurrentColor.H += math.Pi * delta / 180 / 2
@@ -207,6 +222,12 @@ func (editor *Editor) UpdateBandColor(delta float64) {
             editor.CurrentColor.S = min(1, max(0, editor.CurrentColor.S + 0.01 * delta))
         case BandV:
             editor.CurrentColor.V = min(1, max(0, editor.CurrentColor.V + 0.01 * delta))
+        case BandRed:
+            updateRGB(int(delta), 0, 0)
+        case BandGreen:
+            updateRGB(0, int(delta), 0)
+        case BandBlue:
+            updateRGB(0, 0, int(delta))
     }
 
     editor.ColorBand = nil
