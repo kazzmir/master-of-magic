@@ -46,6 +46,10 @@ const (
     LocationTypeDisenchant
 )
 
+type UnitEnchantmentCallback func (*units.OverworldUnit)
+
+func noUnitEnchantmentCallback(unit *units.OverworldUnit) {}
+
 type CityEnchantmentCallback func (*citylib.City) bool
 
 func noCityEnchantmentCallback(city *citylib.City) bool {
@@ -93,76 +97,78 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             UNIT ENCHANTMENTS
         */
         case "Bless":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentBless)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentBless, noUnitEnchantmentCallback)
         case "Heroism":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHeroism)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHeroism, noUnitEnchantmentCallback)
         case "Giant Strength":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentGiantStrength)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentGiantStrength, noUnitEnchantmentCallback)
         case "Lionheart":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentLionHeart)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentLionHeart, noUnitEnchantmentCallback)
         case "Immolation":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentImmolation)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentImmolation, noUnitEnchantmentCallback)
         case "Resist Elements":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentResistElements)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentResistElements, noUnitEnchantmentCallback)
         case "Resist Magic":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentResistMagic)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentResistMagic, noUnitEnchantmentCallback)
         case "Elemental Armor":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentElementalArmor)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentElementalArmor, noUnitEnchantmentCallback)
         case "Righteousness":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentRighteousness)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentRighteousness, noUnitEnchantmentCallback)
         case "Cloak of Fear":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentCloakOfFear)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentCloakOfFear, noUnitEnchantmentCallback)
         case "True Sight":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentTrueSight)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentTrueSight, noUnitEnchantmentCallback)
         case "Flight":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentFlight)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentFlight, noUnitEnchantmentCallback)
         case "Chaos Channels":
             choices := []data.UnitEnchantment{
                 data.UnitEnchantmentChaosChannelsDemonSkin,
                 data.UnitEnchantmentChaosChannelsDemonWings,
                 data.UnitEnchantmentChaosChannelsFireBreath,
             }
-            game.doCastUnitEnchantment(player, spell, choices[rand.N(len(choices))])
+            game.doCastUnitEnchantment(player, spell, choices[rand.N(len(choices))], noUnitEnchantmentCallback)
         case "Endurance":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentEndurance)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentEndurance, noUnitEnchantmentCallback)
         case "Holy Armor":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHolyArmor)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHolyArmor, noUnitEnchantmentCallback)
         case "Holy Weapon":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHolyWeapon)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentHolyWeapon, noUnitEnchantmentCallback)
         case "Invulnerability":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentInvulnerability)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentInvulnerability, noUnitEnchantmentCallback)
         case "Planar Travel":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentPlanarTravel)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentPlanarTravel, noUnitEnchantmentCallback)
         case "Iron Skin":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentIronSkin)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentIronSkin, noUnitEnchantmentCallback)
         case "Path Finding":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentPathFinding)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentPathFinding, noUnitEnchantmentCallback)
         case "Regeneration":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentRegeneration)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentRegeneration, noUnitEnchantmentCallback)
         case "Stone Skin":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentStoneSkin)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentStoneSkin, noUnitEnchantmentCallback)
         case "Water Walking":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWaterWalking)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWaterWalking, noUnitEnchantmentCallback)
         case "Guardian Wind":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentGuardianWind)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentGuardianWind, noUnitEnchantmentCallback)
         // "Invisiblity" is a typo in the game in spelldat.lbx
         case "Invisiblity":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentInvisibility)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentInvisibility, noUnitEnchantmentCallback)
         case "Magic Immunity":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentMagicImmunity)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentMagicImmunity, noUnitEnchantmentCallback)
         case "Spell Lock":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentSpellLock)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentSpellLock, noUnitEnchantmentCallback)
         case "Wind Walking":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWindWalking)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWindWalking, noUnitEnchantmentCallback)
         case "Eldritch Weapon":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentEldritchWeapon)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentEldritchWeapon, noUnitEnchantmentCallback)
         case "Flame Blade":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentFlameBlade)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentFlameBlade, noUnitEnchantmentCallback)
         case "Black Channels":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentBlackChannels)
-            // FIXME: unit should become undead
+            after := func (unit *units.OverworldUnit) {
+                unit.Undead = true
+            }
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentBlackChannels, after)
         case "Wraith Form":
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWraithForm)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWraithForm, noUnitEnchantmentCallback)
         case "Lycanthropy":
             game.doCastLycanthropy(player, spell)
 
@@ -573,7 +579,7 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
     }
 }
 
-func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {
+func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment, after UnitEnchantmentCallback) {
     var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
     selected = func (yield coroutine.YieldFunc, tileX int, tileY int){
         game.doMoveCamera(yield, tileX, tileY)
@@ -594,6 +600,11 @@ func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellboo
 
         game.doCastOnMap(yield, tileX, tileY, enchantment.CastAnimationIndex(), false, spell.Sound, func (x int, y int, animationFrame int) {})
         unit.AddEnchantment(enchantment)
+
+        overworldUnit, ok := unit.(*units.OverworldUnit)
+        if ok {
+            after(overworldUnit)
+        }
 
         game.RefreshUI()
     }
