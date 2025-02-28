@@ -76,7 +76,8 @@ func NewEngine() (*Engine, error) {
                 data.RetortInfernalPower,
             },
         },
-        TaxRate: fraction.Make(2, 1),
+        // TaxRate: fraction.Make(2, 1),
+        TaxRate: fraction.Zero(),
         GlobalEnchantments: set.MakeSet[data.Enchantment](),
     }
 
@@ -111,10 +112,10 @@ func NewEngine() (*Engine, error) {
     city.AddBuilding(buildinglib.BuildingFortress)
     city.AddBuilding(buildinglib.BuildingGranary)
     city.AddBuilding(buildinglib.BuildingFarmersMarket)
-    city.AddBuilding(buildinglib.BuildingMarketplace)
+    // city.AddBuilding(buildinglib.BuildingMarketplace)
     city.AddBuilding(buildinglib.BuildingMinersGuild)
     city.AddBuilding(buildinglib.BuildingSawmill)
-    city.AddBuilding(buildinglib.BuildingMechaniciansGuild)
+    // city.AddBuilding(buildinglib.BuildingMechaniciansGuild)
     city.AddBuilding(buildinglib.BuildingBuildersHall)
     city.AddBuilding(buildinglib.BuildingCityWalls)
     city.AddBuilding(buildinglib.BuildingWizardsGuild)

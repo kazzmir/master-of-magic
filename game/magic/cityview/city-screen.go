@@ -1694,12 +1694,14 @@ func (cityScreen *CityScreen) drawIcons(total int, small *ebiten.Image, large *e
         total = -total
     }
 
-    if total / 10 > 3 {
+    totalIcons := total / 10 + total % 10
+
+    if totalIcons > 3 {
         largeGap -= 1 * data.ScreenScale
     }
 
-    if total / 10 > 6 {
-        largeGap -= 5 * data.ScreenScale
+    if totalIcons > 5 {
+        largeGap -= 4 * data.ScreenScale
     }
 
     for range total / 10 {
@@ -1711,10 +1713,10 @@ func (cityScreen *CityScreen) drawIcons(total int, small *ebiten.Image, large *e
     }
 
     smallGap := small.Bounds().Dx() + 1
-    if total % 10 > 3 {
+    if totalIcons > 4 {
         smallGap -= 1 * data.ScreenScale
     }
-    if total % 10 >= 6 {
+    if totalIcons >= 8 {
         smallGap -= 1 * data.ScreenScale
     }
 
