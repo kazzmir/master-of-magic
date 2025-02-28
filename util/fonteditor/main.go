@@ -776,6 +776,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
             "Control: Change color by 1 value at a time",
             "Up/Down/Left/Right: Move cursor while not choosing color",
             "Any letter key: Change glyph",
+            "Ctrl-z: Undo last color change",
             "F1: output go code for the palette to stdout",
         }
 
