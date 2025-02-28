@@ -654,6 +654,12 @@ func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellboo
             return
         }
 
+        if unit.HasEnchantment(enchantment) {
+            game.Events <- &GameEventNotice{Message: fmt.Sprintf("That unit already has %v cast on it", spell.Name)}
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+            return
+        }
+
         game.doCastOnMap(yield, tileX, tileY, enchantment.CastAnimationIndex(), false, spell.Sound, func (x int, y int, animationFrame int) {})
         unit.AddEnchantment(enchantment)
 
