@@ -73,6 +73,8 @@ func (hsv HSVColor) ToColor() color.Color {
     return out
 }
 
+type UndoFunc func()
+
 type Editor struct {
     Lbx *lbx.LbxFile
     Palette color.Palette
@@ -96,6 +98,10 @@ type Editor struct {
     RedBand *ebiten.Image
     GreenBand *ebiten.Image
     BlueBand *ebiten.Image
+
+    AlphaSprite *ebiten.Image
+
+    Undo []UndoFunc
 }
 
 // go through each glyph and find the highest palette index used, then make a palette of that many entries
@@ -167,6 +173,25 @@ func MakeEditor() (*Editor, error) {
         CurrentColor: HSVColor{math.Pi * 90 / 180, 1, 1},
         TextFont: textFont,
     }, nil
+}
+
+func (editor *Editor) MakeAlphaSprite(width int, height int) *ebiten.Image {
+    out := ebiten.NewImage(width, height)
+
+    boxSize := 5
+
+    for x := range width / boxSize {
+        for y := range height / boxSize {
+            use := color.RGBA{R: 12, G: 12, B: 12, A: 0xff}
+            if (x+y) % 2 == 0 {
+                use = color.RGBA{R: 96, G: 96, B: 96, A: 0xff}
+            }
+
+            vector.DrawFilledRect(out, float32(x * boxSize), float32(y * boxSize), float32(boxSize), float32(boxSize), use, true)
+        }
+    }
+
+    return out
 }
 
 func (editor *Editor) UpdateFont() {
@@ -274,24 +299,27 @@ func (editor *Editor) Update() error {
     keys = inpututil.AppendPressedKeys(keys)
 
     leftShift := ebiten.IsKeyPressed(ebiten.KeyShift)
+    leftControl := ebiten.IsKeyPressed(ebiten.KeyControl)
 
     speed := 1.0
     if leftShift {
         speed = 3
     }
 
-    for _, key := range keys {
-        switch key {
-            case ebiten.KeyLeft:
-                switch editor.State {
-                    case ChooseColorState:
-                        editor.UpdateBandColor(-speed)
-                }
-            case ebiten.KeyRight:
-                switch editor.State {
-                    case ChooseColorState:
-                        editor.UpdateBandColor(speed)
-                }
+    if !leftControl {
+        for _, key := range keys {
+            switch key {
+                case ebiten.KeyLeft:
+                    switch editor.State {
+                        case ChooseColorState:
+                            editor.UpdateBandColor(-speed)
+                    }
+                case ebiten.KeyRight:
+                    switch editor.State {
+                        case ChooseColorState:
+                            editor.UpdateBandColor(speed)
+                    }
+            }
         }
     }
 
@@ -360,6 +388,10 @@ func (editor *Editor) Update() error {
                         if editor.GlyphPosition.X < 0 {
                             editor.GlyphPosition.X = editor.GlyphImage.Bounds().Dx() - 1
                         }
+                    case ChooseColorState:
+                        if leftControl {
+                            editor.UpdateBandColor(-speed)
+                        }
                 }
             case ebiten.KeyRight:
                 switch editor.State {
@@ -367,6 +399,10 @@ func (editor *Editor) Update() error {
                         editor.GlyphPosition.X += 1
                         if editor.GlyphPosition.X >= editor.GlyphImage.Bounds().Dx() {
                             editor.GlyphPosition.X = 0
+                        }
+                    case ChooseColorState:
+                        if leftControl {
+                            editor.UpdateBandColor(speed)
                         }
                 }
             case ebiten.KeyUp:
@@ -405,11 +441,24 @@ func (editor *Editor) Update() error {
 
                         paletteIndex := editor.GlyphImage.ColorIndexAt(editor.GlyphPosition.X, editor.GlyphPosition.Y)
 
+                        lastValue := editor.Palette[paletteIndex]
+                        editor.Undo = append(editor.Undo, func() {
+                            if int(paletteIndex) < len(editor.Palette) {
+                                editor.Palette[paletteIndex] = lastValue
+                                editor.UpdateFont()
+                            }
+                        })
+
                         editor.Palette[paletteIndex] = editor.CurrentColor.ToColor()
                         editor.Optimized = font.MakeOptimizedFontWithPalette(editor.Fonts[editor.FontIndex], editor.Palette)
                         editor.GlyphImage = editor.Fonts[editor.FontIndex].GlyphForRune(editor.Rune).MakeImageWithPalette(editor.Palette)
                 }
-
+            case ebiten.KeyZ:
+                if len(editor.Undo) > 0 {
+                    last := editor.Undo[len(editor.Undo) - 1]
+                    editor.Undo = editor.Undo[:len(editor.Undo) - 1]
+                    last()
+                }
         }
     }
 
@@ -513,7 +562,19 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
     paletteIndex := int(editor.GlyphImage.ColorIndexAt(editor.GlyphPosition.X, editor.GlyphPosition.Y))
     for i, c := range editor.Palette {
         area := image.Rect(paletteRect.Min.X, paletteRect.Min.Y + minY + i * colorSize, paletteRect.Max.X, paletteRect.Min.Y + minY + (i + 1) * colorSize)
-        vector.DrawFilledRect(paletteArea, float32(area.Min.X), float32(area.Min.Y+1), float32(area.Dx()), float32(area.Dy()-2), c, true)
+
+        _, _, _, a := c.RGBA()
+        if a == 0 {
+            if editor.AlphaSprite == nil {
+                editor.AlphaSprite = editor.MakeAlphaSprite(area.Bounds().Dx(), area.Bounds().Dy())
+            }
+
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(area.Min.X), float64(area.Min.Y))
+            screen.DrawImage(editor.AlphaSprite, &options)
+        } else {
+            vector.DrawFilledRect(paletteArea, float32(area.Min.X), float32(area.Min.Y+1), float32(area.Dx()), float32(area.Dy()-2), c, true)
+        }
 
         borderColor := color.RGBA{R: 0xff, A: 0xff}
         if i == paletteIndex {
@@ -596,7 +657,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
         opts.GeoM.Translate(600, 20)
         opts.ColorScale.ScaleWithColor(color.White)
         face := &text.GoTextFace{Source: editor.TextFont, Size: 15}
-        text.Draw(screen, fmt.Sprintf("H: %.2f S: %.2f V: %.2f", editor.CurrentColor.H, editor.CurrentColor.S, editor.CurrentColor.V), face, &opts)
+        text.Draw(screen, fmt.Sprintf("H: %.2f S: %.2f V: %.2f", editor.CurrentColor.H * 180 / math.Pi, editor.CurrentColor.S, editor.CurrentColor.V), face, &opts)
 
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(600, 50)
@@ -711,8 +772,11 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
             "Space: Clear color (alpha=0)",
             "Enter: Choose color",
             "Up/Down: Change band while choosing color",
+            "Shift: Increase speed while choosing color",
+            "Control: Change color by 1 value at a time",
             "Up/Down/Left/Right: Move cursor while not choosing color",
             "Any letter key: Change glyph",
+            "Ctrl-z: Undo last color change",
             "F1: output go code for the palette to stdout",
         }
 
