@@ -99,6 +99,8 @@ type Editor struct {
     GreenBand *ebiten.Image
     BlueBand *ebiten.Image
 
+    AlphaSprite *ebiten.Image
+
     Undo []UndoFunc
 }
 
@@ -171,6 +173,25 @@ func MakeEditor() (*Editor, error) {
         CurrentColor: HSVColor{math.Pi * 90 / 180, 1, 1},
         TextFont: textFont,
     }, nil
+}
+
+func (editor *Editor) MakeAlphaSprite(width int, height int) *ebiten.Image {
+    out := ebiten.NewImage(width, height)
+
+    boxSize := 5
+
+    for x := range width / boxSize {
+        for y := range height / boxSize {
+            use := color.RGBA{R: 12, G: 12, B: 12, A: 0xff}
+            if (x+y) % 2 == 0 {
+                use = color.RGBA{R: 96, G: 96, B: 96, A: 0xff}
+            }
+
+            vector.DrawFilledRect(out, float32(x * boxSize), float32(y * boxSize), float32(boxSize), float32(boxSize), use, true)
+        }
+    }
+
+    return out
 }
 
 func (editor *Editor) UpdateFont() {
@@ -541,7 +562,19 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
     paletteIndex := int(editor.GlyphImage.ColorIndexAt(editor.GlyphPosition.X, editor.GlyphPosition.Y))
     for i, c := range editor.Palette {
         area := image.Rect(paletteRect.Min.X, paletteRect.Min.Y + minY + i * colorSize, paletteRect.Max.X, paletteRect.Min.Y + minY + (i + 1) * colorSize)
-        vector.DrawFilledRect(paletteArea, float32(area.Min.X), float32(area.Min.Y+1), float32(area.Dx()), float32(area.Dy()-2), c, true)
+
+        _, _, _, a := c.RGBA()
+        if a == 0 {
+            if editor.AlphaSprite == nil {
+                editor.AlphaSprite = editor.MakeAlphaSprite(area.Bounds().Dx(), area.Bounds().Dy())
+            }
+
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(area.Min.X), float64(area.Min.Y))
+            screen.DrawImage(editor.AlphaSprite, &options)
+        } else {
+            vector.DrawFilledRect(paletteArea, float32(area.Min.X), float32(area.Min.Y+1), float32(area.Dx()), float32(area.Dy()-2), c, true)
+        }
 
         borderColor := color.RGBA{R: 0xff, A: 0xff}
         if i == paletteIndex {
