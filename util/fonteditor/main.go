@@ -274,24 +274,27 @@ func (editor *Editor) Update() error {
     keys = inpututil.AppendPressedKeys(keys)
 
     leftShift := ebiten.IsKeyPressed(ebiten.KeyShift)
+    leftControl := ebiten.IsKeyPressed(ebiten.KeyControl)
 
     speed := 1.0
     if leftShift {
         speed = 3
     }
 
-    for _, key := range keys {
-        switch key {
-            case ebiten.KeyLeft:
-                switch editor.State {
-                    case ChooseColorState:
-                        editor.UpdateBandColor(-speed)
-                }
-            case ebiten.KeyRight:
-                switch editor.State {
-                    case ChooseColorState:
-                        editor.UpdateBandColor(speed)
-                }
+    if !leftControl {
+        for _, key := range keys {
+            switch key {
+                case ebiten.KeyLeft:
+                    switch editor.State {
+                        case ChooseColorState:
+                            editor.UpdateBandColor(-speed)
+                    }
+                case ebiten.KeyRight:
+                    switch editor.State {
+                        case ChooseColorState:
+                            editor.UpdateBandColor(speed)
+                    }
+            }
         }
     }
 
@@ -360,6 +363,10 @@ func (editor *Editor) Update() error {
                         if editor.GlyphPosition.X < 0 {
                             editor.GlyphPosition.X = editor.GlyphImage.Bounds().Dx() - 1
                         }
+                    case ChooseColorState:
+                        if leftControl {
+                            editor.UpdateBandColor(-speed)
+                        }
                 }
             case ebiten.KeyRight:
                 switch editor.State {
@@ -367,6 +374,10 @@ func (editor *Editor) Update() error {
                         editor.GlyphPosition.X += 1
                         if editor.GlyphPosition.X >= editor.GlyphImage.Bounds().Dx() {
                             editor.GlyphPosition.X = 0
+                        }
+                    case ChooseColorState:
+                        if leftControl {
+                            editor.UpdateBandColor(speed)
                         }
                 }
             case ebiten.KeyUp:
@@ -596,7 +607,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
         opts.GeoM.Translate(600, 20)
         opts.ColorScale.ScaleWithColor(color.White)
         face := &text.GoTextFace{Source: editor.TextFont, Size: 15}
-        text.Draw(screen, fmt.Sprintf("H: %.2f S: %.2f V: %.2f", editor.CurrentColor.H, editor.CurrentColor.S, editor.CurrentColor.V), face, &opts)
+        text.Draw(screen, fmt.Sprintf("H: %.2f S: %.2f V: %.2f", editor.CurrentColor.H * 180 / math.Pi, editor.CurrentColor.S, editor.CurrentColor.V), face, &opts)
 
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(600, 50)
@@ -711,6 +722,8 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
             "Space: Clear color (alpha=0)",
             "Enter: Choose color",
             "Up/Down: Change band while choosing color",
+            "Shift: Increase speed while choosing color",
+            "Control: Change color by 1 value at a time",
             "Up/Down/Left/Right: Move cursor while not choosing color",
             "Any letter key: Change glyph",
             "F1: output go code for the palette to stdout",
