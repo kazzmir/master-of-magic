@@ -29,6 +29,13 @@ const (
     ChooseColorState
 )
 
+type BandChoice int
+const (
+    BandH BandChoice = iota
+    BandS
+    BandV
+)
+
 type HSVColor struct {
     H, S, V float64
 }
@@ -51,6 +58,8 @@ type Editor struct {
     Scale float64
     State State
     TextFont *text.GoTextFaceSource
+
+    Band BandChoice
 
     CurrentColor HSVColor
     ColorBand *ebiten.Image
@@ -122,6 +131,7 @@ func MakeEditor() (*Editor, error) {
         GlyphPosition: image.Pt(0, 0),
         GlyphImage: fonts[0].GlyphForRune('F').MakeImage(),
         Scale: 6,
+        Band: BandH,
         Palette: palette,
         CurrentColor: HSVColor{math.Pi * 90 / 180, 1, 1},
         TextFont: textFont,
@@ -152,6 +162,27 @@ func (editor *Editor) UpdateFont() {
     }
 }
 
+func (editor *Editor) UpdateBandColor(delta float64) {
+    switch editor.Band {
+        case BandH:
+            editor.CurrentColor.H += math.Pi * delta / 180
+            if editor.CurrentColor.H < 0 {
+                editor.CurrentColor.H += 2 * math.Pi
+            }
+            if editor.CurrentColor.H >= 2 * math.Pi {
+                editor.CurrentColor.H -= 2 * math.Pi
+            }
+        case BandS:
+            editor.CurrentColor.S = max(0, editor.CurrentColor.S - 0.01 * delta)
+        case BandV:
+            editor.CurrentColor.V = max(0, editor.CurrentColor.V - 0.01 * delta)
+    }
+
+    editor.ColorBand = nil
+    editor.SaturationBand = nil
+    editor.ValueBand = nil
+}
+
 func (editor *Editor) Update() error {
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendPressedKeys(keys)
@@ -168,18 +199,12 @@ func (editor *Editor) Update() error {
             case ebiten.KeyLeft:
                 switch editor.State {
                     case ChooseColorState:
-                        editor.CurrentColor.H -= math.Pi * speed / 180
-                        editor.ColorBand = nil
-                        editor.SaturationBand = nil
-                        editor.ValueBand = nil
+                        editor.UpdateBandColor(-speed)
                 }
             case ebiten.KeyRight:
                 switch editor.State {
                     case ChooseColorState:
-                        editor.CurrentColor.H += math.Pi * speed / 180
-                        editor.ColorBand = nil
-                        editor.SaturationBand = nil
-                        editor.ValueBand = nil
+                        editor.UpdateBandColor(speed)
                 }
         }
     }
@@ -421,13 +446,33 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
             editor.ValueBand = editor.CreateValueBand(editor.CurrentColor, 200, 40)
         }
 
+        var opts text.DrawOptions
+        opts.GeoM.Translate(600, 20)
+        opts.ColorScale.ScaleWithColor(color.White)
+        face := &text.GoTextFace{Source: editor.TextFont, Size: 15}
+        text.Draw(screen, fmt.Sprintf("H: %.2f S: %.2f V: %.2f", editor.CurrentColor.H, editor.CurrentColor.S, editor.CurrentColor.V), face, &opts)
+
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(600, 50)
         screen.DrawImage(editor.ColorBand, &options)
+
+        opts.GeoM = options.GeoM
+        opts.GeoM.Translate(-20, 8)
+        text.Draw(screen, "H", face, &opts)
+
         options.GeoM.Translate(0, float64(editor.ColorBand.Bounds().Dy() + 1))
         screen.DrawImage(editor.SaturationBand, &options)
+
+        opts.GeoM = options.GeoM
+        opts.GeoM.Translate(-20, 8)
+        text.Draw(screen, "S", face, &opts)
+
         options.GeoM.Translate(0, float64(editor.SaturationBand.Bounds().Dy() + 1))
         screen.DrawImage(editor.ValueBand, &options)
+
+        opts.GeoM = options.GeoM
+        opts.GeoM.Translate(-20, 8)
+        text.Draw(screen, "V", face, &opts)
     }
 
 }
