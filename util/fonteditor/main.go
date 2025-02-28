@@ -21,7 +21,7 @@ import (
 )
 
 const ScreenWidth = 1024
-const ScreenHeight = 768
+const ScreenHeight = 900
 
 type State int
 const (
@@ -124,6 +124,22 @@ func MakeEditor() (*Editor, error) {
     }, nil
 }
 
+func (editor *Editor) UpdateFont() {
+    lbxFont := editor.Fonts[editor.FontIndex]
+    palette := makePaletteForFont(lbxFont)
+
+    for i := range len(editor.Palette) {
+        if i < len(palette) {
+            palette[i] = editor.Palette[i]
+        }
+    }
+
+    editor.Palette = palette
+
+    editor.Optimized = font.MakeOptimizedFontWithPalette(lbxFont, editor.Palette)
+    editor.GlyphImage = lbxFont.GlyphForRune('F').MakeImageWithPalette(editor.Palette)
+}
+
 func (editor *Editor) Update() error {
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendPressedKeys(keys)
@@ -160,7 +176,7 @@ func (editor *Editor) Update() error {
                             editor.FontIndex = len(editor.Fonts) - 1
                         }
 
-                        editor.Optimized = font.MakeOptimizedFont(editor.Fonts[editor.FontIndex])
+                        editor.UpdateFont()
 
                         fmt.Printf("Font: %v\n", editor.FontIndex)
                 }
@@ -168,14 +184,20 @@ func (editor *Editor) Update() error {
                 switch editor.State {
                     case NormalState:
                         editor.FontIndex = (editor.FontIndex + 1) % len(editor.Fonts)
-                        editor.Optimized = font.MakeOptimizedFont(editor.Fonts[editor.FontIndex])
+                        editor.UpdateFont()
                         fmt.Printf("Font: %v\n", editor.FontIndex)
                 }
             case ebiten.KeyUp:
-                editor.PaletteIndex = max(0, editor.PaletteIndex - 1)
+                switch editor.State {
+                    case NormalState:
+                        editor.PaletteIndex = max(0, editor.PaletteIndex - 1)
+                }
                 // editor.Scale *= 1.05
             case ebiten.KeyDown:
-                editor.PaletteIndex = min(len(editor.Palette) - 1, editor.PaletteIndex + 1)
+                switch editor.State {
+                    case NormalState:
+                        editor.PaletteIndex = min(len(editor.Palette) - 1, editor.PaletteIndex + 1)
+                }
                 /*
                 editor.Scale *= 0.95
                 if editor.Scale < 1 {
@@ -221,7 +243,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
     // vector.DrawFilledRect(screen, 90, 90, 100, 100, &color.RGBA{R: 0xff, A: 0xff}, true)
 
-    paletteRect := image.Rect(800, 0, 1024, 768)
+    paletteRect := image.Rect(800, 0, ScreenWidth, ScreenHeight)
     paletteArea := screen.SubImage(paletteRect).(*ebiten.Image)
     paletteArea.Fill(color.RGBA{32, 32, 32, 0xff})
 
@@ -249,14 +271,14 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
         vector.StrokeRect(screen, float32(area.Min.X-1), float32(area.Min.Y-1), float32(area.Dx()+2), float32(area.Dy()+2), 2, borderColor, true)
 
         var opts text.DrawOptions
-        opts.GeoM.Translate(float64(area.Min.X - 15), float64(area.Min.Y + 1))
+        opts.GeoM.Translate(float64(area.Min.X - 22), float64(area.Min.Y + 1))
         opts.ColorScale.ScaleWithColor(color.White)
         face := &text.GoTextFace{Source: editor.TextFont, Size: 15}
         text.Draw(screen, fmt.Sprintf("%v", i), face, &opts)
     }
 
-    width := 10
-    height := 10
+    width := 7
+    height := 7
     for x := range editor.GlyphImage.Bounds().Dx() {
         for y := range editor.GlyphImage.Bounds().Dy() {
 
@@ -278,7 +300,9 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
         }
     }
 
-    editor.Optimized.Print(screen, 50, 400, editor.Scale, ebiten.ColorScale{}, "This is a test")
+    yPos := editor.GlyphImage.Bounds().Dy() * height * int(editor.Scale) + 10 + 10
+
+    editor.Optimized.Print(screen, 50, float64(yPos), editor.Scale, ebiten.ColorScale{}, "This is a test")
 
     if editor.State == ChooseColorState {
         vector.DrawFilledRect(screen, 600, 50, 100, 50, editor.CurrentColor.ToColor(), true)
