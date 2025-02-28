@@ -73,6 +73,8 @@ func (hsv HSVColor) ToColor() color.Color {
     return out
 }
 
+type UndoFunc func()
+
 type Editor struct {
     Lbx *lbx.LbxFile
     Palette color.Palette
@@ -96,6 +98,8 @@ type Editor struct {
     RedBand *ebiten.Image
     GreenBand *ebiten.Image
     BlueBand *ebiten.Image
+
+    Undo []UndoFunc
 }
 
 // go through each glyph and find the highest palette index used, then make a palette of that many entries
@@ -416,11 +420,22 @@ func (editor *Editor) Update() error {
 
                         paletteIndex := editor.GlyphImage.ColorIndexAt(editor.GlyphPosition.X, editor.GlyphPosition.Y)
 
+                        lastValue := editor.Palette[paletteIndex]
+                        editor.Undo = append(editor.Undo, func() {
+                            editor.Palette[paletteIndex] = lastValue
+                            editor.UpdateFont()
+                        })
+
                         editor.Palette[paletteIndex] = editor.CurrentColor.ToColor()
                         editor.Optimized = font.MakeOptimizedFontWithPalette(editor.Fonts[editor.FontIndex], editor.Palette)
                         editor.GlyphImage = editor.Fonts[editor.FontIndex].GlyphForRune(editor.Rune).MakeImageWithPalette(editor.Palette)
                 }
-
+            case ebiten.KeyZ:
+                if len(editor.Undo) > 0 {
+                    last := editor.Undo[len(editor.Undo) - 1]
+                    editor.Undo = editor.Undo[:len(editor.Undo) - 1]
+                    last()
+                }
         }
     }
 
