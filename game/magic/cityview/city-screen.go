@@ -2145,7 +2145,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         screen.DrawImage(ui, &options)
     }
 
-    cityScreen.Fonts.BigFont.Print(screen, float64(20 * data.ScreenScale), float64(3 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
+    cityScreen.Fonts.BigFont.PrintOptions(screen, float64(20 * data.ScreenScale), float64(3 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{DropShadow: true}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
     cityScreen.Fonts.DescriptionFont.Print(screen, float64(6 * data.ScreenScale), float64(19 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", cityScreen.City.Race))
 
     deltaNumber := func(n int) string {
