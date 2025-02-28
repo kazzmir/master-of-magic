@@ -35,6 +35,12 @@ const (
     BandH BandChoice = iota
     BandS
     BandV
+
+    BandRed
+    BandGreen
+    BandBlue
+
+    BandMax
 )
 
 type HSVColor struct {
@@ -52,7 +58,7 @@ func (hsv HSVColor) ToColor() color.Color {
     if h < 0 {
         h += 360
     }
-    if h > 360 {
+    if h >= 360 {
         h -= 360
     }
     s := hsv.S
@@ -86,6 +92,10 @@ type Editor struct {
     ColorBand *ebiten.Image
     SaturationBand *ebiten.Image
     ValueBand *ebiten.Image
+
+    RedBand *ebiten.Image
+    GreenBand *ebiten.Image
+    BlueBand *ebiten.Image
 }
 
 // go through each glyph and find the highest palette index used, then make a palette of that many entries
@@ -209,26 +219,24 @@ func (editor *Editor) UpdateBandColor(delta float64) {
     */
 }
 
-func (editor *Editor) NextBand() {
-    switch editor.Band {
-        case BandH:
-            editor.Band = BandS
-        case BandS:
-            editor.Band = BandV
-        case BandV:
-            editor.Band = BandH
+func (editor *Editor) ChangeBand(current BandChoice, delta int) BandChoice {
+    current += BandChoice(delta)
+    if current >= BandMax {
+        current = 0
     }
+    if current < 0 {
+        current = BandMax - 1
+    }
+
+    return current
+}
+
+func (editor *Editor) NextBand() {
+    editor.Band = editor.ChangeBand(editor.Band, 1)
 }
 
 func (editor *Editor) PreviousBand() {
-    switch editor.Band {
-        case BandH:
-            editor.Band = BandV
-        case BandS:
-            editor.Band = BandH
-        case BandV:
-            editor.Band = BandS
-    }
+    editor.Band = editor.ChangeBand(editor.Band, -1)
 }
 
 func (editor *Editor) SavePalette() {
@@ -433,6 +441,27 @@ func (editor *Editor) CreateValueBand(hsv HSVColor, width int, height int) *ebit
     return out
 }
 
+// for r,g,b values
+func (editor *Editor) CreateSolidBand(rgb color.RGBA, width int, height int) *ebiten.Image {
+    out := ebiten.NewImage(width, height)
+
+    r, g, b, a := rgb.RGBA()
+    r = r >> 8
+    g = g >> 8
+    b = b >> 8
+    a = a >> 8
+
+    for x := range width {
+        r1 := uint8(float64(r) * float64(x) / float64(width))
+        g1 := uint8(float64(g) * float64(x) / float64(width))
+        b1 := uint8(float64(b) * float64(x) / float64(width))
+
+        vector.DrawFilledRect(out, float32(x), 0, float32(1), float32(height), color.RGBA{R: r1, G: g1, B: b1, A: uint8(a)}, true)
+    }
+
+    return out
+}
+
 func (editor *Editor) Draw(screen *ebiten.Image) {
     screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
 
@@ -516,7 +545,11 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
     editor.Optimized.Print(screen, 50, float64(yPos), editor.Scale, ebiten.ColorScale{}, "ABCDEFGHIJKL")
 
     if editor.State == ChooseColorState {
-        vector.DrawFilledRect(screen, 850, 50, 100, 50, editor.CurrentColor.ToColor(), true)
+        yellow := color.RGBA{R: 0xff, G: 0xff, A: 0xff}
+
+        theColor := editor.CurrentColor.ToColor()
+
+        vector.DrawFilledRect(screen, 850, 50, 100, 50, theColor, true)
         if editor.ColorBand == nil {
             editor.ColorBand = editor.CreateColorBand(editor.CurrentColor, 200, 40)
         }
@@ -539,7 +572,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
         if editor.Band == BandH {
             x1, y1 := options.GeoM.Apply(-1, -1)
-            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.ColorBand.Bounds().Dx() + 2), float32(editor.ColorBand.Bounds().Dy() + 2), 1, color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}, true)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.ColorBand.Bounds().Dx() + 2), float32(editor.ColorBand.Bounds().Dy() + 2), 1, yellow, true)
         }
 
         opts.GeoM = options.GeoM
@@ -551,7 +584,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
         if editor.Band == BandS {
             x1, y1 := options.GeoM.Apply(-1, -1)
-            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.SaturationBand.Bounds().Dx() + 2), float32(editor.SaturationBand.Bounds().Dy() + 2), 1, color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}, true)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.SaturationBand.Bounds().Dx() + 2), float32(editor.SaturationBand.Bounds().Dy() + 2), 1, yellow, true)
         }
 
         opts.GeoM = options.GeoM
@@ -563,12 +596,77 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
         if editor.Band == BandV {
             x1, y1 := options.GeoM.Apply(-1, -1)
-            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.ValueBand.Bounds().Dx() + 2), float32(editor.ValueBand.Bounds().Dy() + 2), 1, color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}, true)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.ValueBand.Bounds().Dx() + 2), float32(editor.ValueBand.Bounds().Dy() + 2), 1, yellow, true)
         }
 
         opts.GeoM = options.GeoM
         opts.GeoM.Translate(-20, 8)
         text.Draw(screen, "V", face, &opts)
+
+        r, g, b, a := theColor.RGBA()
+        r >>= 8
+        g >>= 8
+        b >>= 8
+        a >>= 8
+
+        options.GeoM.Translate(0, float64(editor.ValueBand.Bounds().Dy() + 20))
+        opts.GeoM = options.GeoM
+        text.Draw(screen, fmt.Sprintf("R: 0x%x (%v) G: 0x%x (%v) B: 0x%x (%v)", r, r, g, g, b, b), face, &opts)
+
+        if editor.RedBand == nil {
+            editor.RedBand = editor.CreateSolidBand(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, 200, 40)
+        }
+        if editor.GreenBand == nil {
+            editor.GreenBand = editor.CreateSolidBand(color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}, 200, 40)
+        }
+        if editor.BlueBand == nil {
+            editor.BlueBand = editor.CreateSolidBand(color.RGBA{R: 0, G: 0, B: 0xff, A: 0xff}, 200, 40)
+        }
+
+        options.GeoM.Translate(0, 20)
+        screen.DrawImage(editor.RedBand, &options)
+
+        if editor.Band == BandRed {
+            x1, y1 := options.GeoM.Apply(-1, -1)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.RedBand.Bounds().Dx() + 2), float32(editor.RedBand.Bounds().Dy() + 2), 1, yellow, true)
+        }
+
+        opts.GeoM = options.GeoM
+        opts.GeoM.Translate(-20, 8)
+        text.Draw(screen, "R", face, &opts)
+
+        px, py := options.GeoM.Apply(float64(int(r) * editor.RedBand.Bounds().Dx()) / 0xff, 0)
+        vector.StrokeLine(screen, float32(px), float32(py), float32(px), float32(py) + float32(editor.RedBand.Bounds().Dy()), 1, yellow, true)
+
+        options.GeoM.Translate(0, float64(editor.RedBand.Bounds().Dy() + 2))
+        screen.DrawImage(editor.GreenBand, &options)
+
+        if editor.Band == BandGreen {
+            x1, y1 := options.GeoM.Apply(-1, -1)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.GreenBand.Bounds().Dx() + 2), float32(editor.GreenBand.Bounds().Dy() + 2), 1, yellow, true)
+        }
+
+        opts.GeoM = options.GeoM
+        opts.GeoM.Translate(-20, 8)
+        text.Draw(screen, "G", face, &opts)
+
+        px, py = options.GeoM.Apply(float64(int(g) * editor.RedBand.Bounds().Dx()) / 0xff, 0)
+        vector.StrokeLine(screen, float32(px), float32(py), float32(px), float32(py) + float32(editor.GreenBand.Bounds().Dy()), 1, yellow, true)
+
+        options.GeoM.Translate(0, float64(editor.GreenBand.Bounds().Dy() + 2))
+        screen.DrawImage(editor.BlueBand, &options)
+
+        if editor.Band == BandBlue {
+            x1, y1 := options.GeoM.Apply(-1, -1)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.BlueBand.Bounds().Dx() + 2), float32(editor.BlueBand.Bounds().Dy() + 2), 1, yellow, true)
+        }
+
+        opts.GeoM = options.GeoM
+        opts.GeoM.Translate(-20, 8)
+        text.Draw(screen, "B", face, &opts)
+
+        px, py = options.GeoM.Apply(float64(int(b) * editor.RedBand.Bounds().Dx()) / 0xff, 0)
+        vector.StrokeLine(screen, float32(px), float32(py), float32(px), float32(py) + float32(editor.BlueBand.Bounds().Dy()), 1, yellow, true)
     }
 
 }
