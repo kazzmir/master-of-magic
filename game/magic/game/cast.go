@@ -166,10 +166,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentFlameBlade)
         case "Black Channels":
             after := func (unit units.StackUnit) bool {
-                overworldUnit, ok := unit.(*units.OverworldUnit)
-                if ok {
-                    overworldUnit.Undead = true
-                }
+                unit.SetUndead()
                 return true
             }
             game.doCastUnitEnchantmentFull(player, spell, data.UnitEnchantmentBlackChannels, noUnitEnchantmentCallback, after)
