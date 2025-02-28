@@ -194,6 +194,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                return true
             }
             after := func (unit units.StackUnit) bool {
+                unit.RemoveEnchantment(data.UnitEnchantmentLycanthropie)
                 overworldUnit, ok := unit.(*units.OverworldUnit)
                 if ok {
                     damage := overworldUnit.GetMaxHealth() - overworldUnit.Health
@@ -204,7 +205,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 }
                 return true
             }
-            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentWraithForm, before, after)
+            game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentLycanthropie, before, after)
 
         /*
             TOWN ENCHANTMENTS
