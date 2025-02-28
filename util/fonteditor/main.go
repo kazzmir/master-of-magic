@@ -688,6 +688,26 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
         px, py = options.GeoM.Apply(float64(int(b) * editor.RedBand.Bounds().Dx()) / 0xff, 0)
         vector.StrokeLine(screen, float32(px), float32(py), float32(px), float32(py) + float32(editor.BlueBand.Bounds().Dy()), 1, yellow, true)
+    } else {
+        var opts text.DrawOptions
+        opts.GeoM.Translate(600, 20)
+        opts.ColorScale.ScaleWithColor(color.White)
+        face := &text.GoTextFace{Source: editor.TextFont, Size: 15}
+
+        lines := []string{
+            "Keys",
+            "Tab: Change font",
+            "Space: Clear color (alpha=0)",
+            "Enter: Choose color",
+            "Up/Down: Change band while choosing color",
+            "Up/Down/Left/Right: Move cursor while not choosing color",
+            "Any letter key: Change glyph",
+        }
+
+        for _, line := range lines {
+            text.Draw(screen, line, face, &opts)
+            opts.GeoM.Translate(0, 20)
+        }
     }
 
 }
