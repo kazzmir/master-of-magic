@@ -210,6 +210,15 @@ func (editor *Editor) PreviousBand() {
     }
 }
 
+func (editor *Editor) SavePalette() {
+    fmt.Printf("color.Palette{\n")
+    for _, c := range editor.Palette {
+        r, g, b, a := c.RGBA()
+        fmt.Printf("    color.RGBA{R: 0x%x, G: 0x%x, B: 0x%x, A: 0x%x},\n", r >> 8, g >> 8, b >> 8, a >> 8)
+    }
+    fmt.Printf("}\n")
+}
+
 func (editor *Editor) Update() error {
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendPressedKeys(keys)
@@ -266,6 +275,9 @@ func (editor *Editor) Update() error {
                         fmt.Printf("Font: %v\n", editor.FontIndex)
                 }
                 */
+            case ebiten.KeyF1:
+                editor.SavePalette()
+
             case ebiten.KeySpace:
                 switch editor.State {
                     case NormalState:
