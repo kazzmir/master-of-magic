@@ -1622,7 +1622,8 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
                 images, _ := imageCache.GetImages("cityscap.lbx", enchantment.Enchantment.LbxIndex())
                 index := animationCounter % uint64(len(images))
                 screen.DrawImage(images[index], &options)
-            case data.CityEnchantmentNaturesEye, data.CityEnchantmentProsperity, data.CityEnchantmentConsecration:
+            case data.CityEnchantmentNaturesEye, data.CityEnchantmentProsperity, data.CityEnchantmentConsecration,
+                data.CityEnchantmentInspirations:
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(alphaScale)
                 options.GeoM = baseGeoM
