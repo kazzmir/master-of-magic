@@ -42,7 +42,7 @@ func (hsv HSVColor) ToColor() color.Color {
 type Editor struct {
     Lbx *lbx.LbxFile
     Palette color.Palette
-    PaletteIndex int
+    GlyphPosition image.Point
     GlyphImage *image.Paletted
     FontIndex int
     Fonts []*font.LbxFont
@@ -115,10 +115,10 @@ func MakeEditor() (*Editor, error) {
         Optimized: optimized,
         FontIndex: 0,
         Fonts: fonts,
+        GlyphPosition: image.Pt(0, 0),
         GlyphImage: fonts[0].GlyphForRune('F').MakeImage(),
         Scale: 6,
         Palette: palette,
-        PaletteIndex: 0,
         CurrentColor: HSVColor{math.Pi * 90 / 180, 1, 1},
         TextFont: textFont,
     }, nil
@@ -138,6 +138,14 @@ func (editor *Editor) UpdateFont() {
 
     editor.Optimized = font.MakeOptimizedFontWithPalette(lbxFont, editor.Palette)
     editor.GlyphImage = lbxFont.GlyphForRune('F').MakeImageWithPalette(editor.Palette)
+
+    if editor.GlyphPosition.X >= editor.GlyphImage.Bounds().Dx() {
+        editor.GlyphPosition.X = editor.GlyphImage.Bounds().Dx() - 1
+    }
+
+    if editor.GlyphPosition.Y >= editor.GlyphImage.Bounds().Dy() {
+        editor.GlyphPosition.Y = editor.GlyphImage.Bounds().Dy() - 1
+    }
 }
 
 func (editor *Editor) Update() error {
@@ -168,6 +176,7 @@ func (editor *Editor) Update() error {
         switch key {
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
+                /*
             case ebiten.KeyLeft:
                 switch editor.State {
                     case NormalState:
@@ -180,23 +189,48 @@ func (editor *Editor) Update() error {
 
                         fmt.Printf("Font: %v\n", editor.FontIndex)
                 }
-            case ebiten.KeyRight:
+                */
+            case ebiten.KeyTab:
                 switch editor.State {
                     case NormalState:
                         editor.FontIndex = (editor.FontIndex + 1) % len(editor.Fonts)
                         editor.UpdateFont()
                         fmt.Printf("Font: %v\n", editor.FontIndex)
                 }
+            case ebiten.KeyLeft:
+                switch editor.State {
+                    case NormalState:
+                        editor.GlyphPosition.X -= 1
+                        if editor.GlyphPosition.X < 0 {
+                            editor.GlyphPosition.X = editor.GlyphImage.Bounds().Dx() - 1
+                        }
+                }
+            case ebiten.KeyRight:
+                switch editor.State {
+                    case NormalState:
+                        editor.GlyphPosition.X += 1
+                        if editor.GlyphPosition.X >= editor.GlyphImage.Bounds().Dx() {
+                            editor.GlyphPosition.X = 0
+                        }
+                }
             case ebiten.KeyUp:
                 switch editor.State {
                     case NormalState:
-                        editor.PaletteIndex = max(0, editor.PaletteIndex - 1)
+                        editor.GlyphPosition.Y -= 1
+                        if editor.GlyphPosition.Y < 0 {
+                            editor.GlyphPosition.Y = editor.GlyphImage.Bounds().Dy() - 1
+                        }
                 }
                 // editor.Scale *= 1.05
             case ebiten.KeyDown:
                 switch editor.State {
                     case NormalState:
-                        editor.PaletteIndex = min(len(editor.Palette) - 1, editor.PaletteIndex + 1)
+                        editor.GlyphPosition.Y += 1
+                        if editor.GlyphPosition.Y >= editor.GlyphImage.Bounds().Dy() {
+                            editor.GlyphPosition.Y = 0
+                        }
+
+                        // editor.PaletteIndex = min(len(editor.Palette) - 1, editor.PaletteIndex + 1)
                 }
                 /*
                 editor.Scale *= 0.95
@@ -210,7 +244,10 @@ func (editor *Editor) Update() error {
                         editor.State = ChooseColorState
                     case ChooseColorState:
                         editor.State = NormalState
-                        editor.Palette[editor.PaletteIndex] = editor.CurrentColor.ToColor()
+
+                        paletteIndex := editor.GlyphImage.ColorIndexAt(editor.GlyphPosition.X, editor.GlyphPosition.Y)
+
+                        editor.Palette[paletteIndex] = editor.CurrentColor.ToColor()
                         editor.Optimized = font.MakeOptimizedFontWithPalette(editor.Fonts[editor.FontIndex], editor.Palette)
                         editor.GlyphImage = editor.Fonts[editor.FontIndex].GlyphForRune('F').MakeImageWithPalette(editor.Palette)
                 }
@@ -259,12 +296,13 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
         text.Draw(screen, fmt.Sprintf("Palette %v", len(editor.Palette)), face, &opts)
     }
 
+    paletteIndex := int(editor.GlyphImage.ColorIndexAt(editor.GlyphPosition.X, editor.GlyphPosition.Y))
     for i, c := range editor.Palette {
         area := image.Rect(paletteRect.Min.X, paletteRect.Min.Y + minY + i * colorSize, paletteRect.Max.X, paletteRect.Min.Y + minY + (i + 1) * colorSize)
         vector.DrawFilledRect(paletteArea, float32(area.Min.X), float32(area.Min.Y), float32(area.Dx()), float32(area.Dy()), c, true)
 
         borderColor := color.RGBA{R: 0xff, A: 0xff}
-        if i == editor.PaletteIndex {
+        if i == paletteIndex {
             borderColor = color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
         }
 
@@ -288,8 +326,14 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
             y2 := y1 + float32(height * int(editor.Scale))
 
             value := editor.GlyphImage.At(x, y)
-            vector.DrawFilledRect(screen, x1 + 2, y1 + 2, x2 - x1 - 4, y2 - y1 - 4, value, true)
-            vector.StrokeRect(screen, x1, y1, x2 - x1, y2 - y1, 1, color.RGBA{A: 0xff}, true)
+            vector.DrawFilledRect(screen, x1 + 3, y1 + 3, x2 - x1 - 6, y2 - y1 - 6, value, true)
+
+            borderColor := color.RGBA{A: 0xff}
+            if image.Pt(x, y) == editor.GlyphPosition {
+                borderColor = color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
+            }
+
+            vector.StrokeRect(screen, x1+1, y1+1, x2 - x1 - 2, y2 - y1 - 2, 1, borderColor, true)
             // vector.StrokeRect(screen, x1, y1, 3, 3, 1, color.RGBA{A: 0xff}, true)
 
             var opts text.DrawOptions
@@ -302,7 +346,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
     yPos := editor.GlyphImage.Bounds().Dy() * height * int(editor.Scale) + 10 + 10
 
-    editor.Optimized.Print(screen, 50, float64(yPos), editor.Scale, ebiten.ColorScale{}, "This is a test")
+    editor.Optimized.Print(screen, 50, float64(yPos), editor.Scale, ebiten.ColorScale{}, "abcdefghijkl")
 
     if editor.State == ChooseColorState {
         vector.DrawFilledRect(screen, 600, 50, 100, 50, editor.CurrentColor.ToColor(), true)
