@@ -69,6 +69,10 @@ func (unit *OverworldUnit) IsUndead() bool {
     return unit.Undead
 }
 
+func (unit *OverworldUnit) SetUndead() {
+    unit.Undead = true
+}
+
 func (unit *OverworldUnit) GetAbilityValue(ability data.AbilityType) float32 {
     return unit.Unit.GetAbilityValue(ability)
 }

@@ -39,6 +39,7 @@ type StackUnit interface {
     MovementSpeedEnchantmentBonus(int, []data.UnitEnchantment) int
 
     IsUndead() bool
+    SetUndead()
     GetBanner() data.BannerType
     SetBanner(data.BannerType)
     SetWeaponBonus(data.WeaponBonus)
