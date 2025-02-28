@@ -11,10 +11,11 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/colorconv"
     "github.com/kazzmir/master-of-magic/util/common"
 
     "github.com/hajimehoshi/ebiten/v2"
-    "github.com/hajimehoshi/ebiten/v2/colorm"
+    // "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/vector"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -41,9 +42,29 @@ type HSVColor struct {
 }
 
 func (hsv HSVColor) ToColor() color.Color {
+    /*
     var colorm colorm.ColorM
     colorm.ChangeHSV(hsv.H, hsv.S, hsv.V)
     return colorm.Apply(color.RGBA{R: 0xff, A: 0xff})
+    */
+
+    h := hsv.H * 180 / math.Pi
+    if h < 0 {
+        h += 360
+    }
+    if h > 360 {
+        h -= 360
+    }
+    s := hsv.S
+    v := hsv.V
+
+    // log.Printf("H: %.2f S: %.2f V: %.2f", h, s, v)
+
+    out, err := colorconv.HSVToColor(h, s, v)
+    if err != nil {
+        panic(err)
+    }
+    return out
 }
 
 type Editor struct {
@@ -440,7 +461,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
     paletteIndex := int(editor.GlyphImage.ColorIndexAt(editor.GlyphPosition.X, editor.GlyphPosition.Y))
     for i, c := range editor.Palette {
         area := image.Rect(paletteRect.Min.X, paletteRect.Min.Y + minY + i * colorSize, paletteRect.Max.X, paletteRect.Min.Y + minY + (i + 1) * colorSize)
-        vector.DrawFilledRect(paletteArea, float32(area.Min.X), float32(area.Min.Y), float32(area.Dx()), float32(area.Dy()), c, true)
+        vector.DrawFilledRect(paletteArea, float32(area.Min.X), float32(area.Min.Y+1), float32(area.Dx()), float32(area.Dy()-2), c, true)
 
         borderColor := color.RGBA{R: 0xff, A: 0xff}
         if i == paletteIndex {
