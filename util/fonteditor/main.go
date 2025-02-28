@@ -20,7 +20,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
-const ScreenWidth = 1024
+const ScreenWidth = 1300
 const ScreenHeight = 900
 
 type State int
@@ -44,6 +44,7 @@ type Editor struct {
     Palette color.Palette
     GlyphPosition image.Point
     GlyphImage *image.Paletted
+    Rune rune
     FontIndex int
     Fonts []*font.LbxFont
     Optimized *font.Font
@@ -115,6 +116,7 @@ func MakeEditor() (*Editor, error) {
         Optimized: optimized,
         FontIndex: 0,
         Fonts: fonts,
+        Rune: 'F',
         GlyphPosition: image.Pt(0, 0),
         GlyphImage: fonts[0].GlyphForRune('F').MakeImage(),
         Scale: 6,
@@ -137,7 +139,7 @@ func (editor *Editor) UpdateFont() {
     editor.Palette = palette
 
     editor.Optimized = font.MakeOptimizedFontWithPalette(lbxFont, editor.Palette)
-    editor.GlyphImage = lbxFont.GlyphForRune('F').MakeImageWithPalette(editor.Palette)
+    editor.GlyphImage = lbxFont.GlyphForRune(editor.Rune).MakeImageWithPalette(editor.Palette)
 
     if editor.GlyphPosition.X >= editor.GlyphImage.Bounds().Dx() {
         editor.GlyphPosition.X = editor.GlyphImage.Bounds().Dx() - 1
@@ -152,21 +154,34 @@ func (editor *Editor) Update() error {
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendPressedKeys(keys)
 
+    leftShift := ebiten.IsKeyPressed(ebiten.KeyShift)
+
+    speed := 1.0
+    if leftShift {
+        speed = 3
+    }
+
     for _, key := range keys {
         switch key {
             case ebiten.KeyLeft:
                 switch editor.State {
                     case ChooseColorState:
-                        editor.CurrentColor.H -= math.Pi * 1 / 180
+                        editor.CurrentColor.H -= math.Pi * speed / 180
                         editor.ColorBand = nil
                 }
             case ebiten.KeyRight:
                 switch editor.State {
                     case ChooseColorState:
-                        editor.CurrentColor.H += math.Pi * 1 / 180
+                        editor.CurrentColor.H += math.Pi * speed / 180
                         editor.ColorBand = nil
                 }
         }
+    }
+
+    inputs := ebiten.AppendInputChars(nil)
+    for _, r := range inputs {
+        editor.Rune = r
+        editor.UpdateFont()
     }
 
     keys = make([]ebiten.Key, 0)
@@ -193,7 +208,14 @@ func (editor *Editor) Update() error {
             case ebiten.KeyTab:
                 switch editor.State {
                     case NormalState:
-                        editor.FontIndex = (editor.FontIndex + 1) % len(editor.Fonts)
+                        if leftShift {
+                            editor.FontIndex -= 1
+                            if editor.FontIndex < 0 {
+                                editor.FontIndex = len(editor.Fonts) - 1
+                            }
+                        } else {
+                            editor.FontIndex = (editor.FontIndex + 1) % len(editor.Fonts)
+                        }
                         editor.UpdateFont()
                         fmt.Printf("Font: %v\n", editor.FontIndex)
                 }
@@ -249,7 +271,7 @@ func (editor *Editor) Update() error {
 
                         editor.Palette[paletteIndex] = editor.CurrentColor.ToColor()
                         editor.Optimized = font.MakeOptimizedFontWithPalette(editor.Fonts[editor.FontIndex], editor.Palette)
-                        editor.GlyphImage = editor.Fonts[editor.FontIndex].GlyphForRune('F').MakeImageWithPalette(editor.Palette)
+                        editor.GlyphImage = editor.Fonts[editor.FontIndex].GlyphForRune(editor.Rune).MakeImageWithPalette(editor.Palette)
                 }
 
         }
@@ -280,7 +302,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
     // vector.DrawFilledRect(screen, 90, 90, 100, 100, &color.RGBA{R: 0xff, A: 0xff}, true)
 
-    paletteRect := image.Rect(800, 0, ScreenWidth, ScreenHeight)
+    paletteRect := image.Rect(ScreenWidth - 200, 0, ScreenWidth, ScreenHeight)
     paletteArea := screen.SubImage(paletteRect).(*ebiten.Image)
     paletteArea.Fill(color.RGBA{32, 32, 32, 0xff})
 
@@ -294,6 +316,10 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
         opts.ColorScale.ScaleWithColor(color.White)
         face := &text.GoTextFace{Source: editor.TextFont, Size: 15}
         text.Draw(screen, fmt.Sprintf("Palette %v", len(editor.Palette)), face, &opts)
+
+        opts.GeoM.Reset()
+        opts.GeoM.Translate(1, 1)
+        text.Draw(screen, fmt.Sprintf("Font %v", editor.FontIndex), face, &opts)
     }
 
     paletteIndex := int(editor.GlyphImage.ColorIndexAt(editor.GlyphPosition.X, editor.GlyphPosition.Y))
@@ -315,13 +341,16 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
         text.Draw(screen, fmt.Sprintf("%v", i), face, &opts)
     }
 
+    minX := 50
+    minY = 20
+
     width := 7
     height := 7
     for x := range editor.GlyphImage.Bounds().Dx() {
         for y := range editor.GlyphImage.Bounds().Dy() {
 
-            x1 := float32(50 + x * width * int(editor.Scale))
-            y1 := float32(10 + y * height * int(editor.Scale))
+            x1 := float32(minX + x * width * int(editor.Scale))
+            y1 := float32(minY + y * height * int(editor.Scale))
             x2 := x1 + float32(width * int(editor.Scale))
             y2 := y1 + float32(height * int(editor.Scale))
 
@@ -347,6 +376,8 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
     yPos := editor.GlyphImage.Bounds().Dy() * height * int(editor.Scale) + 10 + 10
 
     editor.Optimized.Print(screen, 50, float64(yPos), editor.Scale, ebiten.ColorScale{}, "abcdefghijkl")
+    yPos += editor.Optimized.Height() * int(editor.Scale) + 2
+    editor.Optimized.Print(screen, 50, float64(yPos), editor.Scale, ebiten.ColorScale{}, "ABCDEFGHIJKL")
 
     if editor.State == ChooseColorState {
         vector.DrawFilledRect(screen, 600, 50, 100, 50, editor.CurrentColor.ToColor(), true)
