@@ -754,7 +754,13 @@ func TestScenario2(test *testing.T) {
     city.Population = 10110
     city.Farmers = 7
     city.Workers = 3
-    city.BuildingInfo = make([]building.BuildingInfo, 35)
+    city.BuildingInfo = make([]building.BuildingInfo, 40)
+
+    // set the buildings to have some upkeep cost
+    city.BuildingInfo[city.BuildingInfo.GetBuildingIndex(building.BuildingBarracks)].UpkeepGold = 3
+    city.BuildingInfo[city.BuildingInfo.GetBuildingIndex(building.BuildingBuildersHall)].UpkeepGold = 3
+    city.BuildingInfo[city.BuildingInfo.GetBuildingIndex(building.BuildingSmithy)].UpkeepGold = 3
+
     city.AddBuilding(building.BuildingBarracks)
     city.AddBuilding(building.BuildingBuildersHall)
     city.AddBuilding(building.BuildingSmithy)
@@ -823,7 +829,9 @@ func TestScenario2(test *testing.T) {
         test.Logf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
 
+    // with 0 tax and some building costs, surplus will be negative
     reign.TaxRate = fraction.Zero()
+    city.ProducingBuilding = building.BuildingHousing
 
     if city.GoldSurplus() != -2 {
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
