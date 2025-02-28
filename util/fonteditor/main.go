@@ -301,7 +301,9 @@ func (editor *Editor) Update() error {
             continue
         }
         editor.Rune = r
-        editor.UpdateFont()
+        // editor.UpdateFont()
+        lbxFont := editor.Fonts[editor.FontIndex]
+        editor.GlyphImage = lbxFont.GlyphForRune(editor.Rune).MakeImageWithPalette(editor.Palette)
     }
 
     keys = make([]ebiten.Key, 0)
@@ -552,9 +554,15 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
             // vector.StrokeRect(screen, x1, y1, 3, 3, 1, color.RGBA{A: 0xff}, true)
 
             var opts text.DrawOptions
-            opts.GeoM.Translate(float64(x1 + 1), float64(y1 + 1))
+            face := &text.GoTextFace{Source: editor.TextFont, Size: 15}
+            opts.GeoM.Translate(float64(x1 + 4), float64(y1 + 4))
+            opts.GeoM.Translate(1, 1)
+            opts.ColorScale.ScaleWithColor(color.Black)
+            text.Draw(screen, fmt.Sprintf("%v", editor.GlyphImage.ColorIndexAt(x, y)), face, &opts)
+
+            opts.GeoM.Translate(-1, -1)
+            opts.ColorScale = ebiten.ColorScale{}
             opts.ColorScale.ScaleWithColor(color.White)
-            face := &text.GoTextFace{Source: editor.TextFont, Size: 13}
             text.Draw(screen, fmt.Sprintf("%v", editor.GlyphImage.ColorIndexAt(x, y)), face, &opts)
         }
     }
@@ -596,7 +604,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
         if editor.Band == BandH {
             x1, y1 := options.GeoM.Apply(-1, -1)
-            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.ColorBand.Bounds().Dx() + 2), float32(editor.ColorBand.Bounds().Dy() + 2), 1, yellow, true)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.ColorBand.Bounds().Dx() + 2), float32(editor.ColorBand.Bounds().Dy() + 2), 2, yellow, true)
         }
 
         opts.GeoM = options.GeoM
@@ -608,7 +616,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
         if editor.Band == BandS {
             x1, y1 := options.GeoM.Apply(-1, -1)
-            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.SaturationBand.Bounds().Dx() + 2), float32(editor.SaturationBand.Bounds().Dy() + 2), 1, yellow, true)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.SaturationBand.Bounds().Dx() + 2), float32(editor.SaturationBand.Bounds().Dy() + 2), 2, yellow, true)
         }
 
         opts.GeoM = options.GeoM
@@ -620,7 +628,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
         if editor.Band == BandV {
             x1, y1 := options.GeoM.Apply(-1, -1)
-            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.ValueBand.Bounds().Dx() + 2), float32(editor.ValueBand.Bounds().Dy() + 2), 1, yellow, true)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.ValueBand.Bounds().Dx() + 2), float32(editor.ValueBand.Bounds().Dy() + 2), 2, yellow, true)
         }
 
         opts.GeoM = options.GeoM
@@ -652,7 +660,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
         if editor.Band == BandRed {
             x1, y1 := options.GeoM.Apply(-1, -1)
-            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.RedBand.Bounds().Dx() + 2), float32(editor.RedBand.Bounds().Dy() + 2), 1, yellow, true)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.RedBand.Bounds().Dx() + 2), float32(editor.RedBand.Bounds().Dy() + 2), 2, yellow, true)
         }
 
         opts.GeoM = options.GeoM
@@ -667,7 +675,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
         if editor.Band == BandGreen {
             x1, y1 := options.GeoM.Apply(-1, -1)
-            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.GreenBand.Bounds().Dx() + 2), float32(editor.GreenBand.Bounds().Dy() + 2), 1, yellow, true)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.GreenBand.Bounds().Dx() + 2), float32(editor.GreenBand.Bounds().Dy() + 2), 2, yellow, true)
         }
 
         opts.GeoM = options.GeoM
@@ -682,7 +690,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
         if editor.Band == BandBlue {
             x1, y1 := options.GeoM.Apply(-1, -1)
-            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.BlueBand.Bounds().Dx() + 2), float32(editor.BlueBand.Bounds().Dy() + 2), 1, yellow, true)
+            vector.StrokeRect(screen, float32(x1), float32(y1), float32(editor.BlueBand.Bounds().Dx() + 2), float32(editor.BlueBand.Bounds().Dy() + 2), 2, yellow, true)
         }
 
         opts.GeoM = options.GeoM
@@ -705,6 +713,7 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
             "Up/Down: Change band while choosing color",
             "Up/Down/Left/Right: Move cursor while not choosing color",
             "Any letter key: Change glyph",
+            "F1: output go code for the palette to stdout",
         }
 
         for _, line := range lines {
