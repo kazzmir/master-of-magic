@@ -211,6 +211,9 @@ func (editor *Editor) Update() error {
 
     inputs := ebiten.AppendInputChars(nil)
     for _, r := range inputs {
+        if r == ' ' {
+            continue
+        }
         editor.Rune = r
         editor.UpdateFont()
     }
@@ -236,6 +239,15 @@ func (editor *Editor) Update() error {
                         fmt.Printf("Font: %v\n", editor.FontIndex)
                 }
                 */
+            case ebiten.KeySpace:
+                switch editor.State {
+                    case NormalState:
+                        paletteIndex := editor.GlyphImage.ColorIndexAt(editor.GlyphPosition.X, editor.GlyphPosition.Y)
+                        // reset to alpha=0
+                        editor.Palette[paletteIndex] = color.RGBA{}
+                        editor.UpdateFont()
+                }
+
             case ebiten.KeyTab:
                 switch editor.State {
                     case NormalState:
@@ -322,32 +334,39 @@ func (editor *Editor) CreateColorBand(color HSVColor, width int, height int) *eb
     for x := range width {
         use := color
         use.H = color.H + (math.Pi / 2 * float64(x - middle) / float64(width / 2))
-        vector.DrawFilledRect(out, float32(x), 0, float32(x+1), float32(height), use.ToColor(), true)
+        vector.DrawFilledRect(out, float32(x), 0, float32(1), float32(height), use.ToColor(), true)
     }
 
     return out
 }
 
-func (editor *Editor) CreateSaturationBand(color HSVColor, width int, height int) *ebiten.Image {
+func (editor *Editor) CreateSaturationBand(hsv HSVColor, width int, height int) *ebiten.Image {
     out := ebiten.NewImage(width, height)
 
     for x := range width {
-        use := color
+        use := hsv
         use.S = float64(x) / float64(width)
-        vector.DrawFilledRect(out, float32(x), 0, float32(x+1), float32(height), use.ToColor(), true)
+        vector.DrawFilledRect(out, float32(x), 0, float32(1), float32(height), use.ToColor(), true)
     }
+
+    // draw yellow line at current saturation
+    x := float32(hsv.S * float64(width))
+    vector.DrawFilledRect(out, x, 0, 1, float32(height), color.RGBA{R: 0xff, G: 0xff, A: 0xff}, true)
 
     return out
 }
 
-func (editor *Editor) CreateValueBand(color HSVColor, width int, height int) *ebiten.Image {
+func (editor *Editor) CreateValueBand(hsv HSVColor, width int, height int) *ebiten.Image {
     out := ebiten.NewImage(width, height)
 
     for x := range width {
-        use := color
+        use := hsv
         use.V = float64(x) / float64(width)
-        vector.DrawFilledRect(out, float32(x), 0, float32(x+1), float32(height), use.ToColor(), true)
+        vector.DrawFilledRect(out, float32(x), 0, float32(1), float32(height), use.ToColor(), true)
     }
+
+    x := float32(hsv.V * float64(width))
+    vector.DrawFilledRect(out, x, 0, 1, float32(height), color.RGBA{R: 0xff, G: 0xff, A: 0xff}, true)
 
     return out
 }
