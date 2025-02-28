@@ -49,6 +49,7 @@ type Editor struct {
     State State
 
     CurrentColor HSVColor
+    ColorBand *ebiten.Image
 }
 
 // go through each glyph and find the highest palette index used, then make a palette of that many entries
@@ -124,11 +125,13 @@ func (editor *Editor) Update() error {
                 switch editor.State {
                     case ChooseColorState:
                         editor.CurrentColor.H -= math.Pi * 1 / 180
+                        editor.ColorBand = nil
                 }
             case ebiten.KeyRight:
                 switch editor.State {
                     case ChooseColorState:
                         editor.CurrentColor.H += math.Pi * 1 / 180
+                        editor.ColorBand = nil
                 }
         }
     }
@@ -190,6 +193,19 @@ func (editor *Editor) Layout(outsideWidth int, outsideHeight int) (int, int) {
     return ScreenWidth, ScreenHeight
 }
 
+func (editor *Editor) CreateColorBand(color HSVColor, width int, height int) *ebiten.Image {
+    out := ebiten.NewImage(width, height)
+
+    middle := width / 2
+    for x := range width {
+        use := color
+        use.H = color.H + (math.Pi / 2 * float64(x - middle) / float64(width / 2))
+        vector.DrawFilledRect(out, float32(x), 0, float32(x+1), float32(height), use.ToColor(), true)
+    }
+
+    return out
+}
+
 func (editor *Editor) Draw(screen *ebiten.Image) {
     screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
 
@@ -217,6 +233,12 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
 
     if editor.State == ChooseColorState {
         vector.DrawFilledRect(screen, 600, 50, 100, 50, editor.CurrentColor.ToColor(), true)
+        if editor.ColorBand == nil {
+            editor.ColorBand = editor.CreateColorBand(editor.CurrentColor, 200, 40)
+        }
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(650 - editor.ColorBand.Bounds().Dx() / 2), float64(50 - editor.ColorBand.Bounds().Dy()))
+        screen.DrawImage(editor.ColorBand, &options)
     }
 
     /*
