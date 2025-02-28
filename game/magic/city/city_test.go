@@ -748,10 +748,19 @@ func TestScenario2(test *testing.T) {
     // Test against values from a city screen of original MoM v1.60
 
     // City
-    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, nil, &Catchment{Map: makeScenarioMap(), GoldBonus: 30}, &NoCities{}, &NoReign{NumberOfBooks: 11, TaxRate: fraction.FromInt(1)})
+    reign := NoReign{NumberOfBooks: 11, TaxRate: fraction.FromInt(1)}
+
+    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, nil, &Catchment{Map: makeScenarioMap(), GoldBonus: 30}, &NoCities{}, &reign)
     city.Population = 10110
     city.Farmers = 7
     city.Workers = 3
+    city.BuildingInfo = make([]building.BuildingInfo, 40)
+
+    // set the buildings to have some upkeep cost
+    city.BuildingInfo[city.BuildingInfo.GetBuildingIndex(building.BuildingBarracks)].UpkeepGold = 3
+    city.BuildingInfo[city.BuildingInfo.GetBuildingIndex(building.BuildingBuildersHall)].UpkeepGold = 3
+    city.BuildingInfo[city.BuildingInfo.GetBuildingIndex(building.BuildingSmithy)].UpkeepGold = 3
+
     city.AddBuilding(building.BuildingBarracks)
     city.AddBuilding(building.BuildingBuildersHall)
     city.AddBuilding(building.BuildingSmithy)
@@ -819,4 +828,13 @@ func TestScenario2(test *testing.T) {
         // Dos MoM seems to be doing this other than explained in the wiki
         test.Logf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
+
+    // with 0 tax and some building costs, surplus will be negative
+    reign.TaxRate = fraction.Zero()
+    city.ProducingBuilding = building.BuildingHousing
+
+    if city.GoldSurplus() != -2 {
+        test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
+    }
+
 }

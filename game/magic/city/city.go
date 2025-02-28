@@ -1441,10 +1441,6 @@ func (city *City) GoldSurplus() int {
 
     out := income - upkeepCosts
 
-    if out < 0 {
-        out = 0
-    }
-
     return out
 }
 
