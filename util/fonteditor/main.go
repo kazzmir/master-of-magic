@@ -22,7 +22,7 @@ import (
 )
 
 const ScreenWidth = 1300
-const ScreenHeight = 900
+const ScreenHeight = 1100
 
 type State int
 const (
@@ -559,7 +559,10 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
         }
     }
 
-    yPos := editor.GlyphImage.Bounds().Dy() * height * int(editor.Scale) + 10 + 10
+    yPos := editor.GlyphImage.Bounds().Dy() * height * int(editor.Scale) + 10 + 20
+
+    editor.Optimized.Print(screen, 50, float64(yPos), editor.Scale + 2, ebiten.ColorScale{}, string(editor.Rune))
+    yPos += editor.Optimized.Height() * int(editor.Scale+2) + 2
 
     editor.Optimized.Print(screen, 50, float64(yPos), editor.Scale, ebiten.ColorScale{}, "abcdefghijkl")
     yPos += editor.Optimized.Height() * int(editor.Scale) + 2
