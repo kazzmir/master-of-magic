@@ -422,8 +422,10 @@ func (editor *Editor) Update() error {
 
                         lastValue := editor.Palette[paletteIndex]
                         editor.Undo = append(editor.Undo, func() {
-                            editor.Palette[paletteIndex] = lastValue
-                            editor.UpdateFont()
+                            if int(paletteIndex) < len(editor.Palette) {
+                                editor.Palette[paletteIndex] = lastValue
+                                editor.UpdateFont()
+                            }
                         })
 
                         editor.Palette[paletteIndex] = editor.CurrentColor.ToColor()
