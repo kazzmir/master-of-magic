@@ -269,6 +269,12 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
             vector.DrawFilledRect(screen, x1 + 2, y1 + 2, x2 - x1 - 4, y2 - y1 - 4, value, true)
             vector.StrokeRect(screen, x1, y1, x2 - x1, y2 - y1, 1, color.RGBA{A: 0xff}, true)
             // vector.StrokeRect(screen, x1, y1, 3, 3, 1, color.RGBA{A: 0xff}, true)
+
+            var opts text.DrawOptions
+            opts.GeoM.Translate(float64(x1 + 1), float64(y1 + 1))
+            opts.ColorScale.ScaleWithColor(color.White)
+            face := &text.GoTextFace{Source: editor.TextFont, Size: 13}
+            text.Draw(screen, fmt.Sprintf("%v", editor.GlyphImage.ColorIndexAt(x, y)), face, &opts)
         }
     }
 
