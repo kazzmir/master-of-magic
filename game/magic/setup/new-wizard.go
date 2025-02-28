@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/draw"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -857,6 +858,8 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         return err
     }
 
+    newWizardFonts := fontslib.MakeNewWizardFonts(cache)
+
     // FIXME: this is a fudged palette to look like the original, but its probably slightly wrong
     brightYellowPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -908,34 +911,13 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
     }
 
-    // FIXME: move this to the font module
-    selectYellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xfa, G: 0xe1, B: 0x16, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xef, B: 0x2f, A: 0xff},
-        color.RGBA{R: 0xe0, G: 0x8a, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xd2, G: 0x7f, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x99, G: 0x4f, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
     screen.LbxFonts = fonts
 
     screen.Font = font.MakeOptimizedFont(fonts[3])
     screen.WizardSlots = DefaultWizardSlots()
 
     // FIXME: load with a yellowish palette
-    screen.SelectFont = font.MakeOptimizedFontWithPalette(fonts[5], selectYellowPalette)
+    screen.SelectFont = newWizardFonts.BigYellowFont
 
     screen.AbilityFont = font.MakeOptimizedFontWithPalette(fonts[0], transparentPalette)
     screen.AbilityFontSelected = font.MakeOptimizedFontWithPalette(fonts[0], brightYellowPalette)
@@ -958,7 +940,6 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
     }
 
     screen.ErrorFont = font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
-
 
     if screen.State == NewWizardScreenStateSelectWizard {
         screen.UI = screen.MakeSelectWizardUI()

@@ -1168,3 +1168,18 @@ func MakeSpellSpecialUIFonts(cache *lbx.LbxCache) *SpellSpecialUIFonts {
         InfoOrange: gameFonts.InfoFontYellow,
     }
 }
+
+type NewWizardFonts struct {
+    BigYellowFont *font.Font
+}
+
+func MakeNewWizardFonts(cache *lbx.LbxCache) *NewWizardFonts {
+    cityViewFonts, err := MakeCityViewFonts(cache)
+    if err != nil {
+        return nil
+    }
+
+    return &NewWizardFonts{
+        BigYellowFont: cityViewFonts.BigFont,
+    }
+}
