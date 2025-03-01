@@ -4438,7 +4438,7 @@ func createScenario49(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
-// Spell Blast test
+// Wizard-targeting spells (Spell Blast, Cruel Unminding, Drain Power) test
 func createScenario50(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 49: Spell Blast")
     wizard := setup.WizardCustom{
@@ -4475,6 +4475,8 @@ func createScenario50(cache *lbx.LbxCache) *gamelib.Game {
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
     player.KnownSpells.AddSpell(allSpells.FindByName("Spell Blast"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Cruel Unminding"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Drain Power"))
 
     x, y, _ := game.FindValidCityLocation(game.Plane)
 
@@ -4514,8 +4516,6 @@ func createScenario50(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy := game.AddPlayer(enemyWizard, false)
     enemy.TaxRate = fraction.Make(1, 1)
-    enemy.GlobalEnchantments.Insert(data.EnchantmentTranquility)
-    enemy.GlobalEnchantments.Insert(data.EnchantmentLifeForce)
     enemy.Mana += 10000
     enemy.CastingSpell = allSpells.FindByName("Armageddon")
     enemy.CastingSpellProgress = 100

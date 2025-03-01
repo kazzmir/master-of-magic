@@ -431,9 +431,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Word of Recall
                 Fire Storm
                 Black Wind
-                Cruel Unminding
                 Death Wish
-                Drain Power
                 Subversion
         */
         case "Create Artifact", "Enchant Item":
@@ -463,6 +461,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyCity, SelectedFunc: selected}
         case "Change Terrain":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeChangeTerrain, SelectedFunc: game.doCastChangeTerrain}
+        case "Cruel Unminding":
+            game.doCastCruelUnminding(player)
+        case "Drain Power":
+            game.doCastDrainPower(player)
         case "Transmute":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeTransmute, SelectedFunc: game.doCastTransmute}
         case "Raise Volcano":
@@ -1354,6 +1356,34 @@ func (game *Game) doCastSpellBlast(player *playerlib.Player) {
     }
     playersInGame := len(game.Players)
     wizSelectionUiGroup = makeSelectSpellBlastTargetUI(game.HudUI, game.Cache, &game.ImageCache, player, playersInGame, onTargetSelectCallback)
+    game.HudUI.AddGroup(wizSelectionUiGroup)
+}
+
+func (game *Game) doCastCruelUnminding(player *playerlib.Player) {
+    var wizSelectionUiGroup *uilib.UIElementGroup
+    onTargetSelectCallback := func(targetPlayer *playerlib.Player) (bool, string) {
+        if targetPlayer.Defeated || targetPlayer.Banished {
+            return false, ""
+        }
+        // TODO: the spell logic itself
+        return true, fmt.Sprintf("%s loses %d points of casting ability", targetPlayer.Wizard.Name, 123)
+    }
+    playersInGame := len(game.Players)
+    wizSelectionUiGroup = makeSelectTargetWizardUI(game.HudUI, game.Cache, &game.ImageCache, "Select target for Cruel Unminding spell", 41, player, playersInGame, onTargetSelectCallback)
+    game.HudUI.AddGroup(wizSelectionUiGroup)
+}
+
+func (game *Game) doCastDrainPower(player *playerlib.Player) {
+    var wizSelectionUiGroup *uilib.UIElementGroup
+    onTargetSelectCallback := func(targetPlayer *playerlib.Player) (bool, string) {
+        if targetPlayer.Defeated || targetPlayer.Banished {
+            return false, ""
+        }
+        // TODO: the spell logic itself
+        return true, fmt.Sprintf("%s loses %d points of mana", targetPlayer.Wizard.Name, 123)
+    }
+    playersInGame := len(game.Players)
+    wizSelectionUiGroup = makeSelectTargetWizardUI(game.HudUI, game.Cache, &game.ImageCache, "Select target for Drain Power spell", 42, player, playersInGame, onTargetSelectCallback)
     game.HudUI.AddGroup(wizSelectionUiGroup)
 }
 
