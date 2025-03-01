@@ -128,6 +128,10 @@ func (unit *OverworldUnit) SetPlane(plane data.Plane) {
 }
 
 func (unit *OverworldUnit) GetRace() data.Race {
+    if unit.IsUndead() {
+        return data.RaceFantastic
+    }
+
     return unit.Unit.Race
 }
 
