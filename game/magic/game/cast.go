@@ -1365,8 +1365,12 @@ func (game *Game) doCastCruelUnminding(player *playerlib.Player) {
         if targetPlayer.Defeated || targetPlayer.Banished {
             return false, ""
         }
-        // TODO: the spell logic itself
-        return true, fmt.Sprintf("%s loses %d points of casting ability", targetPlayer.Wizard.Name, 123)
+        targetSkill := targetPlayer.ComputeCastingSkill()
+        minReduction := max(targetSkill / 100, 1)
+        maxReduction := max(targetSkill / 10, 1)
+        reduction := minReduction + rand.N(maxReduction)
+        actuallyReduced := targetPlayer.ReduceCastingSkill(reduction)
+        return true, fmt.Sprintf("%s loses %d points of casting ability", targetPlayer.Wizard.Name, actuallyReduced)
     }
     playersInGame := len(game.Players)
     wizSelectionUiGroup = makeSelectTargetWizardUI(game.HudUI, game.Cache, &game.ImageCache, "Select target for Cruel Unminding spell", 41, player, playersInGame, onTargetSelectCallback)
@@ -1379,8 +1383,9 @@ func (game *Game) doCastDrainPower(player *playerlib.Player) {
         if targetPlayer.Defeated || targetPlayer.Banished {
             return false, ""
         }
-        // TODO: the spell logic itself
-        return true, fmt.Sprintf("%s loses %d points of mana", targetPlayer.Wizard.Name, 123)
+        drainAmount := min(targetPlayer.Mana, 50 + rand.N(101)) // random 50-150, but don't drain more than the target has
+        targetPlayer.Mana -= drainAmount
+        return true, fmt.Sprintf("%s loses %d points of mana", targetPlayer.Wizard.Name, drainAmount)
     }
     playersInGame := len(game.Players)
     wizSelectionUiGroup = makeSelectTargetWizardUI(game.HudUI, game.Cache, &game.ImageCache, "Select target for Drain Power spell", 42, player, playersInGame, onTargetSelectCallback)

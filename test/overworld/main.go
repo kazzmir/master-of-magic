@@ -4517,6 +4517,7 @@ func createScenario50(cache *lbx.LbxCache) *gamelib.Game {
     enemy := game.AddPlayer(enemyWizard, false)
     enemy.TaxRate = fraction.Make(1, 1)
     enemy.Mana += 10000
+    enemy.CastingSkillPower = (100 * 100 - 100 + 1) // skill^2 - skill + 1, simplification of (skill-1)^2 + skill
     enemy.CastingSpell = allSpells.FindByName("Armageddon")
     enemy.CastingSpellProgress = 100
 

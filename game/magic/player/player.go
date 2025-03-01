@@ -519,6 +519,16 @@ func (player *Player) ComputeCastingSkill() int {
     return int((math.Sqrt(float64(4 * player.CastingSkillPower - 3)) + 1) / 2) + bonus
 }
 
+// Used by Cruel Unminding. skillReduction is the actual skill to reduce, but the func reduces the power points put into skill. Returns actual value of the resulting skill (not power) reduction.
+func (player *Player) ReduceCastingSkill(skillReduction int) int {
+    skillBeforeReduction := player.ComputeCastingSkill()
+    investedPowerToReduce := skillReduction * (2 * skillBeforeReduction - skillReduction - 1) // Formula: to reduce skill by X, the invested power to reduce is "deltaP = X * (2 * skill - X - 1)"
+    // FIXME: Should the power be allowed to be reduced below 0 to nullify Archmage retort? Wiki doesn't know.
+    investedPowerToReduce = min(player.CastingSkillPower, investedPowerToReduce)
+    player.CastingSkillPower -= investedPowerToReduce
+    return skillBeforeReduction - player.ComputeCastingSkill()
+}
+
 func (player *Player) CastingSkillPerTurn(power int) int {
     bonus := 1.0
 
