@@ -718,6 +718,18 @@ func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, bless))
 }
 
+func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) {
+    // FIXME: verify
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
+    explodeImages := images
+
+    bless := func (unit *ArmyUnit){
+        unit.AddCurse(data.UnitCurseWeakness)
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, bless))
+}
+
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
@@ -1299,6 +1311,12 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 castedCallback()
             }, targetAny)
         case "Weakness":
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateWeaknessProjectile(target)
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                return target != nil && !target.HasCurse(data.UnitCurseWeakness)
+            })
 
         /*
         unit curses:
@@ -2129,9 +2147,9 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
                 combat.MouseState = CombatNotOk
             }
 
-            if canTarget(unit) && inputmanager.LeftClick() && mouseY < hudY {
+            if unit != nil && canTarget(unit) && inputmanager.LeftClick() && mouseY < hudY {
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
-                if unit != nil && (selectTeam == TeamEither || unit.Team == selectTeam) {
+                if selectTeam == TeamEither || unit.Team == selectTeam {
                     selectTarget(unit)
 
                     // shouldn't need to set the mouse state here
@@ -3412,6 +3430,12 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 switch curse {
                     case data.UnitCurseMindStorm:
                         images, _ := combat.ImageCache.GetImages("resource.lbx", 78)
+                        index := animationIndex % uint64(len(images))
+                        use := images[index]
+
+                        screen.DrawImage(use, &unitOptions)
+                    case data.UnitCurseWeakness:
+                        images, _ := combat.ImageCache.GetImages("resource.lbx", 80)
                         index := animationIndex % uint64(len(images))
                         use := images[index]
 
