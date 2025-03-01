@@ -1298,6 +1298,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 combat.CreateBlessProjectile(target)
                 castedCallback()
             }, targetAny)
+        case "Weakness":
 
         /*
         unit curses:
@@ -1308,7 +1309,6 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         CurseWarpCreature
         CurseBlackSleep
         CursePossession
-        CurseWeakness
         */
 
         /*
