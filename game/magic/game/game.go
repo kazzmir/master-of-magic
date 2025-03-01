@@ -7,6 +7,7 @@ import (
     "log"
     "math"
     "fmt"
+    "context"
     "strings"
     "slices"
 
@@ -127,6 +128,12 @@ type GameEventNewOutpost struct {
     City *citylib.City
     Stack *playerlib.UnitStack
     Player *playerlib.Player
+}
+
+// add the group to the ui and continue executing the main coroutine until the quit context is cancelled
+type GameEventRunUI struct {
+    Group *uilib.UIElementGroup
+    Quit context.Context
 }
 
 type GameEventSelectLocationForSpell struct {
@@ -2798,6 +2805,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         if merchant.Player.IsHuman() {
                             game.doMerchant(yield, merchant.Cost, merchant.Artifact, merchant.Player)
                         }
+                    case *GameEventRunUI:
+                        runUI := event.(*GameEventRunUI)
+                        game.doRunUI(yield, runUI.Group, runUI.Quit)
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)
                     case *GameEventSurveyor:
@@ -2928,6 +2938,22 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                 return
         }
     }
+}
+
+func (game *Game) doRunUI(yield coroutine.YieldFunc, group *uilib.UIElementGroup, quit context.Context) {
+    game.HudUI.AddGroup(group)
+    defer game.HudUI.RemoveGroup(group)
+
+    yield()
+    for quit.Err() == nil {
+        game.Counter += 1
+        game.HudUI.StandardUpdate()
+        if yield() != nil {
+            break
+        }
+    }
+
+    yield()
 }
 
 func ChooseUniqueWizard(players []*playerlib.Player, allSpells spellbook.Spells) (setup.WizardCustom, bool) {
