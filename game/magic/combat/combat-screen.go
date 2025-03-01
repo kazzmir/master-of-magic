@@ -1390,7 +1390,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
 }
 
 func (combat *CombatScreen) CastCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
-    if rand.N(10) + 1 > target.GetResistance() - 20 {
+    if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
         // FIXME: make creature bind animation
         combat.Model.ApplyCreatureBinding(target, newOwner)
     }
