@@ -2937,6 +2937,10 @@ func ChooseUniqueWizard(players []*playerlib.Player, allSpells spellbook.Spells)
     chooseBase := func() (setup.WizardSlot, bool) {
         choices := slices.Clone(setup.DefaultWizardSlots())
         choices = slices.DeleteFunc(choices, func (wizard setup.WizardSlot) bool {
+            if wizard.Name == "Custom" {
+                return true
+            }
+
             for _, player := range players {
                 if player.Wizard.Base == wizard.Base {
                     return true
