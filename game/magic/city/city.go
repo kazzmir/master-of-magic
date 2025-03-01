@@ -1553,6 +1553,8 @@ func (city *City) UnitProductionCost(unit *units.Unit) int {
         reduction *= 2
     }
 
+    reduction = min(reduction, 0.5)
+
     return unit.ProductionCost - int(float32(unit.ProductionCost) * reduction)
 }
 
