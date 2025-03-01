@@ -69,7 +69,7 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
     // Wizard faces/gems/broken gems
     crystalPicture, _ := imageCache.GetImage("magic.lbx", 6, 0)
     brokenCrystalPicture, _ := imageCache.GetImage("magic.lbx", 51, 0)
-    wizardFacesOffsets := [][2]int {{24, 37}, {101, 37}, {24, 98}, {101, 98}}
+    wizardFacesOffsets := []image.Point{ image.Pt(24, 37), image.Pt(101, 37), image.Pt(24, 98), image.Pt(101, 98) }
 
     drawnWizardFaces := 0
     var currentMouseoverPlayer *playerlib.Player
@@ -78,7 +78,7 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
             continue
         }
         portrait, _ := imageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(target.Wizard.Base, target.Wizard.Banner), 0)
-        faceRect := util.ImageRect((x + wizardFacesOffsets[index][0]) * data.ScreenScale, (y + wizardFacesOffsets[index][1]) * data.ScreenScale, portrait)
+        faceRect := util.ImageRect((x + wizardFacesOffsets[index].X) * data.ScreenScale, (y + wizardFacesOffsets[index].Y) * data.ScreenScale, portrait)
         group.AddElement(&uilib.UIElement{
             Layer: layer+1,
             Rect: faceRect,
@@ -139,7 +139,7 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
     }
     // Empty crystals
     for emptyPlaceIndex := drawnWizardFaces; emptyPlaceIndex < 4; emptyPlaceIndex++ {
-        crystalRect := util.ImageRect((x + wizardFacesOffsets[emptyPlaceIndex][0]) * data.ScreenScale, (y + wizardFacesOffsets[emptyPlaceIndex][1]) * data.ScreenScale, crystalPicture)
+        crystalRect := util.ImageRect((x + wizardFacesOffsets[emptyPlaceIndex].X) * data.ScreenScale, (y + wizardFacesOffsets[emptyPlaceIndex].Y) * data.ScreenScale, crystalPicture)
         crystalToDraw := crystalPicture
         if emptyPlaceIndex > playersInGame - 1 {
             crystalToDraw = brokenCrystalPicture
@@ -237,7 +237,7 @@ func makeSelectTargetWizardUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache *uti
     // Wizard faces/gems/broken gems
     crystalPicture, _ := imageCache.GetImage("magic.lbx", 6, 0)
     brokenCrystalPicture, _ := imageCache.GetImage("magic.lbx", 51, 0)
-    wizardFacesOffsets := [][2]int {{24, 37}, {101, 37}, {24, 98}, {101, 98}}
+    wizardFacesOffsets := []image.Point{ image.Pt(24, 37), image.Pt(101, 37), image.Pt(24, 98), image.Pt(101, 98) }
 
     drawnWizardFaces := 0
     var currentMouseoverPlayer *playerlib.Player
@@ -246,7 +246,7 @@ func makeSelectTargetWizardUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache *uti
             continue
         }
         portrait, _ := imageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(target.Wizard.Base, target.Wizard.Banner), 0)
-        faceRect := util.ImageRect((x + wizardFacesOffsets[index][0]) * data.ScreenScale, (y + wizardFacesOffsets[index][1]) * data.ScreenScale, portrait)
+        faceRect := util.ImageRect((x + wizardFacesOffsets[index].X) * data.ScreenScale, (y + wizardFacesOffsets[index].Y) * data.ScreenScale, portrait)
         // FIXME: right click should open the wizard's mirror info screen
         group.AddElement(&uilib.UIElement{
             Layer: layer+1,
@@ -302,7 +302,7 @@ func makeSelectTargetWizardUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache *uti
     }
     // Empty crystals
     for emptyPlaceIndex := drawnWizardFaces; emptyPlaceIndex < 4; emptyPlaceIndex++ {
-        crystalRect := util.ImageRect((x + wizardFacesOffsets[emptyPlaceIndex][0]) * data.ScreenScale, (y + wizardFacesOffsets[emptyPlaceIndex][1]) * data.ScreenScale, crystalPicture)
+        crystalRect := util.ImageRect((x + wizardFacesOffsets[emptyPlaceIndex].X) * data.ScreenScale, (y + wizardFacesOffsets[emptyPlaceIndex].Y) * data.ScreenScale, crystalPicture)
         crystalToDraw := crystalPicture
         if emptyPlaceIndex > playersInGame - 1 {
             crystalToDraw = brokenCrystalPicture

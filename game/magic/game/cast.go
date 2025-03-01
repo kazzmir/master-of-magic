@@ -1368,7 +1368,8 @@ func (game *Game) doCastCruelUnminding(player *playerlib.Player) {
         targetSkill := targetPlayer.ComputeCastingSkill()
         minReduction := max(targetSkill / 100, 1)
         maxReduction := max(targetSkill / 10, 1)
-        reduction := minReduction + rand.N(maxReduction)
+        reductionRandomSpread := max(maxReduction - minReduction, 1) // It should never be zero, or rand.N will crash
+        reduction := minReduction + rand.N(reductionRandomSpread)
         actuallyReduced := targetPlayer.ReduceCastingSkill(reduction)
         return true, fmt.Sprintf("%s loses %d points of casting ability", targetPlayer.Wizard.Name, actuallyReduced)
     }
