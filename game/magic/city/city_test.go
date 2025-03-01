@@ -785,8 +785,7 @@ func TestScenario2(test *testing.T) {
 
     // Production
     if int(city.WorkProductionRate()) != 18 {
-        // see "FIXME: This should be only when producing units
-        test.Logf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
+        test.Errorf("City WorkProductionRate is not correct: %v", city.WorkProductionRate())
     }
     if int(city.ProductionWorkers()) != 6 {
         test.Errorf("City ProductionWorkers is not correct: %v", city.ProductionWorkers())
@@ -795,8 +794,7 @@ func TestScenario2(test *testing.T) {
         test.Errorf("City ProductionFarmers is not correct: %v", city.ProductionFarmers())
     }
     if int(city.ProductionTerrain()) != 3 {
-        // see "FIXME: This should be only when producing units
-        test.Logf("City ProductionTerrain is not correct: %v", city.ProductionTerrain())
+        test.Errorf("City ProductionTerrain is not correct: %v", city.ProductionTerrain())
     }
     if int(city.ProductionMinersGuild()) != 5 {
         test.Errorf("City ProductionTerrain is not correct: %v", city.ProductionTerrain())

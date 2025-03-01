@@ -531,7 +531,7 @@ func (city *City) ProducingTurnsLeft() int {
     }
 
     if !city.ProducingUnit.Equals(units.UnitNone) {
-        cost := city.ProducingUnit.ProductionCost - int(city.Production)
+        cost := city.UnitProductionCost(&city.ProducingUnit) - int(city.Production)
         if cost < 0 {
             cost = 0
         }
@@ -1498,25 +1498,13 @@ func (city *City) ProductionMechaniciansGuild() float32 {
 func (city *City) ProductionTerrain() float32 {
     catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
     production := float32(0)
-    mineralProduction := float32(0)
     hasGaiasBlessing := city.HasEnchantment(data.CityEnchantmentGaiasBlessing)
 
     for _, tile := range catchment {
         production += float32(tile.ProductionBonus(hasGaiasBlessing)) / 100
-
-        // FIXME: This should be only when producing units
-        mineralProduction += float32(tile.GetBonus().UnitReductionBonus()) / 100
     }
 
-    if city.Race == data.RaceDwarf {
-        mineralProduction *= 2
-    }
-
-    if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
-        mineralProduction *= 2
-    }
-
-    return (production + mineralProduction) * (city.ProductionWorkers() + city.ProductionFarmers())
+    return production * (city.ProductionWorkers() + city.ProductionFarmers())
 }
 
 func (city *City) ProductionInspirations() float32 {
@@ -1542,6 +1530,30 @@ func (city *City) WorkProductionRate() float32 {
     }
 
     return result
+}
+
+func (city *City) UnitProductionCost(unit *units.Unit) int {
+
+    if !unit.ProductionCostReduction {
+        return unit.ProductionCost
+    }
+
+    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+    reduction := float32(0)
+
+    for _, tile := range catchment {
+        reduction += float32(tile.GetBonus().UnitReductionBonus()) / 100
+    }
+
+    if city.Race == data.RaceDwarf {
+        reduction *= 2
+    }
+
+    if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
+        reduction *= 2
+    }
+
+    return unit.ProductionCost - int(float32(unit.ProductionCost) * reduction)
 }
 
 func (city *City) GrowOutpost() CityEvent {
@@ -1684,7 +1696,7 @@ func (city *City) DoNextTurn(mapObject *maplib.Map) []CityEvent {
                     city.Production = 0
                     city.ProducingBuilding = buildinglib.BuildingHousing
                 }
-            } else if !city.ProducingUnit.Equals(units.UnitNone) && city.Production >= float32(city.ProducingUnit.ProductionCost) {
+            } else if !city.ProducingUnit.Equals(units.UnitNone) && city.Production >= float32(city.UnitProductionCost(&city.ProducingUnit)) {
                 experience := 0
                 switch {
                     case city.HasEnchantment(data.CityEnchantmentAltarOfBattle): experience = 120

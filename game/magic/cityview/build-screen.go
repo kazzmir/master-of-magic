@@ -243,7 +243,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(float64(130 * data.ScreenScale), float64(7 * data.ScreenScale))
-                unitview.RenderUnitInfoBuild(screen, imageCache, bannerUnit, fonts.DescriptionFont, fonts.SmallFont, options)
+                unitview.RenderUnitInfoBuild(screen, imageCache, bannerUnit, fonts.DescriptionFont, fonts.SmallFont, options, city.UnitProductionCost(&unit))
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(float64(85 * data.ScreenScale), float64(48 * data.ScreenScale))
