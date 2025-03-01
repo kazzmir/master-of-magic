@@ -750,7 +750,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     }
 
     if !cityScreen.City.ProducingUnit.IsNone() {
-        buyAmount, buyProduction = computeBuyAmount(cityScreen.City.ProducingUnit.ProductionCost)
+        buyAmount, buyProduction = computeBuyAmount(cityScreen.City.UnitProductionCost(&cityScreen.City.ProducingUnit))
     }
 
     // true if there is something to buy
@@ -2221,7 +2221,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
 
         showWork = true
-        workRequired = cityScreen.City.ProducingUnit.ProductionCost
+        workRequired = cityScreen.City.UnitProductionCost(&cityScreen.City.ProducingUnit)
     }
 
     if showWork {
