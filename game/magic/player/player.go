@@ -520,12 +520,16 @@ func (player *Player) ComputeCastingSkill() int {
 }
 
 // Used by Cruel Unminding. skillReduction is the actual skill to reduce, but the func reduces the power points put into skill. Returns actual value of the resulting skill (not power) reduction.
-func (player *Player) ReduceCastingSkill(skillReduction int) int {
+func (player *Player) ReduceCastingSkill(reduceBy int) int {
     skillBeforeReduction := player.ComputeCastingSkill()
-    investedPowerToReduce := skillReduction * (2 * skillBeforeReduction - skillReduction - 1) // Formula: to reduce skill by X, the invested power to reduce is "deltaP = X * (2 * skill - X - 1)"
-    // FIXME: Should the power be allowed to be reduced below 0 to nullify Archmage retort? Wiki doesn't know.
+    investedPowerToReduce := reduceBy * (2 * skillBeforeReduction - reduceBy - 1) // Formula: to reduce skill by X, the invested power to reduce is "deltaP = X * (2 * skill - X - 1)"
+    // FIXME: Should the power be allowed to be reduced below 0 to nullify Archmage retort? Wiki doesn't know this.
     investedPowerToReduce = min(player.CastingSkillPower, investedPowerToReduce)
     player.CastingSkillPower -= investedPowerToReduce
+    // Workaround: reducing the power if the calculated reduction is insufficient due to int rounding errors. This is tested to usually use less than 10 loop iterations unless the initial skill is absurdly high (more than 30000).
+    for player.CastingSkillPower > 0 && player.ComputeCastingSkill() != skillBeforeReduction - reduceBy {
+        player.CastingSkillPower -= 1
+    }
     return skillBeforeReduction - player.ComputeCastingSkill()
 }
 

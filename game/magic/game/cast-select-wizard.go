@@ -247,6 +247,7 @@ func makeSelectTargetWizardUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache *uti
         }
         portrait, _ := imageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(target.Wizard.Base, target.Wizard.Banner), 0)
         faceRect := util.ImageRect((x + wizardFacesOffsets[index][0]) * data.ScreenScale, (y + wizardFacesOffsets[index][1]) * data.ScreenScale, portrait)
+        // FIXME: right click should open the wizard's mirror info screen
         group.AddElement(&uilib.UIElement{
             Layer: layer+1,
             Rect: faceRect,
