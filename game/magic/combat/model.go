@@ -767,6 +767,20 @@ func (unit *ArmyUnit) GetFullResistance() int {
     return unit.Unit.GetResistance()
 }
 
+// get the resistance of the unit, taking into account enchantments and curses that apply to the specific magic type
+func (unit *ArmyUnit) GetResistanceFor(magic data.MagicType) int {
+    base := unit.GetResistance()
+    modifier := 0
+
+    if unit.HasEnchantment(data.UnitEnchantmentBless) {
+        switch magic {
+            case data.DeathMagic, data.ChaosMagic: modifier += 3
+        }
+    }
+
+    return base + modifier
+}
+
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 

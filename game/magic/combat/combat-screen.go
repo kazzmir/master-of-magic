@@ -723,11 +723,13 @@ func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
     explodeImages := images
 
-    bless := func (unit *ArmyUnit){
-        unit.AddCurse(data.UnitCurseWeakness)
+    weakness := func (unit *ArmyUnit){
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.DeathMagic) - 2 {
+            unit.AddCurse(data.UnitCurseWeakness)
+        }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, bless))
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, weakness))
 }
 
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
@@ -1315,7 +1317,23 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 combat.CreateWeaknessProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                return target != nil && !target.HasCurse(data.UnitCurseWeakness)
+                if target.HasCurse(data.UnitCurseWeakness) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityDeathImmunity) || target.HasAbility(data.AbilityMagicImmunity) {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityCharmed) {
+                    return false
+                }
+
+                return true
             })
 
         /*
