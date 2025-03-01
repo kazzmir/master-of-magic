@@ -1484,13 +1484,13 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             options.GeoM.Reset()
                             options.GeoM.Translate(float64(130 * data.ScreenScale), y)
                             screen.DrawImage(arrow, &options)
-                            combat.HudFont.PrintRight(screen, float64(130 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetRangedAttackPower()))
+                            combat.HudFont.PrintRight(screen, float64(130 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.GetRangedAttackPower()))
                         case units.DamageRangedMagical:
                             magic, _ := combat.ImageCache.GetImage("compix.lbx", 30, 0)
                             options.GeoM.Reset()
                             options.GeoM.Translate(float64(130 * data.ScreenScale), y)
                             screen.DrawImage(magic, &options)
-                            combat.HudFont.PrintRight(screen, float64(130 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetRangedAttackPower()))
+                            combat.HudFont.PrintRight(screen, float64(130 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.GetRangedAttackPower()))
                     }
                 }
 
@@ -1828,6 +1828,10 @@ func (combat *CombatScreen) withinArrowRange(attacker *ArmyUnit, defender *ArmyU
 
 func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
     if attacker.RangedAttacks <= 0 {
+        return false
+    }
+
+    if attacker.GetRangedAttackPower() <= 0 {
         return false
     }
 
@@ -2885,14 +2889,14 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
             options.GeoM.Translate(float64(x1 + 14) * float64(data.ScreenScale), float64(y1 + 18) * float64(data.ScreenScale))
             screen.DrawImage(fire, &options)
             ax, ay := options.GeoM.Apply(0, 2)
-            combat.InfoFont.PrintOptions(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v", unit.Unit.GetRangedAttackPower()))
+            combat.InfoFont.PrintOptions(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
         case units.DamageRangedPhysical:
             arrow, _ := combat.ImageCache.GetImage("compix.lbx", 66, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(x1 + 14) * float64(data.ScreenScale), float64(y1 + 18) * float64(data.ScreenScale))
             screen.DrawImage(arrow, &options)
             ax, ay := options.GeoM.Apply(0, 2)
-            combat.InfoFont.PrintOptions(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v", unit.Unit.GetRangedAttackPower()))
+            combat.InfoFont.PrintOptions(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
     }
 
     movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)

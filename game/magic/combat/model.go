@@ -880,6 +880,10 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
     for _, curse := range unit.Curses {
         switch curse {
             case data.UnitCurseMindStorm: modifier -= 5
+            case data.UnitCurseWeakness:
+                if unit.Unit.GetRangedAttackDamageType() == units.DamageRangedPhysical {
+                    modifier -= 2
+                }
         }
     }
 
@@ -906,6 +910,7 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
     for _, curse := range unit.Curses {
         switch curse {
             case data.UnitCurseMindStorm: modifier -= 5
+            case data.UnitCurseWeakness: modifier -= 2
         }
     }
 
@@ -2701,6 +2706,10 @@ func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) {
 
 func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
     if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
+        return false
+    }
+
+    if attacker.GetMeleeAttackPower() <= 0 {
         return false
     }
 
