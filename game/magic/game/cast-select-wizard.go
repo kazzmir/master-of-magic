@@ -3,6 +3,7 @@ package game
 import (
 	"fmt"
 	"image"
+    "context"
 
 	fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
 	playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -182,15 +183,15 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
     return group
 }
 
-func makeSelectTargetWizardUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, 
+func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, imageCache *util.ImageCache, 
     initialHeader string, sparksGraphicIndex int, castingPlayer *playerlib.Player, playersInGame int,
     // This callback receives a spell target and returns if the selection was valid (bool) and the new menu header change (string)
     onPlayerSelectedCallback func(selectedPlayer *playerlib.Player) (bool, string)) *uilib.UIElementGroup {
 
-    const fadeSpeed = 7
-    getAlpha := ui.MakeFadeIn(fadeSpeed)
-    
     group := uilib.MakeGroup()
+
+    const fadeSpeed = 7
+    getAlpha := group.MakeFadeIn(fadeSpeed)
 
     var layer uilib.UILayer = 2
 
@@ -202,12 +203,12 @@ func makeSelectTargetWizardUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache *uti
 
     // A func for creating a sparks element when a target is selected
     createSparksElement := func (faceRect image.Rectangle) *uilib.UIElement {
-        sparksCreationTick := ui.Counter // Needed for sparks animation
+        sparksCreationTick := group.Counter // Needed for sparks animation
         return &uilib.UIElement{
             Layer: layer+2,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 const ticksPerFrame = 5
-                frameToShow := int((ui.Counter - sparksCreationTick) / ticksPerFrame) % 6
+                frameToShow := int((group.Counter - sparksCreationTick) / ticksPerFrame) % 6
                 background, _ := imageCache.GetImage("specfx.lbx", sparksGraphicIndex, frameToShow)
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(getAlpha())
@@ -261,12 +262,12 @@ func makeSelectTargetWizardUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache *uti
                     if err == nil {
                         sound.Play()
                     }
-                    ui.AddDelay(60, func(){
+                    group.AddDelay(60, func(){
                         header = newHeader
-                        ui.AddDelay(113, func(){
-                            getAlpha = ui.MakeFadeOut(fadeSpeed)
-                            ui.AddDelay(7, func(){
-                                ui.RemoveGroup(group)
+                        group.AddDelay(113, func(){
+                            getAlpha = group.MakeFadeOut(fadeSpeed)
+                            group.AddDelay(7, func(){
+                                finish()
                             })
                         })
                     })
@@ -332,7 +333,7 @@ func makeSelectTargetWizardUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache *uti
         },
         LeftClickRelease: func(element *uilib.UIElement){
             cancelIndex = 0
-            ui.RemoveGroup(group)
+            finish()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions

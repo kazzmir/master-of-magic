@@ -4,6 +4,7 @@ import (
     "fmt"
     "log"
     "image"
+    "context"
     "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -1360,7 +1361,6 @@ func (game *Game) doCastSpellBlast(player *playerlib.Player) {
 }
 
 func (game *Game) doCastCruelUnminding(player *playerlib.Player) {
-    var wizSelectionUiGroup *uilib.UIElementGroup
     onTargetSelectCallback := func(targetPlayer *playerlib.Player) (bool, string) {
         if targetPlayer.Defeated || targetPlayer.Banished {
             return false, ""
@@ -1374,11 +1374,17 @@ func (game *Game) doCastCruelUnminding(player *playerlib.Player) {
         return true, fmt.Sprintf("%s loses %d points of casting ability", targetPlayer.Wizard.Name, actuallyReduced)
     }
     playersInGame := len(game.Players)
-    wizSelectionUiGroup = makeSelectTargetWizardUI(game.HudUI, game.Cache, &game.ImageCache, "Select target for Cruel Unminding spell", 41, player, playersInGame, onTargetSelectCallback)
-    game.HudUI.AddGroup(wizSelectionUiGroup)
+    quit, cancel := context.WithCancel(context.Background())
+    wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, "Select target for Cruel Unminding spell", 41, player, playersInGame, onTargetSelectCallback)
+    // game.HudUI.AddGroup(wizSelectionUiGroup)
+    game.Events <- &GameEventRunUI{
+        Group: wizSelectionUiGroup,
+        Quit: quit,
+    }
 }
 
 func (game *Game) doCastDrainPower(player *playerlib.Player) {
+    /*
     var wizSelectionUiGroup *uilib.UIElementGroup
     onTargetSelectCallback := func(targetPlayer *playerlib.Player) (bool, string) {
         if targetPlayer.Defeated || targetPlayer.Banished {
@@ -1391,6 +1397,7 @@ func (game *Game) doCastDrainPower(player *playerlib.Player) {
     playersInGame := len(game.Players)
     wizSelectionUiGroup = makeSelectTargetWizardUI(game.HudUI, game.Cache, &game.ImageCache, "Select target for Drain Power spell", 42, player, playersInGame, onTargetSelectCallback)
     game.HudUI.AddGroup(wizSelectionUiGroup)
+    */
 }
 
 func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int, caster *playerlib.Player) {
