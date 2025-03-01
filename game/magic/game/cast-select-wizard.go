@@ -19,11 +19,11 @@ import (
 
 // onPlayerSelectedCallback CAN'T receive nil as argument
 // TODO: transform this into more unversal reusable form.
-func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, castingPlayer *playerlib.Player, playersInGame int, onPlayerSelectedCallback func(selectedPlayer *playerlib.Player) bool) *uilib.UIElementGroup {
-    const fadeSpeed = 7
-    getAlpha := ui.MakeFadeIn(fadeSpeed)
-    
+func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache, imageCache *util.ImageCache, castingPlayer *playerlib.Player, playersInGame int, onPlayerSelectedCallback func(selectedPlayer *playerlib.Player) bool) *uilib.UIElementGroup {
     group := uilib.MakeGroup()
+
+    const fadeSpeed = 7
+    getAlpha := group.MakeFadeIn(fadeSpeed)
 
     var layer uilib.UILayer = 2
 
@@ -35,12 +35,12 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
 
     // A func for creating a sparks element when a target is selected
     createSparksElement := func (faceRect image.Rectangle) *uilib.UIElement {
-        sparksCreationTick := ui.Counter // Needed for sparks animation
+        sparksCreationTick := group.Counter // Needed for sparks animation
         return &uilib.UIElement{
             Layer: layer+2,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 const ticksPerFrame = 5
-                frameToShow := int((ui.Counter - sparksCreationTick) / ticksPerFrame) % 6
+                frameToShow := int((group.Counter - sparksCreationTick) / ticksPerFrame) % 6
                 background, _ := imageCache.GetImage("specfx.lbx", 40, frameToShow)
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(getAlpha())
@@ -92,12 +92,12 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
                     if err == nil {
                         sound.Play()
                     }
-                    ui.AddDelay(60, func(){
+                    group.AddDelay(60, func(){
                         header = fmt.Sprintf("%s has been spell blasted", target.Wizard.Name)
-                        ui.AddDelay(113, func(){
-                            getAlpha = ui.MakeFadeOut(fadeSpeed)
-                            ui.AddDelay(7, func(){
-                                ui.RemoveGroup(group)
+                        group.AddDelay(113, func(){
+                            getAlpha = group.MakeFadeOut(fadeSpeed)
+                            group.AddDelay(7, func(){
+                                finish()
                             })
                         })
                     })
@@ -170,7 +170,7 @@ func makeSelectSpellBlastTargetUI(ui *uilib.UI, cache *lbx.LbxCache, imageCache 
         },
         LeftClickRelease: func(element *uilib.UIElement){
             cancelIndex = 0
-            ui.RemoveGroup(group)
+            finish()
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions

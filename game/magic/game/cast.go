@@ -1356,8 +1356,12 @@ func (game *Game) doCastSpellBlast(player *playerlib.Player) {
         return true
     }
     playersInGame := len(game.Players)
-    wizSelectionUiGroup = makeSelectSpellBlastTargetUI(game.HudUI, game.Cache, &game.ImageCache, player, playersInGame, onTargetSelectCallback)
-    game.HudUI.AddGroup(wizSelectionUiGroup)
+    quit, cancel := context.WithCancel(context.Background())
+    wizSelectionUiGroup = makeSelectSpellBlastTargetUI(cancel, game.Cache, &game.ImageCache, player, playersInGame, onTargetSelectCallback)
+    game.Events <- &GameEventRunUI{
+        Group: wizSelectionUiGroup,
+        Quit: quit,
+    }
 }
 
 func (game *Game) doCastCruelUnminding(player *playerlib.Player) {
