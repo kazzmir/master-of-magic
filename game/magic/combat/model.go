@@ -535,6 +535,9 @@ type ArmyUnit struct {
     // Health int
     MovesLeft fraction.Fraction
 
+    // due to black sleep
+    Asleep bool
+
     Spells spellbook.Spells
     SpellCharges map[spellbook.Spell]int
     CastingSkill float32

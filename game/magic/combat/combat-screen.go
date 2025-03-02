@@ -732,6 +732,20 @@ func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, weakness))
 }
 
+func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) {
+    // FIXME: verify
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
+    explodeImages := images
+
+    sleep := func (unit *ArmyUnit){
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.DeathMagic) - 2 {
+            unit.AddCurse(data.UnitCurseBlackSleep)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, sleep))
+}
+
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
@@ -1335,6 +1349,29 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
 
                 return true
             })
+        case "CurseBlackSleep":
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateBlackSleepProjectile(target)
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasCurse(data.UnitCurseBlackSleep) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityDeathImmunity) || target.HasAbility(data.AbilityMagicImmunity) {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityCharmed) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit curses:
@@ -1343,7 +1380,6 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         CurseVertigo
         CurseShatter
         CurseWarpCreature
-        CurseBlackSleep
         CursePossession
         */
 
