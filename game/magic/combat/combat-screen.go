@@ -525,15 +525,14 @@ func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, explodeImages
     return projectile
 }
 
-func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 11)
 
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    // FIXME: made up
     damage := func(unit *ArmyUnit) {
-        unit.TakeDamage(3)
+        unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageCold, DamageModifiers{})
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.RemoveUnit(unit)
         }
@@ -542,15 +541,15 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
-func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 0)
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    // FIXME: made up
     damage := func(unit *ArmyUnit) {
-        unit.TakeDamage(3)
-        combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for 3 damage", unit.Unit.GetName()))
+        fireDamage := unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageFire, DamageModifiers{})
+
+        combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
             combat.Model.RemoveUnit(unit)
@@ -567,7 +566,7 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength 
     explodeImages := images[11:]
 
     damage := func(unit *ArmyUnit) {
-        unit.TakeDamage(strength)
+        combat.Model.ApplyImmolationDamage(unit, strength)
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.RemoveUnit(unit)
         }
@@ -580,7 +579,14 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 9)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    damage := func (unit *ArmyUnit) {
+        unit.ApplyDamage(15, units.DamageRangedMagical, DamageModifiers{})
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
 }
 
 func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
@@ -590,11 +596,18 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
-func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, strength int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 16)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    damage := func (unit *ArmyUnit) {
+        unit.ApplyDamage(ComputeRoll(15, 30), units.DamageRangedMagical, DamageModifiers{})
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
 }
 
 func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
@@ -635,7 +648,8 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
         Effect: func(unit *ArmyUnit) {
-            unit.ApplyDamage(strength, units.DamageRangedMagical, true, 0)
+            // FIXME: should we pass in ChaosMagic here so the defender can use GetDefenseFor(ChaosMagic) in ApplyDamage?
+            unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true})
             if unit.Unit.GetHealth() <= 0 {
                 combat.Model.RemoveUnit(unit)
             }
@@ -652,10 +666,10 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
 
     matrix := combat.GetCameraMatrix()
     screenX, screenY := matrix.Apply(float64(target.X), float64(target.Y))
-    screenY += 13
-    screenX += 3
+    // screenY += 13
+    screenX += 3 * float64(data.ScreenScale)
 
-    screenY -= float64(images[0].Bounds().Dy())
+    // screenY -= float64(images[0].Bounds().Dy())
 
     projectile := &Projectile{
         X: screenX,
@@ -668,6 +682,18 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
         Animation: util.MakeAnimation(images, true),
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
+        Effect: func(unit *ArmyUnit) {
+
+            // 10 separate attacks are different than a single 55-point attack due to defense
+            for strength := range 10 {
+                // FIXME: should we pass in ChaosMagic here so the defender can use GetDefenseFor(ChaosMagic) in ApplyDamage?
+                unit.ApplyDamage(ComputeRoll(strength + 1, 30), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true})
+            }
+
+            if unit.Unit.GetHealth() <= 0 {
+                combat.Model.RemoveUnit(unit)
+            }
+        },
     }
 
     combat.Model.Projectiles = append(combat.Model.Projectiles, projectile)
@@ -1034,7 +1060,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             }, targetAny)
         case "Ice Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateIceBoltProjectile(target)
+                combat.CreateIceBoltProjectile(target, spell.Cost(false))
                 castedCallback()
             }, targetAny)
         case "Star Fires":
@@ -1042,12 +1068,16 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 combat.CreateStarFiresProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                // FIXME: can only target fantastic creatures that are death or chaos
-                return true
+                realm := target.Unit.GetRealm()
+                if target.Unit.GetRace() == data.RaceFantastic && (realm == data.ChaosMagic || realm == data.DeathMagic) {
+                    return true
+                }
+
+                return false
             })
         case "Psionic Blast":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreatePsionicBlastProjectile(target)
+                combat.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2)
                 castedCallback()
             }, targetAny)
         case "Doom Bolt":
@@ -1057,7 +1087,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             }, targetAny)
         case "Fire Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateFireBoltProjectile(target)
+                combat.CreateFireBoltProjectile(target, spell.Cost(false))
                 castedCallback()
             }, targetAny)
         case "Lightning Bolt":
@@ -1977,7 +2007,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         damage := attacker.ComputeRangeDamage(tileDistance)
         // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
-        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), false, combat.Model.ComputeWallDefense(attacker, defender))
+        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
             combat.Model.doTouchAttack(attacker, target, 0)
