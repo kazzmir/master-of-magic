@@ -1138,6 +1138,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city2.AddBuilding(buildinglib.BuildingShrine)
     city2.AddBuilding(buildinglib.BuildingGranary)
     city2.AddBuilding(buildinglib.BuildingBank)
+    city2.AddEnchantment(data.CityEnchantmentCloudOfShadow, enemy.GetBanner())
     city2.Farmers = 10
     city2.Workers = 4
     city2.ResetCitizens()

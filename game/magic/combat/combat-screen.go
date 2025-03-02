@@ -1659,7 +1659,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // info
     elements = append(elements, makeButton(20, 0, 1, func(){
-        // FIXME
+        // FIXME: show enchantments such as "Eternal Night", "Cloud of Shadow", "Heavenly Light" etc.
     }))
 
     // auto
