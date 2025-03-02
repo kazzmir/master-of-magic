@@ -718,6 +718,20 @@ func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, bless))
 }
 
+func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) {
+    // FIXME: verify
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
+    explodeImages := images
+
+    weakness := func (unit *ArmyUnit){
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.DeathMagic) - 2 {
+            unit.AddCurse(data.UnitCurseWeakness)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, weakness))
+}
+
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
@@ -1298,6 +1312,29 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 combat.CreateBlessProjectile(target)
                 castedCallback()
             }, targetAny)
+        case "Weakness":
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateWeaknessProjectile(target)
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasCurse(data.UnitCurseWeakness) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityDeathImmunity) || target.HasAbility(data.AbilityMagicImmunity) {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityCharmed) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit curses:
@@ -1308,7 +1345,6 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         CurseWarpCreature
         CurseBlackSleep
         CursePossession
-        CurseWeakness
         */
 
         /*
@@ -1354,7 +1390,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
 }
 
 func (combat *CombatScreen) CastCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
-    if rand.N(10) + 1 > target.GetResistance() - 20 {
+    if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
         // FIXME: make creature bind animation
         combat.Model.ApplyCreatureBinding(target, newOwner)
     }
@@ -1448,13 +1484,13 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             options.GeoM.Reset()
                             options.GeoM.Translate(float64(130 * data.ScreenScale), y)
                             screen.DrawImage(arrow, &options)
-                            combat.HudFont.PrintRight(screen, float64(130 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetRangedAttackPower()))
+                            combat.HudFont.PrintRight(screen, float64(130 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.GetRangedAttackPower()))
                         case units.DamageRangedMagical:
                             magic, _ := combat.ImageCache.GetImage("compix.lbx", 30, 0)
                             options.GeoM.Reset()
                             options.GeoM.Translate(float64(130 * data.ScreenScale), y)
                             screen.DrawImage(magic, &options)
-                            combat.HudFont.PrintRight(screen, float64(130 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetRangedAttackPower()))
+                            combat.HudFont.PrintRight(screen, float64(130 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.GetRangedAttackPower()))
                     }
                 }
 
@@ -1795,6 +1831,10 @@ func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUni
         return false
     }
 
+    if attacker.GetRangedAttackPower() <= 0 {
+        return false
+    }
+
     if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
         return false
     }
@@ -2129,9 +2169,9 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
                 combat.MouseState = CombatNotOk
             }
 
-            if canTarget(unit) && inputmanager.LeftClick() && mouseY < hudY {
+            if unit != nil && canTarget(unit) && inputmanager.LeftClick() && mouseY < hudY {
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
-                if unit != nil && (selectTeam == TeamEither || unit.Team == selectTeam) {
+                if selectTeam == TeamEither || unit.Team == selectTeam {
                     selectTarget(unit)
 
                     // shouldn't need to set the mouse state here
@@ -2849,14 +2889,14 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
             options.GeoM.Translate(float64(x1 + 14) * float64(data.ScreenScale), float64(y1 + 18) * float64(data.ScreenScale))
             screen.DrawImage(fire, &options)
             ax, ay := options.GeoM.Apply(0, 2)
-            combat.InfoFont.PrintOptions(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v", unit.Unit.GetRangedAttackPower()))
+            combat.InfoFont.PrintOptions(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
         case units.DamageRangedPhysical:
             arrow, _ := combat.ImageCache.GetImage("compix.lbx", 66, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(x1 + 14) * float64(data.ScreenScale), float64(y1 + 18) * float64(data.ScreenScale))
             screen.DrawImage(arrow, &options)
             ax, ay := options.GeoM.Apply(0, 2)
-            combat.InfoFont.PrintOptions(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v", unit.Unit.GetRangedAttackPower()))
+            combat.InfoFont.PrintOptions(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
     }
 
     movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
@@ -3412,6 +3452,12 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 switch curse {
                     case data.UnitCurseMindStorm:
                         images, _ := combat.ImageCache.GetImages("resource.lbx", 78)
+                        index := animationIndex % uint64(len(images))
+                        use := images[index]
+
+                        screen.DrawImage(use, &unitOptions)
+                    case data.UnitCurseWeakness:
+                        images, _ := combat.ImageCache.GetImages("resource.lbx", 80)
                         index := animationIndex % uint64(len(images))
                         use := images[index]
 
