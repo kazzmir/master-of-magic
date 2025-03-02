@@ -732,6 +732,20 @@ func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, weakness))
 }
 
+func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) {
+    // FIXME: verify
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
+    explodeImages := images
+
+    sleep := func (unit *ArmyUnit){
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.DeathMagic) - 2 {
+            unit.AddCurse(data.UnitCurseBlackSleep)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, sleep))
+}
+
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
@@ -1335,6 +1349,29 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
 
                 return true
             })
+        case "CurseBlackSleep":
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateBlackSleepProjectile(target)
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasCurse(data.UnitCurseBlackSleep) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityDeathImmunity) || target.HasAbility(data.AbilityMagicImmunity) {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityCharmed) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit curses:
@@ -1343,7 +1380,6 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         CurseVertigo
         CurseShatter
         CurseWarpCreature
-        CurseBlackSleep
         CursePossession
         */
 
@@ -1823,40 +1859,6 @@ func (combat *CombatScreen) withinArrowRange(attacker *ArmyUnit, defender *ArmyU
     return xDiff <= 1 && yDiff <= 1
     */
     // FIXME: what is the actual range distance?
-    return true
-}
-
-func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
-    if attacker.RangedAttacks <= 0 {
-        return false
-    }
-
-    if attacker.GetRangedAttackPower() <= 0 {
-        return false
-    }
-
-    if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
-        return false
-    }
-
-    if attacker.Team == defender.Team {
-        return false
-    }
-
-    // FIXME: check if defender has missle immunity and attacker is using regular non-magical attacks
-    // FIXME: check if defender has magic immunity and attacker is using magical attacks
-    // FIXME: check if defender has invisible, and attacker doesn't have illusions immunity
-
-    if combat.Model.InsideWallOfDarkness(defender.X, defender.Y) && !combat.Model.InsideWallOfDarkness(attacker.X, attacker.Y) {
-        // attacker can't target a defender inside a wall of darkness, unless the attacker has True Sight or Illusions Immunity
-
-        if attacker.HasAbility(data.AbilityIllusionsImmunity) {
-            return true
-        }
-
-        return false
-    }
-
     return true
 }
 
@@ -2483,7 +2485,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         })
 
         for _, candidate := range candidates {
-           if combat.withinArrowRange(aiUnit, candidate) && combat.canRangeAttack(aiUnit, candidate) {
+           if combat.withinArrowRange(aiUnit, candidate) && combat.Model.canRangeAttack(aiUnit, candidate) {
                combat.doRangeAttack(yield, aiUnit, candidate)
                return
            }
@@ -2741,7 +2743,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         } else {
             newState := CombatNotOk
             // prioritize range attack over melee
-            if combat.canRangeAttack(combat.Model.SelectedUnit, who) && combat.withinArrowRange(combat.Model.SelectedUnit, who) {
+            if combat.Model.canRangeAttack(combat.Model.SelectedUnit, who) && combat.withinArrowRange(combat.Model.SelectedUnit, who) {
                 newState = CombatRangeAttackOk
             } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who) && combat.withinMeleeRange(combat.Model.SelectedUnit, who) {
                 newState = CombatMeleeAttackOk
@@ -2772,7 +2774,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            attacker := combat.Model.SelectedUnit
 
            // try a ranged attack first
-           if defender != nil && combat.withinArrowRange(attacker, defender) && combat.canRangeAttack(attacker, defender) {
+           if defender != nil && combat.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
                combat.doRangeAttack(yield, attacker, defender)
            // then fall back to melee
            } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){
@@ -3445,7 +3447,11 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
             // _ = index
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
-            unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
+            if unit.IsAsleep() {
+                unitview.RenderCombatUnitGrey(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
+            } else {
+                unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
+            }
 
             unitOptions.GeoM.Translate(float64(-combatImages[index].Bounds().Dx()/2), float64(-combatImages[0].Bounds().Dy()*3/4))
             for _, curse := range unit.GetCurses() {

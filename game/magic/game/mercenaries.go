@@ -40,7 +40,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
             screen.DrawImage(background, &options)
 
             options.GeoM.Translate(float64(24 * data.ScreenScale), float64(28 * data.ScreenScale))
-            unitview.RenderUnitViewImage(screen, &imageCache, unit, options, 0)
+            unitview.RenderUnitViewImage(screen, &imageCache, unit, options, false, 0)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)

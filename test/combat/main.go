@@ -314,6 +314,8 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
+    defendingArmy.Units[0].AddCurse(data.UnitCurseBlackSleep)
+
     /*
     defendingArmy.AddEnchantment(data.CombatEnchantmentCounterMagic)
     defendingArmy.CounterMagic = 50

@@ -30,7 +30,7 @@ type CombatView interface {
     GetCount() int
 }
 
-func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit CombatView, options ebiten.DrawImageOptions, counter uint64) {
+func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit CombatView, options ebiten.DrawImageOptions, grey bool, counter uint64) {
     images, err := imageCache.GetImagesTransform(unit.GetCombatLbxFile(), unit.GetCombatIndex(units.FacingRight), unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
     if err == nil && len(images) > 2 {
         use := images[2]
@@ -46,7 +46,11 @@ func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit
         RenderCombatTile(screen, imageCache, options)
 
         first := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
-        RenderCombatUnit(screen, use, options, unit.GetCount(), first, counter, imageCache)
+        if grey {
+            RenderCombatUnitGrey(screen, use, options, unit.GetCount(), first, counter, imageCache)
+        } else {
+            RenderCombatUnit(screen, use, options, unit.GetCount(), first, counter, imageCache)
+        }
     }
 }
 
