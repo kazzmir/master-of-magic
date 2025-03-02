@@ -525,15 +525,14 @@ func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, explodeImages
     return projectile
 }
 
-func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 11)
 
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    // FIXME: made up
     damage := func(unit *ArmyUnit) {
-        unit.TakeDamage(3)
+        unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageCold, false, 0)
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.RemoveUnit(unit)
         }
@@ -1034,7 +1033,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             }, targetAny)
         case "Ice Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateIceBoltProjectile(target)
+                combat.CreateIceBoltProjectile(target, spell.Cost(false))
                 castedCallback()
             }, targetAny)
         case "Star Fires":
