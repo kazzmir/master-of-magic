@@ -1862,44 +1862,6 @@ func (combat *CombatScreen) withinArrowRange(attacker *ArmyUnit, defender *ArmyU
     return true
 }
 
-func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
-    if attacker.IsAsleep() {
-        return false
-    }
-
-    if attacker.RangedAttacks <= 0 {
-        return false
-    }
-
-    if attacker.GetRangedAttackPower() <= 0 {
-        return false
-    }
-
-    if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
-        return false
-    }
-
-    if attacker.Team == defender.Team {
-        return false
-    }
-
-    // FIXME: check if defender has missle immunity and attacker is using regular non-magical attacks
-    // FIXME: check if defender has magic immunity and attacker is using magical attacks
-    // FIXME: check if defender has invisible, and attacker doesn't have illusions immunity
-
-    if combat.Model.InsideWallOfDarkness(defender.X, defender.Y) && !combat.Model.InsideWallOfDarkness(attacker.X, attacker.Y) {
-        // attacker can't target a defender inside a wall of darkness, unless the attacker has True Sight or Illusions Immunity
-
-        if attacker.HasAbility(data.AbilityIllusionsImmunity) {
-            return true
-        }
-
-        return false
-    }
-
-    return true
-}
-
 func distanceInRange(x1 float64, y1 float64, x2 float64, y2 float64, r float64) bool {
     xDiff := x2 - x1
     yDiff := y2 - y1
@@ -2523,7 +2485,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         })
 
         for _, candidate := range candidates {
-           if combat.withinArrowRange(aiUnit, candidate) && combat.canRangeAttack(aiUnit, candidate) {
+           if combat.withinArrowRange(aiUnit, candidate) && combat.Model.canRangeAttack(aiUnit, candidate) {
                combat.doRangeAttack(yield, aiUnit, candidate)
                return
            }
@@ -2781,7 +2743,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         } else {
             newState := CombatNotOk
             // prioritize range attack over melee
-            if combat.canRangeAttack(combat.Model.SelectedUnit, who) && combat.withinArrowRange(combat.Model.SelectedUnit, who) {
+            if combat.Model.canRangeAttack(combat.Model.SelectedUnit, who) && combat.withinArrowRange(combat.Model.SelectedUnit, who) {
                 newState = CombatRangeAttackOk
             } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who) && combat.withinMeleeRange(combat.Model.SelectedUnit, who) {
                 newState = CombatMeleeAttackOk
@@ -2812,7 +2774,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            attacker := combat.Model.SelectedUnit
 
            // try a ranged attack first
-           if defender != nil && combat.withinArrowRange(attacker, defender) && combat.canRangeAttack(attacker, defender) {
+           if defender != nil && combat.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
                combat.doRangeAttack(yield, attacker, defender)
            // then fall back to melee
            } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){

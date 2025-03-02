@@ -2757,6 +2757,44 @@ func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) {
     model.Observer.WallOfFire(defender, 5)
 }
 
+func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    if attacker.IsAsleep() {
+        return false
+    }
+
+    if attacker.RangedAttacks <= 0 {
+        return false
+    }
+
+    if attacker.GetRangedAttackPower() <= 0 {
+        return false
+    }
+
+    if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
+        return false
+    }
+
+    if attacker.Team == defender.Team {
+        return false
+    }
+
+    // FIXME: check if defender has missle immunity and attacker is using regular non-magical attacks
+    // FIXME: check if defender has magic immunity and attacker is using magical attacks
+    // FIXME: check if defender has invisible, and attacker doesn't have illusions immunity
+
+    if model.InsideWallOfDarkness(defender.X, defender.Y) && !model.InsideWallOfDarkness(attacker.X, attacker.Y) {
+        // attacker can't target a defender inside a wall of darkness, unless the attacker has True Sight or Illusions Immunity
+
+        if attacker.HasAbility(data.AbilityIllusionsImmunity) {
+            return true
+        }
+
+        return false
+    }
+
+    return true
+}
+
 func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
     if attacker.IsAsleep() {
         return false
