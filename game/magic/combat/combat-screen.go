@@ -542,15 +542,15 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
-func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 0)
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    // FIXME: made up
     damage := func(unit *ArmyUnit) {
-        unit.TakeDamage(3)
-        combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for 3 damage", unit.Unit.GetName()))
+        fireDamage := unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageFire, false, 0)
+
+        combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
             combat.Model.RemoveUnit(unit)
@@ -567,7 +567,7 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength 
     explodeImages := images[11:]
 
     damage := func(unit *ArmyUnit) {
-        unit.TakeDamage(strength)
+        combat.Model.ApplyImmolationDamage(unit, strength)
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.RemoveUnit(unit)
         }
@@ -1057,7 +1057,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             }, targetAny)
         case "Fire Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateFireBoltProjectile(target)
+                combat.CreateFireBoltProjectile(target, spell.Cost(false))
                 castedCallback()
             }, targetAny)
         case "Lightning Bolt":

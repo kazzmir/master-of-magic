@@ -1267,13 +1267,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wa
 
     // log.Printf("Unit %v has %v defense", unit.Unit.GetName(), defenseRolls)
 
-    defense := 0
-
-    for range defenseRolls {
-        if rand.N(100) < toDefend {
-            defense += 1
-        }
-    }
+    defense := ComputeRoll(defenseRolls, toDefend)
 
     return defense
 }
@@ -1294,14 +1288,8 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
     health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
 
     for range unit.Figures() {
-        damage := 0
-        // FIXME: should this toHit be based on the unit's toHitMelee?
-        toHit := 30
-        for range attackStrength {
-            if rand.N(100) < toHit {
-                damage += 1
-            }
-        }
+        // FIXME: should this toHit=30 be based on the unit's toHitMelee?
+        damage := ComputeRoll(attackStrength, 30)
 
         defense := unit.ComputeDefense(damageType, false, wallDefense)
         // can't do more damage than a single figure has HP
@@ -1317,6 +1305,7 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
 }
 
 // apply damage to lead figure, and if it dies then keep applying remaining damage to the next figure
+// FIXME: its possible that the damage can be passed to ComputeRoll() to determine how much actual damage is done
 func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, armorPiercing bool, wallDefense int) int {
     taken := 0
     for damage > 0 && unit.Unit.GetHealth() > 0 {
@@ -1401,11 +1390,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
 
     damage := 0
     for range unit.Figures() {
-        for range unit.GetRangedAttackPower() {
-            if rand.N(100) < toHit {
-                damage += 1
-            }
-        }
+        damage += ComputeRoll(unit.GetRangedAttackPower(), toHit)
     }
 
     return damage
@@ -1422,11 +1407,7 @@ func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int) (int, bool) {
     for range unit.Figures() - fearFigure {
         // even if all figures fail to cause damage, it still counts as a hit for touch purposes
         hit = true
-        for range unit.GetMeleeAttackPower() {
-            if rand.N(100) < unit.GetToHitMelee() {
-                damage += 1
-            }
-        }
+        damage += ComputeRoll(unit.GetMeleeAttackPower(), unit.GetToHitMelee())
     }
 
     return damage, hit
@@ -1682,6 +1663,19 @@ func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
     model.SelectedUnit = model.ChooseNextUnit(TeamDefender)
 
     return model
+}
+
+// do N rolls (n=strength) where each roll has 'chance' success. return number of successful rolls
+func ComputeRoll(strength int, chance int) int {
+    out := 0
+
+    for range strength {
+        if rand.N(100) < chance {
+            out += 1
+        }
+    }
+
+    return out
 }
 
 // distance -> cost multiplier:

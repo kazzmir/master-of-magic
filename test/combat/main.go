@@ -647,7 +647,9 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
                        "Blur", "Counter Magic", "Mass Invisibility", "Metal Fires", "Warp Reality",
                        "Black Prayer", "Darkness", "Mana Leak", "Terror", "Wrack",
                        "Disenchant Area", "Disenchant True",
-                       "Creature Binding", "Mind Storm"}
+                       "Creature Binding", "Mind Storm",
+                       "Fire Bolt",
+                   }
 
 
     for _, spellName := range spells {
