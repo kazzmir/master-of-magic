@@ -1176,7 +1176,13 @@ func (unit *ArmyUnit) ResetTurnData() {
     unit.Casted = false
 }
 
-func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wallDefense int) int {
+type DamageModifiers struct {
+    ArmorPiercing bool
+    Illusion bool
+    WallDefense int
+}
+
+func (unit *ArmyUnit) ComputeDefense(damage units.Damage, modifiers DamageModifiers) int {
     if unit.IsAsleep() {
         return 0
     }
@@ -1249,8 +1255,12 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wa
             defenseRolls = unit.GetDefense()
     }
 
-    if armorPiercing {
+    if modifiers.ArmorPiercing {
         defenseRolls /= 2
+    }
+
+    if modifiers.Illusion {
+        defenseRolls = 0
     }
 
     // after armor piercing, wall defense is applied
@@ -1258,7 +1268,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wa
         case units.DamageRangedMagical,
              units.DamageRangedPhysical,
              units.DamageMeleePhysical:
-            defenseRolls += wallDefense
+            defenseRolls += modifiers.WallDefense
     }
 
     if hasImmunity {
@@ -1291,7 +1301,7 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
         // FIXME: should this toHit=30 be based on the unit's toHitMelee?
         damage := ComputeRoll(attackStrength, 30)
 
-        defense := unit.ComputeDefense(damageType, false, wallDefense)
+        defense := unit.ComputeDefense(damageType, DamageModifiers{WallDefense: wallDefense})
         // can't do more damage than a single figure has HP
         figureDamage := min(damage - defense, health_per_figure)
         if figureDamage > 0 {
@@ -1306,11 +1316,15 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
 
 // apply damage to lead figure, and if it dies then keep applying remaining damage to the next figure
 // FIXME: its possible that the damage can be passed to ComputeRoll() to determine how much actual damage is done
-func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, armorPiercing bool, wallDefense int) int {
+func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, modifiers DamageModifiers) int {
+    if damageType == units.DamageRangedMagical && unit.HasAbility(data.AbilityMagicImmunity) {
+        return 0
+    }
+
     taken := 0
     for damage > 0 && unit.Unit.GetHealth() > 0 {
         // compute defense, apply damage to lead figure. if lead figure dies, apply damage to next figure
-        defense := unit.ComputeDefense(damageType, armorPiercing, wallDefense)
+        defense := unit.ComputeDefense(damageType, modifiers)
         damage -= defense
         if damage > 0 {
             health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
@@ -2453,7 +2467,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         hit = true
 
         damage = append(damage, func(){
-            fireDamage := defender.ApplyDamage(strength, units.DamageFire, false, 0)
+            fireDamage := defender.ApplyDamage(strength, units.DamageFire, DamageModifiers{})
             model.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
             // damage += fireDamage
             model.Observer.FireBreathAttack(attacker, defender, fireDamage)
@@ -2465,7 +2479,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         hit = true
 
         damage = append(damage, func(){
-            lightningDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, true, 0)
+            lightningDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true})
             model.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
             // damage += lightningDamage
             model.Observer.LightningBreathAttack(attacker, defender, lightningDamage)
@@ -2746,7 +2760,12 @@ func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDa
 }
 
 func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
-    hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, false, model.ComputeWallDefense(attacker, defender))
+    modifiers := DamageModifiers{
+        WallDefense: model.ComputeWallDefense(attacker, defender),
+        ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
+        Illusion: attacker.HasAbility(data.AbilityIllusion),
+    }
+    hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, modifiers)
     model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
 }
 
@@ -2955,7 +2974,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
 
                 if throwDamage > 0 {
-                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, attacker.HasAbility(data.AbilityArmorPiercing), 0)
+                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, DamageModifiers{ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing)})
                     model.Observer.ThrowAttack(attacker, defender, damage)
                     model.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
                 }

@@ -532,7 +532,7 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageCold, false, 0)
+        unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageCold, DamageModifiers{})
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.RemoveUnit(unit)
         }
@@ -547,7 +547,7 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        fireDamage := unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageFire, false, 0)
+        fireDamage := unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageFire, DamageModifiers{})
 
         combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.Unit.GetHealth() <= 0 {
@@ -580,7 +580,7 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        unit.ApplyDamage(15, units.DamageRangedMagical, false, 0)
+        unit.ApplyDamage(15, units.DamageRangedMagical, DamageModifiers{})
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.RemoveUnit(unit)
         }
@@ -596,11 +596,18 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
-func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, strength int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 16)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    damage := func (unit *ArmyUnit) {
+        unit.ApplyDamage(ComputeRoll(15, 30), units.DamageRangedMagical, DamageModifiers{})
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
 }
 
 func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
@@ -641,7 +648,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
         Effect: func(unit *ArmyUnit) {
-            unit.ApplyDamage(strength, units.DamageRangedMagical, true, 0)
+            unit.ApplyDamage(strength, units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true})
             if unit.Unit.GetHealth() <= 0 {
                 combat.Model.RemoveUnit(unit)
             }
@@ -1057,7 +1064,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             })
         case "Psionic Blast":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreatePsionicBlastProjectile(target)
+                combat.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2)
                 castedCallback()
             }, targetAny)
         case "Doom Bolt":
@@ -1987,7 +1994,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         damage := attacker.ComputeRangeDamage(tileDistance)
         // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
-        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), false, combat.Model.ComputeWallDefense(attacker, defender))
+        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
             combat.Model.doTouchAttack(attacker, target, 0)
