@@ -4413,6 +4413,13 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
         if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentCloudOfShadow) {
             combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
+        } else {
+            for _, enchantments := range game.GetAllGlobalEnchantments() {
+                if enchantments.Contains(data.EnchantmentEternalNight) {
+                    combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
+                    break
+                }
+            }
         }
 
         // ebiten.SetCursorMode(ebiten.CursorModeHidden)

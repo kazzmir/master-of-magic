@@ -1060,6 +1060,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Armageddon"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Great Wasting"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Detect Magic"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Eternal Night"))
 
     // unit enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Bless"))
@@ -1113,7 +1114,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     game.CurrentMap().SetRoad(x, y+1, false)
     game.CurrentMap().SetRoad(x, y+2, false)
@@ -1137,15 +1138,16 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city2.AddBuilding(buildinglib.BuildingShrine)
     city2.AddBuilding(buildinglib.BuildingGranary)
     city2.AddBuilding(buildinglib.BuildingBank)
+    city2.AddEnchantment(data.CityEnchantmentCloudOfShadow, enemy.GetBanner())
     city2.Farmers = 10
     city2.Workers = 4
     city2.ResetCitizens()
     enemy.AddCity(city2)
 
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
-    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x + 2, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y - 1, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.DragonTurtle, x + 2, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.DragonTurtle, x, y - 2, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     player.LiftFog(x, y, 2, data.PlaneArcanus)
 
     enemyWizard2 := setup.WizardCustom{
