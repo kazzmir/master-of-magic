@@ -648,7 +648,8 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
         Effect: func(unit *ArmyUnit) {
-            unit.ApplyDamage(strength, units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true})
+            // FIXME: should we pass in ChaosMagic here so the defender can use GetDefenseFor(ChaosMagic) in ApplyDamage?
+            unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true})
             if unit.Unit.GetHealth() <= 0 {
                 combat.Model.RemoveUnit(unit)
             }

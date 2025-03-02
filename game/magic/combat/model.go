@@ -1180,6 +1180,7 @@ type DamageModifiers struct {
     ArmorPiercing bool
     Illusion bool
     WallDefense int
+    // Possibly have a MagicType here so the defender can apply GetDefenseFor() to the magic type
 }
 
 func (unit *ArmyUnit) ComputeDefense(damage units.Damage, modifiers DamageModifiers) int {
