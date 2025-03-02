@@ -1351,39 +1351,39 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         combat instants:
 
         Dispel Magic
-        Raise Dead 
-        Petrify 
-        Call Chaos 	
+        Raise Dead
+        Petrify
+        Call Chaos
         Animate Dead
          */
 
         /*
         unit enchantments:
-        Heroism 
-        Holy Armor 
-        Holy Weapon 
+        Heroism
+        Holy Armor
+        Holy Weapon
         Invulnerability
-        Lionheart 	
+        Lionheart
         Righteousness
-        True Sight 	
+        True Sight
         Elemental Armor
-        Giant Strength 
-        Iron Skin 	
-        Regeneration 
-        Resist Elements 
-        Stone Skin 	
-        Flight 	
+        Giant Strength
+        Iron Skin
+        Regeneration
+        Resist Elements
+        Stone Skin
+        Flight
         Guardian Wind
-        Haste 	
+        Haste
         Invisibility
         Magic Immunity
-        Resist Magic 
-        Spell Lock 	
+        Resist Magic
+        Spell Lock
         Eldritch Weapon
-        Flame Blade 
-        Immolation 
-        Berserk 
-        Cloak of Fear 
+        Flame Blade
+        Immolation
+        Berserk
+        Cloak of Fear
         Wraith Form
          */
     }
