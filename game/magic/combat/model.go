@@ -1260,10 +1260,6 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, modifiers DamageModifi
         defenseRolls /= 2
     }
 
-    if modifiers.Illusion {
-        defenseRolls = 0
-    }
-
     // after armor piercing, wall defense is applied
     switch damage {
         case units.DamageRangedMagical,
@@ -1274,6 +1270,10 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, modifiers DamageModifi
 
     if hasImmunity {
         defenseRolls = 50
+    }
+
+    if modifiers.Illusion && !unit.HasAbility(data.AbilityIllusionsImmunity) {
+        defenseRolls = 0
     }
 
     // log.Printf("Unit %v has %v defense", unit.Unit.GetName(), defenseRolls)
