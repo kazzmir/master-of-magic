@@ -1060,6 +1060,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Armageddon"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Great Wasting"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Detect Magic"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Eternal Night"))
 
     // unit enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Bless"))
