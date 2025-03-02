@@ -43,6 +43,8 @@ type Editor struct {
 
     ShowInfo bool
     InfoImage *ebiten.Image
+
+    Terrain terrain.TerrainType
 }
 
 func chooseRandomElement[T any](values []T) T {
@@ -116,6 +118,24 @@ func (editor *Editor) Update() error {
 
     for _, key := range keys {
         switch key {
+            case ebiten.Key1:
+                editor.Terrain = terrain.Grass
+            case ebiten.Key2:
+                editor.Terrain = terrain.Hill
+            case ebiten.Key3:
+                editor.Terrain = terrain.Mountain
+            case ebiten.Key4:
+                editor.Terrain = terrain.Swamp
+            case ebiten.Key5:
+                editor.Terrain = terrain.Forest
+            case ebiten.Key6:
+                editor.Terrain = terrain.Desert
+            case ebiten.Key7:
+                editor.Terrain = terrain.Tundra
+            case ebiten.Key8:
+                editor.Terrain = terrain.River
+            case ebiten.Key9:
+                editor.Terrain = terrain.Lake
             case ebiten.KeyP:
                 editor.togglePlane()
             case ebiten.KeyC:
@@ -137,8 +157,6 @@ func (editor *Editor) Update() error {
         }
     }
 
-    leftShift := inpututil.KeyPressDuration(ebiten.KeyShiftLeft) > 0
-
     leftClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft)
     rightClick := ebiten.IsMouseButtonPressed(ebiten.MouseButtonRight)
 
@@ -159,22 +177,11 @@ func (editor *Editor) Update() error {
 
     if leftClick {
         if x >= 0 && x < editor.Map.Columns() && y >= 0 && y < editor.Map.Rows() {
-            use := terrain.TileLand.Index(editor.Plane)
-
-            if leftShift {
-                use = terrain.TileOcean.Index(editor.Plane)
-            }
-
-            editor.Map.Terrain[x][y] = use
+            editor.Map.SetTerrainAt(x, y, editor.Terrain, editor.Data, editor.Plane)
         }
     } else if rightClick {
         if x >= 0 && x < editor.Map.Columns() && y >= 0 && y < editor.Map.Rows() {
-            resolved, err := editor.Map.ResolveTile(x, y, editor.Data, editor.Plane)
-            if err == nil {
-                editor.Map.Terrain[x][y] = resolved
-            } else {
-                fmt.Printf("Unable to resolve tile %v, %v: %v\n", x, y, err)
-            }
+            editor.Map.SetTerrainAt(x, y, terrain.Ocean, editor.Data, editor.Plane)
         }
     }
 
@@ -242,6 +249,8 @@ func (editor *Editor) Draw(screen *ebiten.Image){
         op.ColorScale.ScaleWithColor(color.White)
         text.Draw(editor.InfoImage, fmt.Sprintf("Map Dimensions: %vx%v", editor.Map.Columns(), editor.Map.Rows()), face, op)
         op.GeoM.Translate(0, face.Size + 2)
+        text.Draw(editor.InfoImage, fmt.Sprintf("Selection: %v", editor.Terrain), face, op)
+        op.GeoM.Translate(0, face.Size + 2)
         value := -1
         var type_ terrain.TerrainType = terrain.Unknown
 
@@ -256,7 +265,7 @@ func (editor *Editor) Draw(screen *ebiten.Image){
             tileImage := editor.GetTileImage(editor.TileX, editor.TileY)
             var options ebiten.DrawImageOptions
             options.GeoM.Scale(1.5, 1.5)
-            options.GeoM.Translate(1, face.Size * 3)
+            options.GeoM.Translate(1, face.Size * 4)
             editor.InfoImage.DrawImage(tileImage, &options)
         }
 
@@ -307,6 +316,7 @@ func MakeEditor() *Editor {
         CameraY: 0,
         ShowInfo: true,
         InfoImage: ebiten.NewImage(200, 100),
+        Terrain: terrain.Grass,
     }
 }
 
