@@ -535,9 +535,6 @@ type ArmyUnit struct {
     // Health int
     MovesLeft fraction.Fraction
 
-    // due to black sleep
-    Asleep bool
-
     Spells spellbook.Spells
     SpellCharges map[spellbook.Spell]int
     CastingSkill float32
@@ -566,6 +563,10 @@ type ArmyUnit struct {
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
+}
+
+func (unit *ArmyUnit) IsAsleep() bool {
+    return unit.HasCurse(data.UnitCurseBlackSleep)
 }
 
 func (unit *ArmyUnit) GetAbilities() []data.Ability {
@@ -1176,6 +1177,10 @@ func (unit *ArmyUnit) ResetTurnData() {
 }
 
 func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wallDefense int) int {
+    if unit.IsAsleep() {
+        return 0
+    }
+
     toDefend := unit.ToDefend()
     var defenseRolls int
 
@@ -1777,6 +1782,11 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
             for i := 0; i < len(model.AttackingArmy.Units); i++ {
                 model.TurnAttacker = (model.TurnAttacker + 1) % len(model.AttackingArmy.Units)
                 unit := model.AttackingArmy.Units[model.TurnAttacker]
+
+                if unit.IsAsleep() {
+                    unit.LastTurn = model.CurrentTurn
+                }
+
                 if unit.LastTurn < model.CurrentTurn {
                     unit.Paths = make(map[image.Point]pathfinding.Path)
                     return unit
@@ -1787,6 +1797,11 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
             for i := 0; i < len(model.DefendingArmy.Units); i++ {
                 model.TurnDefender = (model.TurnDefender + 1) % len(model.DefendingArmy.Units)
                 unit := model.DefendingArmy.Units[model.TurnDefender]
+
+                if unit.IsAsleep() {
+                    unit.LastTurn = model.CurrentTurn
+                }
+
                 if unit.LastTurn < model.CurrentTurn {
                     unit.Paths = make(map[image.Point]pathfinding.Path)
                     return unit
@@ -2743,6 +2758,10 @@ func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) {
 }
 
 func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    if attacker.IsAsleep() {
+        return false
+    }
+
     if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
         return false
     }
@@ -2946,7 +2965,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
 
             case 3:
-                if defender.HasAbility(data.AbilityCauseFear) {
+                if !defender.IsAsleep() && defender.HasAbility(data.AbilityCauseFear) {
                     attackerFear = attacker.CauseFear()
                     model.AddLogEvent(fmt.Sprintf("%v causes fear in %v for %v figures", defender.Unit.GetName(), attacker.Unit.GetName(), attackerFear))
                     model.Observer.CauseFear(defender, attacker, attackerFear)
@@ -2954,6 +2973,12 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
             case 4:
                 if attacker.HasAbility(data.AbilityFirstStrike) && !defender.HasAbility(data.AbilityNegateFirstStrike) {
                     attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
+
+                    // asleep units take full attack power as damage
+                    if defender.IsAsleep() {
+                        hit = true
+                        attackerDamage = attacker.GetMeleeAttackPower()
+                    }
 
                     immolationDamage := 0
 
@@ -2975,7 +3000,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
             case 5:
                 // attacker fear attack
-                if attacker.HasAbility(data.AbilityCauseFear) || attacker.HasEnchantment(data.UnitEnchantmentCloakOfFear) {
+                if attacker.HasAbility(data.AbilityCauseFear) {
                     defenderFear = defender.CauseFear()
                     model.AddLogEvent(fmt.Sprintf("%v causes fear in %v for %v figures", attacker.Unit.GetName(), defender.Unit.GetName(), defenderFear))
                     model.Observer.CauseFear(attacker, defender, defenderFear)
@@ -3008,6 +3033,11 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 for range attacks {
                     attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
 
+                    if defender.IsAsleep() {
+                        hit = true
+                        attackerDamage = attacker.GetMeleeAttackPower()
+                    }
+
                     if hit {
                         model.Observer.MeleeAttack(attacker, defender, attackerDamage)
                         defenderMeleeDamage += attackerDamage
@@ -3026,16 +3056,20 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 attackerImmolationDamage := 0
                 attackerMeleeDamage := 0
 
-                // defender does counter-attack
-                for range counters {
-                    defenderDamage, hit := defender.ComputeMeleeDamage(defenderFear)
+                if !defender.IsAsleep() {
+                    // defender does counter-attack
+                    for range counters {
+                        defenderDamage, hit := defender.ComputeMeleeDamage(defenderFear)
 
-                    if hit {
-                        model.Observer.MeleeAttack(defender, attacker, defenderDamage)
-                        attackerMeleeDamage += defenderDamage
-                        attackerImmolationDamage += model.immolationDamage(defender, attacker)
-                        if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                            damageFuncs = append(damageFuncs, model.doTouchAttack(defender, attacker, defenderFear)...)
+                        // attacker can't possibly be asleep, so no need to check here
+
+                        if hit {
+                            model.Observer.MeleeAttack(defender, attacker, defenderDamage)
+                            attackerMeleeDamage += defenderDamage
+                            attackerImmolationDamage += model.immolationDamage(defender, attacker)
+                            if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                                damageFuncs = append(damageFuncs, model.doTouchAttack(defender, attacker, defenderFear)...)
+                            }
                         }
                     }
                 }

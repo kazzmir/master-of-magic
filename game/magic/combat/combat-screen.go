@@ -1863,6 +1863,10 @@ func (combat *CombatScreen) withinArrowRange(attacker *ArmyUnit, defender *ArmyU
 }
 
 func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    if attacker.IsAsleep() {
+        return false
+    }
+
     if attacker.RangedAttacks <= 0 {
         return false
     }
