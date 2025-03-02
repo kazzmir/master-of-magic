@@ -3447,7 +3447,11 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
             // _ = index
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
-            unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
+            if unit.IsAsleep() {
+                unitview.RenderCombatUnitGrey(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
+            } else {
+                unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
+            }
 
             unitOptions.GeoM.Translate(float64(-combatImages[index].Bounds().Dx()/2), float64(-combatImages[0].Bounds().Dy()*3/4))
             for _, curse := range unit.GetCurses() {
