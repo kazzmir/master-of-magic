@@ -325,7 +325,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Chaos Surge
                 Doom Mastery
                 Meteor Storm
-                Eternal Night
                 Evil Omens
                 Zombie Mastery
         */
@@ -410,7 +409,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 game.RefreshUI()
             }
+        case "Eternal Night":
+            if !player.GlobalEnchantments.Contains(data.EnchantmentEternalNight) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentEternalNight}
 
+                player.GlobalEnchantments.Insert(data.EnchantmentEternalNight)
+
+                game.RefreshUI()
+            }
         /*
             INSTANT SPELLS
                 TODO:

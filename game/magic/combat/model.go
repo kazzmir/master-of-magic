@@ -2184,6 +2184,10 @@ func (model *CombatModel) AddGlobalEnchantment(enchantment data.CombatEnchantmen
 }
 
 func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment) bool {
+    if slices.Contains(model.GlobalEnchantments, enchantment) {
+        return false
+    }
+
     if player == model.DefendingArmy.Player {
         return model.DefendingArmy.AddEnchantment(enchantment)
     } else {

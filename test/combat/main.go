@@ -373,13 +373,17 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fire Elemental"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Bless"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Weakness"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Darkness"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
     attackingArmy := createArmyN(attackingPlayer, units.HighElfMagician, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
+    // return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
+    combatScreen := combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
+    combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
+    return combatScreen
 }
 
 func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
