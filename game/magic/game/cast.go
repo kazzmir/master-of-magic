@@ -544,7 +544,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 return true
             }
-            // FIXME: sound is wrong
             game.doCastNewCityBuilding(spell, player, LocationTypeFriendlyCity, building.BuildingFortress, "Your fortress is already in this city", after)
 
         default:
