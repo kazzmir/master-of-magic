@@ -52,9 +52,9 @@ func noUnitEnchantmentCallback(unit units.StackUnit) bool {
     return true
 }
 
-type CityEnchantmentCallback func (*citylib.City) bool
+type CityCallback func (*citylib.City) bool
 
-func noCityEnchantmentCallback(city *citylib.City) bool {
+func noCityCallback(city *citylib.City) bool {
     return true
 }
 
@@ -232,7 +232,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 )
                 return true
             }
-            game.doCastCityEnchantmentFull(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentConsecration, noCityEnchantmentCallback, after)
+            game.doCastCityEnchantmentFull(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentConsecration, noCityCallback, after)
         case "Inspirations":
             game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentInspirations)
         case "Gaia's Blessing":
@@ -242,15 +242,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 player.UpdateFogVisibility()
                 return true
             }
-            game.doCastCityEnchantmentFull(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentNaturesEye, noCityEnchantmentCallback, after)
+            game.doCastCityEnchantmentFull(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentNaturesEye, noCityCallback, after)
         case "Dark Rituals":
             game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentDarkRituals)
         case "Stream of Life":
             game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentStreamOfLife)
         case "Altar of Battle":
             game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentAltarOfBattle)
-        case "Wall of Stone":
-            game.doCastNewCityBuilding(spell, player, LocationTypeFriendlyCity, building.BuildingCityWalls)
         case "Wall of Fire":
             game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentWallOfFire)
         case "Wall of Darkness":
@@ -269,7 +267,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 }
                 return true
             }
-            game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentCursedLands, before, noCityEnchantmentCallback)
+            game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentCursedLands, before, noCityCallback)
         case "Famine":
             before := func (city *citylib.City) bool {
                 if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
@@ -278,7 +276,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 }
                 return true
             }
-            game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentFamine, before, noCityEnchantmentCallback)
+            game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentFamine, before, noCityCallback)
         case "Pestilence":
             before := func (city *citylib.City) bool {
                 if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
@@ -287,7 +285,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 }
                 return true
             }
-            game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentPestilence, before, noCityEnchantmentCallback)
+            game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentPestilence, before, noCityCallback)
         case "Evil Presence":
             before := func (city *citylib.City) bool {
                 if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
@@ -296,7 +294,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 }
                 return true
             }
-            game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentEvilPresence, before, noCityEnchantmentCallback)
+            game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentEvilPresence, before, noCityCallback)
 
 
         /*
@@ -412,7 +410,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Disjunction
                 Spell of Mastery
                 Spell of Return
-                Summoning Circle
                 Plane Shift
                 Resurrection
                 Earthquake
@@ -509,13 +506,18 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeDisenchant, SelectedFunc: selected}
-        /*
-            COMBAT ENCHANTMENTS
-        */
-
-        /*
-            COMBAT INSTANTS
-        */
+        case "Wall of Stone":
+            game.doCastNewCityBuilding(spell, player, LocationTypeFriendlyCity, building.BuildingCityWalls, "This city already has a Wall of Stone", noCityCallback)
+        case "Summoning Circle":
+            after := func(chosenCity *citylib.City) bool {
+                for _, city := range player.Cities {
+                    if city != chosenCity && city.Buildings.Contains(building.BuildingSummoningCircle) {
+                        city.Buildings.Remove(building.BuildingSummoningCircle)
+                    }
+                }
+                return true
+            }
+            game.doCastNewCityBuilding(spell, player, LocationTypeFriendlyCity, building.BuildingSummoningCircle, "Your summoning circle is already in this city", after)
 
         default:
             log.Printf("Warning: casting unhandled spell '%v'", spell.Name)
@@ -1121,7 +1123,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     return 0, 0, true
 }
 
-func (game *Game) doCastCityEnchantmentFull(spell spellbook.Spell, player *playerlib.Player, locationType LocationType, enchantment data.CityEnchantment, before CityEnchantmentCallback, after CityEnchantmentCallback) {
+func (game *Game) doCastCityEnchantmentFull(spell spellbook.Spell, player *playerlib.Player, locationType LocationType, enchantment data.CityEnchantment, before CityCallback, after CityCallback) {
     var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
     selected = func (yield coroutine.YieldFunc, tileX int, tileY int) {
         // FIXME: Show this only for enemies if detect magic is active and the city is known to the human player
@@ -1165,7 +1167,7 @@ func (game *Game) doCastCityEnchantmentFull(spell spellbook.Spell, player *playe
     game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: locationType, SelectedFunc: selected}
 }
 
-func (game *Game) doCastNewCityBuilding(spell spellbook.Spell, player *playerlib.Player, locationType LocationType, newBuilding building.Building) {
+func (game *Game) doCastNewCityBuilding(spell spellbook.Spell, player *playerlib.Player, locationType LocationType, newBuilding building.Building, errorMessage string, after CityCallback) {
     var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
     selected = func (yield coroutine.YieldFunc, tileX int, tileY int) {
         // FIXME: Show this only for enemies if detect magic is active and the city is known to the human player
@@ -1176,7 +1178,7 @@ func (game *Game) doCastNewCityBuilding(spell spellbook.Spell, player *playerlib
         }
 
         if chosenCity.Buildings.Contains(newBuilding) {
-            game.Events <- &GameEventNotice{Message: fmt.Sprintf("This city already has a %v", spell.Name)}
+            game.Events <- &GameEventNotice{Message: errorMessage}
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: locationType, SelectedFunc: selected}
             return
         }
@@ -1193,13 +1195,15 @@ func (game *Game) doCastNewCityBuilding(spell spellbook.Spell, player *playerlib
 
         game.showCastNewBuilding(yield, chosenCity, player, newBuilding, spell.Name)
         game.RefreshUI()
+
+        after(chosenCity)
     }
 
     game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: locationType, SelectedFunc: selected}
 }
 
 func (game *Game) doCastCityEnchantment(spell spellbook.Spell, player *playerlib.Player, locationType LocationType, enchantment data.CityEnchantment) {
-    game.doCastCityEnchantmentFull(spell, player, locationType, enchantment, noCityEnchantmentCallback, noCityEnchantmentCallback)
+    game.doCastCityEnchantmentFull(spell, player, locationType, enchantment, noCityCallback, noCityCallback)
 }
 
 type UpdateMapFunction func (tileX int, tileY int, animationFrame int)
