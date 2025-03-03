@@ -1175,7 +1175,7 @@ func (game *Game) doCastCityEnchantmentFull(spell spellbook.Spell, player *playe
 
         yield()
 
-        sound, err := audio.LoadSound(game.Cache, enchantment.SoundIndex())
+        sound, err := audio.LoadSound(game.Cache, spell.Sound)
         if err == nil {
             sound.Play()
         }

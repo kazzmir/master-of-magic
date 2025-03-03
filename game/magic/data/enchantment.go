@@ -710,34 +710,6 @@ func (enchantment CityEnchantment) LbxIndex() int {
     return 0
 }
 
-func (enchantment CityEnchantment) SoundIndex() int {
-    // FIXME: Add other sound indexes
-    switch enchantment {
-        case CityEnchantmentAltarOfBattle, CityEnchantmentHeavenlyLight, CityEnchantmentInspirations,
-            CityEnchantmentProsperity, CityEnchantmentStreamOfLife, CityEnchantmentAstralGate:
-            return 31
-        // case CityEnchantmentChaosRift: return 0
-        case CityEnchantmentCloudOfShadow, CityEnchantmentEvilPresence, CityEnchantmentFamine,
-            CityEnchantmentPestilence, CityEnchantmentWallOfDarkness:
-            return 32
-        case CityEnchantmentConsecration: return 31
-        case CityEnchantmentCursedLands: return 61
-        case CityEnchantmentDarkRituals: return 60
-        // case CityEnchantmentEarthGate: return 0
-        // case CityEnchantmentFlyingFortress: return 0
-        case CityEnchantmentGaiasBlessing, CityEnchantmentNaturesEye:
-            return 28
-        // case CityEnchantmentLifeWard: return 0
-        // case CityEnchantmentSorceryWard: return 0
-        // case CityEnchantmentNatureWard: return 0
-        // case CityEnchantmentDeathWard: return 0
-        // case CityEnchantmentChaosWard: return 0
-        case CityEnchantmentWallOfFire: return 30
-    }
-
-    return 0
-}
-
 // this is the offset in the city view of where to draw the enchantment sprite
 // for enchantments that have 'normal' buildings associated with them (such as altar of battle), this is not needed
 func (enchantment CityEnchantment) IconOffset() int {
