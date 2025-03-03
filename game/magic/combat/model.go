@@ -1177,10 +1177,16 @@ func (unit *ArmyUnit) ResetTurnData() {
 }
 
 type DamageModifiers struct {
+    // 50% less defense
     ArmorPiercing bool
+    // 100% less defense
     Illusion bool
+
+    // any protection offered by the city wall
     WallDefense int
-    // Possibly have a MagicType here so the defender can apply GetDefenseFor() to the magic type
+
+    // if the damage comes from a specific realm (for spells or magic damage)
+    Magic data.MagicType
 }
 
 func (unit *ArmyUnit) ComputeDefense(damage units.Damage, modifiers DamageModifiers) int {
@@ -1195,7 +1201,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, modifiers DamageModifi
 
     switch damage {
         case units.DamageRangedMagical:
-            defenseRolls = unit.GetDefense()
+            defenseRolls = unit.GetDefenseFor(modifiers.Magic)
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1230,7 +1236,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, modifiers DamageModifi
             // defenseRolls += unit.GetResistances(data.UnitEnchantmentResistElements, data.UnitEnchantmentBless, data.UnitEnchantmentElementalArmor)
 
         case units.DamageFire:
-            defenseRolls = unit.GetDefense()
+            defenseRolls = unit.GetDefenseFor(modifiers.Magic)
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1239,7 +1245,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, modifiers DamageModifi
                 hasImmunity = true
             }
         case units.DamageCold:
-            defenseRolls = unit.GetDefense()
+            defenseRolls = unit.GetDefenseFor(modifiers.Magic)
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1318,7 +1324,8 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
 // apply damage to lead figure, and if it dies then keep applying remaining damage to the next figure
 // FIXME: its possible that the damage can be passed to ComputeRoll() to determine how much actual damage is done
 func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, modifiers DamageModifiers) int {
-    if damageType == units.DamageRangedMagical && unit.HasAbility(data.AbilityMagicImmunity) {
+    isMagic := damageType == units.DamageRangedMagical || damageType == units.DamageFire || damageType == units.DamageCold
+    if isMagic && unit.HasAbility(data.AbilityMagicImmunity) {
         return 0
     }
 
@@ -2468,7 +2475,11 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         hit = true
 
         damage = append(damage, func(){
-            fireDamage := defender.ApplyDamage(strength, units.DamageFire, DamageModifiers{})
+            fireDamage := 0
+            // one breath attack per figure
+            for range attacker.Figures() {
+                fireDamage += defender.ApplyDamage(ComputeRoll(strength, attacker.GetToHitMelee()), units.DamageFire, DamageModifiers{Magic: data.ChaosMagic})
+            }
             model.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
             // damage += fireDamage
             model.Observer.FireBreathAttack(attacker, defender, fireDamage)
@@ -2480,7 +2491,10 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         hit = true
 
         damage = append(damage, func(){
-            lightningDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true})
+            lightningDamage := 0
+            for range attacker.Figures() {
+                lightningDamage += defender.ApplyDamage(ComputeRoll(strength, attacker.GetToHitMelee()), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+            }
             model.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
             // damage += lightningDamage
             model.Observer.LightningBreathAttack(attacker, defender, lightningDamage)
