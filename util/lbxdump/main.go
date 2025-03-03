@@ -5,6 +5,7 @@ import (
     "io"
     "fmt"
     "log"
+    "image/color"
     "image/png"
     "path/filepath"
     "bytes"
@@ -239,6 +240,16 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool, 
             }
         }()
 
+        files := make(map[string]*lbx.LbxFile)
+        files[lbxName] = &file
+        cache := lbx.MakeCacheFromLbxFiles(files)
+
+        customPaletteMap, err := lbx.GetPaletteOverrideMap(cache, &file, lbxName)
+        if err != nil {
+            log.Printf("Warning: unable to load custom palette map: %v\n", err)
+            customPaletteMap = make(map[int]color.Palette)
+        }
+
         for index, data := range file.Data {
             if onlyIndex != -1 && index != onlyIndex {
                 continue
@@ -260,7 +271,13 @@ func dumpLbx(reader io.ReadSeeker, lbxName string, onlyIndex int, rawDump bool, 
                     fmt.Printf("Saved raw data to %v\n", name)
                 }()
             } else if len(data) > 0 {
-                images, err := file.ReadImages(index)
+
+                palette := customPaletteMap[index]
+                if palette == nil {
+                    palette = customPaletteMap[-1]
+                }
+
+                images, err := file.ReadImagesWithPalette(index, palette, false)
                 if err != nil {
                     log.Printf("Unable to load entry %v as images: %v\n", index, err)
                     continue

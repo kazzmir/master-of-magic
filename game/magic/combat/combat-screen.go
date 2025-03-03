@@ -532,7 +532,7 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageCold, DamageModifiers{})
+        unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageCold, DamageModifiers{Magic: data.NatureMagic})
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.RemoveUnit(unit)
         }
@@ -547,7 +547,7 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        fireDamage := unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageFire, DamageModifiers{})
+        fireDamage := unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageFire, DamageModifiers{Magic: data.ChaosMagic})
 
         combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.Unit.GetHealth() <= 0 {
@@ -601,7 +601,7 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, stren
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        unit.ApplyDamage(ComputeRoll(15, 30), units.DamageRangedMagical, DamageModifiers{})
+        unit.ApplyDamage(ComputeRoll(15, 30), units.DamageRangedMagical, DamageModifiers{Magic: data.SorceryMagic})
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.RemoveUnit(unit)
         }
@@ -648,8 +648,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
         Effect: func(unit *ArmyUnit) {
-            // FIXME: should we pass in ChaosMagic here so the defender can use GetDefenseFor(ChaosMagic) in ApplyDamage?
-            unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true})
+            unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             if unit.Unit.GetHealth() <= 0 {
                 combat.Model.RemoveUnit(unit)
             }
@@ -686,8 +685,7 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
 
             // 10 separate attacks are different than a single 55-point attack due to defense
             for strength := range 10 {
-                // FIXME: should we pass in ChaosMagic here so the defender can use GetDefenseFor(ChaosMagic) in ApplyDamage?
-                unit.ApplyDamage(ComputeRoll(strength + 1, 30), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true})
+                unit.ApplyDamage(ComputeRoll(strength + 1, 30), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             }
 
             if unit.Unit.GetHealth() <= 0 {
