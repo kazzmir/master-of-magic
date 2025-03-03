@@ -506,7 +506,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeDisenchant, SelectedFunc: selected}
         case "Wall of Stone":
-            game.doCastNewCityBuilding(spell, player, LocationTypeFriendlyCity, building.BuildingCityWalls, "This city already has a Wall of Stone", noCityCallback)
+            after := func (city *citylib.City) bool {
+                if city.ProducingBuilding == building.BuildingCityWalls {
+                    city.ProducingBuilding = building.BuildingTradeGoods
+                }
+                return true
+            }
+            game.doCastNewCityBuilding(spell, player, LocationTypeFriendlyCity, building.BuildingCityWalls, "This city already has a Wall of Stone", after)
         case "Summoning Circle":
             after := func(chosenCity *citylib.City) bool {
                 for _, city := range player.Cities {
