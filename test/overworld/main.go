@@ -1052,6 +1052,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Astral Gate"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Cloud of Shadow"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Summoning Circle"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Move Fortress"))
 
     // global enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
@@ -1122,7 +1123,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y, _ = game.FindValidCityLocation(game.Plane)
 
-    city2 := citylib.MakeCity("Test City", x, y, player.Wizard.Race, game.BuildingInfo, game.CurrentMap(), game, player)
+    city2 := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
     city2.Population = 14000
     city2.Plane = data.PlaneArcanus
     city2.ProducingBuilding = buildinglib.BuildingHousing

@@ -414,7 +414,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Resurrection
                 Earthquake
                 Ice Storm
-                Move Fortress
                 Nature's Cures
                 Disjunction True
                 Great Unsummoning
@@ -513,11 +512,34 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 for _, city := range player.Cities {
                     if city != chosenCity && city.Buildings.Contains(building.BuildingSummoningCircle) {
                         city.Buildings.Remove(building.BuildingSummoningCircle)
+                        break
                     }
                 }
                 return true
             }
             game.doCastNewCityBuilding(spell, player, LocationTypeFriendlyCity, building.BuildingSummoningCircle, "Your summoning circle is already in this city", after)
+        case "Move Fortress":
+            after := func(chosenCity *citylib.City) bool {
+                player.Wizard.Race = chosenCity.Race
+
+                for _, city := range player.Cities {
+                    if city != chosenCity && city.Buildings.Contains(building.BuildingFortress) {
+                        city.Buildings.Remove(building.BuildingFortress)
+
+                        if city.Buildings.Contains(building.BuildingSummoningCircle) {
+                            chosenCity.Buildings.Insert(building.BuildingSummoningCircle)
+                            city.Buildings.Remove(building.BuildingSummoningCircle)
+                        }
+                        break
+                    }
+                }
+
+                player.UpdateUnrest()
+
+                return true
+            }
+            // FIXME: sound is wrong
+            game.doCastNewCityBuilding(spell, player, LocationTypeFriendlyCity, building.BuildingFortress, "Your fortress is already in this city", after)
 
         default:
             log.Printf("Warning: casting unhandled spell '%v'", spell.Name)
