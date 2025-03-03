@@ -615,7 +615,6 @@ const (
     CityEnchantmentStreamOfLife
     CityEnchantmentWallOfDarkness
     CityEnchantmentWallOfFire
-    CityEnchantmentWallOfStone
 )
 
 func (enchantment CityEnchantment) SpellName() string {
@@ -656,7 +655,6 @@ func (enchantment CityEnchantment) Name() string {
         case CityEnchantmentStreamOfLife: return "Stream of Life"
         case CityEnchantmentWallOfDarkness: return "Wall of Darkness"
         case CityEnchantmentWallOfFire: return "Wall of Fire"
-        case CityEnchantmentWallOfStone: return "Wall of Stone"
     }
 
     return ""
@@ -707,34 +705,6 @@ func (enchantment CityEnchantment) LbxIndex() int {
         case CityEnchantmentChaosWard: return 95
         case CityEnchantmentWallOfDarkness: return 79
         case CityEnchantmentWallOfFire: return 77
-    }
-
-    return 0
-}
-
-func (enchantment CityEnchantment) SoundIndex() int {
-    // FIXME: Add other sound indexes
-    switch enchantment {
-        case CityEnchantmentAltarOfBattle, CityEnchantmentHeavenlyLight, CityEnchantmentInspirations,
-            CityEnchantmentProsperity, CityEnchantmentStreamOfLife, CityEnchantmentAstralGate:
-            return 31
-        // case CityEnchantmentChaosRift: return 0
-        case CityEnchantmentCloudOfShadow, CityEnchantmentEvilPresence, CityEnchantmentFamine,
-            CityEnchantmentPestilence, CityEnchantmentWallOfDarkness:
-            return 32
-        case CityEnchantmentConsecration: return 31
-        case CityEnchantmentCursedLands: return 61
-        case CityEnchantmentDarkRituals: return 60
-        // case CityEnchantmentEarthGate: return 0
-        // case CityEnchantmentFlyingFortress: return 0
-        case CityEnchantmentGaiasBlessing, CityEnchantmentNaturesEye, CityEnchantmentWallOfStone:
-            return 28
-        // case CityEnchantmentLifeWard: return 0
-        // case CityEnchantmentSorceryWard: return 0
-        // case CityEnchantmentNatureWard: return 0
-        // case CityEnchantmentDeathWard: return 0
-        // case CityEnchantmentChaosWard: return 0
-        case CityEnchantmentWallOfFire: return 30
     }
 
     return 0
