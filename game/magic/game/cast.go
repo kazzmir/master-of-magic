@@ -17,6 +17,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -35,7 +36,6 @@ const (
     LocationTypeLand
     LocationTypeEmptyWater
     LocationTypeFriendlyCity
-    LocationTypeFriendlyCityNoWalls
     LocationTypeEnemyCity
     LocationTypeFriendlyUnit
     LocationTypeEnemyUnit
@@ -250,18 +250,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         case "Altar of Battle":
             game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentAltarOfBattle)
         case "Wall of Stone":
-            before := func (city *citylib.City) bool {
-                city.AddBuilding(building.BuildingCityWalls)
-                return true
-            }
-            after := func (city *citylib.City) bool {
-                city.RemoveEnchantments(data.CityEnchantmentWallOfStone)
-                if city.ProducingBuilding == building.BuildingCityWalls {
-                    city.ProducingBuilding = building.BuildingTradeGoods
-                }
-                return true
-            }
-            game.doCastCityEnchantmentFull(spell, player, LocationTypeFriendlyCityNoWalls, data.CityEnchantmentWallOfStone, before, after)
+            game.doCastNewCityBuilding(spell, player, LocationTypeFriendlyCity, building.BuildingCityWalls)
         case "Wall of Fire":
             game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentWallOfFire)
         case "Wall of Darkness":
@@ -784,10 +773,10 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
     }
 }
 
-func (game *Game) showCityEnchantment(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, enchantment data.CityEnchantment) {
-    ui, quit, err := cityview.MakeEnchantmentView(game.Cache, city, player, enchantment)
+func (game *Game) showCastNewBuilding(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, newBuilding building.Building, name string) {
+    ui, quit, err := cityview.MakeNewBuildingView(game.Cache, city, player, newBuilding, name)
     if err != nil {
-        log.Printf("Error making enchantment view: %v", err)
+        log.Printf("Error making new building view: %v", err)
         return
     }
 
@@ -871,7 +860,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         case LocationTypeAny, LocationTypeLand, LocationTypeEmptyWater, LocationTypeChangeTerrain,
              LocationTypeTransmute, LocationTypeRaiseVolcano, LocationTypeDisenchant:
             selectMessage = fmt.Sprintf("Select a space as the target for an %v spell.", spell.Name)
-        case LocationTypeFriendlyCity, LocationTypeFriendlyCityNoWalls:
+        case LocationTypeFriendlyCity:
             selectMessage = fmt.Sprintf("Select a friendly city to cast %v on.", spell.Name)
         case LocationTypeEnemyMeldedNode:
             selectMessage = fmt.Sprintf("Select a magic node as the target for a %v spell.", spell.Name)
@@ -1042,11 +1031,6 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         if city != nil {
                             return tileX, tileY, false
                         }
-                    case LocationTypeFriendlyCityNoWalls:
-                        city := player.FindCity(tileX, tileY, game.Plane)
-                        if city != nil && !city.Buildings.Contains(building.BuildingCityWalls){
-                            return tileX, tileY, false
-                        }
                     case LocationTypeChangeTerrain:
                         if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
                             tileX = overworld.Map.WrapX(tileX)
@@ -1167,10 +1151,48 @@ func (game *Game) doCastCityEnchantmentFull(spell spellbook.Spell, player *playe
             sound.Play()
         }
 
-        game.showCityEnchantment(yield, chosenCity, player, enchantment)
+        enchantmentBuilding, ok := buildinglib.EnchantmentBuildings()[enchantment]
+        if !ok {
+            enchantmentBuilding = buildinglib.BuildingNone
+        }
+
+        game.showCastNewBuilding(yield, chosenCity, player, enchantmentBuilding, enchantment.Name())
         game.RefreshUI()
 
         after(chosenCity)
+    }
+
+    game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: locationType, SelectedFunc: selected}
+}
+
+func (game *Game) doCastNewCityBuilding(spell spellbook.Spell, player *playerlib.Player, locationType LocationType, newBuilding building.Building) {
+    var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
+    selected = func (yield coroutine.YieldFunc, tileX int, tileY int) {
+        // FIXME: Show this only for enemies if detect magic is active and the city is known to the human player
+        game.doMoveCamera(yield, tileX, tileY)
+        chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
+        if chosenCity == nil {
+            return
+        }
+
+        if chosenCity.Buildings.Contains(newBuilding) {
+            game.Events <- &GameEventNotice{Message: fmt.Sprintf("This city already has a %v", spell.Name)}
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: locationType, SelectedFunc: selected}
+            return
+        }
+
+        chosenCity.AddBuilding(newBuilding)
+        chosenCity.UpdateUnrest()
+
+        yield()
+
+        sound, err := audio.LoadSound(game.Cache, spell.Sound)
+        if err == nil {
+            sound.Play()
+        }
+
+        game.showCastNewBuilding(yield, chosenCity, player, newBuilding, spell.Name)
+        game.RefreshUI()
     }
 
     game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: locationType, SelectedFunc: selected}

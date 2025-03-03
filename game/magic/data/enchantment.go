@@ -615,7 +615,6 @@ const (
     CityEnchantmentStreamOfLife
     CityEnchantmentWallOfDarkness
     CityEnchantmentWallOfFire
-    CityEnchantmentWallOfStone
 )
 
 func (enchantment CityEnchantment) SpellName() string {
@@ -656,7 +655,6 @@ func (enchantment CityEnchantment) Name() string {
         case CityEnchantmentStreamOfLife: return "Stream of Life"
         case CityEnchantmentWallOfDarkness: return "Wall of Darkness"
         case CityEnchantmentWallOfFire: return "Wall of Fire"
-        case CityEnchantmentWallOfStone: return "Wall of Stone"
     }
 
     return ""
@@ -727,7 +725,7 @@ func (enchantment CityEnchantment) SoundIndex() int {
         case CityEnchantmentDarkRituals: return 60
         // case CityEnchantmentEarthGate: return 0
         // case CityEnchantmentFlyingFortress: return 0
-        case CityEnchantmentGaiasBlessing, CityEnchantmentNaturesEye, CityEnchantmentWallOfStone:
+        case CityEnchantmentGaiasBlessing, CityEnchantmentNaturesEye:
             return 28
         // case CityEnchantmentLifeWard: return 0
         // case CityEnchantmentSorceryWard: return 0

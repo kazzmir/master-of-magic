@@ -141,17 +141,6 @@ func sortBuildings(buildings []buildinglib.Building) []buildinglib.Building {
     return buildings
 }
 
-func enchantmentBuildings() map[data.CityEnchantment]buildinglib.Building {
-    buildings := make(map[data.CityEnchantment]buildinglib.Building)
-    buildings[data.CityEnchantmentAstralGate] = buildinglib.BuildingAstralGate
-    buildings[data.CityEnchantmentAltarOfBattle] = buildinglib.BuildingAltarOfBattle
-    buildings[data.CityEnchantmentStreamOfLife] = buildinglib.BuildingStreamOfLife
-    buildings[data.CityEnchantmentEarthGate] = buildinglib.BuildingEarthGate
-    buildings[data.CityEnchantmentDarkRituals] = buildinglib.BuildingDarkRituals
-    buildings[data.CityEnchantmentWallOfStone] = buildinglib.BuildingCityWalls
-    return buildings
-}
-
 func hash(str string) uint64 {
     hasher := fnv.New64a()
     hasher.Write([]byte(str))
@@ -294,7 +283,7 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
         }
     }
 
-    enchantmentBuildings := enchantmentBuildings()
+    enchantmentBuildings := buildinglib.EnchantmentBuildings()
 
     for enchantment, building := range enchantmentBuildings {
         if city.HasEnchantment(enchantment) {
@@ -914,7 +903,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                         cityScreen.City.CancelEnchantment(enchantment.Enchantment, enchantment.Owner)
                         cityScreen.City.UpdateUnrest()
 
-                        enchantmentBuildings := enchantmentBuildings()
+                        enchantmentBuildings := buildinglib.EnchantmentBuildings()
                         building, ok := enchantmentBuildings[enchantment.Enchantment]
                         if ok {
                             cityScreen.City.Buildings.Remove(building)
