@@ -5,6 +5,7 @@ import (
     "log"
     "fmt"
     "bytes"
+    "errors"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -868,6 +869,212 @@ func loadUnits(reader io.Reader) error {
     return nil
 }
 
+// T should usually be int8 or uint8
+func loadMapData[T any](reader io.Reader) ([][]T, error) {
+    data := make([][]T, WorldWidth)
+    for i := range WorldWidth {
+        data[i] = make([]T, WorldHeight)
+    }
+
+    for y := range WorldHeight {
+        for x := range WorldWidth {
+            value, err := lbx.ReadN[T](reader)
+            if err != nil {
+                return nil, err
+            }
+            data[x][y] = value
+        }
+    }
+
+    return data, nil
+}
+
+type MovementCostData struct {
+    Moves [][]int8
+    Walking [][]int8
+    Forester [][]int8
+    Mountaineer [][]int8
+    Swimming [][]int8
+    Sailing [][]int8
+}
+
+func loadMovementCostData(reader io.Reader) (MovementCostData, error) {
+    moves, err := loadMapData[int8](reader)
+    if err != nil {
+        return MovementCostData{}, err
+    }
+
+    walking, err := loadMapData[int8](reader)
+    if err != nil {
+        return MovementCostData{}, err
+    }
+
+    forester, err := loadMapData[int8](reader)
+    if err != nil {
+        return MovementCostData{}, err
+    }
+
+    mountaineer, err := loadMapData[int8](reader)
+    if err != nil {
+        return MovementCostData{}, err
+    }
+
+    swimming, err := loadMapData[int8](reader)
+    if err != nil {
+        return MovementCostData{}, err
+    }
+
+    sailing, err := loadMapData[int8](reader)
+    if err != nil {
+        return MovementCostData{}, err
+    }
+
+    return MovementCostData{
+        Moves: moves,
+        Walking: walking,
+        Forester: forester,
+        Mountaineer: mountaineer,
+        Swimming: swimming,
+        Sailing: sailing,
+    }, nil
+}
+
+type EventData struct {
+    LastEvent int16
+    MeteorStatus int16
+    MeteorPlayer int16
+    MeteorData int16
+
+    GiftStatus int16
+    GiftPlayer int16
+    GiftData int16
+
+    DisjunctionStatus int16
+
+    MarriageStatus int16
+    MarriagePlayer int16
+    MarriageNeutralCity int16
+    MarriagePlayerCity int16
+
+    EarthquakeStatus int16
+    EarthquakePlayer int16
+    EarthquakeData int16
+
+    PirateStatus int16
+    PiratePlayer int16
+    PirateData int16
+
+    PlagueStatus int16
+    PlaguePlayer int16
+    PlagueData int16
+    PlagueDuration int16
+
+    RebellionStatus int16
+    RebellionPlayer int16
+    RebellionData int16
+
+    DonationStatus int16
+    DonationPlayer int16
+    DonationData int16
+
+    DepletionStatus int16
+    DepletionPlayer int16
+    DepletionData int16
+
+    MineralsStatus int16
+    MineralsData int16
+    MineralsPlayer int16
+
+    PopulationBoomStatus int16
+    // FIXME: are data and player swapped here?
+    PopulationBoomData int16
+    PopulationBoomPlayer int16
+    PopulationBoomDuration int16
+
+    GoodMoonStatus int16
+    GoodMoonDuration int16
+
+    BadMoonStatus int16
+    BadMoonDuration int16
+
+    ConjunctionChaosStatus int16
+    ConjunctionChaosDuration int16
+
+    ConjunctionNatureStatus int16
+    ConjunctionNatureDuration int16
+
+    ConjunctionSorceryStatus int16
+    ConjunctionSorceryDuration int16
+
+    ManaShortageStatus int16
+    ManaShortageDuration int16
+}
+
+func loadEvents(reader io.Reader) error {
+    data := make([]byte, 100)
+    _, err := io.ReadFull(reader, data)
+    if err != nil {
+        return err
+    }
+
+    eventReader := bytes.NewReader(data)
+    var eventData EventData
+
+    eventData.LastEvent, _ = lbx.ReadN[int16](eventReader)
+    eventData.MeteorStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.MeteorPlayer, _ = lbx.ReadN[int16](eventReader)
+    eventData.MeteorData, _ = lbx.ReadN[int16](eventReader)
+    eventData.GiftStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.GiftPlayer, _ = lbx.ReadN[int16](eventReader)
+    eventData.GiftData, _ = lbx.ReadN[int16](eventReader)
+
+    eventData.DisjunctionStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.MarriageStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.MarriagePlayer, _ = lbx.ReadN[int16](eventReader)
+    eventData.MarriageNeutralCity, _ = lbx.ReadN[int16](eventReader)
+    eventData.MarriagePlayerCity, _ = lbx.ReadN[int16](eventReader)
+    eventData.EarthquakeStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.EarthquakePlayer, _ = lbx.ReadN[int16](eventReader)
+    eventData.EarthquakeData, _ = lbx.ReadN[int16](eventReader)
+    eventData.PirateStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.PiratePlayer, _ = lbx.ReadN[int16](eventReader)
+    eventData.PirateData, _ = lbx.ReadN[int16](eventReader)
+    eventData.PlagueStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.PlaguePlayer, _ = lbx.ReadN[int16](eventReader)
+    eventData.PlagueData, _ = lbx.ReadN[int16](eventReader)
+    eventData.PlagueDuration, _ = lbx.ReadN[int16](eventReader)
+    eventData.RebellionStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.RebellionPlayer, _ = lbx.ReadN[int16](eventReader)
+    eventData.RebellionData, _ = lbx.ReadN[int16](eventReader)
+    eventData.DonationStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.DonationPlayer, _ = lbx.ReadN[int16](eventReader)
+    eventData.DonationData, _ = lbx.ReadN[int16](eventReader)
+    eventData.DepletionStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.DepletionPlayer, _ = lbx.ReadN[int16](eventReader)
+    eventData.DepletionData, _ = lbx.ReadN[int16](eventReader)
+    eventData.MineralsStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.MineralsData, _ = lbx.ReadN[int16](eventReader)
+    eventData.MineralsPlayer, _ = lbx.ReadN[int16](eventReader)
+    eventData.PopulationBoomStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.PopulationBoomData, _ = lbx.ReadN[int16](eventReader)
+    eventData.PopulationBoomPlayer, _ = lbx.ReadN[int16](eventReader)
+    eventData.PopulationBoomDuration, _ = lbx.ReadN[int16](eventReader)
+    eventData.GoodMoonStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.GoodMoonDuration, _ = lbx.ReadN[int16](eventReader)
+    eventData.BadMoonStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.BadMoonDuration, _ = lbx.ReadN[int16](eventReader)
+    eventData.ConjunctionChaosStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.ConjunctionChaosDuration, _ = lbx.ReadN[int16](eventReader)
+    eventData.ConjunctionNatureStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.ConjunctionNatureDuration, _ = lbx.ReadN[int16](eventReader)
+    eventData.ConjunctionSorceryStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.ConjunctionSorceryDuration, _ = lbx.ReadN[int16](eventReader)
+    eventData.ManaShortageStatus, _ = lbx.ReadN[int16](eventReader)
+    eventData.ManaShortageDuration, _ = lbx.ReadN[int16](eventReader)
+
+    return nil
+}
+
 type ReadMonitor struct {
     reader io.Reader
     BytesRead int
@@ -1040,5 +1247,57 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
         return nil, err
     }
 
-    return nil, fmt.Errorf("unfinished")
+    arcanusTerrainSpecials, err := loadMapData[uint8](reader)
+    if err != nil {
+        return nil, err
+    }
+
+    // myrror
+    myrrorTerrainSpecials, err := loadMapData[uint8](reader)
+    if err != nil {
+        return nil, err
+    }
+
+    _ = arcanusTerrainSpecials
+    _ = myrrorTerrainSpecials
+
+    arcanusExplored, err := loadMapData[int8](reader)
+    if err != nil {
+        return nil, err
+    }
+
+    myrrorExplored, err := loadMapData[int8](reader)
+    if err != nil {
+        return nil, err
+    }
+
+    _ = arcanusExplored
+    _ = myrrorExplored
+
+    arcanusMovementCost, err := loadMovementCostData(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    myrrorMovementCost, err := loadMovementCostData(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    _ = arcanusMovementCost
+    _ = myrrorMovementCost
+
+    log.Printf("Offset: 0x%x", reader.BytesRead)
+
+    err = loadEvents(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    _, err = lbx.ReadByte(reader)
+    if errors.Is(err, io.EOF) {
+        return nil, nil
+    }
+
+    return nil, fmt.Errorf("leftover data")
 }
