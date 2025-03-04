@@ -323,6 +323,7 @@ func MakeEditor() *Editor {
 }
 
 func (editor *Editor) loadFromSavegame(filename string, myrror bool) {
+    // FIXME: load the whole savegame once this implemented instead of using offsets
     fileOffset := int64(9880)
     terrainOffset := 0
     if myrror {
