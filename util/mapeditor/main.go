@@ -8,12 +8,12 @@ import (
     "flag"
     "image/color"
     "math/rand"
-    "encoding/binary"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/util/common"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/load"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -323,6 +323,7 @@ func MakeEditor() *Editor {
 }
 
 func (editor *Editor) loadFromSavegame(filename string, myrror bool) {
+    // FIXME: load the whole savegame once this implemented instead of using offsets
     fileOffset := int64(9880)
     terrainOffset := 0
     if myrror {
@@ -344,16 +345,16 @@ func (editor *Editor) loadFromSavegame(filename string, myrror bool) {
         os.Exit(0)
     }
 
-    editor.Map = terrain.MakeMap(40, 60)
-    for y := range(40) {
-        for x := range(60) {
-            var value uint16
-            err = binary.Read(reader, binary.LittleEndian, &value)
-            if err != nil {
-                fmt.Printf("Error reading file: %v", err)
-                os.Exit(0)
-            }
-            editor.Map.Terrain[x][y] = int(value) + terrainOffset
+    terrainData, err := load.LoadTerrain(reader)
+    if err != nil {
+        fmt.Printf("Error reading file: %v", err)
+        os.Exit(0)
+    }
+
+    editor.Map = terrain.MakeMap(load.WorldHeight, load.WorldWidth)
+    for y := range(load.WorldHeight) {
+        for x := range(load.WorldWidth) {
+            editor.Map.Terrain[x][y] = int(terrainData.Data[x][y]) + terrainOffset
         }
     }
 }
