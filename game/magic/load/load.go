@@ -261,9 +261,285 @@ func loadPlayerData(reader io.Reader) error {
         return err
     }
 
+    capitalRace, err := lbx.ReadN[uint8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    bannerId, err := lbx.ReadN[uint8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    _, err = lbx.ReadByte(playerReader) // skip 1 byte
+    if err != nil {
+        return err
+    }
+
+    personality, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    objective, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    _, err = lbx.ReadByte(playerReader) // skip 1 byte
+    if err != nil {
+        return err
+    }
+
+    // not sure
+    masteryResearch, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    fame, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    powerBase, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    volcanoes, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    researchRatio, err := lbx.ReadN[uint8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    manaRatio, err := lbx.ReadN[uint8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    skillRatio, err := lbx.ReadN[uint8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    volcanoPower, err := lbx.ReadN[uint8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    summonX, err := lbx.ReadN[int16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    summonY, err := lbx.ReadN[int16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    summonPlane, err := lbx.ReadN[int16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    researchSpells := make([]uint16, 8)
+    for i := range len(researchSpells) {
+        researchSpells[i], err = lbx.ReadN[uint16](playerReader)
+        if err != nil {
+            return err
+        }
+    }
+
+    _, err = lbx.ReadByte(playerReader) // skip 1 byte
+
+    averageUnitCost, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    _, err = lbx.ReadN[uint16](playerReader) // skip 2 byte
+    if err != nil {
+        return err
+    }
+
+    combatSkillLeft, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    castingCostRemaining, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    castingCostOriginal, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    castingSpellIndex, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    skillLeft, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    nominalSkill, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    taxRate, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    spellRanks := make([]int16, 5)
+    for i := range len(spellRanks) {
+        spellRanks[i], err = lbx.ReadN[int16](playerReader)
+        if err != nil {
+            return err
+        }
+    }
+
+    retortAlchemy, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortWarlord, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortChaosMastery, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortNatureMastery, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortSorceryMastery, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortInfernalPower, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortDivinePower, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortSageMaster, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortChanneler, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortMyrran, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortArchmage, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortManaFocusing, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortFamous, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortRunemaster, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortConjurer, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortCharismatic, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    retortArtificer, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
     // FIXME: read more fields
 
     log.Printf("Player %v: %v", wizardId, string(wizardName))
+    _ = capitalRace
+    _ = bannerId
+    _ = personality
+    _ = objective
+    _ = masteryResearch
+    _ = fame
+    _ = powerBase
+    _ = volcanoes
+    _ = researchRatio
+    _ = manaRatio
+    _ = skillRatio
+    _ = volcanoPower
+    _ = summonX
+    _ = summonY
+    _ = summonPlane
+    _ = researchSpells
+    _ = averageUnitCost
+    _ = combatSkillLeft
+    _ = castingCostRemaining
+    _ = castingCostOriginal
+    _ = castingSpellIndex
+    _ = skillLeft
+    _ = nominalSkill
+    _ = taxRate
+    _ = spellRanks
+    _ = retortAlchemy
+    _ = retortWarlord
+    _ = retortChaosMastery
+    _ = retortNatureMastery
+    _ = retortSorceryMastery
+    _ = retortInfernalPower
+    _ = retortDivinePower
+    _ = retortSageMaster
+    _ = retortChanneler
+    _ = retortMyrran
+    _ = retortArchmage
+    _ = retortManaFocusing
+    _ = retortFamous
+    _ = retortRunemaster
+    _ = retortConjurer
+    _ = retortCharismatic
+    _ = retortArtificer
 
     return nil
 }
