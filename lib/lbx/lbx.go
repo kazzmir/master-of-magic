@@ -31,6 +31,18 @@ func ReadN[T any](reader io.Reader) (T, error) {
     return value, err
 }
 
+func ReadArrayN[T any](reader io.Reader, count int) ([]T, error) {
+    var err error
+    data := make([]T, count)
+    for i := range count {
+        data[i], err = ReadN[T](reader)
+        if err != nil {
+            return nil, err
+        }
+    }
+    return data, nil
+}
+
 func ReadUint16Big(reader io.Reader) (uint16, error) {
     var value uint16
     err := binary.Read(reader, binary.BigEndian, &value)

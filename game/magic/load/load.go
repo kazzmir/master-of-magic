@@ -12,6 +12,11 @@ import (
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
 )
 
+const NumHeroes = 35
+const NumPlayers = 6
+const NumPlayerHeroes = 6
+const NumSpells = 240
+
 // hero indexes as dos mom defines them
 type HeroIndex int
 const (
@@ -240,6 +245,228 @@ func loadHeroData(reader io.Reader) (HeroData, error) {
     return heroData, nil
 }
 
+type PlayerHeroData struct {
+    Unit int16
+    Name string
+    Items []int16
+    ItemSlot []int16
+}
+
+func loadPlayerHeroData(reader io.Reader) (PlayerHeroData, error) {
+    data := make([]byte, 28)
+    _, err := io.ReadFull(reader, data)
+    if err != nil {
+        return PlayerHeroData{}, err
+    }
+
+    dataReader := bytes.NewReader(data)
+
+    unit, err := lbx.ReadN[int16](dataReader)
+    if err != nil {
+        return PlayerHeroData{}, err
+    }
+
+    name := make([]byte, 14)
+    _, err = io.ReadFull(dataReader, name)
+    if err != nil {
+        return PlayerHeroData{}, err
+    }
+
+    items := make([]int16, 3)
+    for i := range len(items) {
+        items[i], err = lbx.ReadN[int16](dataReader)
+        if err != nil {
+            return PlayerHeroData{}, err
+        }
+    }
+
+    itemSlots := make([]int16, 3)
+    for i := range len(itemSlots) {
+        itemSlots[i], err = lbx.ReadN[int16](dataReader)
+        if err != nil {
+            return PlayerHeroData{}, err
+        }
+    }
+
+    return PlayerHeroData{
+        Unit: unit,
+        Name: string(name),
+        Items: items,
+        ItemSlot: itemSlots,
+    }, nil
+}
+
+func loadDiplomacy(reader io.Reader) error {
+    data := make([]byte, 306)
+    _, err := io.ReadFull(reader, data)
+    if err != nil {
+        return fmt.Errorf("Unable to read diplomacy data: %v", err)
+    }
+
+    dataReader := bytes.NewReader(data)
+    contacted, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    treatyInterest, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    peaceInterest, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    tradeInterest, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    visibleRelations, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    diplomacyStatus, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    strength, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    action, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    spell, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    city, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    defaultRelations, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    contactProgress, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    brokenTreaty, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    unknown1, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    hiddenRelations, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    unknown2, err := lbx.ReadArrayN[int8](dataReader, 24)
+    if err != nil {
+        return err
+    }
+
+    tributeSpell, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    unknown3, err := lbx.ReadArrayN[int8](dataReader, 90)
+    if err != nil {
+        return err
+    }
+
+    tributeGold, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    unknown4, err := lbx.ReadArrayN[int8](dataReader, 30)
+    if err != nil {
+        return err
+    }
+
+    unknown5, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    unknown6, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    warningProgress, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    _ = contacted
+    _ = treatyInterest
+    _ = peaceInterest
+    _ = tradeInterest
+    _ = visibleRelations
+    _ = diplomacyStatus
+    _ = strength
+    _ = action
+    _ = spell
+    _ = city
+    _ = defaultRelations
+    _ = contactProgress
+    _ = brokenTreaty
+    _ = unknown1
+    _ = hiddenRelations
+    _ = unknown2
+    _ = tributeSpell
+    _ = unknown3
+    _ = tributeGold
+    _ = unknown4
+    _ = unknown5
+    _ = unknown6
+    _ = warningProgress
+
+    return nil
+}
+
+func loadAstrology(reader io.Reader) error {
+    magicPower, err := lbx.ReadN[int16](reader)
+    if err != nil {
+        return err
+    }
+    spellResearch, err := lbx.ReadN[int16](reader)
+    if err != nil {
+        return err
+    }
+    armyStrength, err := lbx.ReadN[int16](reader)
+    if err != nil {
+        return err
+    }
+
+    _ = magicPower
+    _ = spellResearch
+    _ = armyStrength
+
+    return nil
+}
+
 func loadPlayerData(reader io.Reader) error {
     var err error
     playerData := make([]byte, 1224)
@@ -248,7 +475,7 @@ func loadPlayerData(reader io.Reader) error {
         return err
     }
 
-    playerReader := bytes.NewReader(playerData)
+    playerReader := &ReadMonitor{reader: bytes.NewReader(playerData)}
 
     wizardId, err := lbx.ReadN[uint8](playerReader)
     if err != nil {
@@ -260,6 +487,8 @@ func loadPlayerData(reader io.Reader) error {
     if err != nil {
         return err
     }
+
+    log.Printf("Player offset capitalRace: 0x%x", playerReader.BytesRead)
 
     capitalRace, err := lbx.ReadN[uint8](playerReader)
     if err != nil {
@@ -286,7 +515,7 @@ func loadPlayerData(reader io.Reader) error {
         return err
     }
 
-    _, err = lbx.ReadByte(playerReader) // skip 1 byte
+    _, err = lbx.ReadArrayN[uint8](playerReader, 6) // skip 6 bytes
     if err != nil {
         return err
     }
@@ -347,15 +576,17 @@ func loadPlayerData(reader io.Reader) error {
         return err
     }
 
-    researchSpells := make([]uint16, 8)
-    for i := range len(researchSpells) {
-        researchSpells[i], err = lbx.ReadN[uint16](playerReader)
-        if err != nil {
-            return err
-        }
+    researchSpells, err := lbx.ReadArrayN[uint16](playerReader, 8)
+    if err != nil {
+        return err
     }
 
-    _, err = lbx.ReadByte(playerReader) // skip 1 byte
+    _, err = lbx.ReadArrayN[uint8](playerReader, 4) // skip 4 byte
+    if err != nil {
+        return err
+    }
+
+    log.Printf("Player offset averageUnitCost: 0x%x", playerReader.BytesRead)
 
     averageUnitCost, err := lbx.ReadN[uint16](playerReader)
     if err != nil {
@@ -402,13 +633,12 @@ func loadPlayerData(reader io.Reader) error {
         return err
     }
 
-    spellRanks := make([]int16, 5)
-    for i := range len(spellRanks) {
-        spellRanks[i], err = lbx.ReadN[int16](playerReader)
-        if err != nil {
-            return err
-        }
+    spellRanks, err := lbx.ReadArrayN[int16](playerReader, 5)
+    if err != nil {
+        return err
     }
+
+    log.Printf("Player offset retorts: 0x%x", playerReader.BytesRead)
 
     retortAlchemy, err := lbx.ReadN[int8](playerReader)
     if err != nil {
@@ -465,6 +695,11 @@ func loadPlayerData(reader io.Reader) error {
         return err
     }
 
+    retortNodeMastery, err := lbx.ReadN[int8](playerReader)
+    if err != nil {
+        return err
+    }
+
     retortManaFocusing, err := lbx.ReadN[int8](playerReader)
     if err != nil {
         return err
@@ -495,7 +730,174 @@ func loadPlayerData(reader io.Reader) error {
         return err
     }
 
-    // FIXME: read more fields
+    log.Printf("Player offset heroes: 0x%x", playerReader.BytesRead)
+
+    heroData := make([]PlayerHeroData, NumHeroes)
+
+    for i := range NumPlayerHeroes {
+        heroData[i], err = loadPlayerHeroData(playerReader)
+        if err != nil {
+            return err
+        }
+    }
+
+    _, err = lbx.ReadN[int16](playerReader) // skip 2 bytes
+
+    vaultItems, err := lbx.ReadArrayN[int16](playerReader, 4)
+    if err != nil {
+        return err
+    }
+
+    log.Printf("Player offset diplomacy: 0x%x", playerReader.BytesRead)
+
+    err = loadDiplomacy(playerReader)
+    if err != nil {
+        return err
+    }
+
+    researchCostRemaining, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    manaReserve, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    spellCastingSkill, err := lbx.ReadN[int32](playerReader)
+    if err != nil {
+        return err
+    }
+
+    researchingSpellIndex, err := lbx.ReadN[int16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    spellsList, err := lbx.ReadArrayN[uint8](playerReader, NumSpells)
+    if err != nil {
+        return err
+    }
+
+    defeatedWizards, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    goldReserve, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    unknown1, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    err = loadAstrology(playerReader)
+    if err != nil {
+        return err
+    }
+
+    population, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    historian, err := lbx.ReadArrayN[uint8](playerReader, 288)
+    if err != nil {
+        return err
+    }
+
+    globalEnchantments, err := lbx.ReadArrayN[uint8](playerReader, 24)
+    if err != nil {
+        return err
+    }
+
+    log.Printf("Player offset magic strategy: 0x%x", playerReader.BytesRead)
+
+    magicStrategy, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    unknown2, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    hostility, err := lbx.ReadArrayN[uint16](playerReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    reevaluateHostilityCountdown, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    reevaluateMagicStrategyCountdown, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    reevaluateMagicPowerCountdown, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    peaceDuration, err := lbx.ReadArrayN[uint8](playerReader, NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    unknown3, err := lbx.ReadN[uint8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    unknown4, err := lbx.ReadN[uint8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    unknown5, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    log.Printf("Player offset target wizard: 0x%x", playerReader.BytesRead)
+
+    targetWizard, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    unknown6, err := lbx.ReadN[uint8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    unknown7, err := lbx.ReadN[uint8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    unknown8, err := lbx.ReadArrayN[uint8](playerReader, 6)
+    if err != nil {
+        return err
+    }
+
+    primaryRealm, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
+
+    secondaryRealm, err := lbx.ReadN[uint16](playerReader)
+    if err != nil {
+        return err
+    }
 
     log.Printf("Player %v: %v", wizardId, string(wizardName))
     _ = capitalRace
@@ -534,12 +936,43 @@ func loadPlayerData(reader io.Reader) error {
     _ = retortChanneler
     _ = retortMyrran
     _ = retortArchmage
+    _ = retortNodeMastery
     _ = retortManaFocusing
     _ = retortFamous
     _ = retortRunemaster
     _ = retortConjurer
     _ = retortCharismatic
     _ = retortArtificer
+    _ = vaultItems
+    _ = spellRanks
+
+    _ = researchCostRemaining
+    _ = manaReserve
+    _ = spellCastingSkill
+    _ = researchingSpellIndex
+    _ = spellsList
+    _ = defeatedWizards
+    _ = goldReserve
+    _ = unknown1
+    _ = population
+    _ = historian
+    _ = globalEnchantments
+    _ = magicStrategy
+    _ = unknown2
+    _ = hostility
+    _ = reevaluateHostilityCountdown
+    _ = reevaluateMagicStrategyCountdown
+    _ = reevaluateMagicPowerCountdown
+    _ = peaceDuration
+    _ = unknown3
+    _ = unknown4
+    _ = unknown5
+    _ = targetWizard
+    _ = unknown6
+    _ = unknown7
+    _ = unknown8
+    _ = primaryRealm
+    _ = secondaryRealm
 
     return nil
 }
@@ -662,7 +1095,7 @@ func loadNodes(reader io.Reader) error {
 }
 
 func loadFortresses(reader io.Reader) error {
-    for range 6 {
+    for range NumPlayers {
         fortressData := make([]byte, 4)
         _, err := io.ReadFull(reader, fortressData)
         if err != nil {
@@ -1353,7 +1786,7 @@ func loadEvents(reader io.Reader) error {
 
 // hero names and experience for the human player's heroes
 func loadHeroNames(reader io.Reader) error {
-    for i := range 35 {
+    for i := range NumHeroes {
         name := make([]byte, 14)
         _, err := io.ReadFull(reader, name)
         if err != nil {
@@ -1393,11 +1826,11 @@ func (read *ReadMonitor) Read(p []byte) (n int, err error) {
 
 // load a dos savegame file
 func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
-    numHeroes := 35
+    numHeroes := NumHeroes
 
     reader := &ReadMonitor{reader: reader1}
 
-    for player := range 6 {
+    for player := range NumPlayers {
         for i := range numHeroes {
             heroData, err := loadHeroData(reader)
             if err != nil {
@@ -1458,7 +1891,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
     log.Printf("turn: %v", turn)
     log.Printf("unit: %v", unit)
 
-    for range 6 {
+    for range NumPlayers {
         err := loadPlayerData(reader)
         if err != nil {
             return nil, err
