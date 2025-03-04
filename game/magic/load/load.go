@@ -1808,6 +1808,7 @@ func loadPremadeItems(reader io.Reader) error {
         return err
     }
 
+    // I think data is just an array of 0's and 1's where a 1 at some index means that premade item is available
     // TODO: parse data
 
     return nil
