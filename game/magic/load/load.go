@@ -14,79 +14,79 @@ import (
 type HeroIndex int
 const (
     HeroBrax HeroIndex = iota
-	HeroGunther
-	HeroZaldron
-	HeroBShan
-	HeroRakir
-	HeroValana
-	HeroBahgtru
-	HeroSerena 
-	HeroShuri 
+    HeroGunther
+    HeroZaldron
+    HeroBShan
+    HeroRakir
+    HeroValana
+    HeroBahgtru
+    HeroSerena
+    HeroShuri
     HeroTheria
-	HeroGreyfairer 
-	HeroTaki 
-	HeroReywind 
-	HeroMalleus 
-	HeroTumu 
-	HeroJaer 
-	HeroMarcus 
-	HeroFang 
-	HeroMorgana 
-	HeroAureus 
-	HeroShinBo 
-	HeroSpyder 
-	HeroShalla 
-	HeroYramrag 
-	HeroMysticX 
-	HeroAerie 
-	HeroDethStryke 
-	HeroElana 
-	HeroRoland 
-	HeroMortu 
-	HeroAlorra 
-	HeroSirHarold 
-	HeroRavashack 
-	HeroWarrax 
-	HeroTorin 
+    HeroGreyfairer
+    HeroTaki
+    HeroReywind
+    HeroMalleus
+    HeroTumu
+    HeroJaer
+    HeroMarcus
+    HeroFang
+    HeroMorgana
+    HeroAureus
+    HeroShinBo
+    HeroSpyder
+    HeroShalla
+    HeroYramrag
+    HeroMysticX
+    HeroAerie
+    HeroDethStryke
+    HeroElana
+    HeroRoland
+    HeroMortu
+    HeroAlorra
+    HeroSirHarold
+    HeroRavashack
+    HeroWarrax
+    HeroTorin
 )
 
 func (heroIndex HeroIndex) GetHero() herolib.HeroType {
     switch heroIndex {
         case HeroBrax: return herolib.HeroBrax
         case HeroGunther: return herolib.HeroGunther
-        case HeroZaldron: return herolib.HeroZaldron 
-        case HeroBShan: return herolib.HeroBShan 
-        case HeroRakir: return herolib.HeroRakir 
-        case HeroValana: return herolib.HeroValana 
-        case HeroBahgtru: return herolib.HeroBahgtru 
-        case HeroSerena: return herolib.HeroSerena 
-        case HeroShuri: return herolib.HeroShuri 
+        case HeroZaldron: return herolib.HeroZaldron
+        case HeroBShan: return herolib.HeroBShan
+        case HeroRakir: return herolib.HeroRakir
+        case HeroValana: return herolib.HeroValana
+        case HeroBahgtru: return herolib.HeroBahgtru
+        case HeroSerena: return herolib.HeroSerena
+        case HeroShuri: return herolib.HeroShuri
         case HeroTheria: return herolib.HeroTheria
-        case HeroGreyfairer: return herolib.HeroGreyfairer 
-        case HeroTaki: return herolib.HeroTaki 
-        case HeroReywind: return herolib.HeroReywind 
-        case HeroMalleus: return herolib.HeroMalleus 
-        case HeroTumu: return herolib.HeroTumu 
-        case HeroJaer: return herolib.HeroJaer 
-        case HeroMarcus: return herolib.HeroMarcus 
-        case HeroFang: return herolib.HeroFang 
-        case HeroMorgana: return herolib.HeroMorgana 
-        case HeroAureus: return herolib.HeroAureus 
-        case HeroShinBo: return herolib.HeroShinBo 
-        case HeroSpyder: return herolib.HeroSpyder 
-        case HeroShalla: return herolib.HeroShalla 
-        case HeroYramrag: return herolib.HeroYramrag 
-        case HeroMysticX: return herolib.HeroMysticX 
-        case HeroAerie: return herolib.HeroAerie 
-        case HeroDethStryke: return herolib.HeroDethStryke 
-        case HeroElana: return herolib.HeroElana 
-        case HeroRoland: return herolib.HeroRoland 
-        case HeroMortu: return herolib.HeroMortu 
-        case HeroAlorra: return herolib.HeroAlorra 
-        case HeroSirHarold: return herolib.HeroSirHarold 
-        case HeroRavashack: return herolib.HeroRavashack 
-        case HeroWarrax: return herolib.HeroWarrax 
-        case HeroTorin: return herolib.HeroTorin 
+        case HeroGreyfairer: return herolib.HeroGreyfairer
+        case HeroTaki: return herolib.HeroTaki
+        case HeroReywind: return herolib.HeroReywind
+        case HeroMalleus: return herolib.HeroMalleus
+        case HeroTumu: return herolib.HeroTumu
+        case HeroJaer: return herolib.HeroJaer
+        case HeroMarcus: return herolib.HeroMarcus
+        case HeroFang: return herolib.HeroFang
+        case HeroMorgana: return herolib.HeroMorgana
+        case HeroAureus: return herolib.HeroAureus
+        case HeroShinBo: return herolib.HeroShinBo
+        case HeroSpyder: return herolib.HeroSpyder
+        case HeroShalla: return herolib.HeroShalla
+        case HeroYramrag: return herolib.HeroYramrag
+        case HeroMysticX: return herolib.HeroMysticX
+        case HeroAerie: return herolib.HeroAerie
+        case HeroDethStryke: return herolib.HeroDethStryke
+        case HeroElana: return herolib.HeroElana
+        case HeroRoland: return herolib.HeroRoland
+        case HeroMortu: return herolib.HeroMortu
+        case HeroAlorra: return herolib.HeroAlorra
+        case HeroSirHarold: return herolib.HeroSirHarold
+        case HeroRavashack: return herolib.HeroRavashack
+        case HeroWarrax: return herolib.HeroWarrax
+        case HeroTorin: return herolib.HeroTorin
     }
 
     return herolib.HeroBrax
@@ -241,6 +241,34 @@ func loadHeroData(reader io.Reader) (HeroData, error) {
     return heroData, nil
 }
 
+const (
+    WorldWidth = 60
+    WorldHeight = 40
+)
+
+type TerrainData struct {
+    Data [][]uint16
+}
+
+func LoadTerrain(reader io.Reader) (TerrainData, error) {
+    data := make([][]uint16, WorldWidth)
+    for i := range WorldWidth {
+        data[i] = make([]uint16, WorldHeight)
+    }
+
+    for y := range(WorldHeight) {
+        for x := range(WorldWidth) {
+            value, err := lbx.ReadUint16(reader)
+            if err != nil {
+                return TerrainData{}, err
+            }
+            data[x][y] = value
+        }
+    }
+
+    return TerrainData{Data: data}, nil
+}
+
 // load a dos savegame file
 func LoadSaveGame(reader io.Reader) (*SaveGame, error) {
     numHeroes := 35
@@ -265,6 +293,8 @@ func LoadSaveGame(reader io.Reader) (*SaveGame, error) {
 
     numPlayers = int16(value)
     log.Printf("numPlayers: %v", numPlayers)
+
+    // FIXME: LoadTerrain
 
     return nil, fmt.Errorf("unfinished")
 }
