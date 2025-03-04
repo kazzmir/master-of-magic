@@ -5,8 +5,10 @@ import (
     "fmt"
     "log"
     "time"
+    "flag"
     "image/color"
     "math/rand"
+    "encoding/binary"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/util/common"
@@ -320,6 +322,42 @@ func MakeEditor() *Editor {
     }
 }
 
+func (editor *Editor) loadFromSavegame(filename string, myrror bool) {
+    fileOffset := int64(9880)
+    terrainOffset := 0
+    if myrror {
+        editor.Plane = data.PlaneMyrror
+        fileOffset += 4800
+        terrainOffset = terrain.MyrrorStart
+    }
+
+    reader, err := os.Open(filename)
+    if err != nil {
+        log.Printf("Unable to open %v: %v", filename, err)
+        os.Exit(0)
+    }
+    defer reader.Close()
+
+    _, err = reader.Seek(fileOffset, 0)
+    if err != nil {
+        fmt.Printf("Error seeking file: %v", err)
+        os.Exit(0)
+    }
+
+    editor.Map = terrain.MakeMap(40, 60)
+    for y := range(40) {
+        for x := range(60) {
+            var value uint16
+            err = binary.Read(reader, binary.LittleEndian, &value)
+            if err != nil {
+                fmt.Printf("Error reading file: %v", err)
+                os.Exit(0)
+            }
+            editor.Map.Terrain[x][y] = int(value) + terrainOffset
+        }
+    }
+}
+
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
@@ -328,6 +366,24 @@ func main() {
     ebiten.SetWindowSize(ScreenWidth, ScreenHeight)
     ebiten.SetWindowTitle("map editor")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+
+    var saveGame string
+    var myrror bool
+
+    flag.StringVar(&saveGame, "file", "", "Path to a savegame (optional)")
+    flag.BoolVar(&myrror, "myrror", false, "Load myrror instead of arcanus (optional)")
+    flag.Usage = func() {
+        fmt.Fprintf(os.Stderr, "Usage: %v [options] filename\n\n", os.Args[0])
+        fmt.Fprintln(os.Stderr, "Options:")
+        flag.PrintDefaults()
+        fmt.Fprintln(os.Stderr, "\nExample:")
+        fmt.Fprintln(os.Stderr, "  ", os.Args[0], "--file SAVE1.GAM --myrror")
+    }
+    flag.Parse()
+
+    if saveGame != "" {
+        editor.loadFromSavegame(saveGame, myrror)
+    }
 
     err := ebiten.RunGame(editor)
     if err != nil {
