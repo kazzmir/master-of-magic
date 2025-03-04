@@ -1,5 +1,9 @@
 package building
 
+import (
+    "github.com/kazzmir/master-of-magic/game/magic/data"
+)
+
 type Building int
 const (
     BuildingNone Building = iota
@@ -210,4 +214,14 @@ func (building Building) IsReligous() bool {
     }
 
     return false
+}
+
+func EnchantmentBuildings() map[data.CityEnchantment]Building {
+    buildings := make(map[data.CityEnchantment]Building)
+    buildings[data.CityEnchantmentAstralGate] = BuildingAstralGate
+    buildings[data.CityEnchantmentAltarOfBattle] = BuildingAltarOfBattle
+    buildings[data.CityEnchantmentStreamOfLife] = BuildingStreamOfLife
+    buildings[data.CityEnchantmentEarthGate] = BuildingEarthGate
+    buildings[data.CityEnchantmentDarkRituals] = BuildingDarkRituals
+    return buildings
 }

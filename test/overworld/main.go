@@ -1051,6 +1051,8 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Altar of Battle"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Astral Gate"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Cloud of Shadow"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Summoning Circle"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Move Fortress"))
 
     // global enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
@@ -1060,6 +1062,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Armageddon"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Great Wasting"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Detect Magic"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Eternal Night"))
 
     // unit enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Bless"))
@@ -1113,10 +1116,24 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
 
     game.CurrentMap().SetRoad(x, y+1, false)
     game.CurrentMap().SetRoad(x, y+2, false)
+
+    x, y, _ = game.FindValidCityLocation(game.Plane)
+
+    city2 := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
+    city2.Population = 14000
+    city2.Plane = data.PlaneArcanus
+    city2.ProducingBuilding = buildinglib.BuildingHousing
+    city2.ProducingUnit = units.UnitNone
+    city2.AddBuilding(buildinglib.BuildingShrine)
+    city2.AddBuilding(buildinglib.BuildingGranary)
+    city2.Farmers = 10
+    city2.Workers = 4
+    city2.ResetCitizens()
+    player.AddCity(city2)
 
     enemyWizard := setup.WizardCustom{
         Name: "enemy",
@@ -1129,23 +1146,24 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     x, y, _ = game.FindValidCityLocation(game.Plane)
 
-    city2 := citylib.MakeCity("Test City", x, y, enemy.Wizard.Race, game.BuildingInfo, game.CurrentMap(), game, enemy)
-    city2.Population = 14000
-    city2.Plane = data.PlaneArcanus
-    city2.ProducingBuilding = buildinglib.BuildingHousing
-    city2.ProducingUnit = units.UnitNone
-    city2.AddBuilding(buildinglib.BuildingShrine)
-    city2.AddBuilding(buildinglib.BuildingGranary)
-    city2.AddBuilding(buildinglib.BuildingBank)
-    city2.Farmers = 10
-    city2.Workers = 4
-    city2.ResetCitizens()
-    enemy.AddCity(city2)
+    city3 := citylib.MakeCity("Test City", x, y, enemy.Wizard.Race, game.BuildingInfo, game.CurrentMap(), game, enemy)
+    city3.Population = 14000
+    city3.Plane = data.PlaneArcanus
+    city3.ProducingBuilding = buildinglib.BuildingHousing
+    city3.ProducingUnit = units.UnitNone
+    city3.AddBuilding(buildinglib.BuildingShrine)
+    city3.AddBuilding(buildinglib.BuildingGranary)
+    city3.AddBuilding(buildinglib.BuildingBank)
+    city3.AddEnchantment(data.CityEnchantmentCloudOfShadow, enemy.GetBanner())
+    city3.Farmers = 10
+    city3.Workers = 4
+    city3.ResetCitizens()
+    enemy.AddCity(city3)
 
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
-    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x + 2, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y - 1, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.DragonTurtle, x + 2, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.DragonTurtle, x, y - 2, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     player.LiftFog(x, y, 2, data.PlaneArcanus)
 
     enemyWizard2 := setup.WizardCustom{
@@ -1160,21 +1178,21 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     x2, y2, _ := game.FindValidCityLocation(game.Plane)
 
-    city3 := citylib.MakeCity("Test City", x2, y2, enemy2.Wizard.Race, game.BuildingInfo, game.CurrentMap(), game, enemy2)
-    city3.Population = 14000
-    city3.Plane = data.PlaneArcanus
-    city3.ProducingBuilding = buildinglib.BuildingHousing
-    city3.ProducingUnit = units.UnitNone
-    city3.AddBuilding(buildinglib.BuildingShrine)
-    city3.AddBuilding(buildinglib.BuildingGranary)
-    city3.AddBuilding(buildinglib.BuildingBank)
-    city3.Farmers = 10
-    city3.Workers = 4
-    city3.ResetCitizens()
-    city3.AddEnchantment(data.CityEnchantmentConsecration, enemy2.GetBanner())
-    enemy2.AddCity(city3)
+    city4 := citylib.MakeCity("Test City", x2, y2, enemy2.Wizard.Race, game.BuildingInfo, game.CurrentMap(), game, enemy2)
+    city4.Population = 14000
+    city4.Plane = data.PlaneArcanus
+    city4.ProducingBuilding = buildinglib.BuildingHousing
+    city4.ProducingUnit = units.UnitNone
+    city4.AddBuilding(buildinglib.BuildingShrine)
+    city4.AddBuilding(buildinglib.BuildingGranary)
+    city4.AddBuilding(buildinglib.BuildingBank)
+    city4.Farmers = 10
+    city4.Workers = 4
+    city4.ResetCitizens()
+    city4.AddEnchantment(data.CityEnchantmentConsecration, enemy2.GetBanner())
+    enemy2.AddCity(city4)
 
-    player.LiftFog(x2, y2, 4, city3.Plane)
+    player.LiftFog(x2, y2, 4, city4.Plane)
     player.AwarePlayer(enemy)
     player.AwarePlayer(enemy2)
 
@@ -1469,7 +1487,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    player.CastingSkillPower += 5000
+    player.CastingSkillPower += 6000
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
@@ -1480,6 +1498,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Create Artifact"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Dark Rituals"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Enchant Road"))
 
     x, y, _ := game.FindValidCityLocation(game.Plane)
 

@@ -97,7 +97,7 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
                     screen.DrawImage(portait, &options)
                 }
             } else {
-                unitview.RenderUnitViewImage(screen, &imageCache, unit, options, ui.Counter)
+                unitview.RenderUnitViewImage(screen, &imageCache, unit, options, unit.IsAsleep(), ui.Counter)
             }
 
             options.GeoM.Reset()

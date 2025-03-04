@@ -525,15 +525,14 @@ func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, explodeImages
     return projectile
 }
 
-func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 11)
 
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    // FIXME: made up
     damage := func(unit *ArmyUnit) {
-        unit.TakeDamage(3)
+        unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageCold, DamageModifiers{Magic: data.NatureMagic})
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.RemoveUnit(unit)
         }
@@ -542,15 +541,15 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
-func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 0)
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    // FIXME: made up
     damage := func(unit *ArmyUnit) {
-        unit.TakeDamage(3)
-        combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for 3 damage", unit.Unit.GetName()))
+        fireDamage := unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageFire, DamageModifiers{Magic: data.ChaosMagic})
+
+        combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
             combat.Model.RemoveUnit(unit)
@@ -567,7 +566,7 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength 
     explodeImages := images[11:]
 
     damage := func(unit *ArmyUnit) {
-        unit.TakeDamage(strength)
+        combat.Model.ApplyImmolationDamage(unit, strength)
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.RemoveUnit(unit)
         }
@@ -580,7 +579,14 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 9)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    damage := func (unit *ArmyUnit) {
+        unit.ApplyDamage(15, units.DamageRangedMagical, DamageModifiers{})
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
 }
 
 func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
@@ -590,11 +596,18 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
-func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, strength int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 16)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    damage := func (unit *ArmyUnit) {
+        unit.ApplyDamage(ComputeRoll(15, 30), units.DamageRangedMagical, DamageModifiers{Magic: data.SorceryMagic})
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
 }
 
 func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
@@ -635,7 +648,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
         Effect: func(unit *ArmyUnit) {
-            unit.ApplyDamage(strength, units.DamageRangedMagical, true, 0)
+            unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             if unit.Unit.GetHealth() <= 0 {
                 combat.Model.RemoveUnit(unit)
             }
@@ -652,10 +665,10 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
 
     matrix := combat.GetCameraMatrix()
     screenX, screenY := matrix.Apply(float64(target.X), float64(target.Y))
-    screenY += 13
-    screenX += 3
+    // screenY += 13
+    screenX += 3 * float64(data.ScreenScale)
 
-    screenY -= float64(images[0].Bounds().Dy())
+    // screenY -= float64(images[0].Bounds().Dy())
 
     projectile := &Projectile{
         X: screenX,
@@ -668,6 +681,17 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
         Animation: util.MakeAnimation(images, true),
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
+        Effect: func(unit *ArmyUnit) {
+
+            // 10 separate attacks are different than a single 55-point attack due to defense
+            for strength := range 10 {
+                unit.ApplyDamage(ComputeRoll(strength + 1, 30), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+            }
+
+            if unit.Unit.GetHealth() <= 0 {
+                combat.Model.RemoveUnit(unit)
+            }
+        },
     }
 
     combat.Model.Projectiles = append(combat.Model.Projectiles, projectile)
@@ -716,6 +740,34 @@ func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) {
     }
 
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, bless))
+}
+
+func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) {
+    // FIXME: verify
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
+    explodeImages := images
+
+    weakness := func (unit *ArmyUnit){
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.DeathMagic) - 2 {
+            unit.AddCurse(data.UnitCurseWeakness)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, weakness))
+}
+
+func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) {
+    // FIXME: verify
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
+    explodeImages := images
+
+    sleep := func (unit *ArmyUnit){
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.DeathMagic) - 2 {
+            unit.AddCurse(data.UnitCurseBlackSleep)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, sleep))
 }
 
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
@@ -1006,7 +1058,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             }, targetAny)
         case "Ice Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateIceBoltProjectile(target)
+                combat.CreateIceBoltProjectile(target, spell.Cost(false))
                 castedCallback()
             }, targetAny)
         case "Star Fires":
@@ -1014,12 +1066,16 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 combat.CreateStarFiresProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                // FIXME: can only target fantastic creatures that are death or chaos
-                return true
+                realm := target.Unit.GetRealm()
+                if target.Unit.GetRace() == data.RaceFantastic && (realm == data.ChaosMagic || realm == data.DeathMagic) {
+                    return true
+                }
+
+                return false
             })
         case "Psionic Blast":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreatePsionicBlastProjectile(target)
+                combat.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2)
                 castedCallback()
             }, targetAny)
         case "Doom Bolt":
@@ -1029,7 +1085,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             }, targetAny)
         case "Fire Bolt":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateFireBoltProjectile(target)
+                combat.CreateFireBoltProjectile(target, spell.Cost(false))
                 castedCallback()
             }, targetAny)
         case "Lightning Bolt":
@@ -1298,6 +1354,52 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 combat.CreateBlessProjectile(target)
                 castedCallback()
             }, targetAny)
+        case "Weakness":
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateWeaknessProjectile(target)
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasCurse(data.UnitCurseWeakness) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityDeathImmunity) || target.HasAbility(data.AbilityMagicImmunity) {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityCharmed) {
+                    return false
+                }
+
+                return true
+            })
+        case "CurseBlackSleep":
+            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                combat.CreateBlackSleepProjectile(target)
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasCurse(data.UnitCurseBlackSleep) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityDeathImmunity) || target.HasAbility(data.AbilityMagicImmunity) {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityCharmed) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit curses:
@@ -1306,55 +1408,53 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
         CurseVertigo
         CurseShatter
         CurseWarpCreature
-        CurseBlackSleep
         CursePossession
-        CurseWeakness
         */
 
         /*
         combat instants:
 
         Dispel Magic
-        Raise Dead 
-        Petrify 
-        Call Chaos 	
+        Raise Dead
+        Petrify
+        Call Chaos
         Animate Dead
          */
 
         /*
         unit enchantments:
-        Heroism 
-        Holy Armor 
-        Holy Weapon 
+        Heroism
+        Holy Armor
+        Holy Weapon
         Invulnerability
-        Lionheart 	
+        Lionheart
         Righteousness
-        True Sight 	
+        True Sight
         Elemental Armor
-        Giant Strength 
-        Iron Skin 	
-        Regeneration 
-        Resist Elements 
-        Stone Skin 	
-        Flight 	
+        Giant Strength
+        Iron Skin
+        Regeneration
+        Resist Elements
+        Stone Skin
+        Flight
         Guardian Wind
-        Haste 	
+        Haste
         Invisibility
         Magic Immunity
-        Resist Magic 
-        Spell Lock 	
+        Resist Magic
+        Spell Lock
         Eldritch Weapon
-        Flame Blade 
-        Immolation 
-        Berserk 
-        Cloak of Fear 
+        Flame Blade
+        Immolation
+        Berserk
+        Cloak of Fear
         Wraith Form
          */
     }
 }
 
 func (combat *CombatScreen) CastCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
-    if rand.N(10) + 1 > target.GetResistance() - 20 {
+    if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
         // FIXME: make creature bind animation
         combat.Model.ApplyCreatureBinding(target, newOwner)
     }
@@ -1448,13 +1548,13 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             options.GeoM.Reset()
                             options.GeoM.Translate(float64(130 * data.ScreenScale), y)
                             screen.DrawImage(arrow, &options)
-                            combat.HudFont.PrintRight(screen, float64(130 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetRangedAttackPower()))
+                            combat.HudFont.PrintRight(screen, float64(130 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.GetRangedAttackPower()))
                         case units.DamageRangedMagical:
                             magic, _ := combat.ImageCache.GetImage("compix.lbx", 30, 0)
                             options.GeoM.Reset()
                             options.GeoM.Translate(float64(130 * data.ScreenScale), y)
                             screen.DrawImage(magic, &options)
-                            combat.HudFont.PrintRight(screen, float64(130 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.Unit.GetRangedAttackPower()))
+                            combat.HudFont.PrintRight(screen, float64(130 * data.ScreenScale), y+float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", combat.Model.SelectedUnit.GetRangedAttackPower()))
                     }
                 }
 
@@ -1623,7 +1723,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // info
     elements = append(elements, makeButton(20, 0, 1, func(){
-        // FIXME
+        // FIXME: show enchantments such as "Eternal Night", "Cloud of Shadow", "Heavenly Light" etc.
     }))
 
     // auto
@@ -1790,36 +1890,6 @@ func (combat *CombatScreen) withinArrowRange(attacker *ArmyUnit, defender *ArmyU
     return true
 }
 
-func (combat *CombatScreen) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
-    if attacker.RangedAttacks <= 0 {
-        return false
-    }
-
-    if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
-        return false
-    }
-
-    if attacker.Team == defender.Team {
-        return false
-    }
-
-    // FIXME: check if defender has missle immunity and attacker is using regular non-magical attacks
-    // FIXME: check if defender has magic immunity and attacker is using magical attacks
-    // FIXME: check if defender has invisible, and attacker doesn't have illusions immunity
-
-    if combat.Model.InsideWallOfDarkness(defender.X, defender.Y) && !combat.Model.InsideWallOfDarkness(attacker.X, attacker.Y) {
-        // attacker can't target a defender inside a wall of darkness, unless the attacker has True Sight or Illusions Immunity
-
-        if attacker.HasAbility(data.AbilityIllusionsImmunity) {
-            return true
-        }
-
-        return false
-    }
-
-    return true
-}
-
 func distanceInRange(x1 float64, y1 float64, x2 float64, y2 float64, r float64) bool {
     xDiff := x2 - x1
     yDiff := y2 - y1
@@ -1935,7 +2005,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         damage := attacker.ComputeRangeDamage(tileDistance)
         // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
-        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), false, combat.Model.ComputeWallDefense(attacker, defender))
+        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
             combat.Model.doTouchAttack(attacker, target, 0)
@@ -2129,9 +2199,9 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
                 combat.MouseState = CombatNotOk
             }
 
-            if canTarget(unit) && inputmanager.LeftClick() && mouseY < hudY {
+            if unit != nil && canTarget(unit) && inputmanager.LeftClick() && mouseY < hudY {
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
-                if unit != nil && (selectTeam == TeamEither || unit.Team == selectTeam) {
+                if selectTeam == TeamEither || unit.Team == selectTeam {
                     selectTarget(unit)
 
                     // shouldn't need to set the mouse state here
@@ -2443,7 +2513,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         })
 
         for _, candidate := range candidates {
-           if combat.withinArrowRange(aiUnit, candidate) && combat.canRangeAttack(aiUnit, candidate) {
+           if combat.withinArrowRange(aiUnit, candidate) && combat.Model.canRangeAttack(aiUnit, candidate) {
                combat.doRangeAttack(yield, aiUnit, candidate)
                return
            }
@@ -2701,7 +2771,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         } else {
             newState := CombatNotOk
             // prioritize range attack over melee
-            if combat.canRangeAttack(combat.Model.SelectedUnit, who) && combat.withinArrowRange(combat.Model.SelectedUnit, who) {
+            if combat.Model.canRangeAttack(combat.Model.SelectedUnit, who) && combat.withinArrowRange(combat.Model.SelectedUnit, who) {
                 newState = CombatRangeAttackOk
             } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who) && combat.withinMeleeRange(combat.Model.SelectedUnit, who) {
                 newState = CombatMeleeAttackOk
@@ -2732,7 +2802,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            attacker := combat.Model.SelectedUnit
 
            // try a ranged attack first
-           if defender != nil && combat.withinArrowRange(attacker, defender) && combat.canRangeAttack(attacker, defender) {
+           if defender != nil && combat.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
                combat.doRangeAttack(yield, attacker, defender)
            // then fall back to melee
            } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){
@@ -2849,14 +2919,14 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
             options.GeoM.Translate(float64(x1 + 14) * float64(data.ScreenScale), float64(y1 + 18) * float64(data.ScreenScale))
             screen.DrawImage(fire, &options)
             ax, ay := options.GeoM.Apply(0, 2)
-            combat.InfoFont.PrintOptions(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v", unit.Unit.GetRangedAttackPower()))
+            combat.InfoFont.PrintOptions(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
         case units.DamageRangedPhysical:
             arrow, _ := combat.ImageCache.GetImage("compix.lbx", 66, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(x1 + 14) * float64(data.ScreenScale), float64(y1 + 18) * float64(data.ScreenScale))
             screen.DrawImage(arrow, &options)
             ax, ay := options.GeoM.Apply(0, 2)
-            combat.InfoFont.PrintOptions(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v", unit.Unit.GetRangedAttackPower()))
+            combat.InfoFont.PrintOptions(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
     }
 
     movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
@@ -3405,13 +3475,23 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
             // _ = index
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
-            unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
+            if unit.IsAsleep() {
+                unitview.RenderCombatUnitGrey(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
+            } else {
+                unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
+            }
 
             unitOptions.GeoM.Translate(float64(-combatImages[index].Bounds().Dx()/2), float64(-combatImages[0].Bounds().Dy()*3/4))
             for _, curse := range unit.GetCurses() {
                 switch curse {
                     case data.UnitCurseMindStorm:
                         images, _ := combat.ImageCache.GetImages("resource.lbx", 78)
+                        index := animationIndex % uint64(len(images))
+                        use := images[index]
+
+                        screen.DrawImage(use, &unitOptions)
+                    case data.UnitCurseWeakness:
+                        images, _ := combat.ImageCache.GetImages("resource.lbx", 80)
                         index := animationIndex % uint64(len(images))
                         use := images[index]
 

@@ -5,7 +5,9 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/colorm"
 )
 
 // hard coding the points is what the real master of magic does
@@ -31,9 +33,9 @@ func CombatPoints(count int) []image.Point {
         case 4:
             // FIXME: this was just copied from case 8
             return []image.Point{
-                image.Pt(2, -4),
-                image.Pt(6, -2),
-                image.Pt(-1, 0),
+                image.Pt(1, -4),
+                image.Pt(7, -2),
+                image.Pt(-1, 3),
                 image.Pt(-8, 0),
             }
         case 5:
@@ -53,7 +55,7 @@ func CombatPoints(count int) []image.Point {
                 image.Pt(-1, 0),
                 image.Pt(-8, 0),
                 image.Pt(10, 0),
-                image.Pt(3, 1),
+                image.Pt(3, 4),
             }
         case 7:
             // FIXME: this was just copied from case 8
@@ -81,6 +83,32 @@ func CombatPoints(count int) []image.Point {
     }
 
     return nil
+}
+
+func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, enchantment data.UnitEnchantment, timeCounter uint64, imageCache *util.ImageCache){
+    // the ground is always 6 pixels above the bottom of the unit image
+    groundHeight := float64(6 * data.ScreenScale)
+
+    var greyScale colorm.ColorM
+    greyScale.ChangeHSV(0, 0, 1)
+    var greyOptions colorm.DrawImageOptions
+
+    geoM := options.GeoM
+
+    for _, point := range CombatPoints(count) {
+        greyOptions.GeoM.Reset()
+        greyOptions.GeoM.Translate(float64(point.X * data.ScreenScale), float64(point.Y * data.ScreenScale))
+        greyOptions.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
+
+        greyOptions.GeoM.Concat(geoM)
+
+        // screen.DrawImage(use, &options)
+        colorm.DrawImage(screen, use, greyScale, &greyOptions)
+
+        if enchantment != data.UnitEnchantmentNone {
+            util.DrawOutline(screen, imageCache, use, greyOptions.GeoM, options.ColorScale, timeCounter/10, enchantment.Color())
+        }
+    }
 }
 
 func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, enchantment data.UnitEnchantment, timeCounter uint64, imageCache *util.ImageCache){

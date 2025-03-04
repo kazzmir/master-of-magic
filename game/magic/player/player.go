@@ -506,6 +506,26 @@ func (player *Player) InterruptCastingSpell() {
     player.CastingSpellProgress = 0
 }
 
+// the base casting skill + any heroes with the caster ability in the fortress
+func (player *Player) ComputeOverworldCastingSkill() int {
+    base := player.ComputeCastingSkill()
+    heroes := float32(0)
+
+    // for each hero at the fortress city, add half of their caster ability to the casting skill
+    fortressCity := player.FindFortressCity()
+    if fortressCity != nil {
+        stack := player.FindStack(fortressCity.X, fortressCity.Y, fortressCity.Plane)
+        if stack != nil {
+            for _, unit := range stack.Units() {
+                caster := unit.GetAbilityValue(data.AbilityCaster)
+                heroes += caster
+            }
+        }
+    }
+
+    return base + int(heroes) / 2
+}
+
 func (player *Player) ComputeCastingSkill() int {
     if player.CastingSkillPower == 0 {
         return 0

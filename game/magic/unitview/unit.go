@@ -30,7 +30,7 @@ type CombatView interface {
     GetCount() int
 }
 
-func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit CombatView, options ebiten.DrawImageOptions, counter uint64) {
+func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit CombatView, options ebiten.DrawImageOptions, grey bool, counter uint64) {
     images, err := imageCache.GetImagesTransform(unit.GetCombatLbxFile(), unit.GetCombatIndex(units.FacingRight), unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
     if err == nil && len(images) > 2 {
         use := images[2]
@@ -46,7 +46,11 @@ func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit
         RenderCombatTile(screen, imageCache, options)
 
         first := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
-        RenderCombatUnit(screen, use, options, unit.GetCount(), first, counter, imageCache)
+        if grey {
+            RenderCombatUnitGrey(screen, use, options, unit.GetCount(), first, counter, imageCache)
+        } else {
+            RenderCombatUnit(screen, use, options, unit.GetCount(), first, counter, imageCache)
+        }
     }
 }
 
@@ -129,7 +133,7 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     renderUpkeep(screen, imageCache, unit, options)
 }
 
-func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
+func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions, discountedCost int) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
     descriptionFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, unit.GetName())
@@ -158,8 +162,6 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
     renderUpkeep(screen, imageCache, unit, options)
 
     cost := unit.GetProductionCost()
-    // FIXME: compute discounted cost based on the unit being built and the tiles surrounding the city
-    discountedCost := cost
     smallFont.PrintOptions(screen, x, y + float64(27 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, fmt.Sprintf("Cost %v(%v)", discountedCost, cost))
 }
 

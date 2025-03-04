@@ -565,6 +565,10 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+func (unit *ArmyUnit) IsAsleep() bool {
+    return unit.HasCurse(data.UnitCurseBlackSleep)
+}
+
 func (unit *ArmyUnit) GetAbilities() []data.Ability {
     return unit.Unit.GetAbilities()
 }
@@ -684,7 +688,7 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                 modifier += 1
             }
 
-            if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
+            if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
                 switch unit.GetRealm() {
                     case data.DeathMagic: modifier += 1
                     case data.LifeMagic: modifier -= 1
@@ -704,7 +708,7 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                 modifier -= 5
             }
 
-            if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
+            if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
                 switch unit.GetRealm() {
                     case data.DeathMagic: modifier += 1
                     case data.LifeMagic: modifier -= 1
@@ -767,6 +771,42 @@ func (unit *ArmyUnit) GetFullResistance() int {
     return unit.Unit.GetResistance()
 }
 
+// get the resistance of the unit, taking into account enchantments and curses that apply to the specific magic type
+func (unit *ArmyUnit) GetResistanceFor(magic data.MagicType) int {
+    base := unit.GetResistance()
+    modifier := 0
+
+    if unit.HasEnchantment(data.UnitEnchantmentBless) {
+        switch magic {
+            case data.DeathMagic, data.ChaosMagic: modifier += 3
+        }
+    }
+
+    if unit.HasEnchantment(data.UnitEnchantmentRighteousness) {
+        switch magic {
+            case data.DeathMagic, data.ChaosMagic: modifier += 30
+        }
+    }
+
+    if unit.HasEnchantment(data.UnitEnchantmentResistMagic) {
+        modifier += 5
+    }
+
+    if unit.HasEnchantment(data.UnitEnchantmentElementalArmor) {
+        switch magic {
+            case data.NatureMagic, data.ChaosMagic: modifier += 10
+        }
+    }
+
+    if unit.HasEnchantment(data.UnitEnchantmentResistElements) {
+        switch magic {
+            case data.NatureMagic, data.ChaosMagic: modifier += 3
+        }
+    }
+
+    return base + modifier
+}
+
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
@@ -780,7 +820,9 @@ func (unit *ArmyUnit) GetResistance() int {
         }
     }
 
-    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
+    hasRighteousness := unit.HasEnchantment(data.UnitEnchantmentRighteousness)
+
+    if !hasRighteousness && unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlackPrayer, oppositeTeam(unit.Team)) {
         modifier -= 2
     }
 
@@ -789,14 +831,17 @@ func (unit *ArmyUnit) GetResistance() int {
         modifier += 3
     }
 
-    if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
+    if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
         switch unit.GetRealm() {
             case data.DeathMagic: modifier += 1
-            case data.LifeMagic: modifier -= 1
+            case data.LifeMagic:
+                if !hasRighteousness {
+                    modifier -= 1
+                }
         }
     }
 
-    if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
+    if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
         switch unit.GetRealm() {
             case data.LifeMagic: modifier += 1
             case data.DeathMagic: modifier -= 1
@@ -808,6 +853,32 @@ func (unit *ArmyUnit) GetResistance() int {
 
 func (unit *ArmyUnit) GetFullDefense() int {
     return unit.Unit.GetDefense()
+}
+
+// get defense against a specific magic type
+func (unit *ArmyUnit) GetDefenseFor(magic data.MagicType) int {
+    base := unit.GetDefense()
+    modifier := 0
+
+    if unit.HasEnchantment(data.UnitEnchantmentBless) {
+        switch magic {
+            case data.DeathMagic, data.ChaosMagic: modifier += 3
+        }
+    }
+
+    if unit.HasEnchantment(data.UnitEnchantmentElementalArmor) {
+        switch magic {
+            case data.NatureMagic, data.ChaosMagic: modifier += 10
+        }
+    }
+
+    if unit.HasEnchantment(data.UnitEnchantmentResistElements) {
+        switch magic {
+            case data.NatureMagic, data.ChaosMagic: modifier += 3
+        }
+    }
+
+    return base + modifier
 }
 
 func (unit *ArmyUnit) GetDefense() int {
@@ -835,14 +906,14 @@ func (unit *ArmyUnit) GetDefense() int {
         modifier -= 1
     }
 
-    if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
+    if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
         switch unit.GetRealm() {
             case data.DeathMagic: modifier += 1
             case data.LifeMagic: modifier -= 1
         }
     }
 
-    if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
+    if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
         switch unit.GetRealm() {
             case data.LifeMagic: modifier += 1
             case data.DeathMagic: modifier -= 1
@@ -866,6 +937,10 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
     for _, curse := range unit.Curses {
         switch curse {
             case data.UnitCurseMindStorm: modifier -= 5
+            case data.UnitCurseWeakness:
+                if unit.Unit.GetRangedAttackDamageType() == units.DamageRangedPhysical {
+                    modifier -= 2
+                }
         }
     }
 
@@ -892,6 +967,7 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
     for _, curse := range unit.Curses {
         switch curse {
             case data.UnitCurseMindStorm: modifier -= 5
+            case data.UnitCurseWeakness: modifier -= 2
         }
     }
 
@@ -901,7 +977,7 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
         }
     }
 
-    if ((unit.Unit.GetRace() == data.RaceFantastic && unit.GetRealm() == data.DeathMagic) || unit.Unit.IsUndead()) &&
+    if (unit.Unit.GetRace() == data.RaceFantastic && unit.GetRealm() == data.DeathMagic) &&
         unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
         modifier += 1
     }
@@ -917,7 +993,7 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
         }
     }
 
-    if (unit.Unit.GetRace() == data.RaceFantastic || unit.Unit.IsUndead()) && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
+    if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentTrueLight, TeamEither) {
         switch unit.GetRealm() {
             case data.LifeMagic: modifier += 1
             case data.DeathMagic: modifier -= 1
@@ -1057,25 +1133,6 @@ func (unit *ArmyUnit) AddEnchantment(enchantment data.UnitEnchantment) {
     unit.Enchantments = append(unit.Enchantments, enchantment)
 }
 
-func (unit *ArmyUnit) GetResistances(enchantments... data.UnitEnchantment) int {
-    resistance := 0
-
-    for _, enchantment := range enchantments {
-
-        if unit.HasEnchantment(enchantment) {
-            switch enchantment {
-                case data.UnitEnchantmentBless: resistance += 3
-                case data.UnitEnchantmentElementalArmor: resistance += 10
-                case data.UnitEnchantmentRighteousness: resistance += 30
-                case data.UnitEnchantmentResistMagic: resistance += 5
-                case data.UnitEnchantmentResistElements: resistance += 3
-            }
-        }
-    }
-
-    return resistance
-}
-
 func (unit *ArmyUnit) CanCast() bool {
     if unit.Casted {
         return false
@@ -1119,14 +1176,32 @@ func (unit *ArmyUnit) ResetTurnData() {
     unit.Casted = false
 }
 
-func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wallDefense int) int {
+type DamageModifiers struct {
+    // 50% less defense
+    ArmorPiercing bool
+    // 100% less defense
+    Illusion bool
+
+    // any protection offered by the city wall
+    WallDefense int
+
+    // if the damage comes from a specific realm (for spells or magic damage)
+    Magic data.MagicType
+}
+
+func (unit *ArmyUnit) ComputeDefense(damage units.Damage, modifiers DamageModifiers) int {
+    if unit.IsAsleep() {
+        return 0
+    }
+
     toDefend := unit.ToDefend()
-    defenseRolls := unit.GetDefense()
+    var defenseRolls int
 
     hasImmunity := false
 
     switch damage {
         case units.DamageRangedMagical:
+            defenseRolls = unit.GetDefenseFor(modifiers.Magic)
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1135,6 +1210,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wa
                 hasImmunity = true
             }
         case units.DamageRangedPhysical:
+            defenseRolls = unit.GetDefense()
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1143,6 +1219,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wa
                 hasImmunity = true
             }
         case units.DamageImmolation:
+            defenseRolls = unit.GetDefenseFor(data.ChaosMagic)
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1156,9 +1233,10 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wa
                 hasImmunity = true
             }
 
-            defenseRolls += unit.GetResistances(data.UnitEnchantmentResistElements, data.UnitEnchantmentBless, data.UnitEnchantmentElementalArmor)
+            // defenseRolls += unit.GetResistances(data.UnitEnchantmentResistElements, data.UnitEnchantmentBless, data.UnitEnchantmentElementalArmor)
 
         case units.DamageFire:
+            defenseRolls = unit.GetDefenseFor(modifiers.Magic)
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1167,6 +1245,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wa
                 hasImmunity = true
             }
         case units.DamageCold:
+            defenseRolls = unit.GetDefenseFor(modifiers.Magic)
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1175,12 +1254,15 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wa
                 hasImmunity = true
             }
         case units.DamageThrown:
+            defenseRolls = unit.GetDefense()
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
+        default:
+            defenseRolls = unit.GetDefense()
     }
 
-    if armorPiercing {
+    if modifiers.ArmorPiercing {
         defenseRolls /= 2
     }
 
@@ -1189,22 +1271,20 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, armorPiercing bool, wa
         case units.DamageRangedMagical,
              units.DamageRangedPhysical,
              units.DamageMeleePhysical:
-            defenseRolls += wallDefense
+            defenseRolls += modifiers.WallDefense
     }
 
     if hasImmunity {
         defenseRolls = 50
     }
 
+    if modifiers.Illusion && !unit.HasAbility(data.AbilityIllusionsImmunity) {
+        defenseRolls = 0
+    }
+
     // log.Printf("Unit %v has %v defense", unit.Unit.GetName(), defenseRolls)
 
-    defense := 0
-
-    for range defenseRolls {
-        if rand.N(100) < toDefend {
-            defense += 1
-        }
-    }
+    defense := ComputeRoll(defenseRolls, toDefend)
 
     return defense
 }
@@ -1225,16 +1305,10 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
     health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
 
     for range unit.Figures() {
-        damage := 0
-        // FIXME: should this toHit be based on the unit's toHitMelee?
-        toHit := 30
-        for range attackStrength {
-            if rand.N(100) < toHit {
-                damage += 1
-            }
-        }
+        // FIXME: should this toHit=30 be based on the unit's toHitMelee?
+        damage := ComputeRoll(attackStrength, 30)
 
-        defense := unit.ComputeDefense(damageType, false, wallDefense)
+        defense := unit.ComputeDefense(damageType, DamageModifiers{WallDefense: wallDefense})
         // can't do more damage than a single figure has HP
         figureDamage := min(damage - defense, health_per_figure)
         if figureDamage > 0 {
@@ -1248,11 +1322,17 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
 }
 
 // apply damage to lead figure, and if it dies then keep applying remaining damage to the next figure
-func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, armorPiercing bool, wallDefense int) int {
+// FIXME: its possible that the damage can be passed to ComputeRoll() to determine how much actual damage is done
+func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, modifiers DamageModifiers) int {
+    isMagic := damageType == units.DamageRangedMagical || damageType == units.DamageFire || damageType == units.DamageCold
+    if isMagic && unit.HasAbility(data.AbilityMagicImmunity) {
+        return 0
+    }
+
     taken := 0
     for damage > 0 && unit.Unit.GetHealth() > 0 {
         // compute defense, apply damage to lead figure. if lead figure dies, apply damage to next figure
-        defense := unit.ComputeDefense(damageType, armorPiercing, wallDefense)
+        defense := unit.ComputeDefense(damageType, modifiers)
         damage -= defense
         if damage > 0 {
             health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
@@ -1332,11 +1412,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
 
     damage := 0
     for range unit.Figures() {
-        for range unit.GetRangedAttackPower() {
-            if rand.N(100) < toHit {
-                damage += 1
-            }
-        }
+        damage += ComputeRoll(unit.GetRangedAttackPower(), toHit)
     }
 
     return damage
@@ -1353,11 +1429,7 @@ func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int) (int, bool) {
     for range unit.Figures() - fearFigure {
         // even if all figures fail to cause damage, it still counts as a hit for touch purposes
         hit = true
-        for range unit.GetMeleeAttackPower() {
-            if rand.N(100) < unit.GetToHitMelee() {
-                damage += 1
-            }
-        }
+        damage += ComputeRoll(unit.GetMeleeAttackPower(), unit.GetToHitMelee())
     }
 
     return damage, hit
@@ -1375,9 +1447,7 @@ func (unit *ArmyUnit) CauseFear() int {
         return 0
     }
 
-    resistance := unit.GetResistance()
-
-    resistance += unit.GetResistances(data.UnitEnchantmentBless, data.UnitEnchantmentResistMagic)
+    resistance := unit.GetResistanceFor(data.DeathMagic)
 
     for range unit.Figures() {
         if rand.N(10) + 1 > resistance {
@@ -1617,6 +1687,19 @@ func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
     return model
 }
 
+// do N rolls (n=strength) where each roll has 'chance' success. return number of successful rolls
+func ComputeRoll(strength int, chance int) int {
+    out := 0
+
+    for range strength {
+        if rand.N(100) < chance {
+            out += 1
+        }
+    }
+
+    return out
+}
+
 // distance -> cost multiplier:
 // 0 -> 0.5
 // <=5 -> 1
@@ -1715,6 +1798,11 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
             for i := 0; i < len(model.AttackingArmy.Units); i++ {
                 model.TurnAttacker = (model.TurnAttacker + 1) % len(model.AttackingArmy.Units)
                 unit := model.AttackingArmy.Units[model.TurnAttacker]
+
+                if unit.IsAsleep() {
+                    unit.LastTurn = model.CurrentTurn
+                }
+
                 if unit.LastTurn < model.CurrentTurn {
                     unit.Paths = make(map[image.Point]pathfinding.Path)
                     return unit
@@ -1725,6 +1813,11 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
             for i := 0; i < len(model.DefendingArmy.Units); i++ {
                 model.TurnDefender = (model.TurnDefender + 1) % len(model.DefendingArmy.Units)
                 unit := model.DefendingArmy.Units[model.TurnDefender]
+
+                if unit.IsAsleep() {
+                    unit.LastTurn = model.CurrentTurn
+                }
+
                 if unit.LastTurn < model.CurrentTurn {
                     unit.Paths = make(map[image.Point]pathfinding.Path)
                     return unit
@@ -2125,6 +2218,10 @@ func (model *CombatModel) AddGlobalEnchantment(enchantment data.CombatEnchantmen
 }
 
 func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment) bool {
+    if slices.Contains(model.GlobalEnchantments, enchantment) {
+        return false
+    }
+
     if player == model.DefendingArmy.Player {
         return model.DefendingArmy.AddEnchantment(enchantment)
     } else {
@@ -2378,7 +2475,11 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         hit = true
 
         damage = append(damage, func(){
-            fireDamage := defender.ApplyDamage(strength, units.DamageFire, false, 0)
+            fireDamage := 0
+            // one breath attack per figure
+            for range attacker.Figures() {
+                fireDamage += defender.ApplyDamage(ComputeRoll(strength, attacker.GetToHitMelee()), units.DamageFire, DamageModifiers{Magic: data.ChaosMagic})
+            }
             model.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
             // damage += fireDamage
             model.Observer.FireBreathAttack(attacker, defender, fireDamage)
@@ -2390,7 +2491,10 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         hit = true
 
         damage = append(damage, func(){
-            lightningDamage := defender.ApplyDamage(strength, units.DamageRangedMagical, true, 0)
+            lightningDamage := 0
+            for range attacker.Figures() {
+                lightningDamage += defender.ApplyDamage(ComputeRoll(strength, attacker.GetToHitMelee()), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+            }
             model.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
             // damage += lightningDamage
             model.Observer.LightningBreathAttack(attacker, defender, lightningDamage)
@@ -2509,7 +2613,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             modifier := int(attacker.GetAbilityValue(data.AbilityLifeSteal))
             // if vampiric, modifier will just be 0
             damage := 0
-            defenderResistance := defender.GetResistance() + defender.GetResistances(data.UnitEnchantmentResistMagic, data.UnitEnchantmentBless, data.UnitEnchantmentRighteousness)
+            defenderResistance := defender.GetResistanceFor(data.DeathMagic)
 
             for range attacker.Figures() - fearFigure {
                 more := rand.N(10) + 1 - (defenderResistance + modifier)
@@ -2538,7 +2642,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
         if !defender.HasAbility(data.AbilityStoningImmunity) && !defender.HasAbility(data.AbilityMagicImmunity) {
             damage := 0
 
-            defenderResistance := defender.GetResistance() + defender.GetResistances(data.UnitEnchantmentElementalArmor, data.UnitEnchantmentResistElements, data.UnitEnchantmentResistMagic)
+            defenderResistance := defender.GetResistanceFor(data.NatureMagic)
 
             modifier := int(attacker.GetAbilityValue(data.AbilityStoningTouch))
 
@@ -2568,10 +2672,6 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             }
         }
 
-        if defender.Unit.IsUndead() {
-            immune = false
-        }
-
         if defender.HasAbility(data.AbilityMagicImmunity) {
             immune = true
         }
@@ -2579,14 +2679,12 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
         if !immune {
             damage := 0
 
-            defenderResistance := defender.GetResistance()
+            defenderResistance := defender.GetResistanceFor(data.LifeMagic)
             if defender.Unit.IsUndead() {
                 defenderResistance -= 9
             } else {
                 defenderResistance -= 4
             }
-
-            defenderResistance += defender.GetResistances(data.UnitEnchantmentResistMagic)
 
             for range attacker.Figures() - fearFigure {
                 if rand.N(10) + 1 > defenderResistance {
@@ -2606,7 +2704,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
     if attacker.HasAbility(data.AbilityDeathTouch) {
         if !defender.HasAbility(data.AbilityDeathImmunity) && !defender.HasAbility(data.AbilityMagicImmunity) {
             damage := 0
-            defenderResistance := defender.GetResistance() + defender.GetResistances(data.UnitEnchantmentResistMagic, data.UnitEnchantmentBless, data.UnitEnchantmentRighteousness)
+            defenderResistance := defender.GetResistanceFor(data.DeathMagic)
             modifier := 3
 
             for range attacker.Figures() - fearFigure {
@@ -2627,10 +2725,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
     if attacker.Unit.HasItemAbility(data.ItemAbilityDestruction) {
         if !defender.HasAbility(data.AbilityMagicImmunity) {
-            defenderResistance := defender.GetResistance() + defender.GetResistances(
-                data.UnitEnchantmentResistMagic, data.UnitEnchantmentBless,
-                data.UnitEnchantmentRighteousness, data.UnitEnchantmentElementalArmor,
-                data.UnitEnchantmentResistElements)
+            defenderResistance := defender.GetResistanceFor(data.ChaosMagic)
 
             damage := 0
             for range attacker.Figures() - fearFigure {
@@ -2680,7 +2775,12 @@ func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDa
 }
 
 func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
-    hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, false, model.ComputeWallDefense(attacker, defender))
+    modifiers := DamageModifiers{
+        WallDefense: model.ComputeWallDefense(attacker, defender),
+        ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
+        Illusion: attacker.HasAbility(data.AbilityIllusion),
+    }
+    hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, modifiers)
     model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
 }
 
@@ -2689,8 +2789,54 @@ func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) {
     model.Observer.WallOfFire(defender, 5)
 }
 
-func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    if attacker.IsAsleep() {
+        return false
+    }
+
+    if attacker.RangedAttacks <= 0 {
+        return false
+    }
+
+    if attacker.GetRangedAttackPower() <= 0 {
+        return false
+    }
+
     if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
+        return false
+    }
+
+    if attacker.Team == defender.Team {
+        return false
+    }
+
+    // FIXME: check if defender has missle immunity and attacker is using regular non-magical attacks
+    // FIXME: check if defender has magic immunity and attacker is using magical attacks
+    // FIXME: check if defender has invisible, and attacker doesn't have illusions immunity
+
+    if model.InsideWallOfDarkness(defender.X, defender.Y) && !model.InsideWallOfDarkness(attacker.X, attacker.Y) {
+        // attacker can't target a defender inside a wall of darkness, unless the attacker has True Sight or Illusions Immunity
+
+        if attacker.HasAbility(data.AbilityIllusionsImmunity) {
+            return true
+        }
+
+        return false
+    }
+
+    return true
+}
+
+func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    if attacker.IsAsleep() {
+        return false
+    }
+
+    if attacker.MovesLeft.LessThanEqual(fraction.FromInt(0)) {
+        return false
+    }
+
+    if attacker.GetMeleeAttackPower() <= 0 {
         return false
     }
 
@@ -2843,7 +2989,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
 
                 if throwDamage > 0 {
-                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, attacker.HasAbility(data.AbilityArmorPiercing), 0)
+                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, DamageModifiers{ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing)})
                     model.Observer.ThrowAttack(attacker, defender, damage)
                     model.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
                 }
@@ -2889,7 +3035,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
 
             case 3:
-                if defender.HasAbility(data.AbilityCauseFear) {
+                if !defender.IsAsleep() && defender.HasAbility(data.AbilityCauseFear) {
                     attackerFear = attacker.CauseFear()
                     model.AddLogEvent(fmt.Sprintf("%v causes fear in %v for %v figures", defender.Unit.GetName(), attacker.Unit.GetName(), attackerFear))
                     model.Observer.CauseFear(defender, attacker, attackerFear)
@@ -2897,6 +3043,12 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
             case 4:
                 if attacker.HasAbility(data.AbilityFirstStrike) && !defender.HasAbility(data.AbilityNegateFirstStrike) {
                     attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
+
+                    // asleep units take full attack power as damage
+                    if defender.IsAsleep() {
+                        hit = true
+                        attackerDamage = attacker.GetMeleeAttackPower()
+                    }
 
                     immolationDamage := 0
 
@@ -2918,7 +3070,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
             case 5:
                 // attacker fear attack
-                if attacker.HasAbility(data.AbilityCauseFear) || attacker.HasEnchantment(data.UnitEnchantmentCloakOfFear) {
+                if attacker.HasAbility(data.AbilityCauseFear) {
                     defenderFear = defender.CauseFear()
                     model.AddLogEvent(fmt.Sprintf("%v causes fear in %v for %v figures", attacker.Unit.GetName(), defender.Unit.GetName(), defenderFear))
                     model.Observer.CauseFear(attacker, defender, defenderFear)
@@ -2951,6 +3103,11 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 for range attacks {
                     attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
 
+                    if defender.IsAsleep() {
+                        hit = true
+                        attackerDamage = attacker.GetMeleeAttackPower()
+                    }
+
                     if hit {
                         model.Observer.MeleeAttack(attacker, defender, attackerDamage)
                         defenderMeleeDamage += attackerDamage
@@ -2969,16 +3126,20 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 attackerImmolationDamage := 0
                 attackerMeleeDamage := 0
 
-                // defender does counter-attack
-                for range counters {
-                    defenderDamage, hit := defender.ComputeMeleeDamage(defenderFear)
+                if !defender.IsAsleep() {
+                    // defender does counter-attack
+                    for range counters {
+                        defenderDamage, hit := defender.ComputeMeleeDamage(defenderFear)
 
-                    if hit {
-                        model.Observer.MeleeAttack(defender, attacker, defenderDamage)
-                        attackerMeleeDamage += defenderDamage
-                        attackerImmolationDamage += model.immolationDamage(defender, attacker)
-                        if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                            damageFuncs = append(damageFuncs, model.doTouchAttack(defender, attacker, defenderFear)...)
+                        // attacker can't possibly be asleep, so no need to check here
+
+                        if hit {
+                            model.Observer.MeleeAttack(defender, attacker, defenderDamage)
+                            attackerMeleeDamage += defenderDamage
+                            attackerImmolationDamage += model.immolationDamage(defender, attacker)
+                            if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
+                                damageFuncs = append(damageFuncs, model.doTouchAttack(defender, attacker, defenderFear)...)
+                            }
                         }
                     }
                 }

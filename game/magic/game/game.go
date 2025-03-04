@@ -2963,6 +2963,10 @@ func ChooseUniqueWizard(players []*playerlib.Player, allSpells spellbook.Spells)
     chooseBase := func() (setup.WizardSlot, bool) {
         choices := slices.Clone(setup.DefaultWizardSlots())
         choices = slices.DeleteFunc(choices, func (wizard setup.WizardSlot) bool {
+            if wizard.Name == "Custom" {
+                return true
+            }
+
             for _, player := range players {
                 if player.Wizard.Base == wizard.Base {
                     return true
@@ -4435,6 +4439,13 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
         if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentCloudOfShadow) {
             combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
+        } else {
+            for _, enchantments := range game.GetAllGlobalEnchantments() {
+                if enchantments.Contains(data.EnchantmentEternalNight) {
+                    combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
+                    break
+                }
+            }
         }
 
         // ebiten.SetCursorMode(ebiten.CursorModeHidden)
@@ -4785,7 +4796,7 @@ func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc, player *playerlib.
     }
 
     power := game.ComputePower(player)
-    spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, player.ResearchingSpell, player.ResearchProgress, int(player.SpellResearchPerTurn(power)), player.ComputeCastingSkill(), spellbook.Spell{}, false, nil, &newDrawer)
+    spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, player.ResearchingSpell, player.ResearchProgress, int(player.SpellResearchPerTurn(power)), player.ComputeOverworldCastingSkill(), spellbook.Spell{}, false, nil, &newDrawer)
 }
 
 func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.Player){
@@ -4803,7 +4814,7 @@ func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.
 
     if len(player.ResearchCandidateSpells.Spells) > 0 {
         power := game.ComputePower(player)
-        spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, spellbook.Spell{}, 0, int(player.SpellResearchPerTurn(power)), player.ComputeCastingSkill(), spellbook.Spell{}, true, &player.ResearchingSpell, &newDrawer)
+        spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, spellbook.Spell{}, 0, int(player.SpellResearchPerTurn(power)), player.ComputeOverworldCastingSkill(), spellbook.Spell{}, true, &player.ResearchingSpell, &newDrawer)
     }
 }
 
@@ -4879,7 +4890,7 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
 }
 
 func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerlib.Player){
-    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, player.KnownSpells.OverlandSpells(), make(map[spellbook.Spell]int), player.ComputeCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, func (spell spellbook.Spell, picked bool){
+    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, player.KnownSpells.OverlandSpells(), make(map[spellbook.Spell]int), player.ComputeOverworldCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, func (spell spellbook.Spell, picked bool){
         if picked {
             if spell.Name == "Create Artifact" || spell.Name == "Enchant Item" {
 
@@ -6539,7 +6550,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     player.CastingSkillPower += player.CastingSkillPerTurn(power)
 
     // reset casting skill for this turn
-    player.RemainingCastingSkill = player.ComputeCastingSkill()
+    player.RemainingCastingSkill = player.ComputeOverworldCastingSkill()
 
     var removeCities []*citylib.City
 

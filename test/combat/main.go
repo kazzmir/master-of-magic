@@ -314,6 +314,8 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
+    defendingArmy.Units[0].AddCurse(data.UnitCurseBlackSleep)
+
     /*
     defendingArmy.AddEnchantment(data.CombatEnchantmentCounterMagic)
     defendingArmy.CounterMagic = 50
@@ -372,13 +374,18 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Air Elemental"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fire Elemental"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Bless"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Weakness"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Darkness"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
     attackingArmy := createArmyN(attackingPlayer, units.HighElfMagician, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
+    // return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
+    combatScreen := combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
+    combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
+    return combatScreen
 }
 
 func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
@@ -640,7 +647,9 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
                        "Blur", "Counter Magic", "Mass Invisibility", "Metal Fires", "Warp Reality",
                        "Black Prayer", "Darkness", "Mana Leak", "Terror", "Wrack",
                        "Disenchant Area", "Disenchant True",
-                       "Creature Binding", "Mind Storm"}
+                       "Creature Binding", "Mind Storm",
+                       "Fire Bolt", "Ice Bolt", "Star Fires",
+                   }
 
 
     for _, spellName := range spells {
