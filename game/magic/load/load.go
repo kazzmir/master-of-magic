@@ -260,6 +260,8 @@ func loadPlayerData(reader io.Reader) error {
         return err
     }
 
+    // FIXME: read more fields
+
     log.Printf("Player %v: %v", wizardId, string(wizardName))
 
     return nil
@@ -339,7 +341,7 @@ func loadNodes(reader io.Reader) error {
             return err
         }
 
-        p, err := lbx.ReadN[int8](nodeReader)
+        plane, err := lbx.ReadN[int8](nodeReader)
         if err != nil {
             return err
         }
@@ -376,7 +378,185 @@ func loadNodes(reader io.Reader) error {
             return err
         }
 
-        log.Printf("Node: x=%v y=%v p=%v owner=%v power=%v auraX=%v auraY=%v nodeType=%v meld=%v", x, y, p, owner, power, auraX, auraY, nodeType, meld)
+        log.Printf("Node: x=%v y=%v plane=%v owner=%v power=%v auraX=%v auraY=%v nodeType=%v meld=%v", x, y, plane, owner, power, auraX, auraY, nodeType, meld)
+    }
+
+    return nil
+}
+
+func loadFortresses(reader io.Reader) error {
+    for range 6 {
+        fortressData := make([]byte, 4)
+        _, err := io.ReadFull(reader, fortressData)
+        if err != nil {
+            return err
+        }
+
+        fortressReader := bytes.NewReader(fortressData)
+        x, err := lbx.ReadN[int8](fortressReader)
+        if err != nil {
+            return err
+        }
+
+        y, err := lbx.ReadN[int8](fortressReader)
+        if err != nil {
+            return err
+        }
+
+        plane, err := lbx.ReadN[int8](fortressReader)
+        if err != nil {
+            return err
+        }
+
+        active, err := lbx.ReadN[int8](fortressReader)
+        if err != nil {
+            return err
+        }
+
+        log.Printf("Fortress: x=%v y=%v plane=%v active=%v", x, y, plane, active)
+    }
+
+    return nil
+}
+
+func loadTowers(reader io.Reader) error {
+    for range 6 {
+        towerData := make([]byte, 4)
+        _, err := io.ReadFull(reader, towerData)
+        if err != nil {
+            return err
+        }
+
+        towerReader := bytes.NewReader(towerData)
+
+        x, err := lbx.ReadN[int8](towerReader)
+        if err != nil {
+            return err
+        }
+
+        y, err := lbx.ReadN[int8](towerReader)
+        if err != nil {
+            return err
+        }
+
+        owner, err := lbx.ReadN[int8](towerReader)
+        if err != nil {
+            return err
+        }
+
+        log.Printf("Tower: x=%v y=%v owner=%v", x, y, owner)
+    }
+
+    return nil
+}
+
+func loadLairs(reader io.Reader) error {
+    for range 102 {
+        lairData := make([]byte, 24)
+        _, err := io.ReadFull(reader, lairData)
+        if err != nil {
+            return err
+        }
+
+        lairReader := bytes.NewReader(lairData)
+
+        x, err := lbx.ReadN[int8](lairReader)
+        if err != nil {
+            return err
+        }
+
+        y, err := lbx.ReadN[int8](lairReader)
+        if err != nil {
+            return err
+        }
+
+        plane, err := lbx.ReadN[int8](lairReader)
+        if err != nil {
+            return err
+        }
+
+        intact, err := lbx.ReadN[int8](lairReader)
+        if err != nil {
+            return err
+        }
+
+        kind, err := lbx.ReadN[int8](lairReader)
+        if err != nil {
+            return err
+        }
+
+        guard1_unit_type, err := lbx.ReadN[uint8](lairReader)
+        if err != nil {
+            return err
+        }
+
+        guard1_unit_count, err := lbx.ReadN[uint8](lairReader)
+        if err != nil {
+            return err
+        }
+
+        guard2_unit_type, err := lbx.ReadN[uint8](lairReader)
+        if err != nil {
+            return err
+        }
+
+        guard2_unit_count, err := lbx.ReadN[uint8](lairReader)
+        if err != nil {
+            return err
+        }
+
+        // 1 byte of padding
+        _, err = lbx.ReadByte(lairReader)
+        if err != nil {
+            return err
+        }
+
+        gold, err := lbx.ReadN[int16](lairReader)
+        if err != nil {
+            return err
+        }
+
+        mana, err := lbx.ReadN[int16](lairReader)
+        if err != nil {
+            return err
+        }
+
+        spellSpecial, err := lbx.ReadN[int8](lairReader)
+        if err != nil {
+            return err
+        }
+
+        flags, err := lbx.ReadN[uint8](lairReader)
+        if err != nil {
+            return err
+        }
+
+        itemCount, err := lbx.ReadN[int8](lairReader)
+        if err != nil {
+            return err
+        }
+
+        _, err = lbx.ReadByte(lairReader) // skip 1 byte
+        if err != nil {
+            return err
+        }
+
+        item1, err := lbx.ReadN[int16](lairReader)
+        if err != nil {
+            return err
+        }
+
+        item2, err := lbx.ReadN[int16](lairReader)
+        if err != nil {
+            return err
+        }
+
+        item3, err := lbx.ReadN[int16](lairReader)
+        if err != nil {
+            return err
+        }
+
+        log.Printf("lair x=%v y=%v plane=%v intact=%v kind=%v guard1_unit_type=%v guard1_unit_count=%v guard2_unit_type=%v guard2_unit_count=%v gold=%v mana=%v spellSpecial=%v flags=%v itemCount=%v item1=%v item2=%v item3=%v", x, y, plane, intact, kind, guard1_unit_type, guard1_unit_count, guard2_unit_type, guard2_unit_count, gold, mana, spellSpecial, flags, itemCount, item1, item2, item3)
     }
 
     return nil
@@ -495,6 +675,21 @@ func LoadSaveGame(reader io.Reader) (*SaveGame, error) {
     _ = myrrorLandMasses
 
     err = loadNodes(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    err = loadFortresses(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    err = loadTowers(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    err = loadLairs(reader)
     if err != nil {
         return nil, err
     }
