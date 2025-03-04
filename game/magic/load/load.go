@@ -4,6 +4,7 @@ import (
     "io"
     "log"
     "fmt"
+    "bytes"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -238,6 +239,32 @@ func loadHeroData(reader io.Reader) (HeroData, error) {
     return heroData, nil
 }
 
+func loadPlayerData(reader io.Reader) error {
+    var err error
+    playerData := make([]byte, 1224)
+    _, err = io.ReadFull(reader, playerData)
+    if err != nil {
+        return err
+    }
+
+    playerReader := bytes.NewReader(playerData)
+
+    wizardId, err := lbx.ReadN[uint8](playerReader)
+    if err != nil {
+        return err
+    }
+
+    wizardName := make([]byte, 20)
+    _, err = io.ReadFull(playerReader, wizardName)
+    if err != nil {
+        return err
+    }
+
+    log.Printf("Player %v: %v", wizardId, string(wizardName))
+
+    return nil
+}
+
 const (
     WorldWidth = 60
     WorldHeight = 40
@@ -264,6 +291,95 @@ func LoadTerrain(reader io.Reader) (TerrainData, error) {
     }
 
     return TerrainData{Data: data}, nil
+}
+
+func LoadLandMass(reader io.Reader) ([][]uint8, error) {
+    data := make([][]uint8, WorldWidth)
+    for i := range WorldWidth {
+        data[i] = make([]uint8, WorldHeight)
+    }
+
+    for y := range WorldHeight {
+        for x := range WorldWidth {
+            value, err := lbx.ReadN[uint8](reader)
+            if err != nil {
+                return nil, err
+            }
+            data[x][y] = value
+        }
+    }
+
+    return data, nil
+}
+
+type NodeType int8
+const (
+    NodeTypeSorcery NodeType = iota
+    NodeTypeNature
+    NodeTypeChaos
+)
+
+func loadNodes(reader io.Reader) error {
+    for range 30 {
+        nodeData := make([]byte, 48)
+        _, err := io.ReadFull(reader, nodeData)
+        if err != nil {
+            return err
+        }
+
+        nodeReader := bytes.NewReader(nodeData)
+
+        x, err := lbx.ReadN[int8](nodeReader)
+        if err != nil {
+            return err
+        }
+
+        y, err := lbx.ReadN[int8](nodeReader)
+        if err != nil {
+            return err
+        }
+
+        p, err := lbx.ReadN[int8](nodeReader)
+        if err != nil {
+            return err
+        }
+
+        owner, err := lbx.ReadN[int8](nodeReader)
+        if err != nil {
+            return err
+        }
+
+        power, err := lbx.ReadN[int8](nodeReader)
+        if err != nil {
+            return err
+        }
+
+        auraX := make([]byte, 20)
+        _, err = io.ReadFull(nodeReader, auraX)
+        if err != nil {
+            return err
+        }
+
+        auraY := make([]byte, 20)
+        _, err = io.ReadFull(nodeReader, auraY)
+        if err != nil {
+            return err
+        }
+
+        nodeType, err := lbx.ReadN[int8](nodeReader)
+        if err != nil {
+            return err
+        }
+
+        meld, err := lbx.ReadN[int8](nodeReader)
+        if err != nil {
+            return err
+        }
+
+        log.Printf("Node: x=%v y=%v p=%v owner=%v power=%v auraX=%v auraY=%v nodeType=%v meld=%v", x, y, p, owner, power, auraX, auraY, nodeType, meld)
+    }
+
+    return nil
 }
 
 // load a dos savegame file
@@ -331,7 +447,57 @@ func LoadSaveGame(reader io.Reader) (*SaveGame, error) {
     log.Printf("turn: %v", turn)
     log.Printf("unit: %v", unit)
 
-    // FIXME: LoadTerrain
+    for range 6 {
+        err := loadPlayerData(reader)
+        if err != nil {
+            return nil, err
+        }
+    }
+
+    arcanusMap, err := LoadTerrain(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    myrrorMap, err := LoadTerrain(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    _ = arcanusMap
+    _ = myrrorMap
+
+    // FIXME: what is this for?
+    uu_table_1 := make([]byte, 96)
+    _, err = io.ReadFull(reader, uu_table_1)
+    if err != nil {
+        return nil, err
+    }
+
+    // FIXME: what is this for?
+    uu_table_2 := make([]byte, 96)
+    _, err = io.ReadFull(reader, uu_table_2)
+    if err != nil {
+        return nil, err
+    }
+
+    arcanusLandMasses, err := LoadLandMass(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    myrrorLandMasses, err := LoadLandMass(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    _ = arcanusLandMasses
+    _ = myrrorLandMasses
+
+    err = loadNodes(reader)
+    if err != nil {
+        return nil, err
+    }
 
     return nil, fmt.Errorf("unfinished")
 }
