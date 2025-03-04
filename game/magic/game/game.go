@@ -177,6 +177,7 @@ type GameEventSummonArtifact struct {
 type GameEventSummonHero struct {
     Player *playerlib.Player
     Champion bool
+    Female bool
 }
 
 type GameEventShowBanish struct {
@@ -2911,7 +2912,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
 
                         if player.IsHuman() || game.CastingDetectableByHuman(player) {
                             game.Music.PushSong(music.SongVeryRareSummoningSpell)
-                            game.doSummon(yield, summon.MakeSummonHero(game.Cache, player.Wizard.Base, summonHero.Champion, !player.IsHuman()))
+                            game.doSummon(yield, summon.MakeSummonHero(game.Cache, player.Wizard.Base, summonHero.Champion, !player.IsHuman(), summonHero.Female))
                             game.Music.PopSong()
                         }
                     case *GameEventGameMenu:

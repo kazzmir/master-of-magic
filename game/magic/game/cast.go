@@ -752,6 +752,7 @@ func (game *Game) doSummonHero(player *playerlib.Player, champion bool) {
         summonEvent := GameEventSummonHero{
             Player: player,
             Champion: false,
+            Female: hero.IsFemale(),
         }
 
         select {

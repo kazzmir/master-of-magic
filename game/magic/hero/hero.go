@@ -414,6 +414,15 @@ func (hero *Hero) SetExtraAbilities() {
     // fmt.Printf("Hero %v took %v loops: %v\n", hero.ShortName(), totalLoops, hero.GetAbilities())
 }
 
+func (hero *Hero) IsFemale() bool {
+    switch hero.HeroType {
+        case HeroValana, HeroSerena, HeroShuri, HeroTheria, HeroMorgana,
+             HeroShalla, HeroElana, HeroAlorra: return true
+    }
+
+    return false
+}
+
 func (hero *Hero) IsChampion() bool {
     switch hero.HeroType {
         case HeroTorin, HeroWarrax, HeroMysticX, HeroDethStryke, HeroSirHarold,
