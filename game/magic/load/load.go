@@ -562,6 +562,176 @@ func loadLairs(reader io.Reader) error {
     return nil
 }
 
+func loadItems(reader io.Reader) error {
+    for range 138 {
+        itemData := make([]byte, 50)
+        _, err := io.ReadFull(reader, itemData)
+        if err != nil {
+            return err
+        }
+
+        itemReader := bytes.NewReader(itemData)
+        name := make([]byte, 30)
+        _, err = io.ReadFull(itemReader, name)
+        if err != nil {
+            return err
+        }
+
+        log.Printf("Item name=%v", string(name))
+    }
+
+    return nil
+}
+
+func loadCities(reader io.Reader) error {
+    for range 100 {
+        cityData := make([]byte, 114)
+        _, err := io.ReadFull(reader, cityData)
+        if err != nil {
+            return err
+        }
+
+        cityReader := bytes.NewReader(cityData)
+
+        name := make([]byte, 14)
+        _, err = io.ReadFull(cityReader, name)
+        if err != nil {
+            return err
+        }
+
+        race, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        x, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        y, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        plane, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        owner, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        size, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        population, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        farmers, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        soldBuilding, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        _, err = lbx.ReadByte(cityReader) // skip 1 byte
+
+        population10, err := lbx.ReadN[int16](cityReader)
+        if err != nil {
+            return err
+        }
+
+        playerBits, err := lbx.ReadN[uint8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        _, err = lbx.ReadByte(cityReader) // skip 1 byte
+
+        construction, err := lbx.ReadN[int16](cityReader)
+        if err != nil {
+            return err
+        }
+
+        numBuildings, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        buildings := make([]byte, 36)
+        _, err = io.ReadFull(cityReader, buildings)
+        if err != nil {
+            return err
+        }
+
+        enchantments := make([]byte, 26)
+        _, err = io.ReadFull(cityReader, enchantments)
+        if err != nil {
+            return err
+        }
+
+        productionUnits, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        production, err := lbx.ReadN[int16](cityReader)
+        if err != nil {
+            return err
+        }
+
+        gold, err := lbx.ReadN[uint8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        upkeep, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        manaUpkeep, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        research, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        food, err := lbx.ReadN[int8](cityReader)
+        if err != nil {
+            return err
+        }
+
+        roadConnections := make([]byte, 13)
+        _, err = io.ReadFull(cityReader, roadConnections)
+        if err != nil {
+            return err
+        }
+
+        _ = buildings
+        _ = enchantments
+        _ = roadConnections
+
+        log.Printf("City name=%v race=%v x=%v y=%v plane=%v owner=%v size=%v population=%v farmers=%v soldBuilding=%v population10=%v playerBits=%v construction=%v numBuildings=%v buildings=%v enchantments=%v productionUnits=%v production=%v gold=%v upkeep=%v manaUpkeep=%v research=%v food=%v roadConnections=%v", string(name), race, x, y, plane, owner, size, population, farmers, soldBuilding, population10, playerBits, construction, numBuildings, buildings, enchantments, productionUnits, production, gold, upkeep, manaUpkeep, research, food, roadConnections)
+
+    }
+
+    return nil
+}
+
 // load a dos savegame file
 func LoadSaveGame(reader io.Reader) (*SaveGame, error) {
     numHeroes := 35
@@ -690,6 +860,16 @@ func LoadSaveGame(reader io.Reader) (*SaveGame, error) {
     }
 
     err = loadLairs(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    err = loadItems(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    err = loadCities(reader)
     if err != nil {
         return nil, err
     }
