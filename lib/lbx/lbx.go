@@ -25,6 +25,12 @@ func ReadUint16(reader io.Reader) (uint16, error) {
     return value, err
 }
 
+func ReadN[T any](reader io.Reader) (T, error) {
+    var value T
+    err := binary.Read(reader, binary.LittleEndian, &value)
+    return value, err
+}
+
 func ReadUint16Big(reader io.Reader) (uint16, error) {
     var value uint16
     err := binary.Read(reader, binary.BigEndian, &value)

@@ -204,33 +204,30 @@ type SaveGame struct {
 
 func loadHeroData(reader io.Reader) (HeroData, error) {
     var heroData HeroData
+    var err error
 
-    value, err := lbx.ReadUint16(reader)
+    heroData.Level, err = lbx.ReadN[int16](reader)
     if err != nil {
         return HeroData{}, err
     }
-    heroData.Level = int16(value)
 
-    heroData.Abilities, err = lbx.ReadUint32(reader)
+    heroData.Abilities, err = lbx.ReadN[uint32](reader)
     if err != nil {
         return HeroData{}, err
     }
 
     heroData.AbilitySet = makeHeroAbilities(heroData.Abilities)
 
-    value8, err := lbx.ReadByte(reader)
+    heroData.CastingSkill, err = lbx.ReadN[int8](reader)
     if err != nil {
         return HeroData{}, err
     }
-    heroData.CastingSkill = int8(value8)
 
     for i := range 4 {
-        value, err := lbx.ReadByte(reader)
+        heroData.Spells[i], err = lbx.ReadN[uint8](reader)
         if err != nil {
             return HeroData{}, err
         }
-
-        heroData.Spells[i] = uint8(value)
     }
 
     _, err = lbx.ReadByte(reader) // skip 1 byte
@@ -285,14 +282,54 @@ func LoadSaveGame(reader io.Reader) (*SaveGame, error) {
         }
     }
 
-    var numPlayers int16
-    value, err := lbx.ReadUint16(reader)
+    numPlayers, err := lbx.ReadN[int16](reader)
     if err != nil {
         return nil, err
     }
 
-    numPlayers = int16(value)
+    landSize, err := lbx.ReadN[int16](reader)
+    if err != nil {
+        return nil, err
+    }
+
+    magic, err := lbx.ReadN[int16](reader)
+    if err != nil {
+        return nil, err
+    }
+
+    difficulty, err := lbx.ReadN[int16](reader)
+    if err != nil {
+        return nil, err
+    }
+
+    cities, err := lbx.ReadN[int16](reader)
+    if err != nil {
+        return nil, err
+    }
+
+    units, err := lbx.ReadN[int16](reader)
+    if err != nil {
+        return nil, err
+    }
+
+    turn, err := lbx.ReadN[int16](reader)
+    if err != nil {
+        return nil, err
+    }
+
+    unit, err := lbx.ReadN[int16](reader)
+    if err != nil {
+        return nil, err
+    }
+
     log.Printf("numPlayers: %v", numPlayers)
+    log.Printf("landSize: %v", landSize)
+    log.Printf("magic: %v", magic)
+    log.Printf("difficulty: %v", difficulty)
+    log.Printf("cities: %v", cities)
+    log.Printf("units: %v", units)
+    log.Printf("turn: %v", turn)
+    log.Printf("unit: %v", unit)
 
     // FIXME: LoadTerrain
 
