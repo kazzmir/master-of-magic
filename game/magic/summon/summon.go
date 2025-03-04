@@ -5,7 +5,6 @@ import (
     "log"
     "image"
     "image/color"
-    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -237,7 +236,7 @@ func MakeSummonArtifact(cache *lbx.LbxCache, wizard data.WizardBase, short bool)
     return makeSummon(cache, "Artifact Summoned", wizard, monsterPicture, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, short)
 }
 
-func MakeSummonHero(cache *lbx.LbxCache, wizard data.WizardBase, champion bool, short bool) *Summon {
+func MakeSummonHero(cache *lbx.LbxCache, wizard data.WizardBase, champion bool, short bool, female bool) *Summon {
     imageCache := util.MakeImageCache(cache)
 
     // female 44
@@ -245,10 +244,8 @@ func MakeSummonHero(cache *lbx.LbxCache, wizard data.WizardBase, champion bool, 
 
     heroIndex := 45
 
-    if rand.IntN(2) == 0 {
+    if female {
         heroIndex = 44
-    } else {
-        heroIndex = 45
     }
 
     heroPicture, err := imageCache.GetImage("monster.lbx", heroIndex, 0)

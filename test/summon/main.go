@@ -29,10 +29,10 @@ func NewEngine(scenario int) (*Engine, error) {
         case 1: summonUnit = summon.MakeSummonUnit(cache, units.MagicSpirit, data.WizardMerlin, false)
         case 2: summonUnit = summon.MakeSummonUnit(cache, units.SkyDrake, data.WizardJafar, false)
         case 3: summonUnit = summon.MakeSummonArtifact(cache, data.WizardFreya, false)
-        case 4: summonUnit = summon.MakeSummonHero(cache, data.WizardLoPan, false, false)
+        case 4: summonUnit = summon.MakeSummonHero(cache, data.WizardLoPan, false, false, false)
         case 5: summonUnit = summon.MakeSummonUnit(cache, units.SkyDrake, data.WizardJafar, true)
         case 6: summonUnit = summon.MakeSummonArtifact(cache, data.WizardFreya, true)
-        case 7: summonUnit = summon.MakeSummonHero(cache, data.WizardLoPan, false, true)
+        case 7: summonUnit = summon.MakeSummonHero(cache, data.WizardLoPan, false, true, true)
         default:
             summonUnit = summon.MakeSummonUnit(cache, units.MagicSpirit, data.WizardMerlin, false)
     }
