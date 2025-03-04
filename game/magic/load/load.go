@@ -732,9 +732,22 @@ func loadCities(reader io.Reader) error {
     return nil
 }
 
+type ReadMonitor struct {
+    reader io.Reader
+    BytesRead int
+}
+
+func (read *ReadMonitor) Read(p []byte) (n int, err error) {
+    n, err = read.reader.Read(p)
+    read.BytesRead += n
+    return n, err
+}
+
 // load a dos savegame file
-func LoadSaveGame(reader io.Reader) (*SaveGame, error) {
+func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
     numHeroes := 35
+
+    reader := &ReadMonitor{reader: reader1}
 
     for player := range 6 {
         for i := range numHeroes {
@@ -818,18 +831,20 @@ func LoadSaveGame(reader io.Reader) (*SaveGame, error) {
     _ = myrrorMap
 
     // FIXME: what is this for?
-    uu_table_1 := make([]byte, 96)
+    uu_table_1 := make([]byte, 96 * 2)
     _, err = io.ReadFull(reader, uu_table_1)
     if err != nil {
         return nil, err
     }
 
     // FIXME: what is this for?
-    uu_table_2 := make([]byte, 96)
+    uu_table_2 := make([]byte, 96 * 2)
     _, err = io.ReadFull(reader, uu_table_2)
     if err != nil {
         return nil, err
     }
+
+    log.Printf("Offset: 0x%x", reader.BytesRead)
 
     arcanusLandMasses, err := LoadLandMass(reader)
     if err != nil {
@@ -844,25 +859,35 @@ func LoadSaveGame(reader io.Reader) (*SaveGame, error) {
     _ = arcanusLandMasses
     _ = myrrorLandMasses
 
+    log.Printf("Offset: 0x%x", reader.BytesRead)
+
     err = loadNodes(reader)
     if err != nil {
         return nil, err
     }
+
+    log.Printf("Offset: 0x%x", reader.BytesRead)
 
     err = loadFortresses(reader)
     if err != nil {
         return nil, err
     }
 
+    log.Printf("Offset: 0x%x", reader.BytesRead)
+
     err = loadTowers(reader)
     if err != nil {
         return nil, err
     }
 
+    log.Printf("Offset: 0x%x", reader.BytesRead)
+
     err = loadLairs(reader)
     if err != nil {
         return nil, err
     }
+
+    log.Printf("Offset: 0x%x", reader.BytesRead)
 
     err = loadItems(reader)
     if err != nil {
