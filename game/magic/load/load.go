@@ -1075,6 +1075,35 @@ func loadEvents(reader io.Reader) error {
     return nil
 }
 
+// hero names and experience for the human player's heroes
+func loadHeroNames(reader io.Reader) error {
+    for i := range 35 {
+        name := make([]byte, 14)
+        _, err := io.ReadFull(reader, name)
+        if err != nil {
+            return err
+        }
+
+        experience, err := lbx.ReadN[int16](reader)
+
+        log.Printf("Hero %v: '%v' experience=%v", i, string(name), experience)
+    }
+
+    return nil
+}
+
+func loadPremadeItems(reader io.Reader) error {
+    data := make([]byte, 250)
+    _, err := io.ReadFull(reader, data)
+    if err != nil {
+        return err
+    }
+
+    // TODO: parse data
+
+    return nil
+}
+
 type ReadMonitor struct {
     reader io.Reader
     BytesRead int
@@ -1290,6 +1319,42 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
     log.Printf("Offset: 0x%x", reader.BytesRead)
 
     err = loadEvents(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    arcanusMapSquareFlags, err := loadMapData[uint8](reader)
+    if err != nil {
+        return nil, err
+    }
+
+    myrrorMapSquareFlags, err := loadMapData[uint8](reader)
+    if err != nil {
+        return nil, err
+    }
+
+    _ = arcanusMapSquareFlags
+    _ = myrrorMapSquareFlags
+
+    log.Printf("Offset: 0x%x", reader.BytesRead)
+
+    grandVizier, err := lbx.ReadN[uint16](reader)
+    if err != nil {
+        return nil, err
+    }
+
+    log.Printf("Grand vizier: %v", grandVizier)
+
+    log.Printf("Offset: 0x%x", reader.BytesRead)
+
+    err = loadPremadeItems(reader)
+    if err != nil {
+        return nil, err
+    }
+
+    log.Printf("Offset: 0x%x", reader.BytesRead)
+
+    err = loadHeroNames(reader)
     if err != nil {
         return nil, err
     }
