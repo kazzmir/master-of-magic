@@ -823,7 +823,29 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    damage := func (unit *ArmyUnit){
+        modifier := 2
+        if unit.Unit.IsUndead() {
+            modifier = 7
+        }
+
+        resistance := unit.GetResistanceFor(data.LifeMagic) - modifier
+
+        damage := 0
+        for range unit.Figures() {
+            if rand.N(10) + 1 > resistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        // FIXME: apply irreversable damage
+        unit.TakeDamage(damage)
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
 }
 
 func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
@@ -1181,8 +1203,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 combat.CreateHolyWordProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                // FIXME: can only target fantastic units, chaos channeled and undead
-                return true
+                return target.GetRace() == data.RaceFantastic
             })
         case "Recall Hero":
             combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
