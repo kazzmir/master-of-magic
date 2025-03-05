@@ -717,11 +717,32 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, projectile)
 }
 
-func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit) {
+// player will never be nil, but unitCaster might be nil if the player is casting the spell
+// if a hero/unit is casting the spell then unitCaster will be non-nil
+func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player *playerlib.Player, unitCaster *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 6)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    damage := func (unit *ArmyUnit) {
+        resistance := unit.GetResistanceFor(data.LifeMagic) - reduceResistance
+        damage := rand.N(10) + 1 - resistance
+        if damage > 0 {
+            unit.TakeDamage(damage)
+            if unitCaster != nil {
+                unitCaster.Heal(damage)
+            } else {
+                // add casting skill to player
+                army := combat.Model.GetArmyForPlayer(player)
+                army.ManaPool += damage * 3
+            }
+
+            if unit.Unit.GetHealth() <= 0 {
+                combat.Model.RemoveUnit(unit)
+            }
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
 }
 
 func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
@@ -1063,7 +1084,8 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
     }
 }
 
-func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell, castedCallback func()){
+// playerCasted is true if the player cast the spell, or false if a unit cast the spell
+func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func()){
     targetAny := func (target *ArmyUnit) bool { return true }
     targetFantastic := func (target *ArmyUnit) bool {
         return target != nil && target.Unit.GetRace() == data.RaceFantastic
@@ -1132,7 +1154,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             }, targetAny)
         case "Life Drain":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateLifeDrainProjectile(target)
+                combat.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5, player, unitCaster)
                 castedCallback()
             }, targetAny)
         case "Dispel Evil":
@@ -1653,7 +1675,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 if picked {
                     army.Casted = true
                     // player mana and skill should go down accordingly
-                    combat.InvokeSpell(player, spell, func(){
+                    combat.InvokeSpell(player, nil, spell, func(){
                         army.ManaPool -= spell.Cost(false)
                         player.Mana -= int(float64(spell.Cost(false)) * army.Range.ToFloat())
                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
@@ -1683,7 +1705,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             // spell casting range for a unit is always 1
 
                             doCast := func(spell spellbook.Spell){
-                                combat.InvokeSpell(player, spell, func(){
+                                combat.InvokeSpell(player, caster, spell, func(){
                                     charge, hasCharge := caster.SpellCharges[spell]
                                     if hasCharge && charge > 0 {
                                         caster.SpellCharges[spell] -= 1
