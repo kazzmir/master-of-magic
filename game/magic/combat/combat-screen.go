@@ -887,7 +887,14 @@ func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 4)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    effect := func (unit *ArmyUnit){
+        if unit.GetResistanceFor(data.ChaosMagic) <= 9 {
+            // FIXME: does irreversable damage
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
 }
 
 func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) {
