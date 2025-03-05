@@ -337,7 +337,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.AddCity(fortressCity)
 
     attackingPlayer.CastingSkillPower = 10000
-    attackingPlayer.Mana = 100
+    attackingPlayer.Mana = 1000
 
     // attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
 
@@ -376,6 +376,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Bless"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Weakness"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Darkness"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Flame Strike"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
@@ -448,6 +449,7 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Terror"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wrack"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Call Lightning"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Flame Strike"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createHeroArmy(attackingPlayer, cache)
