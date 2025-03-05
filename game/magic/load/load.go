@@ -2,7 +2,7 @@ package load
 
 import (
     "io"
-    // "log"
+    "log"
     "fmt"
     "bytes"
     "errors"
@@ -2274,9 +2274,9 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
     }
 
     _, err = lbx.ReadByte(reader)
-    if errors.Is(err, io.EOF) {
-        return &saveGame, nil
+    if !errors.Is(err, io.EOF) {
+        log.Printf("leftover data")
     }
 
-    return nil, fmt.Errorf("leftover data")
+    return &saveGame, nil
 }

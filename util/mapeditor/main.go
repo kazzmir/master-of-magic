@@ -29,7 +29,8 @@ type Editor struct {
     Data *terrain.TerrainData
     Font *text.GoTextFaceSource
 
-    Map *terrain.Map
+    ArcanusMap *terrain.Map
+    MyrrorMap *terrain.Map
     Plane data.Plane
 
     TileGpuCache map[int]*ebiten.Image
@@ -54,10 +55,26 @@ func chooseRandomElement[T any](values []T) T {
     return values[index]
 }
 
+func (editor *Editor) getMap() *terrain.Map {
+    if editor.Plane == data.PlaneArcanus {
+        return editor.ArcanusMap
+    } else {
+        return editor.MyrrorMap
+    }
+}
+
+func (editor *Editor) setMap(mapObject *terrain.Map)  {
+    if editor.Plane == data.PlaneArcanus {
+        editor.ArcanusMap = mapObject
+    } else {
+        editor.MyrrorMap = mapObject
+    }
+}
+
 func (editor *Editor) clear() {
-    for column := range(editor.Map.Columns()) {
-        for row := range(editor.Map.Rows()) {
-            editor.Map.Terrain[column][row] = terrain.TileOcean.Index(editor.Plane)
+    for column := range(editor.getMap().Columns()) {
+        for row := range(editor.getMap().Rows()) {
+            editor.getMap().Terrain[column][row] = terrain.TileOcean.Index(editor.Plane)
         }
     }
 }
@@ -68,7 +85,6 @@ func (editor *Editor) togglePlane() {
     } else {
         editor.Plane = data.PlaneArcanus
     }
-    editor.clear()
 }
 
 func (editor *Editor) Update() error {
@@ -87,7 +103,7 @@ func (editor *Editor) Update() error {
                     editor.CameraY -= 1.0 / editor.Scale
                 }
             case ebiten.KeyDown:
-                if int(editor.CameraY) < editor.Map.Rows() && canScroll {
+                if int(editor.CameraY) < editor.getMap().Rows() && canScroll {
                     editor.CameraY += 1.0 / editor.Scale
                 }
             case ebiten.KeyLeft:
@@ -95,7 +111,7 @@ func (editor *Editor) Update() error {
                     editor.CameraX -= 1.0 / editor.Scale
                 }
             case ebiten.KeyRight:
-                if int(editor.CameraX) < editor.Map.Columns() && canScroll {
+                if int(editor.CameraX) < editor.getMap().Columns() && canScroll {
                     editor.CameraX += 1.0 / editor.Scale
                 }
             case ebiten.KeyMinus:
@@ -144,12 +160,12 @@ func (editor *Editor) Update() error {
                 editor.clear()
             case ebiten.KeyG:
                 start := time.Now()
-                editor.Map = terrain.GenerateLandCellularAutomata(editor.Map.Columns(), editor.Map.Rows(), editor.Data, editor.Plane)
+                editor.setMap(terrain.GenerateLandCellularAutomata(editor.getMap().Columns(), editor.getMap().Rows(), editor.Data, editor.Plane))
                 end := time.Now()
                 log.Printf("Generate land took %v", end.Sub(start))
             case ebiten.KeyS:
                 start := time.Now()
-                editor.Map.ResolveTiles(editor.Data, editor.Plane)
+                editor.getMap().ResolveTiles(editor.Data, editor.Plane)
                 end := time.Now()
                 log.Printf("Resolve tiles took %v", end.Sub(start))
             case ebiten.KeyTab:
@@ -178,12 +194,12 @@ func (editor *Editor) Update() error {
     editor.TileY = y
 
     if leftClick {
-        if x >= 0 && x < editor.Map.Columns() && y >= 0 && y < editor.Map.Rows() {
-            editor.Map.SetTerrainAt(x, y, editor.Terrain, editor.Data, editor.Plane)
+        if x >= 0 && x < editor.getMap().Columns() && y >= 0 && y < editor.getMap().Rows() {
+            editor.getMap().SetTerrainAt(x, y, editor.Terrain, editor.Data, editor.Plane)
         }
     } else if rightClick {
-        if x >= 0 && x < editor.Map.Columns() && y >= 0 && y < editor.Map.Rows() {
-            editor.Map.SetTerrainAt(x, y, terrain.Ocean, editor.Data, editor.Plane)
+        if x >= 0 && x < editor.getMap().Columns() && y >= 0 && y < editor.getMap().Rows() {
+            editor.getMap().SetTerrainAt(x, y, terrain.Ocean, editor.Data, editor.Plane)
         }
     }
 
@@ -193,7 +209,7 @@ func (editor *Editor) Update() error {
 }
 
 func (editor *Editor) GetTileImage(x int, y int) *ebiten.Image {
-    index := editor.Map.Terrain[x][y]
+    index := editor.getMap().Terrain[x][y]
 
     use, ok := editor.TileGpuCache[index]
     if ok {
@@ -217,8 +233,8 @@ func (editor *Editor) Draw(screen *ebiten.Image){
 
     // log.Printf("Draw start")
 
-    for y := 0; y < editor.Map.Rows(); y++ {
-        for x := 0; x < editor.Map.Columns(); x++ {
+    for y := 0; y < editor.getMap().Rows(); y++ {
+        for x := 0; x < editor.getMap().Columns(); x++ {
             // xPos := startX + float64(x * xSize) //  * editor.Scale
             // yPos := startY + float64(y * ySize) // * editor.Scale
             xPos := float64(x * xSize)
@@ -227,7 +243,7 @@ func (editor *Editor) Draw(screen *ebiten.Image){
             xUse := x + int(editor.CameraX)
             yUse := y + int(editor.CameraY)
 
-            if xUse >= 0 && xUse < editor.Map.Columns() && yUse >= 0 && yUse < editor.Map.Rows() {
+            if xUse >= 0 && xUse < editor.getMap().Columns() && yUse >= 0 && yUse < editor.getMap().Rows() {
                 tileImage := editor.GetTileImage(xUse, yUse)
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(xPos), float64(yPos))
@@ -249,21 +265,21 @@ func (editor *Editor) Draw(screen *ebiten.Image){
         op := &text.DrawOptions{}
         op.GeoM.Translate(1, 1)
         op.ColorScale.ScaleWithColor(color.White)
-        text.Draw(editor.InfoImage, fmt.Sprintf("Map Dimensions: %vx%v", editor.Map.Columns(), editor.Map.Rows()), face, op)
+        text.Draw(editor.InfoImage, fmt.Sprintf("Map Dimensions: %vx%v", editor.getMap().Columns(), editor.getMap().Rows()), face, op)
         op.GeoM.Translate(0, face.Size + 2)
         text.Draw(editor.InfoImage, fmt.Sprintf("Selection: %v", editor.Terrain), face, op)
         op.GeoM.Translate(0, face.Size + 2)
         value := -1
         var type_ terrain.TerrainType = terrain.Unknown
 
-        if editor.TileX >= 0 && editor.TileX < editor.Map.Columns() && editor.TileY >= 0 && editor.TileY < editor.Map.Rows() {
-            value = editor.Map.Terrain[editor.TileX][editor.TileY]
+        if editor.TileX >= 0 && editor.TileX < editor.getMap().Columns() && editor.TileY >= 0 && editor.TileY < editor.getMap().Rows() {
+            value = editor.getMap().Terrain[editor.TileX][editor.TileY]
             type_ = editor.Data.Tiles[value].Tile.TerrainType()
         }
 
         text.Draw(editor.InfoImage, fmt.Sprintf("Tile: %v,%v: 0x%x %v", editor.TileX, editor.TileY, value, type_), face, op)
 
-        if editor.TileX >= 0 && editor.TileX < editor.Map.Columns() && editor.TileY >= 0 && editor.TileY < editor.Map.Rows() {
+        if editor.TileX >= 0 && editor.TileX < editor.getMap().Columns() && editor.TileY >= 0 && editor.TileY < editor.getMap().Rows() {
             tileImage := editor.GetTileImage(editor.TileX, editor.TileY)
             var options ebiten.DrawImageOptions
             options.GeoM.Scale(1.5, 1.5)
@@ -309,7 +325,8 @@ func MakeEditor() *Editor {
     return &Editor{
         Data: data,
         Font: font,
-        Map: terrain.MakeMap(100, 200),
+        ArcanusMap: terrain.MakeMap(100, 200),
+        MyrrorMap: terrain.MakeMap(100, 200),
         TileGpuCache: make(map[int]*ebiten.Image),
         TileX: -1,
         TileY: -1,
@@ -322,7 +339,7 @@ func MakeEditor() *Editor {
     }
 }
 
-func (editor *Editor) loadFromSavegame(filename string, myrror bool) {
+func (editor *Editor) loadFromSavegame(filename string) {
     reader, err := os.Open(filename)
     if err != nil {
         log.Printf("Unable to open %v: %v", filename, err)
@@ -337,18 +354,26 @@ func (editor *Editor) loadFromSavegame(filename string, myrror bool) {
     }
 
     terrainData := saveGame.ArcanusMap
-    terrainOffset := 0
-    if myrror {
-        terrainData = saveGame.MyrrorMap
-        terrainOffset = terrain.MyrrorStart
-    }
 
-    editor.Map = terrain.MakeMap(load.WorldHeight, load.WorldWidth)
+    editor.setMap(terrain.MakeMap(load.WorldHeight, load.WorldWidth))
     for y := range(load.WorldHeight) {
         for x := range(load.WorldWidth) {
-            editor.Map.Terrain[x][y] = int(terrainData.Data[x][y]) + terrainOffset
+            editor.getMap().Terrain[x][y] = int(terrainData.Data[x][y])
         }
     }
+
+    editor.Plane = data.PlaneMyrror
+
+    terrainData = saveGame.MyrrorMap
+
+    editor.setMap(terrain.MakeMap(load.WorldHeight, load.WorldWidth))
+    for y := range(load.WorldHeight) {
+        for x := range(load.WorldWidth) {
+            editor.getMap().Terrain[x][y] = int(terrainData.Data[x][y]) + terrain.MyrrorStart
+        }
+    }
+
+    editor.Plane = data.PlaneArcanus
 }
 
 func main() {
@@ -361,21 +386,19 @@ func main() {
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
     var saveGame string
-    var myrror bool
 
     flag.StringVar(&saveGame, "file", "", "Path to a savegame (optional)")
-    flag.BoolVar(&myrror, "myrror", false, "Load myrror instead of arcanus (optional)")
     flag.Usage = func() {
         fmt.Fprintf(os.Stderr, "Usage: %v [options] filename\n\n", os.Args[0])
         fmt.Fprintln(os.Stderr, "Options:")
         flag.PrintDefaults()
         fmt.Fprintln(os.Stderr, "\nExample:")
-        fmt.Fprintln(os.Stderr, "  ", os.Args[0], "--file SAVE1.GAM --myrror")
+        fmt.Fprintln(os.Stderr, "  ", os.Args[0], "--file SAVE1.GAM")
     }
     flag.Parse()
 
     if saveGame != "" {
-        editor.loadFromSavegame(saveGame, myrror)
+        editor.loadFromSavegame(saveGame)
     }
 
     err := ebiten.RunGame(editor)
