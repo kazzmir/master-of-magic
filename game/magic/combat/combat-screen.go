@@ -919,11 +919,27 @@ func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, effect))
 }
 
-func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResistance int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 19)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
+    effect := func (unit *ArmyUnit){
+        resistance := unit.GetResistanceFor(data.SorceryMagic) - reduceResistance - 3
+        damage := 0
+
+        for range unit.Figures() {
+            if rand.N(10) + 1 > resistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        unit.TakeDamage(damage)
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, effect))
 }
 
 func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) {
@@ -1253,7 +1269,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
             }, targetAny)
         case "Banish":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateBanishProjectile(target)
+                combat.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15)
                 castedCallback()
             }, targetFantastic)
         case "Dispel Magic True":
