@@ -8,12 +8,12 @@ import (
     "flag"
     "image/color"
     "math/rand"
-    "encoding/binary"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/util/common"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/load"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -323,14 +323,6 @@ func MakeEditor() *Editor {
 }
 
 func (editor *Editor) loadFromSavegame(filename string, myrror bool) {
-    fileOffset := int64(9880)
-    terrainOffset := 0
-    if myrror {
-        editor.Plane = data.PlaneMyrror
-        fileOffset += 4800
-        terrainOffset = terrain.MyrrorStart
-    }
-
     reader, err := os.Open(filename)
     if err != nil {
         log.Printf("Unable to open %v: %v", filename, err)
@@ -338,22 +330,23 @@ func (editor *Editor) loadFromSavegame(filename string, myrror bool) {
     }
     defer reader.Close()
 
-    _, err = reader.Seek(fileOffset, 0)
+    saveGame, err := load.LoadSaveGame(reader)
     if err != nil {
-        fmt.Printf("Error seeking file: %v", err)
+        fmt.Printf("Error reading file: %v", err)
         os.Exit(0)
     }
 
-    editor.Map = terrain.MakeMap(40, 60)
-    for y := range(40) {
-        for x := range(60) {
-            var value uint16
-            err = binary.Read(reader, binary.LittleEndian, &value)
-            if err != nil {
-                fmt.Printf("Error reading file: %v", err)
-                os.Exit(0)
-            }
-            editor.Map.Terrain[x][y] = int(value) + terrainOffset
+    terrainData := saveGame.ArcanusMap
+    terrainOffset := 0
+    if myrror {
+        terrainData = saveGame.MyrrorMap
+        terrainOffset = terrain.MyrrorStart
+    }
+
+    editor.Map = terrain.MakeMap(load.WorldHeight, load.WorldWidth)
+    for y := range(load.WorldHeight) {
+        for x := range(load.WorldWidth) {
+            editor.Map.Terrain[x][y] = int(terrainData.Data[x][y]) + terrainOffset
         }
     }
 }

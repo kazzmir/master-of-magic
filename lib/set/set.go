@@ -1,5 +1,10 @@
 package set
 
+import (
+    "fmt"
+    "strings"
+)
+
 // The set type is a generic set implementation that uses a map as the underlying data structure.
 // Note that iterating over its Values() is non-deterministic. The order of the elements may be
 // different each time.
@@ -68,4 +73,13 @@ func (set *Set[T]) Values() []T {
         out = append(out, k)
     }
     return out
+}
+
+func (set *Set[T]) String() string {
+    parts := make([]string, 0, len(set.data))
+    for _, v := range set.Values() {
+        parts = append(parts, fmt.Sprintf("%v", v))
+    }
+
+    return "{" + strings.Join(parts, ", ") + "}"
 }
