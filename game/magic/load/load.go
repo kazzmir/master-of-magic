@@ -236,6 +236,7 @@ type SaveGame struct {
     Nodes []NodeData
     Fortresses []FortressData
     Towers []TowerData
+    Lairs []LairData
 }
 
 func loadHeroData(reader io.Reader) (HeroData, error) {
@@ -1316,116 +1317,140 @@ func loadTowers(reader io.Reader) ([]TowerData, error) {
     return out, nil
 }
 
-func loadLairs(reader io.Reader) error {
+type LairData struct {
+    X int8
+    Y int8
+    Plane int8
+    Intact int8
+    Kind int8
+    Guard1_unit_type uint8
+    Guard1_unit_count uint8
+    Guard2_unit_type uint8
+    Guard2_unit_count uint8
+    Gold int16
+    Mana int16
+    SpellSpecial int8
+    Flags uint8
+    ItemCount int8
+    Item1 int16
+    Item2 int16
+    Item3 int16
+}
+
+func loadLairs(reader io.Reader) ([]LairData, error) {
+    var out []LairData
     for range 102 {
         lairData := make([]byte, 24)
         _, err := io.ReadFull(reader, lairData)
         if err != nil {
-            return err
+            return nil, err
         }
 
         lairReader := bytes.NewReader(lairData)
 
-        x, err := lbx.ReadN[int8](lairReader)
+        var data LairData
+
+        data.X, err = lbx.ReadN[int8](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        y, err := lbx.ReadN[int8](lairReader)
+        data.Y, err = lbx.ReadN[int8](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        plane, err := lbx.ReadN[int8](lairReader)
+        data.Plane, err = lbx.ReadN[int8](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        intact, err := lbx.ReadN[int8](lairReader)
+        data.Intact, err = lbx.ReadN[int8](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        kind, err := lbx.ReadN[int8](lairReader)
+        data.Kind, err = lbx.ReadN[int8](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        guard1_unit_type, err := lbx.ReadN[uint8](lairReader)
+        data.Guard1_unit_type, err = lbx.ReadN[uint8](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        guard1_unit_count, err := lbx.ReadN[uint8](lairReader)
+        data.Guard1_unit_count, err = lbx.ReadN[uint8](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        guard2_unit_type, err := lbx.ReadN[uint8](lairReader)
+        data.Guard2_unit_type, err = lbx.ReadN[uint8](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        guard2_unit_count, err := lbx.ReadN[uint8](lairReader)
+        data.Guard2_unit_count, err = lbx.ReadN[uint8](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
         // 1 byte of padding
         _, err = lbx.ReadByte(lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        gold, err := lbx.ReadN[int16](lairReader)
+        data.Gold, err = lbx.ReadN[int16](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        mana, err := lbx.ReadN[int16](lairReader)
+        data.Mana, err = lbx.ReadN[int16](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        spellSpecial, err := lbx.ReadN[int8](lairReader)
+        data.SpellSpecial, err = lbx.ReadN[int8](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        flags, err := lbx.ReadN[uint8](lairReader)
+        data.Flags, err = lbx.ReadN[uint8](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        itemCount, err := lbx.ReadN[int8](lairReader)
+        data.ItemCount, err = lbx.ReadN[int8](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
         _, err = lbx.ReadByte(lairReader) // skip 1 byte
         if err != nil {
-            return err
+            return nil, err
         }
 
-        item1, err := lbx.ReadN[int16](lairReader)
+        data.Item1, err = lbx.ReadN[int16](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        item2, err := lbx.ReadN[int16](lairReader)
+        data.Item2, err = lbx.ReadN[int16](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        item3, err := lbx.ReadN[int16](lairReader)
+        data.Item3, err = lbx.ReadN[int16](lairReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        log.Printf("lair x=%v y=%v plane=%v intact=%v kind=%v guard1_unit_type=%v guard1_unit_count=%v guard2_unit_type=%v guard2_unit_count=%v gold=%v mana=%v spellSpecial=%v flags=%v itemCount=%v item1=%v item2=%v item3=%v", x, y, plane, intact, kind, guard1_unit_type, guard1_unit_count, guard2_unit_type, guard2_unit_count, gold, mana, spellSpecial, flags, itemCount, item1, item2, item3)
+        // log.Printf("lair x=%v y=%v plane=%v intact=%v kind=%v guard1_unit_type=%v guard1_unit_count=%v guard2_unit_type=%v guard2_unit_count=%v gold=%v mana=%v spellSpecial=%v flags=%v itemCount=%v item1=%v item2=%v item3=%v", x, y, plane, intact, kind, guard1_unit_type, guard1_unit_count, guard2_unit_type, guard2_unit_count, gold, mana, spellSpecial, flags, itemCount, item1, item2, item3)
+        out = append(out, data)
     }
 
-    return nil
+    return out, nil
 }
 
 func loadItems(reader io.Reader) error {
@@ -2127,7 +2152,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
 
     log.Printf("Offset: 0x%x", reader.BytesRead)
 
-    err = loadLairs(reader)
+    saveGame.Lairs, err = loadLairs(reader)
     if err != nil {
         return nil, err
     }
