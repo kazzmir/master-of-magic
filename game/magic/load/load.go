@@ -234,6 +234,7 @@ type SaveGame struct {
     MyrrorLandMasses [][]uint8
 
     Nodes []NodeData
+    Fortresses []FortressData
 }
 
 func loadHeroData(reader io.Reader) (HeroData, error) {
@@ -1226,39 +1227,51 @@ func loadNodes(reader io.Reader) ([]NodeData, error) {
     return out, nil
 }
 
-func loadFortresses(reader io.Reader) error {
+type FortressData struct {
+    X int8
+    Y int8
+    Plane int8
+    Active int8
+}
+
+func loadFortresses(reader io.Reader) ([]FortressData, error) {
+    var out []FortressData
+
     for range NumPlayers {
         fortressData := make([]byte, 4)
         _, err := io.ReadFull(reader, fortressData)
         if err != nil {
-            return err
+            return nil, err
         }
 
         fortressReader := bytes.NewReader(fortressData)
-        x, err := lbx.ReadN[int8](fortressReader)
+        var data FortressData
+
+        data.X, err = lbx.ReadN[int8](fortressReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        y, err := lbx.ReadN[int8](fortressReader)
+        data.Y, err = lbx.ReadN[int8](fortressReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        plane, err := lbx.ReadN[int8](fortressReader)
+        data.Plane, err = lbx.ReadN[int8](fortressReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        active, err := lbx.ReadN[int8](fortressReader)
+        data.Active, err = lbx.ReadN[int8](fortressReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        log.Printf("Fortress: x=%v y=%v plane=%v active=%v", x, y, plane, active)
+        // log.Printf("Fortress: x=%v y=%v plane=%v active=%v", x, y, plane, active)
+        out = append(out, data)
     }
 
-    return nil
+    return out, nil
 }
 
 func loadTowers(reader io.Reader) error {
@@ -2089,7 +2102,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
 
     log.Printf("Offset: 0x%x", reader.BytesRead)
 
-    err = loadFortresses(reader)
+    saveGame.Fortresses, err = loadFortresses(reader)
     if err != nil {
         return nil, err
     }
