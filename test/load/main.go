@@ -26,5 +26,6 @@ func main(){
         return
     }
 
-    fmt.Printf("Loaded saved game: %+v\n", data)
+    fmt.Printf("Loaded saved game\n")
+    fmt.Printf("Num players: %d\n", data.NumPlayers)
 }

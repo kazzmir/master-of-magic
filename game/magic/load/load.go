@@ -2,7 +2,7 @@ package load
 
 import (
     "io"
-    "log"
+    // "log"
     "fmt"
     "bytes"
     "errors"
@@ -246,6 +246,18 @@ type SaveGame struct {
 
     ArcanusExplored [][]int8
     MyrrorExplored [][]int8
+
+    ArcanusMovementCost MovementCostData
+    MyrrorMovementCost MovementCostData
+
+    Events EventData
+
+    ArcanusMapSquareFlags [][]uint8
+    MyrrorMapSquareFlags [][]uint8
+
+    PremadeItems []byte
+
+    HeroNames []HeroNameData
 }
 
 func loadHeroData(reader io.Reader) (HeroData, error) {
@@ -613,7 +625,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    log.Printf("Player offset capitalRace: 0x%x", playerReader.BytesRead)
+    // log.Printf("Player offset capitalRace: 0x%x", playerReader.BytesRead)
 
     out.CapitalRace, err = lbx.ReadN[uint8](playerReader)
     if err != nil {
@@ -711,7 +723,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    log.Printf("Player offset averageUnitCost: 0x%x", playerReader.BytesRead)
+    // log.Printf("Player offset averageUnitCost: 0x%x", playerReader.BytesRead)
 
     out.AverageUnitCost, err = lbx.ReadN[uint16](playerReader)
     if err != nil {
@@ -763,7 +775,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    log.Printf("Player offset retorts: 0x%x", playerReader.BytesRead)
+    // log.Printf("Player offset retorts: 0x%x", playerReader.BytesRead)
 
     out.RetortAlchemy, err = lbx.ReadN[int8](playerReader)
     if err != nil {
@@ -855,7 +867,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    log.Printf("Player offset heroes: 0x%x", playerReader.BytesRead)
+    // log.Printf("Player offset heroes: 0x%x", playerReader.BytesRead)
 
     heroData := make([]PlayerHeroData, NumHeroes)
 
@@ -873,7 +885,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    log.Printf("Player offset diplomacy: 0x%x", playerReader.BytesRead)
+    // log.Printf("Player offset diplomacy: 0x%x", playerReader.BytesRead)
 
     out.Diplomacy, err = loadDiplomacy(playerReader)
     if err != nil {
@@ -940,7 +952,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    log.Printf("Player offset magic strategy: 0x%x", playerReader.BytesRead)
+    // log.Printf("Player offset magic strategy: 0x%x", playerReader.BytesRead)
 
     out.MagicStrategy, err = lbx.ReadN[uint16](playerReader)
     if err != nil {
@@ -992,7 +1004,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    log.Printf("Player offset target wizard: 0x%x", playerReader.BytesRead)
+    // log.Printf("Player offset target wizard: 0x%x", playerReader.BytesRead)
 
     out.TargetWizard, err = lbx.ReadN[uint16](playerReader)
     if err != nil {
@@ -1911,11 +1923,11 @@ type EventData struct {
     ManaShortageDuration int16
 }
 
-func loadEvents(reader io.Reader) error {
+func loadEvents(reader io.Reader) (EventData, error) {
     data := make([]byte, 100)
     _, err := io.ReadFull(reader, data)
     if err != nil {
-        return err
+        return EventData{}, err
     }
 
     eventReader := bytes.NewReader(data)
@@ -1973,37 +1985,43 @@ func loadEvents(reader io.Reader) error {
     eventData.ManaShortageStatus, _ = lbx.ReadN[int16](eventReader)
     eventData.ManaShortageDuration, _ = lbx.ReadN[int16](eventReader)
 
-    return nil
+    return eventData, nil
+}
+
+type HeroNameData struct {
+    Name []byte
+    Experience int16
 }
 
 // hero names and experience for the human player's heroes
-func loadHeroNames(reader io.Reader) error {
-    for i := range NumHeroes {
+func loadHeroNames(reader io.Reader) ([]HeroNameData, error) {
+    var out []HeroNameData
+    for range NumHeroes {
         name := make([]byte, 14)
         _, err := io.ReadFull(reader, name)
         if err != nil {
-            return err
+            return nil, err
         }
 
         experience, err := lbx.ReadN[int16](reader)
 
-        log.Printf("Hero %v: '%v' experience=%v", i, string(name), experience)
+        out = append(out, HeroNameData{Name: name, Experience: experience})
     }
 
-    return nil
+    return out, nil
 }
 
-func loadPremadeItems(reader io.Reader) error {
+func loadPremadeItems(reader io.Reader) ([]byte, error) {
     data := make([]byte, 250)
     _, err := io.ReadFull(reader, data)
     if err != nil {
-        return err
+        return nil, err
     }
 
     // I think data is just an array of 0's and 1's where a 1 at some index means that premade item is available
     // TODO: parse data
 
-    return nil
+    return data, nil
 }
 
 type ReadMonitor struct {
@@ -2128,7 +2146,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
         return nil, err
     }
 
-    log.Printf("Offset: 0x%x", reader.BytesRead)
+    // log.Printf("Offset: 0x%x", reader.BytesRead)
 
     saveGame.ArcanusLandMasses, err = LoadLandMass(reader)
     if err != nil {
@@ -2140,35 +2158,35 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
         return nil, err
     }
 
-    log.Printf("Offset: 0x%x", reader.BytesRead)
+    // log.Printf("Offset: 0x%x", reader.BytesRead)
 
     saveGame.Nodes, err = loadNodes(reader)
     if err != nil {
         return nil, err
     }
 
-    log.Printf("Offset: 0x%x", reader.BytesRead)
+    // log.Printf("Offset: 0x%x", reader.BytesRead)
 
     saveGame.Fortresses, err = loadFortresses(reader)
     if err != nil {
         return nil, err
     }
 
-    log.Printf("Offset: 0x%x", reader.BytesRead)
+    // log.Printf("Offset: 0x%x", reader.BytesRead)
 
     saveGame.Towers, err = loadTowers(reader)
     if err != nil {
         return nil, err
     }
 
-    log.Printf("Offset: 0x%x", reader.BytesRead)
+    // log.Printf("Offset: 0x%x", reader.BytesRead)
 
     saveGame.Lairs, err = loadLairs(reader)
     if err != nil {
         return nil, err
     }
 
-    log.Printf("Offset: 0x%x", reader.BytesRead)
+    // log.Printf("Offset: 0x%x", reader.BytesRead)
 
     saveGame.Items, err = loadItems(reader)
     if err != nil {
@@ -2205,40 +2223,34 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
         return nil, err
     }
 
-    arcanusMovementCost, err := loadMovementCostData(reader)
+    saveGame.ArcanusMovementCost, err = loadMovementCostData(reader)
     if err != nil {
         return nil, err
     }
 
-    myrrorMovementCost, err := loadMovementCostData(reader)
+    saveGame.MyrrorMovementCost, err = loadMovementCostData(reader)
     if err != nil {
         return nil, err
     }
 
-    _ = arcanusMovementCost
-    _ = myrrorMovementCost
+    // log.Printf("Offset: 0x%x", reader.BytesRead)
 
-    log.Printf("Offset: 0x%x", reader.BytesRead)
-
-    err = loadEvents(reader)
+    saveGame.Events, err = loadEvents(reader)
     if err != nil {
         return nil, err
     }
 
-    arcanusMapSquareFlags, err := loadMapData[uint8](reader)
+    saveGame.ArcanusMapSquareFlags, err = loadMapData[uint8](reader)
     if err != nil {
         return nil, err
     }
 
-    myrrorMapSquareFlags, err := loadMapData[uint8](reader)
+    saveGame.MyrrorMapSquareFlags, err = loadMapData[uint8](reader)
     if err != nil {
         return nil, err
     }
 
-    _ = arcanusMapSquareFlags
-    _ = myrrorMapSquareFlags
-
-    log.Printf("Offset: 0x%x", reader.BytesRead)
+    // log.Printf("Offset: 0x%x", reader.BytesRead)
 
     saveGame.GrandVizier, err = lbx.ReadN[uint16](reader)
     if err != nil {
@@ -2247,16 +2259,16 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
 
     // log.Printf("Grand vizier: %v", grandVizier)
 
-    log.Printf("Offset: 0x%x", reader.BytesRead)
+    // log.Printf("Offset: 0x%x", reader.BytesRead)
 
-    err = loadPremadeItems(reader)
+    saveGame.PremadeItems, err = loadPremadeItems(reader)
     if err != nil {
         return nil, err
     }
 
-    log.Printf("Offset: 0x%x", reader.BytesRead)
+    // log.Printf("Offset: 0x%x", reader.BytesRead)
 
-    err = loadHeroNames(reader)
+    saveGame.HeroNames, err = loadHeroNames(reader)
     if err != nil {
         return nil, err
     }
