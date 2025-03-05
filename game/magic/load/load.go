@@ -240,6 +240,12 @@ type SaveGame struct {
     Items []ItemData
     Cities []CityData
     Units []UnitData
+
+    ArcanusTerrainSpecials [][]uint8
+    MyrrorTerrainSpecials [][]uint8
+
+    ArcanusExplored [][]int8
+    MyrrorExplored [][]int8
 }
 
 func loadHeroData(reader io.Reader) (HeroData, error) {
@@ -2249,32 +2255,25 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
         return nil, err
     }
 
-    arcanusTerrainSpecials, err := loadMapData[uint8](reader)
+    saveGame.ArcanusTerrainSpecials, err = loadMapData[uint8](reader)
     if err != nil {
         return nil, err
     }
 
-    // myrror
-    myrrorTerrainSpecials, err := loadMapData[uint8](reader)
+    saveGame.MyrrorTerrainSpecials, err = loadMapData[uint8](reader)
     if err != nil {
         return nil, err
     }
 
-    _ = arcanusTerrainSpecials
-    _ = myrrorTerrainSpecials
-
-    arcanusExplored, err := loadMapData[int8](reader)
+    saveGame.ArcanusExplored, err = loadMapData[int8](reader)
     if err != nil {
         return nil, err
     }
 
-    myrrorExplored, err := loadMapData[int8](reader)
+    saveGame.MyrrorExplored, err = loadMapData[int8](reader)
     if err != nil {
         return nil, err
     }
-
-    _ = arcanusExplored
-    _ = myrrorExplored
 
     arcanusMovementCost, err := loadMovementCostData(reader)
     if err != nil {
