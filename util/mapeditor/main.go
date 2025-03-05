@@ -323,15 +323,6 @@ func MakeEditor() *Editor {
 }
 
 func (editor *Editor) loadFromSavegame(filename string, myrror bool) {
-    // FIXME: load the whole savegame once this implemented instead of using offsets
-    fileOffset := int64(9880)
-    terrainOffset := 0
-    if myrror {
-        editor.Plane = data.PlaneMyrror
-        fileOffset += 4800
-        terrainOffset = terrain.MyrrorStart
-    }
-
     reader, err := os.Open(filename)
     if err != nil {
         log.Printf("Unable to open %v: %v", filename, err)
@@ -339,16 +330,17 @@ func (editor *Editor) loadFromSavegame(filename string, myrror bool) {
     }
     defer reader.Close()
 
-    _, err = reader.Seek(fileOffset, 0)
-    if err != nil {
-        fmt.Printf("Error seeking file: %v", err)
-        os.Exit(0)
-    }
-
-    terrainData, err := load.LoadTerrain(reader)
+    saveGame, err := load.LoadSaveGame(reader)
     if err != nil {
         fmt.Printf("Error reading file: %v", err)
         os.Exit(0)
+    }
+
+    terrainData := saveGame.ArcanusMap
+    terrainOffset := 0
+    if myrror {
+        terrainData = saveGame.MyrrorMap
+        terrainOffset = terrain.MyrrorStart
     }
 
     editor.Map = terrain.MakeMap(load.WorldHeight, load.WorldWidth)
