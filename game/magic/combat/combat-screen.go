@@ -593,7 +593,27 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 10)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    damage := func (unit *ArmyUnit) {
+        modifier := 4
+        if unit.Unit.IsUndead() {
+            modifier = 9
+        }
+
+        defenderResistance := unit.GetResistanceFor(data.LifeMagic) - modifier
+        damage := 0
+        for range unit.Figures() {
+            if rand.N(10) + 1 > defenderResistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        unit.TakeDamage(damage)
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
 }
 
 func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, strength int) {
@@ -1120,8 +1140,12 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 combat.CreateDispelEvilProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                // FIXME: can only target units that are death or chaos
-                return true
+                if target.Unit.GetRace() == data.RaceFantastic &&
+                   (target.Unit.GetRealm() == data.ChaosMagic || target.Unit.GetRealm() == data.DeathMagic) {
+                    return true
+                }
+
+                return false
             })
         case "Healing":
             combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){

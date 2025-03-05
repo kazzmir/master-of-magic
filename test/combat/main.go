@@ -650,7 +650,7 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
                        "Black Prayer", "Darkness", "Mana Leak", "Terror", "Wrack",
                        "Disenchant Area", "Disenchant True",
                        "Creature Binding", "Mind Storm",
-                       "Fire Bolt", "Ice Bolt", "Star Fires",
+                       "Fire Bolt", "Ice Bolt", "Star Fires", "Dispel Evil",
                    }
 
 
