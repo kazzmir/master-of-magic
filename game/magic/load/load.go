@@ -226,6 +226,14 @@ type SaveGame struct {
     MyrrorMap TerrainData
 
     GrandVizier uint16
+
+    UU_table_1 []byte
+    UU_table_2 []byte
+
+    ArcanusLandMasses [][]uint8
+    MyrrorLandMasses [][]uint8
+
+    Nodes []NodeData
 }
 
 func loadHeroData(reader io.Reader) (HeroData, error) {
@@ -1140,67 +1148,82 @@ const (
     NodeTypeChaos
 )
 
-func loadNodes(reader io.Reader) error {
+type NodeData struct {
+    X int8
+    Y int8
+    Plane int8
+    Owner int8
+    Power int8
+    AuraX []byte
+    AuraY []byte
+    NodeType int8
+    Meld int8
+}
+
+func loadNodes(reader io.Reader) ([]NodeData, error) {
+    var out []NodeData
     for range 30 {
         nodeData := make([]byte, 48)
         _, err := io.ReadFull(reader, nodeData)
         if err != nil {
-            return err
+            return nil, err
         }
 
         nodeReader := bytes.NewReader(nodeData)
 
-        x, err := lbx.ReadN[int8](nodeReader)
+        var data NodeData
+
+        data.X, err = lbx.ReadN[int8](nodeReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        y, err := lbx.ReadN[int8](nodeReader)
+        data.Y, err = lbx.ReadN[int8](nodeReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        plane, err := lbx.ReadN[int8](nodeReader)
+        data.Plane, err = lbx.ReadN[int8](nodeReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        owner, err := lbx.ReadN[int8](nodeReader)
+        data.Owner, err = lbx.ReadN[int8](nodeReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        power, err := lbx.ReadN[int8](nodeReader)
+        data.Power, err = lbx.ReadN[int8](nodeReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        auraX := make([]byte, 20)
-        _, err = io.ReadFull(nodeReader, auraX)
+        data.AuraX, err = lbx.ReadArrayN[byte](nodeReader, 20)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        auraY := make([]byte, 20)
-        _, err = io.ReadFull(nodeReader, auraY)
+        data.AuraY, err = lbx.ReadArrayN[byte](nodeReader, 20)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        nodeType, err := lbx.ReadN[int8](nodeReader)
+        data.NodeType, err = lbx.ReadN[int8](nodeReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        meld, err := lbx.ReadN[int8](nodeReader)
+        data.Meld, err = lbx.ReadN[int8](nodeReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        log.Printf("Node: x=%v y=%v plane=%v owner=%v power=%v auraX=%v auraY=%v nodeType=%v meld=%v", x, y, plane, owner, power, auraX, auraY, nodeType, meld)
+        out = append(out, data)
+
+        // log.Printf("Node: x=%v y=%v plane=%v owner=%v power=%v auraX=%v auraY=%v nodeType=%v meld=%v", x, y, plane, owner, power, auraX, auraY, nodeType, meld)
     }
 
-    return nil
+    return out, nil
 }
 
 func loadFortresses(reader io.Reader) error {
@@ -2032,37 +2055,34 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
     }
 
     // FIXME: what is this for?
-    uu_table_1 := make([]byte, 96 * 2)
-    _, err = io.ReadFull(reader, uu_table_1)
+    saveGame.UU_table_1 = make([]byte, 96 * 2)
+    _, err = io.ReadFull(reader, saveGame.UU_table_1)
     if err != nil {
         return nil, err
     }
 
     // FIXME: what is this for?
-    uu_table_2 := make([]byte, 96 * 2)
-    _, err = io.ReadFull(reader, uu_table_2)
+    saveGame.UU_table_2 = make([]byte, 96 * 2)
+    _, err = io.ReadFull(reader, saveGame.UU_table_2)
     if err != nil {
         return nil, err
     }
 
     log.Printf("Offset: 0x%x", reader.BytesRead)
 
-    arcanusLandMasses, err := LoadLandMass(reader)
+    saveGame.ArcanusLandMasses, err = LoadLandMass(reader)
     if err != nil {
         return nil, err
     }
 
-    myrrorLandMasses, err := LoadLandMass(reader)
+    saveGame.MyrrorLandMasses, err = LoadLandMass(reader)
     if err != nil {
         return nil, err
     }
-
-    _ = arcanusLandMasses
-    _ = myrrorLandMasses
 
     log.Printf("Offset: 0x%x", reader.BytesRead)
 
-    err = loadNodes(reader)
+    saveGame.Nodes, err = loadNodes(reader)
     if err != nil {
         return nil, err
     }
