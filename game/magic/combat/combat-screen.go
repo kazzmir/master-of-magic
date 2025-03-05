@@ -1174,8 +1174,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 combat.CreateHealingProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                // FIXME: can only target units that are not death
-                return true
+                return target.GetRealm() != data.DeathMagic
             })
         case "Holy Word":
             combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
@@ -1190,14 +1189,15 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 combat.CreateRecallHeroProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                // FIXME: can only target heros
-                return true
+                return target.Unit.IsHero()
             })
         case "Mass Healing":
             combat.DoAllUnitsSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateHealingProjectile(target)
                 castedCallback()
-            }, targetAny)
+            }, func (target *ArmyUnit) bool {
+                return target.GetRealm() != data.DeathMagic
+            })
         case "Cracks Call":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateCracksCallProjectile(target)
