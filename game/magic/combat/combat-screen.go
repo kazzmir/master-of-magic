@@ -908,7 +908,15 @@ func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 15)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
+    // 25% chance to destroy the target
+    effect := func (unit *ArmyUnit){
+        if rand.N(4) == 0 {
+            // FIXME: apply irreversable damage, unit cannot be revived or turned into undead
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, effect))
 }
 
 func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit) {
@@ -1223,7 +1231,16 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateCracksCallProjectile(target)
                 castedCallback()
-            }, targetAny)
+            }, func (target *ArmyUnit) bool {
+                if target.Unit.IsFlying() {
+                    return false
+                }
+                if target.HasAbility(data.AbilityNonCorporeal) {
+                    return false
+                }
+
+                return true
+            })
         case "Earth to Mud":
             combat.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.Model.CreateEarthToMud(x, y)
