@@ -882,7 +882,23 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 14)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    effect := func (unit *ArmyUnit){
+        resistance := unit.GetResistanceFor(data.DeathMagic) - 5
+        damage := 0
+
+        for range unit.Figures() {
+            if rand.N(10) + 1 > resistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        unit.TakeDamage(damage)
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
 }
 
 func (combat *CombatScreen) CreateResistElementsProjectile(target *ArmyUnit) {
@@ -1348,7 +1364,9 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWordOfDeathProjectile(target)
                 castedCallback()
-            }, targetAny)
+            }, func (target *ArmyUnit) bool {
+                return !target.HasAbility(data.AbilityDeathImmunity)
+            })
         case "Phantom Warriors":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreatePhantomWarriors(player, x, y)
