@@ -880,7 +880,11 @@ func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 2)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    effect := func (unit *ArmyUnit){
+        unit.SetRangedAttacks(0)
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
 }
 
 func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) {
@@ -1310,8 +1314,12 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 combat.CreateWarpWoodProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                // FIXME: can be cast on a normal unit or hero that has a ranged missle attack
-                return true
+
+                if target.GetRangedAttacks() > 0 && target.GetRangedAttackDamageType() == units.DamageRangedPhysical {
+                    return true
+                }
+
+                return false
             })
         case "Death Spell":
             combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){

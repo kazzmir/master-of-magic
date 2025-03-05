@@ -1386,6 +1386,14 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playe
     }
 }
 
+func (unit *ArmyUnit) GetRangedAttacks() int {
+    return unit.RangedAttacks
+}
+
+func (unit *ArmyUnit) SetRangedAttacks(attacks int) {
+    unit.RangedAttacks = attacks
+}
+
 // given the distance to the target in tiles, return the amount of range damage done
 func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
 

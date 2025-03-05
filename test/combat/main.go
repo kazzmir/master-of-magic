@@ -651,7 +651,7 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
                        "Disenchant Area", "Disenchant True",
                        "Creature Binding", "Mind Storm",
                        "Fire Bolt", "Ice Bolt", "Star Fires", "Dispel Evil", "Life Drain",
-                       "Holy Word", "Cracks Call", "Banish", "Disintegrate",
+                       "Holy Word", "Cracks Call", "Banish", "Disintegrate", "Warp Wood",
                    }
 
 
