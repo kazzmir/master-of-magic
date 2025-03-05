@@ -207,6 +207,22 @@ func makeHeroAbilities(abilities uint32) *set.Set[HeroAbility] {
 }
 
 type SaveGame struct {
+    NumPlayers int16
+    LandSize int16
+    Magic int16
+    Difficulty int16
+    Cities int16
+    Units int16
+    Turn int16
+    Unit int16
+
+    // first index player, second index hero
+    HeroData [][]HeroData
+
+    ArcanusMap TerrainData
+    MyrrorMap TerrainData
+
+    GrandVizier uint16
 }
 
 func loadHeroData(reader io.Reader) (HeroData, error) {
@@ -992,8 +1008,8 @@ func LoadTerrain(reader io.Reader) (TerrainData, error) {
         data[i] = make([]uint16, WorldHeight)
     }
 
-    for y := range(WorldHeight) {
-        for x := range(WorldWidth) {
+    for y := range WorldHeight {
+        for x := range WorldWidth {
             value, err := lbx.ReadUint16(reader)
             if err != nil {
                 return TerrainData{}, err
@@ -1827,62 +1843,73 @@ func (read *ReadMonitor) Read(p []byte) (n int, err error) {
 
 // load a dos savegame file
 func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
-    numHeroes := NumHeroes
+    var err error
+    var saveGame SaveGame
 
     reader := &ReadMonitor{reader: reader1}
 
-    for player := range NumPlayers {
-        for i := range numHeroes {
+    var heroData [][]HeroData
+    for range NumPlayers {
+        var data []HeroData
+        for range NumHeroes {
             heroData, err := loadHeroData(reader)
             if err != nil {
                 return nil, err
             }
+            /*
             if player == 0 {
                 log.Printf("Read hero %v: %+v", HeroIndex(i).GetHero().GetUnit().Name, heroData)
             }
+            */
+            data = append(data, heroData)
         }
+
+        heroData = append(heroData, data)
     }
 
-    numPlayers, err := lbx.ReadN[int16](reader)
+    saveGame.HeroData = heroData
+
+    saveGame.NumPlayers, err = lbx.ReadN[int16](reader)
     if err != nil {
         return nil, err
     }
 
-    landSize, err := lbx.ReadN[int16](reader)
+    saveGame.LandSize, err = lbx.ReadN[int16](reader)
     if err != nil {
         return nil, err
     }
 
-    magic, err := lbx.ReadN[int16](reader)
+    saveGame.Magic, err = lbx.ReadN[int16](reader)
     if err != nil {
         return nil, err
     }
 
-    difficulty, err := lbx.ReadN[int16](reader)
+    saveGame.Difficulty, err = lbx.ReadN[int16](reader)
     if err != nil {
         return nil, err
     }
 
-    cities, err := lbx.ReadN[int16](reader)
+    saveGame.Cities, err = lbx.ReadN[int16](reader)
     if err != nil {
         return nil, err
     }
 
-    units, err := lbx.ReadN[int16](reader)
+    saveGame.Units, err = lbx.ReadN[int16](reader)
     if err != nil {
         return nil, err
     }
 
-    turn, err := lbx.ReadN[int16](reader)
+    saveGame.Turn, err = lbx.ReadN[int16](reader)
     if err != nil {
         return nil, err
     }
 
-    unit, err := lbx.ReadN[int16](reader)
+    saveGame.Unit, err = lbx.ReadN[int16](reader)
     if err != nil {
         return nil, err
     }
 
+    /*
     log.Printf("numPlayers: %v", numPlayers)
     log.Printf("landSize: %v", landSize)
     log.Printf("magic: %v", magic)
@@ -1891,6 +1918,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
     log.Printf("units: %v", units)
     log.Printf("turn: %v", turn)
     log.Printf("unit: %v", unit)
+    */
 
     for range NumPlayers {
         err := loadPlayerData(reader)
@@ -1899,18 +1927,15 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
         }
     }
 
-    arcanusMap, err := LoadTerrain(reader)
+    saveGame.ArcanusMap, err = LoadTerrain(reader)
     if err != nil {
         return nil, err
     }
 
-    myrrorMap, err := LoadTerrain(reader)
+    saveGame.MyrrorMap, err = LoadTerrain(reader)
     if err != nil {
         return nil, err
     }
-
-    _ = arcanusMap
-    _ = myrrorMap
 
     // FIXME: what is this for?
     uu_table_1 := make([]byte, 96 * 2)
@@ -2048,12 +2073,12 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
 
     log.Printf("Offset: 0x%x", reader.BytesRead)
 
-    grandVizier, err := lbx.ReadN[uint16](reader)
+    saveGame.GrandVizier, err = lbx.ReadN[uint16](reader)
     if err != nil {
         return nil, err
     }
 
-    log.Printf("Grand vizier: %v", grandVizier)
+    // log.Printf("Grand vizier: %v", grandVizier)
 
     log.Printf("Offset: 0x%x", reader.BytesRead)
 
@@ -2071,7 +2096,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
 
     _, err = lbx.ReadByte(reader)
     if errors.Is(err, io.EOF) {
-        return nil, nil
+        return &saveGame, nil
     }
 
     return nil, fmt.Errorf("leftover data")
