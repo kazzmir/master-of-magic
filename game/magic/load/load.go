@@ -239,6 +239,7 @@ type SaveGame struct {
     Lairs []LairData
     Items []ItemData
     Cities []CityData
+    Units []UnitData
 }
 
 func loadHeroData(reader io.Reader) (HeroData, error) {
@@ -1665,140 +1666,172 @@ func loadCities(reader io.Reader) ([]CityData, error) {
     return out, nil
 }
 
-func loadUnits(reader io.Reader) error {
+type UnitData struct {
+    X int8
+    Y int8
+    Plane int8
+    Owner int8
+    MovesMax int8
+    TypeIndex uint8
+    Hero int8
+    Finished int8
+    Moves int8
+    DestinationX int8
+    DestinationY int8
+    Status int8
+    Level int8
+    Experience int16
+    MoveFailed int8
+    Damage int8
+    DrawPriority int8
+    InTower int16
+    SightRange int8
+    Mutations int8
+    Enchantments uint32
+    RoadTurns int8
+    RoadX int8
+    RoadY int8
+}
+
+func loadUnits(reader io.Reader) ([]UnitData, error) {
+    var out []UnitData
     for range 1009 {
         unitData := make([]byte, 32)
         _, err := io.ReadFull(reader, unitData)
         if err != nil {
-            return err
+            return nil, err
         }
 
         unitReader := bytes.NewReader(unitData)
 
-        x, err := lbx.ReadN[int8](unitReader)
+        var data UnitData
+
+        data.X, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        y, err := lbx.ReadN[int8](unitReader)
+        data.Y, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        plane, err := lbx.ReadN[int8](unitReader)
+        data.Plane, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        owner, err := lbx.ReadN[int8](unitReader)
+        data.Owner, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        movesMax, err := lbx.ReadN[int8](unitReader)
+        data.MovesMax, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        typeIndex, err := lbx.ReadN[uint8](unitReader)
+        data.TypeIndex, err = lbx.ReadN[uint8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        hero, err := lbx.ReadN[int8](unitReader)
+        data.Hero, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        finished, err := lbx.ReadN[int8](unitReader)
+        data.Finished, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        moves, err := lbx.ReadN[int8](unitReader)
+        data.Moves, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        destinationX, err := lbx.ReadN[int8](unitReader)
+        data.DestinationX, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        destinationY, err := lbx.ReadN[int8](unitReader)
+        data.DestinationY, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        status, err := lbx.ReadN[int8](unitReader)
+        data.Status, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        level, err := lbx.ReadN[int8](unitReader)
+        data.Level, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        experience, err := lbx.ReadN[int16](unitReader)
+        data.Experience, err = lbx.ReadN[int16](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        moveFailed, err := lbx.ReadN[int8](unitReader)
+        data.MoveFailed, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        damage, err := lbx.ReadN[int8](unitReader)
+        data.Damage, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        drawPriority, err := lbx.ReadN[int8](unitReader)
+        data.DrawPriority, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        inTower, err := lbx.ReadN[int16](unitReader)
+        data.InTower, err = lbx.ReadN[int16](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        sightRange, err := lbx.ReadN[int8](unitReader)
+        data.SightRange, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        mutations, err := lbx.ReadN[int8](unitReader)
+        data.Mutations, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        enchantments, err := lbx.ReadN[uint32](unitReader)
+        data.Enchantments, err = lbx.ReadN[uint32](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        roadTurns, err := lbx.ReadN[int8](unitReader)
+        data.RoadTurns, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        roadX, err := lbx.ReadN[int8](unitReader)
+        data.RoadX, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        roadY, err := lbx.ReadN[int8](unitReader)
+        data.RoadY, err = lbx.ReadN[int8](unitReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        log.Printf("Unit x=%v y=%v plane=%v owner=%v movesMax=%v typeIndex=%v hero=%v finished=%v moves=%v destinationX=%v destinationY=%v status=%v level=%v experience=%v moveFailed=%v damage=%v drawPriority=%v inTower=%v sightRange=%v mutations=%v enchantments=%v roadTurns=%v roadX=%v roadY=%v", x, y, plane, owner, movesMax, typeIndex, hero, finished, moves, destinationX, destinationY, status, level, experience, moveFailed, damage, drawPriority, inTower, sightRange, mutations, enchantments, roadTurns, roadX, roadY)
+        // log.Printf("Unit x=%v y=%v plane=%v owner=%v movesMax=%v typeIndex=%v hero=%v finished=%v moves=%v destinationX=%v destinationY=%v status=%v level=%v experience=%v moveFailed=%v damage=%v drawPriority=%v inTower=%v sightRange=%v mutations=%v enchantments=%v roadTurns=%v roadX=%v roadY=%v", x, y, plane, owner, movesMax, typeIndex, hero, finished, moves, destinationX, destinationY, status, level, experience, moveFailed, damage, drawPriority, inTower, sightRange, mutations, enchantments, roadTurns, roadX, roadY)
+
+        out = append(out, data)
     }
 
-    return nil
+    return out, nil
 }
 
 // T should usually be int8 or uint8
@@ -2211,7 +2244,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
         return nil, err
     }
 
-    err = loadUnits(reader)
+    saveGame.Units, err = loadUnits(reader)
     if err != nil {
         return nil, err
     }
