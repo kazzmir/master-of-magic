@@ -940,11 +940,24 @@ func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
-func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit, caster *playerlib.Player, dispelStrength int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 26)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    effect := func (unit *ArmyUnit){
+        // if the unit is owned by the player then disenchant curses, otherwise disenchant enchantments
+
+        playerArmy := combat.Model.GetArmyForPlayer(caster)
+        unitArmy := combat.Model.GetArmy(unit)
+
+        if playerArmy == unitArmy {
+            combat.Model.DoDisenchantUnitCurses(combat.AllSpells, unit, unitArmy.Player, dispelStrength)
+        } else {
+            combat.Model.DoDisenchantUnit(combat.AllSpells, unit, unitArmy.Player, dispelStrength)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
 }
 
 func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
@@ -1317,7 +1330,13 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
             }, targetFantastic)
         case "Dispel Magic True":
             combat.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
-                combat.CreateDispelMagicProjectile(target)
+                disenchantStrength := spell.BaseCost(false) + spell.SpentAdditionalCost(false) * 3
+
+                if player.Wizard.RetortEnabled(data.RetortRunemaster) {
+                    disenchantStrength *= 2
+                }
+
+                combat.CreateDispelMagicProjectile(target, player, disenchantStrength)
                 castedCallback()
             }, targetAny)
         case "Word of Recall":
