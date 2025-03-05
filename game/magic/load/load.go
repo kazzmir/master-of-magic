@@ -235,6 +235,7 @@ type SaveGame struct {
 
     Nodes []NodeData
     Fortresses []FortressData
+    Towers []TowerData
 }
 
 func loadHeroData(reader io.Reader) (HeroData, error) {
@@ -1274,35 +1275,45 @@ func loadFortresses(reader io.Reader) ([]FortressData, error) {
     return out, nil
 }
 
-func loadTowers(reader io.Reader) error {
+type TowerData struct {
+    X int8
+    Y int8
+    Owner int8
+}
+
+func loadTowers(reader io.Reader) ([]TowerData, error) {
+    var out []TowerData
     for range 6 {
         towerData := make([]byte, 4)
         _, err := io.ReadFull(reader, towerData)
         if err != nil {
-            return err
+            return nil, err
         }
 
         towerReader := bytes.NewReader(towerData)
 
-        x, err := lbx.ReadN[int8](towerReader)
+        var data TowerData
+
+        data.X, err = lbx.ReadN[int8](towerReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        y, err := lbx.ReadN[int8](towerReader)
+        data.Y, err = lbx.ReadN[int8](towerReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        owner, err := lbx.ReadN[int8](towerReader)
+        data.Owner, err = lbx.ReadN[int8](towerReader)
         if err != nil {
-            return err
+            return nil, err
         }
 
-        log.Printf("Tower: x=%v y=%v owner=%v", x, y, owner)
+        // log.Printf("Tower: x=%v y=%v owner=%v", x, y, owner)
+        out = append(out, data)
     }
 
-    return nil
+    return out, nil
 }
 
 func loadLairs(reader io.Reader) error {
@@ -2109,7 +2120,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
 
     log.Printf("Offset: 0x%x", reader.BytesRead)
 
-    err = loadTowers(reader)
+    saveGame.Towers, err = loadTowers(reader)
     if err != nil {
         return nil, err
     }
