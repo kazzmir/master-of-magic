@@ -593,7 +593,27 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 10)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    damage := func (unit *ArmyUnit) {
+        modifier := 4
+        if unit.Unit.IsUndead() {
+            modifier = 9
+        }
+
+        defenderResistance := unit.GetResistanceFor(data.LifeMagic) - modifier
+        damage := 0
+        for range unit.Figures() {
+            if rand.N(10) + 1 > defenderResistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        unit.TakeDamage(damage)
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
 }
 
 func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, strength int) {
@@ -697,18 +717,46 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, projectile)
 }
 
-func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit) {
+// player will never be nil, but unitCaster might be nil if the player is casting the spell
+// if a hero/unit is casting the spell then unitCaster will be non-nil
+func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player *playerlib.Player, unitCaster *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 6)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    damage := func (unit *ArmyUnit) {
+        resistance := unit.GetResistanceFor(data.LifeMagic) - reduceResistance
+        damage := rand.N(10) + 1 - resistance
+        if damage > 0 {
+            unit.TakeDamage(damage)
+            if unitCaster != nil {
+                unitCaster.Heal(damage)
+            } else {
+                // add casting skill to player
+                army := combat.Model.GetArmyForPlayer(player)
+                army.ManaPool += damage * 3
+            }
+
+            if unit.Unit.GetHealth() <= 0 {
+                combat.Model.RemoveUnit(unit)
+            }
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
 }
 
 func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 33)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    damage := func (unit *ArmyUnit) {
+        combat.Model.ApplyImmolationDamage(unit, 15)
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
 }
 
 func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) {
@@ -775,7 +823,29 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    damage := func (unit *ArmyUnit){
+        modifier := 2
+        if unit.Unit.IsUndead() {
+            modifier = 7
+        }
+
+        resistance := unit.GetResistanceFor(data.LifeMagic) - modifier
+
+        damage := 0
+        for range unit.Figures() {
+            if rand.N(10) + 1 > resistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        // FIXME: apply irreversable damage
+        unit.TakeDamage(damage)
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
 }
 
 func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
@@ -789,14 +859,46 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 14)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    effect := func (unit *ArmyUnit){
+        resistance := unit.GetResistanceFor(data.DeathMagic) - 2
+        damage := 0
+
+        for range unit.Figures() {
+            if rand.N(10) + 1 > resistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        unit.TakeDamage(damage)
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
 }
 
 func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 14)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    effect := func (unit *ArmyUnit){
+        resistance := unit.GetResistanceFor(data.DeathMagic) - 5
+        damage := 0
+
+        for range unit.Figures() {
+            if rand.N(10) + 1 > resistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        unit.TakeDamage(damage)
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
 }
 
 func (combat *CombatScreen) CreateResistElementsProjectile(target *ArmyUnit) {
@@ -810,14 +912,25 @@ func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 2)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    effect := func (unit *ArmyUnit){
+        unit.SetRangedAttacks(0)
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
 }
 
 func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 4)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    effect := func (unit *ArmyUnit){
+        if unit.GetResistanceFor(data.ChaosMagic) <= 9 {
+            // FIXME: does irreversable damage
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
 }
 
 func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) {
@@ -827,25 +940,62 @@ func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
-func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit, caster *playerlib.Player, dispelStrength int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 26)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    effect := func (unit *ArmyUnit){
+        // if the unit is owned by the player then disenchant curses, otherwise disenchant enchantments
+
+        playerArmy := combat.Model.GetArmyForPlayer(caster)
+        unitArmy := combat.Model.GetArmy(unit)
+
+        if playerArmy == unitArmy {
+            combat.Model.DoDisenchantUnitCurses(combat.AllSpells, unit, unitArmy.Player, dispelStrength)
+        } else {
+            combat.Model.DoDisenchantUnit(combat.AllSpells, unit, unitArmy.Player, dispelStrength)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
 }
 
 func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 15)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
+    // 25% chance to destroy the target
+    effect := func (unit *ArmyUnit){
+        if rand.N(4) == 0 {
+            // FIXME: apply irreversable damage, unit cannot be revived or turned into undead
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, effect))
 }
 
-func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResistance int) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 19)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
+    effect := func (unit *ArmyUnit){
+        resistance := unit.GetResistanceFor(data.SorceryMagic) - reduceResistance - 3
+        damage := 0
+
+        for range unit.Figures() {
+            if rand.N(10) + 1 > resistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        unit.TakeDamage(damage)
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, effect))
 }
 
 func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) {
@@ -1036,7 +1186,8 @@ func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spel
     }
 }
 
-func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellbook.Spell, castedCallback func()){
+// playerCasted is true if the player cast the spell, or false if a unit cast the spell
+func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func()){
     targetAny := func (target *ArmyUnit) bool { return true }
     targetFantastic := func (target *ArmyUnit) bool {
         return target != nil && target.Unit.GetRace() == data.RaceFantastic
@@ -1105,7 +1256,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             }, targetAny)
         case "Life Drain":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateLifeDrainProjectile(target)
+                combat.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5, player, unitCaster)
                 castedCallback()
             }, targetAny)
         case "Dispel Evil":
@@ -1113,43 +1264,55 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 combat.CreateDispelEvilProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                // FIXME: can only target units that are death or chaos
-                return true
+                if target.Unit.GetRace() == data.RaceFantastic &&
+                   (target.Unit.GetRealm() == data.ChaosMagic || target.Unit.GetRealm() == data.DeathMagic) {
+                    return true
+                }
+
+                return false
             })
         case "Healing":
             combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateHealingProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                // FIXME: can only target units that are not death
-                return true
+                return target.GetRealm() != data.DeathMagic
             })
         case "Holy Word":
             combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateHolyWordProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                // FIXME: can only target fantastic units, chaos channeled and undead
-                return true
+                return target.GetRace() == data.RaceFantastic
             })
         case "Recall Hero":
             combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateRecallHeroProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                // FIXME: can only target heros
-                return true
+                return target.Unit.IsHero()
             })
         case "Mass Healing":
             combat.DoAllUnitsSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateHealingProjectile(target)
                 castedCallback()
-            }, targetAny)
+            }, func (target *ArmyUnit) bool {
+                return target.GetRealm() != data.DeathMagic
+            })
         case "Cracks Call":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateCracksCallProjectile(target)
                 castedCallback()
-            }, targetAny)
+            }, func (target *ArmyUnit) bool {
+                if target.Unit.IsFlying() {
+                    return false
+                }
+                if target.HasAbility(data.AbilityNonCorporeal) {
+                    return false
+                }
+
+                return true
+            })
         case "Earth to Mud":
             combat.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.Model.CreateEarthToMud(x, y)
@@ -1162,12 +1325,18 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
             }, targetAny)
         case "Banish":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateBanishProjectile(target)
+                combat.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15)
                 castedCallback()
             }, targetFantastic)
         case "Dispel Magic True":
             combat.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
-                combat.CreateDispelMagicProjectile(target)
+                disenchantStrength := spell.BaseCost(false) + spell.SpentAdditionalCost(false) * 3
+
+                if player.Wizard.RetortEnabled(data.RetortRunemaster) {
+                    disenchantStrength *= 2
+                }
+
+                combat.CreateDispelMagicProjectile(target, player, disenchantStrength)
                 castedCallback()
             }, targetAny)
         case "Word of Recall":
@@ -1196,19 +1365,27 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, spell spellboo
                 combat.CreateWarpWoodProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                // FIXME: can be cast on a normal unit or hero that has a ranged missle attack
-                return true
+
+                if target.GetRangedAttacks() > 0 && target.GetRangedAttackDamageType() == units.DamageRangedPhysical {
+                    return true
+                }
+
+                return false
             })
         case "Death Spell":
             combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDeathSpellProjectile(target)
                 castedCallback()
-            }, targetAny)
+            }, func (target *ArmyUnit) bool {
+                return !target.HasAbility(data.AbilityDeathImmunity)
+            })
         case "Word of Death":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWordOfDeathProjectile(target)
                 castedCallback()
-            }, targetAny)
+            }, func (target *ArmyUnit) bool {
+                return !target.HasAbility(data.AbilityDeathImmunity)
+            })
         case "Phantom Warriors":
             combat.DoSummoningSpell(player, spell, func(x int, y int){
                 combat.CreatePhantomWarriors(player, x, y)
@@ -1622,7 +1799,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 if picked {
                     army.Casted = true
                     // player mana and skill should go down accordingly
-                    combat.InvokeSpell(player, spell, func(){
+                    combat.InvokeSpell(player, nil, spell, func(){
                         army.ManaPool -= spell.Cost(false)
                         player.Mana -= int(float64(spell.Cost(false)) * army.Range.ToFloat())
                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
@@ -1652,7 +1829,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             // spell casting range for a unit is always 1
 
                             doCast := func(spell spellbook.Spell){
-                                combat.InvokeSpell(player, spell, func(){
+                                combat.InvokeSpell(player, caster, spell, func(){
                                     charge, hasCharge := caster.SpellCharges[spell]
                                     if hasCharge && charge > 0 {
                                         caster.SpellCharges[spell] -= 1
