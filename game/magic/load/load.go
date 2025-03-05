@@ -316,7 +316,23 @@ func loadPlayerHeroData(reader io.Reader) (PlayerHeroData, error) {
 }
 
 type DiplomacyData struct {
-    // FIXME
+    Contacted []int8
+    TreatyInterest []int16
+    PeaceInterest []int16
+    TradeInterest []int16
+    VisibleRelations []int8
+    DiplomacyStatus []int8
+    Strength []int16
+    Action []int8
+    Spell []int16
+    City []int8
+    DefaultRelations []int8
+    ContactProgress []int8
+    BrokenTreaty []int8
+    HiddenRelations []int8
+    TributeSpell []int8
+    TributeGold []int16
+    WarningProgress []int8
 }
 
 func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
@@ -329,67 +345,67 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
 
     var out DiplomacyData
 
-    contacted, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.Contacted, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    treatyInterest, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    out.TreatyInterest, err = lbx.ReadArrayN[int16](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    peaceInterest, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    out.PeaceInterest, err = lbx.ReadArrayN[int16](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    tradeInterest, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    out.TradeInterest, err = lbx.ReadArrayN[int16](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    visibleRelations, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.VisibleRelations, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    diplomacyStatus, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.DiplomacyStatus, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    strength, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    out.Strength, err = lbx.ReadArrayN[int16](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    action, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.Action, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    spell, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    out.Spell, err = lbx.ReadArrayN[int16](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    city, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.City, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    defaultRelations, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.DefaultRelations, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    contactProgress, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.ContactProgress, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    brokenTreaty, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.BrokenTreaty, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
@@ -399,7 +415,7 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
         return DiplomacyData{}, err
     }
 
-    hiddenRelations, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.HiddenRelations, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
@@ -409,7 +425,7 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
         return DiplomacyData{}, err
     }
 
-    tributeSpell, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.TributeSpell, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
@@ -419,7 +435,7 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
         return DiplomacyData{}, err
     }
 
-    tributeGold, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    out.TributeGold, err = lbx.ReadArrayN[int16](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
@@ -439,61 +455,45 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
         return DiplomacyData{}, err
     }
 
-    warningProgress, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.WarningProgress, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    _ = contacted
-    _ = treatyInterest
-    _ = peaceInterest
-    _ = tradeInterest
-    _ = visibleRelations
-    _ = diplomacyStatus
-    _ = strength
-    _ = action
-    _ = spell
-    _ = city
-    _ = defaultRelations
-    _ = contactProgress
-    _ = brokenTreaty
     _ = unknown1
-    _ = hiddenRelations
     _ = unknown2
-    _ = tributeSpell
     _ = unknown3
-    _ = tributeGold
     _ = unknown4
     _ = unknown5
     _ = unknown6
-    _ = warningProgress
 
     return out, nil
 }
 
 type AstrologyData struct {
-    // FIXME
+    MagicPower int16
+    SpellResearch int16
+    ArmyStrength int16
 }
 
 func loadAstrology(reader io.Reader) (AstrologyData, error) {
     var out AstrologyData
+    var err error
 
-    magicPower, err := lbx.ReadN[int16](reader)
-    if err != nil {
-        return AstrologyData{}, err
-    }
-    spellResearch, err := lbx.ReadN[int16](reader)
-    if err != nil {
-        return AstrologyData{}, err
-    }
-    armyStrength, err := lbx.ReadN[int16](reader)
+    out.MagicPower, err = lbx.ReadN[int16](reader)
     if err != nil {
         return AstrologyData{}, err
     }
 
-    _ = magicPower
-    _ = spellResearch
-    _ = armyStrength
+    out.SpellResearch, err = lbx.ReadN[int16](reader)
+    if err != nil {
+        return AstrologyData{}, err
+    }
+
+    out.ArmyStrength, err = lbx.ReadN[int16](reader)
+    if err != nil {
+        return AstrologyData{}, err
+    }
 
     return out, nil
 }
