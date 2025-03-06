@@ -272,6 +272,23 @@ func (bonus BonusType) String() string {
     return ""
 }
 
+func (bonus BonusType) LbxIndex() int {
+    switch bonus {
+        case BonusWildGame: return 92
+        case BonusNightshade: return 91
+        case BonusSilverOre: return 80
+        case BonusGoldOre: return 81
+        case BonusIronOre: return 78
+        case BonusCoal: return 79
+        case BonusMithrilOre: return 83
+        case BonusAdamantiumOre: return 84
+        case BonusGem: return 82
+        case BonusQuorkCrystal: return 85
+        case BonusCrysxCrystal: return 86
+    }
+    return -1
+}
+
 func (bonus BonusType) FoodBonus() int {
     if bonus == BonusWildGame {
         return 2

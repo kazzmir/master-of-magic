@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/load"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -24,6 +25,18 @@ import (
 const ScreenWidth = 1024
 const ScreenHeight = 768
 
+type BonusMap struct {
+    Bonus [][]data.BonusType
+}
+
+func makeBonusMap(rows int, columns int) *BonusMap {
+    bonus := make([][]data.BonusType, columns)
+    for i := 0; i < columns; i++ {
+        bonus[i] = make([]data.BonusType, rows)
+    }
+
+    return &BonusMap{Bonus: bonus}
+}
 
 type Editor struct {
     Data *terrain.TerrainData
@@ -31,9 +44,12 @@ type Editor struct {
 
     ArcanusMap *terrain.Map
     MyrrorMap *terrain.Map
+    ArcanusBonusMap *BonusMap
+    MyrrorBonusMap *BonusMap
     Plane data.Plane
 
     TileGpuCache map[int]*ebiten.Image
+    ImageCache util.ImageCache
 
     TileX int
     TileY int
@@ -71,10 +87,27 @@ func (editor *Editor) setMap(mapObject *terrain.Map)  {
     }
 }
 
+func (editor *Editor) getBonusMap() *BonusMap {
+    if editor.Plane == data.PlaneArcanus {
+        return editor.ArcanusBonusMap
+    } else {
+        return editor.MyrrorBonusMap
+    }
+}
+
+func (editor *Editor) setBonusMap(mapObject *BonusMap) {
+    if editor.Plane == data.PlaneArcanus {
+        editor.ArcanusBonusMap = mapObject
+    } else {
+        editor.MyrrorBonusMap = mapObject
+    }
+}
+
 func (editor *Editor) clear() {
     for column := range(editor.getMap().Columns()) {
         for row := range(editor.getMap().Rows()) {
             editor.getMap().Terrain[column][row] = terrain.TileOcean.Index(editor.Plane)
+            editor.getBonusMap().Bonus[column][row] = data.BonusNone
         }
     }
 }
@@ -251,6 +284,19 @@ func (editor *Editor) Draw(screen *ebiten.Image){
                 options.GeoM.Translate(startX, startY)
                 screen.DrawImage(tileImage, &options)
 
+                bonus := editor.getBonusMap().Bonus[xUse][yUse]
+                if bonus != data.BonusNone {
+                    bonusImage, err := editor.ImageCache.GetImage("mapback.lbx", bonus.LbxIndex(), 0)
+                    if err == nil {
+                        options.GeoM.Reset()
+                        options.GeoM.Scale(float64(xSize) / float64(bonusImage.Bounds().Dx()), float64(ySize) / float64(bonusImage.Bounds().Dy()))
+                        options.GeoM.Translate(float64(xPos), float64(yPos))
+                        options.GeoM.Scale(editor.Scale, editor.Scale)
+                        options.GeoM.Translate(startX, startY)
+                        screen.DrawImage(bonusImage, &options)
+                    }
+                }
+
                 if editor.TileX == xUse && editor.TileY == yUse {
                     vector.StrokeRect(screen, float32(startX) + float32(xPos * editor.Scale), float32(startY) + float32(yPos * editor.Scale), float32(xSize) * float32(editor.Scale), float32(ySize) * float32(editor.Scale), 1.5, color.White, true)
                 }
@@ -328,6 +374,7 @@ func MakeEditor() *Editor {
         ArcanusMap: terrain.MakeMap(100, 200),
         MyrrorMap: terrain.MakeMap(100, 200),
         TileGpuCache: make(map[int]*ebiten.Image),
+        ImageCache: util.MakeImageCache(cache),
         TileX: -1,
         TileY: -1,
         Scale: 1.0,
@@ -362,6 +409,17 @@ func (editor *Editor) loadFromSavegame(filename string) {
         }
     }
 
+    table := *load.GetTerrainSpecialLookupTable()
+
+    mapObject := makeBonusMap(load.WorldHeight, load.WorldWidth)
+
+    for y := range(load.WorldHeight) {
+        for x := range(load.WorldWidth) {
+            mapObject.Bonus[x][y] = table[saveGame.ArcanusTerrainSpecials[x][y]]
+        }
+    }
+    editor.setBonusMap(mapObject)
+
     editor.Plane = data.PlaneMyrror
 
     terrainData = saveGame.MyrrorMap
@@ -372,6 +430,16 @@ func (editor *Editor) loadFromSavegame(filename string) {
             editor.getMap().Terrain[x][y] = int(terrainData.Data[x][y]) + terrain.MyrrorStart
         }
     }
+
+    mapObject = makeBonusMap(load.WorldHeight, load.WorldWidth)
+
+    for y := range(load.WorldHeight) {
+        for x := range(load.WorldWidth) {
+            mapObject.Bonus[x][y] = table[saveGame.MyrrorTerrainSpecials[x][y]]
+        }
+    }
+    editor.setBonusMap(mapObject)
+
 
     editor.Plane = data.PlaneArcanus
 }

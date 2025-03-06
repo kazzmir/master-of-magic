@@ -150,21 +150,7 @@ type ExtraBonus struct {
 }
 
 func (bonus *ExtraBonus) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
-    index := -1
-
-    switch bonus.Bonus {
-        case data.BonusWildGame: index = 92
-        case data.BonusNightshade: index = 91
-        case data.BonusSilverOre: index = 80
-        case data.BonusGoldOre: index = 81
-        case data.BonusIronOre: index = 78
-        case data.BonusCoal: index = 79
-        case data.BonusMithrilOre: index = 83
-        case data.BonusAdamantiumOre: index = 84
-        case data.BonusGem: index = 82
-        case data.BonusQuorkCrystal: index = 85
-        case data.BonusCrysxCrystal: index = 86
-    }
+    index := bonus.Bonus.LbxIndex()
 
     if index == -1 {
         return
