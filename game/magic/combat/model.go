@@ -1385,6 +1385,9 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playe
             case data.AbilityFireballSpell:
                 fireball := allSpells.FindByName("Fireball")
                 unit.SpellCharges[fireball] = int(ability.Value)
+            case data.AbilityHealingSpell:
+                healing := allSpells.FindByName("Healing")
+                unit.SpellCharges[healing] = int(ability.Value)
             case data.AbilityWebSpell:
                 web := allSpells.FindByName("Web")
                 unit.SpellCharges[web] = int(ability.Value)
