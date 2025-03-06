@@ -665,6 +665,7 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
 
 func (engine *Engine) MakeUI() *ebitenui.UI {
     imageCache := util.MakeImageCache(engine.Cache)
+    imageCache.ScaleAmount = 1
 
     face, _ := loadFont(19)
 
