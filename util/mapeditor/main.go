@@ -373,6 +373,8 @@ func MakeEditor() *Editor {
         Font: font,
         ArcanusMap: terrain.MakeMap(100, 200),
         MyrrorMap: terrain.MakeMap(100, 200),
+        ArcanusBonusMap: makeBonusMap(100, 200),
+        MyrrorBonusMap: makeBonusMap(100, 200),
         TileGpuCache: make(map[int]*ebiten.Image),
         ImageCache: util.MakeImageCache(cache),
         TileX: -1,
