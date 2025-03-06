@@ -5,20 +5,21 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
-func GetTerrainSpecialLookupTable() *map[uint8]data.BonusType {
-    return &map[uint8]data.BonusType{
-        0: data.BonusNone,
-        1: data.BonusIronOre,
-        2: data.BonusCoal,
-        3: data.BonusSilverOre,
-        4: data.BonusGoldOre,
-        5: data.BonusGem,
-        6: data.BonusMithrilOre,
-        7: data.BonusAdamantiumOre,
-        8: data.BonusQuorkCrystal,
-        9: data.BonusCrysxCrystal,
-        64: data.BonusWildGame,
-        128: data.BonusNightshade,
+func ConvertTerrainSpecial(terrainSpecial uint8) data.BonusType {
+    switch (terrainSpecial) {
+        case 1: return data.BonusIronOre
+        case 2: return data.BonusCoal
+        case 3: return data.BonusSilverOre
+        case 4: return data.BonusGoldOre
+        case 5: return data.BonusGem
+        case 6: return data.BonusMithrilOre
+        case 7: return data.BonusAdamantiumOre
+        case 8: return data.BonusQuorkCrystal
+        case 9: return data.BonusCrysxCrystal
+        case 64: return data.BonusWildGame
+        case 128: return data.BonusNightshade
     }
+
+    return data.BonusNone
 }
 

@@ -411,13 +411,11 @@ func (editor *Editor) loadFromSavegame(filename string) {
         }
     }
 
-    table := *load.GetTerrainSpecialLookupTable()
-
     mapObject := makeBonusMap(load.WorldHeight, load.WorldWidth)
 
     for y := range(load.WorldHeight) {
         for x := range(load.WorldWidth) {
-            mapObject.Bonus[x][y] = table[saveGame.ArcanusTerrainSpecials[x][y]]
+            mapObject.Bonus[x][y] = load.ConvertTerrainSpecial(saveGame.ArcanusTerrainSpecials[x][y])
         }
     }
     editor.setBonusMap(mapObject)
@@ -437,7 +435,7 @@ func (editor *Editor) loadFromSavegame(filename string) {
 
     for y := range(load.WorldHeight) {
         for x := range(load.WorldWidth) {
-            mapObject.Bonus[x][y] = table[saveGame.MyrrorTerrainSpecials[x][y]]
+            mapObject.Bonus[x][y] = load.ConvertTerrainSpecial(saveGame.MyrrorTerrainSpecials[x][y])
         }
     }
     editor.setBonusMap(mapObject)
