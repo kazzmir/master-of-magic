@@ -669,6 +669,11 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.CastingSkillPower = 10000
 
     attackingArmy := createArchAngelArmy(attackingPlayer)
+
+    attackingArmy.Units = append(attackingArmy.Units, &combat.ArmyUnit{
+        Unit: units.MakeOverworldUnitFromUnit(units.GiantSpiders, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()),
+    })
+
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     attackingArmy.AddEnchantment(data.CombatEnchantmentWrack)

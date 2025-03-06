@@ -4635,6 +4635,8 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         transport := stack.HasSailingUnits(false)
 
         for _, unit := range stack.Units() {
+            // if the player fled and the unit is webbed then it should die
+
             dead := unit.GetHealth() <= 0
 
             // if combat was on water and there are no sailing ships left then all units should die
