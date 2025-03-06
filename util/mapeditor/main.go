@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/util/common"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/load"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -112,6 +113,18 @@ func (editor *Editor) clear() {
     }
 }
 
+func (editor *Editor) generate() {
+    generated := maplib.MakeMap(editor.Data, 0, data.MagicSettingNormal, data.DifficultyAverage, editor.Plane, nil, nil)
+    editor.setMap(generated.Map)
+    editor.setBonusMap(makeBonusMap(editor.getMap().Rows(), editor.getMap().Columns()))
+
+    for column := range(editor.getMap().Columns()) {
+        for row := range(editor.getMap().Rows()) {
+            editor.getBonusMap().Bonus[column][row] = generated.GetBonusTile(column, row)
+        }
+    }
+}
+
 func (editor *Editor) togglePlane() {
     if editor.Plane == data.PlaneArcanus {
         editor.Plane = data.PlaneMyrror
@@ -193,7 +206,7 @@ func (editor *Editor) Update() error {
                 editor.clear()
             case ebiten.KeyG:
                 start := time.Now()
-                editor.setMap(terrain.GenerateLandCellularAutomata(editor.getMap().Columns(), editor.getMap().Rows(), editor.Data, editor.Plane))
+                editor.generate()
                 end := time.Now()
                 log.Printf("Generate land took %v", end.Sub(start))
             case ebiten.KeyS:
