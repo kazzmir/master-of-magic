@@ -852,7 +852,12 @@ func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 13)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    effect := func (unit *ArmyUnit){
+        unit.AddCurse(data.UnitCurseWeb)
+        unit.WebHealth = 12
+    }
+
+    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
 }
 
 func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
@@ -1304,7 +1309,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 combat.CreateCracksCallProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                if target.Unit.IsFlying() {
+                if target.IsFlying() {
                     return false
                 }
                 if target.HasAbility(data.AbilityNonCorporeal) {
@@ -1322,7 +1327,9 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWebProjectile(target)
                 castedCallback()
-            }, targetAny)
+            }, func (target *ArmyUnit) bool {
+                return !target.HasAbility(data.AbilityNonCorporeal)
+            })
         case "Banish":
             combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15)
@@ -1736,7 +1743,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 }
 
                 var movementImage *ebiten.Image
-                if combat.Model.SelectedUnit.Unit.IsFlying() {
+                if combat.Model.SelectedUnit.IsFlying() {
                     movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 39, 0)
                 } else {
                     movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 38, 0)
@@ -2578,7 +2585,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
                 }
 
                 // unit moves from outside the wall of fire to inside
-                if !mover.Unit.IsFlying() && combat.Model.InsideWallOfFire(targetX, targetY) && !combat.Model.InsideWallOfFire(mover.X, mover.Y) {
+                if !mover.IsFlying() && combat.Model.InsideWallOfFire(targetX, targetY) && !combat.Model.InsideWallOfFire(mover.X, mover.Y) {
                     combat.Model.ApplyWallOfFireDamage(mover)
 
                     if mover.Unit.GetHealth() <= 0 {
@@ -3107,7 +3114,7 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     }
 
     movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
-    if unit.Unit.IsFlying() {
+    if unit.IsFlying() {
         movementImage, _ = combat.ImageCache.GetImage("compix.lbx", 73, 0)
     }
 
@@ -3625,6 +3632,8 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             // unitOptions.GeoM.Translate(0, float64(tile0.Bounds().Dy()/2))
 
             index := uint64(0)
+            // sort of a hack here, but we use unit.Unit.IsFlying() to bypass a webbed unit so that the unit
+            // still animates if it was originally flying
             if unit.Unit.IsFlying() || unit.Moving {
                 index = animationIndex % (uint64(len(combatImages)) - 1)
             }
@@ -3674,6 +3683,11 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
                         screen.DrawImage(use, &unitOptions)
                 }
+            }
+
+            if unit.IsWebbed() {
+                image, _ := combat.ImageCache.GetImage("resource.lbx", 82, 0)
+                screen.DrawImage(image, &unitOptions)
             }
         }
     }

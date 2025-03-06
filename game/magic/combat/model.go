@@ -540,6 +540,9 @@ type ArmyUnit struct {
     CastingSkill float32
     Casted bool
 
+    // health of the web spell cast on this unit
+    WebHealth int
+
     Model *CombatModel
 
     Team Team
@@ -567,6 +570,23 @@ type ArmyUnit struct {
 
 func (unit *ArmyUnit) IsAsleep() bool {
     return unit.HasCurse(data.UnitCurseBlackSleep)
+}
+
+func (unit *ArmyUnit) IsWebbed() bool {
+    return unit.WebHealth > 0
+}
+
+func (unit *ArmyUnit) ProcessWeb() {
+    if unit.WebHealth > 0 {
+        damage := max(unit.GetMeleeAttackPower(), unit.GetRangedAttackPower())
+        damage += int(unit.GetAbilityValue(data.AbilityFireBreath))
+        unit.WebHealth -= damage
+    }
+}
+
+func (unit *ArmyUnit) IsFlying() bool {
+    // a webbed unit is not flying
+    return unit.Unit.IsFlying() && !unit.HasCurse(data.UnitCurseWeb)
 }
 
 func (unit *ArmyUnit) GetAbilities() []data.Ability {
@@ -1061,7 +1081,7 @@ func (unit *ArmyUnit) GetPower() int {
 
 // true if this unit can move through a tile with a wall tile
 func (unit *ArmyUnit) CanTraverseWall() bool {
-    return unit.Unit.IsFlying() || unit.HasAbility(data.AbilityMerging) || unit.HasAbility(data.AbilityTeleporting)
+    return unit.IsFlying() || unit.HasAbility(data.AbilityMerging) || unit.HasAbility(data.AbilityTeleporting)
 }
 
 func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
@@ -1160,7 +1180,7 @@ func (unit *ArmyUnit) GetMovementSpeed() int {
     base = unit.Unit.MovementSpeedEnchantmentBonus(base, unit.Enchantments)
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentEntangle, oppositeTeam(unit.Team)) {
-        unaffected := unit.Unit.IsFlying() || unit.HasAbility(data.AbilityNonCorporeal)
+        unaffected := unit.IsFlying() || unit.HasAbility(data.AbilityNonCorporeal)
 
         if !unaffected {
             modifier -= 1
@@ -1812,6 +1832,13 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
                 }
 
                 if unit.LastTurn < model.CurrentTurn {
+
+                    // spend a turn to remove the web
+                    if unit.IsWebbed() {
+                        unit.ProcessWeb()
+                        continue
+                    }
+
                     unit.Paths = make(map[image.Point]pathfinding.Path)
                     return unit
                 }
@@ -1827,6 +1854,11 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
                 }
 
                 if unit.LastTurn < model.CurrentTurn {
+                    if unit.IsWebbed() {
+                        unit.ProcessWeb()
+                        continue
+                    }
+
                     unit.Paths = make(map[image.Point]pathfinding.Path)
                     return unit
                 }
@@ -2927,7 +2959,7 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         }
     }
 
-    if defender.Unit.IsFlying() && !attacker.Unit.IsFlying() {
+    if defender.IsFlying() && !attacker.IsFlying() {
         // a unit with Thrown can attack a flying unit
         if attacker.HasAbility(data.AbilityThrown) ||
            attacker.HasAbility(data.AbilityFireBreath) ||
@@ -3033,11 +3065,11 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 // if either side is flying then they do not take damage.
                 // for this to be false, either both are inside the wall of fire, or both are outside.
                 if model.InsideWallOfFire(defender.X, defender.Y) != model.InsideWallOfFire(attacker.X, attacker.Y) {
-                    if !attacker.Unit.IsFlying() {
+                    if !attacker.IsFlying() {
                         model.ApplyWallOfFireDamage(attacker)
                     }
 
-                    if !defender.Unit.IsFlying() {
+                    if !defender.IsFlying() {
                         model.ApplyWallOfFireDamage(defender)
                     }
                 }
