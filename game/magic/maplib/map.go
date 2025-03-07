@@ -150,21 +150,7 @@ type ExtraBonus struct {
 }
 
 func (bonus *ExtraBonus) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
-    index := -1
-
-    switch bonus.Bonus {
-        case data.BonusWildGame: index = 92
-        case data.BonusNightshade: index = 91
-        case data.BonusSilverOre: index = 80
-        case data.BonusGoldOre: index = 81
-        case data.BonusIronOre: index = 78
-        case data.BonusCoal: index = 79
-        case data.BonusMithrilOre: index = 83
-        case data.BonusAdamantiumOre: index = 84
-        case data.BonusGem: index = 82
-        case data.BonusQuorkCrystal: index = 85
-        case data.BonusCrysxCrystal: index = 86
-    }
+    index := bonus.Bonus.LbxIndex()
 
     if index == -1 {
         return
@@ -231,6 +217,20 @@ func (encounterType EncounterType) ShortName() string {
     }
 
     return ""
+}
+
+func (encounterType EncounterType) LbxIndex() int {
+    switch encounterType {
+        case EncounterTypeLair, EncounterTypeCave: return 71
+        case EncounterTypePlaneTower: return 69
+        case EncounterTypeAncientTemple: return 72
+        case EncounterTypeFallenTemple: return 75
+        case EncounterTypeRuins: return 74
+        case EncounterTypeAbandonedKeep: return 73
+        case EncounterTypeDungeon: return 74
+    }
+
+    return -1
 }
 
 func randomEncounterType() EncounterType {
@@ -346,17 +346,7 @@ func makeEncounter(encounterType EncounterType, difficulty data.DifficultySettin
 }
 
 func (extra *ExtraEncounter) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
-    index := -1
-
-    switch extra.Type {
-        case EncounterTypeLair, EncounterTypeCave: index = 71
-        case EncounterTypePlaneTower: index = 69
-        case EncounterTypeAncientTemple: index = 72
-        case EncounterTypeFallenTemple: index = 75
-        case EncounterTypeRuins: index = 74
-        case EncounterTypeAbandonedKeep: index = 73
-        case EncounterTypeDungeon: index = 74
-    }
+    index := extra.Type.LbxIndex()
 
     if index == -1 {
         return
