@@ -545,7 +545,7 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
 }
 
-func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength int) {
+func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 0)
     loopImages := images[0:3]
     explodeImages := images[3:]
@@ -560,10 +560,10 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
+    return combat.createSkyProjectile(target, loopImages, explodeImages, damage)
 }
 
-func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength int) {
+func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 23)
 
     loopImages := images[0:11]
@@ -576,7 +576,7 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength 
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
+    return combat.createSkyProjectile(target, loopImages, explodeImages, damage)
 }
 
 func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
@@ -1257,7 +1257,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 if picked {
                     army.Casted = true
                     // player mana and skill should go down accordingly
-                    combat.Model.InvokeSpell(player, nil, spell, func(){
+                    combat.Model.InvokeSpell(combat, player, nil, spell, func(){
                         army.ManaPool -= spell.Cost(false)
                         player.Mana -= int(float64(spell.Cost(false)) * army.Range.ToFloat())
                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
@@ -1287,7 +1287,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             // spell casting range for a unit is always 1
 
                             doCast := func(spell spellbook.Spell){
-                                combat.Model.InvokeSpell(player, caster, spell, func(){
+                                combat.Model.InvokeSpell(combat, player, caster, spell, func(){
                                     charge, hasCharge := caster.SpellCharges[spell]
                                     if hasCharge && charge > 0 {
                                         caster.SpellCharges[spell] -= 1

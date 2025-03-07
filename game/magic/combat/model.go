@@ -3506,8 +3506,12 @@ func (model *CombatModel) DoAllUnitsSpell(player *playerlib.Player, spell spellb
     }
 }
 
+type SpellSystem interface {
+    CreateFireballProjectile(target *ArmyUnit, cost int) *Projectile
+}
+
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
-func (model *CombatModel) InvokeSpell(player *playerlib.Player, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func()){
+func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib.Player, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func()){
     targetAny := func (target *ArmyUnit) bool { return true }
     targetFantastic := func (target *ArmyUnit) bool {
         return target != nil && target.Unit.GetRace() == data.RaceFantastic
@@ -3525,12 +3529,12 @@ func (model *CombatModel) InvokeSpell(player *playerlib.Player, unitCaster *Army
     }
 
     switch spell.Name {
-        /*
         case "Fireball":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateFireballProjectile(target, spell.Cost(false) / 3)
+                model.AddProjectile(spellSystem.CreateFireballProjectile(target, spell.Cost(false) / 3))
                 castedCallback()
             }, targetAny)
+        /*
         case "Ice Bolt":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateIceBoltProjectile(target, spell.Cost(false))
