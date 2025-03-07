@@ -3460,3 +3460,22 @@ func (model *CombatModel) DoTargetUnitSpell(player *playerlib.Player, spell spel
         default:
     }
 }
+
+// FIXME: take in a canTarget function to check if the tile is legal
+func (model *CombatModel) DoTargetTileSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
+    selecter := TeamAttacker
+    if player == model.DefendingArmy.Player {
+        selecter = TeamDefender
+    }
+
+    event := &CombatEventSelectTile{
+        Selecter: selecter,
+        Spell: spell,
+        SelectTile: onTarget,
+    }
+
+    select {
+        case model.Events <- event:
+        default:
+    }
+}

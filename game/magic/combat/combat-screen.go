@@ -1074,39 +1074,9 @@ func (combat *CombatScreen) CreateDemon(player *playerlib.Player, x int, y int) 
     combat.Model.addNewUnit(player, x, y, units.Demon, units.FacingDown)
 }
 
-// FIXME: take in a canTarget function to check if the tile is legal
-func (combat *CombatScreen) DoTargetTileSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
-    // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
-
-    selecter := TeamAttacker
-    if player == combat.Model.DefendingArmy.Player {
-        selecter = TeamDefender
-    }
-
-    event := &CombatEventSelectTile{
-        Selecter: selecter,
-        Spell: spell,
-        SelectTile: func(x int, y int){
-            sound, err := combat.AudioCache.GetSound(spell.Sound)
-            if err == nil {
-                sound.Play()
-            } else {
-                log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-            }
-
-            onTarget(x, y)
-        },
-    }
-
-    select {
-        case combat.Events <- event:
-        default:
-    }
-}
-
 func (combat *CombatScreen) DoSummoningSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
     // FIXME: pass in a canTarget function that only allows summoning on an empty tile on the casting wizards side of the battlefield
-    combat.DoTargetTileSpell(player, spell, func (x int, y int){
+    combat.Model.DoTargetTileSpell(player, spell, func (x int, y int){
         combat.CreateSummoningCircle(x, y)
         // FIXME: there should be a delay between the summoning circle appearing and when the unit appears
         onTarget(x, y)
@@ -1270,7 +1240,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 return true
             })
         case "Earth to Mud":
-            combat.DoTargetTileSpell(player, spell, func (x int, y int){
+            combat.Model.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.Model.CreateEarthToMud(x, y)
                 castedCallback()
             })
@@ -1309,12 +1279,12 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
             }, targetAny)
         case "Disrupt":
             // FIXME: can only target city walls
-            combat.DoTargetTileSpell(player, spell, func (x int, y int){
+            combat.Model.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.CreateDisruptProjectile(x, y)
                 castedCallback()
             })
         case "Magic Vortex":
-            combat.DoTargetTileSpell(player, spell, func (x int, y int){
+            combat.Model.DoTargetTileSpell(player, spell, func (x int, y int){
                 combat.CreateMagicVortex(x, y)
                 castedCallback()
             })
@@ -2242,6 +2212,13 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
             combat.MouseState = CombatCast
 
             if inputmanager.LeftClick() && mouseY < hudY {
+                sound, err := combat.AudioCache.GetSound(spell.Sound)
+                if err == nil {
+                    sound.Play()
+                } else {
+                    log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+                }
+
                 selectTile(combat.MouseTileX, combat.MouseTileY)
                 break
             }
