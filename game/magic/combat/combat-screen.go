@@ -788,7 +788,7 @@ func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) *Projectil
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, heal)
 }
 
-func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
@@ -797,10 +797,10 @@ func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentBless)
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, bless))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, bless)
 }
 
-func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
     explodeImages := images
@@ -811,10 +811,10 @@ func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, weakness))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, weakness)
 }
 
-func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
     explodeImages := images
@@ -825,7 +825,7 @@ func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, sleep))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, sleep)
 }
 
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
@@ -1015,13 +1015,13 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
     return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, effect)
 }
 
-func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 21)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){
         target.AddCurse(data.UnitCurseMindStorm)
-    }))
+    })
 }
 
 func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) *Projectile {
@@ -1086,14 +1086,6 @@ func (combat *CombatScreen) CreateFireElemental(player *playerlib.Player, x int,
 
 func (combat *CombatScreen) CreateDemon(player *playerlib.Player, x int, y int) {
     combat.Model.addNewUnit(player, x, y, units.Demon, units.FacingDown)
-}
-
-
-func (combat *CombatScreen) CastCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
-    if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
-        // FIXME: make creature bind animation
-        combat.Model.ApplyCreatureBinding(target, newOwner)
-    }
 }
 
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {

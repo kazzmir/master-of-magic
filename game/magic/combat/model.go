@@ -3534,6 +3534,10 @@ type SpellSystem interface {
     CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile
     CreateSummoningCircle(x int, y int) *Projectile
     CreateResistElementsProjectile(target *ArmyUnit) *Projectile
+    CreateMindStormProjectile(target *ArmyUnit) *Projectile
+    CreateBlessProjectile(target *ArmyUnit) *Projectile
+    CreateWeaknessProjectile(target *ArmyUnit) *Projectile
+    CreateBlackSleepProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -3838,7 +3842,6 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             model.CastEnchantment(player, data.CombatEnchantmentTerror, castedCallback)
         case "Wrack":
             model.CastEnchantment(player, data.CombatEnchantmentWrack, castedCallback)
-        /*
 
         case "Creature Binding":
             selectable := func(target *ArmyUnit) bool {
@@ -3862,7 +3865,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             }
 
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CastCreatureBinding(target, player)
+                model.CastCreatureBinding(target, player)
                 castedCallback()
             }, selectable)
 
@@ -3880,18 +3883,18 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             }
 
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateMindStormProjectile(target)
+                model.AddProjectile(spellSystem.CreateMindStormProjectile(target))
                 castedCallback()
             }, selectable)
 
         case "Bless":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                combat.CreateBlessProjectile(target)
+                model.AddProjectile(spellSystem.CreateBlessProjectile(target))
                 castedCallback()
             }, targetAny)
         case "Weakness":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateWeaknessProjectile(target)
+                model.AddProjectile(spellSystem.CreateWeaknessProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
                 if target.HasCurse(data.UnitCurseWeakness) {
@@ -3914,7 +3917,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             })
         case "CurseBlackSleep":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateBlackSleepProjectile(target)
+                model.AddProjectile(spellSystem.CreateBlackSleepProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
                 if target.HasCurse(data.UnitCurseBlackSleep) {
@@ -3935,7 +3938,6 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
-            */
 
         /*
         unit curses:
@@ -4016,3 +4018,9 @@ func (model *CombatModel) CastEnchantment(player *playerlib.Player, enchantment 
     }
 }
 
+func (model *CombatModel) CastCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
+    if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
+        // FIXME: make creature bind animation
+        model.ApplyCreatureBinding(target, newOwner)
+    }
+}
