@@ -3125,7 +3125,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
                         screen.DrawImage(use, &unitOptions)
                     case data.UnitCurseVertigo:
-                        images, _ := combat.ImageCache.GetImages("resource.lbx", 75)
+                        images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 17)
                         index := animationIndex % uint64(len(images))
                         use := images[index]
 
