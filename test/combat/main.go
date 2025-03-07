@@ -652,7 +652,7 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
                        "Creature Binding", "Mind Storm",
                        "Fire Bolt", "Ice Bolt", "Star Fires", "Dispel Evil", "Life Drain",
                        "Holy Word", "Cracks Call", "Banish", "Disintegrate", "Warp Wood", "Death Spell",
-                       "Word of Death", "Dispel Magic True",
+                       "Word of Death", "Dispel Magic True", "Web",
                    }
 
 
@@ -669,6 +669,11 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.CastingSkillPower = 10000
 
     attackingArmy := createArchAngelArmy(attackingPlayer)
+
+    attackingArmy.Units = append(attackingArmy.Units, &combat.ArmyUnit{
+        Unit: units.MakeOverworldUnitFromUnit(units.GiantSpiders, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()),
+    })
+
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     attackingArmy.AddEnchantment(data.CombatEnchantmentWrack)
