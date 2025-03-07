@@ -6,6 +6,7 @@ import (
     "log"
     "time"
     "flag"
+    "image"
     "image/color"
     "math/rand"
 
@@ -26,27 +27,12 @@ import (
 const ScreenWidth = 1024
 const ScreenHeight = 768
 
-type BonusMap struct {
-    Bonus [][]data.BonusType
-}
-
-func makeBonusMap(rows int, columns int) *BonusMap {
-    bonus := make([][]data.BonusType, columns)
-    for i := 0; i < columns; i++ {
-        bonus[i] = make([]data.BonusType, rows)
-    }
-
-    return &BonusMap{Bonus: bonus}
-}
-
 type Editor struct {
     Data *terrain.TerrainData
     Font *text.GoTextFaceSource
 
-    ArcanusMap *terrain.Map
-    MyrrorMap *terrain.Map
-    ArcanusBonusMap *BonusMap
-    MyrrorBonusMap *BonusMap
+    ArcanusMap *maplib.Map
+    MyrrorMap *maplib.Map
     Plane data.Plane
 
     TileGpuCache map[int]*ebiten.Image
@@ -72,7 +58,26 @@ func chooseRandomElement[T any](values []T) T {
     return values[index]
 }
 
-func (editor *Editor) getMap() *terrain.Map {
+func makeEmptyMap(terrainData *terrain.TerrainData, height int, width int, plane data.Plane) *maplib.Map {
+    mapObject := maplib.Map{
+        Data: terrainData,
+        Map: terrain.MakeMap(height, width),
+        Plane: plane,
+        TileCache: make(map[int]*ebiten.Image),
+        ExtraMap: make(map[image.Point]map[maplib.ExtraKind]maplib.ExtraTile),
+        CityProvider: nil,
+    }
+    if plane == data.PlaneMyrror {
+        for x := range width {
+            for y := range height {
+                mapObject.Map.Terrain[x][y] += terrain.MyrrorStart
+            }
+        }
+    }
+    return &mapObject
+}
+
+func (editor *Editor) getMap() *maplib.Map {
     if editor.Plane == data.PlaneArcanus {
         return editor.ArcanusMap
     } else {
@@ -80,48 +85,11 @@ func (editor *Editor) getMap() *terrain.Map {
     }
 }
 
-func (editor *Editor) setMap(mapObject *terrain.Map)  {
+func (editor *Editor) setMap(mapObject *maplib.Map)  {
     if editor.Plane == data.PlaneArcanus {
         editor.ArcanusMap = mapObject
     } else {
         editor.MyrrorMap = mapObject
-    }
-}
-
-func (editor *Editor) getBonusMap() *BonusMap {
-    if editor.Plane == data.PlaneArcanus {
-        return editor.ArcanusBonusMap
-    } else {
-        return editor.MyrrorBonusMap
-    }
-}
-
-func (editor *Editor) setBonusMap(mapObject *BonusMap) {
-    if editor.Plane == data.PlaneArcanus {
-        editor.ArcanusBonusMap = mapObject
-    } else {
-        editor.MyrrorBonusMap = mapObject
-    }
-}
-
-func (editor *Editor) clear() {
-    for column := range(editor.getMap().Columns()) {
-        for row := range(editor.getMap().Rows()) {
-            editor.getMap().Terrain[column][row] = terrain.TileOcean.Index(editor.Plane)
-            editor.getBonusMap().Bonus[column][row] = data.BonusNone
-        }
-    }
-}
-
-func (editor *Editor) generate() {
-    generated := maplib.MakeMap(editor.Data, 0, data.MagicSettingNormal, data.DifficultyAverage, editor.Plane, nil, nil)
-    editor.setMap(generated.Map)
-    editor.setBonusMap(makeBonusMap(editor.getMap().Rows(), editor.getMap().Columns()))
-
-    for column := range(editor.getMap().Columns()) {
-        for row := range(editor.getMap().Rows()) {
-            editor.getBonusMap().Bonus[column][row] = generated.GetBonusTile(column, row)
-        }
     }
 }
 
@@ -149,7 +117,7 @@ func (editor *Editor) Update() error {
                     editor.CameraY -= 1.0 / editor.Scale
                 }
             case ebiten.KeyDown:
-                if int(editor.CameraY) < editor.getMap().Rows() && canScroll {
+                if int(editor.CameraY) < editor.getMap().Height() && canScroll {
                     editor.CameraY += 1.0 / editor.Scale
                 }
             case ebiten.KeyLeft:
@@ -157,7 +125,7 @@ func (editor *Editor) Update() error {
                     editor.CameraX -= 1.0 / editor.Scale
                 }
             case ebiten.KeyRight:
-                if int(editor.CameraX) < editor.getMap().Columns() && canScroll {
+                if int(editor.CameraX) < editor.getMap().Width() && canScroll {
                     editor.CameraX += 1.0 / editor.Scale
                 }
             case ebiten.KeyMinus:
@@ -203,15 +171,15 @@ func (editor *Editor) Update() error {
             case ebiten.KeyP:
                 editor.togglePlane()
             case ebiten.KeyC:
-                editor.clear()
+                editor.setMap(makeEmptyMap(editor.Data, 100, 200, editor.Plane))
             case ebiten.KeyG:
                 start := time.Now()
-                editor.generate()
+                editor.setMap(maplib.MakeMap(editor.Data, 0, data.MagicSettingNormal, data.DifficultyAverage, editor.Plane, nil, nil))
                 end := time.Now()
                 log.Printf("Generate land took %v", end.Sub(start))
             case ebiten.KeyS:
                 start := time.Now()
-                editor.getMap().ResolveTiles(editor.Data, editor.Plane)
+                editor.getMap().Map.ResolveTiles(editor.Data, editor.Plane)
                 end := time.Now()
                 log.Printf("Resolve tiles took %v", end.Sub(start))
             case ebiten.KeyTab:
@@ -240,12 +208,12 @@ func (editor *Editor) Update() error {
     editor.TileY = y
 
     if leftClick {
-        if x >= 0 && x < editor.getMap().Columns() && y >= 0 && y < editor.getMap().Rows() {
-            editor.getMap().SetTerrainAt(x, y, editor.Terrain, editor.Data, editor.Plane)
+        if x >= 0 && x < editor.getMap().Width() && y >= 0 && y < editor.getMap().Height() {
+            editor.getMap().Map.SetTerrainAt(x, y, editor.Terrain, editor.Data, editor.Plane)
         }
     } else if rightClick {
-        if x >= 0 && x < editor.getMap().Columns() && y >= 0 && y < editor.getMap().Rows() {
-            editor.getMap().SetTerrainAt(x, y, terrain.Ocean, editor.Data, editor.Plane)
+        if x >= 0 && x < editor.getMap().Width() && y >= 0 && y < editor.getMap().Height() {
+            editor.getMap().Map.SetTerrainAt(x, y, terrain.Ocean, editor.Data, editor.Plane)
         }
     }
 
@@ -255,7 +223,7 @@ func (editor *Editor) Update() error {
 }
 
 func (editor *Editor) GetTileImage(x int, y int) *ebiten.Image {
-    index := editor.getMap().Terrain[x][y]
+    index := editor.getMap().Map.Terrain[x][y]
 
     use, ok := editor.TileGpuCache[index]
     if ok {
@@ -279,8 +247,8 @@ func (editor *Editor) Draw(screen *ebiten.Image){
 
     // log.Printf("Draw start")
 
-    for y := 0; y < editor.getMap().Rows(); y++ {
-        for x := 0; x < editor.getMap().Columns(); x++ {
+    for y := 0; y < editor.getMap().Height(); y++ {
+        for x := 0; x < editor.getMap().Width(); x++ {
             // xPos := startX + float64(x * xSize) //  * editor.Scale
             // yPos := startY + float64(y * ySize) // * editor.Scale
             xPos := float64(x * xSize)
@@ -289,7 +257,7 @@ func (editor *Editor) Draw(screen *ebiten.Image){
             xUse := x + int(editor.CameraX)
             yUse := y + int(editor.CameraY)
 
-            if xUse >= 0 && xUse < editor.getMap().Columns() && yUse >= 0 && yUse < editor.getMap().Rows() {
+            if xUse >= 0 && xUse < editor.getMap().Width() && yUse >= 0 && yUse < editor.getMap().Height() {
                 tileImage := editor.GetTileImage(xUse, yUse)
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(xPos), float64(yPos))
@@ -297,7 +265,7 @@ func (editor *Editor) Draw(screen *ebiten.Image){
                 options.GeoM.Translate(startX, startY)
                 screen.DrawImage(tileImage, &options)
 
-                bonus := editor.getBonusMap().Bonus[xUse][yUse]
+                bonus := editor.getMap().GetBonusTile(xUse, yUse)
                 if bonus != data.BonusNone {
                     bonusImage, err := editor.ImageCache.GetImage("mapback.lbx", bonus.LbxIndex(), 0)
                     if err == nil {
@@ -324,21 +292,21 @@ func (editor *Editor) Draw(screen *ebiten.Image){
         op := &text.DrawOptions{}
         op.GeoM.Translate(1, 1)
         op.ColorScale.ScaleWithColor(color.White)
-        text.Draw(editor.InfoImage, fmt.Sprintf("Map Dimensions: %vx%v", editor.getMap().Columns(), editor.getMap().Rows()), face, op)
+        text.Draw(editor.InfoImage, fmt.Sprintf("Map Dimensions: %vx%v", editor.getMap().Width(), editor.getMap().Height()), face, op)
         op.GeoM.Translate(0, face.Size + 2)
         text.Draw(editor.InfoImage, fmt.Sprintf("Selection: %v", editor.Terrain), face, op)
         op.GeoM.Translate(0, face.Size + 2)
         value := -1
         var type_ terrain.TerrainType = terrain.Unknown
 
-        if editor.TileX >= 0 && editor.TileX < editor.getMap().Columns() && editor.TileY >= 0 && editor.TileY < editor.getMap().Rows() {
-            value = editor.getMap().Terrain[editor.TileX][editor.TileY]
+        if editor.TileX >= 0 && editor.TileX < editor.getMap().Width() && editor.TileY >= 0 && editor.TileY < editor.getMap().Height() {
+            value = editor.getMap().Map.Terrain[editor.TileX][editor.TileY]
             type_ = editor.Data.Tiles[value].Tile.TerrainType()
         }
 
         text.Draw(editor.InfoImage, fmt.Sprintf("Tile: %v,%v: 0x%x %v", editor.TileX, editor.TileY, value, type_), face, op)
 
-        if editor.TileX >= 0 && editor.TileX < editor.getMap().Columns() && editor.TileY >= 0 && editor.TileY < editor.getMap().Rows() {
+        if editor.TileX >= 0 && editor.TileX < editor.getMap().Width() && editor.TileY >= 0 && editor.TileY < editor.getMap().Height() {
             tileImage := editor.GetTileImage(editor.TileX, editor.TileY)
             var options ebiten.DrawImageOptions
             options.GeoM.Scale(1.5, 1.5)
@@ -375,19 +343,17 @@ func MakeEditor() *Editor {
         os.Exit(0)
     }
 
-    data, err := terrain.ReadTerrainData(lbxFile)
+    terrainData, err := terrain.ReadTerrainData(lbxFile)
     if err != nil {
         fmt.Printf("Could not read terrain data: %v\n", err)
         os.Exit(0)
     }
 
     return &Editor{
-        Data: data,
+        Data: terrainData,
         Font: font,
-        ArcanusMap: terrain.MakeMap(100, 200),
-        MyrrorMap: terrain.MakeMap(100, 200),
-        ArcanusBonusMap: makeBonusMap(100, 200),
-        MyrrorBonusMap: makeBonusMap(100, 200),
+        ArcanusMap: makeEmptyMap(terrainData, 100, 200, data.PlaneArcanus),
+        MyrrorMap: makeEmptyMap(terrainData, 100, 200, data.PlaneMyrror),
         TileGpuCache: make(map[int]*ebiten.Image),
         ImageCache: util.MakeImageCache(cache),
         TileX: -1,
@@ -415,46 +381,8 @@ func (editor *Editor) loadFromSavegame(filename string) {
         os.Exit(0)
     }
 
-    terrainData := saveGame.ArcanusMap
-
-    editor.setMap(terrain.MakeMap(load.WorldHeight, load.WorldWidth))
-    for y := range(load.WorldHeight) {
-        for x := range(load.WorldWidth) {
-            editor.getMap().Terrain[x][y] = int(terrainData.Data[x][y])
-        }
-    }
-
-    mapObject := makeBonusMap(load.WorldHeight, load.WorldWidth)
-
-    for y := range(load.WorldHeight) {
-        for x := range(load.WorldWidth) {
-            mapObject.Bonus[x][y] = load.ConvertTerrainSpecial(saveGame.ArcanusTerrainSpecials[x][y])
-        }
-    }
-    editor.setBonusMap(mapObject)
-
-    editor.Plane = data.PlaneMyrror
-
-    terrainData = saveGame.MyrrorMap
-
-    editor.setMap(terrain.MakeMap(load.WorldHeight, load.WorldWidth))
-    for y := range(load.WorldHeight) {
-        for x := range(load.WorldWidth) {
-            editor.getMap().Terrain[x][y] = int(terrainData.Data[x][y]) + terrain.MyrrorStart
-        }
-    }
-
-    mapObject = makeBonusMap(load.WorldHeight, load.WorldWidth)
-
-    for y := range(load.WorldHeight) {
-        for x := range(load.WorldWidth) {
-            mapObject.Bonus[x][y] = load.ConvertTerrainSpecial(saveGame.MyrrorTerrainSpecials[x][y])
-        }
-    }
-    editor.setBonusMap(mapObject)
-
-
-    editor.Plane = data.PlaneArcanus
+    editor.ArcanusMap = saveGame.ToMap(editor.Data, data.PlaneArcanus, nil)
+    editor.MyrrorMap = saveGame.ToMap(editor.Data, data.PlaneMyrror, nil)
 }
 
 func main() {
