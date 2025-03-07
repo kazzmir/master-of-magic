@@ -62,13 +62,50 @@ func (saveGame *SaveGame) ToMap(terrainData *terrain.TerrainData, plane data.Pla
         point := image.Pt(int(tower.X), int(tower.Y))
         if map_.ExtraMap[point] == nil {
             map_.ExtraMap[point] = make(map[maplib.ExtraKind]maplib.ExtraTile)
-            map_.ExtraMap[point][maplib.ExtraKindEncounter] = &maplib.ExtraEncounter{
-                Type: maplib.EncounterTypePlaneTower,
-                // FIXME: set budget, units and explored by; use tower.Owner
-                Budget: 0,
-                Units: nil,
-                ExploredBy: nil,
-            }
+        }
+        map_.ExtraMap[point][maplib.ExtraKindEncounter] = &maplib.ExtraEncounter{
+            Type: maplib.EncounterTypePlaneTower,
+            // FIXME: use tower.Owner?
+            Budget: 0,
+            Units: nil,
+            ExploredBy: nil,
+        }
+    }
+
+    for _, lair := range saveGame.Lairs {
+        if lair.Intact == 0 {
+            continue
+        }
+
+        if lair.Plane == 0 && plane != data.PlaneArcanus || lair.Plane != 0 && plane != data.PlaneMyrror {
+            continue
+        }
+
+        var encounterType maplib.EncounterType
+        switch lair.Kind {
+            case 0: encounterType = maplib.EncounterTypePlaneTower
+            case 1: encounterType = maplib.EncounterTypeChaosNode
+            case 2: encounterType = maplib.EncounterTypeNatureNode
+            case 3: encounterType = maplib.EncounterTypeSorceryNode
+            case 4: encounterType = maplib.EncounterTypeCave
+            case 5: encounterType = maplib.EncounterTypeDungeon
+            case 6: encounterType = maplib.EncounterTypeAncientTemple
+            case 7: encounterType = maplib.EncounterTypeAbandonedKeep
+            case 8: encounterType = maplib.EncounterTypeLair
+            case 9: encounterType = maplib.EncounterTypeRuins
+            case 10: encounterType = maplib.EncounterTypeFallenTemple
+        }
+
+        point := image.Pt(int(lair.X), int(lair.Y))
+        if map_.ExtraMap[point] == nil {
+            map_.ExtraMap[point] = make(map[maplib.ExtraKind]maplib.ExtraTile)
+        }
+        map_.ExtraMap[point][maplib.ExtraKindEncounter] = &maplib.ExtraEncounter{
+            Type: encounterType,
+            // FIXME: set budget, units and explored by, use tower.Owner
+            Budget: 0,
+            Units: nil,
+            ExploredBy: nil,
         }
     }
 
