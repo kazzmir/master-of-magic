@@ -219,6 +219,20 @@ func (encounterType EncounterType) ShortName() string {
     return ""
 }
 
+func (encounterType EncounterType) LbxIndex() int {
+    switch encounterType {
+        case EncounterTypeLair, EncounterTypeCave: return 71
+        case EncounterTypePlaneTower: return 69
+        case EncounterTypeAncientTemple: return 72
+        case EncounterTypeFallenTemple: return 75
+        case EncounterTypeRuins: return 74
+        case EncounterTypeAbandonedKeep: return 73
+        case EncounterTypeDungeon: return 74
+    }
+
+    return -1
+}
+
 func randomEncounterType() EncounterType {
     all := []EncounterType{
         EncounterTypeLair,
@@ -332,17 +346,7 @@ func makeEncounter(encounterType EncounterType, difficulty data.DifficultySettin
 }
 
 func (extra *ExtraEncounter) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
-    index := -1
-
-    switch extra.Type {
-        case EncounterTypeLair, EncounterTypeCave: index = 71
-        case EncounterTypePlaneTower: index = 69
-        case EncounterTypeAncientTemple: index = 72
-        case EncounterTypeFallenTemple: index = 75
-        case EncounterTypeRuins: index = 74
-        case EncounterTypeAbandonedKeep: index = 73
-        case EncounterTypeDungeon: index = 74
-    }
+    index := extra.Type.LbxIndex()
 
     if index == -1 {
         return

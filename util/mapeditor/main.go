@@ -8,7 +8,6 @@ import (
     "flag"
     "image"
     "image/color"
-    "math/rand"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/util/common"
@@ -51,11 +50,6 @@ type Editor struct {
     InfoImage *ebiten.Image
 
     Terrain terrain.TerrainType
-}
-
-func chooseRandomElement[T any](values []T) T {
-    index := rand.Intn(len(values))
-    return values[index]
 }
 
 func makeEmptyMap(terrainData *terrain.TerrainData, height int, width int, plane data.Plane) *maplib.Map {
@@ -174,9 +168,10 @@ func (editor *Editor) Update() error {
                 editor.setMap(makeEmptyMap(editor.Data, 100, 200, editor.Plane))
             case ebiten.KeyG:
                 start := time.Now()
-                editor.setMap(maplib.MakeMap(editor.Data, 0, data.MagicSettingNormal, data.DifficultyAverage, editor.Plane, nil, nil))
+                towers := maplib.GeneratePlaneTowerPositions(0, 6)
+                editor.setMap(maplib.MakeMap(editor.Data, 0, data.MagicSettingNormal, data.DifficultyAverage, editor.Plane, nil, towers))
                 end := time.Now()
-                log.Printf("Generate land took %v", end.Sub(start))
+                log.Printf("Generate map took %v", end.Sub(start))
             case ebiten.KeyS:
                 start := time.Now()
                 editor.getMap().Map.ResolveTiles(editor.Data, editor.Plane)
@@ -275,6 +270,19 @@ func (editor *Editor) Draw(screen *ebiten.Image){
                         options.GeoM.Scale(editor.Scale, editor.Scale)
                         options.GeoM.Translate(startX, startY)
                         screen.DrawImage(bonusImage, &options)
+                    }
+                }
+
+                encounter := editor.getMap().GetEncounter(xUse, yUse)
+                if encounter != nil {
+                    encounterImage, err := editor.ImageCache.GetImage("mapback.lbx", encounter.Type.LbxIndex(), 0)
+                    if err == nil {
+                        options.GeoM.Reset()
+                        options.GeoM.Scale(float64(xSize) / float64(encounterImage.Bounds().Dx()), float64(ySize) / float64(encounterImage.Bounds().Dy()))
+                        options.GeoM.Translate(float64(xPos), float64(yPos))
+                        options.GeoM.Scale(editor.Scale, editor.Scale)
+                        options.GeoM.Translate(startX, startY)
+                        screen.DrawImage(encounterImage, &options)
                     }
                 }
 

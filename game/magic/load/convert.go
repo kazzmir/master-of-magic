@@ -58,5 +58,19 @@ func (saveGame *SaveGame) ToMap(terrainData *terrain.TerrainData, plane data.Pla
         }
     }
 
+    for _, tower := range saveGame.Towers {
+        point := image.Pt(int(tower.X), int(tower.Y))
+        if map_.ExtraMap[point] == nil {
+            map_.ExtraMap[point] = make(map[maplib.ExtraKind]maplib.ExtraTile)
+            map_.ExtraMap[point][maplib.ExtraKindEncounter] = &maplib.ExtraEncounter{
+                Type: maplib.EncounterTypePlaneTower,
+                // FIXME: set budget, units and explored by; use tower.Owner
+                Budget: 0,
+                Units: nil,
+                ExploredBy: nil,
+            }
+        }
+    }
+
     return &map_
 }
