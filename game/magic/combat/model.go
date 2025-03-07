@@ -790,6 +790,11 @@ func (unit *ArmyUnit) GetToHitMelee() int {
         modifier += 10
     }
 
+    if unit.HasCurse(data.UnitCurseVertigo) {
+        modifier -= 20
+    }
+
+    // FIXME: blur doesn't affect to hit, instead it directly reduces damage points
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentBlur, oppositeTeam(unit.Team)) {
         modifier -= 10
     }
@@ -3538,6 +3543,7 @@ type SpellSystem interface {
     CreateBlessProjectile(target *ArmyUnit) *Projectile
     CreateWeaknessProjectile(target *ArmyUnit) *Projectile
     CreateBlackSleepProjectile(target *ArmyUnit) *Projectile
+    CreateVertigoProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -3930,6 +3936,21 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 }
 
                 if target.HasAbility(data.AbilityCharmed) {
+                    return false
+                }
+
+                return true
+            })
+        case "Vertigo":
+            model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateVertigoProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasCurse(data.UnitCurseVertigo) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityIllusionsImmunity) || target.HasAbility(data.AbilityMagicImmunity) {
                     return false
                 }
 

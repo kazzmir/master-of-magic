@@ -115,6 +115,10 @@ func (system *TestSpellSystem) CreateBlackSleepProjectile(target *ArmyUnit) *Pro
     return nil
 }
 
+func (system *TestSpellSystem) CreateVertigoProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }
