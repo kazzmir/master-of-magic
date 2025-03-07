@@ -18,7 +18,6 @@ import (
 )
 
 // onPlayerSelectedCallback CAN'T receive nil as argument
-// TODO: transform this into more unversal reusable form.
 func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache, imageCache *util.ImageCache, castingPlayer *playerlib.Player, playersInGame int, onPlayerSelectedCallback func(selectedPlayer *playerlib.Player) bool) *uilib.UIElementGroup {
     group := uilib.MakeGroup()
 
