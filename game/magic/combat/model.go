@@ -938,6 +938,7 @@ func (unit *ArmyUnit) GetDefense() int {
     for _, curse := range unit.Curses {
         switch curse {
             case data.UnitCurseMindStorm: modifier -= 5
+            case data.UnitCurseVertigo: modifier -= 1
         }
     }
 
