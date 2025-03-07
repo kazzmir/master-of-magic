@@ -401,6 +401,10 @@ func (combat *CombatScreen) computeTopDownOrder() []image.Point {
     return points
 }
 
+func (combat *CombatScreen) GetAllSpells() spellbook.Spells {
+    return combat.AllSpells
+}
+
 /* a projectile that shoots down from the sky at an angle
  */
 func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, effect ProjectileEffect) *Projectile {
@@ -866,7 +870,7 @@ func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) *Projectile {
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 14)
     explodeImages := images
 
@@ -886,10 +890,10 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 14)
     explodeImages := images
 
@@ -909,14 +913,14 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateResistElementsProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateResistElementsProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 0)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){})
 }
 
 func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) *Projectile {
@@ -1035,7 +1039,7 @@ func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) *Projectile {
     return combat.createUnitProjectile(&fakeTarget, explodeImages, UnitPositionUnder, func (*ArmyUnit){})
 }
 
-func (combat *CombatScreen) CreateSummoningCircle(x int, y int) {
+func (combat *CombatScreen) CreateSummoningCircle(x int, y int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 22)
     explodeImages := images
 
@@ -1044,7 +1048,7 @@ func (combat *CombatScreen) CreateSummoningCircle(x int, y int) {
         Y: y,
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(&fakeTarget, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
+    return combat.createUnitProjectile(&fakeTarget, explodeImages, UnitPositionUnder, func (*ArmyUnit){})
 }
 
 func (combat *CombatScreen) CreateMagicVortex(x int, y int) *OtherUnit {
@@ -1084,35 +1088,11 @@ func (combat *CombatScreen) CreateDemon(player *playerlib.Player, x int, y int) 
     combat.Model.addNewUnit(player, x, y, units.Demon, units.FacingDown)
 }
 
-func (combat *CombatScreen) DoSummoningSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
-    // FIXME: pass in a canTarget function that only allows summoning on an empty tile on the casting wizards side of the battlefield
-    combat.Model.DoTargetTileSpell(player, spell, func (x int, y int){
-        combat.CreateSummoningCircle(x, y)
-        // FIXME: there should be a delay between the summoning circle appearing and when the unit appears
-        onTarget(x, y)
-    })
-}
-
 
 func (combat *CombatScreen) CastCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
     if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
         // FIXME: make creature bind animation
         combat.Model.ApplyCreatureBinding(target, newOwner)
-    }
-}
-
-func (combat *CombatScreen) CastEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment, castedCallback func()){
-    if combat.Model.AddEnchantment(player, enchantment) {
-        combat.Events <- &CombatEventGlobalSpell{
-            Caster: player,
-            Magic: enchantment.Magic(),
-            Name: enchantment.Name(),
-        }
-        castedCallback()
-    } else {
-        combat.Events <- &CombatEventMessage{
-            Message: "That combat enchantment is already in effect",
-        }
     }
 }
 

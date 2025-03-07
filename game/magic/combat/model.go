@@ -3530,6 +3530,12 @@ type SpellSystem interface {
     CreateDisruptProjectile(x int, y int) *Projectile
     CreateMagicVortex(x int, y int) *OtherUnit
     CreateWarpWoodProjectile(target *ArmyUnit) *Projectile
+    CreateDeathSpellProjectile(target *ArmyUnit) *Projectile
+    CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile
+    CreateSummoningCircle(x int, y int) *Projectile
+    CreateResistElementsProjectile(target *ArmyUnit) *Projectile
+
+    GetAllSpells() spellbook.Spells
 }
 
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
@@ -3723,57 +3729,56 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return false
             })
-        /*
         case "Death Spell":
             model.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateDeathSpellProjectile(target)
+                model.AddProjectile(spellSystem.CreateDeathSpellProjectile(target))
             }, func (target *ArmyUnit) bool {
                 return !target.HasAbility(data.AbilityDeathImmunity)
             })
             castedCallback()
         case "Word of Death":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateWordOfDeathProjectile(target)
+                model.AddProjectile(spellSystem.CreateWordOfDeathProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
                 return !target.HasAbility(data.AbilityDeathImmunity)
             })
         case "Phantom Warriors":
-            combat.DoSummoningSpell(player, spell, func(x int, y int){
-                combat.CreatePhantomWarriors(player, x, y)
+            model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
+                model.addNewUnit(player, x, y, units.PhantomWarrior, units.FacingDown)
                 castedCallback()
             })
         case "Phantom Beast":
-            combat.DoSummoningSpell(player, spell, func(x int, y int){
-                combat.CreatePhantomBeast(player, x, y)
+            model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
+                model.addNewUnit(player, x, y, units.PhantomBeast, units.FacingDown)
                 castedCallback()
             })
         case "Earth Elemental":
-            combat.DoSummoningSpell(player, spell, func(x int, y int){
-                combat.CreateEarthElemental(player, x, y)
+            model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
+                model.addNewUnit(player, x, y, units.EarthElemental, units.FacingDown)
                 castedCallback()
             })
         case "Air Elemental":
-            combat.DoSummoningSpell(player, spell, func(x int, y int){
-                combat.CreateAirElemental(player, x, y)
+            model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
+                model.addNewUnit(player, x, y, units.AirElemental, units.FacingDown)
                 castedCallback()
             })
         case "Fire Elemental":
-            combat.DoSummoningSpell(player, spell, func(x int, y int){
-                combat.CreateFireElemental(player, x, y)
+            model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
+                model.addNewUnit(player, x, y, units.FireElemental, units.FacingDown)
                 castedCallback()
             })
         case "Summon Demon":
             // FIXME: the tile should be near the middle of the map
             x, y, err := model.FindEmptyTile()
             if err == nil {
-                combat.CreateSummoningCircle(x, y)
-                combat.CreateDemon(player, x, y)
+                spellSystem.CreateSummoningCircle(x, y)
+                model.addNewUnit(player, x, y, units.Demon, units.FacingDown)
                 castedCallback()
             }
         case "Resist Elements":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                combat.CreateResistElementsProjectile(target)
+                model.AddProjectile(spellSystem.CreateResistElementsProjectile(target))
                 target.AddEnchantment(data.UnitEnchantmentResistElements)
                 castedCallback()
             }, targetAny)
@@ -3781,7 +3786,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
         case "Disenchant Area", "Disenchant True":
             // show some animation and play sound
 
-            combat.Events <- &CombatEventGlobalSpell{
+            model.Events <- &CombatEventGlobalSpell{
                 Caster: player,
                 Magic: spell.Magic,
                 Name: spell.Name,
@@ -3797,42 +3802,43 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 disenchantStrength *= 2
             }
 
-            model.DoDisenchantArea(combat.AllSpells, player, disenchantStrength)
+            model.DoDisenchantArea(spellSystem.GetAllSpells(), player, disenchantStrength)
 
             castedCallback()
 
         case "High Prayer":
-            combat.CastEnchantment(player, data.CombatEnchantmentHighPrayer, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentHighPrayer, castedCallback)
         case "Prayer":
-            combat.CastEnchantment(player, data.CombatEnchantmentPrayer, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentPrayer, castedCallback)
         case "True Light":
-            combat.CastEnchantment(player, data.CombatEnchantmentTrueLight, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentTrueLight, castedCallback)
         case "Call Lightning":
-            combat.CastEnchantment(player, data.CombatEnchantmentCallLightning, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentCallLightning, castedCallback)
         case "Entangle":
-            combat.CastEnchantment(player, data.CombatEnchantmentEntangle, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentEntangle, castedCallback)
         case "Blur":
-            combat.CastEnchantment(player, data.CombatEnchantmentBlur, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentBlur, castedCallback)
         case "Counter Magic":
-            combat.CastEnchantment(player, data.CombatEnchantmentCounterMagic, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentCounterMagic, castedCallback)
             // set counter magic counter for the player to be the spell strength
             model.GetArmyForPlayer(player).CounterMagic = spell.Cost(false)
         case "Mass Invisibility":
-            combat.CastEnchantment(player, data.CombatEnchantmentMassInvisibility, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentMassInvisibility, castedCallback)
         case "Metal Fires":
-            combat.CastEnchantment(player, data.CombatEnchantmentMetalFires, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentMetalFires, castedCallback)
         case "Warp Reality":
-            combat.CastEnchantment(player, data.CombatEnchantmentWarpReality, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentWarpReality, castedCallback)
         case "Black Prayer":
-            combat.CastEnchantment(player, data.CombatEnchantmentBlackPrayer, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentBlackPrayer, castedCallback)
         case "Darkness":
-            combat.CastEnchantment(player, data.CombatEnchantmentDarkness, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentDarkness, castedCallback)
         case "Mana Leak":
-            combat.CastEnchantment(player, data.CombatEnchantmentManaLeak, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentManaLeak, castedCallback)
         case "Terror":
-            combat.CastEnchantment(player, data.CombatEnchantmentTerror, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentTerror, castedCallback)
         case "Wrack":
-            combat.CastEnchantment(player, data.CombatEnchantmentWrack, castedCallback)
+            model.CastEnchantment(player, data.CombatEnchantmentWrack, castedCallback)
+        /*
 
         case "Creature Binding":
             selectable := func(target *ArmyUnit) bool {
@@ -3985,3 +3991,28 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             log.Printf("Unhandled spell %v", spell.Name)
     }
 }
+
+func (model *CombatModel) DoSummoningSpell(spellSystem SpellSystem, player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
+    // FIXME: pass in a canTarget function that only allows summoning on an empty tile on the casting wizards side of the battlefield
+    model.DoTargetTileSpell(player, spell, func (x int, y int){
+        model.AddProjectile(spellSystem.CreateSummoningCircle(x, y))
+        // FIXME: there should be a delay between the summoning circle appearing and when the unit appears
+        onTarget(x, y)
+    })
+}
+
+func (model *CombatModel) CastEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment, castedCallback func()){
+    if model.AddEnchantment(player, enchantment) {
+        model.Events <- &CombatEventGlobalSpell{
+            Caster: player,
+            Magic: enchantment.Magic(),
+            Name: enchantment.Name(),
+        }
+        castedCallback()
+    } else {
+        model.Events <- &CombatEventMessage{
+            Message: "That combat enchantment is already in effect",
+        }
+    }
+}
+
