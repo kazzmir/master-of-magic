@@ -698,9 +698,12 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                 modifier += float32(unit.Unit.MeleeEnchantmentBonus(enchantment))
             }
 
+            shattered := false
+
             for _, curse := range unit.Curses {
                 switch curse {
                     case data.UnitCurseMindStorm: modifier -= 5
+                    case data.UnitCurseShatter: shattered = true
                 }
             }
 
@@ -719,7 +722,13 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                 }
             }
 
-            return max(0, value + modifier)
+            final := value + modifier
+
+            if shattered && final > 0 {
+                return 1
+            }
+
+            return max(0, final)
         }
     }
 
@@ -728,8 +737,13 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
         if value > 0 {
             modifier := float32(0)
 
-            if unit.HasCurse(data.UnitCurseMindStorm) {
-                modifier -= 5
+            shattered := false
+
+            for _, curse := range unit.Curses {
+                switch curse {
+                    case data.UnitCurseMindStorm: modifier -= 5
+                    case data.UnitCurseShatter: shattered = true
+                }
             }
 
             if unit.Unit.GetRace() == data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentDarkness, TeamEither) {
@@ -739,7 +753,13 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                 }
             }
 
-            return max(0, value + modifier)
+            final := value + modifier
+
+            if shattered && final > 0 {
+                return 1
+            }
+
+            return max(0, final)
         }
 
         return value
@@ -978,6 +998,8 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
         modifier += unit.Unit.RangedEnchantmentBonus(enchantment)
     }
 
+    shattered := false
+
     for _, curse := range unit.Curses {
         switch curse {
             case data.UnitCurseMindStorm: modifier -= 5
@@ -985,6 +1007,7 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
                 if unit.Unit.GetRangedAttackDamageType() == units.DamageRangedPhysical {
                     modifier -= 2
                 }
+            case data.UnitCurseShatter: shattered = true
         }
     }
 
@@ -994,7 +1017,13 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
         }
     }
 
-    return max(0, unit.Unit.GetRangedAttackPower() + modifier)
+    final := unit.Unit.GetRangedAttackPower() + modifier
+
+    if shattered && final > 0 {
+        return 1
+    }
+
+    return max(0, final)
 }
 
 func (unit *ArmyUnit) GetFullMeleeAttackPower() int {
@@ -1008,10 +1037,13 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
         modifier += unit.Unit.MeleeEnchantmentBonus(enchantment)
     }
 
+    shattered := false
+
     for _, curse := range unit.Curses {
         switch curse {
             case data.UnitCurseMindStorm: modifier -= 5
             case data.UnitCurseWeakness: modifier -= 2
+            case data.UnitCurseShatter: shattered = true
         }
     }
 
@@ -1053,7 +1085,13 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
         berserkModifier = 2
     }
 
-    return max(0, (unit.Unit.GetMeleeAttackPower() + modifier) * berserkModifier)
+    final := (unit.Unit.GetMeleeAttackPower() + modifier) * berserkModifier
+
+    if shattered && final > 0 {
+        return 1
+    }
+
+    return max(0, final)
 }
 
 func (unit *ArmyUnit) HasAbility(ability data.AbilityType) bool {
