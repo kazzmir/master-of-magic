@@ -3249,6 +3249,8 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
             break
         }
     }
+
+    defender.Attacked += 1
 }
 
 func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
