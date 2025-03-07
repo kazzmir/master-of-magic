@@ -76,6 +76,10 @@ type CombatEventGlobalSpell struct {
     Name string
 }
 
+type CombatPlaySound struct {
+    Sound int
+}
+
 type CombatEventSelectUnit struct {
     SelectTarget func(*ArmyUnit)
     CanTarget func(*ArmyUnit) bool
@@ -397,6 +401,10 @@ func (combat *CombatScreen) computeTopDownOrder() []image.Point {
     return points
 }
 
+func (combat *CombatScreen) GetAllSpells() spellbook.Spells {
+    return combat.AllSpells
+}
+
 /* a projectile that shoots down from the sky at an angle
  */
 func (combat *CombatScreen) createSkyProjectile(target *ArmyUnit, images []*ebiten.Image, explodeImages []*ebiten.Image, effect ProjectileEffect) *Projectile {
@@ -525,7 +533,7 @@ func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, explodeImages
     return projectile
 }
 
-func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength int) {
+func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 11)
 
     loopImages := images[0:3]
@@ -538,10 +546,10 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
+    return combat.createSkyProjectile(target, loopImages, explodeImages, damage)
 }
 
-func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength int) {
+func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 0)
     loopImages := images[0:3]
     explodeImages := images[3:]
@@ -556,10 +564,10 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
+    return combat.createSkyProjectile(target, loopImages, explodeImages, damage)
 }
 
-func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength int) {
+func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 23)
 
     loopImages := images[0:11]
@@ -572,10 +580,10 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength 
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
+    return combat.createSkyProjectile(target, loopImages, explodeImages, damage)
 }
 
-func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 9)
     explodeImages := images
 
@@ -586,10 +594,10 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
 }
 
-func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 10)
     explodeImages := images
 
@@ -613,10 +621,10 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
 }
 
-func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, strength int) {
+func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, strength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 16)
     explodeImages := images
 
@@ -627,10 +635,10 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, stren
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
 }
 
-func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 5)
     loopImages := images[0:3]
     explodeImages := images[3:]
@@ -642,10 +650,10 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createVerticalSkyProjectile(target, loopImages, explodeImages, effect))
+    return combat.createVerticalSkyProjectile(target, loopImages, explodeImages, effect)
 }
 
-func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, strength int) {
+func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, strength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 24)
     // loopImages := images
     explodeImages := images
@@ -675,10 +683,10 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         },
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, projectile)
+    return projectile
 }
 
-func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 3)
     // loopImages := images
     explodeImages := images
@@ -714,12 +722,12 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
         },
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, projectile)
+    return projectile
 }
 
 // player will never be nil, but unitCaster might be nil if the player is casting the spell
 // if a hero/unit is casting the spell then unitCaster will be non-nil
-func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player *playerlib.Player, unitCaster *ArmyUnit) {
+func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player *playerlib.Player, unitCaster *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 6)
     explodeImages := images
 
@@ -742,10 +750,10 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
 }
 
-func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 33)
     explodeImages := images
 
@@ -756,17 +764,19 @@ func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
 }
 
-func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    // TODO
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){})
 }
 
-func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
@@ -775,10 +785,10 @@ func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
         unit.Heal(5)
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, heal))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, heal)
 }
 
-func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
@@ -787,10 +797,10 @@ func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentBless)
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, bless))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, bless)
 }
 
-func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
     explodeImages := images
@@ -801,10 +811,10 @@ func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, weakness))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, weakness)
 }
 
-func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
     explodeImages := images
@@ -815,10 +825,10 @@ func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, sleep))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, sleep)
 }
 
-func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
@@ -845,10 +855,10 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
 }
 
-func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 13)
     explodeImages := images
 
@@ -857,10 +867,10 @@ func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
         unit.WebHealth = 12
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 14)
     explodeImages := images
 
@@ -880,10 +890,10 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 14)
     explodeImages := images
 
@@ -903,17 +913,17 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateResistElementsProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateResistElementsProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 0)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){})
 }
 
-func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 2)
     explodeImages := images
 
@@ -921,10 +931,10 @@ func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) {
         unit.SetRangedAttacks(0)
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 4)
     explodeImages := images
 
@@ -935,17 +945,19 @@ func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
+    // TODO
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){})
 }
 
-func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit, caster *playerlib.Player, dispelStrength int) {
+func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit, caster *playerlib.Player, dispelStrength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 26)
     explodeImages := images
 
@@ -962,10 +974,10 @@ func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit, caster
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 15)
     explodeImages := images
 
@@ -977,10 +989,10 @@ func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, effect))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, effect)
 }
 
-func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResistance int) {
+func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 19)
     explodeImages := images
 
@@ -1000,19 +1012,19 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, effect))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, effect)
 }
 
-func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 21)
     explodeImages := images
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){
         target.AddCurse(data.UnitCurseMindStorm)
-    }))
+    })
 }
 
-func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) {
+func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 1)
 
     explodeImages := images
@@ -1022,10 +1034,12 @@ func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) {
         Y: y,
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(&fakeTarget, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
+    // TODO
+
+    return combat.createUnitProjectile(&fakeTarget, explodeImages, UnitPositionUnder, func (*ArmyUnit){})
 }
 
-func (combat *CombatScreen) CreateSummoningCircle(x int, y int) {
+func (combat *CombatScreen) CreateSummoningCircle(x int, y int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 22)
     explodeImages := images
 
@@ -1034,10 +1048,10 @@ func (combat *CombatScreen) CreateSummoningCircle(x int, y int) {
         Y: y,
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(&fakeTarget, explodeImages, UnitPositionUnder, func (*ArmyUnit){}))
+    return combat.createUnitProjectile(&fakeTarget, explodeImages, UnitPositionUnder, func (*ArmyUnit){})
 }
 
-func (combat *CombatScreen) CreateMagicVortex(x int, y int) {
+func (combat *CombatScreen) CreateMagicVortex(x int, y int) *OtherUnit {
     images, _ := combat.ImageCache.GetImages("cmbmagic.lbx", 120)
 
     unit := &OtherUnit{
@@ -1046,617 +1060,7 @@ func (combat *CombatScreen) CreateMagicVortex(x int, y int) {
         Animation: util.MakeAnimation(images, true),
     }
 
-    combat.Model.OtherUnits = append(combat.Model.OtherUnits, unit)
-}
-
-func (combat *CombatScreen) CreatePhantomWarriors(player *playerlib.Player, x int, y int) {
-    // FIXME: compute facing based on player
-    combat.Model.addNewUnit(player, x, y, units.PhantomWarrior, units.FacingDown)
-}
-
-func (combat *CombatScreen) CreatePhantomBeast(player *playerlib.Player, x int, y int) {
-    combat.Model.addNewUnit(player, x, y, units.PhantomBeast, units.FacingDown)
-}
-
-func (combat *CombatScreen) CreateEarthElemental(player *playerlib.Player, x int, y int) {
-    combat.Model.addNewUnit(player, x, y, units.EarthElemental, units.FacingDown)
-}
-
-func (combat *CombatScreen) CreateAirElemental(player *playerlib.Player, x int, y int) {
-    combat.Model.addNewUnit(player, x, y, units.AirElemental, units.FacingDown)
-}
-
-func (combat *CombatScreen) CreateFireElemental(player *playerlib.Player, x int, y int) {
-    combat.Model.addNewUnit(player, x, y, units.FireElemental, units.FacingDown)
-}
-
-func (combat *CombatScreen) CreateDemon(player *playerlib.Player, x int, y int) {
-    combat.Model.addNewUnit(player, x, y, units.Demon, units.FacingDown)
-}
-
-/* let the user select a target, then cast the spell on that target
- */
-func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
-    teamAttacked := TeamAttacker
-
-    selecter := TeamAttacker
-    if player == combat.Model.DefendingArmy.Player {
-        selecter = TeamDefender
-    }
-
-    if targetKind == TargetFriend {
-        /* if the player is the defender and we are targeting a friend then the team should be the defenders */
-        if combat.Model.DefendingArmy.Player == player {
-            teamAttacked = TeamDefender
-        }
-    } else if targetKind == TargetEnemy {
-        /* if the player is the attacker and we are targeting an enemy then the team should be the defenders */
-        if combat.Model.AttackingArmy.Player == player {
-            teamAttacked = TeamDefender
-        }
-    } else if targetKind == TargetEither {
-        teamAttacked = TeamEither
-    }
-
-    // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
-
-    event := &CombatEventSelectUnit{
-        Selecter: selecter,
-        Spell: spell,
-        SelectTeam: teamAttacked,
-        CanTarget: canTarget,
-        SelectTarget: func(target *ArmyUnit){
-            sound, err := combat.AudioCache.GetSound(spell.Sound)
-            if err == nil {
-                sound.Play()
-            } else {
-                log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-            }
-
-            onTarget(target)
-        },
-    }
-
-    select {
-        case combat.Events <- event:
-        default:
-    }
-}
-
-// FIXME: take in a canTarget function to check if the tile is legal
-func (combat *CombatScreen) DoTargetTileSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
-    // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
-
-    selecter := TeamAttacker
-    if player == combat.Model.DefendingArmy.Player {
-        selecter = TeamDefender
-    }
-
-    event := &CombatEventSelectTile{
-        Selecter: selecter,
-        Spell: spell,
-        SelectTile: func(x int, y int){
-            sound, err := combat.AudioCache.GetSound(spell.Sound)
-            if err == nil {
-                sound.Play()
-            } else {
-                log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-            }
-
-            onTarget(x, y)
-        },
-    }
-
-    select {
-        case combat.Events <- event:
-        default:
-    }
-}
-
-func (combat *CombatScreen) DoSummoningSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
-    // FIXME: pass in a canTarget function that only allows summoning on an empty tile on the casting wizards side of the battlefield
-    combat.DoTargetTileSpell(player, spell, func (x int, y int){
-        combat.CreateSummoningCircle(x, y)
-        // FIXME: there should be a delay between the summoning circle appearing and when the unit appears
-        onTarget(x, y)
-    })
-}
-
-/* create projectiles on all units immediately, no targeting required
- */
-func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
-    var units []*ArmyUnit
-
-    if player == combat.Model.DefendingArmy.Player && targetKind == TargetEnemy {
-        units = combat.Model.AttackingArmy.Units
-    } else if player == combat.Model.AttackingArmy.Player && targetKind == TargetEnemy {
-        units = combat.Model.DefendingArmy.Units
-    } else if player == combat.Model.DefendingArmy.Player && targetKind == TargetFriend {
-        units = combat.Model.DefendingArmy.Units
-    } else if player == combat.Model.AttackingArmy.Player && targetKind == TargetFriend {
-        units = combat.Model.AttackingArmy.Units
-    }
-
-    sound, err := combat.AudioCache.GetSound(spell.Sound)
-    if err == nil {
-        sound.Play()
-    } else {
-        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-    }
-
-    for _, unit := range units {
-        if canTarget(unit){
-            onTarget(unit)
-        }
-    }
-}
-
-// playerCasted is true if the player cast the spell, or false if a unit cast the spell
-func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func()){
-    targetAny := func (target *ArmyUnit) bool { return true }
-    targetFantastic := func (target *ArmyUnit) bool {
-        return target != nil && target.Unit.GetRace() == data.RaceFantastic
-    }
-
-    if combat.Model.CheckDispel(spell, player) {
-        combat.Events <- &CombatEventMessage{
-            Message: fmt.Sprintf("%v fizzled", spell.Name),
-        }
-        castedCallback()
-        return
-    }
-
-    switch spell.Name {
-        case "Fireball":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateFireballProjectile(target, spell.Cost(false) / 3)
-                castedCallback()
-            }, targetAny)
-        case "Ice Bolt":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateIceBoltProjectile(target, spell.Cost(false))
-                castedCallback()
-            }, targetAny)
-        case "Star Fires":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateStarFiresProjectile(target)
-                castedCallback()
-            }, func (target *ArmyUnit) bool {
-                realm := target.Unit.GetRealm()
-                if target.Unit.GetRace() == data.RaceFantastic && (realm == data.ChaosMagic || realm == data.DeathMagic) {
-                    return true
-                }
-
-                return false
-            })
-        case "Psionic Blast":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2)
-                castedCallback()
-            }, targetAny)
-        case "Doom Bolt":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateDoomBoltProjectile(target)
-                castedCallback()
-            }, targetAny)
-        case "Fire Bolt":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateFireBoltProjectile(target, spell.Cost(false))
-                castedCallback()
-            }, targetAny)
-        case "Lightning Bolt":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateLightningBoltProjectile(target, spell.Cost(false) - 5)
-                castedCallback()
-            }, targetAny)
-        case "Warp Lightning":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateWarpLightningProjectile(target)
-                castedCallback()
-            }, targetAny)
-        case "Flame Strike":
-            combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateFlameStrikeProjectile(target)
-                castedCallback()
-            }, targetAny)
-        case "Life Drain":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5, player, unitCaster)
-                castedCallback()
-            }, targetAny)
-        case "Dispel Evil":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateDispelEvilProjectile(target)
-                castedCallback()
-            }, func (target *ArmyUnit) bool {
-                if target.Unit.GetRace() == data.RaceFantastic &&
-                   (target.Unit.GetRealm() == data.ChaosMagic || target.Unit.GetRealm() == data.DeathMagic) {
-                    return true
-                }
-
-                return false
-            })
-        case "Healing":
-            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                combat.CreateHealingProjectile(target)
-                castedCallback()
-            }, func (target *ArmyUnit) bool {
-                return target.GetRealm() != data.DeathMagic
-            })
-        case "Holy Word":
-            combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateHolyWordProjectile(target)
-                castedCallback()
-            }, func (target *ArmyUnit) bool {
-                return target.GetRace() == data.RaceFantastic
-            })
-        case "Recall Hero":
-            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                combat.CreateRecallHeroProjectile(target)
-                castedCallback()
-            }, func (target *ArmyUnit) bool {
-                return target.Unit.IsHero()
-            })
-        case "Mass Healing":
-            combat.DoAllUnitsSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                combat.CreateHealingProjectile(target)
-                castedCallback()
-            }, func (target *ArmyUnit) bool {
-                return target.GetRealm() != data.DeathMagic
-            })
-        case "Cracks Call":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateCracksCallProjectile(target)
-                castedCallback()
-            }, func (target *ArmyUnit) bool {
-                if target.IsFlying() {
-                    return false
-                }
-                if target.HasAbility(data.AbilityNonCorporeal) {
-                    return false
-                }
-
-                return true
-            })
-        case "Earth to Mud":
-            combat.DoTargetTileSpell(player, spell, func (x int, y int){
-                combat.Model.CreateEarthToMud(x, y)
-                castedCallback()
-            })
-        case "Web":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateWebProjectile(target)
-                castedCallback()
-            }, func (target *ArmyUnit) bool {
-                return !target.HasAbility(data.AbilityNonCorporeal)
-            })
-        case "Banish":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15)
-                castedCallback()
-            }, targetFantastic)
-        case "Dispel Magic True":
-            combat.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
-                disenchantStrength := spell.BaseCost(false) + spell.SpentAdditionalCost(false) * 3
-
-                if player.Wizard.RetortEnabled(data.RetortRunemaster) {
-                    disenchantStrength *= 2
-                }
-
-                combat.CreateDispelMagicProjectile(target, player, disenchantStrength)
-                castedCallback()
-            }, targetAny)
-        case "Word of Recall":
-            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                combat.CreateWordOfRecallProjectile(target)
-                castedCallback()
-            }, targetAny)
-        case "Disintegrate":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateDisintegrateProjectile(target)
-                castedCallback()
-            }, targetAny)
-        case "Disrupt":
-            // FIXME: can only target city walls
-            combat.DoTargetTileSpell(player, spell, func (x int, y int){
-                combat.CreateDisruptProjectile(x, y)
-                castedCallback()
-            })
-        case "Magic Vortex":
-            combat.DoTargetTileSpell(player, spell, func (x int, y int){
-                combat.CreateMagicVortex(x, y)
-                castedCallback()
-            })
-        case "Warp Wood":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateWarpWoodProjectile(target)
-                castedCallback()
-            }, func (target *ArmyUnit) bool {
-
-                if target.GetRangedAttacks() > 0 && target.GetRangedAttackDamageType() == units.DamageRangedPhysical {
-                    return true
-                }
-
-                return false
-            })
-        case "Death Spell":
-            combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateDeathSpellProjectile(target)
-                castedCallback()
-            }, func (target *ArmyUnit) bool {
-                return !target.HasAbility(data.AbilityDeathImmunity)
-            })
-        case "Word of Death":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateWordOfDeathProjectile(target)
-                castedCallback()
-            }, func (target *ArmyUnit) bool {
-                return !target.HasAbility(data.AbilityDeathImmunity)
-            })
-        case "Phantom Warriors":
-            combat.DoSummoningSpell(player, spell, func(x int, y int){
-                combat.CreatePhantomWarriors(player, x, y)
-                castedCallback()
-            })
-        case "Phantom Beast":
-            combat.DoSummoningSpell(player, spell, func(x int, y int){
-                combat.CreatePhantomBeast(player, x, y)
-                castedCallback()
-            })
-        case "Earth Elemental":
-            combat.DoSummoningSpell(player, spell, func(x int, y int){
-                combat.CreateEarthElemental(player, x, y)
-                castedCallback()
-            })
-        case "Air Elemental":
-            combat.DoSummoningSpell(player, spell, func(x int, y int){
-                combat.CreateAirElemental(player, x, y)
-                castedCallback()
-            })
-        case "Fire Elemental":
-            combat.DoSummoningSpell(player, spell, func(x int, y int){
-                combat.CreateFireElemental(player, x, y)
-                castedCallback()
-            })
-        case "Summon Demon":
-            // FIXME: the tile should be near the middle of the map
-            x, y, err := combat.Model.FindEmptyTile()
-            if err == nil {
-                combat.CreateSummoningCircle(x, y)
-                combat.CreateDemon(player, x, y)
-                castedCallback()
-            }
-        case "Resist Elements":
-            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                combat.CreateResistElementsProjectile(target)
-                target.AddEnchantment(data.UnitEnchantmentResistElements)
-                castedCallback()
-            }, targetAny)
-
-        case "Disenchant Area", "Disenchant True":
-            // show some animation and play sound
-
-            combat.Events <- &CombatEventGlobalSpell{
-                Caster: player,
-                Magic: spell.Magic,
-                Name: spell.Name,
-            }
-
-            disenchantStrength := spell.Cost(false)
-            if spell.Name == "Disenchant True" {
-                // each additional point of mana spent increases the disenchant strength by 3
-                disenchantStrength = spell.BaseCost(false) + spell.SpentAdditionalCost(false) * 3
-            }
-
-            if player.Wizard.RetortEnabled(data.RetortRunemaster) {
-                disenchantStrength *= 2
-            }
-
-            combat.Model.DoDisenchantArea(combat.AllSpells, player, disenchantStrength)
-
-            castedCallback()
-
-        case "High Prayer":
-            combat.CastEnchantment(player, data.CombatEnchantmentHighPrayer, castedCallback)
-        case "Prayer":
-            combat.CastEnchantment(player, data.CombatEnchantmentPrayer, castedCallback)
-        case "True Light":
-            combat.CastEnchantment(player, data.CombatEnchantmentTrueLight, castedCallback)
-        case "Call Lightning":
-            combat.CastEnchantment(player, data.CombatEnchantmentCallLightning, castedCallback)
-        case "Entangle":
-            combat.CastEnchantment(player, data.CombatEnchantmentEntangle, castedCallback)
-        case "Blur":
-            combat.CastEnchantment(player, data.CombatEnchantmentBlur, castedCallback)
-        case "Counter Magic":
-            combat.CastEnchantment(player, data.CombatEnchantmentCounterMagic, castedCallback)
-            // set counter magic counter for the player to be the spell strength
-            combat.Model.GetArmyForPlayer(player).CounterMagic = spell.Cost(false)
-        case "Mass Invisibility":
-            combat.CastEnchantment(player, data.CombatEnchantmentMassInvisibility, castedCallback)
-        case "Metal Fires":
-            combat.CastEnchantment(player, data.CombatEnchantmentMetalFires, castedCallback)
-        case "Warp Reality":
-            combat.CastEnchantment(player, data.CombatEnchantmentWarpReality, castedCallback)
-        case "Black Prayer":
-            combat.CastEnchantment(player, data.CombatEnchantmentBlackPrayer, castedCallback)
-        case "Darkness":
-            combat.CastEnchantment(player, data.CombatEnchantmentDarkness, castedCallback)
-        case "Mana Leak":
-            combat.CastEnchantment(player, data.CombatEnchantmentManaLeak, castedCallback)
-        case "Terror":
-            combat.CastEnchantment(player, data.CombatEnchantmentTerror, castedCallback)
-        case "Wrack":
-            combat.CastEnchantment(player, data.CombatEnchantmentWrack, castedCallback)
-
-        case "Creature Binding":
-            selectable := func(target *ArmyUnit) bool {
-                if target == nil {
-                    return false
-                }
-
-                if target.Unit.GetRace() == data.RaceFantastic {
-                    if target.HasAbility(data.AbilityIllusionsImmunity) {
-                        return false
-                    }
-
-                    if target.HasAbility(data.AbilityMagicImmunity) {
-                        return false
-                    }
-
-                    return true
-                }
-
-                return false
-            }
-
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CastCreatureBinding(target, player)
-                castedCallback()
-            }, selectable)
-
-        case "Mind Storm":
-            selectable := func(target *ArmyUnit) bool {
-                if target != nil {
-                    if target.HasAbility(data.AbilityIllusionsImmunity) || target.HasAbility(data.AbilityMagicImmunity) {
-                        return false
-                    }
-
-                    return true
-                }
-
-                return false
-            }
-
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateMindStormProjectile(target)
-                castedCallback()
-            }, selectable)
-
-        case "Bless":
-            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                combat.CreateBlessProjectile(target)
-                castedCallback()
-            }, targetAny)
-        case "Weakness":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateWeaknessProjectile(target)
-                castedCallback()
-            }, func (target *ArmyUnit) bool {
-                if target.HasCurse(data.UnitCurseWeakness) {
-                    return false
-                }
-
-                if target.HasAbility(data.AbilityDeathImmunity) || target.HasAbility(data.AbilityMagicImmunity) {
-                    return false
-                }
-
-                if target.HasEnchantment(data.UnitEnchantmentRighteousness) {
-                    return false
-                }
-
-                if target.HasAbility(data.AbilityCharmed) {
-                    return false
-                }
-
-                return true
-            })
-        case "CurseBlackSleep":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateBlackSleepProjectile(target)
-                castedCallback()
-            }, func (target *ArmyUnit) bool {
-                if target.HasCurse(data.UnitCurseBlackSleep) {
-                    return false
-                }
-
-                if target.HasAbility(data.AbilityDeathImmunity) || target.HasAbility(data.AbilityMagicImmunity) {
-                    return false
-                }
-
-                if target.HasEnchantment(data.UnitEnchantmentRighteousness) {
-                    return false
-                }
-
-                if target.HasAbility(data.AbilityCharmed) {
-                    return false
-                }
-
-                return true
-            })
-
-        /*
-        unit curses:
-
-        CurseConfusion
-        CurseVertigo
-        CurseShatter
-        CurseWarpCreature
-        CursePossession
-        */
-
-        /*
-        combat instants:
-
-        Dispel Magic
-        Raise Dead
-        Petrify
-        Call Chaos
-        Animate Dead
-         */
-
-        /*
-        unit enchantments:
-        Heroism
-        Holy Armor
-        Holy Weapon
-        Invulnerability
-        Lionheart
-        Righteousness
-        True Sight
-        Elemental Armor
-        Giant Strength
-        Iron Skin
-        Regeneration
-        Resist Elements
-        Stone Skin
-        Flight
-        Guardian Wind
-        Haste
-        Invisibility
-        Magic Immunity
-        Resist Magic
-        Spell Lock
-        Eldritch Weapon
-        Flame Blade
-        Immolation
-        Berserk
-        Cloak of Fear
-        Wraith Form
-         */
-    }
-}
-
-func (combat *CombatScreen) CastCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
-    if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
-        // FIXME: make creature bind animation
-        combat.Model.ApplyCreatureBinding(target, newOwner)
-    }
-}
-
-func (combat *CombatScreen) CastEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment, castedCallback func()){
-    if combat.Model.AddEnchantment(player, enchantment) {
-        combat.Events <- &CombatEventGlobalSpell{
-            Caster: player,
-            Magic: enchantment.Magic(),
-            Name: enchantment.Name(),
-        }
-        castedCallback()
-    } else {
-        combat.Events <- &CombatEventMessage{
-            Message: "That combat enchantment is already in effect",
-        }
-    }
+    return unit
 }
 
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
@@ -1806,7 +1210,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 if picked {
                     army.Casted = true
                     // player mana and skill should go down accordingly
-                    combat.InvokeSpell(player, nil, spell, func(){
+                    combat.Model.InvokeSpell(combat, player, nil, spell, func(){
                         army.ManaPool -= spell.Cost(false)
                         player.Mana -= int(float64(spell.Cost(false)) * army.Range.ToFloat())
                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
@@ -1836,7 +1240,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             // spell casting range for a unit is always 1
 
                             doCast := func(spell spellbook.Spell){
-                                combat.InvokeSpell(player, caster, spell, func(){
+                                combat.Model.InvokeSpell(combat, player, caster, spell, func(){
                                     charge, hasCharge := caster.SpellCharges[spell]
                                     if hasCharge && charge > 0 {
                                         caster.SpellCharges[spell] -= 1
@@ -2291,7 +1695,15 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
             combat.MouseState = CombatCast
 
             if inputmanager.LeftClick() && mouseY < hudY {
+                sound, err := combat.AudioCache.GetSound(spell.Sound)
+                if err == nil {
+                    sound.Play()
+                } else {
+                    log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+                }
+
                 selectTile(combat.MouseTileX, combat.MouseTileY)
+                yield()
                 break
             }
         }
@@ -2386,10 +1798,21 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
             if unit != nil && canTarget(unit) && inputmanager.LeftClick() && mouseY < hudY {
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
                 if selectTeam == TeamEither || unit.Team == selectTeam {
+
+                    sound, err := combat.AudioCache.GetSound(spell.Sound)
+                    if err == nil {
+                        sound.Play()
+                    } else {
+                        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+                    }
+
                     selectTarget(unit)
 
                     // shouldn't need to set the mouse state here
                     combat.MouseState = CombatClickHud
+
+                    // asborb click
+                    yield()
                     return
                 }
             }
@@ -2459,6 +1882,8 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
             sound, err := combat.AudioCache.GetSound(index)
             if err == nil {
                 sound.Play()
+            } else {
+                log.Printf("Unable to play sound %v: %v", index, err)
             }
         }
     }()
@@ -2485,6 +1910,9 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         bolt := event.(*CombatEventCreateLightningBolt)
                         combat.CreateLightningBoltProjectile(bolt.Target, bolt.Strength)
                         sounds.Insert(LightningBoltSound)
+                    case *CombatPlaySound:
+                        use := event.(*CombatPlaySound)
+                        sounds.Insert(use.Sound)
                 }
             default:
                 return

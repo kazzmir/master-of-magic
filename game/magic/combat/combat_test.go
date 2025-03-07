@@ -568,8 +568,6 @@ func TestCounterAttackPenalty(test *testing.T){
     }
 
     attackerUnit := units.LizardSpearmen
-    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbility(data.AbilityCauseFear))
-
     defenderUnit := units.LizardSwordsmen
 
     defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
