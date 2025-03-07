@@ -99,7 +99,7 @@ func (saveGame *SaveGame) ToMap(terrainData *terrain.TerrainData, plane data.Pla
         }
         map_.ExtraMap[point][maplib.ExtraKindEncounter] = &maplib.ExtraEncounter{
             Type: encounterType,
-            // FIXME: set budget, units and explored by, use tower.Owner
+            // FIXME: set budget, units and explored by
             Budget: 0,
             Units: nil,
             ExploredBy: nil,
