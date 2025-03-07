@@ -1153,8 +1153,8 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
         case "Flame Strike":
             combat.Model.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFlameStrikeProjectile(target)
-                castedCallback()
             }, targetAny)
+            castedCallback()
         case "Life Drain":
             combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5, player, unitCaster)
@@ -1182,10 +1182,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
         case "Holy Word":
             combat.Model.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateHolyWordProjectile(target)
-                castedCallback()
             }, func (target *ArmyUnit) bool {
                 return target.GetRace() == data.RaceFantastic
             })
+            castedCallback()
         case "Recall Hero":
             combat.Model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateRecallHeroProjectile(target)
@@ -1196,10 +1196,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
         case "Mass Healing":
             combat.Model.DoAllUnitsSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateHealingProjectile(target)
-                castedCallback()
             }, func (target *ArmyUnit) bool {
                 return target.GetRealm() != data.DeathMagic
             })
+            castedCallback()
         case "Cracks Call":
             combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateCracksCallProjectile(target)
@@ -1278,10 +1278,10 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
         case "Death Spell":
             combat.Model.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDeathSpellProjectile(target)
-                castedCallback()
             }, func (target *ArmyUnit) bool {
                 return !target.HasAbility(data.AbilityDeathImmunity)
             })
+            castedCallback()
         case "Word of Death":
             combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWordOfDeathProjectile(target)
