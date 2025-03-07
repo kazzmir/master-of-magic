@@ -830,7 +830,7 @@ func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) *Projec
 
 func (combat *CombatScreen) CreateVertigoProjectile(target *ArmyUnit) *Projectile {
     // FIXME: verify
-    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 17)
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
@@ -844,7 +844,7 @@ func (combat *CombatScreen) CreateVertigoProjectile(target *ArmyUnit) *Projectil
 
 func (combat *CombatScreen) CreateShatterProjectile(target *ArmyUnit) *Projectile {
     // FIXME: verify
-    images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
+    images, _ := combat.ImageCache.GetImages("resource.lbx", 79)
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
