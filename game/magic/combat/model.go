@@ -3479,3 +3479,29 @@ func (model *CombatModel) DoTargetTileSpell(player *playerlib.Player, spell spel
         default:
     }
 }
+
+/* create projectiles on all units immediately, no targeting required
+ */
+func (model *CombatModel) DoAllUnitsSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
+    var units []*ArmyUnit
+
+    if player == model.DefendingArmy.Player && targetKind == TargetEnemy {
+        units = model.AttackingArmy.Units
+    } else if player == model.AttackingArmy.Player && targetKind == TargetEnemy {
+        units = model.DefendingArmy.Units
+    } else if player == model.DefendingArmy.Player && targetKind == TargetFriend {
+        units = model.DefendingArmy.Units
+    } else if player == model.AttackingArmy.Player && targetKind == TargetFriend {
+        units = model.AttackingArmy.Units
+    }
+
+    model.Events <- &CombatPlaySound{
+        Sound: spell.Sound,
+    }
+
+    for _, unit := range units {
+        if canTarget(unit){
+            onTarget(unit)
+        }
+    }
+}

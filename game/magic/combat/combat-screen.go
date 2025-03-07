@@ -76,6 +76,10 @@ type CombatEventGlobalSpell struct {
     Name string
 }
 
+type CombatPlaySound struct {
+    Sound int
+}
+
 type CombatEventSelectUnit struct {
     SelectTarget func(*ArmyUnit)
     CanTarget func(*ArmyUnit) bool
@@ -1083,35 +1087,6 @@ func (combat *CombatScreen) DoSummoningSpell(player *playerlib.Player, spell spe
     })
 }
 
-/* create projectiles on all units immediately, no targeting required
- */
-func (combat *CombatScreen) DoAllUnitsSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
-    var units []*ArmyUnit
-
-    if player == combat.Model.DefendingArmy.Player && targetKind == TargetEnemy {
-        units = combat.Model.AttackingArmy.Units
-    } else if player == combat.Model.AttackingArmy.Player && targetKind == TargetEnemy {
-        units = combat.Model.DefendingArmy.Units
-    } else if player == combat.Model.DefendingArmy.Player && targetKind == TargetFriend {
-        units = combat.Model.DefendingArmy.Units
-    } else if player == combat.Model.AttackingArmy.Player && targetKind == TargetFriend {
-        units = combat.Model.AttackingArmy.Units
-    }
-
-    sound, err := combat.AudioCache.GetSound(spell.Sound)
-    if err == nil {
-        sound.Play()
-    } else {
-        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-    }
-
-    for _, unit := range units {
-        if canTarget(unit){
-            onTarget(unit)
-        }
-    }
-}
-
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
 func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func()){
     targetAny := func (target *ArmyUnit) bool { return true }
@@ -1176,7 +1151,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 castedCallback()
             }, targetAny)
         case "Flame Strike":
-            combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFlameStrikeProjectile(target)
                 castedCallback()
             }, targetAny)
@@ -1205,7 +1180,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 return target.GetRealm() != data.DeathMagic
             })
         case "Holy Word":
-            combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateHolyWordProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
@@ -1219,7 +1194,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 return target.Unit.IsHero()
             })
         case "Mass Healing":
-            combat.DoAllUnitsSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+            combat.Model.DoAllUnitsSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateHealingProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
@@ -1301,7 +1276,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 return false
             })
         case "Death Spell":
-            combat.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDeathSpellProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
@@ -2395,6 +2370,8 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
             sound, err := combat.AudioCache.GetSound(index)
             if err == nil {
                 sound.Play()
+            } else {
+                log.Printf("Unable to play sound %v: %v", index, err)
             }
         }
     }()
@@ -2421,6 +2398,9 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         bolt := event.(*CombatEventCreateLightningBolt)
                         combat.CreateLightningBoltProjectile(bolt.Target, bolt.Strength)
                         sounds.Insert(LightningBoltSound)
+                    case *CombatPlaySound:
+                        use := event.(*CombatPlaySound)
+                        sounds.Insert(use.Sound)
                 }
             default:
                 return
