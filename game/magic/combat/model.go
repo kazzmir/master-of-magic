@@ -1463,6 +1463,9 @@ func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int) (int, bool) {
     for range unit.Figures() - fearFigure {
         // even if all figures fail to cause damage, it still counts as a hit for touch purposes
         hit = true
+
+        // FIXME: apply tohit penalty of -10% for every 2 times this unit was attacked for this turn
+        // https://masterofmagic.fandom.com/wiki/Counter_Attack#Temporary_To_Hit_Penalty
         damage += ComputeRoll(unit.GetMeleeAttackPower(), unit.GetToHitMelee())
     }
 
