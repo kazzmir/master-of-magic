@@ -1063,31 +1063,6 @@ func (combat *CombatScreen) CreateMagicVortex(x int, y int) *OtherUnit {
     return unit
 }
 
-func (combat *CombatScreen) CreatePhantomWarriors(player *playerlib.Player, x int, y int) {
-    // FIXME: compute facing based on player
-    combat.Model.addNewUnit(player, x, y, units.PhantomWarrior, units.FacingDown)
-}
-
-func (combat *CombatScreen) CreatePhantomBeast(player *playerlib.Player, x int, y int) {
-    combat.Model.addNewUnit(player, x, y, units.PhantomBeast, units.FacingDown)
-}
-
-func (combat *CombatScreen) CreateEarthElemental(player *playerlib.Player, x int, y int) {
-    combat.Model.addNewUnit(player, x, y, units.EarthElemental, units.FacingDown)
-}
-
-func (combat *CombatScreen) CreateAirElemental(player *playerlib.Player, x int, y int) {
-    combat.Model.addNewUnit(player, x, y, units.AirElemental, units.FacingDown)
-}
-
-func (combat *CombatScreen) CreateFireElemental(player *playerlib.Player, x int, y int) {
-    combat.Model.addNewUnit(player, x, y, units.FireElemental, units.FacingDown)
-}
-
-func (combat *CombatScreen) CreateDemon(player *playerlib.Player, x int, y int) {
-    combat.Model.addNewUnit(player, x, y, units.Demon, units.FacingDown)
-}
-
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     var elements []*uilib.UIElement
 
