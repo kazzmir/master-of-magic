@@ -3520,6 +3520,16 @@ type SpellSystem interface {
     CreateDispelEvilProjectile(target *ArmyUnit) *Projectile
     CreateHealingProjectile(target *ArmyUnit) *Projectile
     CreateHolyWordProjectile(target *ArmyUnit) *Projectile
+    CreateRecallHeroProjectile(target *ArmyUnit) *Projectile
+    CreateCracksCallProjectile(target *ArmyUnit) *Projectile
+    CreateWebProjectile(target *ArmyUnit) *Projectile
+    CreateBanishProjectile(target *ArmyUnit, reduceResistance int) *Projectile
+    CreateDispelMagicProjectile(target *ArmyUnit, caster *playerlib.Player, dispelStrength int) *Projectile
+    CreateWordOfRecallProjectile(target *ArmyUnit) *Projectile
+    CreateDisintegrateProjectile(target *ArmyUnit) *Projectile
+    CreateDisruptProjectile(x int, y int) *Projectile
+    CreateMagicVortex(x int, y int) *OtherUnit
+    CreateWarpWoodProjectile(target *ArmyUnit) *Projectile
 }
 
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
@@ -3624,24 +3634,23 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 return target.GetRace() == data.RaceFantastic
             })
             castedCallback()
-        /*
         case "Recall Hero":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                combat.CreateRecallHeroProjectile(target)
+                model.AddProjectile(spellSystem.CreateRecallHeroProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
                 return target.Unit.IsHero()
             })
         case "Mass Healing":
             model.DoAllUnitsSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                combat.CreateHealingProjectile(target)
+                model.AddProjectile(spellSystem.CreateHealingProjectile(target))
             }, func (target *ArmyUnit) bool {
                 return target.GetRealm() != data.DeathMagic
             })
             castedCallback()
         case "Cracks Call":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateCracksCallProjectile(target)
+                model.AddProjectile(spellSystem.CreateCracksCallProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
                 if target.IsFlying() {
@@ -3660,14 +3669,14 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             })
         case "Web":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateWebProjectile(target)
+                model.AddProjectile(spellSystem.CreateWebProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
                 return !target.HasAbility(data.AbilityNonCorporeal)
             })
         case "Banish":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15)
+                model.AddProjectile(spellSystem.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15))
                 castedCallback()
             }, targetFantastic)
         case "Dispel Magic True":
@@ -3678,33 +3687,33 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                     disenchantStrength *= 2
                 }
 
-                combat.CreateDispelMagicProjectile(target, player, disenchantStrength)
+                model.AddProjectile(spellSystem.CreateDispelMagicProjectile(target, player, disenchantStrength))
                 castedCallback()
             }, targetAny)
         case "Word of Recall":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                combat.CreateWordOfRecallProjectile(target)
+                model.AddProjectile(spellSystem.CreateWordOfRecallProjectile(target))
                 castedCallback()
             }, targetAny)
         case "Disintegrate":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateDisintegrateProjectile(target)
+                model.AddProjectile(spellSystem.CreateDisintegrateProjectile(target))
                 castedCallback()
             }, targetAny)
         case "Disrupt":
             // FIXME: can only target city walls
             model.DoTargetTileSpell(player, spell, func (x int, y int){
-                combat.CreateDisruptProjectile(x, y)
+                model.AddProjectile(spellSystem.CreateDisruptProjectile(x, y))
                 castedCallback()
             })
         case "Magic Vortex":
             model.DoTargetTileSpell(player, spell, func (x int, y int){
-                combat.CreateMagicVortex(x, y)
+                model.OtherUnits = append(model.OtherUnits, spellSystem.CreateMagicVortex(x, y))
                 castedCallback()
             })
         case "Warp Wood":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateWarpWoodProjectile(target)
+                model.AddProjectile(spellSystem.CreateWarpWoodProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
 
@@ -3714,6 +3723,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return false
             })
+        /*
         case "Death Spell":
             model.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDeathSpellProjectile(target)
