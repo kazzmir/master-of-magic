@@ -185,6 +185,7 @@ const (
     UnitCurseBlackSleep
     UnitCursePossession
     UnitCurseWeakness
+    UnitCurseWeb
 
 )
 
@@ -267,6 +268,7 @@ func (enchantment UnitEnchantment) Magic() MagicType {
         case UnitCurseBlackSleep: return DeathMagic
         case UnitCursePossession: return DeathMagic
         case UnitCurseWeakness: return DeathMagic
+        case UnitCurseWeb: return NatureMagic
     }
 
     return MagicNone
@@ -281,7 +283,7 @@ func (enchantment UnitEnchantment) IsCurse() bool {
              UnitCurseWarpCreatureDefense,
              UnitCurseWarpCreatureResistance,
              UnitCurseBlackSleep, UnitCursePossession,
-             UnitCurseWeakness: return true
+             UnitCurseWeakness, UnitCurseWeb: return true
     }
 
     return false
@@ -415,6 +417,7 @@ func (enchantment UnitEnchantment) Name() string {
         case UnitCurseBlackSleep: return "Black Sleep"
         case UnitCursePossession: return "Possession"
         case UnitCurseWeakness: return "Weakness"
+        case UnitCurseWeb: return "Web"
     }
 
     return ""
@@ -471,6 +474,7 @@ func (enchantment UnitEnchantment) LbxFile() string {
         case UnitCurseBlackSleep: return "special2.lbx"
         case UnitCursePossession: return "special.lbx"
         case UnitCurseWeakness: return "special.lbx"
+        case UnitCurseWeb: return "special.lbx"
     }
 
     return ""
@@ -526,6 +530,7 @@ func (enchantment UnitEnchantment) LbxIndex() int {
         case UnitCurseBlackSleep: return 3
         case UnitCursePossession: return 98
         case UnitCurseWeakness: return 96
+        case UnitCurseWeb: return 99
     }
 
     return -1

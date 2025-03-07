@@ -26,6 +26,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/util/common"
 
@@ -380,6 +381,11 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
     engine.Mode = EngineModeCombat
     engine.CombatDescription = combatDescription
 
+    allSpells, err := spellbook.ReadSpellsFromCache(engine.Cache)
+    if err != nil {
+        log.Printf("Cannot load spells: %v", err)
+    }
+
     cpuPlayer := playerlib.MakePlayer(setup.WizardCustom{
         Name: "CPU",
         Banner: data.BannerRed,
@@ -389,6 +395,13 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
         Name: "Human",
         Banner: data.BannerGreen,
     }, true, 0, 0, nil)
+
+    humanPlayer.CastingSkillPower = 10000
+    humanPlayer.Mana = 1000
+
+    for _, spell := range allSpells.Spells {
+        humanPlayer.KnownSpells.AddSpell(spell)
+    }
 
     defendingArmy := combat.Army{
         Player: cpuPlayer,
@@ -665,6 +678,7 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
 
 func (engine *Engine) MakeUI() *ebitenui.UI {
     imageCache := util.MakeImageCache(engine.Cache)
+    imageCache.ScaleAmount = 1
 
     face, _ := loadFont(19)
 

@@ -540,10 +540,17 @@ type ArmyUnit struct {
     CastingSkill float32
     Casted bool
 
+    // health of the web spell cast on this unit
+    WebHealth int
+
     Model *CombatModel
 
     Team Team
 
+    // number of times this unit was attacked this turn
+    Attacked int
+
+    // number of ranged attacks remaining
     RangedAttacks int
 
     Attacking bool
@@ -567,6 +574,23 @@ type ArmyUnit struct {
 
 func (unit *ArmyUnit) IsAsleep() bool {
     return unit.HasCurse(data.UnitCurseBlackSleep)
+}
+
+func (unit *ArmyUnit) IsWebbed() bool {
+    return unit.WebHealth > 0
+}
+
+func (unit *ArmyUnit) ProcessWeb() {
+    if unit.WebHealth > 0 {
+        damage := max(unit.GetMeleeAttackPower(), unit.GetRangedAttackPower())
+        damage += int(unit.GetAbilityValue(data.AbilityFireBreath))
+        unit.WebHealth -= damage
+    }
+}
+
+func (unit *ArmyUnit) IsFlying() bool {
+    // a webbed unit is not flying
+    return unit.Unit.IsFlying() && !unit.HasCurse(data.UnitCurseWeb)
 }
 
 func (unit *ArmyUnit) GetAbilities() []data.Ability {
@@ -742,6 +766,20 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
     }
 
     return unit.Unit.GetAbilityValue(ability)
+}
+
+func (unit *ArmyUnit) GetCounterAttackToHit() int {
+    base := unit.GetToHitMelee()
+    // if somehow the unit already has <10% tohit then just return that
+    if base < 10 {
+        return base
+    }
+
+    // for every 2 attacks against this unit, reduce tohit by 10%
+    reduction := 10 * (unit.Attacked / 2)
+
+    // tohit cannot go below 10%
+    return max(10, base - reduction)
 }
 
 func (unit *ArmyUnit) GetToHitMelee() int {
@@ -1061,7 +1099,7 @@ func (unit *ArmyUnit) GetPower() int {
 
 // true if this unit can move through a tile with a wall tile
 func (unit *ArmyUnit) CanTraverseWall() bool {
-    return unit.Unit.IsFlying() || unit.HasAbility(data.AbilityMerging) || unit.HasAbility(data.AbilityTeleporting)
+    return unit.IsFlying() || unit.HasAbility(data.AbilityMerging) || unit.HasAbility(data.AbilityTeleporting)
 }
 
 func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
@@ -1160,7 +1198,7 @@ func (unit *ArmyUnit) GetMovementSpeed() int {
     base = unit.Unit.MovementSpeedEnchantmentBonus(base, unit.Enchantments)
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentEntangle, oppositeTeam(unit.Team)) {
-        unaffected := unit.Unit.IsFlying() || unit.HasAbility(data.AbilityNonCorporeal)
+        unaffected := unit.IsFlying() || unit.HasAbility(data.AbilityNonCorporeal)
 
         if !unaffected {
             modifier -= 1
@@ -1174,6 +1212,7 @@ func (unit *ArmyUnit) ResetTurnData() {
     unit.MovesLeft = fraction.FromInt(unit.GetMovementSpeed())
     unit.Paths = make(map[image.Point]pathfinding.Path)
     unit.Casted = false
+    unit.Attacked = 0
 }
 
 type DamageModifiers struct {
@@ -1365,6 +1404,12 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playe
             case data.AbilityFireballSpell:
                 fireball := allSpells.FindByName("Fireball")
                 unit.SpellCharges[fireball] = int(ability.Value)
+            case data.AbilityHealingSpell:
+                healing := allSpells.FindByName("Healing")
+                unit.SpellCharges[healing] = int(ability.Value)
+            case data.AbilityWebSpell:
+                web := allSpells.FindByName("Web")
+                unit.SpellCharges[web] = int(ability.Value)
             case data.AbilityCaster:
                 unit.CastingSkill = ability.Value
         }
@@ -1426,7 +1471,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
     return damage
 }
 
-func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int) (int, bool) {
+func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int, counterAttack bool) (int, bool) {
 
     if unit.GetMeleeAttackPower() == 0 {
         return 0, false
@@ -1437,7 +1482,13 @@ func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int) (int, bool) {
     for range unit.Figures() - fearFigure {
         // even if all figures fail to cause damage, it still counts as a hit for touch purposes
         hit = true
-        damage += ComputeRoll(unit.GetMeleeAttackPower(), unit.GetToHitMelee())
+
+        toHit := unit.GetToHitMelee()
+        if counterAttack {
+            // counter attack to-hit might be penalized
+            toHit = unit.GetCounterAttackToHit()
+        }
+        damage += ComputeRoll(unit.GetMeleeAttackPower(), toHit)
     }
 
     return damage, hit
@@ -1812,6 +1863,13 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
                 }
 
                 if unit.LastTurn < model.CurrentTurn {
+
+                    // spend a turn to remove the web
+                    if unit.IsWebbed() {
+                        unit.ProcessWeb()
+                        continue
+                    }
+
                     unit.Paths = make(map[image.Point]pathfinding.Path)
                     return unit
                 }
@@ -1827,6 +1885,11 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
                 }
 
                 if unit.LastTurn < model.CurrentTurn {
+                    if unit.IsWebbed() {
+                        unit.ProcessWeb()
+                        continue
+                    }
+
                     unit.Paths = make(map[image.Point]pathfinding.Path)
                     return unit
                 }
@@ -2176,6 +2239,7 @@ func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, uni
         if enchantment == data.UnitCurseCreatureBinding {
             swapArmy = true
         }
+
         unit.RemoveCurse(enchantment)
     }
 
@@ -2927,7 +2991,7 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         }
     }
 
-    if defender.Unit.IsFlying() && !attacker.Unit.IsFlying() {
+    if defender.IsFlying() && !attacker.IsFlying() {
         // a unit with Thrown can attack a flying unit
         if attacker.HasAbility(data.AbilityThrown) ||
            attacker.HasAbility(data.AbilityFireBreath) ||
@@ -3033,11 +3097,11 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 // if either side is flying then they do not take damage.
                 // for this to be false, either both are inside the wall of fire, or both are outside.
                 if model.InsideWallOfFire(defender.X, defender.Y) != model.InsideWallOfFire(attacker.X, attacker.Y) {
-                    if !attacker.Unit.IsFlying() {
+                    if !attacker.IsFlying() {
                         model.ApplyWallOfFireDamage(attacker)
                     }
 
-                    if !defender.Unit.IsFlying() {
+                    if !defender.IsFlying() {
                         model.ApplyWallOfFireDamage(defender)
                     }
                 }
@@ -3050,7 +3114,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
             case 4:
                 if attacker.HasAbility(data.AbilityFirstStrike) && !defender.HasAbility(data.AbilityNegateFirstStrike) {
-                    attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
+                    attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear, false)
 
                     // asleep units take full attack power as damage
                     if defender.IsAsleep() {
@@ -3109,7 +3173,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
 
                 // attacker has not melee attacked yet, so let them do it now, or they have haste so they can attack again
                 for range attacks {
-                    attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
+                    attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear, false)
 
                     if defender.IsAsleep() {
                         hit = true
@@ -3137,7 +3201,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 if !defender.IsAsleep() {
                     // defender does counter-attack
                     for range counters {
-                        defenderDamage, hit := defender.ComputeMeleeDamage(defenderFear)
+                        defenderDamage, hit := defender.ComputeMeleeDamage(defenderFear, true)
 
                         // attacker can't possibly be asleep, so no need to check here
 
@@ -3185,6 +3249,8 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
             break
         }
     }
+
+    defender.Attacked += 1
 }
 
 func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
@@ -3296,6 +3362,11 @@ func (model *CombatModel) flee(army *Army) {
         chance := 50
         if unit.Unit.IsHero() {
             chance = 25
+        }
+
+        // units that are still under the web will always be lost
+        if unit.WebHealth > 0 {
+            chance = 100
         }
 
         if rand.IntN(100) < chance {
