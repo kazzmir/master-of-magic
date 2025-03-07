@@ -63,13 +63,10 @@ func (saveGame *SaveGame) ToMap(terrainData *terrain.TerrainData, plane data.Pla
         if map_.ExtraMap[point] == nil {
             map_.ExtraMap[point] = make(map[maplib.ExtraKind]maplib.ExtraTile)
         }
-        map_.ExtraMap[point][maplib.ExtraKindEncounter] = &maplib.ExtraEncounter{
-            Type: maplib.EncounterTypePlaneTower,
-            // FIXME: use tower.Owner?
-            Budget: 0,
-            Units: nil,
-            ExploredBy: nil,
+        if tower.Owner == -1 {
+            continue
         }
+        map_.ExtraMap[point][maplib.ExtraKindOpenTower] = &maplib.ExtraOpenTower{}
     }
 
     for _, lair := range saveGame.Lairs {

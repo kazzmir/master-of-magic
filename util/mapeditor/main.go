@@ -284,6 +284,16 @@ func (editor *Editor) Draw(screen *ebiten.Image){
                         options.GeoM.Translate(startX, startY)
                         screen.DrawImage(encounterImage, &options)
                     }
+                } else if editor.getMap().HasOpenTower(xUse, yUse) {
+                    towerImage, err := editor.ImageCache.GetImage("mapback.lbx", 70, 0)
+                    if err == nil {
+                        options.GeoM.Reset()
+                        options.GeoM.Scale(float64(xSize) / float64(towerImage.Bounds().Dx()), float64(ySize) / float64(towerImage.Bounds().Dy()))
+                        options.GeoM.Translate(float64(xPos), float64(yPos))
+                        options.GeoM.Scale(editor.Scale, editor.Scale)
+                        options.GeoM.Translate(startX, startY)
+                        screen.DrawImage(towerImage, &options)
+                    }
                 }
 
                 if editor.TileX == xUse && editor.TileY == yUse {
