@@ -3545,6 +3545,7 @@ type SpellSystem interface {
     CreateWeaknessProjectile(target *ArmyUnit) *Projectile
     CreateBlackSleepProjectile(target *ArmyUnit) *Projectile
     CreateVertigoProjectile(target *ArmyUnit) *Projectile
+    CreateShatterProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -3957,13 +3958,26 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Shatter":
+            model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateShatterProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRace() == data.RaceFantastic {
+                    return false
+                }
+
+                if target.HasCurse(data.UnitCurseShatter) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit curses:
 
         CurseConfusion
-        CurseVertigo
-        CurseShatter
         CurseWarpCreature
         CursePossession
         */

@@ -833,13 +833,27 @@ func (combat *CombatScreen) CreateVertigoProjectile(target *ArmyUnit) *Projectil
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
     explodeImages := images
 
-    sleep := func (unit *ArmyUnit){
+    effect := func (unit *ArmyUnit){
         if rand.N(10) + 1 > unit.GetResistanceFor(data.SorceryMagic) {
             unit.AddCurse(data.UnitCurseVertigo)
         }
     }
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, sleep)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateShatterProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.ChaosMagic) {
+            unit.AddCurse(data.UnitCurseShatter)
+        }
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
@@ -3126,6 +3140,12 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                         screen.DrawImage(use, &unitOptions)
                     case data.UnitCurseVertigo:
                         images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 17)
+                        index := animationIndex % uint64(len(images))
+                        use := images[index]
+
+                        screen.DrawImage(use, &unitOptions)
+                    case data.UnitCurseShatter:
+                        images, _ := combat.ImageCache.GetImages("resource.lbx", 79)
                         index := animationIndex % uint64(len(images))
                         use := images[index]
 
