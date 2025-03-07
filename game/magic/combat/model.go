@@ -3549,9 +3549,6 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
         return target != nil && target.Unit.GetRace() == data.RaceFantastic
     }
 
-    _ = targetAny
-    _ = targetFantastic
-
     if model.CheckDispel(spell, player) {
         model.Events <- &CombatEventMessage{
             Message: fmt.Sprintf("%v fizzled", spell.Name),
