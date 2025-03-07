@@ -1074,55 +1074,6 @@ func (combat *CombatScreen) CreateDemon(player *playerlib.Player, x int, y int) 
     combat.Model.addNewUnit(player, x, y, units.Demon, units.FacingDown)
 }
 
-/* let the user select a target, then cast the spell on that target
- */
-func (combat *CombatScreen) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
-    teamAttacked := TeamAttacker
-
-    selecter := TeamAttacker
-    if player == combat.Model.DefendingArmy.Player {
-        selecter = TeamDefender
-    }
-
-    if targetKind == TargetFriend {
-        /* if the player is the defender and we are targeting a friend then the team should be the defenders */
-        if combat.Model.DefendingArmy.Player == player {
-            teamAttacked = TeamDefender
-        }
-    } else if targetKind == TargetEnemy {
-        /* if the player is the attacker and we are targeting an enemy then the team should be the defenders */
-        if combat.Model.AttackingArmy.Player == player {
-            teamAttacked = TeamDefender
-        }
-    } else if targetKind == TargetEither {
-        teamAttacked = TeamEither
-    }
-
-    // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
-
-    event := &CombatEventSelectUnit{
-        Selecter: selecter,
-        Spell: spell,
-        SelectTeam: teamAttacked,
-        CanTarget: canTarget,
-        SelectTarget: func(target *ArmyUnit){
-            sound, err := combat.AudioCache.GetSound(spell.Sound)
-            if err == nil {
-                sound.Play()
-            } else {
-                log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-            }
-
-            onTarget(target)
-        },
-    }
-
-    select {
-        case combat.Events <- event:
-        default:
-    }
-}
-
 // FIXME: take in a canTarget function to check if the tile is legal
 func (combat *CombatScreen) DoTargetTileSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
     // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
@@ -1208,17 +1159,17 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
 
     switch spell.Name {
         case "Fireball":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFireballProjectile(target, spell.Cost(false) / 3)
                 castedCallback()
             }, targetAny)
         case "Ice Bolt":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateIceBoltProjectile(target, spell.Cost(false))
                 castedCallback()
             }, targetAny)
         case "Star Fires":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateStarFiresProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
@@ -1230,27 +1181,27 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 return false
             })
         case "Psionic Blast":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2)
                 castedCallback()
             }, targetAny)
         case "Doom Bolt":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDoomBoltProjectile(target)
                 castedCallback()
             }, targetAny)
         case "Fire Bolt":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateFireBoltProjectile(target, spell.Cost(false))
                 castedCallback()
             }, targetAny)
         case "Lightning Bolt":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateLightningBoltProjectile(target, spell.Cost(false) - 5)
                 castedCallback()
             }, targetAny)
         case "Warp Lightning":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWarpLightningProjectile(target)
                 castedCallback()
             }, targetAny)
@@ -1260,12 +1211,12 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 castedCallback()
             }, targetAny)
         case "Life Drain":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5, player, unitCaster)
                 castedCallback()
             }, targetAny)
         case "Dispel Evil":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDispelEvilProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
@@ -1277,7 +1228,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 return false
             })
         case "Healing":
-            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateHealingProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
@@ -1291,7 +1242,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 return target.GetRace() == data.RaceFantastic
             })
         case "Recall Hero":
-            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateRecallHeroProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
@@ -1305,7 +1256,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 return target.GetRealm() != data.DeathMagic
             })
         case "Cracks Call":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateCracksCallProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
@@ -1324,19 +1275,19 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 castedCallback()
             })
         case "Web":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWebProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
                 return !target.HasAbility(data.AbilityNonCorporeal)
             })
         case "Banish":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15)
                 castedCallback()
             }, targetFantastic)
         case "Dispel Magic True":
-            combat.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
                 disenchantStrength := spell.BaseCost(false) + spell.SpentAdditionalCost(false) * 3
 
                 if player.Wizard.RetortEnabled(data.RetortRunemaster) {
@@ -1347,12 +1298,12 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 castedCallback()
             }, targetAny)
         case "Word of Recall":
-            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateWordOfRecallProjectile(target)
                 castedCallback()
             }, targetAny)
         case "Disintegrate":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateDisintegrateProjectile(target)
                 castedCallback()
             }, targetAny)
@@ -1368,7 +1319,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 castedCallback()
             })
         case "Warp Wood":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWarpWoodProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
@@ -1387,7 +1338,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 return !target.HasAbility(data.AbilityDeathImmunity)
             })
         case "Word of Death":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWordOfDeathProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
@@ -1427,7 +1378,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 castedCallback()
             }
         case "Resist Elements":
-            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateResistElementsProjectile(target)
                 target.AddEnchantment(data.UnitEnchantmentResistElements)
                 castedCallback()
@@ -1510,7 +1461,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 return false
             }
 
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CastCreatureBinding(target, player)
                 castedCallback()
             }, selectable)
@@ -1528,18 +1479,18 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 return false
             }
 
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateMindStormProjectile(target)
                 castedCallback()
             }, selectable)
 
         case "Bless":
-            combat.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateBlessProjectile(target)
                 castedCallback()
             }, targetAny)
         case "Weakness":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWeaknessProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
@@ -1562,7 +1513,7 @@ func (combat *CombatScreen) InvokeSpell(player *playerlib.Player, unitCaster *Ar
                 return true
             })
         case "CurseBlackSleep":
-            combat.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+            combat.Model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateBlackSleepProjectile(target)
                 castedCallback()
             }, func (target *ArmyUnit) bool {
@@ -2386,6 +2337,14 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
             if unit != nil && canTarget(unit) && inputmanager.LeftClick() && mouseY < hudY {
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
                 if selectTeam == TeamEither || unit.Team == selectTeam {
+
+                    sound, err := combat.AudioCache.GetSound(spell.Sound)
+                    if err == nil {
+                        sound.Play()
+                    } else {
+                        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+                    }
+
                     selectTarget(unit)
 
                     // shouldn't need to set the mouse state here

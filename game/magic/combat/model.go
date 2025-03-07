@@ -3420,3 +3420,43 @@ func (model *CombatModel) ApplyCreatureBinding(target *ArmyUnit, newOwner *playe
     newArmy.AddArmyUnit(target)
     target.Team = model.GetTeamForArmy(newArmy)
 }
+
+/* let the user select a target, then cast the spell on that target
+ */
+func (model *CombatModel) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
+    teamAttacked := TeamAttacker
+
+    selecter := TeamAttacker
+    if player == model.DefendingArmy.Player {
+        selecter = TeamDefender
+    }
+
+    if targetKind == TargetFriend {
+        /* if the player is the defender and we are targeting a friend then the team should be the defenders */
+        if model.DefendingArmy.Player == player {
+            teamAttacked = TeamDefender
+        }
+    } else if targetKind == TargetEnemy {
+        /* if the player is the attacker and we are targeting an enemy then the team should be the defenders */
+        if model.AttackingArmy.Player == player {
+            teamAttacked = TeamDefender
+        }
+    } else if targetKind == TargetEither {
+        teamAttacked = TeamEither
+    }
+
+    // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
+
+    event := &CombatEventSelectUnit{
+        Selecter: selecter,
+        Spell: spell,
+        SelectTeam: teamAttacked,
+        CanTarget: canTarget,
+        SelectTarget: onTarget,
+    }
+
+    select {
+        case model.Events <- event:
+        default:
+    }
+}
