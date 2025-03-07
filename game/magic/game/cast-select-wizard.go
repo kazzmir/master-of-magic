@@ -184,7 +184,7 @@ func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache
 }
 
 func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, imageCache *util.ImageCache, 
-    initialHeader string, sparksGraphicIndex int, castingPlayer *playerlib.Player, playersInGame int,
+    initialHeader string, sparksGraphicIndex int, sparksSoundIndex int, castingPlayer *playerlib.Player, playersInGame int,
     // This callback receives a spell target and returns if the selection was valid (bool) and the new menu header change (string)
     onPlayerSelectedCallback func(selectedPlayer *playerlib.Player) (bool, string)) *uilib.UIElementGroup {
 
@@ -258,7 +258,7 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
                 if castSuccessful {
                     // Spell cast successfully. Change header, create sound, add delay, draw the sparks and remove this uigroup.
                     group.AddElement(createSparksElement(faceRect))
-                    sound, err := audio.LoadSound(cache, 29)
+                    sound, err := audio.LoadSound(cache, sparksSoundIndex)
                     if err == nil {
                         sound.Play()
                     }

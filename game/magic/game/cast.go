@@ -1439,7 +1439,7 @@ func (game *Game) doCastCruelUnminding(player *playerlib.Player) {
     }
     playersInGame := len(game.Players)
     quit, cancel := context.WithCancel(context.Background())
-    wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, "Select target for Cruel Unminding spell", 41, player, playersInGame, onTargetSelectCallback)
+    wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, "Select target for Cruel Unminding spell", 41, 58, player, playersInGame, onTargetSelectCallback)
     game.Events <- &GameEventRunUI{
         Group: wizSelectionUiGroup,
         Quit: quit,
@@ -1457,7 +1457,7 @@ func (game *Game) doCastDrainPower(player *playerlib.Player) {
     }
     playersInGame := len(game.Players)
     quit, cancel := context.WithCancel(context.Background())
-    wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, "Select target for Drain Power spell", 42, player, playersInGame, onTargetSelectCallback)
+    wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, "Select target for Drain Power spell", 42, 56, player, playersInGame, onTargetSelectCallback)
     game.Events <- &GameEventRunUI{
         Group: wizSelectionUiGroup,
         Quit: quit,
