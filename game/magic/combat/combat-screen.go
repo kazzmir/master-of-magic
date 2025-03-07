@@ -828,6 +828,20 @@ func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) *Projec
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, sleep)
 }
 
+func (combat *CombatScreen) CreateVertigoProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    sleep := func (unit *ArmyUnit){
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.SorceryMagic) {
+            unit.AddCurse(data.UnitCurseVertigo)
+        }
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, sleep)
+}
+
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
@@ -3110,6 +3124,13 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                         use := images[index]
 
                         screen.DrawImage(use, &unitOptions)
+                    case data.UnitCurseVertigo:
+                        images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 17)
+                        index := animationIndex % uint64(len(images))
+                        use := images[index]
+
+                        screen.DrawImage(use, &unitOptions)
+
                 }
             }
 
