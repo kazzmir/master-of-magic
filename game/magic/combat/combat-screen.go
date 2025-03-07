@@ -529,7 +529,7 @@ func (combat *CombatScreen) createUnitProjectile(target *ArmyUnit, explodeImages
     return projectile
 }
 
-func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength int) {
+func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 11)
 
     loopImages := images[0:3]
@@ -542,7 +542,7 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createSkyProjectile(target, loopImages, explodeImages, damage))
+    return combat.createSkyProjectile(target, loopImages, explodeImages, damage)
 }
 
 func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength int) *Projectile {
@@ -579,7 +579,7 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength 
     return combat.createSkyProjectile(target, loopImages, explodeImages, damage)
 }
 
-func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 9)
     explodeImages := images
 
@@ -590,7 +590,7 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
 }
 
 func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
@@ -620,7 +620,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
 }
 
-func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, strength int) {
+func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, strength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 16)
     explodeImages := images
 
@@ -631,10 +631,10 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, stren
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
 }
 
-func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 5)
     loopImages := images[0:3]
     explodeImages := images[3:]
@@ -646,10 +646,10 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createVerticalSkyProjectile(target, loopImages, explodeImages, effect))
+    return combat.createVerticalSkyProjectile(target, loopImages, explodeImages, effect)
 }
 
-func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, strength int) {
+func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, strength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 24)
     // loopImages := images
     explodeImages := images
@@ -679,7 +679,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         },
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, projectile)
+    return projectile
 }
 
 func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
@@ -1750,6 +1750,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
                 }
 
                 selectTile(combat.MouseTileX, combat.MouseTileY)
+                yield()
                 break
             }
         }
@@ -1856,6 +1857,9 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
 
                     // shouldn't need to set the mouse state here
                     combat.MouseState = CombatClickHud
+
+                    // asborb click
+                    yield()
                     return
                 }
             }

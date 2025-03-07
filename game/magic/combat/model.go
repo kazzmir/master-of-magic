@@ -3508,6 +3508,12 @@ func (model *CombatModel) DoAllUnitsSpell(player *playerlib.Player, spell spellb
 
 type SpellSystem interface {
     CreateFireballProjectile(target *ArmyUnit, cost int) *Projectile
+    CreateIceBoltProjectile(target *ArmyUnit, cost int) *Projectile
+    CreateStarFiresProjectile(target *ArmyUnit) *Projectile
+    CreatePsionicBlastProjectile(target *ArmyUnit, cost int) *Projectile
+    CreateDoomBoltProjectile(target *ArmyUnit) *Projectile
+    CreateFireBoltProjectile(target *ArmyUnit, cost int) *Projectile
+    CreateLightningBoltProjectile(target *ArmyUnit, cost int) *Projectile
 }
 
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
@@ -3534,15 +3540,14 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 model.AddProjectile(spellSystem.CreateFireballProjectile(target, spell.Cost(false) / 3))
                 castedCallback()
             }, targetAny)
-        /*
         case "Ice Bolt":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateIceBoltProjectile(target, spell.Cost(false))
+                model.AddProjectile(spellSystem.CreateIceBoltProjectile(target, spell.Cost(false)))
                 castedCallback()
             }, targetAny)
         case "Star Fires":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateStarFiresProjectile(target)
+                model.AddProjectile(spellSystem.CreateStarFiresProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
                 realm := target.Unit.GetRealm()
@@ -3554,24 +3559,25 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             })
         case "Psionic Blast":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2)
+                model.AddProjectile(spellSystem.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2))
                 castedCallback()
             }, targetAny)
         case "Doom Bolt":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateDoomBoltProjectile(target)
+                model.AddProjectile(spellSystem.CreateDoomBoltProjectile(target))
                 castedCallback()
             }, targetAny)
         case "Fire Bolt":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateFireBoltProjectile(target, spell.Cost(false))
+                model.AddProjectile(spellSystem.CreateFireBoltProjectile(target, spell.Cost(false)))
                 castedCallback()
             }, targetAny)
         case "Lightning Bolt":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateLightningBoltProjectile(target, spell.Cost(false) - 5)
+                model.AddProjectile(spellSystem.CreateLightningBoltProjectile(target, spell.Cost(false) - 5))
                 castedCallback()
             }, targetAny)
+        /*
         case "Warp Lightning":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 combat.CreateWarpLightningProjectile(target)
@@ -3958,5 +3964,8 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
         Cloak of Fear
         Wraith Form
          */
+
+        default:
+            log.Printf("Unhandled spell %v", spell.Name)
     }
 }
