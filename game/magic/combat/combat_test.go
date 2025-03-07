@@ -557,3 +557,46 @@ func TestFear(test *testing.T){
         test.Errorf("Error: defender should have not attacked")
     }
 }
+
+func TestCounterAttackPenalty(test *testing.T){
+    defendingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+    }
+
+    attackingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+    }
+
+    attackerUnit := units.LizardSpearmen
+    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbility(data.AbilityCauseFear))
+
+    defenderUnit := units.LizardSwordsmen
+
+    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
+    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
+
+    defendingArmy.AddUnit(defender)
+    attackingArmy.AddUnit(attacker)
+
+    combat := &CombatModel{
+        SelectedUnit: nil,
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Turn: TeamDefender,
+        DefendingArmy: defendingArmy,
+        AttackingArmy: attackingArmy,
+    }
+
+    combat.Initialize(spellbook.Spells{}, 0, 0)
+
+    if defendingArmy.Units[0].GetCounterAttackToHit() != 30 {
+        test.Errorf("Error: defender should have normal 30%% counter attack to-hit")
+    }
+
+    // attack twice
+    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+
+    if defendingArmy.Units[0].GetCounterAttackToHit() != 20 {
+        test.Errorf("Error: defender should have 20%% counter attack to-hit")
+    }
+}

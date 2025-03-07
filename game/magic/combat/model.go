@@ -547,6 +547,10 @@ type ArmyUnit struct {
 
     Team Team
 
+    // number of times this unit was attacked this turn
+    Attacked int
+
+    // number of ranged attacks remaining
     RangedAttacks int
 
     Attacking bool
@@ -762,6 +766,20 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
     }
 
     return unit.Unit.GetAbilityValue(ability)
+}
+
+func (unit *ArmyUnit) GetCounterAttackToHit() int {
+    base := unit.GetToHitMelee()
+    // if somehow the unit already has <10% tohit then just return that
+    if base < 10 {
+        return base
+    }
+
+    // for every 2 attacks against this unit, reduce tohit by 10%
+    reduction := 10 * (unit.Attacked / 2)
+
+    // tohit cannot go below 10%
+    return max(10, base - reduction)
 }
 
 func (unit *ArmyUnit) GetToHitMelee() int {
@@ -1194,6 +1212,7 @@ func (unit *ArmyUnit) ResetTurnData() {
     unit.MovesLeft = fraction.FromInt(unit.GetMovementSpeed())
     unit.Paths = make(map[image.Point]pathfinding.Path)
     unit.Casted = false
+    unit.Attacked = 0
 }
 
 type DamageModifiers struct {
@@ -1452,7 +1471,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
     return damage
 }
 
-func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int) (int, bool) {
+func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int, counterAttack bool) (int, bool) {
 
     if unit.GetMeleeAttackPower() == 0 {
         return 0, false
@@ -1464,9 +1483,12 @@ func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int) (int, bool) {
         // even if all figures fail to cause damage, it still counts as a hit for touch purposes
         hit = true
 
-        // FIXME: apply tohit penalty of -10% for every 2 times this unit was attacked for this turn
-        // https://masterofmagic.fandom.com/wiki/Counter_Attack#Temporary_To_Hit_Penalty
-        damage += ComputeRoll(unit.GetMeleeAttackPower(), unit.GetToHitMelee())
+        toHit := unit.GetToHitMelee()
+        if counterAttack {
+            // counter attack to-hit might be penalized
+            toHit = unit.GetCounterAttackToHit()
+        }
+        damage += ComputeRoll(unit.GetMeleeAttackPower(), toHit)
     }
 
     return damage, hit
@@ -3092,7 +3114,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
             case 4:
                 if attacker.HasAbility(data.AbilityFirstStrike) && !defender.HasAbility(data.AbilityNegateFirstStrike) {
-                    attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
+                    attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear, false)
 
                     // asleep units take full attack power as damage
                     if defender.IsAsleep() {
@@ -3151,7 +3173,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
 
                 // attacker has not melee attacked yet, so let them do it now, or they have haste so they can attack again
                 for range attacks {
-                    attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear)
+                    attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear, false)
 
                     if defender.IsAsleep() {
                         hit = true
@@ -3179,7 +3201,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 if !defender.IsAsleep() {
                     // defender does counter-attack
                     for range counters {
-                        defenderDamage, hit := defender.ComputeMeleeDamage(defenderFear)
+                        defenderDamage, hit := defender.ComputeMeleeDamage(defenderFear, true)
 
                         // attacker can't possibly be asleep, so no need to check here
 
@@ -3227,6 +3249,8 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
             break
         }
     }
+
+    defender.Attacked += 1
 }
 
 func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
