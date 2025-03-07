@@ -2214,6 +2214,7 @@ func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, uni
         if enchantment == data.UnitCurseCreatureBinding {
             swapArmy = true
         }
+
         unit.RemoveCurse(enchantment)
     }
 
@@ -3334,6 +3335,11 @@ func (model *CombatModel) flee(army *Army) {
         chance := 50
         if unit.Unit.IsHero() {
             chance = 25
+        }
+
+        // units that are still under the web will always be lost
+        if unit.WebHealth > 0 {
+            chance = 100
         }
 
         if rand.IntN(100) < chance {
