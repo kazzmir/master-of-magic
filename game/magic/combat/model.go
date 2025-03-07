@@ -3514,6 +3514,12 @@ type SpellSystem interface {
     CreateDoomBoltProjectile(target *ArmyUnit) *Projectile
     CreateFireBoltProjectile(target *ArmyUnit, cost int) *Projectile
     CreateLightningBoltProjectile(target *ArmyUnit, cost int) *Projectile
+    CreateWarpLightningProjectile(target *ArmyUnit) *Projectile
+    CreateFlameStrikeProjectile(target *ArmyUnit) *Projectile
+    CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player *playerlib.Player, unitCaster *ArmyUnit) *Projectile
+    CreateDispelEvilProjectile(target *ArmyUnit) *Projectile
+    CreateHealingProjectile(target *ArmyUnit) *Projectile
+    CreateHolyWordProjectile(target *ArmyUnit) *Projectile
 }
 
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
@@ -3577,25 +3583,24 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 model.AddProjectile(spellSystem.CreateLightningBoltProjectile(target, spell.Cost(false) - 5))
                 castedCallback()
             }, targetAny)
-        /*
         case "Warp Lightning":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateWarpLightningProjectile(target)
+                model.AddProjectile(spellSystem.CreateWarpLightningProjectile(target))
                 castedCallback()
             }, targetAny)
         case "Flame Strike":
             model.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateFlameStrikeProjectile(target)
+                model.AddProjectile(spellSystem.CreateFlameStrikeProjectile(target))
             }, targetAny)
             castedCallback()
         case "Life Drain":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5, player, unitCaster)
+                model.AddProjectile(spellSystem.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5, player, unitCaster))
                 castedCallback()
             }, targetAny)
         case "Dispel Evil":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateDispelEvilProjectile(target)
+                model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
                 if target.Unit.GetRace() == data.RaceFantastic &&
@@ -3607,18 +3612,19 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             })
         case "Healing":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                combat.CreateHealingProjectile(target)
+                model.AddProjectile(spellSystem.CreateHealingProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
                 return target.GetRealm() != data.DeathMagic
             })
         case "Holy Word":
             model.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                combat.CreateHolyWordProjectile(target)
+                model.AddProjectile(spellSystem.CreateHolyWordProjectile(target))
             }, func (target *ArmyUnit) bool {
                 return target.GetRace() == data.RaceFantastic
             })
             castedCallback()
+        /*
         case "Recall Hero":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 combat.CreateRecallHeroProjectile(target)

@@ -593,7 +593,7 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Project
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
 }
 
-func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 10)
     explodeImages := images
 
@@ -617,7 +617,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
 }
 
 func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, strength int) *Projectile {
@@ -682,7 +682,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
     return projectile
 }
 
-func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 3)
     // loopImages := images
     explodeImages := images
@@ -718,12 +718,12 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) {
         },
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, projectile)
+    return projectile
 }
 
 // player will never be nil, but unitCaster might be nil if the player is casting the spell
 // if a hero/unit is casting the spell then unitCaster will be non-nil
-func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player *playerlib.Player, unitCaster *ArmyUnit) {
+func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player *playerlib.Player, unitCaster *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 6)
     explodeImages := images
 
@@ -746,10 +746,10 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
 }
 
-func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 33)
     explodeImages := images
 
@@ -760,7 +760,7 @@ func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
 }
 
 func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) {
@@ -770,7 +770,7 @@ func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){}))
 }
 
-func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
@@ -779,7 +779,7 @@ func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) {
         unit.Heal(5)
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, heal))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, heal)
 }
 
 func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) {
@@ -822,7 +822,7 @@ func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) {
     combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, sleep))
 }
 
-func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
+func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
@@ -849,7 +849,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) {
         }
     }
 
-    combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
 }
 
 func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) {
