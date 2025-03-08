@@ -1316,8 +1316,6 @@ func (unit *ArmyUnit) ResetTurnData() {
     if unit.HasCurse(data.UnitCurseConfusion) {
         actions := []ConfusionAction{ConfusionActionDoNothing, ConfusionActionMoveRandomly, ConfusionActionEnemyControl, ConfusionActionNone}
         unit.ConfusionAction = actions[rand.N(len(actions))]
-
-        unit.ConfusionAction = ConfusionActionEnemyControl
     }
 
 }
