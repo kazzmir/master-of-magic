@@ -880,6 +880,9 @@ func (unit *ArmyUnit) GetResistance() int {
     for _, curse := range unit.Curses {
         switch curse {
             case data.UnitCurseMindStorm: modifier -= 5
+            // FIXME: it could be the case that warp creature sets the base resistance to 0, but leaves the modifier alone
+            // should the various enchantments in effect still apply if the unit has warp creature resistance?
+            case data.UnitCurseWarpCreatureResistance: return 0
         }
     }
 
@@ -955,10 +958,13 @@ func (unit *ArmyUnit) GetDefense() int {
         modifier += unit.Unit.DefenseEnchantmentBonus(enchantment)
     }
 
+    warpCreatureDefense := false
+
     for _, curse := range unit.Curses {
         switch curse {
             case data.UnitCurseMindStorm: modifier -= 5
             case data.UnitCurseVertigo: modifier -= 1
+            case data.UnitCurseWarpCreatureDefense: warpCreatureDefense = true
         }
     }
 
@@ -984,7 +990,12 @@ func (unit *ArmyUnit) GetDefense() int {
         }
     }
 
-    return max(0, unit.Unit.GetDefense() + modifier)
+    final := unit.Unit.GetDefense() + modifier
+    if warpCreatureDefense {
+        final /= 2
+    }
+
+    return max(0, final)
 }
 
 func (unit *ArmyUnit) GetFullRangedAttackPower() int {
@@ -1038,12 +1049,14 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
     }
 
     shattered := false
+    warpCreatureMelee := false
 
     for _, curse := range unit.Curses {
         switch curse {
             case data.UnitCurseMindStorm: modifier -= 5
             case data.UnitCurseWeakness: modifier -= 2
             case data.UnitCurseShatter: shattered = true
+            case data.UnitCurseWarpCreatureMelee: warpCreatureMelee = true
         }
     }
 
@@ -1089,6 +1102,10 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
 
     if shattered && final > 0 {
         return 1
+    }
+
+    if warpCreatureMelee {
+        final /= 2
     }
 
     return max(0, final)

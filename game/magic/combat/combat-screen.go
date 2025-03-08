@@ -862,7 +862,7 @@ func (combat *CombatScreen) CreateWarpCreatureProjectile(target *ArmyUnit) *Proj
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > unit.GetResistanceFor(data.ChaosMagic) - 1 {
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.ChaosMagic) - 1 - 5 {
             choices := set.NewSet(data.UnitCurseWarpCreatureMelee, data.UnitCurseWarpCreatureDefense, data.UnitCurseWarpCreatureResistance)
             choices.RemoveMany(unit.GetCurses()...)
 
