@@ -3,7 +3,8 @@ package data
 const ScreenWidthOriginal = 320
 const ScreenHeightOriginal = 200
 
-var ScreenScale = 3
+var ScreenScale = 1
+var ScreenScale2 = 3.0
 var ScreenWidth = ScreenWidthOriginal * ScreenScale
 var ScreenHeight = ScreenHeightOriginal * ScreenScale
 var ScreenScaleAlgorithm = ScaleAlgorithmNormal
