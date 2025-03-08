@@ -3649,6 +3649,7 @@ type SpellSystem interface {
     CreateVertigoProjectile(target *ArmyUnit) *Projectile
     CreateShatterProjectile(target *ArmyUnit) *Projectile
     CreateWarpCreatureProjectile(target *ArmyUnit) *Projectile
+    CreateConfusionProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4113,13 +4114,9 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             })
         case "Confusion":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateWarpCreatureProjectile(target))
+                model.AddProjectile(spellSystem.CreateConfusionProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                if target.GetRace() == data.RaceFantastic {
-                    return false
-                }
-
                 if target.HasAbility(data.AbilityIllusionsImmunity) || target.IsMagicImmune(spell.Magic) {
                     return false
                 }

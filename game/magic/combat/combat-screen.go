@@ -814,6 +814,19 @@ func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) *Projecti
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, weakness)
 }
 
+func (combat *CombatScreen) CreateConfusionProjectile(target *ArmyUnit) *Projectile {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 20)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.SorceryMagic) - 4 {
+            unit.AddCurse(data.UnitCurseConfusion)
+        }
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
@@ -3194,7 +3207,12 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                         use := images[index]
 
                         screen.DrawImage(use, &unitOptions)
+                    case data.UnitCurseConfusion:
+                        images, _ := combat.ImageCache.GetImages("resource.lbx", 76)
+                        index := animationIndex % uint64(len(images))
+                        use := images[index]
 
+                        screen.DrawImage(use, &unitOptions)
                 }
             }
 
