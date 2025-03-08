@@ -856,6 +856,27 @@ func (combat *CombatScreen) CreateShatterProjectile(target *ArmyUnit) *Projectil
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
+func (combat *CombatScreen) CreateWarpCreatureProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify
+    images, _ := combat.ImageCache.GetImages("resource.lbx", 81)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.ChaosMagic) - 1 {
+            choices := set.NewSet(data.UnitCurseWarpCreatureMelee, data.UnitCurseWarpCreatureDefense, data.UnitCurseWarpCreatureResistance)
+            choices.RemoveMany(unit.GetCurses()...)
+
+            if choices.Size() > 0 {
+                values := choices.Values()
+                use := values[rand.N(len(values))]
+                unit.AddCurse(use)
+            }
+        }
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
@@ -3120,7 +3141,29 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             if unit.IsAsleep() {
                 unitview.RenderCombatUnitGrey(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
             } else {
+                warpCreature := false
+                for _, curse := range unit.GetCurses() {
+                    switch curse {
+                        case data.UnitCurseWarpCreatureDefense,
+                             data.UnitCurseWarpCreatureMelee,
+                             data.UnitCurseWarpCreatureResistance: warpCreature = true
+                    }
+                    if warpCreature {
+                        break
+                    }
+                }
+
+                var savedColor ebiten.ColorScale
+                if warpCreature {
+                    savedColor = unitOptions.ColorScale
+                    unitOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xb5, G: 0x5e, B: 0xf3, A: 0xff})
+                }
+
                 unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
+
+                if warpCreature {
+                    unitOptions.ColorScale = savedColor
+                }
             }
 
             unitOptions.GeoM.Translate(float64(-combatImages[index].Bounds().Dx()/2), float64(-combatImages[0].Bounds().Dy()*3/4))
