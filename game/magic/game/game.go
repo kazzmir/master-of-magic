@@ -7686,7 +7686,8 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
             pic, err := GetUnitImage(leader, overworld.ImageCache, leader.GetBanner())
             if err == nil {
-                options.GeoM.Translate(float64(data.ScreenScale), float64(data.ScreenScale))
+                // screen scale is already taken into account, so we can translate by 1 pixel here
+                options.GeoM.Translate(1, 1)
 
                 if leader.GetBusy() != units.BusyStatusNone {
                     var patrolOptions colorm.DrawImageOptions
