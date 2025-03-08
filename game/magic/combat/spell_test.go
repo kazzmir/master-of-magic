@@ -123,6 +123,10 @@ func (system *TestSpellSystem) CreateShatterProjectile(target *ArmyUnit) *Projec
     return nil
 }
 
+func (system *TestSpellSystem) CreateWarpCreatureProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }

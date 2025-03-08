@@ -856,6 +856,27 @@ func (combat *CombatScreen) CreateShatterProjectile(target *ArmyUnit) *Projectil
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
+func (combat *CombatScreen) CreateWarpCreatureProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify
+    images, _ := combat.ImageCache.GetImages("resource.lbx", 81)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.ChaosMagic) - 1 {
+            choices := set.NewSet(data.UnitCurseWarpCreatureMelee, data.UnitCurseWarpCreatureDefense, data.UnitCurseWarpCreatureResistance)
+            choices.RemoveMany(unit.GetCurses()...)
+
+            if choices.Size() > 0 {
+                values := choices.Values()
+                use := values[rand.N(len(values))]
+                unit.AddCurse(use)
+            }
+        }
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)

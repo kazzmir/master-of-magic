@@ -3584,6 +3584,7 @@ type SpellSystem interface {
     CreateBlackSleepProjectile(target *ArmyUnit) *Projectile
     CreateVertigoProjectile(target *ArmyUnit) *Projectile
     CreateShatterProjectile(target *ArmyUnit) *Projectile
+    CreateWarpCreatureProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4011,12 +4012,29 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Warp Creature":
+            model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateWarpCreatureProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRace() == data.RaceFantastic {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityMagicImmunity) {
+                    return false
+                }
+
+                // warp creature can be cast on the same unit multiple times, where a different curse effect
+                // is applied each time. if a unit has all 3 curses then potentially we could return false here
+
+                return true
+            })
 
         /*
         unit curses:
 
         CurseConfusion
-        CurseWarpCreature
         CursePossession
         */
 
