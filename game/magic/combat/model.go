@@ -3397,10 +3397,11 @@ func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
 }
 
 func (model *CombatModel) IsAIControlled(unit *ArmyUnit) bool {
+    isConfused := unit.ConfusionAction == ConfusionActionEnemyControl
     if unit.Team == TeamDefender {
-        return model.DefendingArmy.IsAI()
+        return (model.DefendingArmy.IsAI() && !isConfused) || (model.AttackingArmy.IsAI() && isConfused)
     } else {
-        return model.AttackingArmy.IsAI()
+        return (model.AttackingArmy.IsAI() && !isConfused) || (model.DefendingArmy.IsAI() && isConfused)
     }
 }
 

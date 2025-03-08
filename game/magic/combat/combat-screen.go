@@ -2454,7 +2454,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         return CombatStateRunning
     }
 
-    if combat.Model.SelectedUnit != nil && (combat.Model.IsAIControlled(combat.Model.SelectedUnit) || combat.Model.SelectedUnit.ConfusionAction == ConfusionActionEnemyControl && combat.Model.SelectedUnit.Team == combat.Model.Turn) {
+    if combat.Model.SelectedUnit != nil && combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
         aiUnit := combat.Model.SelectedUnit
 
         // keep making choices until the unit runs out of moves
