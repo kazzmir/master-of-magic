@@ -526,6 +526,15 @@ type CombatUnit interface {
     GetSpellChargeSpells() map[spellbook.Spell]int
 }
 
+// for units that are cursed with confusion, this is the action they will take on their turn
+type ConfusionAction int
+const (
+    ConfusionActionNone ConfusionAction = iota
+    ConfusionActionDoNothing
+    ConfusionActionMoveRandomly
+    ConfusionActionEnemyControl
+)
+
 type ArmyUnit struct {
     Unit CombatUnit
     Facing units.Facing
@@ -546,6 +555,9 @@ type ArmyUnit struct {
     Model *CombatModel
 
     Team Team
+
+    // whether this unit is currently under the effects of the Confusion curse
+    ConfusionAction ConfusionAction
 
     // number of times this unit was attacked this turn
     Attacked int
@@ -1298,6 +1310,14 @@ func (unit *ArmyUnit) ResetTurnData() {
     unit.Paths = make(map[image.Point]pathfinding.Path)
     unit.Casted = false
     unit.Attacked = 0
+
+    unit.ConfusionAction = ConfusionActionNone
+
+    if unit.HasCurse(data.UnitCurseConfusion) {
+        actions := []ConfusionAction{ConfusionActionDoNothing, ConfusionActionMoveRandomly, ConfusionActionEnemyControl, ConfusionActionNone}
+        unit.ConfusionAction = actions[rand.N(len(actions))]
+    }
+
 }
 
 type DamageModifiers struct {
