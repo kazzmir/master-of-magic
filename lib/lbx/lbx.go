@@ -1176,6 +1176,11 @@ func GetPaletteOverrideMap(cache *LbxCache, lbxFile *LbxFile, filename string) (
 
             out[47] = paletteItem
             out[48] = paletteItem
+
+            shatterPalette := clonePalette(defaultPalette)
+            shatterPalette[254] = premultiply(color.RGBA{R: 255, G: 0, B: 0, A: 128})
+            out[79] = shatterPalette
+
         case "spellose.lbx":
             palette, err := lbxFile.GetPalette(28)
             if err != nil {

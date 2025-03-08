@@ -119,6 +119,10 @@ func (system *TestSpellSystem) CreateVertigoProjectile(target *ArmyUnit) *Projec
     return nil
 }
 
+func (system *TestSpellSystem) CreateShatterProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }
