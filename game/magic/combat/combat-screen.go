@@ -3141,7 +3141,29 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             if unit.IsAsleep() {
                 unitview.RenderCombatUnitGrey(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
             } else {
+                warpCreature := false
+                for _, curse := range unit.GetCurses() {
+                    switch curse {
+                        case data.UnitCurseWarpCreatureDefense,
+                             data.UnitCurseWarpCreatureMelee,
+                             data.UnitCurseWarpCreatureResistance: warpCreature = true
+                    }
+                    if warpCreature {
+                        break
+                    }
+                }
+
+                var savedColor ebiten.ColorScale
+                if warpCreature {
+                    savedColor = unitOptions.ColorScale
+                    unitOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xb5, G: 0x5e, B: 0xf3, A: 0xff})
+                }
+
                 unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
+
+                if warpCreature {
+                    unitOptions.ColorScale = savedColor
+                }
             }
 
             unitOptions.GeoM.Translate(float64(-combatImages[index].Bounds().Dx()/2), float64(-combatImages[0].Bounds().Dy()*3/4))
