@@ -7613,6 +7613,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
     geom.Translate(-overworld.Camera.GetZoomedX() * float64(tileWidth), -overworld.Camera.GetZoomedY() * float64(tileHeight))
     geom.Scale(overworld.Camera.GetAnimatedZoom(), overworld.Camera.GetAnimatedZoom())
+    geom.Scale(data.ScreenScale2, data.ScreenScale2)
 
     overworld.Map.DrawLayer1(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
@@ -7830,7 +7831,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         FogBlack: game.GetFogImage(),
     }
 
-    overworldScreen := screen.SubImage(image.Rect(0, 18 * data.ScreenScale, 240 * data.ScreenScale, data.ScreenHeight)).(*ebiten.Image)
+    overworldScreen := screen.SubImage(image.Rect(0, int(18 * data.ScreenScale2), int(240 * data.ScreenScale2), data.ScreenHeight)).(*ebiten.Image)
     overworld.DrawOverworld(overworldScreen, ebiten.GeoM{})
 
     var miniGeom ebiten.GeoM
