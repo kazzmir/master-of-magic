@@ -3097,6 +3097,7 @@ func (game *Game) TileToScreen(tileX int, tileY int) (int, int) {
     geom.Translate(float64(x + tileWidth / 2.0), float64(y + tileHeight / 2.0))
     geom.Translate(-game.Camera.GetZoomedX() * float64(tileWidth), -game.Camera.GetZoomedY() * float64(tileHeight))
     geom.Scale(game.Camera.GetAnimatedZoom(), game.Camera.GetAnimatedZoom())
+    geom.Scale(data.ScreenScale2, data.ScreenScale2)
 
     outX, outY := geom.Apply(0, 0)
     return int(outX), int(outY)
@@ -3119,6 +3120,7 @@ func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
 
     geom.Translate(-camera.GetZoomedX() * float64(tileWidth), -camera.GetZoomedY() * float64(tileHeight))
     geom.Scale(camera.GetAnimatedZoom(), camera.GetAnimatedZoom())
+    geom.Scale(data.ScreenScale2, data.ScreenScale2)
 
     geom.Invert()
 
@@ -3559,7 +3561,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
 // given a position on the screen in pixels, return true if the position is within the area of the ui designated for the overworld
 func (game *Game) InOverworldArea(x int, y int) bool {
-    return x < 240 * data.ScreenScale && y > 18 * data.ScreenScale
+    return x < int(240 * data.ScreenScale2) && y > int(18 * data.ScreenScale2)
 }
 
 func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {

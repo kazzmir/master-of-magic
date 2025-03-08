@@ -10,6 +10,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
@@ -542,6 +543,9 @@ func (ui *UI) StandardUpdate() {
     elementLeftClicked := false
 
     wheelX, wheelY := inputmanager.Wheel()
+
+    mouseX /= int(data.ScreenScale2)
+    mouseY /= int(data.ScreenScale2)
 
     for _, element := range slices.Backward(ui.GetHighestLayer()) {
         if image.Pt(mouseX, mouseY).In(element.Rect) {
