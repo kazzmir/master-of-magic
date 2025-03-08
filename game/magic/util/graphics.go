@@ -53,6 +53,8 @@ func DrawOutline(screen *ebiten.Image, imageCache *ImageCache, pic *ebiten.Image
     }
 
     var options ebiten.DrawRectShaderOptions
+    // FIXME: this geom doesn't take the screen scale into account. The image passed in is already scaled
+    // so if we simply apply the screen scale here to the geom then the resulting shader will be much too large
     options.GeoM = geom
     options.Images[0] = pic
     options.Uniforms = make(map[string]interface{})
