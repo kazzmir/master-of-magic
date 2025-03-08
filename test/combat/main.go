@@ -315,7 +315,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingArmy.Units[0].AddCurse(data.UnitCurseBlackSleep)
-    defendingArmy.Units[1].AddCurse(data.UnitCurseConfusion)
+    // defendingArmy.Units[1].AddCurse(data.UnitCurseConfusion)
 
     /*
     defendingArmy.AddEnchantment(data.CombatEnchantmentCounterMagic)
@@ -387,6 +387,8 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
     attackingArmy := createArmyN(attackingPlayer, units.HighElfMagician, 3)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
+
+    attackingArmy.Units[0].AddCurse(data.UnitCurseConfusion)
 
     // return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
     combatScreen := combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)

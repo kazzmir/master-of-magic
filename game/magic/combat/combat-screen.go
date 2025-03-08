@@ -2178,7 +2178,10 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 
 func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
     // aiArmy := combat.GetArmy(combat.SelectedUnit)
-    otherArmy := combat.Model.GetOppositeArmyForTeam(combat.Model.Turn)
+    otherArmy := combat.Model.GetOtherArmy(aiUnit)
+    if aiUnit.ConfusionAction == ConfusionActionEnemyControl {
+        otherArmy = combat.Model.GetArmy(aiUnit)
+    }
 
     // try a ranged attack first
     if aiUnit.RangedAttacks > 0 {
@@ -2451,7 +2454,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         return CombatStateRunning
     }
 
-    if combat.Model.SelectedUnit != nil && combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
+    if combat.Model.SelectedUnit != nil && (combat.Model.IsAIControlled(combat.Model.SelectedUnit) || combat.Model.SelectedUnit.ConfusionAction == ConfusionActionEnemyControl && combat.Model.SelectedUnit.Team == combat.Model.Turn) {
         aiUnit := combat.Model.SelectedUnit
 
         // keep making choices until the unit runs out of moves

@@ -2981,6 +2981,10 @@ func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) {
 }
 
 func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    if attacker == defender {
+        return false
+    }
+
     if attacker.IsAsleep() {
         return false
     }
@@ -2997,7 +3001,7 @@ func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         return false
     }
 
-    if attacker.Team == defender.Team {
+    if attacker.Team == defender.Team && attacker.ConfusionAction != ConfusionActionEnemyControl {
         return false
     }
 
@@ -3019,6 +3023,10 @@ func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
 }
 
 func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    if attacker == defender {
+        return false
+    }
+
     if attacker.IsAsleep() {
         return false
     }
@@ -3120,7 +3128,7 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         return false
     }
 
-    if attacker.Team == defender.Team {
+    if attacker.Team == defender.Team && attacker.ConfusionAction != ConfusionActionEnemyControl {
         return false
     }
 
