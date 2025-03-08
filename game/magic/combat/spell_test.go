@@ -127,6 +127,10 @@ func (system *TestSpellSystem) CreateWarpCreatureProjectile(target *ArmyUnit) *P
     return nil
 }
 
+func (system *TestSpellSystem) CreateConfusionProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }

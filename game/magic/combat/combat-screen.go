@@ -814,6 +814,19 @@ func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) *Projecti
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, weakness)
 }
 
+func (combat *CombatScreen) CreateConfusionProjectile(target *ArmyUnit) *Projectile {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 20)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.SorceryMagic) - 4 {
+            unit.AddCurse(data.UnitCurseConfusion)
+        }
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
@@ -1642,6 +1655,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         damage := attacker.ComputeRangeDamage(tileDistance)
         // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
+        // FIXME: for magical damage, set the Magic damage modifier for the proper realm
         target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
@@ -2165,6 +2179,9 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
     // aiArmy := combat.GetArmy(combat.SelectedUnit)
     otherArmy := combat.Model.GetOtherArmy(aiUnit)
+    if aiUnit.ConfusionAction == ConfusionActionEnemyControl {
+        otherArmy = combat.Model.GetArmy(aiUnit)
+    }
 
     // try a ranged attack first
     if aiUnit.RangedAttacks > 0 {
@@ -2405,6 +2422,45 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         combat.doProjectiles(yield)
     }
 
+    if combat.Model.SelectedUnit != nil && combat.Model.SelectedUnit.ConfusionAction == ConfusionActionMoveRandomly {
+        confusedUnit := combat.Model.SelectedUnit
+
+        // keep moving randomly until the unit is out of moves
+        for confusedUnit.MovesLeft.GreaterThan(fraction.Zero()) {
+            var points []image.Point
+            for x := -1; x <= 1; x++ {
+                for y := -1; y <= 1; y++ {
+                    if x == 0 && y == 0 {
+                        continue
+                    }
+
+                    points = append(points, image.Pt(confusedUnit.X + x, confusedUnit.Y + y))
+                }
+            }
+
+            moved := false
+            for _, index := range rand.Perm(len(points)) {
+                point := points[index]
+                if combat.TileIsEmpty(point.X, point.Y) && combat.Model.CanMoveTo(confusedUnit, point.X, point.Y) {
+                    path, _ := combat.Model.FindPath(confusedUnit, point.X, point.Y)
+                    path = path[1:]
+                    combat.doMoveUnit(yield, confusedUnit, path)
+                    moved = true
+                    break
+                }
+            }
+
+            // unable to move, just quit the loop
+            if !moved {
+                break
+            }
+        }
+
+        combat.Model.DoneTurn()
+
+        return CombatStateRunning
+    }
+
     if combat.Model.SelectedUnit != nil && combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
         aiUnit := combat.Model.SelectedUnit
 
@@ -2466,7 +2522,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            if defender != nil && combat.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
                combat.doRangeAttack(yield, attacker, defender)
            // then fall back to melee
-           } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){
+           } else if defender != nil && combat.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){
                combat.doMelee(yield, attacker, defender)
                attacker.Paths = make(map[image.Point]pathfinding.Path)
            }
@@ -3193,7 +3249,12 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                         use := images[index]
 
                         screen.DrawImage(use, &unitOptions)
+                    case data.UnitCurseConfusion:
+                        images, _ := combat.ImageCache.GetImages("resource.lbx", 76)
+                        index := animationIndex % uint64(len(images))
+                        use := images[index]
 
+                        screen.DrawImage(use, &unitOptions)
                 }
             }
 
