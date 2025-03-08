@@ -1642,6 +1642,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         damage := attacker.ComputeRangeDamage(tileDistance)
         // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
+        // FIXME: for magical damage, set the Magic damage modifier for the proper realm
         target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
@@ -2164,7 +2165,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 
 func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
     // aiArmy := combat.GetArmy(combat.SelectedUnit)
-    otherArmy := combat.Model.GetOtherArmy(aiUnit)
+    otherArmy := combat.Model.GetOppositeArmyForTeam(combat.Model.Turn)
 
     // try a ranged attack first
     if aiUnit.RangedAttacks > 0 {
