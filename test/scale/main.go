@@ -159,10 +159,10 @@ func NewEngine(scenario int) (*Engine, error) {
 }
 
 func (engine *Engine) ChangeScale(scale int, algorithm data.ScaleAlgorithm) {
-    data.ScreenScale = scale
+    data.ScreenScale = 1
     data.ScreenScaleAlgorithm = algorithm
-    data.ScreenWidth = 320 * data.ScreenScale
-    data.ScreenHeight = 200 * data.ScreenScale
+    data.ScreenWidth = 320 * scale
+    data.ScreenHeight = 200 * scale
 
     log.Printf("Changing scale to %v %v", data.ScreenScale, data.ScreenScaleAlgorithm)
 
@@ -248,6 +248,9 @@ func main(){
             return
         }
     }
+
+    data.ScreenWidth = data.ScreenWidthOriginal * 3
+    data.ScreenHeight = data.ScreenHeightOriginal * 3
 
     audio.Initialize()
     mouse.Initialize()

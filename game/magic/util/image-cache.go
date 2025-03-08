@@ -39,7 +39,8 @@ func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
         Cache:    make(map[string][]*ebiten.Image),
         ShaderCache: make(map[shaders.Shader]*ebiten.Shader),
         Scaler: data.ScreenScaleAlgorithm,
-        ScaleAmount: data.ScreenScale,
+        ScaleAmount: 1,
+        // ScaleAmount: data.ScreenScale,
     }
 }
 

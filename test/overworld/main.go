@@ -4738,7 +4738,7 @@ func main(){
 
     size := monitorWidth / 390
 
-    ebiten.SetWindowSize(data.ScreenWidth / data.ScreenScale * size, data.ScreenHeight / data.ScreenScale * size)
+    ebiten.SetWindowSize(data.ScreenWidth / int(data.ScreenScale2) * size, data.ScreenHeight / int(data.ScreenScale2) * size)
     ebiten.SetWindowTitle("new screen")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
