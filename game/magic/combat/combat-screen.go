@@ -2419,6 +2419,38 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         combat.doProjectiles(yield)
     }
 
+    if combat.Model.SelectedUnit != nil && combat.Model.SelectedUnit.ConfusionAction == ConfusionActionMoveRandomly {
+        confusedUnit := combat.Model.SelectedUnit
+
+        // keep moving randomly until the unit is out of moves
+        for confusedUnit.MovesLeft.GreaterThan(fraction.Zero()) {
+            var points []image.Point
+            for x := -1; x <= 1; x++ {
+                for y := -1; y <= 1; y++ {
+                    if x == 0 && y == 0 {
+                        continue
+                    }
+
+                    points = append(points, image.Pt(confusedUnit.X + x, confusedUnit.Y + y))
+                }
+            }
+
+            for _, index := range rand.Perm(len(points)) {
+                point := points[index]
+                if combat.TileIsEmpty(point.X, point.Y) && combat.Model.CanMoveTo(confusedUnit, point.X, point.Y) {
+                    path, _ := combat.Model.FindPath(confusedUnit, point.X, point.Y)
+                    path = path[1:]
+                    combat.doMoveUnit(yield, confusedUnit, path)
+                    break
+                }
+            }
+        }
+
+        combat.Model.DoneTurn()
+
+        return CombatStateRunning
+    }
+
     if combat.Model.SelectedUnit != nil && combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
         aiUnit := combat.Model.SelectedUnit
 

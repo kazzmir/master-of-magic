@@ -1316,6 +1316,8 @@ func (unit *ArmyUnit) ResetTurnData() {
     if unit.HasCurse(data.UnitCurseConfusion) {
         actions := []ConfusionAction{ConfusionActionDoNothing, ConfusionActionMoveRandomly, ConfusionActionEnemyControl, ConfusionActionNone}
         unit.ConfusionAction = actions[rand.N(len(actions))]
+
+        unit.ConfusionAction = ConfusionActionEnemyControl
     }
 
 }
@@ -1963,7 +1965,7 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
                 model.TurnAttacker = (model.TurnAttacker + 1) % len(model.AttackingArmy.Units)
                 unit := model.AttackingArmy.Units[model.TurnAttacker]
 
-                if unit.IsAsleep() {
+                if unit.IsAsleep() || unit.ConfusionAction == ConfusionActionDoNothing {
                     unit.LastTurn = model.CurrentTurn
                 }
 
@@ -1985,7 +1987,7 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
                 model.TurnDefender = (model.TurnDefender + 1) % len(model.DefendingArmy.Units)
                 unit := model.DefendingArmy.Units[model.TurnDefender]
 
-                if unit.IsAsleep() {
+                if unit.IsAsleep() || unit.ConfusionAction == ConfusionActionDoNothing {
                     unit.LastTurn = model.CurrentTurn
                 }
 
@@ -2353,6 +2355,11 @@ func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, uni
         }
 
         unit.RemoveCurse(enchantment)
+
+        // remove confusion effects
+        if enchantment == data.UnitCurseConfusion {
+            unit.ConfusionAction = ConfusionActionNone
+        }
     }
 
     if swapArmy {

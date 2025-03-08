@@ -315,7 +315,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingArmy.Units[0].AddCurse(data.UnitCurseBlackSleep)
-    defendingArmy.Units[1].AddCurse(data.UnitCurseWarpCreatureMelee)
+    defendingArmy.Units[1].AddCurse(data.UnitCurseConfusion)
 
     /*
     defendingArmy.AddEnchantment(data.CombatEnchantmentCounterMagic)
