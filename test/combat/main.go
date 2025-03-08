@@ -311,7 +311,8 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
         }, false, 0, 0, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
+    // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
+    defendingArmy := createLizardmenArmy(defendingPlayer)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingArmy.Units[0].AddCurse(data.UnitCurseBlackSleep)
@@ -391,7 +392,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy.Units[0].AddCurse(data.UnitCurseConfusion)
 
     // return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
-    combatScreen := combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
+    combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
     combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
     return combatScreen
 }

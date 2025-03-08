@@ -2438,14 +2438,21 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
                 }
             }
 
+            moved := false
             for _, index := range rand.Perm(len(points)) {
                 point := points[index]
                 if combat.TileIsEmpty(point.X, point.Y) && combat.Model.CanMoveTo(confusedUnit, point.X, point.Y) {
                     path, _ := combat.Model.FindPath(confusedUnit, point.X, point.Y)
                     path = path[1:]
                     combat.doMoveUnit(yield, confusedUnit, path)
+                    moved = true
                     break
                 }
+            }
+
+            // unable to move, just quit the loop
+            if !moved {
+                break
             }
         }
 
@@ -2515,7 +2522,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            if defender != nil && combat.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
                combat.doRangeAttack(yield, attacker, defender)
            // then fall back to melee
-           } else if defender != nil && defender.Team != attacker.Team && combat.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){
+           } else if defender != nil && combat.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){
                combat.doMelee(yield, attacker, defender)
                attacker.Paths = make(map[image.Point]pathfinding.Path)
            }
