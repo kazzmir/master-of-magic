@@ -11,6 +11,7 @@ import (
     "strings"
     "slices"
 
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -55,6 +56,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
+/*
 func applyGeomScale(geom ebiten.GeoM) ebiten.GeoM {
     geom.Scale(data.ScreenScale2, data.ScreenScale2)
     return geom
@@ -64,6 +66,7 @@ func applyScale(options ebiten.DrawImageOptions) *ebiten.DrawImageOptions {
     options.GeoM.Scale(data.ScreenScale2, data.ScreenScale2)
     return &options
 }
+*/
 
 func (game *Game) GetFogImage() *ebiten.Image {
     if game.Fog != nil {
@@ -5477,8 +5480,6 @@ func (game *Game) SwitchPlane() {
 }
 
 func (game *Game) MakeHudUI() *uilib.UI {
-    scaledOptions := applyGeomScale(ebiten.GeoM{})
-
     ui := &uilib.UI{
         Cache: game.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
@@ -5681,13 +5682,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                         var options ebiten.DrawImageOptions
                         options.GeoM.Translate(float64(unitRect.Min.X), float64(unitRect.Min.Y))
-                        screen.DrawImage(unitBackground, applyScale(options))
+                        screen.DrawImage(unitBackground, scale.ScaleOptions(options))
 
                         options.GeoM.Translate(1, 1)
 
                         if stack.IsActive(unit){
                             unitBack, _ := units.GetUnitBackgroundImage(unit.GetBanner(), &game.ImageCache)
-                            screen.DrawImage(unitBack, applyScale(options))
+                            screen.DrawImage(unitBack, scale.ScaleOptions(options))
                         }
 
                         options.GeoM.Translate(1, 1)
@@ -5697,16 +5698,16 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             if unit.GetBusy() != units.BusyStatusNone {
                                 var patrolOptions colorm.DrawImageOptions
                                 var matrix colorm.ColorM
-                                patrolOptions.GeoM = applyGeomScale(options.GeoM)
+                                patrolOptions.GeoM = scale.ScaleGeom(options.GeoM)
                                 matrix.ChangeHSV(0, 0, 1)
                                 colorm.DrawImage(screen, unitImage, matrix, &patrolOptions)
                             } else {
-                                screen.DrawImage(unitImage, applyScale(options))
+                                screen.DrawImage(unitImage, scale.ScaleOptions(options))
                             }
 
                             // draw the first enchantment on the unit
                             for _, enchantment := range unit.GetEnchantments() {
-                                util.DrawOutline(screen, &game.ImageCache, unitImage, applyGeomScale(options.GeoM), options.ColorScale, game.Counter/8, enchantment.Color())
+                                util.DrawOutline(screen, &game.ImageCache, unitImage, scale.ScaleGeom(options.GeoM), options.ColorScale, game.Counter/8, enchantment.Color())
                                 break
                             }
                         }
@@ -5805,7 +5806,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         badgeOptions.GeoM.Translate(float64(1 * data.ScreenScale), float64(21 * data.ScreenScale))
                         for i := 0; i < count; i++ {
                             pic, _ := game.ImageCache.GetImage("main.lbx", index, 0)
-                            screen.DrawImage(pic, applyScale(badgeOptions))
+                            screen.DrawImage(pic, scale.ScaleOptions(badgeOptions))
                             badgeOptions.GeoM.Translate(float64(4), 0)
                         }
 
@@ -5822,10 +5823,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
 
                         if weapon != nil {
-                            screen.DrawImage(weapon, applyScale(weaponOptions))
+                            screen.DrawImage(weapon, scale.ScaleOptions(weaponOptions))
                         }
 
-                        useGeom := applyGeomScale(options.GeoM)
+                        useGeom := scale.ScaleGeom(options.GeoM)
 
                         // draw a G on the unit if they are moving, P if purify, and B if building road
                         if unit.GetBusy() == units.BusyStatusBuildRoad {
@@ -5867,7 +5868,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     var options ebiten.DrawImageOptions
                     options.ColorScale.ScaleWithColorScale(colorScale)
                     options.GeoM.Translate(float64(doneRect.Min.X), float64(doneRect.Min.Y))
-                    screen.DrawImage(doneImages[doneIndex], applyScale(options))
+                    screen.DrawImage(doneImages[doneIndex], scale.ScaleOptions(options))
                 },
                 Inside: func(this *uilib.UIElement, x int, y int){
                     doneCounter += 1
@@ -5907,7 +5908,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(patrolRect.Min.X), float64(patrolRect.Min.Y))
                     options.ColorScale.ScaleWithColorScale(colorScale)
-                    screen.DrawImage(patrolImages[patrolIndex], applyScale(options))
+                    screen.DrawImage(patrolImages[patrolIndex], scale.ScaleOptions(options))
                 },
                 Inside: func(this *uilib.UIElement, x int, y int){
                     patrolCounter += 1
@@ -5951,7 +5952,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(waitRect.Min.X), float64(waitRect.Min.Y))
                     options.ColorScale.ScaleWithColorScale(colorScale)
-                    screen.DrawImage(waitImages[waitIndex], applyScale(options))
+                    screen.DrawImage(waitImages[waitIndex], scale.ScaleOptions(options))
                 },
                 Inside: func(this *uilib.UIElement, x int, y int){
                     waitCounter += 1
@@ -5991,7 +5992,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     var options colorm.DrawImageOptions
                     var matrix colorm.ColorM
                     options.GeoM.Translate(float64(buildRect.Min.X), float64(buildRect.Min.Y))
-                    options.GeoM = applyGeomScale(options.GeoM)
+                    options.GeoM = scale.ScaleGeom(options.GeoM)
 
                     if buildCounter > 0 {
                         v := 1 + (math.Sin(float64(buildCounter / 4)) / 2 + 0.5) / 2
@@ -6088,7 +6089,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         elements = append(elements, &uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 if !minMoves.IsZero() {
-                    x, y := scaledOptions.Apply(246, 167)
+                    x, y := scale.Scale2(246.0, 167.0)
                     game.Fonts.WhiteFont.PrintOptions(screen, x, y, data.ScreenScale2, ebiten.ColorScale{}, font.FontOptions{DropShadow: true}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
 
                     sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
@@ -6124,7 +6125,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(246 + float64(60), 167)
-                    screen.DrawImage(useIcon, applyScale(options))
+                    screen.DrawImage(useIcon, scale.ScaleOptions(options))
                 }
             },
         })
@@ -6218,14 +6219,14 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            x, y := scaledOptions.Apply(276, 68)
+            x, y := scale.Scale2(276.0, 68.0)
             game.Fonts.WhiteFont.PrintOptions(screen, x, y, data.ScreenScale2, ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v GP", game.Players[0].Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            x, y := scaledOptions.Apply(313, 68)
+            x, y := scale.Scale2(313.0, 68.0)
             game.Fonts.WhiteFont.PrintOptions(screen, x, y, data.ScreenScale2, ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v MP", game.Players[0].Mana))
         },
     })
