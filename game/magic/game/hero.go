@@ -8,12 +8,14 @@ import (
     "cmp"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -25,7 +27,7 @@ import (
 func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, goldToHire int, action func(bool), onFadeOut func()) *uilib.UIElementGroup {
     imageCache := util.MakeImageCache(cache)
 
-    yTop := float64(10 * data.ScreenScale)
+    yTop := float64(10)
 
     fonts := fontslib.MakeHireHeroFonts(cache)
 
@@ -48,30 +50,30 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(0, yTop)
-            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
+            options.GeoM.Translate(float64(31), float64(6))
             options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(background, &options)
+            scale.DrawScaled(screen, background, &options)
 
-            options.GeoM.Translate(float64(9 * data.ScreenScale), float64(7 * data.ScreenScale))
+            options.GeoM.Translate(float64(9), float64(7))
             portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
             portrait, err := imageCache.GetImage(portraitLbx, portraitIndex, 0)
             if err == nil {
-                screen.DrawImage(portrait, &options)
+                scale.DrawScaled(screen, portrait, &options)
             }
 
             // unitview.RenderCombatImage(screen, &imageCache, &hero.Unit.Unit, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
-            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
-            options.GeoM.Translate(float64(51 * data.ScreenScale), float64(7 * data.ScreenScale))
+            options.GeoM.Translate(float64(31), float64(6))
+            options.GeoM.Translate(float64(51), float64(7))
 
             unitview.RenderUnitInfoNormal(screen, &imageCache, hero, hero.GetTitle(), "", fonts.DescriptionFont, fonts.SmallFont, options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
-            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
-            options.GeoM.Translate(float64(10 * data.ScreenScale), float64(50 * data.ScreenScale))
+            options.GeoM.Translate(float64(31), float64(6))
+            options.GeoM.Translate(float64(10), float64(50))
             unitview.RenderUnitInfoStats(screen, &imageCache, hero, 15, fonts.DescriptionFont, fonts.SmallFont, options)
 
             /*
@@ -81,7 +83,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
         },
     })
 
-    uiGroup.AddElements(unitview.MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, hero, fonts.MediumFont, 40 * data.ScreenScale, 124 * data.ScreenScale, &ui.Counter, 1, &getAlpha, true, 0, false))
+    uiGroup.AddElements(unitview.MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, hero, fonts.MediumFont, 40, 124, &ui.Counter, 1, &getAlpha, true, 0, false))
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
@@ -89,15 +91,15 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             box, _ := imageCache.GetImage("unitview.lbx", 2, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(0, yTop)
-            options.GeoM.Translate(float64(248 * data.ScreenScale), float64(139 * data.ScreenScale))
+            options.GeoM.Translate(float64(248), float64(139))
             options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(box, &options)
+            scale.DrawScaled(screen, box, &options)
         },
     })
 
     buttonBackgrounds, _ := imageCache.GetImages("backgrnd.lbx", 24)
     // hire button
-    hireRect := util.ImageRect(257 * data.ScreenScale, 149 * data.ScreenScale + int(yTop), buttonBackgrounds[0])
+    hireRect := util.ImageRect(257, 149 + int(yTop), buttonBackgrounds[0])
     hireIndex := 0
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
@@ -134,15 +136,15 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(hireRect.Min.X), float64(hireRect.Min.Y))
             options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(buttonBackgrounds[hireIndex], &options)
+            scale.DrawScaled(screen, buttonBackgrounds[hireIndex], &options)
 
             x := float64(hireRect.Min.X + hireRect.Max.X) / 2
             y := float64(hireRect.Min.Y + hireRect.Max.Y) / 2
-            fonts.OkDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, hireText)
+            fonts.OkDismissFont.PrintOptions2(screen, x, y - float64(5), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, hireText)
         },
     })
 
-    rejectRect := util.ImageRect(257 * data.ScreenScale, 169 * data.ScreenScale + int(yTop), buttonBackgrounds[0])
+    rejectRect := util.ImageRect(257, 169 + int(yTop), buttonBackgrounds[0])
     rejectIndex := 0
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
@@ -163,11 +165,11 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(rejectRect.Min.X), float64(rejectRect.Min.Y))
             options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(buttonBackgrounds[rejectIndex], &options)
+            scale.DrawScaled(screen, buttonBackgrounds[rejectIndex], &options)
 
             x := float64(rejectRect.Min.X + rejectRect.Max.X) / 2
             y := float64(rejectRect.Min.Y + rejectRect.Max.Y) / 2
-            fonts.OkDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Reject")
+            fonts.OkDismissFont.PrintOptions2(screen, x, y - float64(5), font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Reject")
         },
     })
 
@@ -178,9 +180,9 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(0, 0)
             options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(banner, &options)
+            scale.DrawScaled(screen, banner, &options)
 
-            fonts.OkDismissFont.PrintCenter(screen, float64(135 * data.ScreenScale), float64(6 * data.ScreenScale), float64(1 * data.ScreenScale), options.ColorScale, titleText)
+            fonts.OkDismissFont.PrintOptions2(screen, float64(135), float64(6), font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, titleText)
         },
     })
 
@@ -190,8 +192,8 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.Hero) {
     fonts := fontslib.MakeHeroLevelUpFonts(game.Cache)
 
-    top := float64(40 * data.ScreenScale)
-    left := float64(30 * data.ScreenScale)
+    top := float64(40)
+    left := float64(30)
 
     // the set of abilities that can possibly show an improvement
     progressAbilities := set.MakeSet[data.AbilityType]()
@@ -225,7 +227,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
     abilityRows := int(math.Ceil(float64(1 + len(haveAbilities)) / float64(maxAbilitiesPerRow)))
 
-    height := (50 + abilityRows * 20) * data.ScreenScale
+    height := (50 + abilityRows * 20)
 
     backgroundTop, _ := game.ImageCache.GetImage("reload.lbx", 23, 0)
     backgroundTop = backgroundTop.SubImage(image.Rect(0, 0, backgroundTop.Bounds().Dx(), height)).(*ebiten.Image)
@@ -252,19 +254,19 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
         // background
         options.GeoM.Translate(left, top)
         options.ColorScale.ScaleAlpha(getAlpha())
-        screen.DrawImage(backgroundTop, &options)
+        scale.DrawScaled(screen, backgroundTop, &options)
 
         options.GeoM.Reset()
         options.GeoM.Translate(left, top + float64(height))
-        screen.DrawImage(backgroundBottom, &options)
+        scale.DrawScaled(screen, backgroundBottom, &options)
 
         // portrait
         options.GeoM.Reset()
-        options.GeoM.Translate(left + float64(10 * data.ScreenScale), top + float64(10 * data.ScreenScale))
-        screen.DrawImage(portrait, &options)
+        options.GeoM.Translate(left + float64(10), top + float64(10))
+        scale.DrawScaled(screen, portrait, &options)
 
         // text
-        fonts.TitleFont.Print(screen, left + float64(48 * data.ScreenScale), top + float64(10 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v has made a level.", hero.Name))
+        fonts.TitleFont.PrintOptions2(screen, left + float64(48), top + float64(10), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v has made a level.", hero.Name))
 
         // stats progression
         for index, progression := range hero.GetBaseProgression() {
@@ -272,10 +274,10 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
             yOffset := 10 * float64(index % 2)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(left + (48 + xOffset) * float64(data.ScreenScale), top + (25 + yOffset) * float64(data.ScreenScale))
-            screen.DrawImage(dot, &options)
+            options.GeoM.Translate(left + (48 + xOffset), top + (25 + yOffset))
+            scale.DrawScaled(screen, dot, &options)
 
-            fonts.SmallFont.Print(screen, left + (55 + xOffset) * float64(data.ScreenScale), top + (24 + yOffset) * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, progression)
+            fonts.SmallFont.PrintOptions2(screen, left + (55 + xOffset), top + (24 + yOffset), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, progression)
         }
 
         row := 0
@@ -284,7 +286,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
         // level
         options.GeoM.Reset()
-        options.GeoM.Translate(left + float64((10 + abilityWidth * column) * data.ScreenScale), top + float64((50 + row * 20) * data.ScreenScale))
+        options.GeoM.Translate(left + float64((10 + abilityWidth * column)), top + float64((50 + row * 20)))
         unitview.RenderExperienceBadge(screen, &game.ImageCache, hero, fonts.SmallFont, options, false)
 
         // start in second column because the badge is in the first
@@ -295,16 +297,16 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
             pic, err := game.ImageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)
             if err == nil {
                 options.GeoM.Reset()
-                options.GeoM.Translate(left + float64((10 + abilityWidth * column) * data.ScreenScale), top + float64((50 + row * 20) * data.ScreenScale))
-                screen.DrawImage(pic, &options)
+                options.GeoM.Translate(left + float64((10 + abilityWidth * column)), top + float64((50 + row * 20)))
+                scale.DrawScaled(screen, pic, &options)
 
-                x, y := options.GeoM.Apply(float64(pic.Bounds().Dx() + 2 * data.ScreenScale), float64(5 * data.ScreenScale))
+                x, y := options.GeoM.Apply(float64(pic.Bounds().Dx() + 2), float64(5))
 
                 abilityBonus := hero.GetAbilityBonus(ability.Ability)
                 if abilityBonus > 0 {
-                    fonts.SmallFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v +%v", ability.Name(), abilityBonus))
+                    fonts.SmallFont.PrintOptions2(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v +%v", ability.Name(), abilityBonus))
                 } else {
-                    fonts.SmallFont.Print(screen, x, y, float64(data.ScreenScale), options.ColorScale, ability.Name())
+                    fonts.SmallFont.PrintOptions2(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, ability.Name())
                 }
             }
 
