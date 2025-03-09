@@ -221,7 +221,7 @@ func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.Imag
 
     maxWidth := errorTop.Bounds().Dx() - errorMargin * 2
 
-    wrapped := errorFont.CreateWrappedText(float64(maxWidth), float64(data.ScreenScale), message)
+    wrapped := errorFont.CreateWrappedText(float64(maxWidth), 1, message)
 
     bottom := float64(errorY + errorTopMargin) + wrapped.TotalHeight
 
@@ -236,14 +236,14 @@ func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.Imag
         },
         Draw: func(this *UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(errorX * data.ScreenScale), float64(errorY * data.ScreenScale))
-            window.DrawImage(topDraw, &options)
+            options.GeoM.Translate(float64(errorX), float64(errorY))
+            window.DrawImage(topDraw, scale.ScaleOptions(options))
 
-            errorFont.RenderWrapped(window, float64((errorX + errorMargin) * data.ScreenScale + maxWidth / 2), float64(errorY + errorTopMargin) * float64(data.ScreenScale), wrapped, ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyCenter})
+            errorFont.RenderWrapped(window, float64((errorX + errorMargin) + maxWidth / 2), float64(errorY + errorTopMargin), wrapped, ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount})
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(errorX * data.ScreenScale), float64(bottom))
-            window.DrawImage(errorBottom, &options)
+            options.GeoM.Translate(float64(errorX), float64(bottom))
+            window.DrawImage(errorBottom, scale.ScaleOptions(options))
         },
     }
 
