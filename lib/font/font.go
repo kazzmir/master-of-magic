@@ -27,6 +27,8 @@ type FontOptions struct {
     DropShadow bool
     // if DropShadow is true, this is the color of the shadow, which defaults to black
     ShadowColor color.Color
+    // if nil then the default options are used (no scaling, no color scaling)
+    Options *ebiten.DrawImageOptions
 }
 
 type Font struct {
@@ -278,6 +280,32 @@ func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, scale 
         font.doPrint(image, useX, useY, scale, colorScale, true, options.ShadowColor, text)
     } else {
         font.doPrint(image, useX, useY, scale, colorScale, false, options.ShadowColor, text)
+    }
+}
+
+func (font *Font) PrintOptions2(image *ebiten.Image, x float64, y float64, options FontOptions, text string) {
+    useOptions := options.Options
+    if useOptions == nil {
+        useOptions = &ebiten.DrawImageOptions{}
+    }
+
+    useX, useY := useOptions.GeoM.Apply(x, y)
+    scale, _ := useOptions.GeoM.Apply(1, 1)
+
+    switch options.Justify {
+        case FontJustifyLeft:
+        case FontJustifyCenter:
+            width := font.MeasureTextWidth(text, scale)
+            useX = useX - width / 2
+        case FontJustifyRight:
+            width := font.MeasureTextWidth(text, scale)
+            useX = useX - width
+    }
+
+    if options.DropShadow {
+        font.doPrint(image, useX, useY, scale, useOptions.ColorScale, true, options.ShadowColor, text)
+    } else {
+        font.doPrint(image, useX, useY, scale, useOptions.ColorScale, false, options.ShadowColor, text)
     }
 }
 

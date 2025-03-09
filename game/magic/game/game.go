@@ -6078,8 +6078,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         elements = append(elements, &uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 if !minMoves.IsZero() {
-                    x, y := scale.Scale2(246.0, 167.0)
-                    game.Fonts.WhiteFont.PrintOptions(screen, x, y, data.ScreenScale2, ebiten.ColorScale{}, font.FontOptions{DropShadow: true}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
+                    game.Fonts.WhiteFont.PrintOptions2(screen, 246, 167, font.FontOptions{DropShadow: true, Options: scale.DefaultScaleOptions()}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
 
                     sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
                     swimmingIcon, _ := game.ImageCache.GetImage("main.lbx", 19, 0)
@@ -6208,15 +6207,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            x, y := scale.Scale2(276.0, 68.0)
-            game.Fonts.WhiteFont.PrintOptions(screen, x, y, data.ScreenScale2, ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.Fonts.WhiteFont.PrintOptions2(screen, 276, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Options: scale.DefaultScaleOptions()}, fmt.Sprintf("%v GP", game.Players[0].Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            x, y := scale.Scale2(313.0, 68.0)
-            game.Fonts.WhiteFont.PrintOptions(screen, x, y, data.ScreenScale2, ebiten.ColorScale{}, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.Fonts.WhiteFont.PrintOptions2(screen, 313, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Options: scale.DefaultScaleOptions()}, fmt.Sprintf("%v MP", game.Players[0].Mana))
         },
     })
 

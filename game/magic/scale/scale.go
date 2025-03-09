@@ -31,6 +31,10 @@ func ScaleOptions(options ebiten.DrawImageOptions) *ebiten.DrawImageOptions {
     return &options
 }
 
+func DefaultScaleOptions() *ebiten.DrawImageOptions {
+    return ScaleOptions(ebiten.DrawImageOptions{})
+}
+
 func init(){
     ScaledGeom.Scale(ScaleAmount, ScaleAmount)
 }
