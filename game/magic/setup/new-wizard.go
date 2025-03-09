@@ -1873,7 +1873,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
         highlight := false
 
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(210 * data.ScreenScale, yPos * data.ScreenScale, 210 * data.ScreenScale * raceBackground.Bounds().Dx(), (yPos + raceAvailable.Height()) * data.ScreenScale),
+            Rect: image.Rect(210, yPos, 210 * raceBackground.Bounds().Dx(), (yPos + raceAvailable.Height())),
             Inside: func(this *uilib.UIElement, x int, y int){
                 highlight = true
             },
@@ -1896,9 +1896,9 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 if highlight {
-                    raceSelect.Print(window, float64(this.Rect.Min.X + 5 * data.ScreenScale), float64(this.Rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, race.String())
+                    raceSelect.PrintOptions2(window, float64(this.Rect.Min.X + 5), float64(this.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount}, race.String())
                 } else {
-                    raceAvailable.Print(window, float64(this.Rect.Min.X + 5 * data.ScreenScale), float64(this.Rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, race.String())
+                    raceAvailable.PrintOptions2(window, float64(this.Rect.Min.X + 5), float64(this.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount}, race.String())
                 }
             },
         })
@@ -1915,7 +1915,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
         highlight := false
 
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(210 * data.ScreenScale, yPos * data.ScreenScale, 210 * data.ScreenScale + raceBackground.Bounds().Dx(), (yPos + raceAvailable.Height()) * data.ScreenScale),
+            Rect: image.Rect(210, yPos, 210 + raceBackground.Bounds().Dx(), (yPos + raceAvailable.Height())),
             Inside: func(this *uilib.UIElement, x int, y int){
                 highlight = true
             },
@@ -1950,7 +1950,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
                     }
                 }
 
-                fontDraw.Print(window, float64(this.Rect.Min.X + 5 * data.ScreenScale), float64(yPos * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, race.String())
+                fontDraw.PrintOptions2(window, float64(this.Rect.Min.X + 5), float64(yPos), font.FontOptions{Scale: scale.ScaleAmount}, race.String())
             },
         })
     }
@@ -1965,35 +1965,35 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
             var options ebiten.DrawImageOptions
             background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
-            window.DrawImage(background, &options)
+            window.DrawImage(background, scale.ScaleOptions(options))
 
-            options.GeoM.Translate(float64(portraitX * data.ScreenScale), float64(portraitY * data.ScreenScale))
+            options.GeoM.Translate(float64(portraitX), float64(portraitY))
             portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
-            window.DrawImage(portrait, &options)
-            screen.Font.PrintCenter(window, float64(nameX * data.ScreenScale), float64(nameY * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, screen.CustomWizard.Name)
+            window.DrawImage(portrait, scale.ScaleOptions(options))
+            screen.Font.PrintOptions2(window, float64(nameX), float64(nameY), font.FontOptions{Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(34 * data.ScreenScale), float64(135 * data.ScreenScale))
+            options.GeoM.Translate(34, 135)
             draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
-            screen.SelectFont.PrintCenter(window, float64(245 * data.ScreenScale), float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Select Race")
+            screen.SelectFont.PrintOptions2(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Race")
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(180 * data.ScreenScale), float64(18 * data.ScreenScale))
+            options.GeoM.Translate(180, 18)
             windyBorder, _ := screen.ImageCache.GetImage("newgame.lbx", 47, 0)
-            window.DrawImage(windyBorder, &options)
+            window.DrawImage(windyBorder, scale.ScaleOptions(options))
 
-            raceShadowFont.PrintCenter(window, float64((243 + 1) * data.ScreenScale), float64(25 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Arcanian Races:")
-            raceFont.PrintCenter(window, float64(243 * data.ScreenScale), float64(25 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Arcanian Races:")
+            raceShadowFont.PrintOptions2(window, 243 + 1, 25, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Arcanian Races:")
+            raceFont.PrintOptions2(window, 243, 25, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Arcanian Races:")
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(210 * data.ScreenScale), float64(33 * data.ScreenScale))
-            window.DrawImage(raceBackground, &options)
+            options.GeoM.Translate(210, 33)
+            window.DrawImage(raceBackground, scale.ScaleOptions(options))
 
-            raceShadowFont.PrintCenter(window, float64((243 + 1) * data.ScreenScale), float64(132 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Myrran Races:")
-            raceFont.PrintCenter(window, float64(243 * data.ScreenScale), float64(132 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Myrran Races:")
+            raceShadowFont.PrintOptions2(window, 243 + 1, 132, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Myrran Races:")
+            raceFont.PrintOptions2(window, 243, 132, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Myrran Races:")
 
-            screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Retorts))
+            screen.AbilityFontSelected.PrintOptions2(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
