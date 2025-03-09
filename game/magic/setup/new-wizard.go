@@ -1613,7 +1613,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 y += screen.AbilityFontAvailable.Height() + 1
                 if i == 4 {
                     y = yTop
-                    x += width / data.ScreenScale
+                    x += width
                 }
             }
         }
