@@ -88,7 +88,7 @@ func CombatPoints(count int) []image.Point {
 
 func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, enchantment data.UnitEnchantment, timeCounter uint64, imageCache *util.ImageCache){
     // the ground is always 6 pixels above the bottom of the unit image
-    groundHeight := float64(6 * data.ScreenScale)
+    groundHeight := float64(6)
 
     var greyScale colorm.ColorM
     greyScale.ChangeHSV(0, 0, 1)
@@ -98,7 +98,7 @@ func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebite
 
     for _, point := range CombatPoints(count) {
         greyOptions.GeoM.Reset()
-        greyOptions.GeoM.Translate(float64(point.X * data.ScreenScale), float64(point.Y * data.ScreenScale))
+        greyOptions.GeoM.Translate(float64(point.X), float64(point.Y))
         greyOptions.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
 
         greyOptions.GeoM.Concat(geoM)
@@ -115,12 +115,12 @@ func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebite
 
 func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, enchantment data.UnitEnchantment, timeCounter uint64, imageCache *util.ImageCache){
     // the ground is always 6 pixels above the bottom of the unit image
-    groundHeight := float64(6 * data.ScreenScale)
+    groundHeight := float64(6)
 
     geoM := options.GeoM
     for _, point := range CombatPoints(count) {
         options.GeoM.Reset()
-        options.GeoM.Translate(float64(point.X * data.ScreenScale), float64(point.Y * data.ScreenScale))
+        options.GeoM.Translate(float64(point.X), float64(point.Y))
         options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
 
         options.GeoM.Concat(geoM)
