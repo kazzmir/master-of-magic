@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/banish"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
 
@@ -85,7 +86,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return data.ScreenWidth, data.ScreenHeight
+    return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
 func main(){

@@ -8,6 +8,7 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -148,28 +149,28 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
     animationSteps := 30
 
     badGuy1Sprite := Sprite{
-        StartX: float64(320 * data.ScreenScale),
-        StartY: float64(80 * data.ScreenScale),
-        DestX: float64(250 * data.ScreenScale),
-        DestY: float64(80 * data.ScreenScale),
+        StartX: float64(320),
+        StartY: float64(80),
+        DestX: float64(250),
+        DestY: float64(80),
         Steps: animationSteps,
         Image: badGuy1,
     }
 
     badGuy2Sprite := Sprite{
-        StartX: float64(180 * data.ScreenScale),
-        StartY: float64(200 * data.ScreenScale),
-        DestX: float64(100 * data.ScreenScale),
-        DestY: float64(130 * data.ScreenScale),
+        StartX: float64(180),
+        StartY: float64(200),
+        DestX: float64(100),
+        DestY: float64(130),
         Steps: animationSteps,
         Image: badGuy2,
     }
 
     wizardSprite := Sprite{
-        StartX: float64(320 * data.ScreenScale),
-        StartY: float64(200 * data.ScreenScale),
-        DestX: float64(200 * data.ScreenScale),
-        DestY: float64(60 * data.ScreenScale),
+        StartX: float64(320),
+        StartY: float64(200),
+        DestX: float64(200),
+        DestY: float64(60),
         Steps: animationSteps,
         Image: attackImage,
     }
@@ -190,22 +191,22 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
 
     draw := func (screen *ebiten.Image){
         var options ebiten.DrawImageOptions
-        screen.DrawImage(background, &options)
+        scale.DrawScaled(screen, background, &options)
 
         if !wizardGone {
             if dissappear {
-                options.GeoM.Translate(float64(66 * data.ScreenScale), float64(16 * data.ScreenScale))
-                screen.DrawImage(dissappearAnimation.Frame(), &options)
+                options.GeoM.Translate(float64(66), float64(16))
+                scale.DrawScaled(screen, dissappearAnimation.Frame(), &options)
             } else {
-                options.GeoM.Translate(float64(69 * data.ScreenScale), float64(75 * data.ScreenScale))
-                screen.DrawImage(defeatedWizardImage, &options)
+                options.GeoM.Translate(float64(69), float64(75))
+                scale.DrawScaled(screen, defeatedWizardImage, &options)
             }
         }
 
         if spellAnimation != nil {
             options.GeoM.Reset()
             options.GeoM.Translate(spellX, spellY)
-            screen.DrawImage(spellAnimation.Frame(), &options)
+            scale.DrawScaled(screen, spellAnimation.Frame(), &options)
         }
 
         for _, sprite := range sprites {
@@ -222,10 +223,10 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
             }
 
             options.GeoM.Translate(x, y)
-            screen.DrawImage(sprite.Image, &options)
+            scale.DrawScaled(screen, sprite.Image, &options)
         }
 
-        mainFont.PrintCenter(screen, float64(160 * data.ScreenScale), float64(10 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v banishes %v", attackingWizard.Wizard.Name, defeatedWizard.Wizard.Name))
+        mainFont.PrintOptions2(screen, 160, 10, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("%v banishes %v", attackingWizard.Wizard.Name, defeatedWizard.Wizard.Name))
     }
 
     yellSound, err := audio.LoadSound(cache, 35)
@@ -245,8 +246,8 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
         }
 
         spellAnimation = util.MakeAnimation(spell1Images, false)
-        spellX = float64(175 * data.ScreenScale)
-        spellY = float64(64 * data.ScreenScale)
+        spellX = float64(175)
+        spellY = float64(64)
 
         for i := 0; i < 2000; i++ {
             if i % animationSpeed == 0 {
@@ -275,8 +276,8 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
         }
 
         spellAnimation = util.MakeAnimation(spell1Images[len(spell1Images)-2:len(spell1Images)], true)
-        spellX = float64(175 * data.ScreenScale)
-        spellY = float64(64 * data.ScreenScale)
+        spellX = float64(175)
+        spellY = float64(64)
 
         dissappear = true
         for i := 0; i < 2000; i++ {
@@ -294,8 +295,8 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
         wizardGone = true
 
         spellAnimation = util.MakeReverseAnimation(spell1Images, false)
-        spellX = float64(175 * data.ScreenScale)
-        spellY = float64(64 * data.ScreenScale)
+        spellX = float64(175)
+        spellY = float64(64)
 
         for i := 0; i < 200; i++ {
             if i % animationSpeed == 0 {
