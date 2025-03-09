@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/mirror"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -64,10 +65,10 @@ func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, enemies []*p
 func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib.Player, help *helplib.Help, cache *lbx.LbxCache, imageCache *util.ImageCache) *uilib.UIElementGroup {
     group := uilib.MakeGroup()
 
-    fontOptions := font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}
+    fontOptions := font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}
 
     ok, _ := imageCache.GetImages("magic.lbx", 54)
-    okRect := util.ImageRect(176 * data.ScreenScale, 99 * data.ScreenScale, ok[0])
+    okRect := util.ImageRect(176, 99, ok[0])
     okIndex := 0
 
     arrowRight, _ := imageCache.GetImage("magic.lbx", 55, 0)
@@ -76,10 +77,10 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     // if true, then convert power to gold, otherwise convert gold to power
     isRight := true
 
-    arrowRect := util.ImageRect(146 * data.ScreenScale, 99 * data.ScreenScale, arrowRight)
+    arrowRect := util.ImageRect(146, 99, arrowRight)
 
     cancel, _ := imageCache.GetImages("magic.lbx", 53)
-    cancelRect := util.ImageRect(93 * data.ScreenScale, 99 * data.ScreenScale, cancel[0])
+    cancelRect := util.ImageRect(93, 99, cancel[0])
     cancelIndex := 0
 
     powerToGold, _ := imageCache.GetImage("magic.lbx", 59, 0)
@@ -103,85 +104,85 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("magic.lbx", 52, 0)
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(75 * data.ScreenScale), float64(60 * data.ScreenScale))
-            screen.DrawImage(background, &options)
+            options.GeoM.Translate(75, 60)
+            scale.DrawScaled(screen, background, &options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(okRect.Min.X), float64(okRect.Min.Y))
-            screen.DrawImage(ok[okIndex], &options)
+            scale.DrawScaled(screen, ok[okIndex], &options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(arrowRect.Min.X), float64(arrowRect.Min.Y))
 
             flip := false
             if isRight {
-                screen.DrawImage(arrowRight, &options)
+                scale.DrawScaled(screen, arrowRight, &options)
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(float64(87 * data.ScreenScale), float64(70 * data.ScreenScale))
-                screen.DrawImage(powerToGold, &options)
+                options.GeoM.Translate(87, 70)
+                scale.DrawScaled(screen, powerToGold, &options)
 
                 flip = true
             } else {
-                screen.DrawImage(arrowLeft, &options)
+                scale.DrawScaled(screen, arrowLeft, &options)
             }
 
             // the conveyor belt should only be drawn until the position of the cursor
-            conveyorArea := screen.SubImage(image.Rect(131 * data.ScreenScale, 85 * data.ScreenScale, 131 * data.ScreenScale + cursorPosition, (85 + 7) * data.ScreenScale)).(*ebiten.Image)
+            conveyorArea := screen.SubImage(scale.ScaleRect(image.Rect(131, 85, 131 + cursorPosition, (85 + 7)))).(*ebiten.Image)
 
             // draw an animated conveyor belt by drawing the same image twice with a slight offset
             movement := int((ui.Counter / 6) % 8)
             if flip {
                 options.GeoM.Reset()
                 options.GeoM.Scale(-1, 1)
-                options.GeoM.Translate(float64(131 * data.ScreenScale), float64(85 * data.ScreenScale))
+                options.GeoM.Translate(float64(131), float64(85))
                 options.GeoM.Translate(float64(cursorPosition + conveyor.Bounds().Dx()), 0)
-                options.GeoM.Translate(float64(-movement * data.ScreenScale), 0)
-                conveyorArea.DrawImage(conveyor, &options)
+                options.GeoM.Translate(float64(-movement), 0)
+                scale.DrawScaled(conveyorArea, conveyor, &options)
 
                 options.GeoM.Reset()
                 options.GeoM.Scale(-1, 1)
-                options.GeoM.Translate(float64(131 * data.ScreenScale), float64(85 * data.ScreenScale))
+                options.GeoM.Translate(float64(131), float64(85))
                 options.GeoM.Translate(float64(cursorPosition), 0)
-                options.GeoM.Translate(float64(-movement * data.ScreenScale), 0)
-                conveyorArea.DrawImage(conveyor, &options)
+                options.GeoM.Translate(float64(-movement), 0)
+                scale.DrawScaled(conveyorArea, conveyor, &options)
             } else {
                 options.GeoM.Reset()
-                options.GeoM.Translate(float64(131 * data.ScreenScale), float64(85 * data.ScreenScale))
+                options.GeoM.Translate(float64(131), float64(85))
                 options.GeoM.Translate(float64(-conveyor.Bounds().Dx()), 0)
-                options.GeoM.Translate(float64(movement * data.ScreenScale), 0)
-                conveyorArea.DrawImage(conveyor, &options)
+                options.GeoM.Translate(float64(movement), 0)
+                scale.DrawScaled(conveyorArea, conveyor, &options)
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(float64(131 * data.ScreenScale), float64(85 * data.ScreenScale))
-                options.GeoM.Translate(float64(movement * data.ScreenScale), 0)
-                conveyorArea.DrawImage(conveyor, &options)
+                options.GeoM.Translate(float64(131), float64(85))
+                options.GeoM.Translate(float64(movement), 0)
+                scale.DrawScaled(conveyorArea, conveyor, &options)
             }
 
             // draw the cursor itself
             options.GeoM.Reset()
-            options.GeoM.Translate(float64((131 - 3) * data.ScreenScale) + float64(cursorPosition), float64(85 * data.ScreenScale))
-            screen.DrawImage(cursor, &options)
+            options.GeoM.Translate(float64((131 - 3)) + float64(cursorPosition), float64(85))
+            scale.DrawScaled(screen, cursor, &options)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
-            screen.DrawImage(cancel[cancelIndex], &options)
+            scale.DrawScaled(screen, cancel[cancelIndex], &options)
 
-            leftSide := float64(122 * data.ScreenScale)
-            rightSide := float64(224 * data.ScreenScale)
+            leftSide := float64(122)
+            rightSide := float64(224)
             if isRight {
-                smallFont.PrintOptions(screen, leftSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fontOptions, fmt.Sprintf("%v GP", int(float64(totalMana) * changePercent * alchemyConversion)))
-                smallFont.PrintOptions(screen, rightSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fontOptions, fmt.Sprintf("%v PP", int(float64(totalMana) * changePercent)))
+                smallFont.PrintOptions2(screen, leftSide, float64(86), fontOptions, fmt.Sprintf("%v GP", int(float64(totalMana) * changePercent * alchemyConversion)))
+                smallFont.PrintOptions2(screen, rightSide, float64(86), fontOptions, fmt.Sprintf("%v PP", int(float64(totalMana) * changePercent)))
             } else {
-                smallFont.PrintOptions(screen, leftSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fontOptions, fmt.Sprintf("%v GP", int(float64(totalGold) * changePercent)))
-                smallFont.PrintOptions(screen, rightSide, float64(86 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fontOptions, fmt.Sprintf("%v PP", int(float64(totalGold) * changePercent * alchemyConversion)))
+                smallFont.PrintOptions2(screen, leftSide, float64(86), fontOptions, fmt.Sprintf("%v GP", int(float64(totalGold) * changePercent)))
+                smallFont.PrintOptions2(screen, rightSide, float64(86), fontOptions, fmt.Sprintf("%v PP", int(float64(totalGold) * changePercent * alchemyConversion)))
             }
         },
     })
 
     {
         posX := 0
-        conveyorRect := image.Rect(131 * data.ScreenScale, 85 * data.ScreenScale, (131 + 56) * data.ScreenScale, (85 + 7) * data.ScreenScale)
+        conveyorRect := image.Rect(131, 85, (131 + 56), (85 + 7))
         group.AddElement(&uilib.UIElement{
             Rect: conveyorRect,
             Layer: 1,
@@ -206,7 +207,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     }
 
     group.AddElement(&uilib.UIElement{
-        Rect: image.Rect(94 * data.ScreenScale, 85 * data.ScreenScale, 123 * data.ScreenScale, 92 * data.ScreenScale),
+        Rect: image.Rect(94, 85, 123, 92),
         Layer: 1,
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntriesByName("Alchemy Gold")
@@ -217,7 +218,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     })
 
     group.AddElement(&uilib.UIElement{
-        Rect: image.Rect(195 * data.ScreenScale, 85 * data.ScreenScale, 225 * data.ScreenScale, 92 * data.ScreenScale),
+        Rect: image.Rect(195, 85, 225, 92),
         Layer: 1,
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntriesByName("Alchemy Power")
@@ -315,9 +316,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     knownPlayers := player.GetKnownPlayers()
 
     fonts := fontslib.MakeMagicViewFonts(magic.Cache)
-    leftShadow := font.FontOptions{Justify: font.FontJustifyLeft, DropShadow: true}
-    centerShadow := font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true}
-    rightShadow := font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}
+    leftShadow := font.FontOptions{Justify: font.FontJustifyLeft, DropShadow: true, Scale: scale.ScaleAmount}
+    centerShadow := font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}
+    rightShadow := font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}
 
     helpLbx, err := magic.Cache.GetLbxFile("help.lbx")
     if err != nil {
@@ -335,16 +336,16 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             background, err := magic.ImageCache.GetImage("magic.lbx", 0, 0)
             if err == nil {
                 var options ebiten.DrawImageOptions
-                screen.DrawImage(background, &options)
+                scale.DrawScaled(screen, background, &options)
             }
 
             mana := int(math.Round(player.PowerDistribution.Mana * float64(magic.Power)))
             research := int(math.Round(player.PowerDistribution.Research * float64(magic.Power)))
             skill := magic.Power - (mana + research)
 
-            fonts.NormalFont.PrintOptions(screen, float64(56 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, rightShadow, fmt.Sprintf("%v MP", mana))
-            fonts.NormalFont.PrintOptions(screen, float64(103 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, rightShadow, fmt.Sprintf("%v RP", research))
-            fonts.NormalFont.PrintOptions(screen, float64(151 * data.ScreenScale), float64(160 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, rightShadow, fmt.Sprintf("%v SP", skill))
+            fonts.NormalFont.PrintOptions2(screen, float64(56), float64(160), rightShadow, fmt.Sprintf("%v MP", mana))
+            fonts.NormalFont.PrintOptions2(screen, float64(103), float64(160), rightShadow, fmt.Sprintf("%v RP", research))
+            fonts.NormalFont.PrintOptions2(screen, float64(151), float64(160), rightShadow, fmt.Sprintf("%v SP", skill))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -398,7 +399,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         gemDefeated, _ := magic.ImageCache.GetImage("magic.lbx", 51, 0)
         gemUnknown, _ := magic.ImageCache.GetImage("magic.lbx", 6, 0)
         position := gemPositions[i]
-        rect := util.ImageRect(position.X * data.ScreenScale, position.Y * data.ScreenScale, gemUnknown)
+        rect := util.ImageRect(position.X, position.Y, gemUnknown)
         group.AddElement(&uilib.UIElement{
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
@@ -421,23 +422,23 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                     enemy := knownPlayers[i]
 
                     if enemy.Defeated {
-                        screen.DrawImage(gemDefeated, &options)
+                        scale.DrawScaled(screen, gemDefeated, &options)
                     } else {
                         portraitIndex := mirror.GetWizardPortraitIndex(enemy.Wizard.Base, enemy.Wizard.Banner)
                         portrait, _ := magic.ImageCache.GetImage("lilwiz.lbx", portraitIndex, 0)
                         if portrait != nil {
-                            screen.DrawImage(portrait, &options)
+                            scale.DrawScaled(screen, portrait, &options)
                         }
                         if player.GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
                             text := enemy.CastingSpell.Name
                             if text == "" {
                                 text = "None"
                             }
-                            fonts.SpellFont.PrintOptions(screen, float64((position.X + 21) * data.ScreenScale), float64(position.Y * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, centerShadow, text)
+                            fonts.SpellFont.PrintOptions2(screen, float64((position.X + 21)), float64(position.Y), centerShadow, text)
                         }
                     }
                 } else {
-                    screen.DrawImage(gemUnknown, &options)
+                    scale.DrawScaled(screen, gemUnknown, &options)
                 }
             },
         })
@@ -445,9 +446,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         if i < len(knownPlayers) {
             enemy := knownPlayers[i]
             if !enemy.Defeated {
-                positionStart := gemPositions[i].Mul(data.ScreenScale)
-                positionStart.X += gemUnknown.Bounds().Dx() + 2 * data.ScreenScale
-                positionStart.Y -= 2 * data.ScreenScale
+                positionStart := gemPositions[i]
+                positionStart.X += gemUnknown.Bounds().Dx() + 2
+                positionStart.Y -= 2
                 for otherPlayer, relationship := range enemy.PlayerRelations {
                     treatyIcon := getTreatyIcon(otherPlayer, relationship.Treaty)
                     if treatyIcon != nil {
@@ -464,11 +465,11 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                                 var options ebiten.DrawImageOptions
                                 options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
-                                screen.DrawImage(treatyIcon, &options)
+                                scale.DrawScaled(screen, treatyIcon, &options)
                             },
                         })
 
-                        positionStart.Y += treatyIcon.Bounds().Dy() + 1 * data.ScreenScale
+                        positionStart.Y += treatyIcon.Bounds().Dy() + 1
                     }
                 }
             }
@@ -529,7 +530,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     manaLocked, err := magic.ImageCache.GetImage("magic.lbx", 15, 0)
     if err == nil {
         group.AddElement(&uilib.UIElement{
-            Rect: image.Rect(27 * data.ScreenScale, 81 * data.ScreenScale, 27 * data.ScreenScale + manaLocked.Bounds().Dx(), 81 * data.ScreenScale + manaLocked.Bounds().Dy() - 2 * data.ScreenScale),
+            Rect: image.Rect(27, 81, 27 + manaLocked.Bounds().Dx(), 81 + manaLocked.Bounds().Dy() - 2),
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Mana Points Ratio")
                 if helpEntries != nil {
@@ -546,7 +547,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
         posY := 0
         manaPowerStaff, _ := magic.ImageCache.GetImage("magic.lbx", 8, 0)
-        staffRect := image.Rect(33 * data.ScreenScale, 102 * data.ScreenScale, 38 * data.ScreenScale, 102 * data.ScreenScale + manaPowerStaff.Bounds().Dy())
+        staffRect := image.Rect(33, 102, 38, 102 + manaPowerStaff.Bounds().Dy())
 
         group.AddElement(&uilib.UIElement{
             Rect: staffRect,
@@ -569,28 +570,28 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(29 * data.ScreenScale), float64(83 * data.ScreenScale))
-                screen.DrawImage(manaStaff, &options)
+                options.GeoM.Translate(float64(29), float64(83))
+                scale.DrawScaled(screen, manaStaff, &options)
 
                 if player.PowerDistribution.Mana > 0 {
                     length := manaPowerStaff.Bounds().Dy() - int(float64(manaPowerStaff.Bounds().Dy()) * player.PowerDistribution.Mana)
                     part := manaPowerStaff.SubImage(image.Rect(0, length, manaPowerStaff.Bounds().Dx(), manaPowerStaff.Bounds().Dy())).(*ebiten.Image)
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(32 * data.ScreenScale), float64(staffRect.Min.Y + length))
-                    screen.DrawImage(part, &options)
+                    options.GeoM.Translate(float64(32), float64(staffRect.Min.Y + length))
+                    scale.DrawScaled(screen, part, &options)
                 }
 
                 if magic.ManaLocked {
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(27 * data.ScreenScale), float64(81 * data.ScreenScale))
-                    screen.DrawImage(manaLocked, &options)
+                    options.GeoM.Translate(float64(27), float64(81))
+                    scale.DrawScaled(screen, manaLocked, &options)
                 }
             },
         })
     }
 
     // transmute button
-    transmuteRect := image.Rect(235 * data.ScreenScale, 185 * data.ScreenScale, 290 * data.ScreenScale, 195 * data.ScreenScale)
+    transmuteRect := image.Rect(235, 185, 290, 195)
     group.AddElement(&uilib.UIElement{
         Rect: transmuteRect,
         PlaySoundLeftClick: true,
@@ -610,7 +611,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     })
 
     // ok button
-    okRect := image.Rect(296 * data.ScreenScale, 185 * data.ScreenScale, 316 * data.ScreenScale, 195 * data.ScreenScale)
+    okRect := image.Rect(296, 185, 316, 195)
     group.AddElement(&uilib.UIElement{
         Rect: okRect,
         PlaySoundLeftClick: true,
@@ -633,7 +634,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         researchStaff, _ := magic.ImageCache.GetImage("magic.lbx", 9, 0)
 
         group.AddElement(&uilib.UIElement{
-            Rect: image.Rect(74 * data.ScreenScale, 81 * data.ScreenScale, 74 * data.ScreenScale + researchLocked.Bounds().Dx(), 81 * data.ScreenScale + researchLocked.Bounds().Dy() - 2 * data.ScreenScale),
+            Rect: image.Rect(74, 81, 74 + researchLocked.Bounds().Dx(), 81 + researchLocked.Bounds().Dy() - 2),
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 magic.ResearchLocked = !magic.ResearchLocked
@@ -648,7 +649,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
         researchPowerStaff, _ := magic.ImageCache.GetImage("magic.lbx", 10, 0)
         posY := 0
-        staffRect := image.Rect(79 * data.ScreenScale, 102 * data.ScreenScale, 86 * data.ScreenScale, 102 * data.ScreenScale + researchPowerStaff.Bounds().Dy())
+        staffRect := image.Rect(79, 102, 86, 102 + researchPowerStaff.Bounds().Dy())
 
         group.AddElement(&uilib.UIElement{
             Rect: staffRect,
@@ -671,21 +672,21 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(75 * data.ScreenScale), float64(85 * data.ScreenScale))
-                screen.DrawImage(researchStaff, &options)
+                options.GeoM.Translate(float64(75), float64(85))
+                scale.DrawScaled(screen, researchStaff, &options)
 
                 if player.PowerDistribution.Research > 0 {
                     length := researchPowerStaff.Bounds().Dy() - int(float64(researchPowerStaff.Bounds().Dy()) * player.PowerDistribution.Research)
                     part := researchPowerStaff.SubImage(image.Rect(0, length, researchPowerStaff.Bounds().Dx(), researchPowerStaff.Bounds().Dy())).(*ebiten.Image)
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(staffRect.Min.X), float64(staffRect.Min.Y + length))
-                    screen.DrawImage(part, &options)
+                    scale.DrawScaled(screen, part, &options)
                 }
 
                 if magic.ResearchLocked {
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(74 * data.ScreenScale), float64(81 * data.ScreenScale))
-                    screen.DrawImage(researchLocked, &options)
+                    options.GeoM.Translate(float64(74), float64(81))
+                    scale.DrawScaled(screen, researchLocked, &options)
                 }
 
             },
@@ -695,7 +696,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     skillLocked, err := magic.ImageCache.GetImage("magic.lbx", 17, 0)
     if err == nil {
         group.AddElement(&uilib.UIElement{
-            Rect: image.Rect(121 * data.ScreenScale, 81 * data.ScreenScale, 121 * data.ScreenScale + skillLocked.Bounds().Dx(), 81 * data.ScreenScale + skillLocked.Bounds().Dy() - 3 * data.ScreenScale),
+            Rect: image.Rect(121, 81, 121 + skillLocked.Bounds().Dx(), 81 + skillLocked.Bounds().Dy() - 3),
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
                 magic.SkillLocked = !magic.SkillLocked
@@ -710,7 +711,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
         skillPowerStaff, _ := magic.ImageCache.GetImage("magic.lbx", 10, 0)
         posY := 0
-        staffRect := image.Rect(126 * data.ScreenScale, 102 * data.ScreenScale, 132 * data.ScreenScale, 102 * data.ScreenScale + skillPowerStaff.Bounds().Dy())
+        staffRect := image.Rect(126, 102, 132, 102 + skillPowerStaff.Bounds().Dy())
 
         group.AddElement(&uilib.UIElement{
             Rect: staffRect,
@@ -735,8 +736,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 skillStaff, err := magic.ImageCache.GetImage("magic.lbx", 11, 0)
                 if err == nil {
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(122 * data.ScreenScale), float64(83 * data.ScreenScale))
-                    screen.DrawImage(skillStaff, &options)
+                    options.GeoM.Translate(float64(122), float64(83))
+                    scale.DrawScaled(screen, skillStaff, &options)
                 }
 
                 if player.PowerDistribution.Skill > 0 {
@@ -744,23 +745,22 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                     part := skillPowerStaff.SubImage(image.Rect(0, length, skillPowerStaff.Bounds().Dx(), skillPowerStaff.Bounds().Dy())).(*ebiten.Image)
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(staffRect.Min.X), float64(staffRect.Min.Y + length))
-                    screen.DrawImage(part, &options)
+                    scale.DrawScaled(screen, part, &options)
                 }
 
                 if magic.SkillLocked {
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(121 * data.ScreenScale), float64(81 * data.ScreenScale))
-                    screen.DrawImage(skillLocked, &options)
+                    options.GeoM.Translate(float64(121), float64(81))
+                    scale.DrawScaled(screen, skillLocked, &options)
                 }
             },
         })
     }
 
-
     overworldCastingSkill := player.ComputeOverworldCastingSkill()
     castingSkill := player.ComputeCastingSkill()
 
-    spellCastUIRect := image.Rect(5 * data.ScreenScale, 175 * data.ScreenScale, 99 * data.ScreenScale, 196 * data.ScreenScale)
+    spellCastUIRect := image.Rect(5, 175, 99, 196)
     group.AddElement(&uilib.UIElement{
         Rect: spellCastUIRect,
         RightClick: func(element *uilib.UIElement){
@@ -772,13 +772,13 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // vector.StrokeRect(screen, float32(spellCastUIRect.Min.X), float32(spellCastUIRect.Min.Y), float32(spellCastUIRect.Dx()), float32(spellCastUIRect.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
 
-            fonts.SmallerFont.PrintOptions(screen, float64(5 * data.ScreenScale), float64(176 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, fmt.Sprintf("Casting Skill: %v(%v)", overworldCastingSkill, castingSkill))
-            fonts.SmallerFont.PrintOptions(screen, float64(5 * data.ScreenScale), float64(183 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, fmt.Sprintf("Magic Reserve: %v", player.Mana))
-            fonts.SmallerFont.PrintOptions(screen, float64(5 * data.ScreenScale), float64(190 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, fmt.Sprintf("Power Base: %v", magic.Power))
+            fonts.SmallerFont.PrintOptions2(screen, float64(5), float64(176), leftShadow, fmt.Sprintf("Casting Skill: %v(%v)", overworldCastingSkill, castingSkill))
+            fonts.SmallerFont.PrintOptions2(screen, float64(5), float64(183), leftShadow, fmt.Sprintf("Magic Reserve: %v", player.Mana))
+            fonts.SmallerFont.PrintOptions2(screen, float64(5), float64(190), leftShadow, fmt.Sprintf("Power Base: %v", magic.Power))
         },
     })
 
-    castingRect := image.Rect(100 * data.ScreenScale, 175 * data.ScreenScale, 220 * data.ScreenScale, 196 * data.ScreenScale)
+    castingRect := image.Rect(100, 175, 220, 196)
     group.AddElement(&uilib.UIElement{
         Rect: castingRect,
         RightClick: func(element *uilib.UIElement){
@@ -789,8 +789,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // util.DrawRect(screen, castingRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
-            fonts.SmallerFont.PrintOptions(screen, float64(100 * data.ScreenScale), float64(176 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, fmt.Sprintf("Casting: %v", player.CastingSpell.Name))
-            fonts.SmallerFont.PrintOptions(screen, float64(100 * data.ScreenScale), float64(183 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, fmt.Sprintf("Researching: %v", player.ResearchingSpell.Name))
+            fonts.SmallerFont.PrintOptions2(screen, float64(100), float64(176), leftShadow, fmt.Sprintf("Casting: %v", player.CastingSpell.Name))
+            fonts.SmallerFont.PrintOptions2(screen, float64(100), float64(183), leftShadow, fmt.Sprintf("Researching: %v", player.ResearchingSpell.Name))
 
             summonCity := player.FindSummoningCity()
             if summonCity == nil {
@@ -799,7 +799,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 }
             }
 
-            fonts.SmallerFont.PrintOptions(screen, float64(100 * data.ScreenScale), float64(190 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, fmt.Sprintf("Summon To: %v", summonCity.Name))
+            fonts.SmallerFont.PrintOptions2(screen, float64(100), float64(190), leftShadow, fmt.Sprintf("Summon To: %v", summonCity.Name))
         },
     })
 
@@ -851,11 +851,11 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             }
 
             yStart := 80
-            rect := image.Rect(170 * data.ScreenScale, (yStart + i * useFont.Height()) * data.ScreenScale, 310 * data.ScreenScale, (yStart + (i + 1) * useFont.Height()) * data.ScreenScale)
+            rect := image.Rect(170, (yStart + i * useFont.Height()), 310, (yStart + (i + 1) * useFont.Height()))
             globalEnchantments = append(globalEnchantments, &uilib.UIElement{
                 Rect: rect,
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    useFont.PrintOptions(screen, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), ebiten.ColorScale{}, leftShadow, name)
+                    useFont.PrintOptions2(screen, float64(rect.Min.X), float64(rect.Min.Y), leftShadow, name)
                 },
                 LeftClick: func(element *uilib.UIElement){
                     // can only cancel the player's enchantments
@@ -888,7 +888,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         }
 
         if len(globalEnchantments) == 0 {
-            enchantmentsRect := image.Rect(168 * data.ScreenScale, 67 * data.ScreenScale, 310 * data.ScreenScale, 172 * data.ScreenScale)
+            enchantmentsRect := image.Rect(168, 67, 310, 172)
             globalEnchantments = append(globalEnchantments, &uilib.UIElement{
                 Rect: enchantmentsRect,
                 RightClick: func(element *uilib.UIElement){

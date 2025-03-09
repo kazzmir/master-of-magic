@@ -2,6 +2,7 @@ package scale
 
 import (
     "golang.org/x/exp/constraints"
+    "image"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -67,4 +68,11 @@ func DrawScaled(screen *ebiten.Image, img *ebiten.Image, options *ebiten.DrawIma
     options.GeoM.Concat(ScaledGeom)
     screen.DrawImage(img, options)
     options.GeoM = oldGeom
+}
+
+func ScaleRect(rect image.Rectangle) image.Rectangle {
+    return image.Rectangle{
+        Min: rect.Min.Mul(int(ScaleAmount)),
+        Max: rect.Max.Mul(int(ScaleAmount)),
+    }
 }
