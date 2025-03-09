@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
@@ -199,7 +200,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return data.ScreenWidth, data.ScreenHeight
+    return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
 func main(){

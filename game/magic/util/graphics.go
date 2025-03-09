@@ -7,7 +7,7 @@ import (
     "math"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
-    "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
@@ -253,15 +253,15 @@ func MakePaletteRotateAnimation(lbxFile *lbx.LbxFile, scaler Scaler, index int, 
 }
 
 func DrawTextCursor(screen *ebiten.Image, source *ebiten.Image, cursorX float64, y float64, counter uint64) {
-    width := float64(4 * data.ScreenScale)
-    height := float64(8 * data.ScreenScale)
+    width := float64(4)
+    height := float64(8)
 
-    yOffset := float64((counter*uint64(data.ScreenScale)/3) % (16 * uint64(data.ScreenScale))) - height
+    yOffset := float64((counter/3) % 16) - height
 
     vertices := [4]ebiten.Vertex{
         ebiten.Vertex{
-            DstX: float32(cursorX),
-            DstY: float32(y - yOffset),
+            DstX: float32(scale.Scale(cursorX)),
+            DstY: float32(scale.Scale(y - yOffset)),
             SrcX: 0,
             SrcY: 0,
             ColorA: 1,
@@ -270,8 +270,8 @@ func DrawTextCursor(screen *ebiten.Image, source *ebiten.Image, cursorX float64,
             ColorR: 1,
         },
         ebiten.Vertex{
-            DstX: float32(cursorX + width),
-            DstY: float32(y - yOffset),
+            DstX: float32(scale.Scale(cursorX + width)),
+            DstY: float32(scale.Scale(y - yOffset)),
             SrcX: 0,
             SrcY: 0,
             ColorA: 1,
@@ -280,8 +280,8 @@ func DrawTextCursor(screen *ebiten.Image, source *ebiten.Image, cursorX float64,
             ColorR: 1,
         },
         ebiten.Vertex{
-            DstX: float32(cursorX + width),
-            DstY: float32(y + height - yOffset),
+            DstX: float32(scale.Scale(cursorX + width)),
+            DstY: float32(scale.Scale(y + height - yOffset)),
             SrcX: 0,
             SrcY: 0,
             ColorA: 0.1,
@@ -290,8 +290,8 @@ func DrawTextCursor(screen *ebiten.Image, source *ebiten.Image, cursorX float64,
             ColorR: 1,
         },
         ebiten.Vertex{
-            DstX: float32(cursorX),
-            DstY: float32(y + height - yOffset),
+            DstX: float32(scale.Scale(cursorX)),
+            DstY: float32(scale.Scale(y + height - yOffset)),
             SrcX: 0,
             SrcY: 0,
             ColorA: 0.1,
@@ -301,7 +301,7 @@ func DrawTextCursor(screen *ebiten.Image, source *ebiten.Image, cursorX float64,
         },
     }
 
-    cursorArea := screen.SubImage(image.Rect(int(cursorX), int(y), int(cursorX + width), int(y + height))).(*ebiten.Image)
+    cursorArea := screen.SubImage(scale.ScaleRect(image.Rect(int(cursorX), int(y), int(cursorX + width), int(y + height)))).(*ebiten.Image)
     cursorArea.DrawTriangles(vertices[:], []uint16{0, 1, 2, 2, 3, 0}, source, nil)
 }
 
