@@ -568,12 +568,19 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
             after := func (unit units.StackUnit) bool {
                 summonCity := player.FindSummoningCity()
-                if summonCity != nil {
-                    unit.SetX(summonCity.X)
-                    unit.SetY(summonCity.Y)
+                if summonCity == nil {
+                    return false
                 }
 
-                // FIXME: maybe relocate
+                unit.SetX(summonCity.X)
+                unit.SetY(summonCity.Y)
+
+                allStacks := player.FindAllStacks(summonCity.X, summonCity.Y, summonCity.Plane)
+                for i := 1; i < len(allStacks); i++ {
+                    player.MergeStacks(allStacks[0], allStacks[i])
+                }
+
+                game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
 
                 unit.SetBusy(units.BusyStatusNone)
 
@@ -847,6 +854,7 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
     if summonCity != nil {
         overworldUnit := units.MakeOverworldUnitFromUnit(unit, summonCity.X, summonCity.Y, summonCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
         player.AddUnit(overworldUnit)
+        game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
         game.RefreshUI()
     }
 }

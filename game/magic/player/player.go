@@ -931,13 +931,10 @@ func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {
     player.UnitId += 1
     player.Units = append(player.Units, unit)
 
-    // FIXME: maybe relocate
-
     stack := player.FindStack(unit.GetX(), unit.GetY(), unit.GetPlane())
     if stack == nil {
         stack = MakeUnitStack()
         player.Stacks = append(player.Stacks, stack)
-    } else {
     }
 
     stack.AddUnit(unit)

@@ -4596,6 +4596,98 @@ func createScenario50(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// Relocate units
+func createScenario51(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 50: relocate units")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceHalfling,
+        Retorts: []data.Retort{},
+        Books: []data.WizardBook{
+            {
+                Magic: data.SorceryMagic,
+                Count: 11,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.CastingSkillPower += 500000
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Word of Recall"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Summon Hero"))
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHalfling, game.BuildingInfo, game.CurrentMap(), game, player)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingNone
+    city.ProducingUnit = units.HalflingSpearmen
+    city.Race = wizard.Race
+    city.Farmers = 13
+    city.Workers = 3
+
+    city.AddBuilding(buildinglib.BuildingFortress)
+    city.AddBuilding(buildinglib.BuildingGranary)
+
+    city.ResetCitizens()
+
+    player.AddCity(city)
+
+    player.Gold = 1000
+    player.Mana = 10000
+
+    player.LiftFog(x, y, 4, data.PlaneArcanus)
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Slingers, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HalflingSpearmen, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HalflingShamans, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Nagas, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.SkyDrake, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
+
+    player.HeroPool[hero.HeroRakir].Unit.Experience = 0
+    player.HeroPool[hero.HeroShinBo].Unit.Experience = 100
+    player.HeroPool[hero.HeroAerie].Unit.Experience = 200
+    player.HeroPool[hero.HeroBShan].Unit.Experience = 300
+
+    player.AddHero(player.HeroPool[hero.HeroRakir])
+    player.AddHero(player.HeroPool[hero.HeroAerie])
+    player.AddHero(player.HeroPool[hero.HeroBShan])
+
+    game.Events <- &gamelib.GameEventHireHero{
+        Player: player,
+        Hero: player.HeroPool[hero.HeroShinBo],
+        Cost: 200,
+    }
+
+    game.Events <- &gamelib.GameEventHireMercenaries{
+        Player: player,
+        Units: []*units.OverworldUnit{
+            units.MakeOverworldUnitFromUnit(units.Berserkers, x, y, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
+            units.MakeOverworldUnitFromUnit(units.Berserkers, x, y, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
+        },
+        Cost: 200,
+    }
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -4652,6 +4744,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 48: game = createScenario48(cache)
         case 49: game = createScenario49(cache)
         case 50: game = createScenario50(cache)
+        case 51: game = createScenario51(cache)
         default: game = createScenario1(cache)
     }
 
