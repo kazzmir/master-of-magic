@@ -101,6 +101,7 @@ func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebite
         greyOptions.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
 
         greyOptions.GeoM.Concat(geoM)
+        greyOptions.GeoM.Scale(data.ScreenScale2, data.ScreenScale2)
 
         // screen.DrawImage(use, &options)
         colorm.DrawImage(screen, use, greyScale, &greyOptions)
@@ -122,6 +123,7 @@ func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
         options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
 
         options.GeoM.Concat(geoM)
+        options.GeoM.Scale(data.ScreenScale2, data.ScreenScale2)
 
         /*
         x, y := options.GeoM.Apply(0, 0)

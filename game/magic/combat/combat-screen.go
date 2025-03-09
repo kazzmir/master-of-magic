@@ -58,6 +58,16 @@ func (state CombatState) String() string {
     return ""
 }
 
+func applyGeomScale(geom ebiten.GeoM) ebiten.GeoM {
+    geom.Scale(data.ScreenScale2, data.ScreenScale2)
+    return geom
+}
+
+func applyScale(options ebiten.DrawImageOptions) *ebiten.DrawImageOptions {
+    options.GeoM.Scale(data.ScreenScale2, data.ScreenScale2)
+    return &options
+}
+
 type CombatEvent interface {
 }
 
@@ -358,6 +368,7 @@ func (combat *CombatScreen) GetCameraMatrix() ebiten.GeoM {
 func (combat *CombatScreen) ScreenToTile(x float64, y float64) (float64, float64) {
     // tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
     screenToTile := combat.GetCameraMatrix()
+    screenToTile.Scale(data.ScreenScale2, data.ScreenScale2)
     screenToTile.Invert()
 
     // return screenToTile.Apply(x - float64(tile0.Bounds().Dx()/3) * combat.CameraScale, y - float64(tile0.Bounds().Dy()/3) * combat.CameraScale)
@@ -1128,23 +1139,27 @@ func (combat *CombatScreen) CreateMagicVortex(x int, y int) *OtherUnit {
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     var elements []*uilib.UIElement
 
+    scaledOptions := applyGeomScale(ebiten.GeoM{})
+
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             hudImage, _ := combat.ImageCache.GetImage("backgrnd.lbx", 3, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(0, float64(data.ScreenHeight - hudImage.Bounds().Dy()))
+            options.GeoM.Translate(0, float64(200 - hudImage.Bounds().Dy()))
+            options.GeoM.Scale(data.ScreenScale2, data.ScreenScale2)
             screen.DrawImage(hudImage, &options)
 
             if combat.Model.AttackingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
-                combat.AttackingWizardFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, combat.Model.AttackingArmy.Player.Wizard.Name)
+                x, y := scaledOptions.Apply(280, 167)
+                combat.AttackingWizardFont.PrintCenter(screen, x, y, float64(data.ScreenScale2), ebiten.ColorScale{}, combat.Model.AttackingArmy.Player.Wizard.Name)
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(float64(246 * data.ScreenScale), float64(179 * data.ScreenScale))
+                options.GeoM.Translate(246, 179)
                 for _, enchantment := range combat.Model.AttackingArmy.Enchantments {
                     image, _ := combat.ImageCache.GetImage("compix.lbx", enchantment.LbxIndex(), 0)
-                    screen.DrawImage(image, &options)
+                    screen.DrawImage(image, applyScale(options))
                     options.GeoM.Translate(float64(image.Bounds().Dx()), 0)
                 }
             }
@@ -2376,12 +2391,13 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     combat.UpdateAnimations()
 
-    hudY := data.ScreenHeight - hudImage.Bounds().Dy()
+    // hudY := data.ScreenHeightOriginal - hudImage.Bounds().Dy()
+    hudY := (data.ScreenHeightOriginal - hudImage.Bounds().Dy()) * int(data.ScreenScale2)
 
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)
     for _, key := range keys {
-        speed := 1.5 * float64(data.ScreenScale)
+        speed := 0.8 * data.ScreenScale2
         switch key {
             case ebiten.KeyDown:
                 combat.Coordinates.Translate(0, -speed)
@@ -2554,18 +2570,41 @@ func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y i
 
     var useMatrix ebiten.GeoM
 
+    /*
     tx, ty := matrix.Apply(float64(x), float64(y))
     useMatrix.Scale(combat.CameraScale, combat.CameraScale)
     useMatrix.Translate(tx, ty)
+    useMatrix = applyGeomScale(useMatrix)
+    */
+    // useMatrix = applyGeomScale(ebiten.GeoM{})
+    // useMatrix.Concat(*matrix)
+
+    tx, ty := matrix.Apply(float64(x), float64(y))
+    useMatrix.Scale(combat.CameraScale, combat.CameraScale)
+    useMatrix.Translate(tx, ty)
+    useMatrix = applyGeomScale(useMatrix)
+
+    // log.Printf("tx=%v, ty=%v", tx, ty)
 
     // left
-    x1, y1 := useMatrix.Apply(-float64(tile0.Bounds().Dx()/2), 0)
+    x1, y1 := useMatrix.Apply(float64(-tile0.Bounds().Dx()/2), 0)
     // top
-    x2, y2 := useMatrix.Apply(0, -float64(tile0.Bounds().Dy()/2))
+    x2, y2 := useMatrix.Apply(0, float64(-tile0.Bounds().Dy()/2))
     // right
     x3, y3 := useMatrix.Apply(float64(tile0.Bounds().Dx()/2), 0)
     // bottom
     x4, y4 := useMatrix.Apply(0, float64(tile0.Bounds().Dy()/2))
+
+    /*
+    x1 = tx - data.ScreenScale2 * float64(tile0.Bounds().Dx()/2)
+    y1 = ty
+    x2 = tx
+    y2 = ty - data.ScreenScale2 * float64(tile0.Bounds().Dy()/2)
+    x3 = tx + data.ScreenScale2 * float64(tile0.Bounds().Dx()/2)
+    y3 = ty
+    x4 = tx
+    y4 = ty + data.ScreenScale2 * float64(tile0.Bounds().Dy()/2)
+    */
 
     gradient := (math.Sin(float64(combat.Counter)/6) + 1)
 
@@ -3024,7 +3063,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
         tx, ty := tilePosition(float64(x), float64(y))
         options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
         options.GeoM.Translate(tx, ty)
-        screen.DrawImage(image, &options)
+        screen.DrawImage(image, applyScale(options))
 
         if combat.Model.Tiles[y][x].Mud {
             mudTiles, _ := combat.ImageCache.GetImages("cmbtcity.lbx", 118)
@@ -3059,7 +3098,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
             options.GeoM.Translate(tx, ty)
 
-            extra.Drawer(screen, &combat.ImageCache, &options, combat.Counter)
+            extra.Drawer(screen, &combat.ImageCache, applyScale(options), combat.Counter)
         } else if extra.Index != -1 {
             options.GeoM.Reset()
             // tx,ty is the middle of the tile
@@ -3085,7 +3124,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
             options.GeoM.Concat(geom)
 
-            screen.DrawImage(extraImage, &options)
+            screen.DrawImage(extraImage, applyScale(options))
 
             // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         }
@@ -3125,6 +3164,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 options.GeoM.Reset()
                 options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
                 options.GeoM.Translate(tx, ty)
+                options.GeoM = applyGeomScale(options.GeoM)
                 screen.DrawImage(movementImage, &options)
             }
         }
