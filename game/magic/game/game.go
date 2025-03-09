@@ -56,18 +56,6 @@ import (
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-/*
-func applyGeomScale(geom ebiten.GeoM) ebiten.GeoM {
-    geom.Scale(data.ScreenScale2, data.ScreenScale2)
-    return geom
-}
-
-func applyScale(options ebiten.DrawImageOptions) *ebiten.DrawImageOptions {
-    options.GeoM.Scale(data.ScreenScale2, data.ScreenScale2)
-    return &options
-}
-*/
-
 func (game *Game) GetFogImage() *ebiten.Image {
     if game.Fog != nil {
         return game.Fog
@@ -3100,7 +3088,7 @@ func (game *Game) TileToScreen(tileX int, tileY int) (int, int) {
     geom.Translate(float64(x + tileWidth / 2.0), float64(y + tileHeight / 2.0))
     geom.Translate(-game.Camera.GetZoomedX() * float64(tileWidth), -game.Camera.GetZoomedY() * float64(tileHeight))
     geom.Scale(game.Camera.GetAnimatedZoom(), game.Camera.GetAnimatedZoom())
-    geom.Scale(data.ScreenScale2, data.ScreenScale2)
+    geom.Concat(scale.ScaledGeom)
 
     outX, outY := geom.Apply(0, 0)
     return int(outX), int(outY)
@@ -3123,7 +3111,7 @@ func (game *Game) ScreenToTile(inX float64, inY float64) (int, int) {
 
     geom.Translate(-camera.GetZoomedX() * float64(tileWidth), -camera.GetZoomedY() * float64(tileHeight))
     geom.Scale(camera.GetAnimatedZoom(), camera.GetAnimatedZoom())
-    geom.Scale(data.ScreenScale2, data.ScreenScale2)
+    geom.Concat(scale.ScaledGeom)
 
     geom.Invert()
 
@@ -3564,7 +3552,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
 // given a position on the screen in pixels, return true if the position is within the area of the ui designated for the overworld
 func (game *Game) InOverworldArea(x int, y int) bool {
-    return x < int(240 * data.ScreenScale2) && y > int(18 * data.ScreenScale2)
+    scaledX, scaledY := scale.Scale2(240, 18)
+    return x < scaledX && y > scaledY
 }
 
 func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
@@ -5484,7 +5473,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         Cache: game.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
-            options.GeoM.Scale(data.ScreenScale2, data.ScreenScale2)
+            options.GeoM.Concat(scale.ScaledGeom)
             mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
             screen.DrawImage(mainHud, &options)
 
@@ -5556,7 +5545,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
-                options.GeoM.Scale(data.ScreenScale2, data.ScreenScale2)
+                options.GeoM.Concat(scale.ScaledGeom)
                 options.ColorScale.ScaleWithColorScale(colorScale)
                 screen.DrawImage(buttons[index], &options)
             },
@@ -7616,7 +7605,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
     geom.Translate(-overworld.Camera.GetZoomedX() * float64(tileWidth), -overworld.Camera.GetZoomedY() * float64(tileHeight))
     geom.Scale(overworld.Camera.GetAnimatedZoom(), overworld.Camera.GetAnimatedZoom())
-    geom.Scale(data.ScreenScale2, data.ScreenScale2)
+    geom.Concat(scale.ScaledGeom)
 
     overworld.Map.DrawLayer1(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
@@ -7834,14 +7823,14 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         FogBlack: game.GetFogImage(),
     }
 
-    overworldScreen := screen.SubImage(image.Rect(0, int(18 * data.ScreenScale2), int(240 * data.ScreenScale2), data.ScreenHeight)).(*ebiten.Image)
+    overworldScreen := screen.SubImage(image.Rect(0, scale.Scale(18), scale.Scale(240), scale.Scale(data.ScreenHeight))).(*ebiten.Image)
     overworld.DrawOverworld(overworldScreen, ebiten.GeoM{})
 
     var miniGeom ebiten.GeoM
-    miniGeom.Translate(float64(250 * data.ScreenScale), float64(20 * data.ScreenScale))
+    miniGeom.Translate(scale.Scale2(250.0, 20.0))
     mx, my := miniGeom.Apply(0, 0)
-    miniWidth := 60 * data.ScreenScale
-    miniHeight := 31 * data.ScreenScale
+    miniWidth := scale.Scale(60)
+    miniHeight := scale.Scale(31)
     mini := screen.SubImage(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight)).(*ebiten.Image)
     if mini.Bounds().Dx() > 0 {
         overworld.DrawMinimap(mini)
