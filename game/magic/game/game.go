@@ -4520,6 +4520,8 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     var state combat.CombatState
     var defeatedDefenders int
     var defeatedAttackers int
+    var recalledAttackers []units.StackUnit
+    var recalledDefenders []units.StackUnit
 
     oldDrawer := game.Drawer
     var combatScreen *combat.CombatScreen
@@ -4565,6 +4567,13 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         defeatedDefenders = combatScreen.Model.DefeatedDefenders
         defeatedAttackers = combatScreen.Model.DefeatedAttackers
+
+        for _, unit := range combatScreen.Model.AttackingArmy.RecalledUnits {
+            recalledAttackers = append(recalledAttackers, unit.Unit.(units.StackUnit))
+        }
+        for _, unit := range combatScreen.Model.DefendingArmy.RecalledUnits {
+            recalledDefenders = append(recalledDefenders, unit.Unit.(units.StackUnit))
+        }
     }
 
     // experience
@@ -4719,7 +4728,15 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     // ebiten.SetCursorMode(ebiten.CursorModeVisible)
 
-    // FIXME: handle spells like recall hero
+    // recall units
+    relocateUnits := func(player *playerlib.Player, units []units.StackUnit) {
+        for _, unit := range units {
+            game.RelocateUnit(player, unit)
+        }
+    }
+
+    relocateUnits(attacker, recalledAttackers)
+    relocateUnits(defender, recalledDefenders)
 
     // remove dead units
     killUnits := func (player *playerlib.Player, stack *playerlib.UnitStack, landscape combat.CombatLandscape){
@@ -7966,4 +7983,23 @@ func (game *Game) CastingDetectableByHuman(caster *playerlib.Player) bool {
         }
     }
     return false
+}
+
+func (game *Game) RelocateUnit(player *playerlib.Player, unit units.StackUnit) {
+    summonCity := player.FindSummoningCity()
+    if summonCity == nil {
+        return
+    }
+
+    unit.SetX(summonCity.X)
+    unit.SetY(summonCity.Y)
+
+    allStacks := player.FindAllStacks(summonCity.X, summonCity.Y, summonCity.Plane)
+    for i := 1; i < len(allStacks); i++ {
+        player.MergeStacks(allStacks[0], allStacks[i])
+    }
+
+    game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
+
+    unit.SetBusy(units.BusyStatusNone)
 }

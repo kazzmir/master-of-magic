@@ -4625,8 +4625,9 @@ func createScenario51_52(cache *lbx.LbxCache, kill bool) *gamelib.Game {
     player.Gold = 1000
     player.Mana = 10000
     player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
-    player.KnownSpells.AddSpell(allSpells.FindByName("Word of Recall"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Summon Hero"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Recall Hero"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Word of Recall"))
 
     x, y, _ := game.FindValidCityLocationOnShore(game.Plane)
 

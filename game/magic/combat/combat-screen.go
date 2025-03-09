@@ -773,9 +773,11 @@ func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) *Projec
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
     explodeImages := images
 
-    // TODO
+    recall := func(unit *ArmyUnit) {
+        combat.Model.RecallUnit(unit)
+    }
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){})
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, recall)
 }
 
 func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) *Projectile {
@@ -1099,9 +1101,11 @@ func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) *Proj
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
     explodeImages := images
 
-    // TODO
+    recall := func(unit *ArmyUnit) {
+        combat.Model.RecallUnit(unit)
+    }
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){})
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, recall)
 }
 
 func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit, caster *playerlib.Player, dispelStrength int) *Projectile {

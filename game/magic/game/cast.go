@@ -567,22 +567,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                return true
             }
             after := func (unit units.StackUnit) bool {
-                summonCity := player.FindSummoningCity()
-                if summonCity == nil {
-                    return false
-                }
-
-                unit.SetX(summonCity.X)
-                unit.SetY(summonCity.Y)
-
-                allStacks := player.FindAllStacks(summonCity.X, summonCity.Y, summonCity.Plane)
-                for i := 1; i < len(allStacks); i++ {
-                    player.MergeStacks(allStacks[0], allStacks[i])
-                }
-
-                game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
-
-                unit.SetBusy(units.BusyStatusNone)
+                game.RelocateUnit(player, unit)
 
                 return true
             }

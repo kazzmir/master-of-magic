@@ -1669,6 +1669,7 @@ type Army struct {
     Auto bool
     Fled bool
     Casted bool
+    RecalledUnits []*ArmyUnit
 
     Enchantments []data.CombatEnchantment
 }
@@ -3405,6 +3406,15 @@ func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
     if unit == model.SelectedUnit {
         model.NextUnit()
     }
+}
+
+func (model *CombatModel) RecallUnit(unit *ArmyUnit) {
+    if unit.Team == TeamDefender {
+        model.DefendingArmy.RecalledUnits = append(model.DefendingArmy.RecalledUnits, unit)
+    } else {
+        model.AttackingArmy.RecalledUnits = append(model.AttackingArmy.RecalledUnits, unit)
+    }
+    model.RemoveUnit(unit)
 }
 
 func (model *CombatModel) IsAIControlled(unit *ArmyUnit) bool {
