@@ -4283,23 +4283,23 @@ func (game *Game) doTreasurePopup(yield coroutine.YieldFunc, player *playerlib.P
             left, _ := game.ImageCache.GetImage("resource.lbx", 56, 0)
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            options.GeoM.Translate(float64(10 * data.ScreenScale), float64(50 * data.ScreenScale))
+            options.GeoM.Translate(float64(10), float64(50))
 
-            fontX, fontY := options.GeoM.Apply(float64(10 * data.ScreenScale), float64(10 * data.ScreenScale))
+            fontX, fontY := options.GeoM.Apply(float64(10), float64(10))
 
-            screen.DrawImage(left, &options)
+            scale.DrawScaled(screen, left, &options)
             right, _ := game.ImageCache.GetImage("resource.lbx", 58, 0)
             options.GeoM.Translate(float64(left.Bounds().Dx()), 0)
             rightGeom := options.GeoM
 
             chest, _ := game.ImageCache.GetImage("reload.lbx", 20, 0)
-            options.GeoM.Translate(float64(6 * data.ScreenScale), float64(8 * data.ScreenScale))
-            screen.DrawImage(chest, &options)
+            options.GeoM.Translate(float64(6), float64(8))
+            scale.DrawScaled(screen, chest, &options)
 
             options.GeoM = rightGeom
-            screen.DrawImage(right, &options)
+            scale.DrawScaled(screen, right, &options)
 
-            fonts.TreasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, font.FontOptions{DropShadow: true}, treasure.String())
+            fonts.TreasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx() - 5), 1, options.ColorScale, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, treasure.String())
         },
     }
 
