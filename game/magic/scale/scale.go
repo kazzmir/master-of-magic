@@ -29,6 +29,14 @@ func Scale2[T Number](x, y T) (T, T) {
     return x * T(ScaleAmount), y * T(ScaleAmount)
 }
 
+func Unscale[T Number](x T) T {
+    return x / T(ScaleAmount)
+}
+
+func Unscale2[T Number](x, y T) (T, T) {
+    return x / T(ScaleAmount), y / T(ScaleAmount)
+}
+
 func ScaleGeom(geom ebiten.GeoM) ebiten.GeoM {
     geom.Scale(ScaleAmount, ScaleAmount)
     return geom

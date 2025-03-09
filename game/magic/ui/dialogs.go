@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -74,13 +75,13 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
     infoLeftMargin := 18
     infoTopMargin := 26
     infoBodyMargin := 3
-    maxInfoWidth := infoWidth / data.ScreenScale - infoLeftMargin - infoBodyMargin - 14
+    maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 14
 
     // fmt.Printf("Help text: %v\n", []byte(help.Text))
 
-    wrapped := helpFont.CreateWrappedText(float64(maxInfoWidth * data.ScreenScale), float64(data.ScreenScale), help.Text)
+    wrapped := helpFont.CreateWrappedText(float64(maxInfoWidth), 1, help.Text)
 
-    helpTextY := infoTopMargin * data.ScreenScale
+    helpTextY := infoTopMargin
     titleYAdjust := 0
 
     var extraImage *ebiten.Image
@@ -93,15 +94,15 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
     }
 
     if extraImage != nil {
-        titleYAdjust = extraImage.Bounds().Dy() / 2 - helpTitleFont.Height() * data.ScreenScale / 2
+        titleYAdjust = extraImage.Bounds().Dy() / 2 - helpTitleFont.Height() / 2
 
-        if extraImage.Bounds().Dy() > helpTitleFont.Height() * data.ScreenScale {
+        if extraImage.Bounds().Dy() > helpTitleFont.Height() {
             helpTextY += extraImage.Bounds().Dy() + 1
         } else {
-            helpTextY += (helpTitleFont.Height() + 1) * data.ScreenScale
+            helpTextY += (helpTitleFont.Height() + 1)
         }
     } else {
-        helpTextY += (helpTitleFont.Height() + 1) * data.ScreenScale
+        helpTextY += (helpTitleFont.Height() + 1)
     }
 
     bottom := float64(helpTextY) + wrapped.TotalHeight
@@ -111,8 +112,8 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
     // add in more help entries
     for _, entry := range helpEntries {
         bottom += 2
-        bottom += float64(helpTitleFont.Height() * data.ScreenScale) + 1
-        moreWrapped := helpFont.CreateWrappedText(float64(maxInfoWidth * data.ScreenScale), float64(data.ScreenScale), entry.Text)
+        bottom += float64(helpTitleFont.Height()) + 1
+        moreWrapped := helpFont.CreateWrappedText(float64(maxInfoWidth), 1, entry.Text)
         moreHelp = append(moreHelp, moreWrapped)
         bottom += moreWrapped.TotalHeight
     }
@@ -131,37 +132,37 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
         Draw: func (infoThis *UIElement, window *ebiten.Image){
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(infoX * data.ScreenScale), float64(infoY))
+            options.GeoM.Translate(float64(infoX), float64(infoY))
             options.ColorScale.ScaleAlpha(getAlpha())
-            window.DrawImage(topImage, &options)
+            window.DrawImage(topImage, scale.ScaleOptions(options))
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(infoX * data.ScreenScale), float64(bottom) + infoY)
+            options.GeoM.Translate(float64(infoX), float64(bottom) + infoY)
             options.ColorScale.ScaleAlpha(getAlpha())
-            window.DrawImage(helpBottom, &options)
+            window.DrawImage(helpBottom, scale.ScaleOptions(options))
 
             // for debugging
             // vector.StrokeRect(window, float32(infoX), float32(infoY), float32(infoWidth), float32(infoHeight), 1, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
             // vector.StrokeRect(window, float32(infoX + infoLeftMargin), float32(infoY + infoTopMargin), float32(maxInfoWidth), float32(screen.HelpTitleFont.Height() + 20 + 1), 1, color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}, false)
 
-            titleX := (infoX + infoLeftMargin) * data.ScreenScale
+            titleX := (infoX + infoLeftMargin)
 
             if extraImage != nil {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(titleX), infoY + float64(infoTopMargin * data.ScreenScale))
+                options.GeoM.Translate(float64(titleX), infoY + float64(infoTopMargin))
                 options.ColorScale.ScaleAlpha(getAlpha())
-                window.DrawImage(extraImage, &options)
-                titleX += extraImage.Bounds().Dx() + 5 * data.ScreenScale
+                window.DrawImage(extraImage, scale.ScaleOptions(options))
+                titleX += extraImage.Bounds().Dx() + 5
             }
 
-            helpTitleFont.Print(window, float64(titleX), infoY + float64(infoTopMargin * data.ScreenScale + titleYAdjust), float64(data.ScreenScale), options.ColorScale, help.Headline)
-            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin) * float64(data.ScreenScale), float64(helpTextY) + infoY, wrapped, options.ColorScale, font.FontOptions{})
+            helpTitleFont.PrintOptions2(window, float64(titleX), infoY + float64(infoTopMargin + titleYAdjust), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, help.Headline)
+            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY) + infoY, wrapped, options.ColorScale, font.FontOptions{Options: &options, Scale: scale.ScaleAmount})
 
             yPos := float64(helpTextY) + infoY + wrapped.TotalHeight + 2
             for i, moreWrapped := range moreHelp {
-                helpTitleFont.Print(window, float64(titleX), float64(yPos), float64(data.ScreenScale), options.ColorScale, helpEntries[i].Headline)
-                helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin) * float64(data.ScreenScale), yPos + float64(helpTitleFont.Height() * data.ScreenScale) + 1, moreWrapped, options.ColorScale, font.FontOptions{})
-                yPos += float64(helpTitleFont.Height() * data.ScreenScale) + 1 + float64(moreWrapped.TotalHeight) + 2
+                helpTitleFont.PrintOptions2(window, float64(titleX), yPos, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, helpEntries[i].Headline)
+                helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), yPos + float64(helpTitleFont.Height()) + 1, moreWrapped, options.ColorScale, font.FontOptions{Options: &options, Scale: scale.ScaleAmount})
+                yPos += float64(helpTitleFont.Height()) + 1 + float64(moreWrapped.TotalHeight) + 2
             }
 
         },
@@ -218,13 +219,13 @@ func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.Imag
 
     errorFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
-    maxWidth := errorTop.Bounds().Dx() - errorMargin * 2 * data.ScreenScale
+    maxWidth := errorTop.Bounds().Dx() - errorMargin * 2
 
     wrapped := errorFont.CreateWrappedText(float64(maxWidth), float64(data.ScreenScale), message)
 
-    bottom := float64(errorY + errorTopMargin) * float64(data.ScreenScale) + wrapped.TotalHeight
+    bottom := float64(errorY + errorTopMargin) + wrapped.TotalHeight
 
-    topDraw := errorTop.SubImage(image.Rect(0, 0, errorTop.Bounds().Dx(), int(bottom) - errorY * data.ScreenScale)).(*ebiten.Image)
+    topDraw := errorTop.SubImage(image.Rect(0, 0, errorTop.Bounds().Dx(), int(bottom) - errorY)).(*ebiten.Image)
 
     element := &UIElement{
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
