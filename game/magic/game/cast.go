@@ -555,7 +555,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
             after := func (unit units.StackUnit) bool {
                 // FIXME: make a helper function which makes sure tile are not overcrowed
-                fortressCity := player.FindFortressCity()
+                fortressCity := player.FindSummoningCity()
                 if fortressCity != nil {
                     unit.SetX(fortressCity.X)
                     unit.SetY(fortressCity.Y)
