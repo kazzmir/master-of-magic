@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     // "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
@@ -95,6 +96,7 @@ func (engine *Engine) MakeUI() (*uilib.UI, context.Context, error) {
             Banner: data.BannerBlue,
         },
         TaxRate: fraction.Make(2, 1),
+        GlobalEnchantments: set.MakeSet[data.Enchantment](),
     }
 
     city := citylib.MakeCity("Boston", 3, 8, data.RaceHighElf, buildingInfo, &gameMap, &NoCityProvider{}, player)
@@ -183,7 +185,7 @@ func (engine *Engine) Draw(screen *ebiten.Image){
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return data.ScreenWidth, data.ScreenHeight
+    return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
 func main(){
