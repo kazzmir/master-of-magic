@@ -73,11 +73,11 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             var options ebiten.DrawImageOptions
             scale.DrawScaled(screen, background, &options)
 
-            fonts.BigFont.PrintCenter(screen, float64(160), float64(10), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
+            fonts.BigFont.PrintOptions2(screen, float64(160), float64(10), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
 
             if highlightedUnit != nil {
                 raceName := highlightedUnit.GetRace().String()
-                fonts.NormalFont.PrintCenter(screen, float64(190), float64(162), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v %v", raceName, highlightedUnit.GetName()))
+                fonts.NormalFont.PrintOptions2(screen, float64(190), float64(162), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v %v", raceName, highlightedUnit.GetName()))
 
             }
 
@@ -220,7 +220,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
                     nameX, nameY := options.GeoM.Apply(0, 0)
 
-                    fonts.SmallerFont.PrintCenter(screen, nameX + float64(15), nameY + float64(6), float64(data.ScreenScale), options.ColorScale, hero.GetName())
+                    fonts.SmallerFont.PrintOptions2(screen, nameX + float64(15), nameY + float64(6), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, hero.GetName())
                 },
             }
 
