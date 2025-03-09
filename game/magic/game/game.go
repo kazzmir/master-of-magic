@@ -3297,6 +3297,8 @@ func (game *Game) FindNearbyPosition(player *playerlib.Player, stack *playerlib.
                 }
             }
 
+            // FIXME: what to do in case of a friendly stack with not enough room?
+
             if occupied {
                 continue
             }
@@ -3380,6 +3382,7 @@ func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
         })
 
         for _, unit := range stackUnits {
+            log.Printf("Unit %v killed by ResolveStack", unit)
             player.RemoveUnit(unit)
             count -= 1
             if count <= 9 {

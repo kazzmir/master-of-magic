@@ -4597,7 +4597,7 @@ func createScenario50(cache *lbx.LbxCache) *gamelib.Game {
 }
 
 // Relocate units
-func createScenario51(cache *lbx.LbxCache) *gamelib.Game {
+func createScenario51_52(cache *lbx.LbxCache, kill bool) *gamelib.Game {
     log.Printf("Running scenario 50: relocate units")
     wizard := setup.WizardCustom{
         Name: "bob",
@@ -4616,20 +4616,19 @@ func createScenario51(cache *lbx.LbxCache) *gamelib.Game {
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
-
     game.Plane = data.PlaneArcanus
-
-    player := game.AddPlayer(wizard, true)
-
-    player.CastingSkillPower += 500000
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
+    player := game.AddPlayer(wizard, true)
+    player.CastingSkillPower += 500000
+    player.Gold = 1000
+    player.Mana = 10000
     player.KnownSpells.AddSpell(allSpells.FindByName("Magic Spirit"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Word of Recall"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Summon Hero"))
 
-    x, y, _ := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocationOnShore(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHalfling, game.BuildingInfo, game.CurrentMap(), game, player)
     city.Population = 16190
@@ -4640,32 +4639,22 @@ func createScenario51(cache *lbx.LbxCache) *gamelib.Game {
     city.Race = wizard.Race
     city.Farmers = 13
     city.Workers = 3
-
     city.AddBuilding(buildinglib.BuildingFortress)
     city.AddBuilding(buildinglib.BuildingGranary)
-
     city.ResetCitizens()
 
     player.AddCity(city)
-
-    player.Gold = 1000
-    player.Mana = 10000
-
     player.LiftFog(x, y, 4, data.PlaneArcanus)
-
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.Slingers, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HalflingSpearmen, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HalflingShamans, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
-
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.Nagas, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.SkyDrake, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo()))
-
     player.HeroPool[hero.HeroRakir].Unit.Experience = 0
     player.HeroPool[hero.HeroShinBo].Unit.Experience = 100
     player.HeroPool[hero.HeroAerie].Unit.Experience = 200
     player.HeroPool[hero.HeroBShan].Unit.Experience = 300
-
     player.AddHero(player.HeroPool[hero.HeroRakir])
     player.AddHero(player.HeroPool[hero.HeroAerie])
     player.AddHero(player.HeroPool[hero.HeroBShan])
@@ -4684,6 +4673,38 @@ func createScenario51(cache *lbx.LbxCache) *gamelib.Game {
         },
         Cost: 200,
     }
+
+    enemyWizard := setup.WizardCustom{
+        Name: "enemy",
+        Banner: data.BannerGreen,
+        Race: data.RaceDraconian,
+    }
+    enemy := game.AddPlayer(enemyWizard, false)
+    x1 := game.ArcanusMap.WrapX(x-1)
+    x2 := game.ArcanusMap.WrapX(x+1)
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x1, y-1, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo()))
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x1, y, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo()))
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x1, y+1, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo()))
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y-1, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo()))
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y+1, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo()))
+    if kill {
+        enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x2, y-1, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo()))
+        enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x2, y, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo()))
+        enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x2, y+1, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo()))
+    }
+
+    x, y, _ = game.FindValidCityLocation(game.Plane)
+
+    city = citylib.MakeCity("Test City", x, y, enemy.Wizard.Race, game.BuildingInfo, game.CurrentMap(), game, enemy)
+    city.Population = 14000
+    city.Plane = data.PlaneArcanus
+    city.ProducingBuilding = buildinglib.BuildingHousing
+    city.ProducingUnit = units.UnitNone
+    city.AddBuilding(buildinglib.BuildingGranary)
+    city.Farmers = 10
+    city.Workers = 4
+    city.ResetCitizens()
+    enemy.AddCity(city)
 
     return game
 }
@@ -4744,7 +4765,8 @@ func NewEngine(scenario int) (*Engine, error) {
         case 48: game = createScenario48(cache)
         case 49: game = createScenario49(cache)
         case 50: game = createScenario50(cache)
-        case 51: game = createScenario51(cache)
+        case 51: game = createScenario51_52(cache, false)
+        case 52: game = createScenario51_52(cache, true)
         default: game = createScenario1(cache)
     }
 
