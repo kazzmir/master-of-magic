@@ -5,6 +5,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
@@ -101,7 +102,7 @@ func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebite
         greyOptions.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
 
         greyOptions.GeoM.Concat(geoM)
-        greyOptions.GeoM.Scale(data.ScreenScale2, data.ScreenScale2)
+        greyOptions.GeoM.Scale(scale.ScaleAmount, scale.ScaleAmount)
 
         // screen.DrawImage(use, &options)
         colorm.DrawImage(screen, use, greyScale, &greyOptions)
@@ -123,7 +124,7 @@ func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
         options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
 
         options.GeoM.Concat(geoM)
-        options.GeoM.Scale(data.ScreenScale2, data.ScreenScale2)
+        options.GeoM.Scale(scale.ScaleAmount, scale.ScaleAmount)
 
         /*
         x, y := options.GeoM.Apply(0, 0)
@@ -147,7 +148,7 @@ func RenderCombatTile(screen *ebiten.Image, imageCache *util.ImageCache, options
     grass, err := imageCache.GetImage("cmbgrass.lbx", 0, 0)
     if err == nil {
         options.GeoM.Translate(-float64(grass.Bounds().Dx() / 2), -float64(grass.Bounds().Dy() / 2))
-        screen.DrawImage(grass, &options)
+        screen.DrawImage(grass, scale.ScaleOptions(options))
     }
 }
 
