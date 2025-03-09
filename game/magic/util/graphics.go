@@ -95,24 +95,24 @@ type Distortion struct {
  * for each segment in 'distortion', make a quad from 'source' where the width is 'source width' / segments in the distortion
  * the distortion segments define where to place each corner of the quad
  */
-func DrawDistortion(screen *ebiten.Image, page *ebiten.Image, source *ebiten.Image, distortion Distortion, options ebiten.DrawImageOptions){
-    ax0, ay0 := options.GeoM.Apply(0, 0)
-    ax1, ay1 := options.GeoM.Apply(float64(page.Bounds().Dx()), float64(page.Bounds().Dy()))
+func DrawDistortion(screen *ebiten.Image, page *ebiten.Image, source *ebiten.Image, distortion Distortion, geom ebiten.GeoM){
+    ax0, ay0 := geom.Apply(0, 0)
+    ax1, ay1 := geom.Apply(float64(page.Bounds().Dx()), float64(page.Bounds().Dy()))
     subScreen := screen.SubImage(image.Rect(int(ax0), int(ay0), int(ax1), int(ay1))).(*ebiten.Image)
 
     // top left
-    x1, y1 := options.GeoM.Apply(float64(distortion.Top.X), float64(distortion.Top.Y))
+    x1, y1 := geom.Apply(float64(distortion.Top.X), float64(distortion.Top.Y))
     // bottom left
-    x4, y4 := options.GeoM.Apply(float64(distortion.Bottom.X), float64(distortion.Bottom.Y))
+    x4, y4 := geom.Apply(float64(distortion.Bottom.X), float64(distortion.Bottom.Y))
 
     segmentWidth := float32(source.Bounds().Dx()) / float32(len(distortion.Segments))
 
     for i := 0; i < len(distortion.Segments); i++ {
         segment := distortion.Segments[i]
         // top right
-        x2, y2 := options.GeoM.Apply(float64(segment.Top.X), float64(segment.Top.Y))
+        x2, y2 := geom.Apply(float64(segment.Top.X), float64(segment.Top.Y))
         // bottom right
-        x3, y3 := options.GeoM.Apply(float64(segment.Bottom.X), float64(segment.Bottom.Y))
+        x3, y3 := geom.Apply(float64(segment.Bottom.X), float64(segment.Bottom.Y))
 
         sx := float32(0)
         sy := float32(source.Bounds().Dy())
