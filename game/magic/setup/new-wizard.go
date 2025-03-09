@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/draw"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
@@ -449,29 +450,29 @@ type NewWizardScreen struct {
 }
 
 func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
-    portraitX := 24 * data.ScreenScale
-    portraitY := 10 * data.ScreenScale
+    portraitX := 24
+    portraitY := 10
 
-    nameX := 75 * data.ScreenScale
-    nameY := 120 * data.ScreenScale
+    nameX := 75
+    nameY := 120
 
     ui := &uilib.UI{
         Elements: make(map[uilib.UILayer][]*uilib.UIElement),
         Draw: func(this *uilib.UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
-            window.DrawImage(background, &options)
+            window.DrawImage(background, scale.ScaleOptions(options))
 
             options.GeoM.Translate(float64(portraitX), float64(portraitY))
             portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
-            window.DrawImage(portrait, &options)
-            screen.Font.PrintCenter(window, float64(nameX), float64(nameY), float64(data.ScreenScale), ebiten.ColorScale{}, screen.CustomWizard.Name)
-            screen.SelectFont.PrintCenter(window, float64(245 * data.ScreenScale), float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Wizard's Name")
+            window.DrawImage(portrait, scale.ScaleOptions(options))
+            screen.Font.PrintOptions2(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
+            screen.SelectFont.PrintOptions2(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Wizard's Name")
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(184 * data.ScreenScale), float64(20 * data.ScreenScale))
+            options.GeoM.Translate(184, 20)
             nameBox, _ := screen.ImageCache.GetImage("newgame.lbx", 40, 0)
-            window.DrawImage(nameBox, &options)
+            window.DrawImage(nameBox, scale.ScaleOptions(options))
 
             name := screen.CustomWizard.Name
 
@@ -480,7 +481,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
                 name += "_"
             }
 
-            screen.NameFontBright.Print(window, float64(195 * data.ScreenScale), float64(39 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, name)
+            screen.NameFontBright.PrintOptions2(window, 195, 39, font.FontOptions{Scale: scale.ScaleAmount}, name)
 
             return
         },
@@ -629,11 +630,11 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
 func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), insideFunc func(wizard int)) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
-    top := 28 * data.ScreenScale
-    space := 22 * data.ScreenScale
-    columnSpace := 76 * data.ScreenScale
+    top := 28
+    space := 22
+    columnSpace := 76
 
-    left := 170 * data.ScreenScale
+    left := 170
 
     counter := 0
     for column := 0; column < 2; column += 1 {
@@ -647,6 +648,10 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
             y1 := top + row * space
             x2 := x1 + background.Bounds().Dx()
             y2 := y1 + background.Bounds().Dy()
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(x1), float64(y1))
+
+            scaledOptions := scale.ScaleOptions(options)
 
             elements = append(elements, &uilib.UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
@@ -658,10 +663,8 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
                     // screen.CurrentWizard = wizard
                 },
                 Draw: func(this *uilib.UIElement, window *ebiten.Image){
-                    var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(x1), float64(y1))
-                    window.DrawImage(background, &options)
-                    screen.Font.PrintCenter(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, name)
+                    window.DrawImage(background, scaledOptions)
+                    screen.Font.PrintOptions2(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, name)
                 },
             })
         }
@@ -671,11 +674,11 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
 }
 
 func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
-    top := 28 * data.ScreenScale
-    space := 22 * data.ScreenScale
-    columnSpace := 76 * data.ScreenScale
+    top := 28
+    space := 22
+    columnSpace := 76
 
-    left := 170 * data.ScreenScale
+    left := 170
 
     clickFunc := func(wizard int){
         screen.CustomWizard.Name = screen.WizardSlots[wizard].Name
@@ -719,8 +722,8 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(x1), float64(y1))
-                window.DrawImage(background, &options)
-                screen.Font.PrintCenter(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Custom")
+                window.DrawImage(background, scale.ScaleOptions(options))
+                screen.Font.PrintOptions2(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Custom")
             },
         }
     })())
@@ -729,33 +732,33 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
         Draw: func(this *uilib.UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
-            window.DrawImage(background, &options)
-            screen.SelectFont.PrintCenter(window, float64(245 * data.ScreenScale), float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Select Wizard")
+            window.DrawImage(background, scale.ScaleOptions(options))
+            screen.SelectFont.PrintOptions2(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Wizard")
 
             this.IterateElementsByLayer(func (element *uilib.UIElement){
                 element.Draw(element, window)
             })
 
             if screen.CurrentWizard >= 0 && screen.CurrentWizard < len(screen.WizardSlots) {
-                portraitX := 24 * data.ScreenScale
-                portraitY := 10 * data.ScreenScale
+                portraitX := 24
+                portraitY := 10
 
-                nameX := 75 * data.ScreenScale
-                nameY := 120 * data.ScreenScale
+                nameX := 75
+                nameY := 120
 
                 portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.WizardSlots[screen.CurrentWizard].Portrait, 0)
                 if portrait != nil {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(portraitX), float64(portraitY))
-                    window.DrawImage(portrait, &options)
-                    screen.Font.PrintCenter(window, float64(nameX), float64(nameY), float64(data.ScreenScale), ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].Name)
+                    window.DrawImage(portrait, scale.ScaleOptions(options))
+                    screen.Font.PrintOptions2(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.WizardSlots[screen.CurrentWizard].Name)
 
                     // screen.DrawBooks(window, 36, 135, screen.WizardSlots[screen.CurrentWizard].Books)
                     options.GeoM.Reset()
-                    options.GeoM.Translate(float64(34 * data.ScreenScale), float64(135 * data.ScreenScale))
+                    options.GeoM.Translate(34, 135)
                     draw.DrawBooks(window, options, &screen.ImageCache, screen.WizardSlots[screen.CurrentWizard].Books, screen.BooksOrderRandom())
                     if screen.WizardSlots[screen.CurrentWizard].ExtraRetort != data.RetortNone {
-                        screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, screen.WizardSlots[screen.CurrentWizard].ExtraRetort.String())
+                        screen.AbilityFontSelected.PrintOptions2(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, screen.WizardSlots[screen.CurrentWizard].ExtraRetort.String())
                     }
                 }
             }

@@ -5,6 +5,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -47,7 +48,7 @@ func DrawBooks(screen *ebiten.Image, options ebiten.DrawImageOptions, imageCache
 
             // var options ebiten.DrawImageOptions
             // options.GeoM.Translate(x + float64(offsetX), y)
-            screen.DrawImage(img, &options)
+            screen.DrawImage(img, scale.ScaleOptions(options))
             options.GeoM.Translate(float64(img.Bounds().Dx() - 1), 0)
             // offsetX += img.Bounds().Dx() - 1
             index += 1
