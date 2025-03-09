@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -70,24 +71,24 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
         Draw: func(this *uilib.UI, screen *ebiten.Image) {
             background, _ := view.ImageCache.GetImage("armylist.lbx", 0, 0)
             var options ebiten.DrawImageOptions
-            screen.DrawImage(background, &options)
+            scale.DrawScaled(screen, background, &options)
 
-            fonts.BigFont.PrintCenter(screen, float64(160 * data.ScreenScale), float64(10 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
+            fonts.BigFont.PrintCenter(screen, float64(160), float64(10), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
 
             if highlightedUnit != nil {
                 raceName := highlightedUnit.GetRace().String()
-                fonts.NormalFont.PrintCenter(screen, float64(190 * data.ScreenScale), float64(162 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v %v", raceName, highlightedUnit.GetName()))
+                fonts.NormalFont.PrintCenter(screen, float64(190), float64(162), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v %v", raceName, highlightedUnit.GetName()))
 
             }
 
-            shadow := font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true}
-            fonts.NormalFont.PrintOptions(screen, float64(30 * data.ScreenScale), float64(162 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, shadow, "UPKEEP")
-            fonts.NormalFont.PrintOptions(screen, float64(45 * data.ScreenScale), float64(172 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, shadow, fmt.Sprintf("%v", upkeepGold))
-            fonts.NormalFont.PrintOptions(screen, float64(45 * data.ScreenScale), float64(182 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, shadow, fmt.Sprintf("%v", upkeepMana))
-            fonts.NormalFont.PrintOptions(screen, float64(45 * data.ScreenScale), float64(192 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, shadow, fmt.Sprintf("%v", upkeepFood))
+            shadow := font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}
+            fonts.NormalFont.PrintOptions2(screen, float64(30), float64(162), shadow, "UPKEEP")
+            fonts.NormalFont.PrintOptions2(screen, float64(45), float64(172), shadow, fmt.Sprintf("%v", upkeepGold))
+            fonts.NormalFont.PrintOptions2(screen, float64(45), float64(182), shadow, fmt.Sprintf("%v", upkeepMana))
+            fonts.NormalFont.PrintOptions2(screen, float64(45), float64(192), shadow, fmt.Sprintf("%v", upkeepFood))
 
-            minimapRect := image.Rect(85 * data.ScreenScale, 163 * data.ScreenScale, 135 * data.ScreenScale, 197 * data.ScreenScale)
-            minimapArea := screen.SubImage(minimapRect).(*ebiten.Image)
+            minimapRect := image.Rect(85, 163, 135, 197)
+            minimapArea := screen.SubImage(scale.ScaleRect(minimapRect)).(*ebiten.Image)
 
             if highlightedUnit != nil {
                 view.DrawMinimap(minimapArea, highlightedUnit.GetX(), highlightedUnit.GetY(), view.Player.GetFog(highlightedUnit.GetPlane()), this.Counter)
@@ -128,7 +129,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                 if clicked {
                     use = clickImage
                 }
-                screen.DrawImage(use, &options)
+                scale.DrawScaled(screen, use, &options)
             },
         }
     }
@@ -136,13 +137,13 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     var resetUnits func()
 
     itemButtons, _ := view.ImageCache.GetImages("armylist.lbx", 3)
-    ui.AddElement(makeButton(273 * data.ScreenScale, 163 * data.ScreenScale, itemButtons[0], itemButtons[1], func(){
+    ui.AddElement(makeButton(273, 163, itemButtons[0], itemButtons[1], func(){
         view.ShowVault()
         resetUnits()
     }))
 
     okButtons, _ := view.ImageCache.GetImages("armylist.lbx", 4)
-    ui.AddElement(makeButton(273 * data.ScreenScale, 183 * data.ScreenScale, okButtons[0], okButtons[1], func(){
+    ui.AddElement(makeButton(273, 183, okButtons[0], okButtons[1], func(){
         view.State = ArmyScreenStateDone
     }))
 
@@ -161,11 +162,11 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
         }
     }
 
-    ui.AddElement(makeButton(60 * data.ScreenScale, 26 * data.ScreenScale, upArrows[0], upArrows[1], scrollUnitsUp))
-    ui.AddElement(makeButton(250 * data.ScreenScale, 26 * data.ScreenScale, upArrows[0], upArrows[1], scrollUnitsUp))
+    ui.AddElement(makeButton(60, 26, upArrows[0], upArrows[1], scrollUnitsUp))
+    ui.AddElement(makeButton(250, 26, upArrows[0], upArrows[1], scrollUnitsUp))
 
-    ui.AddElement(makeButton(60 * data.ScreenScale, 139 * data.ScreenScale, downArrows[0], downArrows[1], scrollUnitsDown))
-    ui.AddElement(makeButton(250 * data.ScreenScale, 139 * data.ScreenScale, downArrows[0], downArrows[1], scrollUnitsDown))
+    ui.AddElement(makeButton(60, 139, downArrows[0], downArrows[1], scrollUnitsDown))
+    ui.AddElement(makeButton(250, 139, downArrows[0], downArrows[1], scrollUnitsDown))
 
     highlightColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: 255, A: 90})
 
@@ -176,7 +177,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
         ui.RemoveElements(unitElements)
 
         // row := view.FirstRow
-        rowY := 25 * data.ScreenScale
+        rowY := 25
         rowCount := 0
 
         // recompute upkeep values
@@ -185,8 +186,8 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
         upkeepMana = view.Player.TotalUnitUpkeepMana()
 
         for i, hero := range view.Player.AliveHeroes() {
-            x := (12 + (i % 2) * 265) * data.ScreenScale
-            y := (5 + (i / 2) * 51) * data.ScreenScale
+            x := (12 + (i % 2) * 265)
+            y := (5 + (i / 2) * 51)
 
             portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
             pic, _ := view.ImageCache.GetImage(portraitLbx, portraitIndex, 0)
@@ -213,13 +214,13 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                 Draw: func(this *uilib.UIElement, screen *ebiten.Image){
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(x), float64(y))
-                    screen.DrawImage(pic, &options)
+                    scale.DrawScaled(screen, pic, &options)
 
                     options.GeoM.Translate(0, float64(pic.Bounds().Dy()))
 
                     nameX, nameY := options.GeoM.Apply(0, 0)
 
-                    fonts.SmallerFont.PrintCenter(screen, nameX + float64(15 * data.ScreenScale), nameY + float64(6 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, hero.GetName())
+                    fonts.SmallerFont.PrintCenter(screen, nameX + float64(15), nameY + float64(6), float64(data.ScreenScale), options.ColorScale, hero.GetName())
                 },
             }
 
@@ -238,7 +239,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                 continue
             }
 
-            x := 78 * data.ScreenScale
+            x := 78
 
             for _, unit := range stack.Units() {
                 elementX := float64(x)
@@ -269,10 +270,12 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                             var options colorm.DrawImageOptions
                             var matrix colorm.ColorM
                             options.GeoM.Translate(elementX, elementY)
+                            options.GeoM.Scale(scale.ScaleAmount, scale.ScaleAmount)
 
                             if highlightedUnit == unit {
                                 x, y := options.GeoM.Apply(0, 0)
-                                vector.DrawFilledRect(screen, float32(x), float32(y+1), float32(pic.Bounds().Dx()), float32(pic.Bounds().Dy())-1, highlightColor, false)
+                                x2, y2 := options.GeoM.Apply(float64(pic.Bounds().Dx()), float64(pic.Bounds().Dy()))
+                                vector.DrawFilledRect(screen, float32(x), float32(y+1), float32(x2-x), float32(y2-y)-1, highlightColor, false)
                             }
 
                             if unit.GetBusy() == units.BusyStatusPatrol {
@@ -300,7 +303,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                 break
             }
 
-            rowY += 22 * data.ScreenScale
+            rowY += 22
         }
     }
 
