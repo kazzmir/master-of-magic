@@ -193,7 +193,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                return true
             }
             after := func (unit units.StackUnit) bool {
-                unit.RemoveEnchantment(data.UnitEnchantmentLycanthropy)
                 overworldUnit, ok := unit.(*units.OverworldUnit)
                 if ok {
                     damage := overworldUnit.GetMaxHealth() - overworldUnit.Health
@@ -204,7 +203,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 }
                 return true
             }
-            game.doCastUnitEnchantmentFull(player, spell, data.UnitEnchantmentLycanthropy, before, after)
+            game.doCastOnUnit(player, spell, 4, before, after)
 
         /*
             TOWN ENCHANTMENTS
@@ -639,7 +638,7 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
     }
 }
 
-func (game *Game) doCastUnitEnchantmentFull(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment, before UnitEnchantmentCallback, after UnitEnchantmentCallback) {
+func (game *Game) doCastOnUnit(player *playerlib.Player, spell spellbook.Spell, animationIndex int, before UnitEnchantmentCallback, after UnitEnchantmentCallback) {
     var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
     selected = func (yield coroutine.YieldFunc, tileX int, tileY int){
         game.doMoveCamera(yield, tileX, tileY)
@@ -652,19 +651,12 @@ func (game *Game) doCastUnitEnchantmentFull(player *playerlib.Player, spell spel
             return
         }
 
-        if unit.HasEnchantment(enchantment) {
-            game.Events <- &GameEventNotice{Message: fmt.Sprintf("That unit already has %v cast on it", spell.Name)}
-            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
-            return
-        }
-
         if !before(unit) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
             return
         }
 
-        game.doCastOnMap(yield, tileX, tileY, enchantment.CastAnimationIndex(), false, spell.Sound, func (x int, y int, animationFrame int) {})
-        unit.AddEnchantment(enchantment)
+        game.doCastOnMap(yield, tileX, tileY, animationIndex, false, spell.Sound, func (x int, y int, animationFrame int) {})
 
         after(unit)
 
@@ -672,6 +664,26 @@ func (game *Game) doCastUnitEnchantmentFull(player *playerlib.Player, spell spel
     }
 
     game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+}
+
+func (game *Game) doCastUnitEnchantmentFull(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment, customBefore UnitEnchantmentCallback, customAfter UnitEnchantmentCallback) {
+    before := func (unit units.StackUnit) bool {
+        if unit.HasEnchantment(enchantment) {
+            game.Events <- &GameEventNotice{Message: fmt.Sprintf("That unit already has %v cast on it", spell.Name)}
+            return false
+        }
+
+        return customBefore(unit)
+    }
+
+    after := func (unit units.StackUnit) bool {
+        unit.AddEnchantment(enchantment)
+
+        return customAfter(unit)
+    }
+
+    game.doCastOnUnit(player, spell, enchantment.CastAnimationIndex(), before, after)
+
 }
 
 func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {
