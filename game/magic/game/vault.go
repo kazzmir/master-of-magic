@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/fonts"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
@@ -36,7 +37,7 @@ func (game *Game) showItemPopup(item *artifact.Artifact, cache *lbx.LbxCache, im
     drawer := func (screen *ebiten.Image){
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(getAlpha())
-        options.GeoM.Translate(float64(48 * data.ScreenScale), float64(48 * data.ScreenScale))
+        options.GeoM.Translate(float64(48), float64(48))
         artifact.RenderArtifactBox(screen, imageCache, *item, counter / 8, vaultFonts.ItemName, vaultFonts.PowerFont, options)
     }
 
@@ -107,11 +108,11 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             background, _ := imageCache.GetImage("armylist.lbx", 5, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(data.ScreenWidth / 2 - background.Bounds().Dx() / 2), 2)
-            screen.DrawImage(background, &options)
+            scale.DrawScaled(screen, background, &options)
 
-            fontOptions := font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true}
-            fonts.ResourceFont.PrintOptions(screen, float64(190 * data.ScreenScale), float64(166 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fontOptions, fmt.Sprintf("%v GP", player.Gold))
-            fonts.ResourceFont.PrintOptions(screen, float64(233 * data.ScreenScale), float64(166 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fontOptions, fmt.Sprintf("%v MP", player.Mana))
+            fontOptions := font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Options: &options, Scale: scale.ScaleAmount}
+            fonts.ResourceFont.PrintOptions2(screen, 190, 166, fontOptions, fmt.Sprintf("%v GP", player.Gold))
+            fonts.ResourceFont.PrintOptions2(screen, 233, 166, fontOptions, fmt.Sprintf("%v MP", player.Mana))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -132,10 +133,10 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
     // the 4 equipment slots
     makeEquipmentSlot := func(index int) *uilib.UIElement{
-        width := 20 * data.ScreenScale
-        height := 17 * data.ScreenScale
-        x1 := 72 * data.ScreenScale + index * width
-        y1 := 173 * data.ScreenScale
+        width := 20
+        height := 17
+        x1 := 72 + index * width
+        y1 := 173
         rect := image.Rect(x1, y1, x1 + width, y1 + height)
 
         return &uilib.UIElement{
@@ -158,7 +159,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                     // util.DrawRect(screen, rect, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
 
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(73 + index * 20) * float64(data.ScreenScale), float64(173 * data.ScreenScale))
+                    options.GeoM.Translate(float64(73 + index * 20), float64(173))
                     /*
                     equipmentImage, _ := imageCache.GetImage("items.lbx", player.VaultEquipment[index].Image, 0)
                     screen.DrawImage(equipmentImage, &options)
@@ -175,7 +176,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
     // blacksmith anvil
     ui.AddElement(func () *uilib.UIElement {
-        rect := image.Rect(26 * data.ScreenScale, 158 * data.ScreenScale, 65 * data.ScreenScale, 190 * data.ScreenScale)
+        rect := image.Rect(26, 158, 65, 190)
         return &uilib.UIElement{
             Rect: rect,
             PlaySoundLeftClick: true,
@@ -214,8 +215,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
     makeHero := func(index int, hero *herolib.Hero) []*uilib.UIElement {
         // 3 on left, 3 on right
 
-        x1 := (34 + (index % 2) * 135) * data.ScreenScale
-        y1 := (16 + (index / 2) * 46) * data.ScreenScale
+        x1 := (34 + (index % 2) * 135)
+        y1 := (16 + (index / 2) * 46)
 
         portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
         profile, _ := imageCache.GetImage(portraitLbx, portraitIndex, 0)
@@ -242,17 +243,17 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                 ui.AddGroup(unitview.MakeUnitContextMenu(game.Cache, ui, hero, disband))
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                screen.DrawImage(profile, &options)
-                screen.DrawImage(frame, &options)
+                scale.DrawScaled(screen, profile, &options)
+                scale.DrawScaled(screen, frame, &options)
             },
         })
 
         for slotIndex, slot := range hero.GetArtifactSlots() {
             slotOptions := options
             slotOptions.GeoM = baseGeom
-            slotOptions.GeoM.Translate(float64(profile.Bounds().Dx() + 8 * data.ScreenScale), float64(14 * data.ScreenScale))
+            slotOptions.GeoM.Translate(float64(profile.Bounds().Dx() + 8), float64(14))
             pic, _ := imageCache.GetImage("itemisc.lbx", slot.ImageIndex(), 0)
-            slotOptions.GeoM.Translate(float64((pic.Bounds().Dx() + 11 * data.ScreenScale) * slotIndex), 0)
+            slotOptions.GeoM.Translate(float64((pic.Bounds().Dx() + 11) * slotIndex), 0)
 
             x, y := slotOptions.GeoM.Apply(0, 0)
             rect := util.ImageRect(int(x), int(y), pic)
@@ -283,7 +284,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                         */
                         artifact.RenderArtifactImage(screen, &imageCache, *hero.Equipment[slotIndex], ui.Counter / 8, slotOptions)
                     } else {
-                        screen.DrawImage(pic, &slotOptions)
+                        scale.DrawScaled(screen, pic, &slotOptions)
                     }
                 },
             })
@@ -303,7 +304,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
     ui.AddElement(func () *uilib.UIElement {
         okImages, _ := imageCache.GetImages("armylist.lbx", 8)
         index := 0
-        rect := util.ImageRect(237 * data.ScreenScale, 177 * data.ScreenScale, okImages[index])
+        rect := util.ImageRect(237, 177, okImages[index])
         return &uilib.UIElement{
             Rect: rect,
             PlaySoundLeftClick: true,
@@ -325,7 +326,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                 if selectedItem != nil {
                     options.ColorScale.SetR(2)
                 }
-                screen.DrawImage(okImages[index], &options)
+                scale.DrawScaled(screen, okImages[index], &options)
             },
         }
     }())
@@ -333,7 +334,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
     ui.AddElement(func () *uilib.UIElement {
         images, _ := imageCache.GetImages("armylist.lbx", 7)
         index := 0
-        rect := util.ImageRect(237 * data.ScreenScale, 157 * data.ScreenScale, images[index])
+        rect := util.ImageRect(237, 157, images[index])
         return &uilib.UIElement{
             Rect: rect,
             PlaySoundLeftClick: true,
@@ -348,7 +349,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
-                screen.DrawImage(images[index], &options)
+                scale.DrawScaled(screen, images[index], &options)
             },
         }
     }())
