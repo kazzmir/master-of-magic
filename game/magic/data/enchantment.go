@@ -538,7 +538,6 @@ func (enchantment UnitEnchantment) LbxIndex() int {
 func (enchantment UnitEnchantment) CastAnimationIndex() int {
     switch enchantment {
         // nature
-        // FIXME: verify
         case UnitEnchantmentGiantStrength: return 0
         case UnitEnchantmentElementalArmor: return 0
         case UnitEnchantmentResistElements: return 0

@@ -420,7 +420,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Great Unsummoning
                 Spell Binding
                 Stasis
-                Word of Recall
                 Fire Storm
                 Black Wind
                 Death Wish
@@ -548,6 +547,23 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 return true
             }
             game.doCastNewCityBuilding(spell, player, LocationTypeFriendlyCity, building.BuildingFortress, "Your fortress is already in this city", after)
+        case "Word of Recall":
+            before := func (unit units.StackUnit) bool {
+                // FIXME: this may bypass planar seal
+                // FIXME: this will do nothing if already at fortress city
+               return true
+            }
+            after := func (unit units.StackUnit) bool {
+                // FIXME: make a helper function which makes sure tile are not overcrowed
+                fortressCity := player.FindFortressCity()
+                if fortressCity != nil {
+                    unit.SetX(fortressCity.X)
+                    unit.SetY(fortressCity.Y)
+                }
+
+                return true
+            }
+            game.doCastOnUnit(player, spell, 1, before, after)
 
         default:
             log.Printf("Warning: casting unhandled spell '%v'", spell.Name)

@@ -1034,6 +1034,8 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Change Terrain"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Transmute"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Spell Blast"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Recall Hero"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Word of Recall"))
 
     // city spells
     player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
