@@ -60,3 +60,11 @@ func UpdateScale(amount float64) {
     ScaledGeom.Reset()
     ScaledGeom.Scale(ScaleAmount, ScaleAmount)
 }
+
+// draw the image using the current scale, but avoid allocating an entire DrawImageOptions
+func DrawScaled(screen *ebiten.Image, img *ebiten.Image, options *ebiten.DrawImageOptions) {
+    oldGeom := options.GeoM
+    options.GeoM.Concat(ScaledGeom)
+    screen.DrawImage(img, options)
+    options.GeoM = oldGeom
+}

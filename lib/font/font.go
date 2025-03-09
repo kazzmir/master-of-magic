@@ -40,6 +40,7 @@ type Font struct {
     Columns int
     Glyphs []Glyph
     internalFont *LbxFont
+    GlyphImages map[int]*ebiten.Image
 }
 
 func MakeGPUSpriteMap(font *LbxFont) (*ebiten.Image, int, int, int, int) {
@@ -108,6 +109,7 @@ func MakeOptimizedFontWithPalette(font *LbxFont, palette color.Palette) *Font {
         Columns: columns,
         Glyphs: font.Glyphs,
         internalFont: font,
+        GlyphImages: make(map[int]*ebiten.Image),
     }
 }
 
@@ -116,6 +118,11 @@ func (font *Font) Height() int {
 }
 
 func (font *Font) getGlyphImage(index int) *ebiten.Image {
+    cached, ok := font.GlyphImages[index]
+    if ok {
+        return cached
+    }
+
     x := index % font.Columns
     y := index / font.Columns
 
@@ -124,7 +131,9 @@ func (font *Font) getGlyphImage(index int) *ebiten.Image {
     x2 := (x+1) * font.GlyphWidth
     y2 := (y+1) * font.GlyphHeight
 
-    return font.Image.SubImage(image.Rect(x1, y1, x2, y2)).(*ebiten.Image)
+    sub := font.Image.SubImage(image.Rect(x1, y1, x2, y2)).(*ebiten.Image)
+    font.GlyphImages[index] = sub
+    return sub
 }
 
 func toFloatArray(color color.Color) []float32 {

@@ -5671,13 +5671,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                         var options ebiten.DrawImageOptions
                         options.GeoM.Translate(float64(unitRect.Min.X), float64(unitRect.Min.Y))
-                        screen.DrawImage(unitBackground, scale.ScaleOptions(options))
+                        scale.DrawScaled(screen, unitBackground, &options)
 
                         options.GeoM.Translate(1, 1)
 
                         if stack.IsActive(unit){
                             unitBack, _ := units.GetUnitBackgroundImage(unit.GetBanner(), &game.ImageCache)
-                            screen.DrawImage(unitBack, scale.ScaleOptions(options))
+                            scale.DrawScaled(screen, unitBack, &options)
                         }
 
                         options.GeoM.Translate(1, 1)
@@ -5691,7 +5691,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                                 matrix.ChangeHSV(0, 0, 1)
                                 colorm.DrawImage(screen, unitImage, matrix, &patrolOptions)
                             } else {
-                                screen.DrawImage(unitImage, scale.ScaleOptions(options))
+                                scale.DrawScaled(screen, unitImage, &options)
                             }
 
                             // draw the first enchantment on the unit
@@ -5792,15 +5792,15 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
 
                         badgeOptions := options
-                        badgeOptions.GeoM.Translate(float64(1 * data.ScreenScale), float64(21 * data.ScreenScale))
+                        badgeOptions.GeoM.Translate(1, 21)
                         for i := 0; i < count; i++ {
                             pic, _ := game.ImageCache.GetImage("main.lbx", index, 0)
-                            screen.DrawImage(pic, scale.ScaleOptions(badgeOptions))
-                            badgeOptions.GeoM.Translate(float64(4), 0)
+                            scale.DrawScaled(screen, pic, &badgeOptions)
+                            badgeOptions.GeoM.Translate(4, 0)
                         }
 
                         weaponOptions := options
-                        weaponOptions.GeoM.Translate(float64(12), float64(18))
+                        weaponOptions.GeoM.Translate(12, 18)
                         var weapon *ebiten.Image
                         switch unit.GetWeaponBonus() {
                         case data.WeaponMagic:
@@ -5812,7 +5812,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
 
                         if weapon != nil {
-                            screen.DrawImage(weapon, scale.ScaleOptions(weaponOptions))
+                            scale.DrawScaled(screen, weapon, &weaponOptions)
                         }
 
                         useGeom := scale.ScaleGeom(options.GeoM)
@@ -5857,7 +5857,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     var options ebiten.DrawImageOptions
                     options.ColorScale.ScaleWithColorScale(colorScale)
                     options.GeoM.Translate(float64(doneRect.Min.X), float64(doneRect.Min.Y))
-                    screen.DrawImage(doneImages[doneIndex], scale.ScaleOptions(options))
+                    scale.DrawScaled(screen, doneImages[doneIndex], &options)
                 },
                 Inside: func(this *uilib.UIElement, x int, y int){
                     doneCounter += 1
@@ -5897,7 +5897,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(patrolRect.Min.X), float64(patrolRect.Min.Y))
                     options.ColorScale.ScaleWithColorScale(colorScale)
-                    screen.DrawImage(patrolImages[patrolIndex], scale.ScaleOptions(options))
+                    scale.DrawScaled(screen, patrolImages[patrolIndex], &options)
                 },
                 Inside: func(this *uilib.UIElement, x int, y int){
                     patrolCounter += 1
@@ -5941,7 +5941,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(waitRect.Min.X), float64(waitRect.Min.Y))
                     options.ColorScale.ScaleWithColorScale(colorScale)
-                    screen.DrawImage(waitImages[waitIndex], scale.ScaleOptions(options))
+                    scale.DrawScaled(screen, waitImages[waitIndex], &options)
                 },
                 Inside: func(this *uilib.UIElement, x int, y int){
                     waitCounter += 1
@@ -6113,7 +6113,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(246 + float64(60), 167)
-                    screen.DrawImage(useIcon, scale.ScaleOptions(options))
+                    scale.DrawScaled(screen, useIcon, &options)
                 }
             },
         })
@@ -6147,10 +6147,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(240, 174)
-                screen.DrawImage(nextTurnImage, scale.ScaleOptions(options))
+                scale.DrawScaled(screen, nextTurnImage, &options)
                 if nextTurnClicked {
                     options.GeoM.Translate(6, 5)
-                    screen.DrawImage(nextTurnImageClicked, scale.ScaleOptions(options))
+                    scale.DrawScaled(screen, nextTurnImageClicked, &options)
                 }
             },
         })
@@ -6169,7 +6169,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(240, 77)
-                    screen.DrawImage(goldFood, scale.ScaleOptions(options))
+                    scale.DrawScaled(screen, goldFood, &options)
 
                     negativeScale := ebiten.ColorScale{}
 
@@ -7641,7 +7641,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             // then move the city image so that the center of the image is at the center of the tile
             options.GeoM.Translate(float64(-cityPic.Bounds().Dx()) / 2.0, float64(-cityPic.Bounds().Dy()) / 2.0)
             options.GeoM.Concat(geom)
-            screen.DrawImage(cityPic, scale.ScaleOptions(options))
+            scale.DrawScaled(screen, cityPic, &options)
 
             /*
             tx, ty := geom.Apply(float64(x), float64(y))
@@ -7696,7 +7696,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
             unitBack, err := units.GetUnitBackgroundImage(leader.GetBanner(), overworld.ImageCache)
             if err == nil {
-                screen.DrawImage(unitBack, scale.ScaleOptions(options))
+                scale.DrawScaled(screen, unitBack, &options)
             }
 
             pic, err := GetUnitImage(leader, overworld.ImageCache, leader.GetBanner())
@@ -7711,7 +7711,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
                     matrix.ChangeHSV(0, 0, 1)
                     colorm.DrawImage(screen, pic, matrix, &patrolOptions)
                 } else {
-                    screen.DrawImage(pic, scale.ScaleOptions(options))
+                    scale.DrawScaled(screen, pic, &options)
                 }
 
                 enchantment := util.First(leader.GetEnchantments(), data.UnitEnchantmentNone)
@@ -7743,7 +7743,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             v := float32(1 + (math.Sin(float64(overworld.Counter * 4 + uint64(pointI) * 60) * math.Pi / 180) / 2 + 0.5) / 2)
             options.ColorScale.Scale(v, v, v, 1)
 
-            screen.DrawImage(boot, scale.ScaleOptions(options))
+            scale.DrawScaled(screen, boot, &options)
         }
     }
 
