@@ -6123,7 +6123,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         // next turn
         nextTurnImage, _ := game.ImageCache.GetImage("main.lbx", 35, 0)
         nextTurnImageClicked, _ := game.ImageCache.GetImage("main.lbx", 58, 0)
-        nextTurnRect := image.Rect(240 * data.ScreenScale, 174 * data.ScreenScale, 240 * data.ScreenScale + nextTurnImage.Bounds().Dx(), 174 * data.ScreenScale + nextTurnImage.Bounds().Dy())
+        nextTurnRect := image.Rect(240, 174, 240 + nextTurnImage.Bounds().Dx(), 174 + nextTurnImage.Bounds().Dy())
         nextTurnClicked := false
         elements = append(elements, &uilib.UIElement{
             Rect: nextTurnRect,
@@ -6146,11 +6146,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(240 * data.ScreenScale), float64(174 * data.ScreenScale))
-                screen.DrawImage(nextTurnImage, &options)
+                options.GeoM.Translate(240, 174)
+                screen.DrawImage(nextTurnImage, scale.ScaleOptions(options))
                 if nextTurnClicked {
-                    options.GeoM.Translate(float64(6 * data.ScreenScale), float64(5 * data.ScreenScale))
-                    screen.DrawImage(nextTurnImageClicked, &options)
+                    options.GeoM.Translate(6, 5)
+                    screen.DrawImage(nextTurnImageClicked, scale.ScaleOptions(options))
                 }
             },
         })
@@ -6168,8 +6168,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(240 * data.ScreenScale), float64(77 * data.ScreenScale))
-                    screen.DrawImage(goldFood, &options)
+                    options.GeoM.Translate(240, 77)
+                    screen.DrawImage(goldFood, scale.ScaleOptions(options))
 
                     negativeScale := ebiten.ColorScale{}
 
@@ -6177,28 +6177,34 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     v := (math.Cos(float64(game.Counter) / 7) + 1) / 4 + 0.5
                     negativeScale.SetR(float32(v))
 
+                    negative := options
+                    negative.ColorScale = negativeScale
+
+                    negativeOptions := font.FontOptions{Justify: font.FontJustifyCenter, Options: &negative, Scale: scale.ScaleAmount}
+                    normalOptions := font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}
+
                     if goldPerTurn < 0 {
-                        game.Fonts.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(103 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Gold", goldPerTurn))
+                        game.Fonts.InfoFontRed.PrintOptions2(screen, 278, 103, negativeOptions, fmt.Sprintf("%v Gold", goldPerTurn))
                     } else {
-                        game.Fonts.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(103 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Gold", goldPerTurn))
+                        game.Fonts.InfoFontYellow.PrintOptions2(screen, 278, 103, normalOptions, fmt.Sprintf("%v Gold", goldPerTurn))
                     }
 
                     if foodPerTurn < 0 {
-                        game.Fonts.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(135 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Food", foodPerTurn))
+                        game.Fonts.InfoFontRed.PrintOptions2(screen, 278, 135, negativeOptions, fmt.Sprintf("%v Food", foodPerTurn))
                     } else {
-                        game.Fonts.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(135 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Food", foodPerTurn))
+                        game.Fonts.InfoFontYellow.PrintOptions2(screen, 278, 135, normalOptions, fmt.Sprintf("%v Food", foodPerTurn))
                     }
 
                     if manaPerTurn < 0 {
-                        game.Fonts.InfoFontRed.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), negativeScale, fmt.Sprintf("%v Mana", manaPerTurn))
+                        game.Fonts.InfoFontRed.PrintOptions2(screen, 278, 167, negativeOptions, fmt.Sprintf("%v Mana", manaPerTurn))
                     } else {
-                        game.Fonts.InfoFontYellow.PrintCenter(screen, float64(278 * data.ScreenScale), float64(167 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v Mana", manaPerTurn))
+                        game.Fonts.InfoFontYellow.PrintOptions2(screen, 278, 167, normalOptions, fmt.Sprintf("%v Mana", manaPerTurn))
                     }
 
                     if conjunction != "" {
-                        var scale ebiten.ColorScale
-                        scale.ScaleWithColor(conjunctionColor)
-                        game.Fonts.WhiteFont.PrintCenter(screen, float64(278 * data.ScreenScale), float64(155 * data.ScreenScale), float64(data.ScreenScale), scale, conjunction)
+                        conjunctionOptions := options
+                        conjunctionOptions.ColorScale.ScaleWithColor(conjunctionColor)
+                        game.Fonts.WhiteFont.PrintOptions2(screen, 278, 155, font.FontOptions{Justify: font.FontJustifyCenter, Options: &conjunctionOptions, Scale: scale.ScaleAmount}, conjunction)
                     }
                 },
             })
