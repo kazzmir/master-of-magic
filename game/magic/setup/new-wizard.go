@@ -589,17 +589,17 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
         Draw: func(this *uilib.UI, window *ebiten.Image){
             var options ebiten.DrawImageOptions
             background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
-            window.DrawImage(background, &options)
+            window.DrawImage(background, scale.ScaleOptions(options))
 
-            screen.SelectFont.PrintCenter(window, float64(245 * data.ScreenScale), float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Select Wizard")
+            screen.SelectFont.PrintOptions2(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Wizard")
 
             const portraitX = 24
             const portraitY = 10
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(166 * data.ScreenScale), float64(18 * data.ScreenScale))
+            options.GeoM.Translate(166, 18)
             customPictureBackground, _ := screen.ImageCache.GetImage("newgame.lbx", 39, 0)
-            window.DrawImage(customPictureBackground, &options)
+            window.DrawImage(customPictureBackground, scale.ScaleOptions(options))
 
             this.IterateElementsByLayer(func (element *uilib.UIElement){
                 element.Draw(element, window)
@@ -608,8 +608,8 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
             portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
             if portrait != nil {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(portraitX * data.ScreenScale), float64(portraitY * data.ScreenScale))
-                window.DrawImage(portrait, &options)
+                options.GeoM.Translate(float64(portraitX), float64(portraitY))
+                window.DrawImage(portrait, scale.ScaleOptions(options))
             }
         },
         HandleKeys: func(keys []ebiten.Key){
