@@ -549,17 +549,33 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastNewCityBuilding(spell, player, LocationTypeFriendlyCity, building.BuildingFortress, "Your fortress is already in this city", after)
         case "Word of Recall":
             before := func (unit units.StackUnit) bool {
-                // FIXME: this may bypass planar seal
-                // FIXME: this will do nothing if already at fortress city
+                summonCity := player.FindSummoningCity()
+                if summonCity == nil {
+                    return false
+                }
+
+                if unit.GetX() == summonCity.X && unit.GetY() == summonCity.Y {
+                    game.Events <- &GameEventNotice{Message: "Your unit is already in this city"}
+                    return false
+                }
+
+                if unit.GetPlane() != summonCity.Plane && game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
+                    game.Events <- &GameEventNotice{Message: "Your unit cannot planar travel to this location"}
+                    return false
+                }
+
                return true
             }
             after := func (unit units.StackUnit) bool {
-                // FIXME: make a helper function which makes sure tile are not overcrowed
-                fortressCity := player.FindSummoningCity()
-                if fortressCity != nil {
-                    unit.SetX(fortressCity.X)
-                    unit.SetY(fortressCity.Y)
+                summonCity := player.FindSummoningCity()
+                if summonCity != nil {
+                    unit.SetX(summonCity.X)
+                    unit.SetY(summonCity.Y)
                 }
+
+                // FIXME: maybe relocate
+
+                unit.SetBusy(units.BusyStatusNone)
 
                 return true
             }
