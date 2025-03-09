@@ -9,6 +9,14 @@ import (
 var ScaleAmount = 3.0
 var ScaledGeom ebiten.GeoM
 
+type UnscaledGeoM ebiten.GeoM
+
+func (unscaled *UnscaledGeoM) Scaled() ebiten.GeoM {
+    var scaled ebiten.GeoM = ebiten.GeoM(*unscaled)
+    scaled.Scale(ScaleAmount, ScaleAmount)
+    return scaled
+}
+
 type Number interface {
     constraints.Integer | constraints.Float
 }

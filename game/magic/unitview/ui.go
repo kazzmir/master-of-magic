@@ -11,6 +11,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -152,33 +153,33 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
+            options.GeoM.Translate(31, 6)
             options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(background, &options)
+            screen.DrawImage(background, scale.ScaleOptions(options))
 
-            options.GeoM.Translate(float64(25 * data.ScreenScale), float64(30 * data.ScreenScale))
+            options.GeoM.Translate(25, 30)
             portaitUnit, ok := unit.(PortraitUnit)
             if ok {
                 lbxFile, index := portaitUnit.GetPortraitLbxInfo()
                 portait, err := imageCache.GetImage(lbxFile, index, 0)
                 if err == nil {
-                    options.GeoM.Translate(0, float64(-7 * data.ScreenScale))
+                    options.GeoM.Translate(0, -7)
                     options.GeoM.Translate(float64(-portait.Bounds().Dx()/2), float64(-portait.Bounds().Dy()/2))
-                    screen.DrawImage(portait, &options)
+                    screen.DrawImage(portait, scale.ScaleOptions(options))
                 }
             } else {
                 RenderUnitViewImage(screen, &imageCache, unit, options, false, ui.Counter)
             }
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
-            options.GeoM.Translate(float64(51 * data.ScreenScale), float64(6 * data.ScreenScale))
+            options.GeoM.Translate(31, 6)
+            options.GeoM.Translate(51, 6)
 
             RenderUnitInfoNormal(screen, &imageCache, unit, unit.GetTitle(), "", descriptionFont, smallFont, options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
-            options.GeoM.Translate(float64(10 * data.ScreenScale), float64(50 * data.ScreenScale))
+            options.GeoM.Translate(31, 6)
+            options.GeoM.Translate(10, 50)
             RenderUnitInfoStats(screen, &imageCache, unit, 15, descriptionFont, smallFont, options)
 
             /*
@@ -188,22 +189,22 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
         },
     })
 
-    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, mediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false, 0, true))
+    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, mediumFont, 40, 114, &ui.Counter, 1, &getAlpha, false, 0, true))
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             box, _ := imageCache.GetImage("unitview.lbx", 2, 0)
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(248 * data.ScreenScale), float64(139 * data.ScreenScale))
+            options.GeoM.Translate(248, 139)
             options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(box, &options)
+            screen.DrawImage(box, scale.ScaleOptions(options))
         },
     })
 
     buttonBackgrounds, _ := imageCache.GetImages("backgrnd.lbx", 24)
     // dismiss button
-    cancelRect := util.ImageRect(257 * data.ScreenScale, 149 * data.ScreenScale, buttonBackgrounds[0])
+    cancelRect := util.ImageRect(257, 149, buttonBackgrounds[0])
     cancelIndex := 0
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
@@ -231,15 +232,15 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
             options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(buttonBackgrounds[cancelIndex], &options)
+            screen.DrawImage(buttonBackgrounds[cancelIndex], scale.ScaleOptions(options))
 
             x := float64(cancelRect.Min.X + cancelRect.Max.X) / 2
             y := float64(cancelRect.Min.Y + cancelRect.Max.Y) / 2
-            okDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Dismiss")
+            okDismissFont.PrintOptions2(screen, x, y - 5, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Dismiss")
         },
     })
 
-    okRect := util.ImageRect(257 * data.ScreenScale, 169 * data.ScreenScale, buttonBackgrounds[0])
+    okRect := util.ImageRect(257, 169, buttonBackgrounds[0])
     okIndex := 0
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
@@ -258,11 +259,11 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(okRect.Min.X), float64(okRect.Min.Y))
             options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(buttonBackgrounds[okIndex], &options)
+            screen.DrawImage(buttonBackgrounds[okIndex], scale.ScaleOptions(options))
 
             x := float64(okRect.Min.X + okRect.Max.X) / 2
             y := float64(okRect.Min.Y + okRect.Max.Y) / 2
-            okDismissFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Ok")
+            okDismissFont.PrintOptions2(screen, x, y - 5, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Ok")
         },
     })
 

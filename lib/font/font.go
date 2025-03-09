@@ -29,6 +29,7 @@ type FontOptions struct {
     ShadowColor color.Color
     // if nil then the default options are used (no scaling, no color scaling)
     Options *ebiten.DrawImageOptions
+    Scale float64
 }
 
 type Font struct {
@@ -289,8 +290,12 @@ func (font *Font) PrintOptions2(image *ebiten.Image, x float64, y float64, optio
         useOptions = &ebiten.DrawImageOptions{}
     }
 
-    useX, useY := useOptions.GeoM.Apply(x, y)
-    scale, _ := useOptions.GeoM.Apply(1, 1)
+    scale := options.Scale
+    if scale == 0 {
+        scale = 1
+    }
+
+    useX, useY := x * options.Scale, y * options.Scale
 
     switch options.Justify {
         case FontJustifyLeft:

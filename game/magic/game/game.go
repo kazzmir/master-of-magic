@@ -6078,7 +6078,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         elements = append(elements, &uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 if !minMoves.IsZero() {
-                    game.Fonts.WhiteFont.PrintOptions2(screen, 246, 167, font.FontOptions{DropShadow: true, Options: scale.DefaultScaleOptions()}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
+                    game.Fonts.WhiteFont.PrintOptions2(screen, 246, 167, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
 
                     sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
                     swimmingIcon, _ := game.ImageCache.GetImage("main.lbx", 19, 0)
@@ -6207,13 +6207,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.Fonts.WhiteFont.PrintOptions2(screen, 276, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Options: scale.DefaultScaleOptions()}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.Fonts.WhiteFont.PrintOptions2(screen, 276, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v GP", game.Players[0].Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.Fonts.WhiteFont.PrintOptions2(screen, 313, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Options: scale.DefaultScaleOptions()}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.Fonts.WhiteFont.PrintOptions2(screen, 313, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v MP", game.Players[0].Mana))
         },
     })
 
@@ -7593,6 +7593,7 @@ func (overworld *Overworld) DrawMinimap(screen *ebiten.Image){
     overworld.Map.DrawMinimap(screen, overworld.CitiesMiniMap, overworld.Camera.GetX(), overworld.Camera.GetY(), overworld.Camera.GetZoom(), overworld.Fog, overworld.Counter, true)
 }
 
+// FIXME: pass in an UnscaledGeom here
 func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM){
 
     screen.Fill(color.RGBA{R: 32, G: 32, B: 32, A: 0xff})
@@ -7602,9 +7603,9 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
     geom.Translate(-overworld.Camera.GetZoomedX() * float64(tileWidth), -overworld.Camera.GetZoomedY() * float64(tileHeight))
     geom.Scale(overworld.Camera.GetAnimatedZoom(), overworld.Camera.GetAnimatedZoom())
-    geom.Concat(scale.ScaledGeom)
+    // geom.Concat(scale.ScaledGeom)
 
-    overworld.Map.DrawLayer1(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, geom)
+    overworld.Map.DrawLayer1(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, scale.ScaleGeom(geom))
 
     convertTileCoordinates := func(x int, y int) (int, int) {
         outX := x * tileWidth
@@ -7634,7 +7635,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             // then move the city image so that the center of the image is at the center of the tile
             options.GeoM.Translate(float64(-cityPic.Bounds().Dx()) / 2.0, float64(-cityPic.Bounds().Dy()) / 2.0)
             options.GeoM.Concat(geom)
-            screen.DrawImage(cityPic, &options)
+            screen.DrawImage(cityPic, scale.ScaleOptions(options))
 
             /*
             tx, ty := geom.Apply(float64(x), float64(y))
@@ -7689,7 +7690,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
             unitBack, err := units.GetUnitBackgroundImage(leader.GetBanner(), overworld.ImageCache)
             if err == nil {
-                screen.DrawImage(unitBack, &options)
+                screen.DrawImage(unitBack, scale.ScaleOptions(options))
             }
 
             pic, err := GetUnitImage(leader, overworld.ImageCache, leader.GetBanner())
@@ -7700,26 +7701,26 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
                 if leader.GetBusy() != units.BusyStatusNone {
                     var patrolOptions colorm.DrawImageOptions
                     var matrix colorm.ColorM
-                    patrolOptions.GeoM = options.GeoM
+                    patrolOptions.GeoM = scale.ScaleGeom(options.GeoM)
                     matrix.ChangeHSV(0, 0, 1)
                     colorm.DrawImage(screen, pic, matrix, &patrolOptions)
                 } else {
-                    screen.DrawImage(pic, &options)
+                    screen.DrawImage(pic, scale.ScaleOptions(options))
                 }
 
                 enchantment := util.First(leader.GetEnchantments(), data.UnitEnchantmentNone)
                 if enchantment != data.UnitEnchantmentNone {
-                    util.DrawOutline(screen, overworld.ImageCache, pic, options.GeoM, options.ColorScale, overworld.Counter/8, enchantment.Color())
+                    util.DrawOutline(screen, overworld.ImageCache, pic, scale.ScaleGeom(options.GeoM), options.ColorScale, overworld.Counter/8, enchantment.Color())
                 }
             }
 
         }
     }
 
-    overworld.Map.DrawLayer2(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, geom)
+    overworld.Map.DrawLayer2(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, scale.ScaleGeom(geom))
 
     if overworld.Fog != nil {
-        overworld.DrawFog(screen, geom)
+        overworld.DrawFog(screen, scale.ScaleGeom(geom))
     }
 
     // draw current path on top of fog
@@ -7736,7 +7737,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             v := float32(1 + (math.Sin(float64(overworld.Counter * 4 + uint64(pointI) * 60) * math.Pi / 180) / 2 + 0.5) / 2)
             options.ColorScale.Scale(v, v, v, 1)
 
-            screen.DrawImage(boot, &options)
+            screen.DrawImage(boot, scale.ScaleOptions(options))
         }
     }
 
