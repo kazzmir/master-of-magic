@@ -2032,7 +2032,7 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
         height := 34
         yPos := 24 + i * height
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(160 * data.ScreenScale, yPos * data.ScreenScale, 320 * data.ScreenScale, (yPos + height) * data.ScreenScale),
+            Rect: image.Rect(160, yPos, 320, (yPos + height)),
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 // vector.StrokeRect(window, 160, float32(yPos), 160, float32(height), 1, color.RGBA{R: 0xff, G: uint8(i * 20), B: uint8(i * 20), A: 0xff}, true)
             },
@@ -2062,25 +2062,25 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
 
             var options ebiten.DrawImageOptions
             background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
-            window.DrawImage(background, &options)
+            window.DrawImage(background, scale.ScaleOptions(options))
 
-            options.GeoM.Translate(float64(portraitX * data.ScreenScale), float64(portraitY * data.ScreenScale))
+            options.GeoM.Translate(float64(portraitX), float64(portraitY))
             portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
-            window.DrawImage(portrait, &options)
-            screen.Font.PrintCenter(window, float64(nameX * data.ScreenScale), float64(nameY * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, screen.CustomWizard.Name)
+            window.DrawImage(portrait, scale.ScaleOptions(options))
+            screen.Font.PrintOptions2(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(34 * data.ScreenScale), float64(135 * data.ScreenScale))
+            options.GeoM.Translate(34, 135)
             draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(158 * data.ScreenScale), 0)
+            options.GeoM.Translate(158, 0)
             bannerBackground, _ := screen.ImageCache.GetImage("newgame.lbx", 46, 0)
-            window.DrawImage(bannerBackground, &options)
+            window.DrawImage(bannerBackground, scale.ScaleOptions(options))
 
-            screen.SelectFont.PrintCenter(window, float64(245 * data.ScreenScale), float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Select Banner")
+            screen.SelectFont.PrintOptions2(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Banner")
 
-            screen.AbilityFontSelected.Print(window, float64(12 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, JoinAbilities(screen.CustomWizard.Retorts))
+            screen.AbilityFontSelected.PrintOptions2(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
