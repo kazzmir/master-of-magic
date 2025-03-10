@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
 
@@ -271,7 +272,7 @@ func (summon *Summon) Update() SummonState {
 
     if summon.Counter % 2 == 0 {
         if summon.SummonHeight < summon.SummonPic.Bounds().Dy() {
-            summon.SummonHeight += 1 * data.ScreenScale
+            summon.SummonHeight += 1
         }
     }
 
@@ -286,8 +287,8 @@ func (summon *Summon) Draw(screen *ebiten.Image){
 
     // background, _ := summon.ImageCache.GetImage("spellscr.lbx", 9, 0)
     var options ebiten.DrawImageOptions
-    options.GeoM.Translate(float64(30 * data.ScreenScale), float64(40 * data.ScreenScale))
-    screen.DrawImage(summon.Background, &options)
+    options.GeoM.Translate(float64(30), float64(40))
+    scale.DrawScaled(screen, summon.Background, &options)
 
     wizardIndex := 46
     switch summon.Wizard {
@@ -308,24 +309,24 @@ func (summon *Summon) Draw(screen *ebiten.Image){
     }
 
     circleOptions := options
-    circleOptions.GeoM.Translate(float64(53 * data.ScreenScale), float64(54 * data.ScreenScale))
-    screen.DrawImage(summon.CircleBack.Frame(), &circleOptions)
+    circleOptions.GeoM.Translate(float64(53), float64(54))
+    scale.DrawScaled(screen, summon.CircleBack.Frame(), &circleOptions)
 
     wizard, _ := summon.ImageCache.GetImage("spellscr.lbx", wizardIndex, 0)
     wizardOptions := options
-    wizardOptions.GeoM.Translate(float64(7 * data.ScreenScale), float64(3 * data.ScreenScale))
-    screen.DrawImage(wizard, &wizardOptions)
+    wizardOptions.GeoM.Translate(float64(7), float64(3))
+    scale.DrawScaled(screen, wizard, &wizardOptions)
 
     monster := summon.SummonPic
     monsterOptions := options
-    monsterOptions.GeoM.Translate(float64(75 * data.ScreenScale), float64((30 + 70) * data.ScreenScale) - float64(summon.SummonHeight))
+    monsterOptions.GeoM.Translate(float64(75), float64((30 + 70)) - float64(summon.SummonHeight))
     partialMonster := monster.SubImage(image.Rect(0, 0, monster.Bounds().Dx(), summon.SummonHeight)).(*ebiten.Image)
-    screen.DrawImage(partialMonster, &monsterOptions)
+    scale.DrawScaled(screen, partialMonster, &monsterOptions)
 
-    circleOptions.GeoM.Translate(float64(11 * data.ScreenScale), float64(26 * data.ScreenScale))
+    circleOptions.GeoM.Translate(float64(11), float64(26))
     circleOptions.ColorScale.ScaleAlpha(1.0)
-    screen.DrawImage(summon.CircleFront.Frame(), &circleOptions)
+    scale.DrawScaled(screen, summon.CircleFront.Frame(), &circleOptions)
 
-    x, y := options.GeoM.Apply(float64(summon.Background.Bounds().Dx())/2, float64(summon.Background.Bounds().Dy() - 18 * data.ScreenScale))
-    summon.Font.PrintCenter(screen, x, y, float64(data.ScreenScale), options.ColorScale, summon.Title)
+    x, y := options.GeoM.Apply(float64(summon.Background.Bounds().Dx())/2, float64(summon.Background.Bounds().Dy() - 18))
+    summon.Font.PrintCenter(screen, x, y, scale.ScaleAmount, options.ColorScale, summon.Title)
 }

@@ -2187,6 +2187,8 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
 
     // settings
     elements = append(elements, makeButton(12, 172, 171, func(){
+        // disable for now
+        /*
         ui.RemoveElements(elements)
 
         game.MakeSettingsUI(&imageCache, ui, &background, func(){
@@ -2194,6 +2196,7 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
             // re-enter the game menu
             game.Events <- &GameEventGameMenu{}
         })
+        */
     }))
 
     // ok
