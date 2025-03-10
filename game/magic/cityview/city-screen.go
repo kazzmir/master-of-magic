@@ -564,7 +564,7 @@ func makeCityScapeElement(cache *lbx.LbxCache, group *uilib.UIElementGroup, city
             return nil, err
         }
 
-        rawImageCache[index] = imageCache.ApplyScale(util.AutoCrop(images[0]))
+        rawImageCache[index] = util.AutoCrop(images[0])
 
         return images[0], nil
     }
@@ -630,7 +630,10 @@ func makeCityScapeElement(cache *lbx.LbxCache, group *uilib.UIElementGroup, city
                         pixelX := x - x1
                         pixelY := y - y1
 
-                        _, _, _, a := pic.At(pixelX, pixelY).RGBA()
+                        // log.Printf("look x=%v y=%v inside %v %v,%v,%v,%v at %v,%v", x, y, buildingName, x1, y1, x2, y2, pixelX, pixelY)
+
+                        _, _, _, a := pic.At(pic.Bounds().Min.X + pixelX, pic.Bounds().Min.Y + pixelY).RGBA()
+                        // log.Printf("  pixel value %v", pic.At(pixelX, pixelY))
                         if a > 0 {
                             buildingLook = slot.Building
                             // log.Printf("look at building %v (%v,%v) in (%v,%v,%v,%v)", slot.Building, useX, useY, x1, y1, x2, y2)
