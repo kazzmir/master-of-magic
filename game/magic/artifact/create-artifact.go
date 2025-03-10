@@ -854,7 +854,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
             artifactTypes := compatibilities[power]
             if artifactTypes.Contains(artifact.Type) && magicLevel.MagicLevel(power.Magic) >= power.Amount {
                 totalItems += 1
-                xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, float64(data.ScreenScale))), y + fonts.PowerFont.Height() * data.ScreenScale)
+                xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, 1)), y + fonts.PowerFont.Height())
                 elements = append(elements, &uilib.UIElement{
                     Rect: xRect,
                     PlaySoundLeftClick: inBounds(xRect),
