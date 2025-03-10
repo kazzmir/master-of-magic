@@ -1,6 +1,5 @@
 package data
 
-var ScreenScale = 1
 const ScreenWidth = 320
 const ScreenHeight = 200
 var ScreenScaleAlgorithm = ScaleAlgorithmNormal

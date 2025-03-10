@@ -2071,9 +2071,11 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, back
             Rect: util.ImageRect(20, 40, resolutionBackground),
             LeftClick: func(element *uilib.UIElement){
                 selected := func(name string, scale int, algorithm data.ScaleAlgorithm) string {
+                    /*
                     if data.ScreenScale == scale && data.ScreenScaleAlgorithm == algorithm {
                         return name + "*"
                     }
+                    */
                     return name
                 }
 
