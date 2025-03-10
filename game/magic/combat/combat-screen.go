@@ -2379,7 +2379,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     combat.UpdateAnimations()
 
     // hudY := data.ScreenHeightOriginal - hudImage.Bounds().Dy()
-    hudY := (data.ScreenHeightOriginal - hudImage.Bounds().Dy())
+    hudY := (data.ScreenHeight - hudImage.Bounds().Dy())
 
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)

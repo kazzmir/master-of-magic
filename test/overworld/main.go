@@ -4719,7 +4719,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return scale.Scale2(data.ScreenWidthOriginal, data.ScreenHeightOriginal)
+    return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
 func main(){
