@@ -790,7 +790,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return scale.Scale2(data.ScreenWidthOriginal, data.ScreenHeightOriginal)
+    return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
 func main(){
@@ -812,7 +812,7 @@ func main(){
 
     monitorWidth, _ := ebiten.Monitor().Size()
     size := monitorWidth / 390
-    ebiten.SetWindowSize(data.ScreenWidth / int(data.ScreenScale2) * size, data.ScreenHeight / int(data.ScreenScale2) * size)
+    ebiten.SetWindowSize(data.ScreenWidth * size, data.ScreenHeight * size)
 
     ebiten.SetWindowTitle("combat screen")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)

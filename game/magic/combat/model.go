@@ -18,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 
@@ -346,12 +347,11 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         tiles[TownCenterY-1][TownCenterX].ExtraObject = TileTop{
             Drawer: func(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64) {
                 base, _ := imageCache.GetImageTransform("chriver.lbx", 32, 0, "crop", util.AutoCrop)
-                screen.DrawImage(base, options)
+                scale.DrawScaled(screen, base, options)
 
                 top, _ := imageCache.GetImage("chriver.lbx", 24 + int((counter / 4) % 8), 0)
                 options.GeoM.Translate(float64(16 * data.ScreenScale), float64(-3 * data.ScreenScale))
-                screen.DrawImage(top, options)
-
+                scale.DrawScaled(screen, top, options)
             },
         }
     }
