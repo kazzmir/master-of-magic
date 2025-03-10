@@ -1033,7 +1033,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
             showRect.Max.X = showRect.Min.X + int((float64(conveyor.Bounds().Dx()) * float64(amount) / float64(maximum)))
             area := screen.SubImage(scale.ScaleRect(showRect)).(*ebiten.Image)
 
-            motion := (group.Counter) % uint64(conveyor.Bounds().Dx())
+            motion := (group.Counter / 2) % uint64(conveyor.Bounds().Dx())
 
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
