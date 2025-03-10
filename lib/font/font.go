@@ -239,7 +239,10 @@ func (font *Font) PrintDropShadow(destination *ebiten.Image, x float64, y float6
 
 // print the text with no border/outline
 func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
-    font.doPrint(image, x, y, scale, colorScale, false, color.Black, text)
+    var options ebiten.DrawImageOptions
+    options.ColorScale = colorScale
+    font.PrintOptions2(image, x, y, FontOptions{Scale: scale, Options: &options}, text)
+    // font.doPrint(image, x, y, scale, colorScale, false, color.Black, text)
 }
 
 func (font *Font) MeasureTextWidth(text string, scale float64) float64 {
@@ -263,16 +266,31 @@ func (font *Font) MeasureTextWidth(text string, scale float64) float64 {
 }
 
 func (font *Font) PrintCenter(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
+    var options ebiten.DrawImageOptions
+    options.ColorScale = colorScale
+    font.PrintOptions2(image, x, y, FontOptions{Justify: FontJustifyCenter, Scale: scale, Options: &options}, text)
+    /*
     width := font.MeasureTextWidth(text, scale)
     font.Print(image, x - width / 2, y, scale, colorScale, text)
+    */
 }
 
 func (font *Font) PrintRight(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
+    var options ebiten.DrawImageOptions
+    options.ColorScale = colorScale
+    font.PrintOptions2(image, x, y, FontOptions{Justify: FontJustifyRight, Scale: scale, Options: &options}, text)
+    /*
     width := font.MeasureTextWidth(text, scale)
     font.Print(image, x - width, y, scale, colorScale, text)
+    */
 }
 
 func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, options FontOptions, text string) {
+    var drawOptions ebiten.DrawImageOptions
+    drawOptions.ColorScale = colorScale
+    options.Options = &drawOptions
+    font.PrintOptions2(image, x, y, options, text)
+    /*
     useX := x
     useY := y
 
@@ -291,6 +309,7 @@ func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, scale 
     } else {
         font.doPrint(image, useX, useY, scale, colorScale, false, options.ShadowColor, text)
     }
+    */
 }
 
 func (font *Font) PrintOptions2(image *ebiten.Image, x float64, y float64, options FontOptions, text string) {
