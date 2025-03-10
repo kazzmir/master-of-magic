@@ -126,7 +126,7 @@ func (road *ExtraRoad) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCa
             pics, err := imageCache.GetImages("mapback.lbx", baseIndex + index)
             if err == nil {
                 pic := pics[counter % uint64(len(pics))]
-                screen.DrawImage(pic, options)
+                scale.DrawScaled(screen, pic, options)
             }
 
             connected = true
@@ -137,7 +137,7 @@ func (road *ExtraRoad) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCa
         pics, err := imageCache.GetImages("mapback.lbx", baseIndex)
         if err == nil {
             pic := pics[counter % uint64(len(pics))]
-            screen.DrawImage(pic, options)
+            scale.DrawScaled(screen, pic, options)
         }
     }
 }
@@ -159,7 +159,7 @@ func (bonus *ExtraBonus) DrawLayer1(screen *ebiten.Image, imageCache *util.Image
 
     pic, err := imageCache.GetImage("mapback.lbx", index, 0)
     if err == nil {
-        screen.DrawImage(pic, options)
+        scale.DrawScaled(screen, pic, options)
     }
 }
 
@@ -355,7 +355,7 @@ func (extra *ExtraEncounter) DrawLayer1(screen *ebiten.Image, imageCache *util.I
 
     pic, err := imageCache.GetImage("mapback.lbx", index, 0)
     if err == nil {
-        screen.DrawImage(pic, options)
+        scale.DrawScaled(screen, pic, options)
     }
 }
 
@@ -371,7 +371,7 @@ func (extra *ExtraOpenTower) DrawLayer1(screen *ebiten.Image, imageCache *util.I
 
     pic, err := imageCache.GetImage("mapback.lbx", index, 0)
     if err == nil {
-        screen.DrawImage(pic, options)
+        scale.DrawScaled(screen, pic, options)
     }
 }
 
@@ -422,7 +422,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
             options2.GeoM.Reset()
             options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
             options2.GeoM.Concat(options.GeoM)
-            screen.DrawImage(use, &options2)
+            scale.DrawScaled(screen, use, &options2)
         }
     }
 
@@ -450,7 +450,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
             return
         }
         rect := image.Rect(int(x1), int(y1), int(x2), int(y2))
-        image := screen.SubImage(rect)
+        image := screen.SubImage(scale.ScaleRect(rect))
         if image.Bounds().Dx() == 0 || image.Bounds().Dy() == 0 {
             return
         }
@@ -466,6 +466,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
         // log.Printf("warp at %v, %v bounds image=%v source=%v", point.X, point.Y, image.Bounds(), sourceImage.Bounds())
 
         var options2 ebiten.DrawRectShaderOptions
+        options2.GeoM.Concat(scale.ScaledGeom)
         options2.GeoM.Translate(x1, y1)
 
         options2.Images[0] = sourceImage
@@ -539,7 +540,7 @@ type ExtraCorruption struct {
 func (node *ExtraCorruption) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
     pic, err := imageCache.GetImage("mapback.lbx", 77, 0)
     if err == nil {
-        screen.DrawImage(pic, options)
+        scale.DrawScaled(screen, pic, options)
     }
 }
 
@@ -1822,7 +1823,7 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
                 options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
                 options.GeoM.Concat(geom)
 
-                screen.DrawImage(tileImage, &options)
+                scale.DrawScaled(screen, tileImage, &options)
 
                 for _, extraKind := range ExtraDrawOrder {
                     extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)][extraKind]

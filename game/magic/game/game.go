@@ -5822,7 +5822,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             scale.DrawScaled(screen, weapon, &weaponOptions)
                         }
 
-                        useGeom := scale.ScaleGeom(options.GeoM)
+                        useGeom := options.GeoM
 
                         // draw a G on the unit if they are moving, P if purify, and B if building road
                         if unit.GetBusy() == units.BusyStatusBuildRoad {
@@ -7618,7 +7618,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     geom.Scale(overworld.Camera.GetAnimatedZoom(), overworld.Camera.GetAnimatedZoom())
     // geom.Concat(scale.ScaledGeom)
 
-    overworld.Map.DrawLayer1(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, scale.ScaleGeom(geom))
+    overworld.Map.DrawLayer1(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
     convertTileCoordinates := func(x int, y int) (int, int) {
         outX := x * tileWidth
@@ -7730,7 +7730,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         }
     }
 
-    overworld.Map.DrawLayer2(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, scale.ScaleGeom(geom))
+    overworld.Map.DrawLayer2(overworld.Camera, overworld.Counter / 8, overworld.ImageCache, screen, geom)
 
     if overworld.Fog != nil {
         overworld.DrawFog(screen, geom)
