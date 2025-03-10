@@ -4154,7 +4154,7 @@ func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *map
     if animated {
         rotateIndexLow := 247
         rotateIndexHigh := 254
-        animation = util.MakePaletteRotateAnimation(reloadLbx, &game.ImageCache, lairIndex, rotateIndexLow, rotateIndexHigh)
+        animation = util.MakePaletteRotateAnimation(reloadLbx, lairIndex, rotateIndexLow, rotateIndexHigh)
     }
 
     game.Music.PushSong(music.SongSiteDiscovery)

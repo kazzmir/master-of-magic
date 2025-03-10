@@ -185,7 +185,7 @@ func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, extra str
 
     var out []*ebiten.Image
     for i := 0; i < len(sprites); i++ {
-        out = append(out, ebiten.NewImageFromImage(cache.ApplyScale(transform(sprites[i]))))
+        out = append(out, ebiten.NewImageFromImage(transform(sprites[i])))
     }
 
     cache.Cache[key] = out

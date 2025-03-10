@@ -1316,7 +1316,7 @@ func (mapObject *Map) ResetCache() {
     mapObject.TileCache = make(map[int]*ebiten.Image)
 }
 
-func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64, scaler util.Scaler) (*ebiten.Image, error) {
+func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64) (*ebiten.Image, error) {
     tile := mapObject.Map.Terrain[tileX][tileY]
     tileInfo := mapObject.Data.Tiles[tile]
 
@@ -1326,7 +1326,7 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
         return image, nil
     }
 
-    gpuImage := ebiten.NewImageFromImage(scaler.ApplyScale(tileInfo.Images[animationCounter % uint64(len(tileInfo.Images))]))
+    gpuImage := ebiten.NewImageFromImage(tileInfo.Images[animationCounter % uint64(len(tileInfo.Images))])
 
     mapObject.TileCache[tile * 0x1000 + int(animationIndex)] = gpuImage
     return gpuImage, nil
@@ -1813,7 +1813,7 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
                 continue
             }
 
-            tileImage, err := mapObject.GetTileImage(tileX, tileY, animationCounter, imageCache)
+            tileImage, err := mapObject.GetTileImage(tileX, tileY, animationCounter)
             if err == nil {
                 options.GeoM.Reset()
                 // options.GeoM = geom

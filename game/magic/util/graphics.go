@@ -219,7 +219,7 @@ func MakeFadeOut(time uint64, counter *uint64) AlphaFadeFunc {
 /* create an animation by rotating the colors in a palette for a given lbx/index pair.
  * all the colors between indexLow and indexHigh will be rotated once in the animation
  */
-func MakePaletteRotateAnimation(lbxFile *lbx.LbxFile, scaler Scaler, index int, rotateIndexLow int, rotateIndexHigh int) *Animation {
+func MakePaletteRotateAnimation(lbxFile *lbx.LbxFile, index int, rotateIndexLow int, rotateIndexHigh int) *Animation {
     basePalette, err := lbxFile.GetPalette(index)
     if err != nil {
         return nil
@@ -246,7 +246,7 @@ func MakePaletteRotateAnimation(lbxFile *lbx.LbxFile, scaler Scaler, index int, 
             return nil
         }
 
-        images = append(images, ebiten.NewImageFromImage(scaler.ApplyScale(newImages[0])))
+        images = append(images, ebiten.NewImageFromImage(newImages[0]))
     }
 
     return MakeAnimation(images, true)
