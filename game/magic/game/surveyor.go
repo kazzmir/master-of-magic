@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -90,15 +91,15 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
-            screen.DrawImage(mainHud, &options)
+            scale.DrawScaled(screen, mainHud, &options)
 
             landImage, _ := game.ImageCache.GetImage("main.lbx", 57, 0)
-            options.GeoM.Translate(float64(240 * data.ScreenScale), float64(77 * data.ScreenScale))
-            screen.DrawImage(landImage, &options)
+            options.GeoM.Translate(float64(240), float64(77))
+            scale.DrawScaled(screen, landImage, &options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(240 * data.ScreenScale), float64(174 * data.ScreenScale))
-            screen.DrawImage(cancelBackground, &options)
+            options.GeoM.Translate(float64(240), float64(174))
+            scale.DrawScaled(screen, cancelBackground, &options)
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -108,10 +109,10 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
             player := game.Players[0]
 
-            game.Fonts.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", player.Gold))
-            game.Fonts.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", player.Mana))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(276), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v GP", player.Gold))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(313), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v MP", player.Mana))
 
-            fonts.SurveyorFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(81 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Surveyor")
+            fonts.SurveyorFont.PrintCenter(screen, float64(280), float64(81), scale.ScaleAmount, ebiten.ColorScale{}, "Surveyor")
 
             if selectedPoint.X >= 0 && selectedPoint.X < game.CurrentMap().Width() && selectedPoint.Y >= 0 && selectedPoint.Y < game.CurrentMap().Height() {
                 if overworld.Fog[selectedPoint.X][selectedPoint.Y] != data.FogTypeUnexplored {
@@ -119,7 +120,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                     tile := mapObject.GetTile(selectedPoint.X, selectedPoint.Y)
                     node := mapObject.GetMagicNode(selectedPoint.X, selectedPoint.Y)
 
-                    y := float64(93 * data.ScreenScale)
+                    y := float64(93)
 
                     // Terrain
                     name := tile.Name(mapObject)
@@ -130,88 +131,88 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                             case maplib.MagicNodeChaos: name = "Mountain"
                         }
                     }
-                    fonts.YellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, name)
-                    y += float64(fonts.YellowFont.Height() * data.ScreenScale)
+                    fonts.YellowFont.PrintCenter(screen, 280, y, scale.ScaleAmount, ebiten.ColorScale{}, name)
+                    y += float64(fonts.YellowFont.Height())
 
                     // Terrain bonuses
                     if tile.Corrupted() {
-                        fonts.WhiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Corruption")
-                        y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
+                        fonts.WhiteFont.PrintCenter(screen, float64(280), y, scale.ScaleAmount, ebiten.ColorScale{}, "Corruption")
+                        y += float64(fonts.WhiteFont.Height())
                     }
 
                     foodBonus := tile.FoodBonus()
                     if !foodBonus.IsZero() {
-                        fonts.WhiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v food", foodBonus.NormalString()))
-                        y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
+                        fonts.WhiteFont.PrintCenter(screen, float64(280), y, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v food", foodBonus.NormalString()))
+                        y += float64(fonts.WhiteFont.Height())
                     }
 
                     productionBonus := tile.ProductionBonus(false)
                     if productionBonus != 0 {
-                        fonts.WhiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v%% production", productionBonus))
-                        y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
+                        fonts.WhiteFont.PrintCenter(screen, float64(280), y, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("+%v%% production", productionBonus))
+                        y += float64(fonts.WhiteFont.Height())
                     }
 
                     goldBonus := tile.GoldBonus(mapObject)
                     if goldBonus != 0 {
-                        fonts.WhiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v%% gold", goldBonus))
-                        y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
+                        fonts.WhiteFont.PrintCenter(screen, float64(280), y, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("+%v%% gold", goldBonus))
+                        y += float64(fonts.WhiteFont.Height())
                     }
 
-                    y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
+                    y += float64(fonts.WhiteFont.Height())
 
                     // Bonuses
                     bonus := tile.GetBonus()
                     if bonus != data.BonusNone {
-                        fonts.YellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, bonus.String())
-                        y += float64(fonts.YellowFont.Height() * data.ScreenScale)
+                        fonts.YellowFont.PrintCenter(screen, float64(280), y, scale.ScaleAmount, ebiten.ColorScale{}, bonus.String())
+                        y += float64(fonts.YellowFont.Height())
 
                         food := bonus.FoodBonus()
                         if food != 0 {
-                            fonts.WhiteFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v food", food))
-                            y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
+                            fonts.WhiteFont.PrintWrapCenter(screen, float64(280), y, float64(cancelBackground.Bounds().Dx() - 5), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("+%v food", food))
+                            y += float64(fonts.WhiteFont.Height())
                         }
 
                         gold := bonus.GoldBonus()
                         if gold != 0 {
-                            fonts.WhiteFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v gold", gold))
-                            y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
+                            fonts.WhiteFont.PrintWrapCenter(screen, float64(280), y, float64(cancelBackground.Bounds().Dx() - 5), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("+%v gold", gold))
+                            y += float64(fonts.WhiteFont.Height())
                         }
 
                         power := bonus.PowerBonus()
                         if power != 0 {
-                            fonts.WhiteFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v power", power))
-                            y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
+                            fonts.WhiteFont.PrintWrapCenter(screen, float64(280), y, float64(cancelBackground.Bounds().Dx() - 5), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("+%v power", power))
+                            y += float64(fonts.WhiteFont.Height())
                         }
 
                         reduction := bonus.UnitReductionBonus()
                         if reduction != 0 {
-                            fonts.WhiteFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Reduces normal unit cost by %v%%", reduction))
-                            y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
+                            fonts.WhiteFont.PrintWrapCenter(screen, float64(280), y, float64(cancelBackground.Bounds().Dx() - 5), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("Reduces normal unit cost by %v%%", reduction))
+                            y += float64(fonts.WhiteFont.Height())
                         }
                     }
 
                     // Nodes
                     if node != nil {
-                        fonts.YellowFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, node.Kind.Name())
-                        y += float64(fonts.YellowFont.Height() * data.ScreenScale)
+                        fonts.YellowFont.PrintWrapCenter(screen, float64(280), y, float64(cancelBackground.Bounds().Dx() - 5), scale.ScaleAmount, ebiten.ColorScale{}, node.Kind.Name())
+                        y += float64(fonts.YellowFont.Height())
 
                         if node.Warped {
-                            fonts.WhiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Warped")
-                            y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
+                            fonts.WhiteFont.PrintCenter(screen, float64(280), y, scale.ScaleAmount, ebiten.ColorScale{}, "Warped")
+                            y += float64(fonts.WhiteFont.Height())
                         } else if node.MeldingWizard != nil && node.GuardianSpiritMeld {
-                            fonts.WhiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Guardian Spirit")
-                            y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
+                            fonts.WhiteFont.PrintCenter(screen, float64(280), y, scale.ScaleAmount, ebiten.ColorScale{}, "Guardian Spirit")
+                            y += float64(fonts.WhiteFont.Height())
                         } else if node.MeldingWizard != nil {
-                            fonts.WhiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Magic Spirit")
-                            y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
+                            fonts.WhiteFont.PrintCenter(screen, float64(280), y, scale.ScaleAmount, ebiten.ColorScale{}, "Magic Spirit")
+                            y += float64(fonts.WhiteFont.Height())
                         }
                     }
 
                     // Lairs
                     encounter := mapObject.GetEncounter(selectedPoint.X, selectedPoint.Y)
                     if encounter != nil && encounter.Type != maplib.EncounterTypeChaosNode && encounter.Type != maplib.EncounterTypeNatureNode && encounter.Type != maplib.EncounterTypeSorceryNode {
-                        fonts.YellowFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, encounter.Type.Name())
-                        y += float64(fonts.YellowFont.Height() * data.ScreenScale)
+                        fonts.YellowFont.PrintCenter(screen, float64(280), y, scale.ScaleAmount, ebiten.ColorScale{}, encounter.Type.Name())
+                        y += float64(fonts.YellowFont.Height())
                     }
 
                     // Enemies
@@ -223,34 +224,34 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                                 text = encounter.Units[0].Name
                             }
                         }
-                        fonts.WhiteFont.PrintCenter(screen, float64(280 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, text)
-                        y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
+                        fonts.WhiteFont.PrintCenter(screen, float64(280), y, scale.ScaleAmount, ebiten.ColorScale{}, text)
+                        y += float64(fonts.WhiteFont.Height())
                     }
 
                     // FIXME: how should this behave for different fog types?
                     if cityMap[selectedPoint] != nil {
                         city := cityMap[selectedPoint]
-                        fonts.YellowFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), y, float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, city.String())
+                        fonts.YellowFont.PrintWrapCenter(screen, float64(280), y, float64(cancelBackground.Bounds().Dx() - 5), scale.ScaleAmount, ebiten.ColorScale{}, city.String())
                     }
 
-                    y = float64(170 * data.ScreenScale) - cityInfoText.TotalHeight
+                    y = float64(170) - cityInfoText.TotalHeight
 
                     if resources.Enabled {
-                        y = float64(170 * data.ScreenScale) - float64(fonts.WhiteFont.Height() * data.ScreenScale) * 3 - cityInfoText.TotalHeight
+                        y = float64(170) - float64(fonts.WhiteFont.Height()) * 3 - cityInfoText.TotalHeight
                     }
 
-                    fonts.YellowFont.RenderWrapped(screen, float64(245 * data.ScreenScale), y, cityInfoText, ebiten.ColorScale{}, font.FontOptions{})
+                    fonts.YellowFont.RenderWrapped(screen, float64(245), y, cityInfoText, ebiten.ColorScale{}, font.FontOptions{})
                     y += cityInfoText.TotalHeight
 
                     if resources.Enabled {
-                        fonts.WhiteFont.Print(screen, float64(245 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Maximum Pop")
-                        fonts.WhiteFont.PrintRight(screen, float64(308 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", resources.MaximumPopulation))
-                        y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
-                        fonts.WhiteFont.Print(screen, float64(245 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Prod Bonus")
-                        fonts.WhiteFont.PrintRight(screen, float64(314 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v%%", resources.ProductionBonus))
-                        y += float64(fonts.WhiteFont.Height() * data.ScreenScale)
-                        fonts.WhiteFont.Print(screen, float64(245 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Gold Bonus")
-                        fonts.WhiteFont.PrintRight(screen, float64(314 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("+%v%%", resources.GoldBonus))
+                        fonts.WhiteFont.Print(screen, float64(245), y, scale.ScaleAmount, ebiten.ColorScale{}, "Maximum Pop")
+                        fonts.WhiteFont.PrintRight(screen, float64(308), y, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v", resources.MaximumPopulation))
+                        y += float64(fonts.WhiteFont.Height())
+                        fonts.WhiteFont.Print(screen, float64(245), y, scale.ScaleAmount, ebiten.ColorScale{}, "Prod Bonus")
+                        fonts.WhiteFont.PrintRight(screen, float64(314), y, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("+%v%%", resources.ProductionBonus))
+                        y += float64(fonts.WhiteFont.Height())
+                        fonts.WhiteFont.Print(screen, float64(245), y, scale.ScaleAmount, ebiten.ColorScale{}, "Gold Bonus")
+                        fonts.WhiteFont.PrintRight(screen, float64(314), y, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("+%v%%", resources.GoldBonus))
                     }
                 }
             }
@@ -262,10 +263,10 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     makeButton := func(lbxIndex int, x int, y int) *uilib.UIElement {
         button, _ := game.ImageCache.GetImage("main.lbx", lbxIndex, 0)
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x * data.ScreenScale), float64(y * data.ScreenScale))
+        options.GeoM.Translate(float64(x), float64(y))
         return &uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                screen.DrawImage(button, &options)
+                scale.DrawScaled(screen, button, &options)
             },
         }
     }
@@ -291,8 +292,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     // plane button
     ui.AddElement((func () *uilib.UIElement {
         buttons, _ := game.ImageCache.GetImages("main.lbx", 7)
-        x := 270 * data.ScreenScale
-        y := 4 * data.ScreenScale
+        x := 270
+        y := 4
 
         clicked := false
 
@@ -312,9 +313,9 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 if clicked {
-                    screen.DrawImage(buttons[1], &options)
+                    scale.DrawScaled(screen, buttons[1], &options)
                 } else {
-                    screen.DrawImage(buttons[0], &options)
+                    scale.DrawScaled(screen, buttons[0], &options)
                 }
             },
         }
@@ -325,7 +326,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     // cancel button at bottom
     cancel, _ := game.ImageCache.GetImages("main.lbx", 41)
     cancelIndex := 0
-    cancelRect := util.ImageRect(263 * data.ScreenScale, 182 * data.ScreenScale, cancel[0])
+    cancelRect := util.ImageRect(263, 182, cancel[0])
     ui.AddElement(&uilib.UIElement{
         Rect: cancelRect,
         LeftClick: func(element *uilib.UIElement){
@@ -338,7 +339,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
-            screen.DrawImage(cancel[cancelIndex], &options)
+            scale.DrawScaled(screen, cancel[cancelIndex], &options)
         },
     })
 
@@ -348,11 +349,11 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
         var miniGeom ebiten.GeoM
-        miniGeom.Translate(float64(250 * data.ScreenScale), float64(20 * data.ScreenScale))
+        miniGeom.Translate(float64(250), float64(20))
         mx, my := miniGeom.Apply(0, 0)
-        miniWidth := 60 * data.ScreenScale
-        miniHeight := 31 * data.ScreenScale
-        mini := screen.SubImage(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight)).(*ebiten.Image)
+        miniWidth := 60
+        miniHeight := 31
+        mini := screen.SubImage(scale.ScaleRect(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight))).(*ebiten.Image)
         overworld.DrawMinimap(mini)
 
         ui.Draw(ui, screen)
@@ -401,7 +402,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                     resources.GoldBonus = game.CityGoldBonus(newX, newY, game.Plane)
                 }
 
-                cityInfoText = fonts.YellowFont.CreateWrappedText(float64(cancelBackground.Bounds().Dx() - 9 * data.ScreenScale), float64(data.ScreenScale), text)
+                cityInfoText = fonts.YellowFont.CreateWrappedText(float64(cancelBackground.Bounds().Dx() - 9), 1, text)
             }
         } else {
             cityInfoText.Clear()
