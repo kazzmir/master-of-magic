@@ -2070,7 +2070,7 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, back
         elements = append(elements, &uilib.UIElement{
             Rect: util.ImageRect(20, 40, resolutionBackground),
             LeftClick: func(element *uilib.UIElement){
-                selected := func(name string, scale int, algorithm data.ScaleAlgorithm) string {
+                selected := func(name string, scale int, algorithm scale.ScaleAlgorithm) string {
                     /*
                     if data.ScreenScale == scale && data.ScreenScaleAlgorithm == algorithm {
                         return name + "*"
@@ -2079,7 +2079,7 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, back
                     return name
                 }
 
-                update := func(scale int, algorithm data.ScaleAlgorithm){
+                update := func(scale int, algorithm scale.ScaleAlgorithm){
                     /*
                     data.ScreenScale = scale
                     data.ScreenScaleAlgorithm = algorithm
@@ -2091,7 +2091,7 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, back
                     */
                 }
 
-                makeChoices := func (name string, scales []int, algorithm data.ScaleAlgorithm) []uilib.Selection {
+                makeChoices := func (name string, scales []int, algorithm scale.ScaleAlgorithm) []uilib.Selection {
                     var out []uilib.Selection
                     for _, value := range scales {
                         out = append(out, uilib.Selection{
@@ -2104,9 +2104,9 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, back
                     return out
                 }
 
-                normalChoices := makeChoices("Normal", []int{1, 2, 3, 4}, data.ScaleAlgorithmNormal)
-                scaleChoices := makeChoices("Scale", []int{2, 3, 4}, data.ScaleAlgorithmScale)
-                xbrChoices := makeChoices("XBR", []int{2, 3, 4}, data.ScaleAlgorithmXbr)
+                normalChoices := makeChoices("Normal", []int{1, 2, 3, 4}, scale.ScaleAlgorithmNormal)
+                scaleChoices := makeChoices("Scale", []int{2, 3, 4}, scale.ScaleAlgorithmScale)
+                xbrChoices := makeChoices("XBR", []int{2, 3, 4}, scale.ScaleAlgorithmXbr)
 
                 choices := append(append(normalChoices, scaleChoices...), xbrChoices...)
 
