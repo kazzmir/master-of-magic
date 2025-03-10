@@ -240,7 +240,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
                         y = float64(170) - float64(fonts.WhiteFont.Height()) * 3 - cityInfoText.TotalHeight
                     }
 
-                    fonts.YellowFont.RenderWrapped(screen, float64(245), y, cityInfoText, ebiten.ColorScale{}, font.FontOptions{})
+                    fonts.YellowFont.RenderWrapped(screen, float64(245), y, cityInfoText, ebiten.ColorScale{}, font.FontOptions{Scale: scale.ScaleAmount})
                     y += cityInfoText.TotalHeight
 
                     if resources.Enabled {
