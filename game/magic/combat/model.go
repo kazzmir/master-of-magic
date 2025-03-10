@@ -350,8 +350,14 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
                 scale.DrawScaled(screen, base, options)
 
                 top, _ := imageCache.GetImage("chriver.lbx", 24 + int((counter / 4) % 8), 0)
-                options.GeoM.Translate(float64(16), float64(-3))
+                var geom2 ebiten.GeoM
+                geom2.Translate(float64(16), float64(-3))
+                geom2.Concat(options.GeoM)
+
+                saved := options.GeoM
+                options.GeoM = geom2
                 scale.DrawScaled(screen, top, options)
+                options.GeoM = saved
             },
         }
     }

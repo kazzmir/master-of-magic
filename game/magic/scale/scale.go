@@ -45,19 +45,19 @@ type Number interface {
 }
 
 func Scale[T Number](x T) T {
-    return x * T(ScaleAmount)
+    return T(float64(x) * ScaleAmount)
 }
 
 func Scale2[T Number](x, y T) (T, T) {
-    return x * T(ScaleAmount), y * T(ScaleAmount)
+    return T(float64(x) * ScaleAmount), T(float64(y) * ScaleAmount)
 }
 
 func Unscale[T Number](x T) T {
-    return x / T(ScaleAmount)
+    return T(float64(x) / ScaleAmount)
 }
 
 func Unscale2[T Number](x, y T) (T, T) {
-    return x / T(ScaleAmount), y / T(ScaleAmount)
+    return T(float64(x) / ScaleAmount), T(float64(y) / ScaleAmount)
 }
 
 func ScaleGeom(geom ebiten.GeoM) ebiten.GeoM {

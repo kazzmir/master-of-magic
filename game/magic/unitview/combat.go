@@ -131,8 +131,6 @@ func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
         vector.DrawFilledCircle(screen, float32(x), float32(y), 1, color.RGBA{255, 0, 0, 255}, true)
         */
 
-        _ = point
-        _ = groundHeight
         // options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
         // options.GeoM.Translate(-13, -22)
         screen.DrawImage(use, &options)
