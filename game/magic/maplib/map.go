@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
     cameralib "github.com/kazzmir/master-of-magic/game/magic/camera"
@@ -1234,11 +1235,11 @@ func (mapObject *Map) Height() int {
 }
 
 func (mapObject *Map) TileWidth() int {
-    return mapObject.Data.TileWidth() * data.ScreenScale
+    return mapObject.Data.TileWidth()
 }
 
 func (mapObject *Map) TileHeight() int {
-    return mapObject.Data.TileHeight() * data.ScreenScale
+    return mapObject.Data.TileHeight()
 }
 
 func (mapObject *Map) WrapX(x int) int {
@@ -1606,8 +1607,8 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
 
     rowSize := screen.Bounds().Dx()
 
-    cameraX := centerX * data.ScreenScale - screen.Bounds().Dx() / 2
-    cameraY := centerY * data.ScreenScale - screen.Bounds().Dy() / 2
+    cameraX := scale.Scale(centerX) - screen.Bounds().Dx() / 2
+    cameraY := scale.Scale(centerY) - screen.Bounds().Dy() / 2
 
     /*
     if cameraX < 0 {
@@ -1625,8 +1626,8 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
     }
     */
 
-    if cameraY > mapObject.Map.Rows() * data.ScreenScale - screen.Bounds().Dy() {
-        cameraY = mapObject.Map.Rows() * data.ScreenScale - screen.Bounds().Dy()
+    if cameraY > scale.Scale(mapObject.Map.Rows()) - screen.Bounds().Dy() {
+        cameraY = scale.Scale(mapObject.Map.Rows()) - screen.Bounds().Dy()
     }
 
     set := func(x int, y int, c color.RGBA){
@@ -1698,8 +1699,8 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
 
     for x := 0; x < screen.Bounds().Dx(); x++ {
         for y := 0; y < screen.Bounds().Dy(); y++ {
-            tileX := mapObject.WrapX((x + cameraX) / data.ScreenScale)
-            tileY := (y + cameraY) / data.ScreenScale
+            tileX := mapObject.WrapX(scale.Unscale(x + cameraX))
+            tileY := scale.Unscale(y + cameraY)
 
             if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() || fog[tileX][tileY] == data.FogTypeUnexplored {
                 set(x, y, black)
@@ -1723,39 +1724,39 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
         }
         cursorColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: byte(cursorColorBlue), A: 180})
 
-        cursorRadius := int(float64(5.0 * data.ScreenScale) / zoom)
-        x1 := centerX * data.ScreenScale - cursorRadius - cameraX
-        y1 := centerY * data.ScreenScale - cursorRadius - cameraY
-        x2 := centerX * data.ScreenScale + cursorRadius - cameraX
+        cursorRadius := int(float64(scale.Scale(5.0)) / zoom)
+        x1 := scale.Scale(centerX) - cursorRadius - cameraX
+        y1 := scale.Scale(centerY) - cursorRadius - cameraY
+        x2 := scale.Scale(centerX) + cursorRadius - cameraX
         y2 := y1
         x3 := x1
-        y3 := centerY * data.ScreenScale + cursorRadius - cameraY
+        y3 := scale.Scale(centerY) + cursorRadius - cameraY
         x4 := x2
         y4 := y3
         points := []image.Point{
             image.Pt(x1, y1),
-            image.Pt(x1+1*data.ScreenScale, y1),
-            image.Pt(x1, y1+1*data.ScreenScale),
+            image.Pt(x1+scale.Scale(1), y1),
+            image.Pt(x1, y1+scale.Scale(1)),
 
             image.Pt(x2, y2),
-            image.Pt(x2-1*data.ScreenScale, y2),
-            image.Pt(x2, y2+1*data.ScreenScale),
+            image.Pt(x2-scale.Scale(1), y2),
+            image.Pt(x2, y2+scale.Scale(1)),
 
             image.Pt(x3, y3),
-            image.Pt(x3+1*data.ScreenScale, y3),
-            image.Pt(x3, y3-1*data.ScreenScale),
+            image.Pt(x3+scale.Scale(1), y3),
+            image.Pt(x3, y3-scale.Scale(1)),
 
             image.Pt(x4, y4),
-            image.Pt(x4-1*data.ScreenScale, y4),
-            image.Pt(x4, y4-1*data.ScreenScale),
+            image.Pt(x4-scale.Scale(1), y4),
+            image.Pt(x4, y4-scale.Scale(1)),
         }
 
         drawSquare := func(x int, y int, c color.RGBA){
-            if data.ScreenScale == 1 {
+            if scale.ScaleAmount == 1 {
                 set(x, y, cursorColor)
             } else {
-                for dx := range data.ScreenScale {
-                    for dy := range data.ScreenScale {
+                for dx := range int(scale.ScaleAmount) {
+                    for dy := range int(scale.ScaleAmount) {
                         cx := x + dx
                         cy := y + dy
 
@@ -1768,7 +1769,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
         }
 
         for _, point := range points {
-            x := mapObject.WrapX(point.X / data.ScreenScale) * data.ScreenScale
+            x := scale.Scale(mapObject.WrapX(scale.Unscale(point.X)))
             y := point.Y
 
             if x >= 0 && y >= 0 && x < screen.Bounds().Dx() && y < screen.Bounds().Dy(){
