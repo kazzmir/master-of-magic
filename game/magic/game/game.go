@@ -3078,6 +3078,8 @@ func (game *Game) RefreshUI() {
 }
 
 // returns screen coordinates in pixels of the middle of the given tile
+// warning: this does not apply the screen scaling to the coordinates so you must still use
+// scale.DrawScaled() to draw the image at the correct size/position
 func (game *Game) TileToScreen(tileX int, tileY int) (int, int) {
     tileWidth := game.CurrentMap().TileWidth()
     tileHeight := game.CurrentMap().TileHeight()
@@ -3088,7 +3090,7 @@ func (game *Game) TileToScreen(tileX int, tileY int) (int, int) {
     geom.Translate(float64(x + tileWidth / 2.0), float64(y + tileHeight / 2.0))
     geom.Translate(-game.Camera.GetZoomedX() * float64(tileWidth), -game.Camera.GetZoomedY() * float64(tileHeight))
     geom.Scale(game.Camera.GetAnimatedZoom(), game.Camera.GetAnimatedZoom())
-    geom.Concat(scale.ScaledGeom)
+    // geom.Concat(scale.ScaledGeom)
 
     outX, outY := geom.Apply(0, 0)
     return int(outX), int(outY)

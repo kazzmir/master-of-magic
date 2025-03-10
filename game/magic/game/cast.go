@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -909,15 +910,15 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
-            screen.DrawImage(mainHud, &options)
+            scale.DrawScaled(screen, mainHud, &options)
 
             landImage, _ := game.ImageCache.GetImage("main.lbx", 57, 0)
-            options.GeoM.Translate(float64(240 * data.ScreenScale), float64(77 * data.ScreenScale))
-            screen.DrawImage(landImage, &options)
+            options.GeoM.Translate(float64(240), float64(77))
+            scale.DrawScaled(screen, landImage, &options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(240 * data.ScreenScale), float64(174 * data.ScreenScale))
-            screen.DrawImage(cancelBackground, &options)
+            options.GeoM.Translate(float64(240), float64(174))
+            scale.DrawScaled(screen, cancelBackground, &options)
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -925,12 +926,12 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                 }
             })
 
-            game.Fonts.WhiteFont.PrintRight(screen, float64(276 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
-            game.Fonts.WhiteFont.PrintRight(screen, float64(313 * data.ScreenScale), float64(68 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(276), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(313), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
 
-            castingFont.PrintCenter(screen, float64(280 * data.ScreenScale), float64(81 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Casting")
+            castingFont.PrintCenter(screen, float64(280), float64(81), scale.ScaleAmount, ebiten.ColorScale{}, "Casting")
 
-            whiteFont.PrintWrapCenter(screen, float64(280 * data.ScreenScale), float64(120 * data.ScreenScale), float64(cancelBackground.Bounds().Dx() - 5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, selectMessage)
+            whiteFont.PrintWrapCenter(screen, float64(280), float64(120), float64(cancelBackground.Bounds().Dx() - 5), scale.ScaleAmount, ebiten.ColorScale{}, selectMessage)
         },
     }
 
@@ -939,10 +940,10 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     makeButton := func(lbxIndex int, x int, y int) *uilib.UIElement {
         button, _ := game.ImageCache.GetImage("main.lbx", lbxIndex, 0)
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x * data.ScreenScale), float64(y * data.ScreenScale))
+        options.GeoM.Translate(float64(x), float64(y))
         return &uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                screen.DrawImage(button, &options)
+                scale.DrawScaled(screen, button, &options)
             },
         }
     }
@@ -973,7 +974,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     // cancel button at bottom
     cancel, _ := game.ImageCache.GetImages("main.lbx", 41)
     cancelIndex := 0
-    cancelRect := util.ImageRect(263 * data.ScreenScale, 182 * data.ScreenScale, cancel[0])
+    cancelRect := util.ImageRect(263, 182, cancel[0])
     ui.AddElement(&uilib.UIElement{
         Rect: cancelRect,
         LeftClick: func(element *uilib.UIElement){
@@ -986,7 +987,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
-            screen.DrawImage(cancel[cancelIndex], &options)
+            scale.DrawScaled(screen, cancel[cancelIndex], &options)
         },
     })
 
@@ -995,11 +996,11 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
         var miniGeom ebiten.GeoM
-        miniGeom.Translate(float64(250 * data.ScreenScale), float64(20 * data.ScreenScale))
+        miniGeom.Translate(float64(250), float64(20))
         mx, my := miniGeom.Apply(0, 0)
-        miniWidth := 60 * data.ScreenScale
-        miniHeight := 31 * data.ScreenScale
-        mini := screen.SubImage(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight)).(*ebiten.Image)
+        miniWidth := 60
+        miniHeight := 31
+        mini := screen.SubImage(scale.ScaleRect(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight))).(*ebiten.Image)
         overworld.DrawMinimap(mini)
 
         ui.Draw(ui, screen)
@@ -1259,7 +1260,7 @@ func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, a
 
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
-        screen.DrawImage(animation.Frame(), &options)
+        scale.DrawScaled(screen, animation.Frame(), &options)
     }
 
     if newSound {
@@ -1572,7 +1573,7 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 
     fader := util.MakeFadeIn(uint64(fadeSpeed), &game.Counter)
 
-    offset := -35 * data.ScreenScale
+    offset := -35
 
     game.Drawer = func(screen *ebiten.Image, game *Game){
         oldDrawer(screen, game)
@@ -1580,28 +1581,28 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
         options.GeoM.Translate(float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2))
         options.GeoM.Translate(float64(offset), 0)
         options.GeoM.Translate(float64(-frame.Bounds().Dx() / 2), float64(-frame.Bounds().Dy() / 2))
-        screen.DrawImage(frame, &options)
+        scale.DrawScaled(screen, frame, &options)
 
         options.ColorScale.ScaleAlpha(fader())
 
         // first draw the wizard
         if doDraw == 0 {
             mood, _ := game.ImageCache.GetImageTransform("moodwiz.lbx", animationIndex, 2, "cutout", makeCutoutMask)
-            options.GeoM.Translate(float64(13 * data.ScreenScale), float64(13 * data.ScreenScale))
-            screen.DrawImage(mood, &options)
+            options.GeoM.Translate(float64(13), float64(13))
+            scale.DrawScaled(screen, mood, &options)
 
             text := "You have finished casting"
             if !player.IsHuman() {
                 text = fmt.Sprintf("%v has cast", player.Wizard.Name)
             }
 
-            fonts.InfoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, text)
+            fonts.InfoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), scale.ScaleAmount, options.ColorScale, text)
         } else {
             // then draw the spell image
-            options.GeoM.Translate(float64(9 * data.ScreenScale), float64(8 * data.ScreenScale))
-            screen.DrawImage(spellImage, &options)
+            options.GeoM.Translate(float64(9), float64(8))
+            scale.DrawScaled(screen, spellImage, &options)
 
-            fonts.InfoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), float64(data.ScreenScale), options.ColorScale, enchantment.String())
+            fonts.InfoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), scale.ScaleAmount, options.ColorScale, enchantment.String())
         }
 
     }
