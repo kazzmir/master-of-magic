@@ -2,6 +2,8 @@
 ![build macos](https://github.com/kazzmir/master-of-magic/actions/workflows/build-macos-m1.yml/badge.svg)
 ![build windows](https://github.com/kazzmir/master-of-magic/actions/workflows/build-windows.yml/badge.svg)
 
+[Discord Channel]https://discord.gg/xCpHBKrU9c
+
 # Master of Magic clone
 
 * Source language: golang, https://go.dev/
@@ -60,3 +62,9 @@ To hear the music you must have a midi synthesizer running separately. On linux 
 - util/ Extra utility programs for development purposes (sprite viewer, font viewer, etc)
 - data/ Put a zip file with the game data to embed the data in the final binary
 - test/ Test programs for executing small pieces of functionality at a time
+
+# Community:
+
+Join the Discord server to discuss this project 
+
+[Discord Channel]https://discord.gg/xCpHBKrU9c
