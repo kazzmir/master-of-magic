@@ -10,7 +10,7 @@ import (
 	uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/kazzmir/master-of-magic/game/magic/audio"
-	"github.com/kazzmir/master-of-magic/game/magic/data"
+	"github.com/kazzmir/master-of-magic/game/magic/scale"
 	"github.com/kazzmir/master-of-magic/game/magic/mirror"
 	"github.com/kazzmir/master-of-magic/game/magic/util"
 	"github.com/kazzmir/master-of-magic/lib/lbx"
@@ -43,8 +43,8 @@ func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache
                 background, _ := imageCache.GetImage("specfx.lbx", 40, frameToShow)
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(getAlpha())
-                options.GeoM.Translate(float64(faceRect.Min.X - 5 * data.ScreenScale), float64(faceRect.Min.Y - 10 * data.ScreenScale))
-                screen.DrawImage(background, &options)
+                options.GeoM.Translate(float64(faceRect.Min.X - 5), float64(faceRect.Min.Y - 10))
+                scale.DrawScaled(screen, background, &options)
             },
         }
     }
@@ -57,11 +57,11 @@ func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache
             background, _ := imageCache.GetImage("spellscr.lbx", 72, 0)
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            options.GeoM.Translate(float64(x * data.ScreenScale), float64(y * data.ScreenScale))
-            screen.DrawImage(background, &options)
+            options.GeoM.Translate(float64(x), float64(y))
+            scale.DrawScaled(screen, background, &options)
 
-            mx, my := options.GeoM.Apply(float64(84 * data.ScreenScale), float64(10 * data.ScreenScale))
-            fonts.BigOrange.PrintWrapCenter(screen, mx, my, 120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, header)
+            mx, my := options.GeoM.Apply(float64(84), float64(10))
+            fonts.BigOrange.PrintWrapCenter(screen, mx, my, 120, scale.ScaleAmount, options.ColorScale, header)
         },
         Order: 0,
     })
@@ -78,7 +78,7 @@ func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache
             continue
         }
         portrait, _ := imageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(target.Wizard.Base, target.Wizard.Banner), 0)
-        faceRect := util.ImageRect((x + wizardFacesOffsets[index].X) * data.ScreenScale, (y + wizardFacesOffsets[index].Y) * data.ScreenScale, portrait)
+        faceRect := util.ImageRect((x + wizardFacesOffsets[index].X), (y + wizardFacesOffsets[index].Y), portrait)
         group.AddElement(&uilib.UIElement{
             Layer: layer+1,
             Rect: faceRect,
@@ -115,9 +115,9 @@ func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache
                 options.ColorScale.ScaleAlpha(getAlpha())
                 options.GeoM.Translate(float64(faceRect.Min.X), float64(faceRect.Min.Y))
                 if target.Defeated {
-                    screen.DrawImage(brokenCrystalPicture, &options)
+                    scale.DrawScaled(screen, brokenCrystalPicture, &options)
                 } else {
-                    screen.DrawImage(portrait, &options)
+                    scale.DrawScaled(screen, portrait, &options)
                     // Draw current spell being cast
                     spellText := "None"
                     if target.CastingSpell.Valid() {
@@ -125,12 +125,12 @@ func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache
                     }
                     fonts.InfoOrange.PrintWrapCenter(
                         screen, 
-                        float64(faceRect.Min.X + faceRect.Dx()/2), float64(faceRect.Max.Y + 6 * data.ScreenScale),
-                        120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, spellText,
+                        float64(faceRect.Min.X + faceRect.Dx()/2), float64(faceRect.Max.Y + 6),
+                        120, scale.ScaleAmount, options.ColorScale, spellText,
                     )
                     // Draw current spell cost/progress
                     if currentMouseoverPlayer == target {
-                        fonts.BigOrange.PrintWrapCenter(screen, float64((x + 47) * data.ScreenScale), float64((y + 159) * data.ScreenScale), 120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%d MP", target.CastingSpellProgress))
+                        fonts.BigOrange.PrintWrapCenter(screen, float64(x + 47), float64(y + 159), 120, scale.ScaleAmount, options.ColorScale, fmt.Sprintf("%d MP", target.CastingSpellProgress))
                     }
                 }
             },
@@ -139,11 +139,11 @@ func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache
     }
     // Empty crystals
     for emptyPlaceIndex := drawnWizardFaces; emptyPlaceIndex < 4; emptyPlaceIndex++ {
-        crystalRect := util.ImageRect((x + wizardFacesOffsets[emptyPlaceIndex].X) * data.ScreenScale, (y + wizardFacesOffsets[emptyPlaceIndex].Y) * data.ScreenScale, crystalPicture)
+        crystalRect := util.ImageRect((x + wizardFacesOffsets[emptyPlaceIndex].X), (y + wizardFacesOffsets[emptyPlaceIndex].Y), crystalPicture)
         crystalToDraw := crystalPicture
         if emptyPlaceIndex > playersInGame - 1 {
             crystalToDraw = brokenCrystalPicture
-            crystalRect = crystalRect.Add(image.Point{-1 * data.ScreenScale, -1 * data.ScreenScale})
+            crystalRect = crystalRect.Add(image.Point{-1, -1})
         }
         group.AddElement(&uilib.UIElement{
             Layer: layer - 1, // That's correct, gems are behind the UI form itself (should fit into transparent windows)
@@ -152,7 +152,7 @@ func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(getAlpha())
                 options.GeoM.Translate(float64(crystalRect.Min.X), float64(crystalRect.Min.Y))
-                screen.DrawImage(crystalToDraw, &options)
+                scale.DrawScaled(screen, crystalToDraw, &options)
             },
         })
     }
@@ -160,7 +160,7 @@ func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache
     // cancel button
     cancel, _ := imageCache.GetImages("spellscr.lbx", 71)
     cancelIndex := 0
-    cancelRect := util.ImageRect((x + 83) * data.ScreenScale, (y + 155) * data.ScreenScale, cancel[0])
+    cancelRect := util.ImageRect((x + 83), (y + 155), cancel[0])
     group.AddElement(&uilib.UIElement{
         Layer: layer+1,
         Rect: cancelRect,
@@ -175,7 +175,7 @@ func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
-            screen.DrawImage(cancel[cancelIndex], &options)
+            scale.DrawScaled(screen, cancel[cancelIndex], &options)
         },
     })
 
@@ -211,8 +211,8 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
                 background, _ := imageCache.GetImage("specfx.lbx", sparksGraphicIndex, frameToShow)
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(getAlpha())
-                options.GeoM.Translate(float64(faceRect.Min.X - 8 * data.ScreenScale), float64(faceRect.Min.Y - 5 * data.ScreenScale))
-                screen.DrawImage(background, &options)
+                options.GeoM.Translate(float64(faceRect.Min.X - 8), float64(faceRect.Min.Y - 5))
+                scale.DrawScaled(screen, background, &options)
             },
         }
     }
@@ -225,11 +225,11 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
             background, _ := imageCache.GetImage("spellscr.lbx", 0, 0)
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            options.GeoM.Translate(float64(x * data.ScreenScale), float64(y * data.ScreenScale))
-            screen.DrawImage(background, &options)
+            options.GeoM.Translate(float64(x), float64(y))
+            scale.DrawScaled(screen, background, &options)
 
-            mx, my := options.GeoM.Apply(float64(84 * data.ScreenScale), float64(10 * data.ScreenScale))
-            fonts.BigOrange.PrintWrapCenter(screen, mx, my, 150. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, header)
+            mx, my := options.GeoM.Apply(float64(84), float64(10))
+            fonts.BigOrange.PrintWrapCenter(screen, mx, my, 150, scale.ScaleAmount, options.ColorScale, header)
         },
         Order: 0,
     })
@@ -246,7 +246,7 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
             continue
         }
         portrait, _ := imageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(target.Wizard.Base, target.Wizard.Banner), 0)
-        faceRect := util.ImageRect((x + wizardFacesOffsets[index].X) * data.ScreenScale, (y + wizardFacesOffsets[index].Y) * data.ScreenScale, portrait)
+        faceRect := util.ImageRect((x + wizardFacesOffsets[index].X), (y + wizardFacesOffsets[index].Y), portrait)
         // FIXME: right click should open the wizard's mirror info screen
         group.AddElement(&uilib.UIElement{
             Layer: layer+1,
@@ -285,15 +285,15 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
                 options.ColorScale.ScaleAlpha(getAlpha())
                 options.GeoM.Translate(float64(faceRect.Min.X), float64(faceRect.Min.Y))
                 if target.Defeated {
-                    screen.DrawImage(brokenCrystalPicture, &options)
+                    scale.DrawScaled(screen, brokenCrystalPicture, &options)
                 } else {
-                    screen.DrawImage(portrait, &options)
+                    scale.DrawScaled(screen, portrait, &options)
                     // FIXME: draw actual relation (restless/peaceful/alliance etc) when the relations code will be done
                     diplomaticRelation := target.Wizard.Name // Temporary solution
                     fonts.InfoOrange.PrintWrapCenter(
                         screen, 
-                        float64(faceRect.Min.X + faceRect.Dx()/2), float64(faceRect.Max.Y + 6 * data.ScreenScale),
-                        120. * float64(data.ScreenScale), float64(data.ScreenScale), options.ColorScale, diplomaticRelation,
+                        float64(faceRect.Min.X + faceRect.Dx()/2), float64(faceRect.Max.Y + 6),
+                        120, scale.ScaleAmount, options.ColorScale, diplomaticRelation,
                     )
                 }
             },
@@ -302,11 +302,11 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
     }
     // Empty crystals
     for emptyPlaceIndex := drawnWizardFaces; emptyPlaceIndex < 4; emptyPlaceIndex++ {
-        crystalRect := util.ImageRect((x + wizardFacesOffsets[emptyPlaceIndex].X) * data.ScreenScale, (y + wizardFacesOffsets[emptyPlaceIndex].Y) * data.ScreenScale, crystalPicture)
+        crystalRect := util.ImageRect((x + wizardFacesOffsets[emptyPlaceIndex].X), (y + wizardFacesOffsets[emptyPlaceIndex].Y), crystalPicture)
         crystalToDraw := crystalPicture
         if emptyPlaceIndex > playersInGame - 1 {
             crystalToDraw = brokenCrystalPicture
-            crystalRect = crystalRect.Add(image.Point{-1 * data.ScreenScale, -1 * data.ScreenScale})
+            crystalRect = crystalRect.Add(image.Point{-1, -1})
         }
         group.AddElement(&uilib.UIElement{
             Layer: layer - 1, // That's correct, gems are behind the UI form itself (should fit into transparent windows)
@@ -315,7 +315,7 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(getAlpha())
                 options.GeoM.Translate(float64(crystalRect.Min.X), float64(crystalRect.Min.Y))
-                screen.DrawImage(crystalToDraw, &options)
+                scale.DrawScaled(screen, crystalToDraw, &options)
             },
         })
     }
@@ -323,7 +323,7 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
     // cancel button
     cancel, _ := imageCache.GetImages("spellscr.lbx", 71)
     cancelIndex := 0
-    cancelRect := util.ImageRect((x + 45) * data.ScreenScale, (y + 155) * data.ScreenScale, cancel[0])
+    cancelRect := util.ImageRect((x + 45), (y + 155), cancel[0])
     group.AddElement(&uilib.UIElement{
         Layer: layer+1,
         Rect: cancelRect,
@@ -338,7 +338,7 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
-            screen.DrawImage(cancel[cancelIndex], &options)
+            scale.DrawScaled(screen, cancel[cancelIndex], &options)
         },
     })
 

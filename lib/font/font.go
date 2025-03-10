@@ -367,7 +367,9 @@ func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth 
 }
 
 func (font *Font) PrintWrapCenter(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, colorScale ebiten.ColorScale, text string) {
-    font.PrintWrap(image, x, y, maxWidth, scale, colorScale, FontOptions{Justify: FontJustifyCenter, Scale: scale}, text)
+    var options ebiten.DrawImageOptions
+    options.ColorScale = colorScale
+    font.PrintWrap(image, x, y, maxWidth, scale, colorScale, FontOptions{Justify: FontJustifyCenter, Scale: scale, Options: &options}, text)
     /*
     wrapped := font.CreateWrappedText(maxWidth, scale, text)
     font.RenderWrapped(image, x, y, wrapped, colorScale, FontOptions{Justify: FontJustifyCenter})
