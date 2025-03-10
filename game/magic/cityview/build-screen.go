@@ -211,9 +211,9 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
                 fonts.DescriptionFont.PrintOptions2(screen, 85, 58, font.FontOptions{Scale: scale.ScaleAmount}, "Allows")
 
-                fonts.MediumFont.RenderWrapped(screen, float64(85) + fonts.DescriptionFont.MeasureTextWidth("Allows", 1) + float64(10), float64(59), allowsWrapped, ebiten.ColorScale{}, font.FontOptions{Scale: scale.ScaleAmount})
+                fonts.MediumFont.RenderWrapped(screen, float64(85) + fonts.DescriptionFont.MeasureTextWidth("Allows", 1) + float64(10), float64(59), allowsWrapped, font.FontOptions{Scale: scale.ScaleAmount})
 
-                fonts.DescriptionFont.RenderWrapped(screen, 85, 108, descriptionWrapped, ebiten.ColorScale{}, font.FontOptions{Scale: scale.ScaleAmount})
+                fonts.DescriptionFont.RenderWrapped(screen, 85, 108, descriptionWrapped, font.FontOptions{Scale: scale.ScaleAmount})
 
                 /*
                 helpEntries := help.GetEntriesByName(building.String())

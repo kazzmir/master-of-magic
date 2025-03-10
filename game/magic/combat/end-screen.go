@@ -203,7 +203,7 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
 
             if extraText2 != "" {
                 extraY += float64((extraFont.Height() + 1))
-                extraFont.RenderWrapped(screen, extraX, extraY, extraText2Render, options.ColorScale, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount})
+                extraFont.RenderWrapped(screen, extraX, extraY, extraText2Render, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options})
             }
         },
     }

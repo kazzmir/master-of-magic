@@ -136,7 +136,7 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *
                 heroFont.PrintOptions2(screen, float64(cornerX + 90), float64(cornerY + 95), centerOptions, fmt.Sprintf("%v Fame", player.GetFame()))
             }
 
-            smallFont.RenderWrapped(screen, float64(cornerX + 13), float64(cornerY + 112), wrappedAbilities, options.ColorScale, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
+            smallFont.RenderWrapped(screen, float64(cornerX + 13), float64(cornerY + 112), wrappedAbilities, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
 
             heroFont.PrintOptions2(screen, float64(cornerX + 90), float64(cornerY + 131), centerOptions, "Heroes")
 

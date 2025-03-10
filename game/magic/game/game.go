@@ -1223,7 +1223,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         scale.DrawScaled(screen, animal, &iconOptions)
 
         x, y := options.GeoM.Apply(float64(8 + animal.Bounds().Dx()), float64(9))
-        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
+        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
         scale.DrawScaled(screen, rightSide, &options)
@@ -1333,7 +1333,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
 
         var textOptions ebiten.DrawImageOptions
         textOptions.ColorScale = textScale
-        fonts.SmallFont.RenderWrapped(screen, x, y, wrappedText, textScale, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &textOptions})
+        fonts.SmallFont.RenderWrapped(screen, x, y, wrappedText, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &textOptions})
 
         scrollOptions := options
         scrollOptions.GeoM.Translate(float64(-63), float64(-20))
@@ -2751,7 +2751,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
         scale.DrawScaled(screen, animal, &iconOptions)
 
         x, y := options.GeoM.Apply(float64(75), float64(9))
-        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, options.ColorScale, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
+        fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
 

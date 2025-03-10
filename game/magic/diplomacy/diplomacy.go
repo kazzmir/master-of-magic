@@ -38,7 +38,7 @@ func (talk *Talk) SetTitle(title string) {
 
     newElement := &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            talk.TitleFont.RenderWrapped(screen, float64(50), float64(140), wrap, ebiten.ColorScale{}, font.FontOptions{Scale: scale.ScaleAmount})
+            talk.TitleFont.RenderWrapped(screen, float64(50), float64(140), wrap, font.FontOptions{Scale: scale.ScaleAmount})
         },
     }
 

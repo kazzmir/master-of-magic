@@ -363,7 +363,7 @@ func (font *Font) splitText(text string, maxWidth float64, scale float64) (strin
 
 func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, colorScale ebiten.ColorScale, options FontOptions, text string) {
     wrapped := font.CreateWrappedText(maxWidth, 1, text)
-    font.RenderWrapped(image, x, y, wrapped, colorScale, options)
+    font.RenderWrapped(image, x, y, wrapped, options)
 }
 
 func (font *Font) PrintWrapCenter(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, colorScale ebiten.ColorScale, text string) {
@@ -388,7 +388,7 @@ func (text *WrappedText) Clear() {
 }
 
 // FIXME: remove colorScale argument
-func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, colorScale ebiten.ColorScale, options FontOptions) {
+func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, options FontOptions) {
     yPos := y
     for _, line := range wrapped.Lines {
         font.PrintOptions2(image, x, yPos, options, line)
