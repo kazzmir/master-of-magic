@@ -6922,8 +6922,6 @@ func ChangeCityOwner(city *citylib.City, owner *playerlib.Player, newOwner *play
     city.Buildings.Remove(buildinglib.BuildingFortress)
     city.Buildings.Remove(buildinglib.BuildingSummoningCircle)
 
-    city.UpdateUnrest()
-
     switch enchantmentChange {
         case ChangeCityKeepEnchantments:
         case ChangeCityRemoveOwnerEnchantments:
@@ -6931,6 +6929,8 @@ func ChangeCityOwner(city *citylib.City, owner *playerlib.Player, newOwner *play
         case ChangeCityRemoveAllEnchantments:
             city.Enchantments.Clear()
     }
+
+    city.UpdateUnrest()
 }
 
 func (game *Game) ManaShortActive() bool {
