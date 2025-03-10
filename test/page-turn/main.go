@@ -274,9 +274,9 @@ func NewEngine() (*Engine, error){
     spellPage := ebiten.NewImage(150, 170)
     spellPage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
 
-    textFont.PrintWrap(spellPage, 0, 5, 135, 1, ebiten.ColorScale{}, font.FontOptions{}, "This is a test of the emergency broadcast system. This is only a test. If this were a real emergency, you would be instructed to do something else.")
+    textFont.PrintWrap(spellPage, 0, 5, 135, font.FontOptions{}, "This is a test of the emergency broadcast system. This is only a test. If this were a real emergency, you would be instructed to do something else.")
     // textFont.PrintWrap(spellPage, 0, 50, 135, 1, ebiten.ColorScale{}, "A sub-image returned by SubImage can be used as a rendering source and a rendering destination. If a sub-image is used as a rendering source, the image is used as if it is a small image. If a sub-image is used as a rendering destination, the region being rendered is clipped.")
-    textFont.PrintWrap(spellPage, 0, 50, 135, 1, ebiten.ColorScale{}, font.FontOptions{}, "aaaaa aaaaaa bbbbb bbbbb bbbb ccccc ccccc ccccc ccc dddd ddddd dddd dddd eeee eeee eeee")
+    textFont.PrintWrap(spellPage, 0, 50, 135, font.FontOptions{}, "aaaaa aaaaaa bbbbb bbbbb bbbb ccccc ccccc ccccc ccc dddd ddddd dddd dddd eeee eeee eeee")
 
     vector.DrawFilledCircle(spellPage, 10, 90, 5, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, true)
     vector.DrawFilledCircle(spellPage, 45, 90, 5, color.RGBA{R: 0x0, G: 0xff, B: 0, A: 0xff}, true)
@@ -286,9 +286,9 @@ func NewEngine() (*Engine, error){
 
     leftPage := ebiten.NewImage(150, 170)
     leftPage.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0})
-    textFont.PrintWrap(leftPage, 5, 5, 135, 1, ebiten.ColorScale{}, font.FontOptions{}, "This is some text on the left page. Note that an important logic should not rely on values returned by RGBA64At, since the returned values can include very slight differences between some machines.")
+    textFont.PrintWrap(leftPage, 5, 5, 135, font.FontOptions{}, "This is some text on the left page. Note that an important logic should not rely on values returned by RGBA64At, since the returned values can include very slight differences between some machines.")
     rightPage := ebiten.NewImage(150, 170)
-    textFont.PrintWrap(rightPage, 5, 5, 135, 1, ebiten.ColorScale{}, font.FontOptions{}, "If the shader unit is texels, one of the specified image is non-nil and its size is different from (width, height), DrawTrianglesShader panics. If one of the specified image is non-nil and is disposed, DrawTrianglesShader panics.")
+    textFont.PrintWrap(rightPage, 5, 5, 135, font.FontOptions{}, "If the shader unit is texels, one of the specified image is non-nil and its size is different from (width, height), DrawTrianglesShader panics. If one of the specified image is non-nil and is disposed, DrawTrianglesShader panics.")
 
     return &Engine{
         Cache: cache,

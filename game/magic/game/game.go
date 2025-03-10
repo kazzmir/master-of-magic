@@ -4310,7 +4310,7 @@ func (game *Game) doTreasurePopup(yield coroutine.YieldFunc, player *playerlib.P
             options.GeoM = rightGeom
             scale.DrawScaled(screen, right, &options)
 
-            fonts.TreasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx() - 5), 1, options.ColorScale, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, treasure.String())
+            fonts.TreasureFont.PrintWrap(screen, fontX, fontY, float64(left.Bounds().Dx() - 5), font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, treasure.String())
         },
     }
 
