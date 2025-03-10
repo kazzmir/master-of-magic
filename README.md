@@ -7,6 +7,7 @@
 * Source language: golang, https://go.dev/
 * Graphics library: ebiten, https://ebitengine.org/
 * Master of Magic wiki: https://masterofmagic.fandom.com/
+* Discord channel: https://discord.gg/xCpHBKrU9c
 
 # Online demo
 
@@ -60,3 +61,9 @@ To hear the music you must have a midi synthesizer running separately. On linux 
 - util/ Extra utility programs for development purposes (sprite viewer, font viewer, etc)
 - data/ Put a zip file with the game data to embed the data in the final binary
 - test/ Test programs for executing small pieces of functionality at a time
+
+# Community:
+
+Join the Discord server to discuss this project 
+
+[Discord Channel](https://discord.gg/xCpHBKrU9c)
