@@ -9,7 +9,9 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/mirror"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/hero"
@@ -45,6 +47,7 @@ func NewEngine(scenario int) (*Engine, error) {
                 data.RetortFamous,
             },
         },
+        GlobalEnchantments: set.MakeSet[data.Enchantment](),
         Fame: 100,
         Gold: 2123,
         Mana: 23455,
@@ -96,7 +99,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return data.ScreenWidth, data.ScreenHeight
+    return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
 func main(){
@@ -106,7 +109,7 @@ func main(){
 
     size := monitorWidth / 390
 
-    ebiten.SetWindowSize(data.ScreenWidth / data.ScreenScale * size, data.ScreenHeight / data.ScreenScale * size)
+    ebiten.SetWindowSize(data.ScreenWidth * size, data.ScreenHeight * size)
 
     ebiten.SetWindowTitle("mirror")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
