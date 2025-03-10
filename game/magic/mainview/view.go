@@ -5,7 +5,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
-    "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -51,13 +51,13 @@ func (main *MainScreen) MakeUI() *uilib.UI {
             top, err := main.ImageCache.GetImages("mainscrn.lbx", 0)
             if err == nil {
                 use := top[(main.Counter / 4) % uint64(len(top))]
-                screen.DrawImage(use, &options)
+                scale.DrawScaled(screen, use, &options)
                 options.GeoM.Translate(0, float64(use.Bounds().Dy()))
             }
 
             background, err := main.ImageCache.GetImage("mainscrn.lbx", 5, 0)
             if err == nil {
-                screen.DrawImage(background, &options)
+                scale.DrawScaled(screen, background, &options)
             }
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -74,7 +74,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
 
     makeButton := func(index int, x, y int, action func()) *uilib.UIElement {
         images, _ := main.ImageCache.GetImages("mainscrn.lbx", index)
-        rect := util.ImageRect(x * data.ScreenScale, y * data.ScreenScale, images[0])
+        rect := util.ImageRect(x, y, images[0])
         imageIndex := 1
         return &uilib.UIElement{
             Rect: rect,
@@ -91,7 +91,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
                 options.ColorScale.ScaleAlpha(getAlpha())
-                screen.DrawImage(images[imageIndex], &options)
+                scale.DrawScaled(screen, images[imageIndex], &options)
             },
         }
     }
