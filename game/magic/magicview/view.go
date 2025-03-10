@@ -131,7 +131,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
             conveyorArea := screen.SubImage(scale.ScaleRect(image.Rect(131, 85, 131 + cursorPosition, (85 + 7)))).(*ebiten.Image)
 
             // draw an animated conveyor belt by drawing the same image twice with a slight offset
-            movement := int((ui.Counter / 6) % 8)
+            movement := int((ui.Counter / 4) % 8)
             if flip {
                 options.GeoM.Reset()
                 options.GeoM.Scale(-1, 1)
