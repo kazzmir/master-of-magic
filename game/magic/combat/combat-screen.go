@@ -3237,7 +3237,10 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 }
             }
 
-            unitOptions.GeoM.Translate(float64(-combatImages[index].Bounds().Dx()/2), float64(-combatImages[0].Bounds().Dy()*3/4))
+            var curseOptions ebiten.DrawImageOptions
+
+            curseOptions.GeoM.Translate(float64(-combatImages[index].Bounds().Dx()/2), float64(-combatImages[0].Bounds().Dy()*3/4))
+            curseOptions.GeoM.Concat(unitOptions.GeoM)
             for _, curse := range unit.GetCurses() {
                 switch curse {
                     case data.UnitCurseMindStorm:
@@ -3245,37 +3248,37 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                         index := animationIndex % uint64(len(images))
                         use := images[index]
 
-                        scale.DrawScaled(screen, use, &unitOptions)
+                        scale.DrawScaled(screen, use, &curseOptions)
                     case data.UnitCurseWeakness:
                         images, _ := combat.ImageCache.GetImages("resource.lbx", 80)
                         index := animationIndex % uint64(len(images))
                         use := images[index]
 
-                        scale.DrawScaled(screen, use, &unitOptions)
+                        scale.DrawScaled(screen, use, &curseOptions)
                     case data.UnitCurseVertigo:
                         images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 17)
                         index := animationIndex % uint64(len(images))
                         use := images[index]
 
-                        scale.DrawScaled(screen, use, &unitOptions)
+                        scale.DrawScaled(screen, use, &curseOptions)
                     case data.UnitCurseShatter:
                         images, _ := combat.ImageCache.GetImages("resource.lbx", 79)
                         index := animationIndex % uint64(len(images))
                         use := images[index]
 
-                        scale.DrawScaled(screen, use, &unitOptions)
+                        scale.DrawScaled(screen, use, &curseOptions)
                     case data.UnitCurseConfusion:
                         images, _ := combat.ImageCache.GetImages("resource.lbx", 76)
                         index := animationIndex % uint64(len(images))
                         use := images[index]
 
-                        scale.DrawScaled(screen, use, &unitOptions)
+                        scale.DrawScaled(screen, use, &curseOptions)
                 }
             }
 
             if unit.IsWebbed() {
                 image, _ := combat.ImageCache.GetImage("resource.lbx", 82, 0)
-                scale.DrawScaled(screen, image, &unitOptions)
+                scale.DrawScaled(screen, image, &curseOptions)
             }
         }
     }
