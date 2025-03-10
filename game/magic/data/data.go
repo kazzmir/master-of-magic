@@ -4,7 +4,6 @@ const ScreenWidthOriginal = 320
 const ScreenHeightOriginal = 200
 
 var ScreenScale = 1
-var ScreenScale2 = 3.0
 var ScreenWidth = ScreenWidthOriginal
 var ScreenHeight = ScreenHeightOriginal
 var ScreenScaleAlgorithm = ScaleAlgorithmNormal
