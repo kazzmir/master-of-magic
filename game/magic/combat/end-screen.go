@@ -180,7 +180,7 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(50), float64(30))
             options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(subPic, &options)
+            scale.DrawScaled(screen, subPic, &options)
 
             fontOptions := font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}
 
@@ -197,7 +197,7 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             extraX, extraY := options.GeoM.Apply(float64(110), float64(fontY))
 
             options.GeoM.Translate(0, float64(picLength))
-            screen.DrawImage(bottom, &options)
+            scale.DrawScaled(screen, bottom, &options)
 
             extraFont.PrintOptions(screen, extraX, extraY, fontOptions, extraText)
 
