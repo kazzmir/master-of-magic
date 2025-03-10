@@ -6,6 +6,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -164,6 +165,6 @@ func (intro *Intro) Draw(screen *ebiten.Image){
 
     if intro.Scene.Frame() != nil {
         var options ebiten.DrawImageOptions
-        screen.DrawImage(intro.Scene.Frame(), &options)
+        scale.DrawScaled(screen, intro.Scene.Frame(), &options)
     }
 }
