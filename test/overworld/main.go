@@ -295,7 +295,7 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
                 Count: 3,
             },
             data.WizardBook{
-                Magic: data.ChaosMagic,
+                Magic: data.SorceryMagic,
                 Count: 8,
             },
         },

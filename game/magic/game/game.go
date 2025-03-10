@@ -1219,10 +1219,10 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         options.GeoM.Translate(float64(8), float64(60))
         scale.DrawScaled(screen, background, &options)
         iconOptions := options
-        iconOptions.GeoM.Translate(float64(6), float64(-10))
+        iconOptions.GeoM.Translate(float64(2), float64(-10))
         scale.DrawScaled(screen, animal, &iconOptions)
 
-        x, y := options.GeoM.Apply(float64(8 + animal.Bounds().Dx()), float64(9))
+        x, y := options.GeoM.Apply(80, 9)
         fonts.BigFont.RenderWrapped(screen, x, y, wrappedText, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
 
         options.GeoM.Translate(float64(background.Bounds().Dx()), 0)
