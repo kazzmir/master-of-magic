@@ -9,9 +9,8 @@ import (
     "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
-    "github.com/kazzmir/master-of-magic/lib/xbr"
+    // "github.com/kazzmir/master-of-magic/lib/xbr"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
-    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -29,8 +28,10 @@ type ImageCache struct {
 
     ShaderCache map[shaders.Shader]*ebiten.Shader
 
+    /*
     Scaler data.ScaleAlgorithm
     ScaleAmount int
+    */
 }
 
 func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
@@ -38,8 +39,11 @@ func MakeImageCache(lbxCache *lbx.LbxCache) ImageCache {
         LbxCache: lbxCache,
         Cache:    make(map[string][]*ebiten.Image),
         ShaderCache: make(map[shaders.Shader]*ebiten.Shader),
+        /*
         Scaler: data.ScreenScaleAlgorithm,
-        ScaleAmount: data.ScreenScale,
+        ScaleAmount: 1,
+        */
+        // ScaleAmount: data.ScreenScale,
     }
 }
 
@@ -184,7 +188,7 @@ func (cache *ImageCache) GetImagesTransform(lbxPath string, index int, extra str
 
     var out []*ebiten.Image
     for i := 0; i < len(sprites); i++ {
-        out = append(out, ebiten.NewImageFromImage(cache.ApplyScale(transform(sprites[i]))))
+        out = append(out, ebiten.NewImageFromImage(transform(sprites[i])))
     }
 
     cache.Cache[key] = out
@@ -317,6 +321,7 @@ func Scale3x(input image.Image, smooth bool) image.Image {
 }
 
 func (cache *ImageCache) ApplyScale(input image.Image) image.Image {
+    /*
     if cache.ScaleAmount == 1 {
         return input
     }
@@ -338,6 +343,7 @@ func (cache *ImageCache) ApplyScale(input image.Image) image.Image {
             }
         case data.ScaleAlgorithmXbr: return xbr.ScaleImage(input, cache.ScaleAmount)
     }
+    */
 
     return input
 }

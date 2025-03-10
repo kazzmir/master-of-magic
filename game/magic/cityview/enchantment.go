@@ -6,8 +6,10 @@ import (
     "image"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -28,7 +30,7 @@ func MakeNewBuildingView(cache *lbx.LbxCache, city *citylib.City, player *player
     }
 
     geom := ebiten.GeoM{}
-    geom.Translate(float64(30 * data.ScreenScale), float64(30 * data.ScreenScale))
+    geom.Translate(float64(30), float64(30))
 
     var getAlpha util.AlphaFadeFunc
     fadeSpeed := uint64(7)
@@ -50,23 +52,23 @@ func MakeNewBuildingView(cache *lbx.LbxCache, city *citylib.City, player *player
             options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM = geom
 
-            screen.DrawImage(background, &options)
+            scale.DrawScaled(screen, background, &options)
 
-            titleX, titleY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(7 * data.ScreenScale))
+            titleX, titleY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(7))
 
-            fonts.BigFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
+            fonts.BigFont.PrintOptions(screen, titleX, titleY, font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
 
-            descriptionX, descriptionY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(background.Bounds().Dy() - fonts.CastFont.Height() * data.ScreenScale - 2 * data.ScreenScale))
-            fonts.CastFont.PrintCenter(screen, descriptionX, descriptionY, float64(data.ScreenScale), options.ColorScale, fmt.Sprintf("You cast %v", name))
+            descriptionX, descriptionY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(background.Bounds().Dy() - fonts.CastFont.Height() - 2))
+            fonts.CastFont.PrintOptions(screen, descriptionX, descriptionY, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options}, fmt.Sprintf("You cast %v", name))
 
             geom2 := geom
-            geom2.Translate(float64(5 * data.ScreenScale), float64(27 * data.ScreenScale))
+            geom2.Translate(5, 27)
 
             x1, y1 := geom2.Apply(0, 0)
             // FIXME: get this rectangle from city-screen.go
-            x2, y2 := geom2.Apply(float64(206 * data.ScreenScale), float64(96 * data.ScreenScale))
+            x2, y2 := geom2.Apply(206, 96)
 
-            cityScapeScreen := screen.SubImage(image.Rect(int(x1), int(y1), int(x2), int(y2))).(*ebiten.Image)
+            cityScapeScreen := screen.SubImage(scale.ScaleRect(image.Rect(int(x1), int(y1), int(x2), int(y2)))).(*ebiten.Image)
             drawCityScape(cityScapeScreen, city, buildingSlots, buildinglib.BuildingNone, 0, newBuilding, ui.Counter / 8, &imageCache, fonts, player, geom2, getAlpha())
         },
     }

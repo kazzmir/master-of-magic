@@ -5,6 +5,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
@@ -87,7 +88,7 @@ func CombatPoints(count int) []image.Point {
 
 func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, enchantment data.UnitEnchantment, timeCounter uint64, imageCache *util.ImageCache){
     // the ground is always 6 pixels above the bottom of the unit image
-    groundHeight := float64(6 * data.ScreenScale)
+    groundHeight := float64(6)
 
     var greyScale colorm.ColorM
     greyScale.ChangeHSV(0, 0, 1)
@@ -97,10 +98,11 @@ func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebite
 
     for _, point := range CombatPoints(count) {
         greyOptions.GeoM.Reset()
-        greyOptions.GeoM.Translate(float64(point.X * data.ScreenScale), float64(point.Y * data.ScreenScale))
+        greyOptions.GeoM.Translate(float64(point.X), float64(point.Y))
         greyOptions.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
 
         greyOptions.GeoM.Concat(geoM)
+        greyOptions.GeoM.Scale(scale.ScaleAmount, scale.ScaleAmount)
 
         // screen.DrawImage(use, &options)
         colorm.DrawImage(screen, use, greyScale, &greyOptions)
@@ -113,15 +115,16 @@ func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebite
 
 func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, enchantment data.UnitEnchantment, timeCounter uint64, imageCache *util.ImageCache){
     // the ground is always 6 pixels above the bottom of the unit image
-    groundHeight := float64(6 * data.ScreenScale)
+    groundHeight := float64(6)
 
     geoM := options.GeoM
     for _, point := range CombatPoints(count) {
         options.GeoM.Reset()
-        options.GeoM.Translate(float64(point.X * data.ScreenScale), float64(point.Y * data.ScreenScale))
+        options.GeoM.Translate(float64(point.X), float64(point.Y))
         options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
 
         options.GeoM.Concat(geoM)
+        options.GeoM.Scale(scale.ScaleAmount, scale.ScaleAmount)
 
         /*
         x, y := options.GeoM.Apply(0, 0)
@@ -145,7 +148,7 @@ func RenderCombatTile(screen *ebiten.Image, imageCache *util.ImageCache, options
     grass, err := imageCache.GetImage("cmbgrass.lbx", 0, 0)
     if err == nil {
         options.GeoM.Translate(-float64(grass.Bounds().Dx() / 2), -float64(grass.Bounds().Dy() / 2))
-        screen.DrawImage(grass, &options)
+        screen.DrawImage(grass, scale.ScaleOptions(options))
     }
 }
 

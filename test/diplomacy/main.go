@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/diplomacy"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -83,13 +84,13 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return data.ScreenWidth, data.ScreenHeight
+    return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
+    ebiten.SetWindowSize(data.ScreenWidth * 4, data.ScreenHeight * 4)
     ebiten.SetWindowTitle("diplomacy")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 

@@ -10,8 +10,8 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
-    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     // "github.com/kazzmir/master-of-magic/game/magic/combat"
@@ -122,8 +122,8 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
             mainInfo, err := imageCache.GetImage("unitview.lbx", 0, 0)
             if err == nil {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(75 * data.ScreenScale), 0)
-                screen.DrawImage(mainInfo, &options)
+                options.GeoM.Translate(float64(75), 0)
+                scale.DrawScaled(screen, mainInfo, &options)
             }
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -145,7 +145,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
     var selectedElement *uilib.UIElement
 
     updateMainElementBuilding := func(building buildinglib.Building){
-        descriptionWrapped := fonts.DescriptionFont.CreateWrappedText(float64(155 * data.ScreenScale), float64(data.ScreenScale), buildDescriptions.Get(building))
+        descriptionWrapped := fonts.DescriptionFont.CreateWrappedText(float64(155), 1, buildDescriptions.Get(building))
 
         allowedBuildings := city.AllowedBuildings(building)
         allowedUnits := city.AllowedUnits(building)
@@ -159,7 +159,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
         allows := combineStrings(allowStrings)
 
-        allowsWrapped := fonts.MediumFont.CreateWrappedText(float64(100 * data.ScreenScale), float64(data.ScreenScale), allows)
+        allowsWrapped := fonts.MediumFont.CreateWrappedText(float64(100), 1, allows)
 
         ui.RemoveGroup(mainGroup)
         mainGroup = uilib.MakeGroup()
@@ -168,52 +168,52 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 images, err := imageCache.GetImages("cityscap.lbx", GetProducingBuildingIndex(building))
                 if err == nil {
-                    middleX := float64(103 * data.ScreenScale)
-                    middleY := float64(22 * data.ScreenScale)
+                    middleX := float64(103)
+                    middleY := float64(22)
                     index := (ui.Counter / 7) % uint64(len(images))
 
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(middleX, middleY)
                     options.GeoM.Translate(-float64(images[index].Bounds().Dx() / 2), -float64(images[index].Bounds().Dy() / 2))
 
-                    width := 44 * data.ScreenScale
-                    height := 36 * data.ScreenScale
+                    width := 44
+                    height := 36
                     clipRect := image.Rect(int(middleX) - width / 2, int(middleY) - height / 2, int(middleX) + width / 2, int(middleY) + height / 2)
-                    clip := screen.SubImage(clipRect).(*ebiten.Image)
+                    clip := screen.SubImage(scale.ScaleRect(clipRect)).(*ebiten.Image)
 
                     // vector.DrawFilledRect(clip, float32(clipRect.Min.X), float32(clipRect.Min.Y), float32(clipRect.Bounds().Dx()), float32(clipRect.Bounds().Dy()), color.RGBA{R: 255, G: 255, B: 255, A: 255}, true)
 
-                    clip.DrawImage(images[index], &options)
+                    scale.DrawScaled(clip, images[index], &options)
 
                     // vector.DrawFilledCircle(screen, float32(middleX), float32(middleY), 1, color.RGBA{255, 255, 255, 255}, true)
                 }
 
-                fonts.DescriptionFont.Print(screen, float64(130 * data.ScreenScale), float64(12 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, city.BuildingInfo.Name(building))
-                fonts.SmallFont.Print(screen, float64(130 * data.ScreenScale), float64(33 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Cost %v", city.BuildingInfo.ProductionCost(building)))
+                fonts.DescriptionFont.PrintOptions(screen, float64(130), float64(12), font.FontOptions{Scale: scale.ScaleAmount}, city.BuildingInfo.Name(building))
+                fonts.SmallFont.PrintOptions(screen, float64(130), float64(33), font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Cost %v", city.BuildingInfo.ProductionCost(building)))
 
-                fonts.DescriptionFont.Print(screen, float64(85 * data.ScreenScale), float64(48 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Maintenance")
+                fonts.DescriptionFont.PrintOptions(screen, float64(85), float64(48), font.FontOptions{Scale: scale.ScaleAmount}, "Maintenance")
 
                 buildingMaintenance := city.BuildingInfo.UpkeepCost(building)
 
                 if buildingMaintenance == 0 {
-                    fonts.MediumFont.Print(screen, float64(85 * data.ScreenScale) + fonts.DescriptionFont.MeasureTextWidth("Maintenance", float64(data.ScreenScale)) + float64(4 * data.ScreenScale), float64(49 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "0")
+                    fonts.MediumFont.PrintOptions(screen, float64(85) + fonts.DescriptionFont.MeasureTextWidth("Maintenance", 1) + float64(4), float64(49), font.FontOptions{Scale: scale.ScaleAmount}, "0")
                 } else {
                     smallCoin, err := imageCache.GetImage("backgrnd.lbx", 42, 0)
                     if err == nil {
                         var options ebiten.DrawImageOptions
-                        options.GeoM.Translate(float64(85 * data.ScreenScale) + fonts.DescriptionFont.MeasureTextWidth("Maintenance", float64(data.ScreenScale)) + float64(3 * data.ScreenScale), float64(50 * data.ScreenScale))
+                        options.GeoM.Translate(float64(85) + fonts.DescriptionFont.MeasureTextWidth("Maintenance", 1) + float64(3), float64(50))
                         for i := 0; i < buildingMaintenance; i++ {
-                            screen.DrawImage(smallCoin, &options)
-                            options.GeoM.Translate(float64(smallCoin.Bounds().Dx() + 2 * data.ScreenScale), 0)
+                            scale.DrawScaled(screen, smallCoin, &options)
+                            options.GeoM.Translate(float64(smallCoin.Bounds().Dx() + 2), 0)
                         }
                     }
                 }
 
-                fonts.DescriptionFont.Print(screen, float64(85 * data.ScreenScale), float64(58 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Allows")
+                fonts.DescriptionFont.PrintOptions(screen, 85, 58, font.FontOptions{Scale: scale.ScaleAmount}, "Allows")
 
-                fonts.MediumFont.RenderWrapped(screen, float64(85 * data.ScreenScale) + fonts.DescriptionFont.MeasureTextWidth("Allows", float64(data.ScreenScale)) + float64(10 * data.ScreenScale), float64(59 * data.ScreenScale), allowsWrapped, ebiten.ColorScale{}, font.FontOptions{})
+                fonts.MediumFont.RenderWrapped(screen, float64(85) + fonts.DescriptionFont.MeasureTextWidth("Allows", 1) + float64(10), float64(59), allowsWrapped, font.FontOptions{Scale: scale.ScaleAmount})
 
-                fonts.DescriptionFont.RenderWrapped(screen, float64(85 * data.ScreenScale), float64(108 * data.ScreenScale), descriptionWrapped, ebiten.ColorScale{}, font.FontOptions{})
+                fonts.DescriptionFont.RenderWrapped(screen, 85, 108, descriptionWrapped, font.FontOptions{Scale: scale.ScaleAmount})
 
                 /*
                 helpEntries := help.GetEntriesByName(building.String())
@@ -239,15 +239,15 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         mainGroup.AddElement(&uilib.UIElement{
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(104 * data.ScreenScale), float64(28 * data.ScreenScale))
+                options.GeoM.Translate(float64(104), float64(28))
                 unitview.RenderUnitViewImage(screen, imageCache, bannerUnit, options, false, 0)
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(float64(130 * data.ScreenScale), float64(7 * data.ScreenScale))
+                options.GeoM.Translate(float64(130), float64(7))
                 unitview.RenderUnitInfoBuild(screen, imageCache, bannerUnit, fonts.DescriptionFont, fonts.SmallFont, options, productionCost)
 
                 options.GeoM.Reset()
-                options.GeoM.Translate(float64(85 * data.ScreenScale), float64(48 * data.ScreenScale))
+                options.GeoM.Translate(float64(85), float64(48))
                 unitview.RenderUnitInfoStats(screen, imageCache, bannerUnit, 10, fonts.DescriptionFont, fonts.SmallFont, options)
 
                 /*
@@ -260,7 +260,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         var getAlpha util.AlphaFadeFunc = func () float32 {
             return 1
         }
-        mainGroup.AddElements(unitview.MakeUnitAbilitiesElements(mainGroup, cache, imageCache, bannerUnit, fonts.MediumFont, 85 * data.ScreenScale, 108 * data.ScreenScale, &ui.Counter, 0, &getAlpha, true, 0, false))
+        mainGroup.AddElements(unitview.MakeUnitAbilitiesElements(mainGroup, cache, imageCache, bannerUnit, fonts.MediumFont, 85, 108, &ui.Counter, 0, &getAlpha, true, 0, false))
         // ui.AddElements(mainElements)
     }
 
@@ -270,7 +270,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
             return cmp.Compare(city.BuildingInfo.GetBuildingIndex(a), city.BuildingInfo.GetBuildingIndex(b))
         }) {
             x1 := 0
-            y1 := 4 * data.ScreenScale + i * (buildingInfo.Bounds().Dy() + 1)
+            y1 := 4 + i * (buildingInfo.Bounds().Dy() + 1)
             x2 := x1 + buildingInfo.Bounds().Dx()
             y2 := y1 + buildingInfo.Bounds().Dy()
 
@@ -295,7 +295,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(x1), float64(y1))
-                    screen.DrawImage(buildingInfo, &options)
+                    scale.DrawScaled(screen, buildingInfo, &options)
 
                     use := fonts.TitleFont
 
@@ -304,7 +304,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                         use = fonts.TitleFontWhite
                     }
 
-                    use.Print(screen, float64(x1 + 2 * data.ScreenScale), float64(y1 + 1 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, city.BuildingInfo.Name(building))
+                    use.PrintOptions(screen, float64(x1 + 2), float64(y1 + 1), font.FontOptions{Scale: scale.ScaleAmount}, city.BuildingInfo.Name(building))
                 },
             }
 
@@ -326,8 +326,8 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
             return cmp.Compare(a.Name, b.Name)
         }) {
 
-            x1 := 240 * data.ScreenScale
-            y1 := 4 * data.ScreenScale + i * (buildingInfo.Bounds().Dy() + 1)
+            x1 := 240
+            y1 := 4 + i * (buildingInfo.Bounds().Dy() + 1)
             x2 := x1 + unitInfo.Bounds().Dx()
             y2 := y1 + unitInfo.Bounds().Dy()
 
@@ -352,7 +352,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(x1), float64(y1))
-                    screen.DrawImage(unitInfo, &options)
+                    scale.DrawScaled(screen, unitInfo, &options)
 
                     use := fonts.TitleFont
 
@@ -361,7 +361,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                         use = fonts.TitleFontWhite
                     }
 
-                    use.Print(screen, float64(x1 + 2 * data.ScreenScale), float64(y1 + 1 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, unit.String())
+                    use.PrintOptions(screen, float64(x1 + 2), float64(y1 + 1), font.FontOptions{Scale: scale.ScaleAmount}, unit.String())
                 },
             }
 
@@ -380,8 +380,8 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
     buttonBackground, err := imageCache.GetImage("backgrnd.lbx", 24, 0)
 
     if err == nil {
-        cancelX := 100 * data.ScreenScale
-        cancelY := 181 * data.ScreenScale
+        cancelX := 100
+        cancelY := 181
 
         // cancel button
         group.AddElement(&uilib.UIElement{
@@ -398,14 +398,14 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(cancelX), float64(cancelY))
-                screen.DrawImage(buttonBackground, &options)
+                scale.DrawScaled(screen, buttonBackground, &options)
 
-                fonts.OkCancelFont.PrintCenter(screen, float64(cancelX + buttonBackground.Bounds().Dx() / 2), float64(cancelY + 1 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Cancel")
+                fonts.OkCancelFont.PrintOptions(screen, float64(cancelX + buttonBackground.Bounds().Dx() / 2), float64(cancelY + 1), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Cancel")
             },
         })
 
-        okX := 173 * data.ScreenScale
-        okY := 181 * data.ScreenScale
+        okX := 173
+        okY := 181
         // ok button
         group.AddElement(&uilib.UIElement{
             Rect: util.ImageRect(okX, okY, buttonBackground),
@@ -421,9 +421,9 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(okX), float64(okY))
-                screen.DrawImage(buttonBackground, &options)
+                scale.DrawScaled(screen, buttonBackground, &options)
 
-                fonts.OkCancelFont.PrintCenter(screen, float64(okX + buttonBackground.Bounds().Dx() / 2), float64(okY + 1 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Ok")
+                fonts.OkCancelFont.PrintOptions(screen, float64(okX + buttonBackground.Bounds().Dx() / 2), float64(okY + 1), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Ok")
             },
         })
     }

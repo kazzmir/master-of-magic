@@ -1,8 +1,9 @@
 package game
 
 import (
-    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -63,25 +64,25 @@ func (game *Game) wizlabAnimation(yield coroutine.YieldFunc, wizard setup.Wizard
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(fade())
 
-        screen.DrawImage(background, &options)
+        scale.DrawScaled(screen, background, &options)
 
         wizardPic, _ := game.ImageCache.GetImage("wizlab.lbx", wizardIndex, 0)
-        options.GeoM.Translate(float64(70 * data.ScreenScale), float64(74 * data.ScreenScale))
-        screen.DrawImage(wizardPic, &options)
+        options.GeoM.Translate(float64(70), float64(74))
+        scale.DrawScaled(screen, wizardPic, &options)
 
         options.GeoM.Reset()
-        options.GeoM.Translate(float64(132 * data.ScreenScale), float64(-5 * data.ScreenScale))
-        screen.DrawImage(sparkles.Frame(), &options)
+        options.GeoM.Translate(float64(132), float64(-5))
+        scale.DrawScaled(screen, sparkles.Frame(), &options)
 
         pulpit, _ := game.ImageCache.GetImage("wizlab.lbx", 20, 0)
         options.GeoM.Reset()
-        options.GeoM.Translate(float64(150 * data.ScreenScale), float64(130 * data.ScreenScale))
-        screen.DrawImage(pulpit, &options)
+        options.GeoM.Translate(float64(150), float64(130))
+        scale.DrawScaled(screen, pulpit, &options)
 
         options.GeoM.Reset()
-        options.GeoM.Translate(float64(190 * data.ScreenScale), float64(157 * data.ScreenScale))
+        options.GeoM.Translate(float64(190), float64(157))
         animalPic, _ := game.ImageCache.GetImage("wizlab.lbx", animalIndex, 0)
-        screen.DrawImage(animalPic, &options)
+        scale.DrawScaled(screen, animalPic, &options)
     }
 
     counter := uint64(0)

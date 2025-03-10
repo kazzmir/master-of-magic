@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -368,7 +369,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(7 * data.ScreenScale), float64(6 * data.ScreenScale))
+            options.GeoM.Translate(float64(7), float64(6))
 
             /*
             image, _ := imageCache.GetImage("items.lbx", artifact.Image, 0)
@@ -381,7 +382,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
 
     leftIndex := 0
     leftImages, _ := imageCache.GetImages("spellscr.lbx", 35)
-    leftRect := util.ImageRect(5 * data.ScreenScale, 24 * data.ScreenScale, leftImages[leftIndex])
+    leftRect := util.ImageRect(5, 24, leftImages[leftIndex])
     elements = append(elements, &uilib.UIElement{
         Rect: leftRect,
         PlaySoundLeftClick: true,
@@ -400,13 +401,13 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(leftRect.Min.X), float64(leftRect.Min.Y))
             image := leftImages[leftIndex]
-            screen.DrawImage(image, &options)
+            scale.DrawScaled(screen, image, &options)
         },
     })
 
     rightIndex := 0
     rightImages, _ := imageCache.GetImages("spellscr.lbx", 36)
-    rightRect := util.ImageRect(17 * data.ScreenScale, 24 * data.ScreenScale, leftImages[rightIndex])
+    rightRect := util.ImageRect(17, 24, leftImages[rightIndex])
     elements = append(elements, &uilib.UIElement{
         Rect: rightRect,
         PlaySoundLeftClick: true,
@@ -425,12 +426,12 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(rightRect.Min.X), float64(rightRect.Min.Y))
             image := rightImages[rightIndex]
-            screen.DrawImage(image, &options)
+            scale.DrawScaled(screen, image, &options)
         },
     })
 
     // name field
-    nameRect := image.Rect(30 * data.ScreenScale, 12 * data.ScreenScale, (30 + 130) * data.ScreenScale, (12 + fonts.NameFont.Height() + 2) * data.ScreenScale)
+    nameRect := image.Rect(30, 12, (30 + 130), (12 + fonts.NameFont.Height() + 2))
     nameFocused := false
     artifact.Name = getName(artifact, *customName)
     nameColorSource := ebiten.NewImage(1, 1)
@@ -493,16 +494,16 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            scale := ebiten.ColorScale{}
+            var options ebiten.DrawImageOptions
             if nameFocused {
-                scale.SetR(3)
-                scale.SetG(3)
+                options.ColorScale.SetR(3)
+                options.ColorScale.SetG(3)
             }
 
-            fonts.NameFont.Print(screen, float64(nameRect.Min.X + 1), float64(nameRect.Min.Y + 1), float64(data.ScreenScale), scale, artifact.Name)
+            fonts.NameFont.PrintOptions(screen, float64(nameRect.Min.X + 1), float64(nameRect.Min.Y + 1), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, artifact.Name)
 
             if nameFocused {
-                util.DrawTextCursor(screen, nameColorSource, float64(nameRect.Min.X) + 1 + fonts.NameFont.MeasureTextWidth(artifact.Name, float64(data.ScreenScale)), float64(nameRect.Min.Y) + 1, ui.Counter)
+                util.DrawTextCursor(screen, nameColorSource, float64(nameRect.Min.X) + 1 + fonts.NameFont.MeasureTextWidth(artifact.Name, 1), float64(nameRect.Min.Y) + 1, ui.Counter)
             }
         },
     }
@@ -510,16 +511,16 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
     elements = append(elements, nameEntry)
 
     // powers
-    x := 7 * data.ScreenScale
-    y := 40 * data.ScreenScale
+    x := 7
+    y := 40
     printRight := false
     for _, group := range powerGroups {
         groupSelect := -1
 
         // goto the next column
-        if y + (fonts.PowerFont.Height() + 1) * len(group) * data.ScreenScale > data.ScreenHeight - 10 * data.ScreenScale {
-            y = 40 * data.ScreenScale
-            x = 170 * data.ScreenScale
+        if y + (fonts.PowerFont.Height() + 1) * len(group) > data.ScreenHeight - 10 {
+            y = 40
+            x = 170
             printRight = true
         }
 
@@ -527,9 +528,9 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
 
         var lastPower *Power = nil
         for i, power := range group {
-            rect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, float64(data.ScreenScale))), y + fonts.PowerFont.Height() * data.ScreenScale)
+            rect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, 1)), y + fonts.PowerFont.Height())
             if groupRight {
-                rect = image.Rect(x - int(fonts.PowerFont.MeasureTextWidth(power.Name, float64(data.ScreenScale))), y, x, y + fonts.PowerFont.Height() * data.ScreenScale)
+                rect = image.Rect(x - int(fonts.PowerFont.MeasureTextWidth(power.Name, 1)), y, x, y + fonts.PowerFont.Height())
             }
 
             elements = append(elements, &uilib.UIElement{
@@ -569,25 +570,25 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     // draw in bright yellow if selected
-                    scale := ebiten.ColorScale{}
+                    var options ebiten.DrawImageOptions
 
                     if groupSelect == i {
-                        scale.SetR(3)
-                        scale.SetG(3)
+                        options.ColorScale.SetR(3)
+                        options.ColorScale.SetG(3)
                     }
 
                     if groupRight {
-                        fonts.PowerFont.PrintRight(screen, float64(rect.Max.X), float64(rect.Min.Y), float64(data.ScreenScale), scale, power.Name)
+                        fonts.PowerFont.PrintOptions(screen, float64(rect.Max.X), float64(rect.Min.Y), font.FontOptions{Justify: font.FontJustifyRight, Options: &options, Scale: scale.ScaleAmount}, power.Name)
                     } else {
-                        fonts.PowerFont.Print(screen, float64(rect.Min.X), float64(rect.Min.Y), float64(data.ScreenScale), scale, power.Name)
+                        fonts.PowerFont.PrintOptions(screen, float64(rect.Min.X), float64(rect.Min.Y), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, power.Name)
                     }
                 },
             })
 
-            y += (fonts.PowerFont.Height() + 1) * data.ScreenScale
+            y += (fonts.PowerFont.Height() + 1)
         }
 
-        y += 5 * data.ScreenScale
+        y += 5
     }
 
     return elements
@@ -603,18 +604,18 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
             vector.DrawFilledRect(screen, 0, 0, float32(data.ScreenWidth), float32(data.ScreenHeight), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
 
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(28 * data.ScreenScale), float64(12 * data.ScreenScale))
+            options.GeoM.Translate(float64(28), float64(12))
             background, _ := imageCache.GetImage("spells.lbx", 0, 0)
-            screen.DrawImage(background, &options)
+            scale.DrawScaled(screen, background, &options)
 
             // print text "Choose a spell to embed in this item"
-            fonts.TitleSpellFont.PrintCenter(screen, float64(data.ScreenWidth / 2), float64(2 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, "Choose a spell to embed in this item")
+            fonts.TitleSpellFont.PrintOptions(screen, float64(data.ScreenWidth / 2), float64(2), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Choose a spell to embed in this item")
         },
     })
 
-    xLeft := 47 * data.ScreenScale
-    xRight := 187 * data.ScreenScale
-    y := 29 * data.ScreenScale
+    xLeft := 47
+    xRight := 187
+    y := 29
 
     var pages []spellbook.Spells
 
@@ -643,15 +644,15 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         background, _ := imageCache.GetImage("spellscr.lbx", 37, 0)
 
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x), float64(80 * data.ScreenScale))
+        options.GeoM.Translate(float64(x), float64(80))
 
         moreElements = append(moreElements, &uilib.UIElement{
             Layer: 2,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                screen.DrawImage(background, &options)
+                scale.DrawScaled(screen, background, &options)
 
-                ax, ay := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(5 * data.ScreenScale))
-                spellFont.PrintCenter(screen, ax, ay, float64(data.ScreenScale), ebiten.ColorScale{}, "Charges")
+                ax, ay := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(5))
+                spellFont.PrintOptions(screen, ax, ay, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Charges")
             },
         })
 
@@ -661,7 +662,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         for i := range 4 {
             buttons, _ := imageCache.GetImages("spellscr.lbx", 38 + i)
             buttonOptions := options
-            buttonOptions.GeoM.Translate(float64(button0.Bounds().Dx() * i + 3 * data.ScreenScale), float64(14 * data.ScreenScale))
+            buttonOptions.GeoM.Translate(float64(button0.Bounds().Dx() * i + 3), float64(14))
             x, y := buttonOptions.GeoM.Apply(0, 0)
             rect := util.ImageRect(int(x), int(y), buttons[0])
             pressed := false
@@ -678,9 +679,9 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     if pressed {
-                        screen.DrawImage(buttons[1], &buttonOptions)
+                        scale.DrawScaled(screen, buttons[1], &buttonOptions)
                     } else {
-                        screen.DrawImage(buttons[0], &buttonOptions)
+                        scale.DrawScaled(screen, buttons[0], &buttonOptions)
                     }
                 },
             })
@@ -695,8 +696,8 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         pageElements = nil
         // left page
         for i, spell := range pages[showPage].Spells {
-            yPos := y + (spellFont.Height() + 1) * i * data.ScreenScale
-            rect := image.Rect(xLeft, yPos, xLeft + int(spellFont.MeasureTextWidth(spell.Name, float64(data.ScreenScale))), yPos + spellFont.Height() * data.ScreenScale)
+            yPos := y + (spellFont.Height() + 1) * i
+            rect := image.Rect(xLeft, yPos, xLeft + int(spellFont.MeasureTextWidth(spell.Name, 1)), yPos + spellFont.Height())
 
             pickCharges := func (count int) {
                 shutdown()
@@ -710,7 +711,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
                     ui.AddElements(makeSelectChargesElements(spell, xRight, pickCharges))
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    spellFont.Print(screen, float64(xLeft), float64(yPos), float64(data.ScreenScale), ebiten.ColorScale{}, spell.Name)
+                    spellFont.PrintOptions(screen, float64(xLeft), float64(yPos), font.FontOptions{Scale: scale.ScaleAmount}, spell.Name)
                 },
             })
         }
@@ -718,8 +719,8 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
         // right page
         if showPage + 1 < len(pages) {
             for i, spell := range pages[showPage+1].Spells {
-                yPos := y + (spellFont.Height() + 1) * i * data.ScreenScale
-                rect := image.Rect(xRight, yPos, xRight + int(spellFont.MeasureTextWidth(spell.Name, float64(data.ScreenScale))), yPos + spellFont.Height() * data.ScreenScale)
+                yPos := y + (spellFont.Height() + 1) * i
+                rect := image.Rect(xRight, yPos, xRight + int(spellFont.MeasureTextWidth(spell.Name, 1)), yPos + spellFont.Height())
 
                 pickCharges := func (count int) {
                     shutdown()
@@ -733,7 +734,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
                         ui.AddElements(makeSelectChargesElements(spell, xLeft, pickCharges))
                     },
                     Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                        spellFont.Print(screen, float64(xRight), float64(yPos), float64(data.ScreenScale), ebiten.ColorScale{}, spell.Name)
+                        spellFont.PrintOptions(screen, float64(xRight), float64(yPos), font.FontOptions{Scale: scale.ScaleAmount}, spell.Name)
                     },
                 })
             }
@@ -749,7 +750,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
 
         // left dogear
         leftEar, _ := imageCache.GetImage("spells.lbx", 1, 0)
-        leftRect := util.ImageRect(41 * data.ScreenScale, 16 * data.ScreenScale, leftEar)
+        leftRect := util.ImageRect(41, 16, leftEar)
         elements = append(elements, &uilib.UIElement{
             Layer: 1,
             Rect: leftRect,
@@ -762,13 +763,13 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(41, 16)
-                screen.DrawImage(leftEar, &options)
+                scale.DrawScaled(screen, leftEar, &options)
             },
         })
 
         // right dogear
         rightEar, _ := imageCache.GetImage("spells.lbx", 2, 0)
-        rightRect := util.ImageRect(286 * data.ScreenScale, 16 * data.ScreenScale, rightEar)
+        rightRect := util.ImageRect(286, 16, rightEar)
         elements = append(elements, &uilib.UIElement{
             Layer: 1,
             Rect: rightRect,
@@ -781,13 +782,13 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(rightRect.Min.X), float64(rightRect.Min.Y))
-                screen.DrawImage(rightEar, &options)
+                scale.DrawScaled(screen, rightEar, &options)
             },
         })
     }
 
     // X button at bottom to cancel
-    cancelRect := image.Rect(0, 0, 18 * data.ScreenScale, 24 * data.ScreenScale).Add(image.Pt(188 * data.ScreenScale, 172 * data.ScreenScale))
+    cancelRect := image.Rect(0, 0, 18, 24).Add(image.Pt(188, 172))
     elements = append(elements, &uilib.UIElement{
         Rect: cancelRect,
         Layer: 1,
@@ -824,12 +825,12 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
     maxItem := 11
 
     // currentItem := 0
-    y := 39 * data.ScreenScale
-    x := 200 * data.ScreenScale
+    y := 39
+    x := 200
 
     // true if the rect is within the bounds of where the abilities should be
     inBounds := func (rect image.Rectangle) bool {
-        if rect.Min.Y >= 39 * data.ScreenScale && rect.Min.Y <= 160 * data.ScreenScale {
+        if rect.Min.Y >= 39 && rect.Min.Y <= 160 {
             return true
         }
 
@@ -853,7 +854,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
             artifactTypes := compatibilities[power]
             if artifactTypes.Contains(artifact.Type) && magicLevel.MagicLevel(power.Magic) >= power.Amount {
                 totalItems += 1
-                xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, float64(data.ScreenScale))), y + fonts.PowerFont.Height() * data.ScreenScale)
+                xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, 1)), y + fonts.PowerFont.Height())
                 elements = append(elements, &uilib.UIElement{
                     Rect: xRect,
                     PlaySoundLeftClick: inBounds(xRect),
@@ -919,27 +920,27 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                             return
                         }
 
-                        scale := ebiten.ColorScale{}
+                        var options ebiten.DrawImageOptions
 
                         if (mutuallyExclusive && groupSelect == i) || (!mutuallyExclusive && selected[i]) {
-                            scale.SetR(3)
-                            scale.SetG(3)
+                            options.ColorScale.SetR(3)
+                            options.ColorScale.SetG(3)
                         }
 
-                        fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), float64(data.ScreenScale), scale, power.Name)
+                        fonts.PowerFont.PrintOptions(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, power.Name)
                     },
                 })
 
-                y += (fonts.PowerFont.Height() + 1) * data.ScreenScale
+                y += (fonts.PowerFont.Height() + 1)
             }
         }
 
-        y += 5 * data.ScreenScale
+        y += 5
     }
 
     // spell charges
     if len(availableSpells.Spells) > 0 && (artifact.Type == ArtifactTypeWand || artifact.Type == ArtifactTypeStaff) {
-        xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth("Spell Charges", float64(data.ScreenScale))), y + fonts.PowerFont.Height() * data.ScreenScale)
+        xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth("Spell Charges", 1)), y + fonts.PowerFont.Height())
         selected := false
         totalItems += 1
 
@@ -979,17 +980,17 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                     return
                 }
 
-                scale := ebiten.ColorScale{}
+                var options ebiten.DrawImageOptions
 
                 if selected {
-                    scale.SetR(3)
-                    scale.SetG(3)
+                    options.ColorScale.SetR(3)
+                    options.ColorScale.SetG(3)
                 }
 
                 if addedPower.Type == PowerTypeSpellCharges {
-                    fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), float64(data.ScreenScale), scale, addedPower.Name)
+                    fonts.PowerFont.PrintOptions(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, addedPower.Name)
                 } else {
-                    fonts.PowerFont.Print(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), float64(data.ScreenScale), scale, "Spell Charges")
+                    fonts.PowerFont.PrintOptions(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, "Spell Charges")
                 }
             },
         })
@@ -1013,8 +1014,8 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         doScroll := func (direction int) {
             move := direction * fonts.PowerFont.Height()
             for _, element := range abilityElements {
-                element.Rect.Min.Y += move * data.ScreenScale
-                element.Rect.Max.Y += move * data.ScreenScale
+                element.Rect.Min.Y += move
+                element.Rect.Max.Y += move
 
                 element.PlaySoundLeftClick = inBounds(element.Rect)
             }
@@ -1034,8 +1035,8 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
             }
         }
 
-        upX := 308 * data.ScreenScale
-        upY := 43 * data.ScreenScale
+        upX := 308
+        upY := 43
         upPressed := false
         elements = append(elements, &uilib.UIElement{
             Rect: util.ImageRect(upX, upY, upArrows[0]),
@@ -1050,7 +1051,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                     image = upArrows[0]
                 }
 
-                screen.DrawImage(image, &options)
+                scale.DrawScaled(screen, image, &options)
             },
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
@@ -1064,7 +1065,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         })
 
         downX := upX
-        downY := 165 * data.ScreenScale
+        downY := 165
         downPressed := false
         elements = append(elements, &uilib.UIElement{
             Rect: util.ImageRect(downX, downY, downArrows[0]),
@@ -1078,7 +1079,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                 } else {
                     image = downArrows[0]
                 }
-                screen.DrawImage(image, &options)
+                scale.DrawScaled(screen, image, &options)
             },
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
@@ -1091,7 +1092,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         })
 
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(200 * data.ScreenScale, 39 * data.ScreenScale, (200 + 110) * data.ScreenScale, 170 * data.ScreenScale),
+            Rect: image.Rect(200, 39, (200 + 110), 170),
             Scroll: func (element *uilib.UIElement, x float64, y float64) {
                 if y < 0 {
                     scrollDown()
@@ -1197,7 +1198,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             background, _ := imageCache.GetImage("spellscr.lbx", 13, 0)
-            screen.DrawImage(background, &options)
+            scale.DrawScaled(screen, background, &options)
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -1291,7 +1292,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
                     use = selected
                 }
                 image, _ := imageCache.GetImage("spellscr.lbx", use, index)
-                screen.DrawImage(image, &options)
+                scale.DrawScaled(screen, image, &options)
             },
         }
     }
@@ -1303,8 +1304,8 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
     // 10 item types
     for i := 0; i < 10; i++ {
-        x := 156 * data.ScreenScale + (i % 5) * (tmpImage.Bounds().Dx() + 2 * data.ScreenScale)
-        y := 3 * data.ScreenScale + (i / 5) * (tmpImage.Bounds().Dy() + 2 * data.ScreenScale)
+        x := 156 + (i % 5) * (tmpImage.Bounds().Dx() + 2)
+        y := 3 + (i / 5) * (tmpImage.Bounds().Dy() + 2)
 
         button := makeButton(x, y, unselectedImageStart + i, selectedImageStart + i, ArtifactType(i+1))
         if selectedButton == nil {
@@ -1317,7 +1318,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
     ui.AddElement(&uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            fonts.PowerFontWhite.Print(screen, float64(198 * data.ScreenScale), float64(185 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("Cost: %v", currentArtifact.Cost))
+            fonts.PowerFontWhite.PrintOptions(screen, 198, 185, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Cost: %v", currentArtifact.Cost))
         },
     })
 
@@ -1326,7 +1327,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
     okButtons, _ := imageCache.GetImages("spellscr.lbx", 24)
     okIndex := 0
-    okRect := util.ImageRect(281 * data.ScreenScale, 180 * data.ScreenScale, okButtons[0])
+    okRect := util.ImageRect(281, 180, okButtons[0])
     ui.AddElement(&uilib.UIElement{
         Rect: okRect,
         PlaySoundLeftClick: true,
@@ -1364,7 +1365,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(okRect.Min.X), float64(okRect.Min.Y))
             image := okButtons[okIndex]
-            screen.DrawImage(image, &options)
+            scale.DrawScaled(screen, image, &options)
         },
     })
 

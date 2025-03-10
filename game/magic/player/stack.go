@@ -99,7 +99,7 @@ func (stack *UnitStack) SplitActiveUnits() *UnitStack {
 }
 
 func (stack *UnitStack) ActiveUnits() []units.StackUnit {
-    var out []units.StackUnit
+    out := make([]units.StackUnit, 0, len(stack.active))
     for unit, active := range stack.active {
         if active {
             out = append(out, unit)
@@ -181,8 +181,8 @@ func (stack *UnitStack) HasHero() bool {
 
 // returns true if any of the active units in the stack have the given ability
 func (stack *UnitStack) ActiveUnitsHasAbility(ability data.AbilityType) bool {
-    for _, unit := range stack.ActiveUnits() {
-        if unit.HasAbility(ability) {
+    for unit, active := range stack.active {
+        if active && unit.HasAbility(ability) {
             return true
         }
     }
@@ -191,8 +191,8 @@ func (stack *UnitStack) ActiveUnitsHasAbility(ability data.AbilityType) bool {
 }
 
 func (stack *UnitStack) ActiveUnitsHasEnchantment(ability data.UnitEnchantment) bool {
-    for _, unit := range stack.ActiveUnits() {
-        if unit.HasEnchantment(ability) {
+    for unit, active := range stack.active {
+        if active && unit.HasEnchantment(ability) {
             return true
         }
     }
@@ -203,8 +203,8 @@ func (stack *UnitStack) ActiveUnitsHasEnchantment(ability data.UnitEnchantment) 
 // returns true if none of the active units in the stack have the given ability
 // if a single unit has the ability then return false
 func (stack *UnitStack) ActiveUnitsDoesntHaveAbility(ability data.AbilityType) bool {
-    for _, unit := range stack.ActiveUnits() {
-        if unit.HasAbility(ability) {
+    for unit, active := range stack.active {
+        if active && unit.HasAbility(ability) {
             return false
         }
     }
@@ -218,7 +218,14 @@ func (stack *UnitStack) HasPathfinding() bool {
 }
 
 func (stack *UnitStack) AllActive() bool {
-    return len(stack.ActiveUnits()) == len(stack.units)
+    count := 0
+    for _, active := range stack.active {
+        if active {
+            count += 1
+        }
+    }
+
+    return count == len(stack.units)
 }
 
 func (stack *UnitStack) ToggleActive(unit units.StackUnit){

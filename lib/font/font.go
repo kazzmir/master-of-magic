@@ -27,6 +27,9 @@ type FontOptions struct {
     DropShadow bool
     // if DropShadow is true, this is the color of the shadow, which defaults to black
     ShadowColor color.Color
+    // if nil then the default options are used (no scaling, no color scaling)
+    Options *ebiten.DrawImageOptions
+    Scale float64
 }
 
 type Font struct {
@@ -37,6 +40,7 @@ type Font struct {
     Columns int
     Glyphs []Glyph
     internalFont *LbxFont
+    GlyphImages map[int]*ebiten.Image
 }
 
 func MakeGPUSpriteMap(font *LbxFont) (*ebiten.Image, int, int, int, int) {
@@ -105,6 +109,7 @@ func MakeOptimizedFontWithPalette(font *LbxFont, palette color.Palette) *Font {
         Columns: columns,
         Glyphs: font.Glyphs,
         internalFont: font,
+        GlyphImages: make(map[int]*ebiten.Image),
     }
 }
 
@@ -113,6 +118,11 @@ func (font *Font) Height() int {
 }
 
 func (font *Font) getGlyphImage(index int) *ebiten.Image {
+    cached, ok := font.GlyphImages[index]
+    if ok {
+        return cached
+    }
+
     x := index % font.Columns
     y := index / font.Columns
 
@@ -121,7 +131,9 @@ func (font *Font) getGlyphImage(index int) *ebiten.Image {
     x2 := (x+1) * font.GlyphWidth
     y2 := (y+1) * font.GlyphHeight
 
-    return font.Image.SubImage(image.Rect(x1, y1, x2, y2)).(*ebiten.Image)
+    sub := font.Image.SubImage(image.Rect(x1, y1, x2, y2)).(*ebiten.Image)
+    font.GlyphImages[index] = sub
+    return sub
 }
 
 func toFloatArray(color color.Color) []float32 {
@@ -227,7 +239,10 @@ func (font *Font) PrintDropShadow(destination *ebiten.Image, x float64, y float6
 
 // print the text with no border/outline
 func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
-    font.doPrint(image, x, y, scale, colorScale, false, color.Black, text)
+    var options ebiten.DrawImageOptions
+    options.ColorScale = colorScale
+    font.PrintOptions(image, x, y, FontOptions{Scale: scale, Options: &options}, text)
+    // font.doPrint(image, x, y, scale, colorScale, false, color.Black, text)
 }
 
 func (font *Font) MeasureTextWidth(text string, scale float64) float64 {
@@ -251,16 +266,32 @@ func (font *Font) MeasureTextWidth(text string, scale float64) float64 {
 }
 
 func (font *Font) PrintCenter(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
+    var options ebiten.DrawImageOptions
+    options.ColorScale = colorScale
+    font.PrintOptions(image, x, y, FontOptions{Justify: FontJustifyCenter, Scale: scale, Options: &options}, text)
+    /*
     width := font.MeasureTextWidth(text, scale)
     font.Print(image, x - width / 2, y, scale, colorScale, text)
+    */
 }
 
 func (font *Font) PrintRight(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
+    var options ebiten.DrawImageOptions
+    options.ColorScale = colorScale
+    font.PrintOptions(image, x, y, FontOptions{Justify: FontJustifyRight, Scale: scale, Options: &options}, text)
+    /*
     width := font.MeasureTextWidth(text, scale)
     font.Print(image, x - width, y, scale, colorScale, text)
+    */
 }
 
+/*
 func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, options FontOptions, text string) {
+    var drawOptions ebiten.DrawImageOptions
+    drawOptions.ColorScale = colorScale
+    options.Options = &drawOptions
+    font.PrintOptions(image, x, y, options, text)
+    /*
     useX := x
     useY := y
 
@@ -278,6 +309,38 @@ func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, scale 
         font.doPrint(image, useX, useY, scale, colorScale, true, options.ShadowColor, text)
     } else {
         font.doPrint(image, useX, useY, scale, colorScale, false, options.ShadowColor, text)
+    }
+    * /
+}
+*/
+
+func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, options FontOptions, text string) {
+    useOptions := options.Options
+    if useOptions == nil {
+        useOptions = &ebiten.DrawImageOptions{}
+    }
+
+    scale := options.Scale
+    if scale == 0 {
+        scale = 1
+    }
+
+    useX, useY := x * options.Scale, y * options.Scale
+
+    switch options.Justify {
+        case FontJustifyLeft:
+        case FontJustifyCenter:
+            width := font.MeasureTextWidth(text, scale)
+            useX = useX - width / 2
+        case FontJustifyRight:
+            width := font.MeasureTextWidth(text, scale)
+            useX = useX - width
+    }
+
+    if options.DropShadow {
+        font.doPrint(image, useX, useY, scale, useOptions.ColorScale, true, options.ShadowColor, text)
+    } else {
+        font.doPrint(image, useX, useY, scale, useOptions.ColorScale, false, options.ShadowColor, text)
     }
 }
 
@@ -300,13 +363,15 @@ func (font *Font) splitText(text string, maxWidth float64, scale float64) (strin
     return "", text
 }
 
-func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, colorScale ebiten.ColorScale, options FontOptions, text string) {
-    wrapped := font.CreateWrappedText(maxWidth, scale, text)
-    font.RenderWrapped(image, x, y, wrapped, colorScale, options)
+func (font *Font) PrintWrap(image *ebiten.Image, x float64, y float64, maxWidth float64, options FontOptions, text string) {
+    wrapped := font.CreateWrappedText(maxWidth, 1, text)
+    font.RenderWrapped(image, x, y, wrapped, options)
 }
 
 func (font *Font) PrintWrapCenter(image *ebiten.Image, x float64, y float64, maxWidth float64, scale float64, colorScale ebiten.ColorScale, text string) {
-    font.PrintWrap(image, x, y, maxWidth, scale, colorScale, FontOptions{Justify: FontJustifyCenter}, text)
+    var options ebiten.DrawImageOptions
+    options.ColorScale = colorScale
+    font.PrintWrap(image, x, y, maxWidth, FontOptions{Justify: FontJustifyCenter, Scale: scale, Options: &options}, text)
     /*
     wrapped := font.CreateWrappedText(maxWidth, scale, text)
     font.RenderWrapped(image, x, y, wrapped, colorScale, FontOptions{Justify: FontJustifyCenter})
@@ -324,12 +389,12 @@ func (text *WrappedText) Clear() {
     text.Lines = nil
 }
 
-func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, colorScale ebiten.ColorScale, options FontOptions) {
+// FIXME: remove colorScale argument
+func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, options FontOptions) {
     yPos := y
-    useOptions := options
     for _, line := range wrapped.Lines {
-        font.PrintOptions(image, x, yPos, wrapped.Scale, colorScale, useOptions, line)
-        yPos += float64(font.Height()) * wrapped.Scale + 1
+        font.PrintOptions(image, x, yPos, options, line)
+        yPos += float64(font.Height()) + 1
     }
 }
 

@@ -2,6 +2,8 @@ package mouse
 
 import (
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
+
     "github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -35,7 +37,7 @@ func (mouse *GlobalMouse) Draw(screen *ebiten.Image) {
     if mouse != nil && mouse.Enabled && mouse.CurrentMouse != nil {
         x, y := inputmanager.MousePosition()
         var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x), float64(y))
-        screen.DrawImage(mouse.CurrentMouse, &options)
+        options.GeoM.Translate(scale.Unscale(float64(x)), scale.Unscale(float64(y)))
+        scale.DrawScaled(screen, mouse.CurrentMouse, &options)
     }
 }

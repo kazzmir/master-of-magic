@@ -10,6 +10,7 @@ import (
     "strconv"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -156,7 +157,7 @@ func DrawScenario2(engine *Engine, screen *ebiten.Image){
     // FIXME: Test with sparkles
     // FIXME: Test with unit
     // FIXME: Test with other node type
-    natureNode := ebiten.NewImageFromImage(engine.ImageCache.ApplyScale(data.Tiles[terrain.IndexNatNode].Images[0]))
+    natureNode := ebiten.NewImageFromImage(data.Tiles[terrain.IndexNatNode].Images[0])
 
     shader, err := engine.ImageCache.GetShader(shaders.ShaderWarp)
     if err != nil {
@@ -179,7 +180,7 @@ func DrawScenario2(engine *Engine, screen *ebiten.Image){
 func DrawScenario3(engine *Engine, screen *ebiten.Image){
     screen.Fill(color.RGBA{R: 60, G: 60, B: 120, A: 255})
 
-    data.ScreenScale = 3
+    // data.ScreenScale = 3
 
     newCache := util.MakeImageCache(engine.Cache)
     engine.ImageCache = &newCache
@@ -225,14 +226,14 @@ func DrawScenario3(engine *Engine, screen *ebiten.Image){
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return data.ScreenWidth, data.ScreenHeight
+    return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    data.ScreenScale = 1
-    ebiten.SetWindowSize(data.ScreenWidth * 2, data.ScreenHeight * 2)
+    scale.UpdateScale(1)
+    ebiten.SetWindowSize(data.ScreenWidth * 4, data.ScreenHeight * 4)
     ebiten.SetWindowTitle("shader test")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 

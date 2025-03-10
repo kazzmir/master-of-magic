@@ -7,7 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
-    "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -32,18 +32,8 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
             background, _ := imageCache.GetImage("hire.lbx", 2, 0)
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            options.GeoM.Translate(float64(4 * data.ScreenScale), float64(15 * data.ScreenScale))
-            screen.DrawImage(background, &options)
-        },
-    })
-
-    elements = append(elements, &uilib.UIElement{
-        Layer: 1,
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            colorScale := ebiten.ColorScale{}
-            colorScale.ScaleAlpha(getAlpha())
-            text := fmt.Sprintf("A merchant arrives and offers a magic %v for sale. The price is only %v gold pieces.", artifactToBuy.Name, goldToBuy)
-            fonts.LightFont.PrintWrap(screen, float64(60 * data.ScreenScale), float64(23 * data.ScreenScale), float64(180 * data.ScreenScale), float64(data.ScreenScale), colorScale, font.FontOptions{}, text)
+            options.GeoM.Translate(float64(4), float64(15))
+            scale.DrawScaled(screen, background, &options)
         },
     })
 
@@ -52,13 +42,23 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            options.GeoM.Translate(float64(18 * data.ScreenScale), float64(80 * data.ScreenScale))
+            text := fmt.Sprintf("A merchant arrives and offers a magic %v for sale. The price is only %v gold pieces.", artifactToBuy.Name, goldToBuy)
+            fonts.LightFont.PrintWrap(screen, float64(60), float64(23), float64(180), font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, text)
+        },
+    })
+
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            options.GeoM.Translate(float64(18), float64(80))
             artifact.RenderArtifactBox(screen, &imageCache, *artifactToBuy, ui.Counter / 8, vaultFonts.ItemName, vaultFonts.PowerFont, options)
         },
     })
 
     buttonBackgrounds, _ := imageCache.GetImages("backgrnd.lbx", 24)
-    buyRect := util.ImageRect(256 * data.ScreenScale, 136 * data.ScreenScale, buttonBackgrounds[0])
+    buyRect := util.ImageRect(256, 136, buttonBackgrounds[0])
     buyIndex := 0
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -78,15 +78,15 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(buyRect.Min.X), float64(buyRect.Min.Y))
             options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(buttonBackgrounds[buyIndex], &options)
+            scale.DrawScaled(screen, buttonBackgrounds[buyIndex], &options)
 
             x := float64(buyRect.Min.X + buyRect.Max.X) / 2
             y := float64(buyRect.Min.Y + buyRect.Max.Y) / 2
-            fonts.LightFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Buy")
+            fonts.LightFont.PrintOptions(screen, x, y - float64(5), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, "Buy")
         },
     })
 
-    rejectRect := util.ImageRect(256 * data.ScreenScale, 155 * data.ScreenScale, buttonBackgrounds[0])
+    rejectRect := util.ImageRect(256, 155, buttonBackgrounds[0])
     rejectIndex := 0
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
@@ -106,11 +106,11 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(rejectRect.Min.X), float64(rejectRect.Min.Y))
             options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(buttonBackgrounds[rejectIndex], &options)
+            scale.DrawScaled(screen, buttonBackgrounds[rejectIndex], &options)
 
             x := float64(rejectRect.Min.X + rejectRect.Max.X) / 2
             y := float64(rejectRect.Min.Y + rejectRect.Max.Y) / 2
-            fonts.LightFont.PrintCenter(screen, x, y - float64(5 * data.ScreenScale), float64(data.ScreenScale), options.ColorScale, "Reject")
+            fonts.LightFont.PrintOptions(screen, x, y - float64(5), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, "Reject")
         },
     })
 

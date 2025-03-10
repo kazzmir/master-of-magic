@@ -18,6 +18,7 @@ import (
     musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -33,12 +34,6 @@ import (
     "github.com/hajimehoshi/ebiten/v2/ebitenutil"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
-
-func stretchImage(screen *ebiten.Image, sprite *ebiten.Image){
-    var options ebiten.DrawImageOptions
-    options.GeoM.Scale(float64(data.ScreenWidth) / float64(sprite.Bounds().Dx()), float64(data.ScreenHeight) / float64(sprite.Bounds().Dy()))
-    screen.DrawImage(sprite, &options)
-}
 
 type DrawFunc func(*ebiten.Image)
 
@@ -451,7 +446,7 @@ func (game *MagicGame) Update() error {
 }
 
 func (game *MagicGame) Layout(outsideWidth int, outsideHeight int) (int, int) {
-    return data.ScreenWidth, data.ScreenHeight
+    return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
 func (game *MagicGame) Draw(screen *ebiten.Image) {
@@ -473,7 +468,7 @@ func main() {
     flag.BoolVar(&startGame, "start", false, "start the game immediately with a random wizard")
     flag.Parse()
 
-    ebiten.SetWindowSize(data.ScreenWidth * 2, data.ScreenHeight * 2)
+    ebiten.SetWindowSize(data.ScreenWidth * 4, data.ScreenHeight * 4)
     ebiten.SetWindowTitle("magic")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
     ebiten.SetWindowClosingHandled(true)

@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -95,7 +96,7 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             background, _ := view.ImageCache.GetImage("reload.lbx", 21, 0)
             var options ebiten.DrawImageOptions
-            screen.DrawImage(background, &options)
+            scale.DrawScaled(screen, background, &options)
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -103,25 +104,25 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
                 }
             })
 
-            bigFont.PrintCenter(screen, float64(160 * data.ScreenScale), float64(5 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("The Cities Of %v", view.Player.Wizard.Name))
+            bigFont.PrintCenter(screen, float64(160), float64(5), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("The Cities Of %v", view.Player.Wizard.Name))
 
-            y := float64(17 * data.ScreenScale)
-            x := float64(31 * data.ScreenScale)
-            normalFont.Print(screen, x, y, float64(data.ScreenScale), ebiten.ColorScale{}, "Name")
-            normalFont.Print(screen, x + float64(57 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Race")
-            normalFont.PrintRight(screen, x + float64(119 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Pop")
-            normalFont.PrintRight(screen, x + float64(139 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Gold")
-            normalFont.PrintRight(screen, x + float64(159 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Prd")
-            normalFont.Print(screen, x + float64(165 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Producing")
-            normalFont.PrintRight(screen, x + float64(258 * data.ScreenScale), y, float64(data.ScreenScale), ebiten.ColorScale{}, "Time")
+            y := float64(17)
+            x := float64(31)
+            normalFont.Print(screen, x, y, scale.ScaleAmount, ebiten.ColorScale{}, "Name")
+            normalFont.Print(screen, x + 57, y, scale.ScaleAmount, ebiten.ColorScale{}, "Race")
+            normalFont.PrintRight(screen, x + float64(119), y, scale.ScaleAmount, ebiten.ColorScale{}, "Pop")
+            normalFont.PrintRight(screen, x + float64(139), y, scale.ScaleAmount, ebiten.ColorScale{}, "Gold")
+            normalFont.PrintRight(screen, x + float64(159), y, scale.ScaleAmount, ebiten.ColorScale{}, "Prd")
+            normalFont.Print(screen, x + float64(165), y, scale.ScaleAmount, ebiten.ColorScale{}, "Producing")
+            normalFont.PrintRight(screen, x + float64(258), y, scale.ScaleAmount, ebiten.ColorScale{}, "Time")
 
-            normalFont.Print(screen, float64(232 * data.ScreenScale), float64(173 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%vGP", view.Player.Gold))
-            normalFont.Print(screen, float64(267 * data.ScreenScale), float64(173 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%vMP", view.Player.Mana))
+            normalFont.Print(screen, 232, 173, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%vGP", view.Player.Gold))
+            normalFont.Print(screen, 267, 173, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%vMP", view.Player.Mana))
 
             if highlightedCity != nil {
-                normalFont.Print(screen, float64(99 * data.ScreenScale), float64(158 * data.ScreenScale), float64(data.ScreenScale), ebiten.ColorScale{}, highlightedCity.Name)
-                minimapRect := image.Rect(42 * data.ScreenScale, 162 * data.ScreenScale, 91 * data.ScreenScale, 195 * data.ScreenScale)
-                minimapArea := screen.SubImage(minimapRect).(*ebiten.Image)
+                normalFont.Print(screen, float64(99), float64(158), scale.ScaleAmount, ebiten.ColorScale{}, highlightedCity.Name)
+                minimapRect := image.Rect(42, 162, 91, 195)
+                minimapArea := screen.SubImage(scale.ScaleRect(minimapRect)).(*ebiten.Image)
                 view.DrawMinimap(minimapArea, highlightedCity.X, highlightedCity.Y, highlightedCity.Plane, ui.Counter)
             // vector.DrawFilledRect(minimapArea, float32(minimapRect.Min.X), float32(minimapRect.Min.Y), float32(minimapRect.Bounds().Dx()), float32(minimapRect.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0, B: 0, A: 128}), false)
             }
@@ -138,7 +139,7 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
     highlightColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: 255, A: 90})
 
     maxRows := 9
-    y := 28 * data.ScreenScale
+    y := 28
     rowCount := 0
     for i, city := range cities {
 
@@ -154,7 +155,7 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
 
         elementY := float64(y)
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(28 * data.ScreenScale, int(elementY), 296 * data.ScreenScale, int(elementY) + 14 * data.ScreenScale),
+            Rect: image.Rect(28, int(elementY), 296, int(elementY) + 14),
             LeftClickRelease: func(element *uilib.UIElement){
                 view.DoSelectCity(city)
                 view.State = CityListScreenStateDone
@@ -174,26 +175,26 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
                 x := float64(31)
 
                 if highlightedCity == city {
-                    vector.DrawFilledRect(screen, float32((x-1) * float64(data.ScreenScale)), float32(elementY- float64(3 * data.ScreenScale)), float32(52 * data.ScreenScale), float32(10 * data.ScreenScale), highlightColor, false)
-                    vector.DrawFilledRect(screen, float32((x-1+57) * float64(data.ScreenScale)), float32(elementY-float64(3 * data.ScreenScale)), float32(44 * data.ScreenScale), float32(10 * data.ScreenScale), highlightColor, false)
-                    vector.DrawFilledRect(screen, float32((x-1+119-14) * float64(data.ScreenScale)), float32(elementY-float64(3 * data.ScreenScale)), float32(16 * data.ScreenScale), float32(10 * data.ScreenScale), highlightColor, false)
-                    vector.DrawFilledRect(screen, float32((x-1+139-14) * float64(data.ScreenScale)), float32(elementY-float64(3 * data.ScreenScale)), float32(16 * data.ScreenScale), float32(10 * data.ScreenScale), highlightColor, false)
-                    vector.DrawFilledRect(screen, float32((x-1+159-14) * float64(data.ScreenScale)), float32(elementY-float64(3 * data.ScreenScale)), float32(16 * data.ScreenScale), float32(10 * data.ScreenScale), highlightColor, false)
-                    vector.DrawFilledRect(screen, float32((x-1+165) * float64(data.ScreenScale)), float32(elementY-float64(3 * data.ScreenScale)), float32(76 * data.ScreenScale), float32(10 * data.ScreenScale), highlightColor, false)
-                    vector.DrawFilledRect(screen, float32((x-1+258-13) * float64(data.ScreenScale)), float32(elementY-float64(3 * data.ScreenScale)), float32(15 * data.ScreenScale), float32(10 * data.ScreenScale), highlightColor, false)
+                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1))), scale.Scale(float32(elementY - 3)), scale.Scale(float32(52)), scale.Scale(float32(10)), highlightColor, false)
+                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1+57))), scale.Scale(float32(elementY-3)), scale.Scale(float32(44)), scale.Scale(float32(10)), highlightColor, false)
+                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1+119-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
+                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1+139-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
+                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1+159-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
+                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1+165))), scale.Scale(float32(elementY-3)), scale.Scale(float32(76)), scale.Scale(float32(10)), highlightColor, false)
+                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1+258-13))), scale.Scale(float32(elementY-3)), scale.Scale(float32(15)), scale.Scale(float32(10)), highlightColor, false)
                 }
 
-                normalFont.Print(screen, x * float64(data.ScreenScale), elementY, float64(data.ScreenScale), ebiten.ColorScale{}, city.Name)
-                normalFont.Print(screen, (x + 57) * float64(data.ScreenScale), elementY, float64(data.ScreenScale), ebiten.ColorScale{}, city.Race.String())
-                normalFont.PrintRight(screen, (x + 119) * float64(data.ScreenScale), elementY, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", city.Citizens()))
-                normalFont.PrintRight(screen, (x + 139) * float64(data.ScreenScale), elementY, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", goldSurplus))
-                normalFont.PrintRight(screen, (x + 159) * float64(data.ScreenScale), elementY, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", int(city.WorkProductionRate())))
-                normalFont.Print(screen, (x + 165) * float64(data.ScreenScale), elementY, float64(data.ScreenScale), ebiten.ColorScale{}, city.ProducingString())
-                normalFont.PrintRight(screen, (x + 258) * float64(data.ScreenScale), elementY, float64(data.ScreenScale), ebiten.ColorScale{}, fmt.Sprintf("%v", city.ProducingTurnsLeft()))
+                normalFont.Print(screen, x, elementY, scale.ScaleAmount, ebiten.ColorScale{}, city.Name)
+                normalFont.Print(screen, (x + 57), elementY, scale.ScaleAmount, ebiten.ColorScale{}, city.Race.String())
+                normalFont.PrintRight(screen, (x + 119), elementY, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v", city.Citizens()))
+                normalFont.PrintRight(screen, (x + 139), elementY, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v", goldSurplus))
+                normalFont.PrintRight(screen, (x + 159), elementY, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v", int(city.WorkProductionRate())))
+                normalFont.Print(screen, (x + 165), elementY, scale.ScaleAmount, ebiten.ColorScale{}, city.ProducingString())
+                normalFont.PrintRight(screen, (x + 258), elementY, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v", city.ProducingTurnsLeft()))
             },
         })
 
-        y += 14 * data.ScreenScale
+        y += 14
 
         rowCount += 1
         if rowCount >= maxRows {
@@ -205,7 +206,7 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
         clicked := false
 
         return &uilib.UIElement{
-            Rect: util.ImageRect(x * data.ScreenScale, y * data.ScreenScale, normal),
+            Rect: util.ImageRect(x, y, normal),
             LeftClick: func (this *uilib.UIElement){
                 clicked = true
             },
@@ -220,7 +221,7 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
                 if clicked {
                     use = clickImage
                 }
-                screen.DrawImage(use, &options)
+                scale.DrawScaled(screen, use, &options)
             },
         }
     }

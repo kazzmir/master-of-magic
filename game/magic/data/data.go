@@ -1,32 +1,7 @@
 package data
 
-const ScreenWidthOriginal = 320
-const ScreenHeightOriginal = 200
-
-var ScreenScale = 3
-var ScreenWidth = ScreenWidthOriginal * ScreenScale
-var ScreenHeight = ScreenHeightOriginal * ScreenScale
-var ScreenScaleAlgorithm = ScaleAlgorithmNormal
-
-type ScaleAlgorithm int
-
-const (
-    // the scale2x
-    // https://www.scale2x.it/
-    ScaleAlgorithmScale ScaleAlgorithm = iota
-    ScaleAlgorithmXbr
-    ScaleAlgorithmNormal
-)
-
-func (algorithm ScaleAlgorithm) String() string {
-    switch algorithm {
-        case ScaleAlgorithmScale: return "scale"
-        case ScaleAlgorithmXbr: return "xbr"
-        case ScaleAlgorithmNormal: return "normal"
-    }
-
-    return ""
-}
+const ScreenWidth = 320
+const ScreenHeight = 200
 
 type BannerType int
 const (

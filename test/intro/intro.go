@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     introlib "github.com/kazzmir/master-of-magic/game/magic/intro"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -59,7 +60,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return data.ScreenWidth, data.ScreenHeight
+    return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
 func main(){
@@ -77,7 +78,7 @@ func main(){
 
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(data.ScreenWidth * 5, data.ScreenHeight * 5)
+    ebiten.SetWindowSize(data.ScreenWidth * 4, data.ScreenHeight * 4)
     ebiten.SetWindowTitle("intro")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 

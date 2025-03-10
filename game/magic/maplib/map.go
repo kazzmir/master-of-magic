@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
     cameralib "github.com/kazzmir/master-of-magic/game/magic/camera"
@@ -125,7 +126,7 @@ func (road *ExtraRoad) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCa
             pics, err := imageCache.GetImages("mapback.lbx", baseIndex + index)
             if err == nil {
                 pic := pics[counter % uint64(len(pics))]
-                screen.DrawImage(pic, options)
+                scale.DrawScaled(screen, pic, options)
             }
 
             connected = true
@@ -136,7 +137,7 @@ func (road *ExtraRoad) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCa
         pics, err := imageCache.GetImages("mapback.lbx", baseIndex)
         if err == nil {
             pic := pics[counter % uint64(len(pics))]
-            screen.DrawImage(pic, options)
+            scale.DrawScaled(screen, pic, options)
         }
     }
 }
@@ -158,7 +159,7 @@ func (bonus *ExtraBonus) DrawLayer1(screen *ebiten.Image, imageCache *util.Image
 
     pic, err := imageCache.GetImage("mapback.lbx", index, 0)
     if err == nil {
-        screen.DrawImage(pic, options)
+        scale.DrawScaled(screen, pic, options)
     }
 }
 
@@ -354,7 +355,7 @@ func (extra *ExtraEncounter) DrawLayer1(screen *ebiten.Image, imageCache *util.I
 
     pic, err := imageCache.GetImage("mapback.lbx", index, 0)
     if err == nil {
-        screen.DrawImage(pic, options)
+        scale.DrawScaled(screen, pic, options)
     }
 }
 
@@ -370,7 +371,7 @@ func (extra *ExtraOpenTower) DrawLayer1(screen *ebiten.Image, imageCache *util.I
 
     pic, err := imageCache.GetImage("mapback.lbx", index, 0)
     if err == nil {
-        screen.DrawImage(pic, options)
+        scale.DrawScaled(screen, pic, options)
     }
 }
 
@@ -421,7 +422,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
             options2.GeoM.Reset()
             options2.GeoM.Translate(float64(point.X * tileWidth), float64(point.Y * tileHeight))
             options2.GeoM.Concat(options.GeoM)
-            screen.DrawImage(use, &options2)
+            scale.DrawScaled(screen, use, &options2)
         }
     }
 
@@ -449,7 +450,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
             return
         }
         rect := image.Rect(int(x1), int(y1), int(x2), int(y2))
-        image := screen.SubImage(rect)
+        image := screen.SubImage(scale.ScaleRect(rect))
         if image.Bounds().Dx() == 0 || image.Bounds().Dy() == 0 {
             return
         }
@@ -465,7 +466,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
         // log.Printf("warp at %v, %v bounds image=%v source=%v", point.X, point.Y, image.Bounds(), sourceImage.Bounds())
 
         var options2 ebiten.DrawRectShaderOptions
-        options2.GeoM.Translate(x1, y1)
+        options2.GeoM.Translate(scale.Scale(x1), scale.Scale(y1))
 
         options2.Images[0] = sourceImage
         // options2.Images[1] = mask
@@ -538,7 +539,7 @@ type ExtraCorruption struct {
 func (node *ExtraCorruption) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
     pic, err := imageCache.GetImage("mapback.lbx", 77, 0)
     if err == nil {
-        screen.DrawImage(pic, options)
+        scale.DrawScaled(screen, pic, options)
     }
 }
 
@@ -1234,11 +1235,11 @@ func (mapObject *Map) Height() int {
 }
 
 func (mapObject *Map) TileWidth() int {
-    return mapObject.Data.TileWidth() * data.ScreenScale
+    return mapObject.Data.TileWidth()
 }
 
 func (mapObject *Map) TileHeight() int {
-    return mapObject.Data.TileHeight() * data.ScreenScale
+    return mapObject.Data.TileHeight()
 }
 
 func (mapObject *Map) WrapX(x int) int {
@@ -1316,7 +1317,7 @@ func (mapObject *Map) ResetCache() {
     mapObject.TileCache = make(map[int]*ebiten.Image)
 }
 
-func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64, scaler util.Scaler) (*ebiten.Image, error) {
+func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64) (*ebiten.Image, error) {
     tile := mapObject.Map.Terrain[tileX][tileY]
     tileInfo := mapObject.Data.Tiles[tile]
 
@@ -1326,7 +1327,7 @@ func (mapObject *Map) GetTileImage(tileX int, tileY int, animationCounter uint64
         return image, nil
     }
 
-    gpuImage := ebiten.NewImageFromImage(scaler.ApplyScale(tileInfo.Images[animationCounter % uint64(len(tileInfo.Images))]))
+    gpuImage := ebiten.NewImageFromImage(tileInfo.Images[animationCounter % uint64(len(tileInfo.Images))])
 
     mapObject.TileCache[tile * 0x1000 + int(animationIndex)] = gpuImage
     return gpuImage, nil
@@ -1606,8 +1607,8 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
 
     rowSize := screen.Bounds().Dx()
 
-    cameraX := centerX * data.ScreenScale - screen.Bounds().Dx() / 2
-    cameraY := centerY * data.ScreenScale - screen.Bounds().Dy() / 2
+    cameraX := scale.Scale(centerX) - screen.Bounds().Dx() / 2
+    cameraY := scale.Scale(centerY) - screen.Bounds().Dy() / 2
 
     /*
     if cameraX < 0 {
@@ -1625,8 +1626,8 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
     }
     */
 
-    if cameraY > mapObject.Map.Rows() * data.ScreenScale - screen.Bounds().Dy() {
-        cameraY = mapObject.Map.Rows() * data.ScreenScale - screen.Bounds().Dy()
+    if cameraY > scale.Scale(mapObject.Map.Rows()) - screen.Bounds().Dy() {
+        cameraY = scale.Scale(mapObject.Map.Rows()) - screen.Bounds().Dy()
     }
 
     set := func(x int, y int, c color.RGBA){
@@ -1698,8 +1699,8 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
 
     for x := 0; x < screen.Bounds().Dx(); x++ {
         for y := 0; y < screen.Bounds().Dy(); y++ {
-            tileX := mapObject.WrapX((x + cameraX) / data.ScreenScale)
-            tileY := (y + cameraY) / data.ScreenScale
+            tileX := mapObject.WrapX(scale.Unscale(x + cameraX))
+            tileY := scale.Unscale(y + cameraY)
 
             if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() || fog[tileX][tileY] == data.FogTypeUnexplored {
                 set(x, y, black)
@@ -1723,39 +1724,39 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
         }
         cursorColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: byte(cursorColorBlue), A: 180})
 
-        cursorRadius := int(float64(5.0 * data.ScreenScale) / zoom)
-        x1 := centerX * data.ScreenScale - cursorRadius - cameraX
-        y1 := centerY * data.ScreenScale - cursorRadius - cameraY
-        x2 := centerX * data.ScreenScale + cursorRadius - cameraX
+        cursorRadius := int(float64(scale.Scale(5.0)) / zoom)
+        x1 := scale.Scale(centerX) - cursorRadius - cameraX
+        y1 := scale.Scale(centerY) - cursorRadius - cameraY
+        x2 := scale.Scale(centerX) + cursorRadius - cameraX
         y2 := y1
         x3 := x1
-        y3 := centerY * data.ScreenScale + cursorRadius - cameraY
+        y3 := scale.Scale(centerY) + cursorRadius - cameraY
         x4 := x2
         y4 := y3
         points := []image.Point{
             image.Pt(x1, y1),
-            image.Pt(x1+1*data.ScreenScale, y1),
-            image.Pt(x1, y1+1*data.ScreenScale),
+            image.Pt(x1+scale.Scale(1), y1),
+            image.Pt(x1, y1+scale.Scale(1)),
 
             image.Pt(x2, y2),
-            image.Pt(x2-1*data.ScreenScale, y2),
-            image.Pt(x2, y2+1*data.ScreenScale),
+            image.Pt(x2-scale.Scale(1), y2),
+            image.Pt(x2, y2+scale.Scale(1)),
 
             image.Pt(x3, y3),
-            image.Pt(x3+1*data.ScreenScale, y3),
-            image.Pt(x3, y3-1*data.ScreenScale),
+            image.Pt(x3+scale.Scale(1), y3),
+            image.Pt(x3, y3-scale.Scale(1)),
 
             image.Pt(x4, y4),
-            image.Pt(x4-1*data.ScreenScale, y4),
-            image.Pt(x4, y4-1*data.ScreenScale),
+            image.Pt(x4-scale.Scale(1), y4),
+            image.Pt(x4, y4-scale.Scale(1)),
         }
 
         drawSquare := func(x int, y int, c color.RGBA){
-            if data.ScreenScale == 1 {
+            if scale.ScaleAmount == 1 {
                 set(x, y, cursorColor)
             } else {
-                for dx := range data.ScreenScale {
-                    for dy := range data.ScreenScale {
+                for dx := range int(scale.ScaleAmount) {
+                    for dy := range int(scale.ScaleAmount) {
                         cx := x + dx
                         cy := y + dy
 
@@ -1768,7 +1769,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
         }
 
         for _, point := range points {
-            x := mapObject.WrapX(point.X / data.ScreenScale) * data.ScreenScale
+            x := scale.Scale(mapObject.WrapX(scale.Unscale(point.X)))
             y := point.Y
 
             if x >= 0 && y >= 0 && x < screen.Bounds().Dx() && y < screen.Bounds().Dy(){
@@ -1813,7 +1814,7 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
                 continue
             }
 
-            tileImage, err := mapObject.GetTileImage(tileX, tileY, animationCounter, imageCache)
+            tileImage, err := mapObject.GetTileImage(tileX, tileY, animationCounter)
             if err == nil {
                 options.GeoM.Reset()
                 // options.GeoM = geom
@@ -1821,7 +1822,7 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
                 options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
                 options.GeoM.Concat(geom)
 
-                screen.DrawImage(tileImage, &options)
+                scale.DrawScaled(screen, tileImage, &options)
 
                 for _, extraKind := range ExtraDrawOrder {
                     extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)][extraKind]

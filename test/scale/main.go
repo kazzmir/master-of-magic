@@ -16,6 +16,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/console"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -158,13 +159,16 @@ func NewEngine(scenario int) (*Engine, error) {
     }, nil
 }
 
-func (engine *Engine) ChangeScale(scale int, algorithm data.ScaleAlgorithm) {
-    data.ScreenScale = scale
+func (engine *Engine) ChangeScale(scaleAmount int, algorithm scale.ScaleAlgorithm) {
+    /*
+    data.ScreenScale = 1
     data.ScreenScaleAlgorithm = algorithm
-    data.ScreenWidth = 320 * data.ScreenScale
-    data.ScreenHeight = 200 * data.ScreenScale
+    data.ScreenWidth = 320 * scale
+    data.ScreenHeight = 200 * scale
+    */
+    scale.UpdateScale(float64(scaleAmount))
 
-    log.Printf("Changing scale to %v %v", data.ScreenScale, data.ScreenScaleAlgorithm)
+    log.Printf("Changing scale to %v %v", scaleAmount, algorithm)
 
     engine.Game.UpdateImages()
     engine.Game.RefreshUI()
@@ -178,16 +182,16 @@ func (engine *Engine) Update() error {
     for _, key := range keys {
         switch key {
             case ebiten.KeyEscape, ebiten.KeyCapsLock: return ebiten.Termination
-            case ebiten.KeyF1: engine.ChangeScale(1, data.ScaleAlgorithmNormal)
-            case ebiten.KeyF2: engine.ChangeScale(2, data.ScaleAlgorithmNormal)
-            case ebiten.KeyF3: engine.ChangeScale(3, data.ScaleAlgorithmNormal)
-            case ebiten.KeyF4: engine.ChangeScale(4, data.ScaleAlgorithmNormal)
-            case ebiten.KeyF5: engine.ChangeScale(2, data.ScaleAlgorithmScale)
-            case ebiten.KeyF6: engine.ChangeScale(3, data.ScaleAlgorithmScale)
-            case ebiten.KeyF7: engine.ChangeScale(4, data.ScaleAlgorithmScale)
-            case ebiten.KeyF8: engine.ChangeScale(2, data.ScaleAlgorithmXbr)
-            case ebiten.KeyF9: engine.ChangeScale(3, data.ScaleAlgorithmXbr)
-            case ebiten.KeyF10: engine.ChangeScale(4, data.ScaleAlgorithmXbr)
+            case ebiten.KeyF1: engine.ChangeScale(1, scale.ScaleAlgorithmNormal)
+            case ebiten.KeyF2: engine.ChangeScale(2, scale.ScaleAlgorithmNormal)
+            case ebiten.KeyF3: engine.ChangeScale(3, scale.ScaleAlgorithmNormal)
+            case ebiten.KeyF4: engine.ChangeScale(4, scale.ScaleAlgorithmNormal)
+            case ebiten.KeyF5: engine.ChangeScale(2, scale.ScaleAlgorithmScale)
+            case ebiten.KeyF6: engine.ChangeScale(3, scale.ScaleAlgorithmScale)
+            case ebiten.KeyF7: engine.ChangeScale(4, scale.ScaleAlgorithmScale)
+            case ebiten.KeyF8: engine.ChangeScale(2, scale.ScaleAlgorithmXbr)
+            case ebiten.KeyF9: engine.ChangeScale(3, scale.ScaleAlgorithmXbr)
+            case ebiten.KeyF10: engine.ChangeScale(4, scale.ScaleAlgorithmXbr)
         }
     }
 
@@ -223,7 +227,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return data.ScreenWidth, data.ScreenHeight
+    return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
 func main(){
@@ -234,7 +238,7 @@ func main(){
 
     size := monitorWidth / 390
 
-    ebiten.SetWindowSize(data.ScreenWidth / data.ScreenScale * size, data.ScreenHeight / data.ScreenScale * size)
+    ebiten.SetWindowSize(data.ScreenWidth * size, data.ScreenHeight * size)
     ebiten.SetWindowTitle("new screen")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
@@ -248,6 +252,11 @@ func main(){
             return
         }
     }
+
+    /*
+    data.ScreenWidth = data.ScreenWidthOriginal * 3
+    data.ScreenHeight = data.ScreenHeightOriginal * 3
+    */
 
     audio.Initialize()
     mouse.Initialize()

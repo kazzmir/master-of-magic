@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
@@ -61,9 +62,9 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
     y += 60
     engine.VaultFonts.ItemName.Print(screen, 10, y, 4, ebiten.ColorScale{}, "This is a test of font outlines")
     y += 60
-    engine.VaultFonts.ItemName.PrintOptions(screen, 10, y, 4, ebiten.ColorScale{}, font.FontOptions{DropShadow: true, ShadowColor: color.RGBA{R: 255, G: 0, B: 0, A: 255}}, "This is a test of font outlines")
+    engine.VaultFonts.ItemName.PrintOptions(screen, 10, y, font.FontOptions{DropShadow: true, ShadowColor: color.RGBA{R: 255, G: 0, B: 0, A: 255}, Scale: 4}, "This is a test of font outlines")
     y += 60
-    engine.VaultFonts.ItemName.PrintOptions(screen, 10, y, 4, ebiten.ColorScale{}, font.FontOptions{DropShadow: true}, "This is a test of font outlines")
+    engine.VaultFonts.ItemName.PrintOptions(screen, 10, y, font.FontOptions{DropShadow: true, Scale: 4}, "This is a test of font outlines")
 
     y += 60
 
@@ -79,13 +80,13 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return data.ScreenWidth, data.ScreenHeight
+    return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
 func main(){
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    ebiten.SetWindowSize(data.ScreenWidth * 2, data.ScreenHeight * 2)
+    ebiten.SetWindowSize(data.ScreenWidth * 4, data.ScreenHeight * 4)
     ebiten.SetWindowTitle("intro")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 

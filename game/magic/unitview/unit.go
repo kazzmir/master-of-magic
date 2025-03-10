@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/fonts"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -35,7 +36,7 @@ func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit
     if err == nil && len(images) > 2 {
         use := images[2]
         // log.Printf("unitview.RenderCombatImage: %v", use.Bounds())
-        options.GeoM.Translate(float64(0), float64(0))
+        // options.GeoM.Translate(float64(0), float64(0))
 
         /*
         x, y := options.GeoM.Apply(0, 0)
@@ -69,12 +70,12 @@ func renderUpkeep(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitVi
 
     renderIcons := func(count int, small *ebiten.Image, big *ebiten.Image){
         for i := 0; i < count / 10; i++ {
-            screen.DrawImage(big, &options)
+            screen.DrawImage(big, scale.ScaleOptions(options))
             options.GeoM.Translate(float64(big.Bounds().Dx() + 1), 0)
         }
 
         for i := 0; i < count % 10; i++ {
-            screen.DrawImage(small, &options)
+            screen.DrawImage(small, scale.ScaleOptions(options))
             options.GeoM.Translate(float64(small.Bounds().Dx() + 1), 0)
         }
     }
@@ -93,23 +94,23 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     }
 
     if extraTitle != "" {
-        descriptionFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, name)
-        y += float64(descriptionFont.Height() * data.ScreenScale)
-        defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height() * data.ScreenScale))
-        descriptionFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "The " + extraTitle)
+        descriptionFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, name)
+        y += float64(descriptionFont.Height())
+        defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
+        descriptionFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, "The " + extraTitle)
 
-        y += float64(descriptionFont.Height() * data.ScreenScale)
-        defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height() * data.ScreenScale))
+        y += float64(descriptionFont.Height())
+        defaultOptions.GeoM.Translate(0, float64(descriptionFont.Height()))
     } else {
-        descriptionFont.PrintOptions(screen, x, y+float64(2 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, name)
-        y += float64(17 * data.ScreenScale)
-        defaultOptions.GeoM.Translate(0, float64(16 * data.ScreenScale))
+        descriptionFont.PrintOptions(screen, x, y+2, font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, name)
+        y += 17
+        defaultOptions.GeoM.Translate(0, 16)
     }
 
-    defaultOptions.GeoM.Translate(0, float64(-1 * data.ScreenScale))
+    defaultOptions.GeoM.Translate(0, float64(-1))
 
-    smallFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Moves")
-    y += float64((smallFont.Height() + 1) * data.ScreenScale)
+    smallFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, "Moves")
+    y += float64(smallFont.Height() + 1)
 
     unitMoves := unit.GetMovementSpeed()
 
@@ -118,27 +119,27 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     if err == nil {
         var options ebiten.DrawImageOptions
         options = defaultOptions
-        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", float64(data.ScreenScale)), 0)
+        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 0)
 
         for i := 0; i < unitMoves; i++ {
-            screen.DrawImage(smallBoot, &options)
+            screen.DrawImage(smallBoot, scale.ScaleOptions(options))
             options.GeoM.Translate(float64(smallBoot.Bounds().Dx()), 0)
         }
     }
 
-    smallFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Upkeep")
+    smallFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, "Upkeep")
 
     options := defaultOptions
-    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", float64(data.ScreenScale)), float64((smallFont.Height() + 2) * data.ScreenScale))
+    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), float64(smallFont.Height() + 2))
     renderUpkeep(screen, imageCache, unit, options)
 }
 
 func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions, discountedCost int) {
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
-    descriptionFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, unit.GetName())
+    descriptionFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, unit.GetName())
 
-    smallFont.PrintOptions(screen, x, y + float64(11 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Moves")
+    smallFont.PrintOptions(screen, x, y + float64(11), font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, "Moves")
 
     unitMoves := unit.GetMovementSpeed()
 
@@ -147,7 +148,7 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
     if err == nil {
         var options ebiten.DrawImageOptions
         options = defaultOptions
-        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", float64(data.ScreenScale)), float64(9 * data.ScreenScale))
+        options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 9)
 
         for i := 0; i < unitMoves; i++ {
             screen.DrawImage(smallBoot, &options)
@@ -155,22 +156,24 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
         }
     }
 
-    smallFont.PrintOptions(screen, x, y + float64(19 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Upkeep")
+    smallFont.PrintOptions(screen, x, y + float64(19), font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, "Upkeep")
 
     options := defaultOptions
-    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", float64(data.ScreenScale)), float64(18 * data.ScreenScale))
+    options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 18)
     renderUpkeep(screen, imageCache, unit, options)
 
     cost := unit.GetProductionCost()
-    smallFont.PrintOptions(screen, x, y + float64(27 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, fmt.Sprintf("Cost %v(%v)", discountedCost, cost))
+    smallFont.PrintOptions(screen, x, y + float64(27), font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, fmt.Sprintf("Cost %v(%v)", discountedCost, cost))
 }
 
 func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitStats, maxIconsPerLine int, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
-    width := descriptionFont.MeasureTextWidth("Armor", float64(data.ScreenScale))
+    width := descriptionFont.MeasureTextWidth("Armor", 1)
 
     x, y := defaultOptions.GeoM.Apply(0, 0)
 
-    descriptionFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Melee")
+    fontOptions := font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}
+
+    descriptionFont.PrintOptions(screen, x, y, fontOptions, "Melee")
 
     // show rows of icons. the second row is offset a bit to the right and down
     showNIcons := func(icon *ebiten.Image, count int, icon2 *ebiten.Image, count2 int, negativeCount int, x, y float64) {
@@ -188,12 +191,12 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
             if index > 0 && index % maxIconsPerLine == 0 {
                 options.GeoM = saveGeoM
-                options.GeoM.Translate(float64(3 * data.ScreenScale * index/maxIconsPerLine), 2 * float64(data.ScreenScale * index/maxIconsPerLine))
+                options.GeoM.Translate(float64(3 * index/maxIconsPerLine), 2 * float64(index/maxIconsPerLine))
             }
 
-            screen.DrawImage(icon, &options)
+            screen.DrawImage(icon, scale.ScaleOptions(options))
             // FIXME: if a stat is given due to an ability/spell then render the icon in gold
-            options.GeoM.Translate(float64(icon.Bounds().Dx() + data.ScreenScale), 0)
+            options.GeoM.Translate(float64(icon.Bounds().Dx() + 1), 0)
         }
 
         index := 0
@@ -235,8 +238,8 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     showNIcons(weaponIcon, unit.GetBaseMeleeAttackPower(), weaponGold, unit.GetFullMeleeAttackPower() - unit.GetBaseMeleeAttackPower(), unit.GetMeleeAttackPower() - unit.GetFullMeleeAttackPower(), x, y)
 
-    y += float64(descriptionFont.Height() * data.ScreenScale)
-    descriptionFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Range")
+    y += float64(descriptionFont.Height())
+    descriptionFont.PrintOptions(screen, x, y, fontOptions, "Range")
 
     var rangeIcon *ebiten.Image
     var rangeIconGold *ebiten.Image
@@ -255,22 +258,22 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     showNIcons(rangeIcon, unit.GetBaseRangedAttackPower(), rangeIconGold, unit.GetFullRangedAttackPower() - unit.GetBaseRangedAttackPower(), unit.GetRangedAttackPower() - unit.GetFullRangedAttackPower(), x, y)
 
-    y += float64(descriptionFont.Height() * data.ScreenScale)
-    descriptionFont.PrintOptions(screen, x, float64(y), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Armor")
+    y += float64(descriptionFont.Height())
+    descriptionFont.PrintOptions(screen, x, y, fontOptions, "Armor")
 
     armorIcon, _ := imageCache.GetImage("unitview.lbx", 22, 0)
     armorGold, _ := imageCache.GetImage("unitview.lbx", 44, 0)
     showNIcons(armorIcon, unit.GetBaseDefense(), armorGold, unit.GetFullDefense() - unit.GetBaseDefense(), unit.GetDefense() - unit.GetFullDefense(), x, y)
 
-    y += float64(descriptionFont.Height() * data.ScreenScale)
-    descriptionFont.PrintOptions(screen, x, float64(y), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Resist")
+    y += float64(descriptionFont.Height())
+    descriptionFont.PrintOptions(screen, x, y, fontOptions, "Resist")
 
     resistIcon, _ := imageCache.GetImage("unitview.lbx", 27, 0)
     resistGold, _ := imageCache.GetImage("unitview.lbx", 49, 0)
     showNIcons(resistIcon, unit.GetBaseResistance(), resistGold, unit.GetFullResistance() - unit.GetBaseResistance(), unit.GetResistance() - unit.GetFullResistance(), x, y)
 
-    y += float64(descriptionFont.Height() * data.ScreenScale)
-    descriptionFont.PrintOptions(screen, x, float64(y), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Hits")
+    y += float64(descriptionFont.Height())
+    descriptionFont.PrintOptions(screen, x, y, fontOptions, "Hits")
 
     healthIcon, _ := imageCache.GetImage("unitview.lbx", 23, 0)
     healthIconGold, _ := imageCache.GetImage("unitview.lbx", 45, 0)
@@ -281,14 +284,14 @@ func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, un
     experience := unit.GetExperienceData()
     experienceIndex := 102 + experience.ToInt()
     pic, _ := imageCache.GetImage("special.lbx", experienceIndex, 0)
-    screen.DrawImage(pic, &defaultOptions)
+    screen.DrawImage(pic, scale.ScaleOptions(defaultOptions))
     x, y := defaultOptions.GeoM.Apply(0, 0)
     text := experience.Name()
     if showExperience {
         text = fmt.Sprintf("%v (%v ep)", experience.Name(), unit.GetExperience())
     }
-    showFont.PrintOptions(screen, x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale), y + float64(5 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, text)
-    return float64(pic.Bounds().Dy() + 1 * data.ScreenScale)
+    showFont.PrintOptions(screen, x + float64(pic.Bounds().Dx() + 2), y + float64(5), font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, text)
+    return float64(pic.Bounds().Dy() + 1)
 }
 
 func makeItemPopup(uiGroup *uilib.UIElementGroup, cache *lbx.LbxCache, imageCache *util.ImageCache, layer uilib.UILayer, item *artifact.Artifact) *uilib.UIElement {
@@ -308,7 +311,7 @@ func makeItemPopup(uiGroup *uilib.UIElementGroup, cache *lbx.LbxCache, imageCach
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            options.GeoM.Translate(float64(48 * data.ScreenScale), float64(48 * data.ScreenScale))
+            options.GeoM.Translate(48, 48)
             artifact.RenderArtifactBox(screen, imageCache, *item, uiGroup.Counter / 8, vaultFonts.ItemName, vaultFonts.PowerFont, options)
         },
     }
@@ -380,18 +383,18 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
                     options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
                     options.ColorScale.ScaleAlpha((*getAlpha)())
 
-                    screen.DrawImage(background, &options)
+                    screen.DrawImage(background, scale.ScaleOptions(options))
 
                     if showArtifact != nil {
                         artifactPic := artifact.RenderArtifactImage(screen, imageCache, *showArtifact, *counter, options)
 
                         x, y := options.GeoM.Apply(0, 0)
-                        printX := x + float64(artifactPic.Bounds().Dx() + 2 * data.ScreenScale)
-                        printY := y + float64(5 * data.ScreenScale)
-                        mediumFont.PrintOptions(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, font.FontOptions{DropShadow: true}, showArtifact.Name)
+                        printX := x + float64(artifactPic.Bounds().Dx() + 2)
+                        printY := y + float64(5)
+                        mediumFont.PrintOptions(screen, printX, printY, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, showArtifact.Name)
                     } else {
                         pic, _ := imageCache.GetImage("itemisc.lbx", slot.ImageIndex() + 8, 0)
-                        screen.DrawImage(pic, &options)
+                        screen.DrawImage(pic, scale.ScaleOptions(options))
                     }
                 },
             })
@@ -418,12 +421,12 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
                     var options ebiten.DrawImageOptions
                     options.ColorScale.ScaleAlpha((*getAlpha)())
                     options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
-                    screen.DrawImage(pic, &options)
+                    screen.DrawImage(pic, scale.ScaleOptions(options))
                     x, y := options.GeoM.Apply(0, 0)
 
-                    printX := x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale)
-                    printY := y + float64(5 * data.ScreenScale)
-                    mediumFont.PrintOptions(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, font.FontOptions{DropShadow: true}, ability.Name())
+                    printX := x + float64(pic.Bounds().Dx() + 2)
+                    printY := y + float64(5)
+                    mediumFont.PrintOptions(screen, printX, printY, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, ability.Name())
                 },
             })
 
@@ -465,12 +468,12 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
                     var options ebiten.DrawImageOptions
                     options.ColorScale.ScaleAlpha((*getAlpha)())
                     options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
-                    screen.DrawImage(pic, &options)
+                    screen.DrawImage(pic, scale.ScaleOptions(options))
                     x, y := options.GeoM.Apply(0, 0)
 
-                    printX := x + float64(pic.Bounds().Dx() + 2 * data.ScreenScale)
-                    printY := y + float64(5 * data.ScreenScale)
-                    mediumFont.PrintOptions(screen, printX, printY, float64(data.ScreenScale), options.ColorScale, font.FontOptions{DropShadow: true}, enchantment.Name())
+                    printX := x + float64(pic.Bounds().Dx() + 2)
+                    printY := y + float64(5)
+                    mediumFont.PrintOptions(screen, printX, printY, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, enchantment.Name())
                 },
             })
 
@@ -546,7 +549,7 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
     abilityCount += len(unit.GetEnchantments())
 
     if abilityCount > 4 {
-        pageUpRect := util.ImageRect(x + 195 * data.ScreenScale, y, upImages[0])
+        pageUpRect := util.ImageRect(x + 195, y, upImages[0])
         pageUpIndex := 0
         elements = append(elements, &uilib.UIElement{
             Rect: pageUpRect,
@@ -566,11 +569,11 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha((*getAlpha)())
                 options.GeoM.Translate(float64(pageUpRect.Min.X), float64(pageUpRect.Min.Y))
-                screen.DrawImage(upImages[pageUpIndex], &options)
+                screen.DrawImage(upImages[pageUpIndex], scale.ScaleOptions(options))
             },
         })
 
-        pageDownRect := util.ImageRect(x + 195 * data.ScreenScale, y + 60 * data.ScreenScale, downImages[0])
+        pageDownRect := util.ImageRect(x + 195, y + 60, downImages[0])
         pageDownIndex := 0
         elements = append(elements, &uilib.UIElement{
             Rect: pageDownRect,
@@ -590,7 +593,7 @@ func MakeUnitAbilitiesElements(group *uilib.UIElementGroup, cache *lbx.LbxCache,
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha((*getAlpha)())
                 options.GeoM.Translate(float64(pageDownRect.Min.X), float64(pageDownRect.Min.Y))
-                screen.DrawImage(downImages[pageDownIndex], &options)
+                screen.DrawImage(downImages[pageDownIndex], scale.ScaleOptions(options))
             },
         })
     }
