@@ -62,9 +62,9 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
     y += 60
     engine.VaultFonts.ItemName.Print(screen, 10, y, 4, ebiten.ColorScale{}, "This is a test of font outlines")
     y += 60
-    engine.VaultFonts.ItemName.PrintOptions(screen, 10, y, 4, ebiten.ColorScale{}, font.FontOptions{DropShadow: true, ShadowColor: color.RGBA{R: 255, G: 0, B: 0, A: 255}}, "This is a test of font outlines")
+    engine.VaultFonts.ItemName.PrintOptions2(screen, 10, y, font.FontOptions{DropShadow: true, ShadowColor: color.RGBA{R: 255, G: 0, B: 0, A: 255}, Scale: 4}, "This is a test of font outlines")
     y += 60
-    engine.VaultFonts.ItemName.PrintOptions(screen, 10, y, 4, ebiten.ColorScale{}, font.FontOptions{DropShadow: true}, "This is a test of font outlines")
+    engine.VaultFonts.ItemName.PrintOptions2(screen, 10, y, font.FontOptions{DropShadow: true, Scale: 4}, "This is a test of font outlines")
 
     y += 60
 

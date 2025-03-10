@@ -285,6 +285,7 @@ func (font *Font) PrintRight(image *ebiten.Image, x float64, y float64, scale fl
     */
 }
 
+/*
 func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, options FontOptions, text string) {
     var drawOptions ebiten.DrawImageOptions
     drawOptions.ColorScale = colorScale
@@ -309,8 +310,9 @@ func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, scale 
     } else {
         font.doPrint(image, useX, useY, scale, colorScale, false, options.ShadowColor, text)
     }
-    */
+    * /
 }
+*/
 
 func (font *Font) PrintOptions2(image *ebiten.Image, x float64, y float64, options FontOptions, text string) {
     useOptions := options.Options
