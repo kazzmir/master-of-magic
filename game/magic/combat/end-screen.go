@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -152,7 +153,7 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             pic, _ = end.ImageCache.GetImage("scroll.lbx", 11, 0)
     }
 
-    extraText2Render := extraFont.CreateWrappedText(float64(pic.Bounds().Dx() - 2 * data.ScreenScale), float64(data.ScreenScale), extraText2)
+    extraText2Render := extraFont.CreateWrappedText(float64(pic.Bounds().Dx() - 2), 1, extraText2)
 
     element := &uilib.UIElement{
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
@@ -169,39 +170,40 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             fontY := picLength
 
             if extraText2 != "" {
-                picLength += extraFont.Height() * data.ScreenScale
+                picLength += extraFont.Height()
             }
 
             picLength += extraFont.Height()
 
-            subPic := pic.SubImage(image.Rect(0, 0, pic.Bounds().Dx(), picLength * data.ScreenScale)).(*ebiten.Image)
+            subPic := pic.SubImage(image.Rect(0, 0, pic.Bounds().Dx(), picLength)).(*ebiten.Image)
 
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(50 * data.ScreenScale), float64(30 * data.ScreenScale))
+            options.GeoM.Translate(float64(50), float64(30))
             options.ColorScale.ScaleAlpha(getAlpha())
             screen.DrawImage(subPic, &options)
 
-            titleX, titleY := options.GeoM.Apply(float64(110 * data.ScreenScale), float64(25 * data.ScreenScale))
+            fontOptions := font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}
+
+            titleX, titleY := options.GeoM.Apply(float64(110), float64(25))
             switch end.Result {
                 case CombatEndScreenResultWin:
-                    titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "You are triumphant")
+                    titleFont.PrintOptions2(screen, titleX, titleY, fontOptions, "You are triumphant")
                 case CombatEndScreenResultLoose:
-                    titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "You have been defeated")
+                    titleFont.PrintOptions2(screen, titleX, titleY, fontOptions, "You have been defeated")
                 case CombatEndScreenResultRetreat:
-                    titleFont.PrintCenter(screen, titleX, titleY, float64(data.ScreenScale), options.ColorScale, "Your forces have retreated")
+                    titleFont.PrintOptions2(screen, titleX, titleY, fontOptions, "Your forces have retreated")
             }
 
-            extraX, extraY := options.GeoM.Apply(float64(110 * data.ScreenScale), float64(fontY * data.ScreenScale))
+            extraX, extraY := options.GeoM.Apply(float64(110), float64(fontY))
 
-            options.GeoM.Translate(0, float64(picLength * data.ScreenScale))
+            options.GeoM.Translate(0, float64(picLength))
             screen.DrawImage(bottom, &options)
 
-            extraFont.PrintCenter(screen, extraX, extraY, float64(data.ScreenScale), options.ColorScale, extraText)
+            extraFont.PrintOptions2(screen, extraX, extraY, fontOptions, extraText)
 
             if extraText2 != "" {
-                extraY += float64((extraFont.Height() + 1) * data.ScreenScale)
-                // extraFont.PrintCenter(screen, extraX, extraY, float64(data.ScreenScale), options.ColorScale, extraText2)
-                extraFont.RenderWrapped(screen, extraX, extraY, extraText2Render, options.ColorScale, font.FontOptions{Justify: font.FontJustifyCenter})
+                extraY += float64((extraFont.Height() + 1))
+                extraFont.RenderWrapped(screen, extraX, extraY, extraText2Render, options.ColorScale, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount})
             }
         },
     }

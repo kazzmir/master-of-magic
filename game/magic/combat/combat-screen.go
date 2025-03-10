@@ -359,7 +359,7 @@ func (combat *CombatScreen) GetCameraMatrix() ebiten.GeoM {
 func (combat *CombatScreen) ScreenToTile(x float64, y float64) (float64, float64) {
     // tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
     screenToTile := combat.GetCameraMatrix()
-    screenToTile.Scale(data.ScreenScale2, data.ScreenScale2)
+    screenToTile.Scale(scale.ScaleAmount, scale.ScaleAmount)
     screenToTile.Invert()
 
     // return screenToTile.Apply(x - float64(tile0.Bounds().Dx()/3) * combat.CameraScale, y - float64(tile0.Bounds().Dy()/3) * combat.CameraScale)
@@ -1712,7 +1712,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
 
     selectElement := &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), float64(75), float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), float64(75), float64(scale.Scale(1)), ebiten.ColorScale{}, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
         },
     }
 
@@ -1806,7 +1806,7 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
 
     selectElement := &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), float64(75), float64(data.ScreenScale), ebiten.ColorScale{}, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
+            combat.WhiteFont.PrintWrap(screen, float64(x), float64(y), float64(75), float64(scale.Scale(1)), ebiten.ColorScale{}, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Select a target for a %v spell.", spell.Name))
         },
     }
 

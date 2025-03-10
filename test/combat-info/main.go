@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     // "github.com/kazzmir/master-of-magic/game/magic/hero"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -118,7 +119,7 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-    return data.ScreenWidth, data.ScreenHeight
+    return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
 func main(){
@@ -131,7 +132,7 @@ func main(){
 
     monitorWidth, _ := ebiten.Monitor().Size()
     size := monitorWidth / 390
-    ebiten.SetWindowSize(data.ScreenWidth / data.ScreenScale * size, data.ScreenHeight / data.ScreenScale * size)
+    ebiten.SetWindowSize(data.ScreenWidth * size, data.ScreenHeight * size)
 
     ebiten.SetWindowTitle("combat info")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
