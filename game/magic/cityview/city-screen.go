@@ -1749,7 +1749,7 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
     infoWidth := helpTop.Bounds().Dx()
     // infoHeight := screen.HelpTop.Bounds().Dy()
     infoLeftMargin := 18
-    infoTopMargin := 20
+    infoTopMargin := 24
     infoBodyMargin := 3
     maxInfoWidth := infoWidth - infoLeftMargin - infoBodyMargin - 14
 
