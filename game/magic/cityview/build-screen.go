@@ -188,15 +188,15 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                     // vector.DrawFilledCircle(screen, float32(middleX), float32(middleY), 1, color.RGBA{255, 255, 255, 255}, true)
                 }
 
-                fonts.DescriptionFont.PrintOptions2(screen, float64(130), float64(12), font.FontOptions{Scale: scale.ScaleAmount}, city.BuildingInfo.Name(building))
-                fonts.SmallFont.PrintOptions2(screen, float64(130), float64(33), font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Cost %v", city.BuildingInfo.ProductionCost(building)))
+                fonts.DescriptionFont.PrintOptions(screen, float64(130), float64(12), font.FontOptions{Scale: scale.ScaleAmount}, city.BuildingInfo.Name(building))
+                fonts.SmallFont.PrintOptions(screen, float64(130), float64(33), font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Cost %v", city.BuildingInfo.ProductionCost(building)))
 
-                fonts.DescriptionFont.PrintOptions2(screen, float64(85), float64(48), font.FontOptions{Scale: scale.ScaleAmount}, "Maintenance")
+                fonts.DescriptionFont.PrintOptions(screen, float64(85), float64(48), font.FontOptions{Scale: scale.ScaleAmount}, "Maintenance")
 
                 buildingMaintenance := city.BuildingInfo.UpkeepCost(building)
 
                 if buildingMaintenance == 0 {
-                    fonts.MediumFont.PrintOptions2(screen, float64(85) + fonts.DescriptionFont.MeasureTextWidth("Maintenance", 1) + float64(4), float64(49), font.FontOptions{Scale: scale.ScaleAmount}, "0")
+                    fonts.MediumFont.PrintOptions(screen, float64(85) + fonts.DescriptionFont.MeasureTextWidth("Maintenance", 1) + float64(4), float64(49), font.FontOptions{Scale: scale.ScaleAmount}, "0")
                 } else {
                     smallCoin, err := imageCache.GetImage("backgrnd.lbx", 42, 0)
                     if err == nil {
@@ -209,7 +209,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                     }
                 }
 
-                fonts.DescriptionFont.PrintOptions2(screen, 85, 58, font.FontOptions{Scale: scale.ScaleAmount}, "Allows")
+                fonts.DescriptionFont.PrintOptions(screen, 85, 58, font.FontOptions{Scale: scale.ScaleAmount}, "Allows")
 
                 fonts.MediumFont.RenderWrapped(screen, float64(85) + fonts.DescriptionFont.MeasureTextWidth("Allows", 1) + float64(10), float64(59), allowsWrapped, font.FontOptions{Scale: scale.ScaleAmount})
 
@@ -304,7 +304,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                         use = fonts.TitleFontWhite
                     }
 
-                    use.PrintOptions2(screen, float64(x1 + 2), float64(y1 + 1), font.FontOptions{Scale: scale.ScaleAmount}, city.BuildingInfo.Name(building))
+                    use.PrintOptions(screen, float64(x1 + 2), float64(y1 + 1), font.FontOptions{Scale: scale.ScaleAmount}, city.BuildingInfo.Name(building))
                 },
             }
 
@@ -361,7 +361,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                         use = fonts.TitleFontWhite
                     }
 
-                    use.PrintOptions2(screen, float64(x1 + 2), float64(y1 + 1), font.FontOptions{Scale: scale.ScaleAmount}, unit.String())
+                    use.PrintOptions(screen, float64(x1 + 2), float64(y1 + 1), font.FontOptions{Scale: scale.ScaleAmount}, unit.String())
                 },
             }
 
@@ -400,7 +400,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 options.GeoM.Translate(float64(cancelX), float64(cancelY))
                 scale.DrawScaled(screen, buttonBackground, &options)
 
-                fonts.OkCancelFont.PrintOptions2(screen, float64(cancelX + buttonBackground.Bounds().Dx() / 2), float64(cancelY + 1), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Cancel")
+                fonts.OkCancelFont.PrintOptions(screen, float64(cancelX + buttonBackground.Bounds().Dx() / 2), float64(cancelY + 1), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Cancel")
             },
         })
 
@@ -423,7 +423,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 options.GeoM.Translate(float64(okX), float64(okY))
                 scale.DrawScaled(screen, buttonBackground, &options)
 
-                fonts.OkCancelFont.PrintOptions2(screen, float64(okX + buttonBackground.Bounds().Dx() / 2), float64(okY + 1), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Ok")
+                fonts.OkCancelFont.PrintOptions(screen, float64(okX + buttonBackground.Bounds().Dx() / 2), float64(okY + 1), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Ok")
             },
         })
     }

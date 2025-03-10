@@ -82,7 +82,7 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
 
             x := float64(buyRect.Min.X + buyRect.Max.X) / 2
             y := float64(buyRect.Min.Y + buyRect.Max.Y) / 2
-            fonts.LightFont.PrintOptions2(screen, x, y - float64(5), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, "Buy")
+            fonts.LightFont.PrintOptions(screen, x, y - float64(5), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, "Buy")
         },
     })
 
@@ -110,7 +110,7 @@ func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *arti
 
             x := float64(rejectRect.Min.X + rejectRect.Max.X) / 2
             y := float64(rejectRect.Min.Y + rejectRect.Max.Y) / 2
-            fonts.LightFont.PrintOptions2(screen, x, y - float64(5), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, "Reject")
+            fonts.LightFont.PrintOptions(screen, x, y - float64(5), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, "Reject")
         },
     })
 

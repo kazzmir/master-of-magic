@@ -241,7 +241,7 @@ func (font *Font) PrintDropShadow(destination *ebiten.Image, x float64, y float6
 func (font *Font) Print(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
     var options ebiten.DrawImageOptions
     options.ColorScale = colorScale
-    font.PrintOptions2(image, x, y, FontOptions{Scale: scale, Options: &options}, text)
+    font.PrintOptions(image, x, y, FontOptions{Scale: scale, Options: &options}, text)
     // font.doPrint(image, x, y, scale, colorScale, false, color.Black, text)
 }
 
@@ -268,7 +268,7 @@ func (font *Font) MeasureTextWidth(text string, scale float64) float64 {
 func (font *Font) PrintCenter(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
     var options ebiten.DrawImageOptions
     options.ColorScale = colorScale
-    font.PrintOptions2(image, x, y, FontOptions{Justify: FontJustifyCenter, Scale: scale, Options: &options}, text)
+    font.PrintOptions(image, x, y, FontOptions{Justify: FontJustifyCenter, Scale: scale, Options: &options}, text)
     /*
     width := font.MeasureTextWidth(text, scale)
     font.Print(image, x - width / 2, y, scale, colorScale, text)
@@ -278,7 +278,7 @@ func (font *Font) PrintCenter(image *ebiten.Image, x float64, y float64, scale f
 func (font *Font) PrintRight(image *ebiten.Image, x float64, y float64, scale float64, colorScale ebiten.ColorScale, text string) {
     var options ebiten.DrawImageOptions
     options.ColorScale = colorScale
-    font.PrintOptions2(image, x, y, FontOptions{Justify: FontJustifyRight, Scale: scale, Options: &options}, text)
+    font.PrintOptions(image, x, y, FontOptions{Justify: FontJustifyRight, Scale: scale, Options: &options}, text)
     /*
     width := font.MeasureTextWidth(text, scale)
     font.Print(image, x - width, y, scale, colorScale, text)
@@ -290,7 +290,7 @@ func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, scale 
     var drawOptions ebiten.DrawImageOptions
     drawOptions.ColorScale = colorScale
     options.Options = &drawOptions
-    font.PrintOptions2(image, x, y, options, text)
+    font.PrintOptions(image, x, y, options, text)
     /*
     useX := x
     useY := y
@@ -314,7 +314,7 @@ func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, scale 
 }
 */
 
-func (font *Font) PrintOptions2(image *ebiten.Image, x float64, y float64, options FontOptions, text string) {
+func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, options FontOptions, text string) {
     useOptions := options.Options
     if useOptions == nil {
         useOptions = &ebiten.DrawImageOptions{}
@@ -393,7 +393,7 @@ func (text *WrappedText) Clear() {
 func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, options FontOptions) {
     yPos := y
     for _, line := range wrapped.Lines {
-        font.PrintOptions2(image, x, yPos, options, line)
+        font.PrintOptions(image, x, yPos, options, line)
         yPos += float64(font.Height()) + 1
     }
 }

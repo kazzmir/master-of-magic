@@ -500,7 +500,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                 options.ColorScale.SetG(3)
             }
 
-            fonts.NameFont.PrintOptions2(screen, float64(nameRect.Min.X + 1), float64(nameRect.Min.Y + 1), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, artifact.Name)
+            fonts.NameFont.PrintOptions(screen, float64(nameRect.Min.X + 1), float64(nameRect.Min.Y + 1), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, artifact.Name)
 
             if nameFocused {
                 util.DrawTextCursor(screen, nameColorSource, float64(nameRect.Min.X) + 1 + fonts.NameFont.MeasureTextWidth(artifact.Name, 1), float64(nameRect.Min.Y) + 1, ui.Counter)
@@ -578,9 +578,9 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                     }
 
                     if groupRight {
-                        fonts.PowerFont.PrintOptions2(screen, float64(rect.Max.X), float64(rect.Min.Y), font.FontOptions{Justify: font.FontJustifyRight, Options: &options, Scale: scale.ScaleAmount}, power.Name)
+                        fonts.PowerFont.PrintOptions(screen, float64(rect.Max.X), float64(rect.Min.Y), font.FontOptions{Justify: font.FontJustifyRight, Options: &options, Scale: scale.ScaleAmount}, power.Name)
                     } else {
-                        fonts.PowerFont.PrintOptions2(screen, float64(rect.Min.X), float64(rect.Min.Y), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, power.Name)
+                        fonts.PowerFont.PrintOptions(screen, float64(rect.Min.X), float64(rect.Min.Y), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, power.Name)
                     }
                 },
             })
@@ -609,7 +609,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
             scale.DrawScaled(screen, background, &options)
 
             // print text "Choose a spell to embed in this item"
-            fonts.TitleSpellFont.PrintOptions2(screen, float64(data.ScreenWidth / 2), float64(2), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Choose a spell to embed in this item")
+            fonts.TitleSpellFont.PrintOptions(screen, float64(data.ScreenWidth / 2), float64(2), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Choose a spell to embed in this item")
         },
     })
 
@@ -652,7 +652,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
                 scale.DrawScaled(screen, background, &options)
 
                 ax, ay := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(5))
-                spellFont.PrintOptions2(screen, ax, ay, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Charges")
+                spellFont.PrintOptions(screen, ax, ay, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Charges")
             },
         })
 
@@ -711,7 +711,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
                     ui.AddElements(makeSelectChargesElements(spell, xRight, pickCharges))
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    spellFont.PrintOptions2(screen, float64(xLeft), float64(yPos), font.FontOptions{Scale: scale.ScaleAmount}, spell.Name)
+                    spellFont.PrintOptions(screen, float64(xLeft), float64(yPos), font.FontOptions{Scale: scale.ScaleAmount}, spell.Name)
                 },
             })
         }
@@ -734,7 +734,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
                         ui.AddElements(makeSelectChargesElements(spell, xLeft, pickCharges))
                     },
                     Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                        spellFont.PrintOptions2(screen, float64(xRight), float64(yPos), font.FontOptions{Scale: scale.ScaleAmount}, spell.Name)
+                        spellFont.PrintOptions(screen, float64(xRight), float64(yPos), font.FontOptions{Scale: scale.ScaleAmount}, spell.Name)
                     },
                 })
             }
@@ -927,7 +927,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                             options.ColorScale.SetG(3)
                         }
 
-                        fonts.PowerFont.PrintOptions2(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, power.Name)
+                        fonts.PowerFont.PrintOptions(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, power.Name)
                     },
                 })
 
@@ -988,9 +988,9 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                 }
 
                 if addedPower.Type == PowerTypeSpellCharges {
-                    fonts.PowerFont.PrintOptions2(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, addedPower.Name)
+                    fonts.PowerFont.PrintOptions(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, addedPower.Name)
                 } else {
-                    fonts.PowerFont.PrintOptions2(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, "Spell Charges")
+                    fonts.PowerFont.PrintOptions(screen, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, "Spell Charges")
                 }
             },
         })
@@ -1318,7 +1318,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
 
     ui.AddElement(&uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            fonts.PowerFontWhite.PrintOptions2(screen, 198, 185, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Cost: %v", currentArtifact.Cost))
+            fonts.PowerFontWhite.PrintOptions(screen, 198, 185, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Cost: %v", currentArtifact.Cost))
         },
     })
 

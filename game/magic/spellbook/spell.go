@@ -446,7 +446,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             // section := pageSpells.Spells[0].Section
             titleX, titleY := options.GeoM.Apply(float64(90), float64(11))
 
-            titleFont.PrintOptions2(pageImage, titleX, titleY, font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, page.Title)
+            titleFont.PrintOptions(pageImage, titleX, titleY, font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, page.Title)
 
             x, topY := options.GeoM.Apply(float64(25), float64(35))
 
@@ -495,7 +495,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
                     }
 
-                    spellTitleNormalFont.PrintOptions2(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &scaleOptions}, spell.Name)
+                    spellTitleNormalFont.PrintOptions(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &scaleOptions}, spell.Name)
                     y += float64(spellTitleNormalFont.Height())
 
                     if page.IsResearch {
@@ -510,7 +510,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                         if turns > 1 {
                             turnString = "turns"
                         }
-                        spellTextNormalFont.PrintOptions2(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &scaleOptions}, fmt.Sprintf("Research Cost:%v (%v %v)", spell.ResearchCost, turns, turnString))
+                        spellTextNormalFont.PrintOptions(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &scaleOptions}, fmt.Sprintf("Research Cost:%v (%v %v)", spell.ResearchCost, turns, turnString))
                         y += float64(spellTextNormalFont.Height())
                     } else {
                         turns := spell.Cost(true) / castingSkill
@@ -521,7 +521,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                         if turns > 1 {
                             turnString = "turns"
                         }
-                        spellTextNormalFont.PrintOptions2(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &scaleOptions}, fmt.Sprintf("Casting cost:%v (%v %v)", spell.Cost(true), turns, turnString))
+                        spellTextNormalFont.PrintOptions(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &scaleOptions}, fmt.Sprintf("Casting cost:%v (%v %v)", spell.Cost(true), turns, turnString))
                         y += float64(spellTextNormalFont.Height())
                     }
 
@@ -536,7 +536,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                     }
 
                 } else {
-                    spellTitleAlienFont.PrintOptions2(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, spell.Name)
+                    spellTitleAlienFont.PrintOptions(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, spell.Name)
                     wrapped := getSpellDescriptionAlienText(spell.Index)
                     spellTextAlienFont.RenderWrapped(pageImage, x, y + float64(10), wrapped, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
                 }
@@ -752,7 +752,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             }
 
             if pickResearchSpell {
-                chooseFont.PrintOptions2(screen, 160, 180, font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, "Choose a new spell to research")
+                chooseFont.PrintOptions(screen, 160, 180, font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, "Choose a new spell to research")
             }
 
         },
@@ -998,9 +998,9 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
             scale.DrawScaled(screen, background, &options)
 
             mx, my := options.GeoM.Apply(float64(8), float64(6))
-            fonts.BigOrange.PrintOptions2(screen, mx, my, font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, "Additional Power:")
+            fonts.BigOrange.PrintOptions(screen, mx, my, font.FontOptions{Scale: scale.ScaleAmount, Options: &options}, "Additional Power:")
             mx, _ = options.GeoM.Apply(float64(background.Bounds().Dx() - 6), 0)
-            fonts.BigOrange.PrintOptions2(screen, mx, my, font.FontOptions{Scale: scale.ScaleAmount, Options: &options, Justify: font.FontJustifyRight}, fmt.Sprintf("+%v", math.Round(amount)))
+            fonts.BigOrange.PrintOptions(screen, mx, my, font.FontOptions{Scale: scale.ScaleAmount, Options: &options, Justify: font.FontJustifyRight}, fmt.Sprintf("+%v", math.Round(amount)))
         },
         Order: 0,
     })
@@ -1198,7 +1198,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
         titleX, titleY := options.GeoM.Apply(float64(60), float64(1))
 
-        titleFont.PrintOptions2(screen, titleX, titleY, font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, page.Title)
+        titleFont.PrintOptions(screen, titleX, titleY, font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, page.Title)
         gibberish, _ := imageCache.GetImage("spells.lbx", 10, 0)
         gibberishHeight := 18
 
@@ -1246,8 +1246,8 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             var textColorOptions ebiten.DrawImageOptions
             textColorOptions.ColorScale = textColorScale
 
-            infoFont.PrintOptions2(screen, spellX, spellY, font.FontOptions{Options: &textColorOptions, Scale: scale.ScaleAmount}, spell.Name)
-            infoFont.PrintOptions2(screen, spellX + float64(124), spellY, font.FontOptions{Options: &textColorOptions, Justify: font.FontJustifyRight, Scale: scale.ScaleAmount}, fmt.Sprintf("%v MP", costRemaining))
+            infoFont.PrintOptions(screen, spellX, spellY, font.FontOptions{Options: &textColorOptions, Scale: scale.ScaleAmount}, spell.Name)
+            infoFont.PrintOptions(screen, spellX + float64(124), spellY, font.FontOptions{Options: &textColorOptions, Justify: font.FontJustifyRight, Scale: scale.ScaleAmount}, fmt.Sprintf("%v MP", costRemaining))
             icon := getMagicIcon(spell)
 
             nameLength := infoFont.MeasureTextWidth(spell.Name, 1) + 1
@@ -1308,7 +1308,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             if overland && costRemaining < castingSkill {
                 x, y := iconOptions.GeoM.Apply(0, 0)
                 x += 2
-                infoFont.PrintOptions2(screen, x, y, font.FontOptions{Options: &spellOptions, Scale: scale.ScaleAmount}, "Instant")
+                infoFont.PrintOptions(screen, x, y, font.FontOptions{Options: &spellOptions, Scale: scale.ScaleAmount}, "Instant")
                 icon1Width += int(infoFont.MeasureTextWidth("Instant", 1)) + 2
                 iconOptions.GeoM.Translate(infoFont.MeasureTextWidth("Instant", 1) + 2, 0)
             }

@@ -226,7 +226,7 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
             scale.DrawScaled(screen, sprite.Image, &options)
         }
 
-        mainFont.PrintOptions2(screen, 160, 10, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("%v banishes %v", attackingWizard.Wizard.Name, defeatedWizard.Wizard.Name))
+        mainFont.PrintOptions(screen, 160, 10, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("%v banishes %v", attackingWizard.Wizard.Name, defeatedWizard.Wizard.Name))
     }
 
     yellSound, err := audio.LoadSound(cache, 35)

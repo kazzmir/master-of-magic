@@ -111,8 +111,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             scale.DrawScaled(screen, background, &options)
 
             fontOptions := font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Options: &options, Scale: scale.ScaleAmount}
-            fonts.ResourceFont.PrintOptions2(screen, 190, 166, fontOptions, fmt.Sprintf("%v GP", player.Gold))
-            fonts.ResourceFont.PrintOptions2(screen, 233, 166, fontOptions, fmt.Sprintf("%v MP", player.Mana))
+            fonts.ResourceFont.PrintOptions(screen, 190, 166, fontOptions, fmt.Sprintf("%v GP", player.Gold))
+            fonts.ResourceFont.PrintOptions(screen, 233, 166, fontOptions, fmt.Sprintf("%v MP", player.Mana))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {

@@ -106,7 +106,7 @@ func (talk *Talk) AddItem(item string, available bool, action func()){
 
             }
 
-            talk.Font.PrintOptions2(screen, 70, float64(posY), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, item)
+            talk.Font.PrintOptions(screen, 70, float64(posY), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, item)
         },
     }
 

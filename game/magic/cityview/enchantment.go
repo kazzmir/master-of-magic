@@ -56,10 +56,10 @@ func MakeNewBuildingView(cache *lbx.LbxCache, city *citylib.City, player *player
 
             titleX, titleY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(7))
 
-            fonts.BigFont.PrintOptions2(screen, titleX, titleY, font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
+            fonts.BigFont.PrintOptions(screen, titleX, titleY, font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
 
             descriptionX, descriptionY := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, float64(background.Bounds().Dy() - fonts.CastFont.Height() - 2))
-            fonts.CastFont.PrintOptions2(screen, descriptionX, descriptionY, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options}, fmt.Sprintf("You cast %v", name))
+            fonts.CastFont.PrintOptions(screen, descriptionX, descriptionY, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options}, fmt.Sprintf("You cast %v", name))
 
             geom2 := geom
             geom2.Translate(5, 27)

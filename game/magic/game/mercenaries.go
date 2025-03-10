@@ -98,7 +98,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
 
             x := float64(hireRect.Min.X + hireRect.Max.X) / 2
             y := float64(hireRect.Min.Y + hireRect.Max.Y) / 2
-            fonts.OkDismissFont.PrintOptions2(screen, x, y - float64(5), font.FontOptions{Options: &options, Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Hire")
+            fonts.OkDismissFont.PrintOptions(screen, x, y - float64(5), font.FontOptions{Options: &options, Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Hire")
         },
     })
 
@@ -127,7 +127,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
 
             x := float64(rejectRect.Min.X + rejectRect.Max.X) / 2
             y := float64(rejectRect.Min.Y + rejectRect.Max.Y) / 2
-            fonts.OkDismissFont.PrintOptions2(screen, x, y - float64(5), font.FontOptions{Options: &options, Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Reject")
+            fonts.OkDismissFont.PrintOptions(screen, x, y - float64(5), font.FontOptions{Options: &options, Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Reject")
         },
     })
 
@@ -144,7 +144,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
             if count > 1 {
                 message = fmt.Sprintf("%v Mercenaries for Hire: %v gold", count, goldToHire)
             }
-            fonts.OkDismissFont.PrintOptions2(screen, float64(135), float64(6), font.FontOptions{Options: &options, Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, message)
+            fonts.OkDismissFont.PrintOptions(screen, float64(135), float64(6), font.FontOptions{Options: &options, Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, message)
         },
     })
 

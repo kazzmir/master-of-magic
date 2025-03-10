@@ -140,7 +140,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
             x := float64(hireRect.Min.X + hireRect.Max.X) / 2
             y := float64(hireRect.Min.Y + hireRect.Max.Y) / 2
-            fonts.OkDismissFont.PrintOptions2(screen, x, y - float64(5), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, hireText)
+            fonts.OkDismissFont.PrintOptions(screen, x, y - float64(5), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, hireText)
         },
     })
 
@@ -169,7 +169,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
             x := float64(rejectRect.Min.X + rejectRect.Max.X) / 2
             y := float64(rejectRect.Min.Y + rejectRect.Max.Y) / 2
-            fonts.OkDismissFont.PrintOptions2(screen, x, y - float64(5), font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Reject")
+            fonts.OkDismissFont.PrintOptions(screen, x, y - float64(5), font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Reject")
         },
     })
 
@@ -182,7 +182,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             options.ColorScale.ScaleAlpha(getAlpha())
             scale.DrawScaled(screen, banner, &options)
 
-            fonts.OkDismissFont.PrintOptions2(screen, float64(135), float64(6), font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, titleText)
+            fonts.OkDismissFont.PrintOptions(screen, float64(135), float64(6), font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, titleText)
         },
     })
 
@@ -266,7 +266,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
         scale.DrawScaled(screen, portrait, &options)
 
         // text
-        fonts.TitleFont.PrintOptions2(screen, left + float64(48), top + float64(10), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v has made a level.", hero.Name))
+        fonts.TitleFont.PrintOptions(screen, left + float64(48), top + float64(10), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v has made a level.", hero.Name))
 
         // stats progression
         for index, progression := range hero.GetBaseProgression() {
@@ -277,7 +277,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
             options.GeoM.Translate(left + (48 + xOffset), top + (25 + yOffset))
             scale.DrawScaled(screen, dot, &options)
 
-            fonts.SmallFont.PrintOptions2(screen, left + (55 + xOffset), top + (24 + yOffset), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, progression)
+            fonts.SmallFont.PrintOptions(screen, left + (55 + xOffset), top + (24 + yOffset), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, progression)
         }
 
         row := 0
@@ -304,9 +304,9 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
                 abilityBonus := hero.GetAbilityBonus(ability.Ability)
                 if abilityBonus > 0 {
-                    fonts.SmallFont.PrintOptions2(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v +%v", ability.Name(), abilityBonus))
+                    fonts.SmallFont.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v +%v", ability.Name(), abilityBonus))
                 } else {
-                    fonts.SmallFont.PrintOptions2(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, ability.Name())
+                    fonts.SmallFont.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, ability.Name())
                 }
             }
 

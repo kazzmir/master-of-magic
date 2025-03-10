@@ -46,7 +46,7 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
     itemImage := RenderArtifactImage(screen, imageCache, artifact, counter, options)
 
     x, y := options.GeoM.Apply(float64(itemImage.Bounds().Max.X + 3), float64(4))
-    titleFont.PrintOptions2(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Options: &options}, artifact.Name)
+    titleFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Options: &options}, artifact.Name)
 
     dot, _ := imageCache.GetImage("itemisc.lbx", 26, 0)
     savedGeom := options.GeoM
@@ -59,6 +59,6 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
         scale.DrawScaled(screen, dot, &options)
 
         x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1), 0)
-        attributeFont.PrintOptions2(screen, x, y, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, power.Name)
+        attributeFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, power.Name)
     }
 }

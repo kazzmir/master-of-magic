@@ -73,19 +73,19 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             var options ebiten.DrawImageOptions
             scale.DrawScaled(screen, background, &options)
 
-            fonts.BigFont.PrintOptions2(screen, float64(160), float64(10), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
+            fonts.BigFont.PrintOptions(screen, float64(160), float64(10), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
 
             if highlightedUnit != nil {
                 raceName := highlightedUnit.GetRace().String()
-                fonts.NormalFont.PrintOptions2(screen, float64(190), float64(162), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v %v", raceName, highlightedUnit.GetName()))
+                fonts.NormalFont.PrintOptions(screen, float64(190), float64(162), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v %v", raceName, highlightedUnit.GetName()))
 
             }
 
             shadow := font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}
-            fonts.NormalFont.PrintOptions2(screen, float64(30), float64(162), shadow, "UPKEEP")
-            fonts.NormalFont.PrintOptions2(screen, float64(45), float64(172), shadow, fmt.Sprintf("%v", upkeepGold))
-            fonts.NormalFont.PrintOptions2(screen, float64(45), float64(182), shadow, fmt.Sprintf("%v", upkeepMana))
-            fonts.NormalFont.PrintOptions2(screen, float64(45), float64(192), shadow, fmt.Sprintf("%v", upkeepFood))
+            fonts.NormalFont.PrintOptions(screen, float64(30), float64(162), shadow, "UPKEEP")
+            fonts.NormalFont.PrintOptions(screen, float64(45), float64(172), shadow, fmt.Sprintf("%v", upkeepGold))
+            fonts.NormalFont.PrintOptions(screen, float64(45), float64(182), shadow, fmt.Sprintf("%v", upkeepMana))
+            fonts.NormalFont.PrintOptions(screen, float64(45), float64(192), shadow, fmt.Sprintf("%v", upkeepFood))
 
             minimapRect := image.Rect(85, 163, 135, 197)
             minimapArea := screen.SubImage(scale.ScaleRect(minimapRect)).(*ebiten.Image)
@@ -220,7 +220,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
                     nameX, nameY := options.GeoM.Apply(0, 0)
 
-                    fonts.SmallerFont.PrintOptions2(screen, nameX + float64(15), nameY + float64(6), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, hero.GetName())
+                    fonts.SmallerFont.PrintOptions(screen, nameX + float64(15), nameY + float64(6), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, hero.GetName())
                 },
             }
 

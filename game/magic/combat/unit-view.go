@@ -129,11 +129,11 @@ func RenderUnitInfo(screen *ebiten.Image, imageCache *util.ImageCache, unit *Arm
     // FIXME: if the unit is a hero and has a title then the title should show up on the next line after the name
     name := unit.Unit.GetFullName()
 
-    fonts.DescriptionFont.PrintOptions2(screen, x, y + float64(2), font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, name)
+    fonts.DescriptionFont.PrintOptions(screen, x, y + float64(2), font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, name)
 
     y += float64((fonts.DescriptionFont.Height() + 6))
 
-    fonts.SmallFont.PrintOptions2(screen, x, y, font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, "Moves")
+    fonts.SmallFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, "Moves")
 
     unitMoves := unit.GetMovementSpeed()
 
@@ -152,5 +152,5 @@ func RenderUnitInfo(screen *ebiten.Image, imageCache *util.ImageCache, unit *Arm
     }
 
     y += float64((fonts.SmallFont.Height() + 3))
-    fonts.SmallFont.PrintOptions2(screen, x, y, font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, fmt.Sprintf("Damage %v", unit.GetDamage()))
+    fonts.SmallFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, fmt.Sprintf("Damage %v", unit.GetDamage()))
 }

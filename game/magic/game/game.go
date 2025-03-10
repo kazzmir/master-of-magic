@@ -6087,7 +6087,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         elements = append(elements, &uilib.UIElement{
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 if !minMoves.IsZero() {
-                    game.Fonts.WhiteFont.PrintOptions2(screen, 246, 167, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
+                    game.Fonts.WhiteFont.PrintOptions(screen, 246, 167, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("Moves:%v", minMoves.ToFloat()))
 
                     sailingIcon, _ := game.ImageCache.GetImage("main.lbx", 18, 0)
                     swimmingIcon, _ := game.ImageCache.GetImage("main.lbx", 19, 0)
@@ -6193,27 +6193,27 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     normalOptions := font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}
 
                     if goldPerTurn < 0 {
-                        game.Fonts.InfoFontRed.PrintOptions2(screen, 278, 103, negativeOptions, fmt.Sprintf("%v Gold", goldPerTurn))
+                        game.Fonts.InfoFontRed.PrintOptions(screen, 278, 103, negativeOptions, fmt.Sprintf("%v Gold", goldPerTurn))
                     } else {
-                        game.Fonts.InfoFontYellow.PrintOptions2(screen, 278, 103, normalOptions, fmt.Sprintf("%v Gold", goldPerTurn))
+                        game.Fonts.InfoFontYellow.PrintOptions(screen, 278, 103, normalOptions, fmt.Sprintf("%v Gold", goldPerTurn))
                     }
 
                     if foodPerTurn < 0 {
-                        game.Fonts.InfoFontRed.PrintOptions2(screen, 278, 135, negativeOptions, fmt.Sprintf("%v Food", foodPerTurn))
+                        game.Fonts.InfoFontRed.PrintOptions(screen, 278, 135, negativeOptions, fmt.Sprintf("%v Food", foodPerTurn))
                     } else {
-                        game.Fonts.InfoFontYellow.PrintOptions2(screen, 278, 135, normalOptions, fmt.Sprintf("%v Food", foodPerTurn))
+                        game.Fonts.InfoFontYellow.PrintOptions(screen, 278, 135, normalOptions, fmt.Sprintf("%v Food", foodPerTurn))
                     }
 
                     if manaPerTurn < 0 {
-                        game.Fonts.InfoFontRed.PrintOptions2(screen, 278, 167, negativeOptions, fmt.Sprintf("%v Mana", manaPerTurn))
+                        game.Fonts.InfoFontRed.PrintOptions(screen, 278, 167, negativeOptions, fmt.Sprintf("%v Mana", manaPerTurn))
                     } else {
-                        game.Fonts.InfoFontYellow.PrintOptions2(screen, 278, 167, normalOptions, fmt.Sprintf("%v Mana", manaPerTurn))
+                        game.Fonts.InfoFontYellow.PrintOptions(screen, 278, 167, normalOptions, fmt.Sprintf("%v Mana", manaPerTurn))
                     }
 
                     if conjunction != "" {
                         conjunctionOptions := options
                         conjunctionOptions.ColorScale.ScaleWithColor(conjunctionColor)
-                        game.Fonts.WhiteFont.PrintOptions2(screen, 278, 155, font.FontOptions{Justify: font.FontJustifyCenter, Options: &conjunctionOptions, Scale: scale.ScaleAmount}, conjunction)
+                        game.Fonts.WhiteFont.PrintOptions(screen, 278, 155, font.FontOptions{Justify: font.FontJustifyCenter, Options: &conjunctionOptions, Scale: scale.ScaleAmount}, conjunction)
                     }
                 },
             })
@@ -6222,13 +6222,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.Fonts.WhiteFont.PrintOptions2(screen, 276, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.Fonts.WhiteFont.PrintOptions(screen, 276, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v GP", game.Players[0].Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.Fonts.WhiteFont.PrintOptions2(screen, 313, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.Fonts.WhiteFont.PrintOptions(screen, 313, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v MP", game.Players[0].Mana))
         },
     })
 

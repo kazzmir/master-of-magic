@@ -944,7 +944,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 area := screen.SubImage(scale.ScaleRect(enchantmentAreaRect)).(*ebiten.Image)
 
-                useFont.PrintOptions2(area, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount}, enchantment.Enchantment.Name())
+                useFont.PrintOptions(area, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount}, enchantment.Enchantment.Name())
             },
         }
 
@@ -1565,7 +1565,7 @@ func drawCityScape(screen *ebiten.Image, city *citylib.City, buildings []Buildin
 
                     printX, printY := baseGeoM.Apply(float64(x + use.Bounds().Dx() / 2) + roadX, float64(y + 1) + roadY)
 
-                    useFont.PrintOptions2(screen, printX, printY, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount, Options: &options}, text)
+                    useFont.PrintOptions(screen, printX, printY, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount, Options: &options}, text)
                 }
             }
         }
@@ -1800,7 +1800,7 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
 
             titleX := infoX + infoLeftMargin + maxInfoWidth / 2
 
-            fonts.HelpTitleFont.PrintOptions2(window, float64(titleX), float64(infoY + infoTopMargin), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, title)
+            fonts.HelpTitleFont.PrintOptions(window, float64(titleX), float64(infoY + infoTopMargin), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, title)
 
             yPos := infoY + (infoTopMargin + fonts.HelpTitleFont.Height() + 1)
             xPos := (infoX + infoLeftMargin)
@@ -1811,7 +1811,7 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
             for _, usage := range resources {
                 if usage.Count < 0 {
                     x, y := options.GeoM.Apply(0, 1)
-                    fonts.HelpFont.PrintOptions2(window, x, y, font.FontOptions{Justify: font.FontJustifyRight, Options: &options, Scale: scale.ScaleAmount}, "-")
+                    fonts.HelpFont.PrintOptions(window, x, y, font.FontOptions{Justify: font.FontJustifyRight, Options: &options, Scale: scale.ScaleAmount}, "-")
                 }
 
                 cityScreen.drawIcons(int(math.Abs(float64(usage.Count))), smallIcon, bigIcon, options, window)
@@ -1823,7 +1823,7 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
                     text = fmt.Sprintf("%v (Replaced)", usage.Name)
                 }
                 text += fmt.Sprintf(" (%v)", usage.Count)
-                fonts.HelpFont.PrintOptions2(window, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, text)
+                fonts.HelpFont.PrintOptions(window, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, text)
                 yPos += (fonts.HelpFont.Height() + 1)
                 options.GeoM.Translate(0, float64((fonts.HelpFont.Height() + 1)))
             }
@@ -1881,7 +1881,7 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
                 options.GeoM.Translate(float64(infoWidth) - fonts.HelpFont.MeasureTextWidth("More", 1) - float64(18), -float64(fonts.HelpFont.Height()))
                 x, y := options.GeoM.Apply(0, 0)
 
-                fonts.HelpFont.PrintOptions2(window, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, "More")
+                fonts.HelpFont.PrintOptions(window, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, "More")
             },
             LeftClick: func(this *uilib.UIElement){
                 currentPage = (currentPage + 1) % len(renderPages)
@@ -2147,8 +2147,8 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         scale.DrawScaled(screen, ui, &options)
     }
 
-    cityScreen.Fonts.BigFont.PrintOptions2(screen, 20, 3, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
-    cityScreen.Fonts.DescriptionFont.PrintOptions2(screen, 6, 19, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("%v", cityScreen.City.Race))
+    cityScreen.Fonts.BigFont.PrintOptions(screen, 20, 3, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
+    cityScreen.Fonts.DescriptionFont.PrintOptions(screen, 6, 19, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("%v", cityScreen.City.Race))
 
     deltaNumber := func(n int) string {
         if n > 0 {
@@ -2160,7 +2160,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
 
-    cityScreen.Fonts.DescriptionFont.PrintOptions2(screen, 210, 19, font.FontOptions{Justify: font.FontJustifyRight, Scale: scale.ScaleAmount}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
+    cityScreen.Fonts.DescriptionFont.PrintOptions(screen, 210, 19, font.FontOptions{Justify: font.FontJustifyRight, Scale: scale.ScaleAmount}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
 
     showWork := false
     workRequired := 0
@@ -2185,7 +2185,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             scale.DrawScaled(screen, producingPics[index], &options)
         }
 
-        cityScreen.Fonts.ProducingFont.PrintOptions2(screen, 237, 179, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding))
+        cityScreen.Fonts.ProducingFont.PrintOptions(screen, 237, 179, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding))
 
         // for all buildings besides trade goods and housing, show amount of work required to build
 
@@ -2217,7 +2217,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             options.GeoM.Translate(238, 168)
             unitview.RenderCombatTile(screen, &cityScreen.ImageCache, options)
             unitview.RenderCombatUnit(screen, use, options, cityScreen.City.ProducingUnit.Count, data.UnitEnchantmentNone, 0, nil)
-            cityScreen.Fonts.ProducingFont.PrintOptions2(screen, 237, 179, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, cityScreen.City.ProducingUnit.Name)
+            cityScreen.Fonts.ProducingFont.PrintOptions(screen, 237, 179, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, cityScreen.City.ProducingUnit.Name)
         }
 
         showWork = true
@@ -2233,7 +2233,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             turn = fmt.Sprintf("%v Turns", int(math.Ceil(turns)))
         }
 
-        cityScreen.Fonts.DescriptionFont.PrintOptions2(screen, 318, 140, font.FontOptions{Justify: font.FontJustifyRight, Scale: scale.ScaleAmount}, turn)
+        cityScreen.Fonts.DescriptionFont.PrintOptions(screen, 318, 140, font.FontOptions{Justify: font.FontJustifyRight, Scale: scale.ScaleAmount}, turn)
 
         workEmpty, err1 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 11, 0)
         workFull, err2 := cityScreen.ImageCache.GetImage("backgrnd.lbx", 12, 0)
@@ -2361,12 +2361,12 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
             fontOptions := font.FontOptions{Options: &useOptions, Scale: scale.ScaleAmount}
 
             titleX, titleY := options.GeoM.Apply(float64(20), float64(3))
-            fonts.BigFont.PrintOptions2(screen, titleX, titleY, fontOptions, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
+            fonts.BigFont.PrintOptions(screen, titleX, titleY, fontOptions, fmt.Sprintf("%v of %s", city.GetSize(), city.Name))
             raceX, raceY := options.GeoM.Apply(float64(6), float64(19))
-            fonts.DescriptionFont.PrintOptions2(screen, raceX, raceY, fontOptions, fmt.Sprintf("%v", city.Race))
+            fonts.DescriptionFont.PrintOptions(screen, raceX, raceY, fontOptions, fmt.Sprintf("%v", city.Race))
 
             unitsX, unitsY := options.GeoM.Apply(float64(6), float64(43))
-            fonts.DescriptionFont.PrintOptions2(screen, unitsX, unitsY, fontOptions, fmt.Sprintf("Units   %v", currentUnitName))
+            fonts.DescriptionFont.PrintOptions(screen, unitsX, unitsY, fontOptions, fmt.Sprintf("Units   %v", currentUnitName))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -2477,7 +2477,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     var options ebiten.DrawImageOptions
                     options.ColorScale.ScaleAlpha(getAlpha())
-                    useFont.PrintOptions2(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, enchantment.Enchantment.Name())
+                    useFont.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, enchantment.Enchantment.Name())
                 },
                 LeftClick: func(element *uilib.UIElement) {
                     if enchantment.Owner == player.GetBanner() {

@@ -192,7 +192,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
 
             x := difficultyX + difficultyBlock.Bounds().Dx() / 2
             y := (difficultyY + 3)
-            buttonFont.PrintOptions2(screen, float64(x), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, newGameScreen.Settings.DifficultyString())
+            buttonFont.PrintOptions(screen, float64(x), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, newGameScreen.Settings.DifficultyString())
         },
     })
 
@@ -212,7 +212,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
             scale.DrawScaled(screen, opponentsBlock, &options)
             x := opponentsX + opponentsBlock.Bounds().Dx() / 2
             y := (opponentsY + 4)
-            buttonFont.PrintOptions2(screen, float64(x), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, newGameScreen.Settings.OpponentsString())
+            buttonFont.PrintOptions(screen, float64(x), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, newGameScreen.Settings.OpponentsString())
         },
     })
 
@@ -233,7 +233,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
             x := landsizeX + landSizeBlock.Bounds().Dx() / 2
             y := (landsizeY + 4)
 
-            buttonFont.PrintOptions2(screen, float64(x), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, newGameScreen.Settings.LandSizeString())
+            buttonFont.PrintOptions(screen, float64(x), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, newGameScreen.Settings.LandSizeString())
         },
     })
 
@@ -252,7 +252,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
             scale.DrawScaled(screen, magicBlock, &options)
             x := magicX + magicBlock.Bounds().Dx() / 2
             y := (magicY + 4)
-            buttonFont.PrintOptions2(screen, float64(x), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, newGameScreen.Settings.MagicString())
+            buttonFont.PrintOptions(screen, float64(x), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, newGameScreen.Settings.MagicString())
         },
     })
 

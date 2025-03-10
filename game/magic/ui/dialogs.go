@@ -155,12 +155,12 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
                 titleX += extraImage.Bounds().Dx() + 5
             }
 
-            helpTitleFont.PrintOptions2(window, float64(titleX), infoY + float64(infoTopMargin + titleYAdjust), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, help.Headline)
+            helpTitleFont.PrintOptions(window, float64(titleX), infoY + float64(infoTopMargin + titleYAdjust), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, help.Headline)
             helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY) + infoY, wrapped, font.FontOptions{Options: &options, Scale: scale.ScaleAmount})
 
             yPos := float64(helpTextY) + infoY + wrapped.TotalHeight + 2
             for i, moreWrapped := range moreHelp {
-                helpTitleFont.PrintOptions2(window, float64(titleX), yPos, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, helpEntries[i].Headline)
+                helpTitleFont.PrintOptions(window, float64(titleX), yPos, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, helpEntries[i].Headline)
                 helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), yPos + float64(helpTitleFont.Height()) + 1, moreWrapped, font.FontOptions{Options: &options, Scale: scale.ScaleAmount})
                 yPos += float64(helpTitleFont.Height()) + 1 + float64(moreWrapped.TotalHeight) + 2
             }
@@ -772,7 +772,7 @@ func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.Im
             options.GeoM.Translate((float64(cornerX + left.Bounds().Dx()) + requiredWidth), float64(cornerY + totalHeight))
             scale.DrawScaled(screen, bottomRight, &options)
 
-            topFont.PrintOptions2(screen, float64(cornerX + left.Bounds().Dx() + 4), float64(cornerY + 4), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, selectionTitle)
+            topFont.PrintOptions(screen, float64(cornerX + left.Bounds().Dx() + 4), float64(cornerY + 4), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, selectionTitle)
         },
     })
 
@@ -821,9 +821,9 @@ func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.Im
 
                 y := float64(myY + 2)
 
-                buttonFont.PrintOptions2(screen, float64(myX + 2), y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, choice.Name)
+                buttonFont.PrintOptions(screen, float64(myX + 2), y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, choice.Name)
                 if choice.Hotkey != "" {
-                    buttonFont.PrintOptions2(screen, float64(myX) + requiredWidth - 2, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, choice.Hotkey)
+                    buttonFont.PrintOptions(screen, float64(myX) + requiredWidth - 2, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, choice.Hotkey)
                 }
             },
         })

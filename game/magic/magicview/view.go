@@ -171,11 +171,11 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
             leftSide := float64(122)
             rightSide := float64(224)
             if isRight {
-                smallFont.PrintOptions2(screen, leftSide, float64(86), fontOptions, fmt.Sprintf("%v GP", int(float64(totalMana) * changePercent * alchemyConversion)))
-                smallFont.PrintOptions2(screen, rightSide, float64(86), fontOptions, fmt.Sprintf("%v PP", int(float64(totalMana) * changePercent)))
+                smallFont.PrintOptions(screen, leftSide, float64(86), fontOptions, fmt.Sprintf("%v GP", int(float64(totalMana) * changePercent * alchemyConversion)))
+                smallFont.PrintOptions(screen, rightSide, float64(86), fontOptions, fmt.Sprintf("%v PP", int(float64(totalMana) * changePercent)))
             } else {
-                smallFont.PrintOptions2(screen, leftSide, float64(86), fontOptions, fmt.Sprintf("%v GP", int(float64(totalGold) * changePercent)))
-                smallFont.PrintOptions2(screen, rightSide, float64(86), fontOptions, fmt.Sprintf("%v PP", int(float64(totalGold) * changePercent * alchemyConversion)))
+                smallFont.PrintOptions(screen, leftSide, float64(86), fontOptions, fmt.Sprintf("%v GP", int(float64(totalGold) * changePercent)))
+                smallFont.PrintOptions(screen, rightSide, float64(86), fontOptions, fmt.Sprintf("%v PP", int(float64(totalGold) * changePercent * alchemyConversion)))
             }
         },
     })
@@ -343,9 +343,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             research := int(math.Round(player.PowerDistribution.Research * float64(magic.Power)))
             skill := magic.Power - (mana + research)
 
-            fonts.NormalFont.PrintOptions2(screen, float64(56), float64(160), rightShadow, fmt.Sprintf("%v MP", mana))
-            fonts.NormalFont.PrintOptions2(screen, float64(103), float64(160), rightShadow, fmt.Sprintf("%v RP", research))
-            fonts.NormalFont.PrintOptions2(screen, float64(151), float64(160), rightShadow, fmt.Sprintf("%v SP", skill))
+            fonts.NormalFont.PrintOptions(screen, float64(56), float64(160), rightShadow, fmt.Sprintf("%v MP", mana))
+            fonts.NormalFont.PrintOptions(screen, float64(103), float64(160), rightShadow, fmt.Sprintf("%v RP", research))
+            fonts.NormalFont.PrintOptions(screen, float64(151), float64(160), rightShadow, fmt.Sprintf("%v SP", skill))
 
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
                 if element.Draw != nil {
@@ -434,7 +434,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                             if text == "" {
                                 text = "None"
                             }
-                            fonts.SpellFont.PrintOptions2(screen, float64((position.X + 21)), float64(position.Y), centerShadow, text)
+                            fonts.SpellFont.PrintOptions(screen, float64((position.X + 21)), float64(position.Y), centerShadow, text)
                         }
                     }
                 } else {
@@ -772,9 +772,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // vector.StrokeRect(screen, float32(spellCastUIRect.Min.X), float32(spellCastUIRect.Min.Y), float32(spellCastUIRect.Dx()), float32(spellCastUIRect.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
 
-            fonts.SmallerFont.PrintOptions2(screen, float64(5), float64(176), leftShadow, fmt.Sprintf("Casting Skill: %v(%v)", overworldCastingSkill, castingSkill))
-            fonts.SmallerFont.PrintOptions2(screen, float64(5), float64(183), leftShadow, fmt.Sprintf("Magic Reserve: %v", player.Mana))
-            fonts.SmallerFont.PrintOptions2(screen, float64(5), float64(190), leftShadow, fmt.Sprintf("Power Base: %v", magic.Power))
+            fonts.SmallerFont.PrintOptions(screen, float64(5), float64(176), leftShadow, fmt.Sprintf("Casting Skill: %v(%v)", overworldCastingSkill, castingSkill))
+            fonts.SmallerFont.PrintOptions(screen, float64(5), float64(183), leftShadow, fmt.Sprintf("Magic Reserve: %v", player.Mana))
+            fonts.SmallerFont.PrintOptions(screen, float64(5), float64(190), leftShadow, fmt.Sprintf("Power Base: %v", magic.Power))
         },
     })
 
@@ -789,8 +789,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // util.DrawRect(screen, castingRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
-            fonts.SmallerFont.PrintOptions2(screen, float64(100), float64(176), leftShadow, fmt.Sprintf("Casting: %v", player.CastingSpell.Name))
-            fonts.SmallerFont.PrintOptions2(screen, float64(100), float64(183), leftShadow, fmt.Sprintf("Researching: %v", player.ResearchingSpell.Name))
+            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(176), leftShadow, fmt.Sprintf("Casting: %v", player.CastingSpell.Name))
+            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(183), leftShadow, fmt.Sprintf("Researching: %v", player.ResearchingSpell.Name))
 
             summonCity := player.FindSummoningCity()
             if summonCity == nil {
@@ -799,7 +799,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 }
             }
 
-            fonts.SmallerFont.PrintOptions2(screen, float64(100), float64(190), leftShadow, fmt.Sprintf("Summon To: %v", summonCity.Name))
+            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(190), leftShadow, fmt.Sprintf("Summon To: %v", summonCity.Name))
         },
     })
 
@@ -855,7 +855,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             globalEnchantments = append(globalEnchantments, &uilib.UIElement{
                 Rect: rect,
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    useFont.PrintOptions2(screen, float64(rect.Min.X), float64(rect.Min.Y), leftShadow, name)
+                    useFont.PrintOptions(screen, float64(rect.Min.X), float64(rect.Min.Y), leftShadow, name)
                 },
                 LeftClick: func(element *uilib.UIElement){
                     // can only cancel the player's enchantments

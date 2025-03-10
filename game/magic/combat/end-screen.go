@@ -187,11 +187,11 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             titleX, titleY := options.GeoM.Apply(float64(110), float64(25))
             switch end.Result {
                 case CombatEndScreenResultWin:
-                    titleFont.PrintOptions2(screen, titleX, titleY, fontOptions, "You are triumphant")
+                    titleFont.PrintOptions(screen, titleX, titleY, fontOptions, "You are triumphant")
                 case CombatEndScreenResultLoose:
-                    titleFont.PrintOptions2(screen, titleX, titleY, fontOptions, "You have been defeated")
+                    titleFont.PrintOptions(screen, titleX, titleY, fontOptions, "You have been defeated")
                 case CombatEndScreenResultRetreat:
-                    titleFont.PrintOptions2(screen, titleX, titleY, fontOptions, "Your forces have retreated")
+                    titleFont.PrintOptions(screen, titleX, titleY, fontOptions, "Your forces have retreated")
             }
 
             extraX, extraY := options.GeoM.Apply(float64(110), float64(fontY))
@@ -199,7 +199,7 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             options.GeoM.Translate(0, float64(picLength))
             screen.DrawImage(bottom, &options)
 
-            extraFont.PrintOptions2(screen, extraX, extraY, fontOptions, extraText)
+            extraFont.PrintOptions(screen, extraX, extraY, fontOptions, extraText)
 
             if extraText2 != "" {
                 extraY += float64((extraFont.Height() + 1))
