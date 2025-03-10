@@ -9,7 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/util"
-    "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -82,33 +82,33 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
+            options.GeoM.Translate(float64(31), float64(6))
             options.ColorScale.ScaleAlpha(getAlpha())
-            screen.DrawImage(background, &options)
+            scale.DrawScaled(screen, background, &options)
 
-            options.GeoM.Translate(float64(25 * data.ScreenScale), float64(30 * data.ScreenScale))
+            options.GeoM.Translate(float64(25), float64(30))
             portaitUnit, ok := unit.Unit.(unitview.PortraitUnit)
             if ok {
                 lbxFile, index := portaitUnit.GetPortraitLbxInfo()
                 portait, err := imageCache.GetImage(lbxFile, index, 0)
                 if err == nil {
-                    options.GeoM.Translate(0, float64(-7 * data.ScreenScale))
+                    options.GeoM.Translate(0, float64(-7))
                     options.GeoM.Translate(float64(-portait.Bounds().Dx()/2), float64(-portait.Bounds().Dy()/2))
-                    screen.DrawImage(portait, &options)
+                    scale.DrawScaled(screen, portait, &options)
                 }
             } else {
                 unitview.RenderUnitViewImage(screen, &imageCache, unit, options, unit.IsAsleep(), ui.Counter)
             }
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
-            options.GeoM.Translate(float64(51 * data.ScreenScale), float64(6 * data.ScreenScale))
+            options.GeoM.Translate(float64(31), float64(6))
+            options.GeoM.Translate(float64(51), float64(6))
 
             RenderUnitInfo(screen, &imageCache, unit, fonts, options)
 
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(31 * data.ScreenScale), float64(6 * data.ScreenScale))
-            options.GeoM.Translate(float64(10 * data.ScreenScale), float64(50 * data.ScreenScale))
+            options.GeoM.Translate(float64(31), float64(6))
+            options.GeoM.Translate(float64(10), float64(50))
             unitview.RenderUnitInfoStats(screen, &imageCache, unit, 15, fonts.DescriptionFont, fonts.SmallFont, options)
 
             /*
@@ -118,7 +118,7 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
         },
     })
 
-    group.AddElements(unitview.MakeUnitAbilitiesElements(group, cache, &imageCache, unit, fonts.MediumFont, 40 * data.ScreenScale, 114 * data.ScreenScale, &ui.Counter, 1, &getAlpha, false, 0, false))
+    group.AddElements(unitview.MakeUnitAbilitiesElements(group, cache, &imageCache, unit, fonts.MediumFont, 40, 114, &ui.Counter, 1, &getAlpha, false, 0, false))
 
     return group
 }
@@ -129,11 +129,11 @@ func RenderUnitInfo(screen *ebiten.Image, imageCache *util.ImageCache, unit *Arm
     // FIXME: if the unit is a hero and has a title then the title should show up on the next line after the name
     name := unit.Unit.GetFullName()
 
-    fonts.DescriptionFont.PrintOptions(screen, x, y + float64(2 * data.ScreenScale), float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, name)
+    fonts.DescriptionFont.PrintOptions2(screen, x, y + float64(2), font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, name)
 
-    y += float64((fonts.DescriptionFont.Height() + 6) * data.ScreenScale)
+    y += float64((fonts.DescriptionFont.Height() + 6))
 
-    fonts.SmallFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, "Moves")
+    fonts.SmallFont.PrintOptions2(screen, x, y, font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, "Moves")
 
     unitMoves := unit.GetMovementSpeed()
 
@@ -143,14 +143,14 @@ func RenderUnitInfo(screen *ebiten.Image, imageCache *util.ImageCache, unit *Arm
         var options ebiten.DrawImageOptions
         options = defaultOptions
         options.GeoM.Reset()
-        options.GeoM.Translate(x + fonts.SmallFont.MeasureTextWidth("Damage ", float64(data.ScreenScale)), y)
+        options.GeoM.Translate(x + fonts.SmallFont.MeasureTextWidth("Damage ", 1), y)
 
         for i := 0; i < unitMoves; i++ {
-            screen.DrawImage(smallBoot, &options)
+            scale.DrawScaled(screen, smallBoot, &options)
             options.GeoM.Translate(float64(smallBoot.Bounds().Dx()), 0)
         }
     }
 
-    y += float64((fonts.SmallFont.Height() + 3) * data.ScreenScale)
-    fonts.SmallFont.PrintOptions(screen, x, y, float64(data.ScreenScale), defaultOptions.ColorScale, font.FontOptions{DropShadow: true}, fmt.Sprintf("Damage %v", unit.GetDamage()))
+    y += float64((fonts.SmallFont.Height() + 3))
+    fonts.SmallFont.PrintOptions2(screen, x, y, font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, fmt.Sprintf("Damage %v", unit.GetDamage()))
 }
