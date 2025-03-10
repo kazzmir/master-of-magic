@@ -21,6 +21,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
@@ -370,7 +371,7 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (screenWidth, scre
         case EngineModeMenu, EngineModeBugReport:
             return outsideWidth, outsideHeight
         case EngineModeCombat:
-            return data.ScreenWidth, data.ScreenHeight
+            return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
     }
 
     return outsideWidth, outsideHeight
