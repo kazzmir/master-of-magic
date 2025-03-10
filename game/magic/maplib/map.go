@@ -466,8 +466,7 @@ func (node *ExtraMagicNode) DrawLayer2(screen *ebiten.Image, imageCache *util.Im
         // log.Printf("warp at %v, %v bounds image=%v source=%v", point.X, point.Y, image.Bounds(), sourceImage.Bounds())
 
         var options2 ebiten.DrawRectShaderOptions
-        options2.GeoM.Concat(scale.ScaledGeom)
-        options2.GeoM.Translate(x1, y1)
+        options2.GeoM.Translate(scale.Scale(x1), scale.Scale(y1))
 
         options2.Images[0] = sourceImage
         // options2.Images[1] = mask
