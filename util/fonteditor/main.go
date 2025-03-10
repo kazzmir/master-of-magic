@@ -628,14 +628,14 @@ func (editor *Editor) Draw(screen *ebiten.Image) {
         }
     }
 
-    yPos := editor.GlyphImage.Bounds().Dy() * height * int(editor.Scale) + 10 + 20
+    yPos := editor.GlyphImage.Bounds().Dy() * height / int(editor.Scale) + 4 + editor.Optimized.Height() * int(editor.Scale)
 
-    editor.Optimized.Print(screen, 50, float64(yPos), editor.Scale + 2, ebiten.ColorScale{}, string(editor.Rune))
-    yPos += editor.Optimized.Height() * int(editor.Scale+2) + 2
+    editor.Optimized.Print(screen, 10, float64(yPos), editor.Scale, ebiten.ColorScale{}, string(editor.Rune))
+    yPos += editor.Optimized.Height() * int(editor.Scale) / 3
 
-    editor.Optimized.Print(screen, 50, float64(yPos), editor.Scale, ebiten.ColorScale{}, "abcdefghijkl")
-    yPos += editor.Optimized.Height() * int(editor.Scale) + 2
-    editor.Optimized.Print(screen, 50, float64(yPos), editor.Scale, ebiten.ColorScale{}, "ABCDEFGHIJKL")
+    editor.Optimized.Print(screen, 10, float64(yPos), editor.Scale, ebiten.ColorScale{}, "abcdefghijkl")
+    yPos += editor.Optimized.Height() + 2
+    editor.Optimized.Print(screen, 10, float64(yPos), editor.Scale, ebiten.ColorScale{}, "ABCDEFGHIJKL")
 
     if editor.State == ChooseColorState {
         yellow := color.RGBA{R: 0xff, G: 0xff, A: 0xff}
