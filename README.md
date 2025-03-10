@@ -2,13 +2,12 @@
 ![build macos](https://github.com/kazzmir/master-of-magic/actions/workflows/build-macos-m1.yml/badge.svg)
 ![build windows](https://github.com/kazzmir/master-of-magic/actions/workflows/build-windows.yml/badge.svg)
 
-[Discord Channel](https://discord.gg/xCpHBKrU9c)
-
 # Master of Magic clone
 
 * Source language: golang, https://go.dev/
 * Graphics library: ebiten, https://ebitengine.org/
 * Master of Magic wiki: https://masterofmagic.fandom.com/
+* Discord channel: https://discord.gg/xCpHBKrU9c
 
 # Online demo
 
