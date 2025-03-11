@@ -3510,7 +3510,7 @@ func (model *CombatModel) flee(army *Army) {
         }
 
         // units that are still under the web will always be lost
-        if unit.WebHealth > 0 {
+        if unit.IsWebbed() {
             chance = 100
         }
 
@@ -3524,14 +3524,15 @@ func (model *CombatModel) flee(army *Army) {
 
 // called when the battle ends
 func (model *CombatModel) Finish() {
+    // kill possessed units
     for _, unit := range model.DefendingArmy.Units {
-        if unit.Unit.GetHealth() > 0 && unit.HasCurse(data.UnitCurseCreatureBinding) {
+        if unit.Unit.GetHealth() > 0 && (unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession)) {
             unit.TakeDamage(unit.Unit.GetHealth())
         }
     }
 
     for _, unit := range model.AttackingArmy.Units {
-        if unit.Unit.GetHealth() > 0 && unit.HasCurse(data.UnitCurseCreatureBinding) {
+        if unit.Unit.GetHealth() > 0 && (unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession)) {
             unit.TakeDamage(unit.Unit.GetHealth())
         }
     }
