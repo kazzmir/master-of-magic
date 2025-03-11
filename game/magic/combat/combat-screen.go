@@ -1088,7 +1088,7 @@ func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) *Proj
     effect := func (unit *ArmyUnit){
         if unit.GetResistanceFor(data.ChaosMagic) <= 9 {
             // FIXME: does irreversable damage
-            combat.Model.RemoveUnit1(unit)
+            combat.Model.RemoveUnit(unit)
         }
     }
 
@@ -1132,7 +1132,7 @@ func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) *Projec
     effect := func (unit *ArmyUnit){
         if rand.N(4) == 0 {
             // FIXME: apply irreversable damage, unit cannot be revived or turned into undead
-            combat.Model.RemoveUnit1(unit)
+            combat.Model.RemoveUnit(unit)
         }
     }
 

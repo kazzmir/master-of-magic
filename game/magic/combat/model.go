@@ -1759,10 +1759,10 @@ func (army *Army) LayoutUnits(team Team){
 
 func (army *Army) KillUnit(kill *ArmyUnit){
     army.KilledUnits = append(army.KilledUnits, kill)
-    army.RemoveUnit1(kill)
+    army.RemoveUnit(kill)
 }
 
-func (army *Army) RemoveUnit1(remove *ArmyUnit){
+func (army *Army) RemoveUnit(remove *ArmyUnit){
     var units []*ArmyUnit
 
     for _, unit := range army.Units {
@@ -3413,13 +3413,13 @@ func (model *CombatModel) KillUnit(unit *ArmyUnit){
     }
 }
 
-func (model *CombatModel) RemoveUnit1(unit *ArmyUnit){
+func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
     if unit.Team == TeamDefender {
         model.DefeatedDefenders += 1
-        model.DefendingArmy.RemoveUnit1(unit)
+        model.DefendingArmy.RemoveUnit(unit)
     } else {
         model.DefeatedAttackers += 1
-        model.AttackingArmy.RemoveUnit1(unit)
+        model.AttackingArmy.RemoveUnit(unit)
     }
 
     model.Tiles[unit.Y][unit.X].Unit = nil
@@ -3548,7 +3548,7 @@ func (model *CombatModel) flee(army *Army) {
 
         if rand.IntN(100) < chance {
             unit.TakeDamage(unit.Unit.GetHealth())
-            model.RemoveUnit1(unit)
+            model.RemoveUnit(unit)
             model.DiedWhileFleeing += 1
         }
     }
@@ -3592,7 +3592,7 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
 func (model *CombatModel) SwitchTeams(target *ArmyUnit) {
     newArmy := model.GetOtherArmy(target)
     oldArmy := model.GetArmy(target)
-    oldArmy.RemoveUnit1(target)
+    oldArmy.RemoveUnit(target)
 
     newArmy.AddArmyUnit(target)
     target.Team = model.GetTeamForArmy(newArmy)
