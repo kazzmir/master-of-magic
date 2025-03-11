@@ -3250,7 +3250,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     // asleep units take full attack power as damage
                     if defender.IsAsleep() {
                         hit = true
-                        attackerDamage = attacker.GetMeleeAttackPower()
+                        attackerDamage = attacker.GetMeleeAttackPower() * max(0, attacker.Figures() - attackerFear)
                     }
 
                     immolationDamage := 0
@@ -3308,7 +3308,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
 
                     if defender.IsAsleep() {
                         hit = true
-                        attackerDamage = attacker.GetMeleeAttackPower()
+                        attackerDamage = attacker.GetMeleeAttackPower() * max(0, attacker.Figures() - attackerFear)
                     }
 
                     if hit {

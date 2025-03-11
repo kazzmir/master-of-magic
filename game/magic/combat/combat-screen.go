@@ -822,7 +822,7 @@ func (combat *CombatScreen) CreatePossessionProjectile(target *ArmyUnit) *Projec
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > unit.GetResistanceFor(data.DeathMagic) - 1 {
+        if rand.N(10) + 1 > unit.GetResistanceFor(data.DeathMagic) {
             combat.Model.ApplyPossession(unit)
         }
     }
