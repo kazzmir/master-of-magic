@@ -3985,7 +3985,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             disenchantStrength := spell.Cost(false)
             if spell.Name == "Disenchant True" {
                 // each additional point of mana spent increases the disenchant strength by 3
-                disenchantStrength = spell.BaseCost(false) + spell.SpentAdditionalCost(false) * 3
+                disenchantStrength = spell.Cost(false) * 3
             }
 
             if player.Wizard.RetortEnabled(data.RetortRunemaster) {
