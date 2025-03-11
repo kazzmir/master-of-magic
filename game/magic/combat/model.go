@@ -3698,6 +3698,7 @@ type SpellSystem interface {
     CreateWarpCreatureProjectile(target *ArmyUnit) *Projectile
     CreateConfusionProjectile(target *ArmyUnit) *Projectile
     CreatePossessionProjectile(target *ArmyUnit) *Projectile
+    CreateCreatureBindingProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4038,11 +4039,8 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 return false
             }
 
-            // FIXME: any projectile here?
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
-                    model.CastCreatureBinding(target)
-                }
+                model.AddProjectile(spellSystem.CreateCreatureBindingProjectile(target))
                 castedCallback()
             }, selectable)
 
@@ -4260,12 +4258,5 @@ func (model *CombatModel) CastEnchantment(player *playerlib.Player, enchantment 
         model.Events <- &CombatEventMessage{
             Message: "That combat enchantment is already in effect",
         }
-    }
-}
-
-func (model *CombatModel) CastCreatureBinding(target *ArmyUnit){
-    if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
-        // FIXME: make creature bind animation
-        model.ApplyCreatureBinding(target)
     }
 }
