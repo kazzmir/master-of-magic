@@ -236,7 +236,8 @@ func (unit *OverworldUnit) AddExperience(amount int) {
 }
 
 func (unit *OverworldUnit) GetExperience() int {
-    if unit.GetRace() == data.RaceFantastic {
+    // check the underlying race because an undead unit might still have experience
+    if unit.Unit.Race == data.RaceFantastic {
         return 0
     }
     return unit.Experience
@@ -504,11 +505,12 @@ func (unit *OverworldUnit) GetHeroExperienceLevel() HeroExperienceLevel {
 }
 
 func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
-    // fantastic creatures can never gain any levels
-    if unit.GetRace() == data.RaceFantastic {
+    // fantastic creatures can never gain any levels, but undead units can have experience
+    if unit.Unit.Race == data.RaceFantastic {
         return ExperienceRecruit
     }
 
+    // FIXME: verify if undead units can be affected by heroism, warlord and crusade
     experience := unit.Experience
     if unit.HasEnchantment(data.UnitEnchantmentHeroism) {
         experience = 120
