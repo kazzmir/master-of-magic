@@ -74,6 +74,19 @@ func (unit *OverworldUnit) SetUndead() {
 }
 
 func (unit *OverworldUnit) GetAbilityValue(ability data.AbilityType) float32 {
+    if ability == data.AbilityFireBreath {
+        value := unit.Unit.GetAbilityValue(ability)
+        if value > 0 {
+            return value
+        }
+
+        if unit.HasEnchantment(data.UnitEnchantmentChaosChannelsFireBreath) {
+            return 2
+        }
+
+        return 0
+    }
+
     return unit.Unit.GetAbilityValue(ability)
 }
 
@@ -149,6 +162,9 @@ func (unit *OverworldUnit) GetRace() data.Race {
 }
 
 func (unit *OverworldUnit) GetRealm() data.MagicType {
+    if unit.IsUndead() {
+        return data.DeathMagic
+    }
     return unit.Unit.Realm
 }
 
@@ -433,6 +449,7 @@ func (unit *OverworldUnit) ResistanceEnchantmentBonus(enchantment data.UnitEncha
 func (unit *OverworldUnit) DefenseEnchantmentBonus(enchantment data.UnitEnchantment) int {
     switch enchantment {
         case data.UnitEnchantmentBlackChannels: return 1
+        case data.UnitEnchantmentChaosChannelsDemonSkin: return 3
         case data.UnitEnchantmentHolyArmor: return 2
         // FIXME: iron/stone skin are mutually exclusive
         case data.UnitEnchantmentIronSkin: return 5
