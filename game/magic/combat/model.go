@@ -3861,7 +3861,18 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             }, targetFantastic)
         case "Dispel Magic True":
             model.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
-                disenchantStrength := spell.BaseCost(false) + spell.SpentAdditionalCost(false) * 3
+                disenchantStrength := spell.Cost(false) * 3
+
+                if player.Wizard.RetortEnabled(data.RetortRunemaster) {
+                    disenchantStrength *= 2
+                }
+
+                model.AddProjectile(spellSystem.CreateDispelMagicProjectile(target, player, disenchantStrength))
+                castedCallback()
+            }, targetAny)
+        case "Dispel Magic":
+            model.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
+                disenchantStrength := spell.Cost(false)
 
                 if player.Wizard.RetortEnabled(data.RetortRunemaster) {
                     disenchantStrength *= 2
@@ -4195,7 +4206,6 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
         /*
         combat instants:
 
-        Dispel Magic
         Raise Dead
         Petrify
         Call Chaos
