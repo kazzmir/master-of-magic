@@ -1900,6 +1900,7 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
                 if selectTeam == TeamEither || unit.Team == selectTeam {
 
+                    // creature binding sound 243, which correlates to new sound 13
                     if spell.Sound >= 230 {
                         sound, err := combat.AudioCache.GetNewSound(spell.Sound - 230)
                         if err == nil {
