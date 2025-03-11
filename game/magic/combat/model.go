@@ -2354,7 +2354,9 @@ func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, uni
     // if the unit had Creature Bind then when it is dispelled the unit should be moved to the other army
     swapArmy := false
     for _, enchantment := range removedEnchantments {
-        if enchantment == data.UnitCurseCreatureBinding {
+        // these enchantments will basically never be dispelled because if a wizard loses control of a unit and casts
+        // disenchant on the unit, then only positive enchantments will be removed, not curses
+        if enchantment == data.UnitCurseCreatureBinding || enchantment == data.UnitCursePossession {
             swapArmy = true
         }
 
@@ -2367,12 +2369,7 @@ func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, uni
     }
 
     if swapArmy {
-        oldArmy := model.GetArmy(unit)
-        newArmy := model.GetOtherArmy(unit)
-
-        oldArmy.RemoveUnit(unit)
-        newArmy.AddArmyUnit(unit)
-        unit.Team = model.GetTeamForArmy(newArmy)
+        model.SwitchTeams(unit)
     }
 }
 
@@ -3250,7 +3247,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     // asleep units take full attack power as damage
                     if defender.IsAsleep() {
                         hit = true
-                        attackerDamage = attacker.GetMeleeAttackPower()
+                        attackerDamage = attacker.GetMeleeAttackPower() * max(0, attacker.Figures() - attackerFear)
                     }
 
                     immolationDamage := 0
@@ -3308,7 +3305,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
 
                     if defender.IsAsleep() {
                         hit = true
-                        attackerDamage = attacker.GetMeleeAttackPower()
+                        attackerDamage = attacker.GetMeleeAttackPower() * max(0, attacker.Figures() - attackerFear)
                     }
 
                     if hit {
@@ -3513,7 +3510,7 @@ func (model *CombatModel) flee(army *Army) {
         }
 
         // units that are still under the web will always be lost
-        if unit.WebHealth > 0 {
+        if unit.IsWebbed() {
             chance = 100
         }
 
@@ -3527,14 +3524,15 @@ func (model *CombatModel) flee(army *Army) {
 
 // called when the battle ends
 func (model *CombatModel) Finish() {
+    // kill possessed units
     for _, unit := range model.DefendingArmy.Units {
-        if unit.Unit.GetHealth() > 0 && unit.HasCurse(data.UnitCurseCreatureBinding) {
+        if unit.Unit.GetHealth() > 0 && (unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession)) {
             unit.TakeDamage(unit.Unit.GetHealth())
         }
     }
 
     for _, unit := range model.AttackingArmy.Units {
-        if unit.Unit.GetHealth() > 0 && unit.HasCurse(data.UnitCurseCreatureBinding) {
+        if unit.Unit.GetHealth() > 0 && (unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession)) {
             unit.TakeDamage(unit.Unit.GetHealth())
         }
     }
@@ -3559,14 +3557,23 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
     return false
 }
 
-func (model *CombatModel) ApplyCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
-    target.AddCurse(data.UnitCurseCreatureBinding)
+func (model *CombatModel) SwitchTeams(target *ArmyUnit) {
+    newArmy := model.GetOtherArmy(target)
     oldArmy := model.GetArmy(target)
     oldArmy.RemoveUnit(target)
 
-    newArmy := model.GetArmyForPlayer(newOwner)
     newArmy.AddArmyUnit(target)
     target.Team = model.GetTeamForArmy(newArmy)
+}
+
+func (model *CombatModel) ApplyCreatureBinding(target *ArmyUnit){
+    target.AddCurse(data.UnitCurseCreatureBinding)
+    model.SwitchTeams(target)
+}
+
+func (model *CombatModel) ApplyPossession(target *ArmyUnit){
+    target.AddCurse(data.UnitCursePossession)
+    model.SwitchTeams(target)
 }
 
 /* let the user select a target, then cast the spell on that target
@@ -3690,6 +3697,7 @@ type SpellSystem interface {
     CreateShatterProjectile(target *ArmyUnit) *Projectile
     CreateWarpCreatureProjectile(target *ArmyUnit) *Projectile
     CreateConfusionProjectile(target *ArmyUnit) *Projectile
+    CreatePossessionProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4030,8 +4038,11 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 return false
             }
 
+            // FIXME: any projectile here?
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                model.CastCreatureBinding(target, player)
+                if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
+                    model.CastCreatureBinding(target)
+                }
                 castedCallback()
             }, selectable)
 
@@ -4167,13 +4178,21 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Possession":
+            model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreatePossessionProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.Unit.IsHero() || target.GetRace() == data.RaceFantastic {
+                    return false
+                }
 
+                if target.IsMagicImmune(spell.Magic) {
+                    return false
+                }
 
-        /*
-        unit curses:
-
-        CursePossession
-        */
+                return true
+            })
 
         /*
         combat instants:
@@ -4244,9 +4263,9 @@ func (model *CombatModel) CastEnchantment(player *playerlib.Player, enchantment 
     }
 }
 
-func (model *CombatModel) CastCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
+func (model *CombatModel) CastCreatureBinding(target *ArmyUnit){
     if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
         // FIXME: make creature bind animation
-        model.ApplyCreatureBinding(target, newOwner)
+        model.ApplyCreatureBinding(target)
     }
 }
