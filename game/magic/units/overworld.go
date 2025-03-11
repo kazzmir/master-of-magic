@@ -80,7 +80,11 @@ func (unit *OverworldUnit) GetAbilityValue(ability data.AbilityType) float32 {
             return value
         }
 
-        return 2
+        if unit.HasEnchantment(data.UnitEnchantmentChaosChannelsFireBreath) {
+            return 2
+        }
+
+        return 0
     }
 
     return unit.Unit.GetAbilityValue(ability)
