@@ -3260,15 +3260,14 @@ func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
 }
 
 // try to find a nearby position that the given stack can move to
-func (game *Game) FindNearbyPosition(player *playerlib.Player, stack *playerlib.UnitStack) ([]image.Point, []image.Point) {
-    x := stack.X()
-    y := stack.Y()
-    plane := stack.Plane()
+func (game *Game) FindEscapePosition(player *playerlib.Player, unit units.StackUnit) []image.Point {
+    x := unit.GetX()
+    y := unit.GetY()
+    plane := unit.GetPlane()
     mapUse := game.GetMap(plane)
-    canMoveToWater := stack.AllFlyers() || stack.AllSwimmers()
+    canMoveToWater := unit.IsFlying() || unit.IsSwimmer() || unit.IsSailing()
 
     var positions []image.Point
-    var waterPositions []image.Point
     for dx := -1; dx <= 1; dx++ {
         for dy := -1; dy <= 1; dy++ {
             if dx == 0 && dy == 0 {
@@ -3297,13 +3296,13 @@ func (game *Game) FindNearbyPosition(player *playerlib.Player, stack *playerlib.
                 }
             }
 
-            // can not contain a friendly with too less room
-            existing := player.FindStack(cx, cy, plane)
-            if existing != nil && (len(existing.Units()) + len(stack.Units())) > 9 {
-                occupied = true
+            if occupied {
+                continue
             }
 
-            if occupied {
+            // can not contain a friendly full stack
+            existing := player.FindStack(cx, cy, plane)
+            if existing != nil && len(existing.Units()) >= 9 {
                 continue
             }
 
@@ -3312,15 +3311,13 @@ func (game *Game) FindNearbyPosition(player *playerlib.Player, stack *playerlib.
                 continue
             }
 
-            if mapUse.GetTile(cx, cy).Tile.IsWater() && !canMoveToWater {
-                waterPositions = append(waterPositions, image.Pt(cx, cy))
-            } else {
+            if !mapUse.GetTile(cx, cy).Tile.IsWater() || canMoveToWater {
                 positions = append(positions, image.Pt(cx, cy))
             }
         }
     }
 
-    return positions, waterPositions
+    return positions
 }
 
 func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
@@ -3339,17 +3336,17 @@ func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
     for _, i := range rand.Perm(len(stackUnits)) {
         unit := stackUnits[i]
 
-        subStack := playerlib.MakeUnitStackFromUnits([]units.StackUnit{unit})
-        positions, _ := game.FindNearbyPosition(player, subStack)
+        positions := game.FindEscapePosition(player, unit)
 
         if len(positions) != 0 {
+            // set to a random position
             position := positions[rand.IntN(len(positions))]
             unit.SetX(position.X)
             unit.SetY(position.Y)
 
+            // merge stacks
             stack.RemoveUnit(unit)
-            player.AddStack(subStack)
-
+            player.AddStack(playerlib.MakeUnitStackFromUnits([]units.StackUnit{unit}))
             allStacks := player.FindAllStacks(position.X, position.Y, stack.Plane())
             for i := 1; i < len(allStacks); i++ {
                 player.MergeStacks(allStacks[0], allStacks[i])
@@ -3398,35 +3395,30 @@ func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
 
 // try to relocate a fleeing stack, kills units that are unable
 func (game *Game) doMoveFleeingDefender(player *playerlib.Player, stack *playerlib.UnitStack) {
-    positions, waterPositions := game.FindNearbyPosition(player, stack)
+    stackUnits := stack.Units()
 
-    // kill units that can not move to water if only water is available
-    if len(positions) == 0 && len(waterPositions) != 0 {
-        for _, unit := range stack.Units() {
-            if !unit.IsFlying() && !unit.IsSwimmer() {
-                player.RemoveUnit(unit)
-            }
-        }
+    for _, i := range rand.Perm(len(stackUnits)) {
+        unit := stackUnits[i]
+        positions := game.FindEscapePosition(player, unit)
 
-        positions = waterPositions
-    }
-
-    // kill whole stack if no position found
-    if len(positions) == 0 {
-        for _, unit := range stack.Units() {
+        // kill unit if it can not move
+        if len(positions) == 0 {
             player.RemoveUnit(unit)
+            continue
         }
-        return
-    }
 
-    // set to a random position
-    position := positions[rand.IntN(len(positions))]
-    stack.SetX(position.X)
-    stack.SetY(position.Y)
+        // set to a random position
+        position := positions[rand.IntN(len(positions))]
+        unit.SetX(position.X)
+        unit.SetY(position.Y)
 
-    allStacks := player.FindAllStacks(position.X, position.Y, stack.Plane())
-    for i := 1; i < len(allStacks); i++ {
-        player.MergeStacks(allStacks[0], allStacks[i])
+        // merge stacks
+        stack.RemoveUnit(unit)
+        player.AddStack(playerlib.MakeUnitStackFromUnits([]units.StackUnit{unit}))
+        allStacks := player.FindAllStacks(position.X, position.Y, unit.GetPlane())
+        for i := 1; i < len(allStacks); i++ {
+            player.MergeStacks(allStacks[0], allStacks[i])
+        }
     }
 }
 
