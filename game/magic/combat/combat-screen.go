@@ -90,6 +90,7 @@ type CombatEventSelectUnit struct {
 }
 
 type CombatSelectTargets struct {
+    Title string
     Targets []*ArmyUnit
     Select func (*ArmyUnit)
 }
@@ -1215,7 +1216,7 @@ func (combat *CombatScreen) CreateMagicVortex(x int, y int) *OtherUnit {
     return unit
 }
 
-func (combat *CombatScreen) AddSelectTargetsElements(targets []*ArmyUnit, selected func(*ArmyUnit)) {
+func (combat *CombatScreen) AddSelectTargetsElements(targets []*ArmyUnit, title string, selected func(*ArmyUnit)) {
     var selections []uilib.Selection
 
     for _, target := range targets {
@@ -1227,7 +1228,7 @@ func (combat *CombatScreen) AddSelectTargetsElements(targets []*ArmyUnit, select
         })
     }
 
-    combat.UI.AddElements(uilib.MakeSelectionUI(combat.UI, combat.Cache, &combat.ImageCache, 100, 20, "Select a target", selections))
+    combat.UI.AddElements(uilib.MakeSelectionUI(combat.UI, combat.Cache, &combat.ImageCache, 100, 20, title, selections))
 }
 
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
@@ -2092,7 +2093,7 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         combat.doCastEnchantment(yield, use.Caster, use.Magic, use.Name)
                     case *CombatSelectTargets:
                         use := event.(*CombatSelectTargets)
-                        combat.AddSelectTargetsElements(use.Targets, use.Select)
+                        combat.AddSelectTargetsElements(use.Targets, use.Title, use.Select)
                     case *CombatEventMessage:
                         use := event.(*CombatEventMessage)
                         combat.UI.AddElement(uilib.MakeErrorElement(combat.UI, combat.Cache, &combat.ImageCache, use.Message, func(){ yield() }))

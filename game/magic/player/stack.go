@@ -254,6 +254,10 @@ func (stack *UnitStack) ToggleActive(unit units.StackUnit){
 }
 
 func (stack *UnitStack) AddUnit(unit units.StackUnit){
+    _, existing := stack.active[unit]
+    if existing {
+        return
+    }
     stack.units = append(stack.units, unit)
     stack.active[unit] = true
 }

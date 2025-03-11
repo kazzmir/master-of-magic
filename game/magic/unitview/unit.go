@@ -403,6 +403,34 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
         }
     }
 
+    if unit.IsUndead() {
+        pic, _ := imageCache.GetImage("special2.lbx", 9, 0)
+        rect := util.ImageRect(x, y, pic)
+        elements = append(elements, &uilib.UIElement{
+            Layer: layer,
+            Rect: rect,
+            RightClick: func(element *uilib.UIElement){
+                helpEntries := help.GetEntriesByName("Undead")
+                if helpEntries != nil {
+                    uiGroup.AddElement(uilib.MakeHelpElementWithLayer(uiGroup, cache, imageCache, layer+1, helpEntries[0], helpEntries[1:]...))
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha((*getAlpha)())
+                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                screen.DrawImage(pic, scale.ScaleOptions(options))
+                x, y := options.GeoM.Apply(0, 0)
+
+                printX := x + float64(pic.Bounds().Dx() + 2)
+                printY := y + float64(5)
+                mediumFont.PrintOptions(screen, printX, printY, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, "Undead")
+            },
+        })
+
+        y += pic.Bounds().Dy() + 1
+    }
+
     // FIXME: handle more than 4 abilities by using more columns
     for _, ability := range unit.GetAbilities() {
         pic, err := imageCache.GetImage(ability.LbxFile(), ability.LbxIndex(), 0)

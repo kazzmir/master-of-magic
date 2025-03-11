@@ -473,70 +473,6 @@ func createWallOfDarkness(tiles [][]Tile, centerX int, centerY int, sideLength i
     createWallArea(centerX, centerY, sideLength, set, inside)
 }
 
-type CombatUnit interface {
-    HasAbility(data.AbilityType) bool
-    HasItemAbility(data.ItemAbility) bool
-    GetAbilityValue(data.AbilityType) float32
-    GetBaseDefense() int
-    GetBaseHitPoints() int
-    GetBaseMeleeAttackPower() int
-    GetBaseRangedAttackPower() int
-    GetBaseResistance() int
-    GetArtifactSlots() []artifact.ArtifactSlot
-    GetArtifacts() []*artifact.Artifact
-    GetExperience() int
-    GetExperienceData() units.ExperienceData
-    GetLbxFile() string
-    GetLbxIndex() int
-
-    MeleeEnchantmentBonus(data.UnitEnchantment) int
-    DefenseEnchantmentBonus(data.UnitEnchantment) int
-    RangedEnchantmentBonus(data.UnitEnchantment) int
-    ResistanceEnchantmentBonus(data.UnitEnchantment) int
-    MovementSpeedEnchantmentBonus(int, []data.UnitEnchantment) int
-
-    GetFullName() string
-    GetDefense() int
-    GetResistance() int
-    AdjustHealth(int)
-    GetAbilities() []data.Ability
-    GetBanner() data.BannerType
-    GetRangedAttackDamageType() units.Damage
-    GetRangedAttackPower() int
-    GetMeleeAttackPower() int
-    GetMaxHealth() int
-    GetHitPoints() int
-    GetWeaponBonus() data.WeaponBonus
-    GetEnchantments() []data.UnitEnchantment
-
-    // for the most part AddEnchantment should be invoked on the ArmyUnit, not on this CombatUnit.
-    // chaos channels is permanent, so that is invoked on the CombatUnit
-    AddEnchantment(data.UnitEnchantment)
-
-    RemoveEnchantment(data.UnitEnchantment)
-    HasEnchantment(data.UnitEnchantment) bool
-    GetCount() int
-    GetHealth() int
-    GetToHitMelee() int
-    GetKnownSpells() []string
-    GetRangedAttacks() int
-    GetCombatLbxFile() string
-    GetCombatIndex(units.Facing) int
-    GetCombatRangeIndex(units.Facing) int
-    GetMovementSound() units.MovementSound
-    GetRangeAttackSound() units.RangeAttackSound
-    GetAttackSound() units.AttackSound
-    GetName() string
-    GetMovementSpeed() int
-    CanTouchAttack(units.Damage) bool
-    IsFlying() bool
-    IsHero() bool
-    IsUndead() bool
-    GetRace() data.Race
-    GetRealm() data.MagicType
-    GetSpellChargeSpells() map[spellbook.Spell]int
-}
-
 // for units that are cursed with confusion, this is the action they will take on their turn
 type ConfusionAction int
 const (
@@ -547,7 +483,7 @@ const (
 )
 
 type ArmyUnit struct {
-    Unit CombatUnit
+    Unit units.StackUnit
     Facing units.Facing
     Moving bool
     X int
@@ -566,6 +502,9 @@ type ArmyUnit struct {
     Model *CombatModel
 
     Team Team
+
+    // true if this unit was summoned via a spell
+    Summoned bool
 
     // whether this unit is currently under the effects of the Confusion curse
     ConfusionAction ConfusionAction
@@ -593,6 +532,10 @@ type ArmyUnit struct {
 
     // ugly to need this, but this caches paths computed for the unit
     Paths map[image.Point]pathfinding.Path
+}
+
+func (unit *ArmyUnit) IsUndead() bool {
+    return unit.Unit.IsUndead()
 }
 
 func (unit *ArmyUnit) RaiseFromDead() {
@@ -1724,7 +1667,7 @@ func (army *Army) IsAI() bool {
 /* must call LayoutUnits() some time after invoking AddUnit() to ensure
  * the units are laid out correctly
  */
-func (army *Army) AddUnit(unit CombatUnit){
+func (army *Army) AddUnit(unit units.StackUnit){
     army.AddArmyUnit(&ArmyUnit{
         Unit: unit,
         Facing: units.FacingDownRight,
@@ -2457,7 +2400,7 @@ func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment d
     }
 }
 
-func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing) {
+func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing, summoned bool) {
     newUnit := ArmyUnit{
         Unit: &units.OverworldUnit{
             Unit: unit,
@@ -2469,6 +2412,7 @@ func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, uni
         Y: y,
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
         LastTurn: model.CurrentTurn-1,
+        Summoned: summoned,
     }
 
     newUnit.Model = model
@@ -2498,10 +2442,35 @@ func (model *CombatModel) CreateEarthToMud(centerX int, centerY int){
     }
 }
 
-func (model *CombatModel) FindEmptyTile() (int, int, error) {
+type MapSide int
+const (
+    MapSideAttacker MapSide = iota
+    MapSideDefender
+    MapSideMiddle
+)
+
+func (model *CombatModel) GetSideForPlayer(player *playerlib.Player) MapSide {
+    if player == model.DefendingArmy.Player {
+        return MapSideDefender
+    }
+
+    return MapSideAttacker
+}
+
+func (model *CombatModel) FindEmptyTile(side MapSide) (int, int, error) {
 
     middleX := len(model.Tiles[0]) / 2
     middleY := len(model.Tiles) / 2
+
+    switch side {
+        case MapSideMiddle: // already set
+        case MapSideAttacker:
+            middleX = TownCenterX - 2
+            middleY = 17
+        case MapSideDefender:
+            middleX = TownCenterX - 2
+            middleY = 10
+    }
 
     distance := 3
     tries := 0
@@ -3576,18 +3545,19 @@ func (model *CombatModel) flee(army *Army) {
 
 // called when the battle ends
 func (model *CombatModel) Finish() {
-    // kill possessed units
-    for _, unit := range model.DefendingArmy.Units {
-        if unit.Unit.GetHealth() > 0 && (unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession)) {
-            unit.TakeDamage(unit.Unit.GetHealth())
+    // kill all units that are bound or possessed, or summoned units
+    killUnits := func(army *Army) {
+        for _, unit := range army.Units {
+            if unit.Unit.GetHealth() > 0 {
+                if unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession) || unit.Summoned {
+                    unit.TakeDamage(unit.Unit.GetHealth())
+                }
+            }
         }
     }
 
-    for _, unit := range model.AttackingArmy.Units {
-        if unit.Unit.GetHealth() > 0 && (unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession)) {
-            unit.TakeDamage(unit.Unit.GetHealth())
-        }
-    }
+    killUnits(model.DefendingArmy)
+    killUnits(model.AttackingArmy)
 }
 
 // returns true if the spell should be dispelled (due to counter magic, magic nodes, etc)
@@ -4007,35 +3977,34 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             }, targetNotImmune)
         case "Phantom Warriors":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.PhantomWarrior, units.FacingDown)
+                model.addNewUnit(player, x, y, units.PhantomWarrior, units.FacingDown, true)
                 castedCallback()
             })
         case "Phantom Beast":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.PhantomBeast, units.FacingDown)
+                model.addNewUnit(player, x, y, units.PhantomBeast, units.FacingDown, true)
                 castedCallback()
             })
         case "Earth Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.EarthElemental, units.FacingDown)
+                model.addNewUnit(player, x, y, units.EarthElemental, units.FacingDown, true)
                 castedCallback()
             })
         case "Air Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.AirElemental, units.FacingDown)
+                model.addNewUnit(player, x, y, units.AirElemental, units.FacingDown, true)
                 castedCallback()
             })
         case "Fire Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.FireElemental, units.FacingDown)
+                model.addNewUnit(player, x, y, units.FireElemental, units.FacingDown, true)
                 castedCallback()
             })
         case "Summon Demon":
-            // FIXME: the tile should be near the middle of the map
-            x, y, err := model.FindEmptyTile()
+            x, y, err := model.FindEmptyTile(MapSideMiddle)
             if err == nil {
                 spellSystem.CreateSummoningCircle(x, y)
-                model.addNewUnit(player, x, y, units.Demon, units.FacingDown)
+                model.addNewUnit(player, x, y, units.Demon, units.FacingDown, true)
                 castedCallback()
             }
         case "Resist Elements":
@@ -4361,6 +4330,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                     if len(targets) > 0 {
                         failed = false
                         model.Events <- &CombatSelectTargets{
+                            Title: "Select a unit to Revive",
                             Targets: targets,
                             Select: func (target *ArmyUnit){
                                 doRaiseDead(target)
@@ -4375,12 +4345,73 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                     Message: "There are no available units to revive.",
                 }
             }
+        case "Animate Dead":
+            // first filter possible candidates to revive
+            allKilledUnits := slices.DeleteFunc(slices.Clone(append(model.AttackingArmy.KilledUnits, model.DefendingArmy.KilledUnits...)), func (unit *ArmyUnit) bool {
+                if unit.Unit.IsHero() {
+                    return true
+                }
 
-        /*
-        combat instants:
+                if unit.GetRealm() == data.DeathMagic {
+                    return true
+                }
 
-        Animate Dead
-         */
+                if unit.Summoned {
+                    return true
+                }
+
+                return false
+            })
+
+            // remove unit from the army's killed units list
+            // add unit to caster's army
+            // make unit undead
+            // restore health
+            doAnimateDead := func (killedUnit *ArmyUnit){
+                x, y, err := model.FindEmptyTile(model.GetSideForPlayer(player))
+                if err != nil {
+                    log.Printf("Unable to find empty tile to animate unit")
+                    return
+                }
+                model.AddProjectile(spellSystem.CreateSummoningCircle(x, y))
+                ownerArmy := model.GetArmy(killedUnit)
+                ownerArmy.KilledUnits = slices.DeleteFunc(ownerArmy.KilledUnits, func (unit *ArmyUnit) bool {
+                    return unit == killedUnit
+                })
+                army := model.GetArmyForPlayer(player)
+                army.AddArmyUnit(killedUnit)
+                killedUnit.Unit.SetUndead()
+                killedUnit.Heal(killedUnit.Unit.GetMaxHealth())
+                killedUnit.X = x
+                killedUnit.Y = y
+                killedUnit.Team = model.GetTeamForArmy(army)
+                killedUnit.Model = model
+                killedUnit.Enchantments = nil
+                killedUnit.Curses = nil
+                killedUnit.WebHealth = 0
+                model.Tiles[y][x].Unit = killedUnit
+            }
+
+            if len(allKilledUnits) > 0 {
+                if len(allKilledUnits) == 1 {
+                    raised := allKilledUnits[0]
+                    doAnimateDead(raised)
+                    castedCallback()
+                } else {
+                    model.Events <- &CombatSelectTargets{
+                        Title: "Select a unit to Animate",
+                        Targets: allKilledUnits,
+                        Select: func (target *ArmyUnit){
+                            doAnimateDead(target)
+                            castedCallback()
+                        },
+                    }
+                }
+            } else {
+                model.Events <- &CombatEventMessage{
+                    Message: "There are no available units to raise.",
+                }
+            }
 
         /*
         unit enchantments:

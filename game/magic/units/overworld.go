@@ -236,7 +236,8 @@ func (unit *OverworldUnit) AddExperience(amount int) {
 }
 
 func (unit *OverworldUnit) GetExperience() int {
-    if unit.GetRace() == data.RaceFantastic {
+    // check the underlying race because an undead unit might still have experience
+    if unit.Unit.Race == data.RaceFantastic {
         return 0
     }
     return unit.Experience
@@ -326,6 +327,13 @@ func (unit *OverworldUnit) HasAbility(ability data.AbilityType) bool {
         return true
     }
 
+    // undead units automatically get all these abilities
+    if unit.IsUndead() &&
+       (ability == data.AbilityDeathImmunity || ability == data.AbilityPoisonImmunity ||
+        ability == data.AbilityIllusionsImmunity || ability == data.AbilityColdImmunity) {
+        return true
+    }
+
     for _, enchantment := range unit.Enchantments {
         for _, grantedAbility := range enchantment.Abilities() {
             if grantedAbility.Ability == ability {
@@ -370,15 +378,25 @@ func (unit *OverworldUnit) GetCount() int {
 }
 
 func (unit *OverworldUnit) GetUpkeepGold() int {
+    if unit.IsUndead() {
+        return 0
+    }
     return unit.Unit.GetUpkeepGold()
 }
 
 func (unit *OverworldUnit) GetUpkeepFood() int {
+    if unit.IsUndead() {
+        return 0
+    }
     return unit.Unit.GetUpkeepFood()
 }
 
 func (unit *OverworldUnit) GetUpkeepMana() int {
-    return unit.Unit.GetUpkeepMana()
+    mana := unit.Unit.GetUpkeepMana() 
+    if unit.IsUndead() && unit.Unit.Race == data.RaceFantastic {
+        return mana * 3 / 2
+    }
+    return mana
 }
 
 func (unit *OverworldUnit) GetBaseMovementSpeed() int {
@@ -487,11 +505,12 @@ func (unit *OverworldUnit) GetHeroExperienceLevel() HeroExperienceLevel {
 }
 
 func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
-    // fantastic creatures can never gain any levels
-    if unit.GetRace() == data.RaceFantastic {
+    // fantastic creatures can never gain any levels, but undead units can have experience
+    if unit.Unit.Race == data.RaceFantastic {
         return ExperienceRecruit
     }
 
+    // FIXME: verify if undead units can be affected by heroism, warlord and crusade
     experience := unit.Experience
     if unit.HasEnchantment(data.UnitEnchantmentHeroism) {
         experience = 120
@@ -687,6 +706,7 @@ func (unit *OverworldUnit) GetBaseHitPoints() int {
 }
 
 func (unit *OverworldUnit) GetAbilities() []data.Ability {
+    // FIXME: should the added death abilities from being undead be added here?
     return unit.Unit.GetAbilities()
 }
 
@@ -710,6 +730,11 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
 /* restore health points on the overworld
  */
 func (unit *OverworldUnit) NaturalHeal(rate float64) {
+    // undead creatures never heal
+    if unit.IsUndead() {
+        return
+    }
+
     amount := float64(unit.GetMaxHealth()) * rate
     if amount < 1 {
         amount = 1
