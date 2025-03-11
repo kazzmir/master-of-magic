@@ -4326,19 +4326,30 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             castedCallback()
         case "Raise Dead":
             army := model.GetArmyForPlayer(player)
+            failed := true
             if len(army.KilledUnits) > 0 {
                 if len(army.KilledUnits) == 1 {
 
                     killedUnit := army.KilledUnits[0]
-                    model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                        // shouldn't really be necessary because the model should already be set, but just in case
-                        killedUnit.Model = model
-                        army.RaiseDeadUnit(killedUnit, x, y)
-                        model.Tiles[y][x].Unit = killedUnit
-                        castedCallback()
-                    })
+
+                    if killedUnit.GetRace() != data.RaceFantastic {
+                        failed = false
+                        model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
+                            // shouldn't really be necessary because the model should already be set, but just in case
+                            killedUnit.Model = model
+                            army.RaiseDeadUnit(killedUnit, x, y)
+                            model.Tiles[y][x].Unit = killedUnit
+                            castedCallback()
+                        })
+                    }
                 } else {
                     // show selection box to choose a dead unit
+                }
+            }
+
+            if failed {
+                model.Events <- &CombatEventMessage{
+                    Message: "There are no available units to revive.",
                 }
             }
 

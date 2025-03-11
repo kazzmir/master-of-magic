@@ -1355,9 +1355,9 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
             spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
                 if picked {
-                    army.Casted = true
                     // player mana and skill should go down accordingly
                     combat.Model.InvokeSpell(combat, player, nil, spell, func(){
+                        army.Casted = true
                         army.ManaPool -= spell.Cost(false)
                         player.Mana -= int(float64(spell.Cost(false)) * army.Range.ToFloat())
                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
