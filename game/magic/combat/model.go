@@ -2354,7 +2354,9 @@ func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, uni
     // if the unit had Creature Bind then when it is dispelled the unit should be moved to the other army
     swapArmy := false
     for _, enchantment := range removedEnchantments {
-        if enchantment == data.UnitCurseCreatureBinding {
+        // these enchantments will basically never be dispelled because if a wizard loses control of a unit and casts
+        // disenchant on the unit, then only positive enchantments will be removed, not curses
+        if enchantment == data.UnitCurseCreatureBinding || enchantment == data.UnitCursePossession {
             swapArmy = true
         }
 
@@ -2367,12 +2369,7 @@ func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, uni
     }
 
     if swapArmy {
-        oldArmy := model.GetArmy(unit)
-        newArmy := model.GetOtherArmy(unit)
-
-        oldArmy.RemoveUnit(unit)
-        newArmy.AddArmyUnit(unit)
-        unit.Team = model.GetTeamForArmy(newArmy)
+        model.SwitchTeams(unit)
     }
 }
 
