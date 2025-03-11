@@ -2442,10 +2442,35 @@ func (model *CombatModel) CreateEarthToMud(centerX int, centerY int){
     }
 }
 
-func (model *CombatModel) FindEmptyTile() (int, int, error) {
+type MapSide int
+const (
+    MapSideAttacker MapSide = iota
+    MapSideDefender
+    MapSideMiddle
+)
+
+func (model *CombatModel) GetSideForPlayer(player *playerlib.Player) MapSide {
+    if player == model.DefendingArmy.Player {
+        return MapSideDefender
+    }
+
+    return MapSideAttacker
+}
+
+func (model *CombatModel) FindEmptyTile(side MapSide) (int, int, error) {
 
     middleX := len(model.Tiles[0]) / 2
     middleY := len(model.Tiles) / 2
+
+    switch side {
+        case MapSideMiddle: // already set
+        case MapSideAttacker:
+            middleX = TownCenterX - 2
+            middleY = 17
+        case MapSideDefender:
+            middleX = TownCenterX - 2
+            middleY = 10
+    }
 
     distance := 3
     tries := 0
@@ -3976,8 +4001,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 castedCallback()
             })
         case "Summon Demon":
-            // FIXME: the tile should be near the middle of the map
-            x, y, err := model.FindEmptyTile()
+            x, y, err := model.FindEmptyTile(MapSideMiddle)
             if err == nil {
                 spellSystem.CreateSummoningCircle(x, y)
                 model.addNewUnit(player, x, y, units.Demon, units.FacingDown, true)
@@ -4343,7 +4367,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             // make unit undead
             // restore health
             doAnimateDead := func (killedUnit *ArmyUnit){
-                x, y, err := model.FindEmptyTile()
+                x, y, err := model.FindEmptyTile(model.GetSideForPlayer(player))
                 if err != nil {
                     log.Printf("Unable to find empty tile to animate unit")
                     return
