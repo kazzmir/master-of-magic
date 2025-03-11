@@ -393,8 +393,9 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createArmyN(attackingPlayer, units.HighElfMagician, 4)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    attackingArmy.KillUnit(attackingArmy.Units[0])
-    attackingArmy.KillUnit(attackingArmy.Units[0])
+    for range 2 {
+        attackingArmy.KillUnit(attackingArmy.Units[0])
+    }
 
     // attackingArmy.Units[0].AddCurse(data.UnitCurseConfusion)
 

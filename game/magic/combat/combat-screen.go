@@ -1227,7 +1227,7 @@ func (combat *CombatScreen) AddSelectTargetsElements(targets []*ArmyUnit, select
         })
     }
 
-    combat.UI.AddElements(uilib.MakeSelectionUI(combat.UI, combat.Cache, &combat.ImageCache, 100, 50, "Select a target", selections))
+    combat.UI.AddElements(uilib.MakeSelectionUI(combat.UI, combat.Cache, &combat.ImageCache, 100, 20, "Select a target", selections))
 }
 
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
