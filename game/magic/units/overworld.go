@@ -392,7 +392,7 @@ func (unit *OverworldUnit) GetUpkeepFood() int {
 
 func (unit *OverworldUnit) GetUpkeepMana() int {
     mana := unit.Unit.GetUpkeepMana() 
-    if unit.IsUndead() && unit.GetRace() == data.RaceFantastic {
+    if unit.IsUndead() && unit.Unit.Race == data.RaceFantastic {
         return mana * 3 / 2
     }
     return mana
