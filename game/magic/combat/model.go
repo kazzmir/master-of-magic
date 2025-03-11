@@ -4182,7 +4182,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 model.AddProjectile(spellSystem.CreatePossessionProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                if target.Unit.IsHero() {
+                if target.Unit.IsHero() || target.GetRace() == data.RaceFantastic {
                     return false
                 }
 
