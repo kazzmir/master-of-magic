@@ -326,6 +326,13 @@ func (unit *OverworldUnit) HasAbility(ability data.AbilityType) bool {
         return true
     }
 
+    // undead units automatically get all these abilities
+    if unit.IsUndead() &&
+       (ability == data.AbilityDeathImmunity || ability == data.AbilityPoisonImmunity ||
+        ability == data.AbilityIllusionsImmunity || ability == data.AbilityColdImmunity) {
+        return true
+    }
+
     for _, enchantment := range unit.Enchantments {
         for _, grantedAbility := range enchantment.Abilities() {
             if grantedAbility.Ability == ability {
@@ -370,15 +377,25 @@ func (unit *OverworldUnit) GetCount() int {
 }
 
 func (unit *OverworldUnit) GetUpkeepGold() int {
+    if unit.IsUndead() {
+        return 0
+    }
     return unit.Unit.GetUpkeepGold()
 }
 
 func (unit *OverworldUnit) GetUpkeepFood() int {
+    if unit.IsUndead() {
+        return 0
+    }
     return unit.Unit.GetUpkeepFood()
 }
 
 func (unit *OverworldUnit) GetUpkeepMana() int {
-    return unit.Unit.GetUpkeepMana()
+    mana := unit.Unit.GetUpkeepMana() 
+    if unit.IsUndead() && unit.GetRace() == data.RaceFantastic {
+        return mana * 3 / 2
+    }
+    return mana
 }
 
 func (unit *OverworldUnit) GetBaseMovementSpeed() int {
