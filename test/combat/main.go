@@ -313,7 +313,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
-    defendingArmy := createLizardmenArmy(defendingPlayer, 9)
+    defendingArmy := createLizardmenArmy(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingArmy.Units[0].AddCurse(data.UnitCurseBlackSleep)
@@ -386,11 +386,14 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Confusion"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Possession"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Call Chaos"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Raise Dead"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
-    attackingArmy := createArmyN(attackingPlayer, units.HighElfMagician, 3)
+    attackingArmy := createArmyN(attackingPlayer, units.HighElfMagician, 4)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
+
+    attackingArmy.KillUnit(attackingArmy.Units[0])
 
     // attackingArmy.Units[0].AddCurse(data.UnitCurseConfusion)
 

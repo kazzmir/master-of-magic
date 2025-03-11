@@ -595,6 +595,16 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+func (unit *ArmyUnit) RaiseFromDead() {
+    // make sure health is 0 first
+    unit.TakeDamage(unit.Unit.GetMaxHealth())
+    // then raise to 1/2
+    unit.Heal(unit.Unit.GetMaxHealth()/2)
+    unit.Enchantments = nil
+    unit.Curses = nil
+    unit.WebHealth = 0
+}
+
 func (unit *ArmyUnit) IsAsleep() bool {
     return unit.HasCurse(data.UnitCurseBlackSleep)
 }
@@ -1755,6 +1765,16 @@ func (army *Army) LayoutUnits(team Team){
             cy += 1
         }
     }
+}
+
+func (army *Army) RaiseDeadUnit(unit *ArmyUnit, x int, y int){
+    unit.RaiseFromDead()
+    unit.X = x
+    unit.Y = y
+    army.Units = append(army.Units, unit)
+    army.KilledUnits = slices.DeleteFunc(army.KilledUnits, func(check *ArmyUnit) bool {
+        return check == unit
+    })
 }
 
 func (army *Army) KillUnit(kill *ArmyUnit){
@@ -4304,11 +4324,27 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             }
 
             castedCallback()
+        case "Raise Dead":
+            army := model.GetArmyForPlayer(player)
+            if len(army.KilledUnits) > 0 {
+                if len(army.KilledUnits) == 1 {
+
+                    killedUnit := army.KilledUnits[0]
+                    model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
+                        // shouldn't really be necessary because the model should already be set, but just in case
+                        killedUnit.Model = model
+                        army.RaiseDeadUnit(killedUnit, x, y)
+                        model.Tiles[y][x].Unit = killedUnit
+                        castedCallback()
+                    })
+                } else {
+                    // show selection box to choose a dead unit
+                }
+            }
 
         /*
         combat instants:
 
-        Raise Dead
         Animate Dead
          */
 
