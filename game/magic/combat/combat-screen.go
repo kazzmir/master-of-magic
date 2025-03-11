@@ -816,6 +816,19 @@ func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) *Projecti
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, weakness)
 }
 
+func (combat *CombatScreen) CreateCreatureBindingProjectile(target *ArmyUnit) *Projectile {
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
+            combat.Model.ApplyCreatureBinding(target)
+        }
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreatePossessionProjectile(target *ArmyUnit) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 8)
@@ -1774,11 +1787,20 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
             combat.MouseState = CombatCast
 
             if inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
-                sound, err := combat.AudioCache.GetSound(spell.Sound)
-                if err == nil {
-                    sound.Play()
+                if spell.Sound >= 230 {
+                    sound, err := combat.AudioCache.GetNewSound(spell.Sound - 230)
+                    if err == nil {
+                        sound.Play()
+                    } else {
+                        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+                    }
                 } else {
-                    log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+                    sound, err := combat.AudioCache.GetSound(spell.Sound)
+                    if err == nil {
+                        sound.Play()
+                    } else {
+                        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+                    }
                 }
 
                 selectTile(combat.MouseTileX, combat.MouseTileY)
@@ -1878,11 +1900,21 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
                 if selectTeam == TeamEither || unit.Team == selectTeam {
 
-                    sound, err := combat.AudioCache.GetSound(spell.Sound)
-                    if err == nil {
-                        sound.Play()
+                    // creature binding sound 243, which correlates to new sound 13
+                    if spell.Sound >= 230 {
+                        sound, err := combat.AudioCache.GetNewSound(spell.Sound - 230)
+                        if err == nil {
+                            sound.Play()
+                        } else {
+                            log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+                        }
                     } else {
-                        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+                        sound, err := combat.AudioCache.GetSound(spell.Sound)
+                        if err == nil {
+                            sound.Play()
+                        } else {
+                            log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
+                        }
                     }
 
                     selectTarget(unit)
