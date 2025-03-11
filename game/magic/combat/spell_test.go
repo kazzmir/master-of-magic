@@ -139,6 +139,10 @@ func (system *TestSpellSystem) CreateCreatureBindingProjectile(target *ArmyUnit)
     return nil
 }
 
+func (system *TestSpellSystem) CreatePetrifyProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }

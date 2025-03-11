@@ -829,6 +829,28 @@ func (combat *CombatScreen) CreateCreatureBindingProjectile(target *ArmyUnit) *P
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
+func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit) *Projectile {
+    images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 12)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        damage := 0
+        for range unit.Figures() {
+            if rand.N(10) + 1 > target.GetResistanceFor(data.NatureMagic) {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        // FIXME: do stoning damage, which is irreversable
+        unit.TakeDamage(damage)
+        if unit.Unit.GetHealth() <= 0 {
+            combat.Model.RemoveUnit(unit)
+        }
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreatePossessionProjectile(target *ArmyUnit) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 8)

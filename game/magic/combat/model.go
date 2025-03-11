@@ -3699,6 +3699,7 @@ type SpellSystem interface {
     CreateConfusionProjectile(target *ArmyUnit) *Projectile
     CreatePossessionProjectile(target *ArmyUnit) *Projectile
     CreateCreatureBindingProjectile(target *ArmyUnit) *Projectile
+    CreatePetrifyProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4202,12 +4203,22 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Petrify":
+            model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreatePetrifyProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.IsMagicImmune(spell.Magic) || target.HasAbility(data.AbilityStoningImmunity) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         combat instants:
 
         Raise Dead
-        Petrify
         Call Chaos
         Animate Dead
          */
