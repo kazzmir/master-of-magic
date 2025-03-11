@@ -473,7 +473,8 @@ func createWallOfDarkness(tiles [][]Tile, centerX int, centerY int, sideLength i
     createWallArea(centerX, centerY, sideLength, set, inside)
 }
 
-type CombatUnit interface {
+/*
+type CombatUnit1 interface {
     HasAbility(data.AbilityType) bool
     HasItemAbility(data.ItemAbility) bool
     GetAbilityValue(data.AbilityType) float32
@@ -537,6 +538,7 @@ type CombatUnit interface {
     GetRealm() data.MagicType
     GetSpellChargeSpells() map[spellbook.Spell]int
 }
+*/
 
 // for units that are cursed with confusion, this is the action they will take on their turn
 type ConfusionAction int
@@ -548,7 +550,7 @@ const (
 )
 
 type ArmyUnit struct {
-    Unit CombatUnit
+    Unit units.StackUnit
     Facing units.Facing
     Moving bool
     X int
@@ -1732,7 +1734,7 @@ func (army *Army) IsAI() bool {
 /* must call LayoutUnits() some time after invoking AddUnit() to ensure
  * the units are laid out correctly
  */
-func (army *Army) AddUnit(unit CombatUnit){
+func (army *Army) AddUnit(unit units.StackUnit){
     army.AddArmyUnit(&ArmyUnit{
         Unit: unit,
         Facing: units.FacingDownRight,
@@ -3585,18 +3587,19 @@ func (model *CombatModel) flee(army *Army) {
 
 // called when the battle ends
 func (model *CombatModel) Finish() {
-    // kill possessed units
-    for _, unit := range model.DefendingArmy.Units {
-        if unit.Unit.GetHealth() > 0 && (unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession)) {
-            unit.TakeDamage(unit.Unit.GetHealth())
+    // kill all units that are bound or possessed, or summoned units
+    killUnits := func(army *Army) {
+        for _, unit := range army.Units {
+            if unit.Unit.GetHealth() > 0 {
+                if unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession) || unit.Summoned {
+                    unit.TakeDamage(unit.Unit.GetHealth())
+                }
+            }
         }
     }
 
-    for _, unit := range model.AttackingArmy.Units {
-        if unit.Unit.GetHealth() > 0 && (unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession)) {
-            unit.TakeDamage(unit.Unit.GetHealth())
-        }
-    }
+    killUnits(model.DefendingArmy)
+    killUnits(model.AttackingArmy)
 }
 
 // returns true if the spell should be dispelled (due to counter magic, magic nodes, etc)
@@ -4385,6 +4388,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 }
             }
         case "Animate Dead":
+            // first filter possible candidates to revive
             allKilledUnits := slices.DeleteFunc(slices.Clone(append(model.AttackingArmy.KilledUnits, model.DefendingArmy.KilledUnits...)), func (unit *ArmyUnit) bool {
                 if unit.Unit.IsHero() {
                     return true

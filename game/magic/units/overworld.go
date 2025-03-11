@@ -728,6 +728,11 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
 /* restore health points on the overworld
  */
 func (unit *OverworldUnit) NaturalHeal(rate float64) {
+    // undead creatures never heal
+    if unit.IsUndead() {
+        return
+    }
+
     amount := float64(unit.GetMaxHealth()) * rate
     if amount < 1 {
         amount = 1

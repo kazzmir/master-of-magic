@@ -117,6 +117,11 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     player.Gold = 83
     player.Mana = 2600
+    player.CastingSkillPower = 10000
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player.KnownSpells.AddSpell(allSpells.FindByName("Animate Dead"))
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 

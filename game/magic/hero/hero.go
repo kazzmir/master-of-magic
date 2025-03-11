@@ -757,6 +757,10 @@ func (hero *Hero) Move(dx int, dy int, cost fraction.Fraction, normalize units.N
 }
 
 func (hero *Hero) NaturalHeal(rate float64) {
+    if hero.IsUndead() {
+        return
+    }
+
     amount := float64(hero.GetMaxHealth()) * rate
     if amount < 1 {
         amount = 1
