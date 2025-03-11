@@ -131,6 +131,10 @@ func (system *TestSpellSystem) CreateConfusionProjectile(target *ArmyUnit) *Proj
     return nil
 }
 
+func (system *TestSpellSystem) CreatePossessionProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }

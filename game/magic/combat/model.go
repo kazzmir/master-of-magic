@@ -3559,14 +3559,23 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
     return false
 }
 
-func (model *CombatModel) ApplyCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
-    target.AddCurse(data.UnitCurseCreatureBinding)
+func (model *CombatModel) SwitchTeams(target *ArmyUnit) {
+    newArmy := model.GetOtherArmy(target)
     oldArmy := model.GetArmy(target)
     oldArmy.RemoveUnit(target)
 
-    newArmy := model.GetArmyForPlayer(newOwner)
     newArmy.AddArmyUnit(target)
     target.Team = model.GetTeamForArmy(newArmy)
+}
+
+func (model *CombatModel) ApplyCreatureBinding(target *ArmyUnit){
+    target.AddCurse(data.UnitCurseCreatureBinding)
+    model.SwitchTeams(target)
+}
+
+func (model *CombatModel) ApplyPossession(target *ArmyUnit){
+    target.AddCurse(data.UnitCursePossession)
+    model.SwitchTeams(target)
 }
 
 /* let the user select a target, then cast the spell on that target
@@ -3690,6 +3699,7 @@ type SpellSystem interface {
     CreateShatterProjectile(target *ArmyUnit) *Projectile
     CreateWarpCreatureProjectile(target *ArmyUnit) *Projectile
     CreateConfusionProjectile(target *ArmyUnit) *Projectile
+    CreatePossessionProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4030,8 +4040,11 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 return false
             }
 
+            // FIXME: any projectile here?
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
-                model.CastCreatureBinding(target, player)
+                if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
+                    model.CastCreatureBinding(target)
+                }
                 castedCallback()
             }, selectable)
 
@@ -4167,13 +4180,21 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Possession":
+            model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreatePossessionProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.Unit.IsHero() {
+                    return false
+                }
 
+                if target.IsMagicImmune(spell.Magic) {
+                    return false
+                }
 
-        /*
-        unit curses:
-
-        CursePossession
-        */
+                return true
+            })
 
         /*
         combat instants:
@@ -4244,9 +4265,9 @@ func (model *CombatModel) CastEnchantment(player *playerlib.Player, enchantment 
     }
 }
 
-func (model *CombatModel) CastCreatureBinding(target *ArmyUnit, newOwner *playerlib.Player){
+func (model *CombatModel) CastCreatureBinding(target *ArmyUnit){
     if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
         // FIXME: make creature bind animation
-        model.ApplyCreatureBinding(target, newOwner)
+        model.ApplyCreatureBinding(target)
     }
 }
