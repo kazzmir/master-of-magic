@@ -599,6 +599,10 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+func (unit *ArmyUnit) IsUndead() bool {
+    return unit.Unit.IsUndead()
+}
+
 func (unit *ArmyUnit) RaiseFromDead() {
     // make sure health is 0 first
     unit.TakeDamage(unit.Unit.GetMaxHealth())

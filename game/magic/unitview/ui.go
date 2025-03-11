@@ -52,6 +52,7 @@ type UnitAbilities interface {
     GetArtifacts() []*artifact.Artifact
     GetAbilities() []data.Ability
     GetEnchantments() []data.UnitEnchantment
+    IsUndead() bool
     RemoveEnchantment(data.UnitEnchantment)
 }
 
