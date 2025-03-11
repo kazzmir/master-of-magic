@@ -572,7 +572,6 @@ func (hero *Hero) IsUndead() bool {
 }
 
 func (hero *Hero) SetUndead() {
-    hero.Unit.SetUndead()
 }
 
 // heroes are never part of a magic realm (life, death, etc)
