@@ -532,6 +532,7 @@ type CombatUnit interface {
     IsFlying() bool
     IsHero() bool
     IsUndead() bool
+    SetUndead()
     GetRace() data.Race
     GetRealm() data.MagicType
     GetSpellChargeSpells() map[spellbook.Spell]int
@@ -566,6 +567,9 @@ type ArmyUnit struct {
     Model *CombatModel
 
     Team Team
+
+    // true if this unit was summoned via a spell
+    Summoned bool
 
     // whether this unit is currently under the effects of the Confusion curse
     ConfusionAction ConfusionAction
@@ -2457,7 +2461,7 @@ func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment d
     }
 }
 
-func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing) {
+func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing, summoned bool) {
     newUnit := ArmyUnit{
         Unit: &units.OverworldUnit{
             Unit: unit,
@@ -2469,6 +2473,7 @@ func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, uni
         Y: y,
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
         LastTurn: model.CurrentTurn-1,
+        Summoned: summoned,
     }
 
     newUnit.Model = model
@@ -4007,27 +4012,27 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             }, targetNotImmune)
         case "Phantom Warriors":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.PhantomWarrior, units.FacingDown)
+                model.addNewUnit(player, x, y, units.PhantomWarrior, units.FacingDown, true)
                 castedCallback()
             })
         case "Phantom Beast":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.PhantomBeast, units.FacingDown)
+                model.addNewUnit(player, x, y, units.PhantomBeast, units.FacingDown, true)
                 castedCallback()
             })
         case "Earth Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.EarthElemental, units.FacingDown)
+                model.addNewUnit(player, x, y, units.EarthElemental, units.FacingDown, true)
                 castedCallback()
             })
         case "Air Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.AirElemental, units.FacingDown)
+                model.addNewUnit(player, x, y, units.AirElemental, units.FacingDown, true)
                 castedCallback()
             })
         case "Fire Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.FireElemental, units.FacingDown)
+                model.addNewUnit(player, x, y, units.FireElemental, units.FacingDown, true)
                 castedCallback()
             })
         case "Summon Demon":
@@ -4035,7 +4040,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             x, y, err := model.FindEmptyTile()
             if err == nil {
                 spellSystem.CreateSummoningCircle(x, y)
-                model.addNewUnit(player, x, y, units.Demon, units.FacingDown)
+                model.addNewUnit(player, x, y, units.Demon, units.FacingDown, true)
                 castedCallback()
             }
         case "Resist Elements":
@@ -4375,12 +4380,70 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                     Message: "There are no available units to revive.",
                 }
             }
+        case "Animate Dead":
+            allKilledUnits := slices.DeleteFunc(slices.Clone(append(model.AttackingArmy.KilledUnits, model.DefendingArmy.KilledUnits...)), func (unit *ArmyUnit) bool {
+                if unit.Unit.IsHero() {
+                    return true
+                }
 
-        /*
-        combat instants:
+                if unit.GetRealm() == data.DeathMagic {
+                    return true
+                }
 
-        Animate Dead
-         */
+                if unit.Summoned {
+                    return true
+                }
+
+                return false
+            })
+
+            // remove unit from the army's killed units list
+            // add unit to caster's army
+            // make unit undead
+            // restore health
+            doAnimateDead := func (killedUnit *ArmyUnit){
+                x, y, err := model.FindEmptyTile()
+                if err != nil {
+                    log.Printf("Unable to find empty tile to animate unit")
+                    return
+                }
+                model.AddProjectile(spellSystem.CreateSummoningCircle(x, y))
+                ownerArmy := model.GetArmy(killedUnit)
+                ownerArmy.KilledUnits = slices.DeleteFunc(ownerArmy.KilledUnits, func (unit *ArmyUnit) bool {
+                    return unit == killedUnit
+                })
+                army := model.GetArmyForPlayer(player)
+                army.AddArmyUnit(killedUnit)
+                killedUnit.Unit.SetUndead()
+                killedUnit.Heal(killedUnit.Unit.GetMaxHealth())
+                killedUnit.X = x
+                killedUnit.Y = y
+                killedUnit.Team = model.GetTeamForArmy(army)
+                killedUnit.Model = model
+                killedUnit.Enchantments = nil
+                killedUnit.Curses = nil
+                killedUnit.WebHealth = 0
+                model.Tiles[y][x].Unit = killedUnit
+            }
+
+            if len(allKilledUnits) > 0 {
+                if len(allKilledUnits) == 1 {
+                    raised := allKilledUnits[0]
+                    doAnimateDead(raised)
+                    castedCallback()
+                } else {
+                    model.Events <- &CombatSelectTargets{
+                        Targets: allKilledUnits,
+                        Select: func (target *ArmyUnit){
+                            doAnimateDead(target)
+                        },
+                    }
+                }
+            } else {
+                model.Events <- &CombatEventMessage{
+                    Message: "There are no available units to raise.",
+                }
+            }
 
         /*
         unit enchantments:

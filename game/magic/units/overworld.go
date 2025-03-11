@@ -704,6 +704,7 @@ func (unit *OverworldUnit) GetBaseHitPoints() int {
 }
 
 func (unit *OverworldUnit) GetAbilities() []data.Ability {
+    // FIXME: should the added death abilities from being undead be added here?
     return unit.Unit.GetAbilities()
 }
 
