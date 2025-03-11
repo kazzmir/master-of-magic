@@ -107,12 +107,12 @@ func createArmyN(player *player.Player, unit units.Unit, count int) *combat.Army
     return &army
 }
 
-func createLizardmenArmy(player *player.Player) *combat.Army {
+func createLizardmenArmy(player *player.Player, count int) *combat.Army {
     army := combat.Army{
         Player: player,
     }
 
-    for range 3 {
+    for range count {
         army.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSwordsmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
     }
 
@@ -313,7 +313,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
-    defendingArmy := createLizardmenArmy(defendingPlayer)
+    defendingArmy := createLizardmenArmy(defendingPlayer, 9)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingArmy.Units[0].AddCurse(data.UnitCurseBlackSleep)
@@ -478,7 +478,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(defendingPlayer)
     // defendingArmy := createSettlerArmy(defendingPlayer, 3)
-    defendingArmy := createLizardmenArmy(defendingPlayer)
+    defendingArmy := createLizardmenArmy(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
