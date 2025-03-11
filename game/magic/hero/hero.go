@@ -568,18 +568,15 @@ func (hero *Hero) CanTouchAttack(damage units.Damage) bool {
 }
 
 func (hero *Hero) IsUndead() bool {
-    return hero.Unit.IsUndead()
+    return false
 }
 
 func (hero *Hero) SetUndead() {
     hero.Unit.SetUndead()
 }
 
-// heroes are never part of a magic realm (life, death, etc) unless they are undead
+// heroes are never part of a magic realm (life, death, etc)
 func (hero *Hero) GetRealm() data.MagicType {
-    if hero.IsUndead() {
-        return data.DeathMagic
-    }
     return data.MagicNone
 }
 
