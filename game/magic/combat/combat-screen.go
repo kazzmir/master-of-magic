@@ -1861,6 +1861,8 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
         if mouseY >= scale.Scale(hudY) {
             combat.MouseState = CombatClickHud
         } else {
+            // FIXME: check if the mouseX/mouseY is on the right side according to the selecter
+
             combat.MouseState = CombatCast
 
             if inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
