@@ -394,6 +394,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     attackingArmy.KillUnit(attackingArmy.Units[0])
+    attackingArmy.KillUnit(attackingArmy.Units[0])
 
     // attackingArmy.Units[0].AddCurse(data.UnitCurseConfusion)
 

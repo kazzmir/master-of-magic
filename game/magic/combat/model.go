@@ -4327,6 +4327,18 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
         case "Raise Dead":
             army := model.GetArmyForPlayer(player)
             failed := true
+
+            doRaiseDead := func (killedUnit *ArmyUnit){
+                model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
+                    // shouldn't really be necessary because the model should already be set, but just in case
+                    killedUnit.Model = model
+                    army.RaiseDeadUnit(killedUnit, x, y)
+                    model.Tiles[y][x].Unit = killedUnit
+                    castedCallback()
+                })
+
+            }
+
             if len(army.KilledUnits) > 0 {
                 if len(army.KilledUnits) == 1 {
 
@@ -4334,16 +4346,27 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                     if killedUnit.GetRace() != data.RaceFantastic {
                         failed = false
-                        model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                            // shouldn't really be necessary because the model should already be set, but just in case
-                            killedUnit.Model = model
-                            army.RaiseDeadUnit(killedUnit, x, y)
-                            model.Tiles[y][x].Unit = killedUnit
-                            castedCallback()
-                        })
+                        doRaiseDead(killedUnit)
                     }
                 } else {
                     // show selection box to choose a dead unit
+
+                    var targets []*ArmyUnit
+                    for _, killedUnit := range army.KilledUnits {
+                        if killedUnit.GetRace() != data.RaceFantastic {
+                            targets = append(targets, killedUnit)
+                        }
+                    }
+
+                    if len(targets) > 0 {
+                        failed = false
+                        model.Events <- &CombatSelectTargets{
+                            Targets: targets,
+                            Select: func (target *ArmyUnit){
+                                doRaiseDead(target)
+                            },
+                        }
+                    }
                 }
             }
 
