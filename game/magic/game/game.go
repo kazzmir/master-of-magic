@@ -4692,8 +4692,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
     }
 
-    // FIXME: add new units that were reanimated
-
     killUnits(attacker, attackerStack, landscape)
     killUnits(defender, defenderStack, landscape)
 
