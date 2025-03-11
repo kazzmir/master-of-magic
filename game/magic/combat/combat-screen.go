@@ -790,6 +790,40 @@ func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) *Projectil
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, heal)
 }
 
+func (combat *CombatScreen) CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile {
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        choices := []data.UnitEnchantment{
+            data.UnitEnchantmentChaosChannelsDemonSkin,
+            data.UnitEnchantmentChaosChannelsDemonWings,
+            data.UnitEnchantmentChaosChannelsFireBreath,
+        }
+
+        for _, i := range rand.Perm(len(choices)) {
+            choice := choices[i]
+            if unit.HasEnchantment(choice) {
+                continue
+            }
+
+            if choice == data.UnitEnchantmentChaosChannelsDemonWings {
+                // FIXME: check sailing
+                if unit.IsFlying() /* || unit.Unit.IsSailing() */ {
+                    continue
+                }
+            }
+
+            // probably other things to check here
+
+            unit.Unit.AddEnchantment(choice)
+            break
+        }
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
