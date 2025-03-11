@@ -544,7 +544,7 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
     damage := func(unit *ArmyUnit) {
         unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageCold, DamageModifiers{Magic: data.NatureMagic})
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -562,7 +562,7 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
         combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -578,7 +578,7 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength 
     damage := func(unit *ArmyUnit) {
         combat.Model.ApplyImmolationDamage(unit, strength)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -592,7 +592,7 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Project
     damage := func (unit *ArmyUnit) {
         unit.ApplyDamage(15, units.DamageRangedMagical, DamageModifiers{})
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -619,7 +619,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
 
         unit.TakeDamage(damage)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -633,7 +633,7 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, stren
     damage := func (unit *ArmyUnit) {
         unit.ApplyDamage(ComputeRoll(15, 30), units.DamageRangedMagical, DamageModifiers{Magic: data.SorceryMagic})
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -648,7 +648,7 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projecti
     effect := func(unit *ArmyUnit) {
         unit.TakeDamage(10)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -680,7 +680,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Effect: func(unit *ArmyUnit) {
             unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             if unit.Unit.GetHealth() <= 0 {
-                combat.Model.RemoveUnit(unit)
+                combat.Model.KillUnit(unit)
             }
         },
     }
@@ -719,7 +719,7 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Pro
             }
 
             if unit.Unit.GetHealth() <= 0 {
-                combat.Model.RemoveUnit(unit)
+                combat.Model.KillUnit(unit)
             }
         },
     }
@@ -747,7 +747,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
             }
 
             if unit.Unit.GetHealth() <= 0 {
-                combat.Model.RemoveUnit(unit)
+                combat.Model.KillUnit(unit)
             }
         }
     }
@@ -762,7 +762,7 @@ func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) *Proje
     damage := func (unit *ArmyUnit) {
         combat.Model.ApplyImmolationDamage(unit, 15)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -878,7 +878,7 @@ func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit) *Projectil
         // FIXME: do stoning damage, which is irreversable
         unit.TakeDamage(damage)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -998,7 +998,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
         // FIXME: apply irreversable damage
         unit.TakeDamage(damage)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -1033,7 +1033,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projec
 
         unit.TakeDamage(damage)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -1056,7 +1056,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Proje
 
         unit.TakeDamage(damage)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -1088,7 +1088,7 @@ func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) *Proj
     effect := func (unit *ArmyUnit){
         if unit.GetResistanceFor(data.ChaosMagic) <= 9 {
             // FIXME: does irreversable damage
-            combat.Model.RemoveUnit(unit)
+            combat.Model.RemoveUnit1(unit)
         }
     }
 
@@ -1132,7 +1132,7 @@ func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) *Projec
     effect := func (unit *ArmyUnit){
         if rand.N(4) == 0 {
             // FIXME: apply irreversable damage, unit cannot be revived or turned into undead
-            combat.Model.RemoveUnit(unit)
+            combat.Model.RemoveUnit1(unit)
         }
     }
 
@@ -1155,7 +1155,7 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
 
         unit.TakeDamage(damage)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -1757,7 +1757,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         target.TakeDamage(damage)
         */
         if target.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(target)
+            combat.Model.KillUnit(target)
         }
     }
 
@@ -2185,7 +2185,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
 
                     if mover.Unit.GetHealth() <= 0 {
                         // this feels dangerous to do here but it seems to work
-                        combat.Model.RemoveUnit(mover)
+                        combat.Model.KillUnit(mover)
                         return
                     }
                 }

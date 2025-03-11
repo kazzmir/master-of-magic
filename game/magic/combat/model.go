@@ -1666,6 +1666,7 @@ type Army struct {
     // when counter magic is cast, this field tracks how much 'counter magic' strength is available to dispel
     CounterMagic int
     Units []*ArmyUnit
+    KilledUnits []*ArmyUnit
     Auto bool
     Fled bool
     Casted bool
@@ -1756,7 +1757,12 @@ func (army *Army) LayoutUnits(team Team){
     }
 }
 
-func (army *Army) RemoveUnit(remove *ArmyUnit){
+func (army *Army) KillUnit(kill *ArmyUnit){
+    army.KilledUnits = append(army.KilledUnits, kill)
+    army.RemoveUnit1(kill)
+}
+
+func (army *Army) RemoveUnit1(remove *ArmyUnit){
     var units []*ArmyUnit
 
     for _, unit := range army.Units {
@@ -2062,7 +2068,7 @@ func (model *CombatModel) NextTurn() {
             }
             unit.TakeDamage(damage)
             if unit.Unit.GetHealth() <= 0 {
-                model.RemoveUnit(unit)
+                model.KillUnit(unit)
             }
         }
     }
@@ -2106,7 +2112,7 @@ func (model *CombatModel) NextTurn() {
             }
             unit.TakeDamage(damage)
             if unit.Unit.GetHealth() <= 0 {
-                model.RemoveUnit(unit)
+                model.KillUnit(unit)
             }
         }
     }
@@ -3371,14 +3377,14 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
         end := false
         if defender.Unit.GetHealth() <= 0 {
             model.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
-            model.RemoveUnit(defender)
+            model.KillUnit(defender)
             end = true
             model.Observer.UnitKilled(defender)
         }
 
         if attacker.Unit.GetHealth() <= 0 {
             model.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
-            model.RemoveUnit(attacker)
+            model.KillUnit(attacker)
             end = true
             model.Observer.UnitKilled(attacker)
         }
@@ -3391,13 +3397,29 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     defender.Attacked += 1
 }
 
-func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
+func (model *CombatModel) KillUnit(unit *ArmyUnit){
     if unit.Team == TeamDefender {
         model.DefeatedDefenders += 1
-        model.DefendingArmy.RemoveUnit(unit)
+        model.DefendingArmy.KillUnit(unit)
     } else {
         model.DefeatedAttackers += 1
-        model.AttackingArmy.RemoveUnit(unit)
+        model.AttackingArmy.KillUnit(unit)
+    }
+
+    model.Tiles[unit.Y][unit.X].Unit = nil
+
+    if unit == model.SelectedUnit {
+        model.NextUnit()
+    }
+}
+
+func (model *CombatModel) RemoveUnit1(unit *ArmyUnit){
+    if unit.Team == TeamDefender {
+        model.DefeatedDefenders += 1
+        model.DefendingArmy.RemoveUnit1(unit)
+    } else {
+        model.DefeatedAttackers += 1
+        model.AttackingArmy.RemoveUnit1(unit)
     }
 
     model.Tiles[unit.Y][unit.X].Unit = nil
@@ -3526,7 +3548,7 @@ func (model *CombatModel) flee(army *Army) {
 
         if rand.IntN(100) < chance {
             unit.TakeDamage(unit.Unit.GetHealth())
-            model.RemoveUnit(unit)
+            model.RemoveUnit1(unit)
             model.DiedWhileFleeing += 1
         }
     }
@@ -3570,7 +3592,7 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
 func (model *CombatModel) SwitchTeams(target *ArmyUnit) {
     newArmy := model.GetOtherArmy(target)
     oldArmy := model.GetArmy(target)
-    oldArmy.RemoveUnit(target)
+    oldArmy.RemoveUnit1(target)
 
     newArmy.AddArmyUnit(target)
     target.Team = model.GetTeamForArmy(newArmy)
