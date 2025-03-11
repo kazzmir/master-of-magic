@@ -3297,7 +3297,11 @@ func (game *Game) FindNearbyPosition(player *playerlib.Player, stack *playerlib.
                 }
             }
 
-            // FIXME: what to do in case of a friendly stack with not enough room?
+            // can not contain a friendly with too less room
+            existing := player.FindStack(cx, cy, plane)
+            if existing != nil && (len(existing.Units()) + len(stack.Units())) > 9 {
+                occupied = true
+            }
 
             if occupied {
                 continue
