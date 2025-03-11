@@ -135,7 +135,7 @@ func (system *TestSpellSystem) CreatePossessionProjectile(target *ArmyUnit) *Pro
     return nil
 }
 
-func (system *CombatScreen) CreateCreatureBindingProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateCreatureBindingProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
 
