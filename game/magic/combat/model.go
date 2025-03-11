@@ -4401,6 +4401,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                         Targets: allKilledUnits,
                         Select: func (target *ArmyUnit){
                             doAnimateDead(target)
+                            castedCallback()
                         },
                     }
                 }
