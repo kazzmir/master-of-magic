@@ -595,6 +595,16 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+func (unit *ArmyUnit) RaiseFromDead() {
+    // make sure health is 0 first
+    unit.TakeDamage(unit.Unit.GetMaxHealth())
+    // then raise to 1/2
+    unit.Heal(unit.Unit.GetMaxHealth()/2)
+    unit.Enchantments = nil
+    unit.Curses = nil
+    unit.WebHealth = 0
+}
+
 func (unit *ArmyUnit) IsAsleep() bool {
     return unit.HasCurse(data.UnitCurseBlackSleep)
 }
@@ -1666,6 +1676,7 @@ type Army struct {
     // when counter magic is cast, this field tracks how much 'counter magic' strength is available to dispel
     CounterMagic int
     Units []*ArmyUnit
+    KilledUnits []*ArmyUnit
     Auto bool
     Fled bool
     Casted bool
@@ -1754,6 +1765,21 @@ func (army *Army) LayoutUnits(team Team){
             cy += 1
         }
     }
+}
+
+func (army *Army) RaiseDeadUnit(unit *ArmyUnit, x int, y int){
+    unit.RaiseFromDead()
+    unit.X = x
+    unit.Y = y
+    army.Units = append(army.Units, unit)
+    army.KilledUnits = slices.DeleteFunc(army.KilledUnits, func(check *ArmyUnit) bool {
+        return check == unit
+    })
+}
+
+func (army *Army) KillUnit(kill *ArmyUnit){
+    army.KilledUnits = append(army.KilledUnits, kill)
+    army.RemoveUnit(kill)
 }
 
 func (army *Army) RemoveUnit(remove *ArmyUnit){
@@ -2062,7 +2088,7 @@ func (model *CombatModel) NextTurn() {
             }
             unit.TakeDamage(damage)
             if unit.Unit.GetHealth() <= 0 {
-                model.RemoveUnit(unit)
+                model.KillUnit(unit)
             }
         }
     }
@@ -2106,7 +2132,7 @@ func (model *CombatModel) NextTurn() {
             }
             unit.TakeDamage(damage)
             if unit.Unit.GetHealth() <= 0 {
-                model.RemoveUnit(unit)
+                model.KillUnit(unit)
             }
         }
     }
@@ -3371,14 +3397,14 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
         end := false
         if defender.Unit.GetHealth() <= 0 {
             model.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
-            model.RemoveUnit(defender)
+            model.KillUnit(defender)
             end = true
             model.Observer.UnitKilled(defender)
         }
 
         if attacker.Unit.GetHealth() <= 0 {
             model.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
-            model.RemoveUnit(attacker)
+            model.KillUnit(attacker)
             end = true
             model.Observer.UnitKilled(attacker)
         }
@@ -3389,6 +3415,22 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     }
 
     defender.Attacked += 1
+}
+
+func (model *CombatModel) KillUnit(unit *ArmyUnit){
+    if unit.Team == TeamDefender {
+        model.DefeatedDefenders += 1
+        model.DefendingArmy.KillUnit(unit)
+    } else {
+        model.DefeatedAttackers += 1
+        model.AttackingArmy.KillUnit(unit)
+    }
+
+    model.Tiles[unit.Y][unit.X].Unit = nil
+
+    if unit == model.SelectedUnit {
+        model.NextUnit()
+    }
 }
 
 func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
@@ -4282,11 +4324,61 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             }
 
             castedCallback()
+        case "Raise Dead":
+            army := model.GetArmyForPlayer(player)
+            failed := true
+
+            doRaiseDead := func (killedUnit *ArmyUnit){
+                model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
+                    // shouldn't really be necessary because the model should already be set, but just in case
+                    killedUnit.Model = model
+                    army.RaiseDeadUnit(killedUnit, x, y)
+                    model.Tiles[y][x].Unit = killedUnit
+                    castedCallback()
+                })
+
+            }
+
+            if len(army.KilledUnits) > 0 {
+                if len(army.KilledUnits) == 1 {
+
+                    killedUnit := army.KilledUnits[0]
+
+                    if killedUnit.GetRace() != data.RaceFantastic {
+                        failed = false
+                        doRaiseDead(killedUnit)
+                    }
+                } else {
+                    // show selection box to choose a dead unit
+
+                    var targets []*ArmyUnit
+                    for _, killedUnit := range army.KilledUnits {
+                        if killedUnit.GetRace() != data.RaceFantastic {
+                            targets = append(targets, killedUnit)
+                        }
+                    }
+
+                    if len(targets) > 0 {
+                        failed = false
+                        model.Events <- &CombatSelectTargets{
+                            Targets: targets,
+                            Select: func (target *ArmyUnit){
+                                doRaiseDead(target)
+                            },
+                        }
+                    }
+                }
+            }
+
+            if failed {
+                model.Events <- &CombatEventMessage{
+                    Message: "There are no available units to revive.",
+                }
+            }
 
         /*
         combat instants:
 
-        Raise Dead
         Animate Dead
          */
 
