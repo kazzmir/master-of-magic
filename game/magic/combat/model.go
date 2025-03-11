@@ -3865,6 +3865,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             }, targetFantastic)
             castedCallback()
         case "Recall Hero":
+            // FIXME:  check planar seal and summoning circle?
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateRecallHeroProjectile(target))
                 castedCallback()
@@ -3928,6 +3929,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 castedCallback()
             }, targetAny)
         case "Word of Recall":
+            // FIXME:  check planar seal and summoning circle?
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWordOfRecallProjectile(target))
                 castedCallback()
