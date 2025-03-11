@@ -3359,7 +3359,7 @@ func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
         }
     }
 
-    // kill units until if not enough room
+    // kill units until enough room
     if count > 9 {
         stackUnits = stack.Units()
         slices.SortFunc(stackUnits, func(unitA, unitB units.StackUnit) int {
