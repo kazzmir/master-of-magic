@@ -4330,6 +4330,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                     if len(targets) > 0 {
                         failed = false
                         model.Events <- &CombatSelectTargets{
+                            Title: "Select a unit to Revive",
                             Targets: targets,
                             Select: func (target *ArmyUnit){
                                 doRaiseDead(target)
@@ -4398,6 +4399,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                     castedCallback()
                 } else {
                     model.Events <- &CombatSelectTargets{
+                        Title: "Select a unit to Animate",
                         Targets: allKilledUnits,
                         Select: func (target *ArmyUnit){
                             doAnimateDead(target)
