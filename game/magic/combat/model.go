@@ -2459,9 +2459,10 @@ func (model *CombatModel) GetSideForPlayer(player *playerlib.Player) MapSide {
 
 // returns true if the given coordinates are on the given side
 func (model *CombatModel) IsOnSide(x int, y int, side MapSide) bool {
+    // FIXME: verify these coordinates
     switch side {
         case MapSideAttacker: return y >= 15
-        case MapSideDefender: return y < 12
+        case MapSideDefender: return y <= 12
     }
 
     return true
