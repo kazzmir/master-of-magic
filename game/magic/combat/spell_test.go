@@ -147,6 +147,10 @@ func (system *TestSpellSystem) CreateChaosChannelsProjectile(target *ArmyUnit) *
     return nil
 }
 
+func (system *TestSpellSystem) CreateHeroismProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }

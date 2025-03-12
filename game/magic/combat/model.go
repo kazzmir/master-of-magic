@@ -3747,6 +3747,7 @@ type SpellSystem interface {
     CreateCreatureBindingProjectile(target *ArmyUnit) *Projectile
     CreatePetrifyProjectile(target *ArmyUnit) *Projectile
     CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile
+    CreateHeroismProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4441,9 +4442,33 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 }
             }
 
+        case "Heroism":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateHeroismProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRace() == data.RaceFantastic {
+                    return false
+                }
+
+                if target.GetRealm() == data.DeathMagic {
+                    return false
+                }
+
+                // elite level for both units and heroes is 3
+                if target.GetExperienceData().ToInt() >= 3 {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentHeroism) {
+                    return false
+                }
+
+                return true
+            })
+
         /*
         unit enchantments:
-        Heroism
         Holy Armor
         Holy Weapon
         Invulnerability
