@@ -64,6 +64,7 @@ type CombatEvent interface {
 
 type CombatEventSelectTile struct {
     SelectTile func(int, int)
+    CanTarget func(int, int) bool
     Spell spellbook.Spell
     Selecter Team
 }
@@ -1787,7 +1788,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
     }
 }
 
-func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Team, spell spellbook.Spell, selectTile func(int, int)) {
+func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Team, spell spellbook.Spell, canTarget func(int, int) bool, selectTile func(int, int)) {
     combat.DoSelectTile = true
     defer func(){
         combat.DoSelectTile = false
@@ -1860,7 +1861,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
 
         if mouseY >= scale.Scale(hudY) {
             combat.MouseState = CombatClickHud
-        } else {
+        } else if canTarget(combat.MouseTileX, combat.MouseTileY) {
             combat.MouseState = CombatCast
 
             if inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
@@ -1884,7 +1885,11 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
                 yield()
                 break
             }
+        } else {
+            combat.MouseState = CombatNotOk
         }
+
+        combat.UpdateMouseState()
 
         if yield() != nil {
             return
@@ -2082,7 +2087,7 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                 switch event.(type) {
                     case *CombatEventSelectTile:
                         use := event.(*CombatEventSelectTile)
-                        combat.doSelectTile(yield, use.Selecter, use.Spell, use.SelectTile)
+                        combat.doSelectTile(yield, use.Selecter, use.Spell, use.CanTarget, use.SelectTile)
                     case *CombatEventSelectUnit:
                         use := event.(*CombatEventSelectUnit)
                         combat.doSelectUnit(yield, use.Selecter, use.Spell, use.SelectTarget, use.CanTarget, use.SelectTeam)
