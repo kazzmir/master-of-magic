@@ -499,10 +499,12 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
             Race: data.RaceHighMen,
         }, true, 0, 0, nil)
 
-    attackingPlayer.CastingSkillPower = 10
+    attackingPlayer.CastingSkillPower = 10000
+    attackingPlayer.Mana = 1000
     attackingPlayer.TaxRate = fraction.Zero()
 
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disrupt"))
 
     attackingArmy := createGreatDrakeArmy(attackingPlayer)
     // attackingArmy := createWeakArmy(attackingPlayer)

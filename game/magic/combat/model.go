@@ -2457,6 +2457,17 @@ func (model *CombatModel) GetSideForPlayer(player *playerlib.Player) MapSide {
     return MapSideAttacker
 }
 
+// returns true if the given coordinates are on the given side
+func (model *CombatModel) IsOnSide(x int, y int, side MapSide) bool {
+    // FIXME: verify these coordinates
+    switch side {
+        case MapSideAttacker: return y >= 15
+        case MapSideDefender: return y <= 12
+    }
+
+    return true
+}
+
 func (model *CombatModel) FindEmptyTile(side MapSide) (int, int, error) {
 
     middleX := len(model.Tiles[0]) / 2
@@ -2556,6 +2567,19 @@ func (model *CombatModel) InsideCityWall(x int, y int) bool {
     }
 
     return model.Tiles[y][x].InsideWall
+}
+
+func (model *CombatModel) ContainsWall(x int, y int) bool {
+    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
+        return false
+    }
+
+    wall := model.Tiles[y][x].Wall
+    if wall != nil && wall.Size() > 0 {
+        return true
+    }
+
+    return false
 }
 
 // a wall tower is a wall with two sides
@@ -3638,8 +3662,7 @@ func (model *CombatModel) DoTargetUnitSpell(player *playerlib.Player, spell spel
     }
 }
 
-// FIXME: take in a canTarget function to check if the tile is legal
-func (model *CombatModel) DoTargetTileSpell(player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
+func (model *CombatModel) DoTargetTileSpell(player *playerlib.Player, spell spellbook.Spell, canTarget func(int, int) bool, onTarget func(int, int)){
     selecter := TeamAttacker
     if player == model.DefendingArmy.Player {
         selecter = TeamDefender
@@ -3649,6 +3672,7 @@ func (model *CombatModel) DoTargetTileSpell(player *playerlib.Player, spell spel
         Selecter: selecter,
         Spell: spell,
         SelectTile: onTarget,
+        CanTarget: canTarget,
     }
 
     select {
@@ -3891,7 +3915,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 return true
             })
         case "Earth to Mud":
-            model.DoTargetTileSpell(player, spell, func (x int, y int){
+            model.DoTargetTileSpell(player, spell, func (x int, y int) bool { return true}, func (x int, y int){
                 model.CreateEarthToMud(x, y)
                 castedCallback()
             })
@@ -3940,13 +3964,17 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 castedCallback()
             }, disintegrateTarget)
         case "Disrupt":
-            // FIXME: can only target city walls
-            model.DoTargetTileSpell(player, spell, func (x int, y int){
+            model.DoTargetTileSpell(player, spell, model.ContainsWall, func (x int, y int){
                 model.AddProjectile(spellSystem.CreateDisruptProjectile(x, y))
                 castedCallback()
             })
         case "Magic Vortex":
-            model.DoTargetTileSpell(player, spell, func (x int, y int){
+            // FIXME: should this also take walls into account?
+            unoccupied := func (x int, y int) bool {
+                return model.GetUnit(x, y) == nil
+            }
+
+            model.DoTargetTileSpell(player, spell, unoccupied, func (x int, y int){
                 model.OtherUnits = append(model.OtherUnits, spellSystem.CreateMagicVortex(x, y))
                 castedCallback()
             })
@@ -4449,8 +4477,15 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 }
 
 func (model *CombatModel) DoSummoningSpell(spellSystem SpellSystem, player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
+
+    side := model.GetSideForPlayer(player)
+
+    allowed := func (x int, y int) bool {
+        return model.IsOnSide(x, y, side)
+    }
+
     // FIXME: pass in a canTarget function that only allows summoning on an empty tile on the casting wizards side of the battlefield
-    model.DoTargetTileSpell(player, spell, func (x int, y int){
+    model.DoTargetTileSpell(player, spell, allowed, func (x int, y int){
         model.AddProjectile(spellSystem.CreateSummoningCircle(x, y))
         // FIXME: there should be a delay between the summoning circle appearing and when the unit appears
         onTarget(x, y)

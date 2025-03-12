@@ -64,6 +64,7 @@ type CombatEvent interface {
 
 type CombatEventSelectTile struct {
     SelectTile func(int, int)
+    CanTarget func(int, int) bool
     Spell spellbook.Spell
     Selecter Team
 }
@@ -1787,7 +1788,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
     }
 }
 
-func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Team, spell spellbook.Spell, selectTile func(int, int)) {
+func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Team, spell spellbook.Spell, canTarget func(int, int) bool, selectTile func(int, int)) {
     combat.DoSelectTile = true
     defer func(){
         combat.DoSelectTile = false
@@ -1860,7 +1861,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
 
         if mouseY >= scale.Scale(hudY) {
             combat.MouseState = CombatClickHud
-        } else {
+        } else if canTarget(combat.MouseTileX, combat.MouseTileY) {
             combat.MouseState = CombatCast
 
             if inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
@@ -1884,7 +1885,11 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
                 yield()
                 break
             }
+        } else {
+            combat.MouseState = CombatNotOk
         }
+
+        combat.UpdateMouseState()
 
         if yield() != nil {
             return
@@ -2082,7 +2087,7 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                 switch event.(type) {
                     case *CombatEventSelectTile:
                         use := event.(*CombatEventSelectTile)
-                        combat.doSelectTile(yield, use.Selecter, use.Spell, use.SelectTile)
+                        combat.doSelectTile(yield, use.Selecter, use.Spell, use.CanTarget, use.SelectTile)
                     case *CombatEventSelectUnit:
                         use := event.(*CombatEventSelectUnit)
                         combat.doSelectUnit(yield, use.Selecter, use.Spell, use.SelectTarget, use.CanTarget, use.SelectTeam)
@@ -3451,13 +3456,15 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
     for _, unit := range combat.Model.OtherUnits {
         var unitOptions ebiten.DrawImageOptions
+        frame := unit.Animation.Frame()
+        unitOptions.GeoM.Translate(float64(-frame.Bounds().Dx()/2), float64(-frame.Bounds().Dy()))
+        // unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
+        unitOptions.GeoM.Translate(0, float64(tile0.Bounds().Dy()/2))
+
         tx, ty := tilePosition(float64(unit.X), float64(unit.Y))
         unitOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
         unitOptions.GeoM.Translate(tx, ty)
-        unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
 
-        frame := unit.Animation.Frame()
-        unitOptions.GeoM.Translate(float64(-frame.Bounds().Dx()/2), float64(-frame.Bounds().Dy()))
         scale.DrawScaled(screen, frame, &unitOptions)
     }
 
