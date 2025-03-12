@@ -3456,13 +3456,15 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
     for _, unit := range combat.Model.OtherUnits {
         var unitOptions ebiten.DrawImageOptions
+        frame := unit.Animation.Frame()
+        unitOptions.GeoM.Translate(float64(-frame.Bounds().Dx()/2), float64(-frame.Bounds().Dy()))
+        // unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
+        unitOptions.GeoM.Translate(0, float64(tile0.Bounds().Dy()/2))
+
         tx, ty := tilePosition(float64(unit.X), float64(unit.Y))
         unitOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
         unitOptions.GeoM.Translate(tx, ty)
-        unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
 
-        frame := unit.Animation.Frame()
-        unitOptions.GeoM.Translate(float64(-frame.Bounds().Dx()/2), float64(-frame.Bounds().Dy()))
         scale.DrawScaled(screen, frame, &unitOptions)
     }
 

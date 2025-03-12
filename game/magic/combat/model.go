@@ -3969,7 +3969,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 castedCallback()
             })
         case "Magic Vortex":
-            model.DoTargetTileSpell(player, spell, func (x int, y int) bool { return true}, func (x int, y int){
+            // FIXME: should this also take walls into account?
+            unoccupied := func (x int, y int) bool {
+                return model.GetUnit(x, y) == nil
+            }
+
+            model.DoTargetTileSpell(player, spell, unoccupied, func (x int, y int){
                 model.OtherUnits = append(model.OtherUnits, spellSystem.CreateMagicVortex(x, y))
                 castedCallback()
             })
