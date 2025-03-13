@@ -195,9 +195,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             after := func (unit units.StackUnit) bool {
                 overworldUnit, ok := unit.(*units.OverworldUnit)
                 if ok {
-                    // damage := overworldUnit.GetMaxHealth() - overworldUnit.Health
                     overworldUnit.Unit = units.WereWolf
-                    // overworldUnit.Health = overworldUnit.GetMaxHealth() - damage
                     overworldUnit.Experience = 0
                     // unit keeps weapon bonus and enchantments
                 }
