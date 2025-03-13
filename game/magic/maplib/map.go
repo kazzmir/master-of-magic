@@ -964,28 +964,35 @@ func GeneratePlaneTowerPositions(landSize int, count int) []image.Point {
     var out []image.Point
 
     for range count {
-        x := rand.N(width)
-        y := rand.N(height)
 
-        // not too close to the edges
-        if y < 3 || y >= height - 3 {
-            continue
-        }
+        success := false
+        tries := 100
+        for !success && tries > 0 {
+            tries -= 1
+            x := rand.N(width)
+            y := rand.N(height)
 
-        point := image.Pt(x, y)
-
-        ok := true
-        for _, other := range out {
-            vector := other.Sub(point)
-            distance := math.Sqrt(float64(vector.X * vector.X + vector.Y * vector.Y))
-            if distance < 10 {
-                ok = false
-                break
+            // not too close to the edges
+            if y < 3 || y >= height - 3 {
+                continue
             }
-        }
 
-        if ok {
-            out = append(out, point)
+            point := image.Pt(x, y)
+
+            ok := true
+            for _, other := range out {
+                vector := other.Sub(point)
+                distance := math.Sqrt(float64(vector.X * vector.X + vector.Y * vector.Y))
+                if distance < 10 {
+                    ok = false
+                    break
+                }
+            }
+
+            if ok {
+                out = append(out, point)
+                success = true
+            }
         }
     }
 
