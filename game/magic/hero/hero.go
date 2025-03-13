@@ -568,14 +568,18 @@ func (hero *Hero) CanTouchAttack(damage units.Damage) bool {
 }
 
 func (hero *Hero) IsUndead() bool {
-    return false
+    return hero.Unit.IsUndead()
 }
 
 func (hero *Hero) SetUndead() {
+    hero.Unit.SetUndead()
 }
 
-// heroes are never part of a magic realm (life, death, etc)
+// heroes are never part of a magic realm (life, death, etc), unless it is undead
 func (hero *Hero) GetRealm() data.MagicType {
+    if hero.IsUndead() {
+        return data.DeathMagic
+    }
     return data.MagicNone
 }
 
@@ -753,6 +757,10 @@ func (hero *Hero) Move(dx int, dy int, cost fraction.Fraction, normalize units.N
 }
 
 func (hero *Hero) NaturalHeal(rate float64) {
+    if hero.IsUndead() {
+        return
+    }
+
     amount := float64(hero.GetMaxHealth()) * rate
     if amount < 1 {
         amount = 1

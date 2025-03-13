@@ -4629,10 +4629,27 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         winner, loser := distributeFame(attacker, defender, defenderStack, defeatedDefenders)
         attackerFame += winner
         defenderFame += loser
+
+        for _, unit := range attackingArmy.Units {
+            if unit.Unit.GetHealth() > 0 {
+                attackerStack.AddUnit(unit.Unit)
+                unit.Unit.SetBanner(attacker.GetBanner())
+                defender.RemoveUnit(unit.Unit)
+            }
+        }
+
     } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee {
         winner, loser := distributeFame(defender, attacker, attackerStack, defeatedAttackers)
         defenderFame += winner
         attackerFame += loser
+
+        for _, unit := range defendingArmy.Units {
+            if unit.Unit.GetHealth() > 0 {
+                defenderStack.AddUnit(unit.Unit)
+                unit.Unit.SetBanner(defender.GetBanner())
+                attacker.RemoveUnit(unit.Unit)
+            }
+        }
     }
 
     attacker.Fame = max(0, attacker.Fame + attackerFame)

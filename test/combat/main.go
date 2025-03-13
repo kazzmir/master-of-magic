@@ -313,7 +313,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
-    defendingArmy := createLizardmenArmy(defendingPlayer, 9)
+    defendingArmy := createLizardmenArmy(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingArmy.Units[0].AddCurse(data.UnitCurseBlackSleep)
@@ -386,11 +386,17 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Confusion"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Possession"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Call Chaos"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Raise Dead"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Animate Dead"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
-    attackingArmy := createArmyN(attackingPlayer, units.HighElfMagician, 3)
+    attackingArmy := createArmyN(attackingPlayer, units.HighElfMagician, 4)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
+
+    for range 2 {
+        attackingArmy.KillUnit(attackingArmy.Units[0])
+    }
 
     // attackingArmy.Units[0].AddCurse(data.UnitCurseConfusion)
 
@@ -493,10 +499,12 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
             Race: data.RaceHighMen,
         }, true, 0, 0, nil)
 
-    attackingPlayer.CastingSkillPower = 10
+    attackingPlayer.CastingSkillPower = 10000
+    attackingPlayer.Mana = 1000
     attackingPlayer.TaxRate = fraction.Zero()
 
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disrupt"))
 
     attackingArmy := createGreatDrakeArmy(attackingPlayer)
     // attackingArmy := createWeakArmy(attackingPlayer)
@@ -663,7 +671,7 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
                        "Creature Binding", "Mind Storm",
                        "Fire Bolt", "Ice Bolt", "Star Fires", "Dispel Evil", "Life Drain",
                        "Holy Word", "Cracks Call", "Banish", "Disintegrate", "Warp Wood", "Death Spell",
-                       "Word of Death", "Dispel Magic True", "Web", "Petrify",
+                       "Word of Death", "Dispel Magic True", "Web", "Petrify", "Raise Dead",
                    }
 
 

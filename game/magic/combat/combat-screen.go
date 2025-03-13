@@ -64,6 +64,7 @@ type CombatEvent interface {
 
 type CombatEventSelectTile struct {
     SelectTile func(int, int)
+    CanTarget func(int, int) bool
     Spell spellbook.Spell
     Selecter Team
 }
@@ -87,6 +88,12 @@ type CombatEventSelectUnit struct {
     Spell spellbook.Spell
     Selecter Team
     SelectTeam Team
+}
+
+type CombatSelectTargets struct {
+    Title string
+    Targets []*ArmyUnit
+    Select func (*ArmyUnit)
 }
 
 type CombatEventMessage struct {
@@ -544,7 +551,7 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
     damage := func(unit *ArmyUnit) {
         unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageCold, DamageModifiers{Magic: data.NatureMagic})
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -562,7 +569,7 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
         combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.Unit.GetHealth() <= 0 {
             combat.Model.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -578,7 +585,7 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength 
     damage := func(unit *ArmyUnit) {
         combat.Model.ApplyImmolationDamage(unit, strength)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -592,7 +599,7 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Project
     damage := func (unit *ArmyUnit) {
         unit.ApplyDamage(15, units.DamageRangedMagical, DamageModifiers{})
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -619,7 +626,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
 
         unit.TakeDamage(damage)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -633,7 +640,7 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, stren
     damage := func (unit *ArmyUnit) {
         unit.ApplyDamage(ComputeRoll(15, 30), units.DamageRangedMagical, DamageModifiers{Magic: data.SorceryMagic})
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -648,7 +655,7 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projecti
     effect := func(unit *ArmyUnit) {
         unit.TakeDamage(10)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -680,7 +687,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Effect: func(unit *ArmyUnit) {
             unit.ApplyDamage(ComputeRoll(strength, 30), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             if unit.Unit.GetHealth() <= 0 {
-                combat.Model.RemoveUnit(unit)
+                combat.Model.KillUnit(unit)
             }
         },
     }
@@ -719,7 +726,7 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Pro
             }
 
             if unit.Unit.GetHealth() <= 0 {
-                combat.Model.RemoveUnit(unit)
+                combat.Model.KillUnit(unit)
             }
         },
     }
@@ -747,7 +754,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
             }
 
             if unit.Unit.GetHealth() <= 0 {
-                combat.Model.RemoveUnit(unit)
+                combat.Model.KillUnit(unit)
             }
         }
     }
@@ -762,7 +769,7 @@ func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) *Proje
     damage := func (unit *ArmyUnit) {
         combat.Model.ApplyImmolationDamage(unit, 15)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -880,7 +887,7 @@ func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit) *Projectil
         // FIXME: do stoning damage, which is irreversable
         unit.TakeDamage(damage)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -1000,7 +1007,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
         // FIXME: apply irreversable damage
         unit.TakeDamage(damage)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -1035,7 +1042,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projec
 
         unit.TakeDamage(damage)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -1058,7 +1065,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Proje
 
         unit.TakeDamage(damage)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -1159,7 +1166,7 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
 
         unit.TakeDamage(damage)
         if unit.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(unit)
+            combat.Model.KillUnit(unit)
         }
     }
 
@@ -1212,6 +1219,21 @@ func (combat *CombatScreen) CreateMagicVortex(x int, y int) *OtherUnit {
     }
 
     return unit
+}
+
+func (combat *CombatScreen) AddSelectTargetsElements(targets []*ArmyUnit, title string, selected func(*ArmyUnit)) {
+    var selections []uilib.Selection
+
+    for _, target := range targets {
+        selections = append(selections, uilib.Selection{
+            Name: target.Unit.GetName(),
+            Action: func(){
+                selected(target)
+            },
+        })
+    }
+
+    combat.UI.AddElements(uilib.MakeSelectionUI(combat.UI, combat.Cache, &combat.ImageCache, 100, 20, title, selections))
 }
 
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
@@ -1359,9 +1381,9 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
             spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
                 if picked {
-                    army.Casted = true
                     // player mana and skill should go down accordingly
                     combat.Model.InvokeSpell(combat, player, nil, spell, func(){
+                        army.Casted = true
                         army.ManaPool -= spell.Cost(false)
                         player.Mana -= int(float64(spell.Cost(false)) * army.Range.ToFloat())
                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
@@ -1761,7 +1783,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         target.TakeDamage(damage)
         */
         if target.Unit.GetHealth() <= 0 {
-            combat.Model.RemoveUnit(target)
+            combat.Model.KillUnit(target)
         }
     }
 
@@ -1770,7 +1792,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
     }
 }
 
-func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Team, spell spellbook.Spell, selectTile func(int, int)) {
+func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Team, spell spellbook.Spell, canTarget func(int, int) bool, selectTile func(int, int)) {
     combat.DoSelectTile = true
     defer func(){
         combat.DoSelectTile = false
@@ -1843,7 +1865,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
 
         if mouseY >= scale.Scale(hudY) {
             combat.MouseState = CombatClickHud
-        } else {
+        } else if canTarget(combat.MouseTileX, combat.MouseTileY) {
             combat.MouseState = CombatCast
 
             if inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
@@ -1867,7 +1889,11 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
                 yield()
                 break
             }
+        } else {
+            combat.MouseState = CombatNotOk
         }
+
+        combat.UpdateMouseState()
 
         if yield() != nil {
             return
@@ -2065,7 +2091,7 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                 switch event.(type) {
                     case *CombatEventSelectTile:
                         use := event.(*CombatEventSelectTile)
-                        combat.doSelectTile(yield, use.Selecter, use.Spell, use.SelectTile)
+                        combat.doSelectTile(yield, use.Selecter, use.Spell, use.CanTarget, use.SelectTile)
                     case *CombatEventSelectUnit:
                         use := event.(*CombatEventSelectUnit)
                         combat.doSelectUnit(yield, use.Selecter, use.Spell, use.SelectTarget, use.CanTarget, use.SelectTeam)
@@ -2074,6 +2100,9 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                     case *CombatEventGlobalSpell:
                         use := event.(*CombatEventGlobalSpell)
                         combat.doCastEnchantment(yield, use.Caster, use.Magic, use.Name)
+                    case *CombatSelectTargets:
+                        use := event.(*CombatSelectTargets)
+                        combat.AddSelectTargetsElements(use.Targets, use.Title, use.Select)
                     case *CombatEventMessage:
                         use := event.(*CombatEventMessage)
                         combat.UI.AddElement(uilib.MakeErrorElement(combat.UI, combat.Cache, &combat.ImageCache, use.Message, func(){ yield() }))
@@ -2189,7 +2218,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
 
                     if mover.Unit.GetHealth() <= 0 {
                         // this feels dangerous to do here but it seems to work
-                        combat.Model.RemoveUnit(mover)
+                        combat.Model.KillUnit(mover)
                         return
                     }
                 }
@@ -3431,13 +3460,15 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
     for _, unit := range combat.Model.OtherUnits {
         var unitOptions ebiten.DrawImageOptions
+        frame := unit.Animation.Frame()
+        unitOptions.GeoM.Translate(float64(-frame.Bounds().Dx()/2), float64(-frame.Bounds().Dy()))
+        // unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
+        unitOptions.GeoM.Translate(0, float64(tile0.Bounds().Dy()/2))
+
         tx, ty := tilePosition(float64(unit.X), float64(unit.Y))
         unitOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
         unitOptions.GeoM.Translate(tx, ty)
-        unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
 
-        frame := unit.Animation.Frame()
-        unitOptions.GeoM.Translate(float64(-frame.Bounds().Dx()/2), float64(-frame.Bounds().Dy()))
         scale.DrawScaled(screen, frame, &unitOptions)
     }
 
