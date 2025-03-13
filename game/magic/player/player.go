@@ -878,6 +878,33 @@ func (player *Player) MergeStacks(stack1 *UnitStack, stack2 *UnitStack) *UnitSta
     return stack1
 }
 
+// teleport/move the unit to a new location. The unit should be removed from its current stack and added to a whatever
+// stack exists at the given location.
+// a presumption is that the unit is already part of the player's Units list. The unit is not added to the Units list in this method
+func (player *Player) UpdateUnitLocation(unit units.StackUnit, x int, y int, plane data.Plane) {
+    oldStack := player.FindStackByUnit(unit)
+    if oldStack != nil {
+        oldStack.RemoveUnit(unit)
+        if oldStack.IsEmpty() {
+            player.Stacks = slices.DeleteFunc(player.Stacks, func (s *UnitStack) bool {
+                return s == oldStack
+            })
+        }
+    }
+
+    unit.SetX(x)
+    unit.SetY(y)
+    unit.SetPlane(plane)
+
+    newStack := player.FindStack(unit.GetX(), unit.GetY(), unit.GetPlane())
+    if newStack == nil {
+        newStack = MakeUnitStack()
+        player.Stacks = append(player.Stacks, newStack)
+    }
+
+    newStack.AddUnit(unit)
+}
+
 func (player *Player) RemoveUnit(unit units.StackUnit) {
 
     for i := 0; i < len(player.Heroes); i++ {
@@ -935,7 +962,6 @@ func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {
     if stack == nil {
         stack = MakeUnitStack()
         player.Stacks = append(player.Stacks, stack)
-    } else {
     }
 
     stack.AddUnit(unit)

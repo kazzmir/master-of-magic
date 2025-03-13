@@ -1627,6 +1627,7 @@ type Army struct {
     Auto bool
     Fled bool
     Casted bool
+    RecalledUnits []*ArmyUnit
 
     Enchantments []data.CombatEnchantment
 }
@@ -3461,6 +3462,15 @@ func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
     }
 }
 
+func (model *CombatModel) RecallUnit(unit *ArmyUnit) {
+    if unit.Team == TeamDefender {
+        model.DefendingArmy.RecalledUnits = append(model.DefendingArmy.RecalledUnits, unit)
+    } else {
+        model.AttackingArmy.RecalledUnits = append(model.AttackingArmy.RecalledUnits, unit)
+    }
+    model.RemoveUnit(unit)
+}
+
 func (model *CombatModel) IsAIControlled(unit *ArmyUnit) bool {
     isConfused := unit.ConfusionAction == ConfusionActionEnemyControl
     if unit.Team == TeamDefender {
@@ -3914,6 +3924,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             }, targetFantastic)
             castedCallback()
         case "Recall Hero":
+            // FIXME:  check planar seal and summoning circle?
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateRecallHeroProjectile(target))
                 castedCallback()
@@ -3977,10 +3988,17 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 castedCallback()
             }, targetAny)
         case "Word of Recall":
+            // FIXME: check planar seal and summoning circle?
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWordOfRecallProjectile(target))
                 castedCallback()
-            }, targetAny)
+            }, func (target *ArmyUnit) bool {
+                if target.Summoned {
+                    return false
+                }
+
+                return true
+            })
         case "Disintegrate":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateDisintegrateProjectile(target))

@@ -2321,6 +2321,8 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
                 name := game.doInput(yield, "Hero Name", hero.GetName(), 70, 50)
                 hero.SetName(name)
 
+                game.ResolveStackAt(hero.GetX(), hero.GetY(), hero.GetPlane())
+
                 game.RefreshUI()
             }
         } else {
@@ -2487,6 +2489,7 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
         if hired {
             for _, unit := range units {
                 player.AddUnit(unit)
+                game.ResolveStackAt(unit.GetX(), unit.GetY(), unit.GetPlane())
             }
             player.Gold -= cost
             game.RefreshUI()
@@ -3256,16 +3259,15 @@ func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
     game.Camera.Center(game.CurrentMap().WrapX(x), y)
 }
 
-func (game *Game) doMoveFleeingDefender(player *playerlib.Player, stack *playerlib.UnitStack) {
-    // try to relocate a fleeing stack, kills units that are unable
-    x := stack.X()
-    y := stack.Y()
-    plane := stack.Plane()
+// try to find a nearby position that the given unit can move to
+func (game *Game) FindEscapePosition(player *playerlib.Player, unit units.StackUnit) []image.Point {
+    x := unit.GetX()
+    y := unit.GetY()
+    plane := unit.GetPlane()
     mapUse := game.GetMap(plane)
-    canMoveToWater := stack.AllFlyers() || stack.AllSwimmers()
+    canMoveToWater := unit.IsFlying() || unit.IsSwimmer() || unit.IsSailing()
 
     var positions []image.Point
-    var waterPositions []image.Point
     for dx := -1; dx <= 1; dx++ {
         for dy := -1; dy <= 1; dy++ {
             if dx == 0 && dy == 0 {
@@ -3298,46 +3300,125 @@ func (game *Game) doMoveFleeingDefender(player *playerlib.Player, stack *playerl
                 continue
             }
 
+            // can not contain a friendly full stack
+            existing := player.FindStack(cx, cy, plane)
+            if existing != nil && len(existing.Units()) >= 9 {
+                continue
+            }
+
             // can not countain encounter
             if mapUse.GetEncounter(cx, cy) != nil {
                 continue
             }
 
-            if mapUse.GetTile(cx, cy).Tile.IsWater() && !canMoveToWater {
-                waterPositions = append(waterPositions, image.Pt(cx, cy))
-            } else {
+            if !mapUse.GetTile(cx, cy).Tile.IsWater() || canMoveToWater {
                 positions = append(positions, image.Pt(cx, cy))
             }
         }
     }
 
-    // kill units that can not move to water if only water is available
-    if len(positions) == 0 && len(waterPositions) != 0 {
-        for _, unit := range stack.Units() {
-            if !unit.IsFlying() && !unit.IsSwimmer() {
-                player.RemoveUnit(unit)
-            }
-        }
+    return positions
+}
 
-        positions = waterPositions
-    }
-
-    // kill whole stack if no position found
-    if len(positions) == 0 {
-        for _, unit := range stack.Units() {
-            player.RemoveUnit(unit)
-        }
+func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
+    stack, player := game.FindStack(x, y, plane)
+    if stack == nil {
         return
     }
 
-    // set to a random position
-    position := positions[rand.IntN(len(positions))]
-    stack.SetX(position.X)
-    stack.SetY(position.Y)
+    count := len(stack.Units())
+    if count <= 9 {
+        return
+    }
 
-    allStacks := player.FindAllStacks(position.X, position.Y, stack.Plane())
-    for i := 1; i < len(allStacks); i++ {
-        player.MergeStacks(allStacks[0], allStacks[i])
+    // try to move random units to a nearby tile
+    stackUnits := stack.Units()
+    for _, i := range rand.Perm(len(stackUnits)) {
+        unit := stackUnits[i]
+
+        positions := game.FindEscapePosition(player, unit)
+
+        if len(positions) != 0 {
+            // set to a random position
+            position := positions[rand.IntN(len(positions))]
+            unit.SetX(position.X)
+            unit.SetY(position.Y)
+
+            // merge stacks
+            stack.RemoveUnit(unit)
+            player.AddStack(playerlib.MakeUnitStackFromUnits([]units.StackUnit{unit}))
+            allStacks := player.FindAllStacks(position.X, position.Y, stack.Plane())
+            for i := 1; i < len(allStacks); i++ {
+                player.MergeStacks(allStacks[0], allStacks[i])
+            }
+
+            count -= 1
+            if count <= 9 {
+                break
+            }
+        }
+    }
+
+    // kill units until enough room
+    if count > 9 {
+        stackUnits = stack.Units()
+        slices.SortFunc(stackUnits, func(unitA, unitB units.StackUnit) int {
+            // non-heros before heroes
+            if unitA.IsHero() != unitB.IsHero() {
+                if unitA.IsHero() {
+                    return 1
+                }
+                return -1
+            }
+
+            // low-leveled heroes first
+            if unitA.IsHero() && unitB.IsHero() {
+                return unitA.GetExperience() - unitB.GetExperience()
+            }
+
+            // low production or casting cost first
+            minCostA := min(unitA.GetRawUnit().ProductionCost, unitA.GetRawUnit().CastingCost)
+            minCostB := min(unitB.GetRawUnit().ProductionCost, unitB.GetRawUnit().CastingCost)
+            return minCostA - minCostB
+        })
+
+        for _, unit := range stackUnits {
+            log.Printf("Unit %v killed by ResolveStack", unit)
+            player.RemoveUnit(unit)
+            count -= 1
+            if count <= 9 {
+                break
+            }
+        }
+    }
+}
+
+// try to relocate a fleeing stack, kills units that are unable
+func (game *Game) doMoveFleeingDefender(player *playerlib.Player, stack *playerlib.UnitStack) {
+    stackUnits := stack.Units()
+
+    for _, i := range rand.Perm(len(stackUnits)) {
+        unit := stackUnits[i]
+        positions := game.FindEscapePosition(player, unit)
+
+        // kill unit if it can not move
+        if len(positions) == 0 {
+            player.RemoveUnit(unit)
+            continue
+        }
+
+        // set to a random position
+        position := positions[rand.IntN(len(positions))]
+        unit.SetX(position.X)
+        unit.SetY(position.Y)
+
+        // merge stacks
+        stack.RemoveUnit(unit)
+        player.AddStack(playerlib.MakeUnitStackFromUnits([]units.StackUnit{unit}))
+        allStacks := player.FindAllStacks(position.X, position.Y, unit.GetPlane())
+        for i := 1; i < len(allStacks); i++ {
+            player.MergeStacks(allStacks[0], allStacks[i])
+        }
     }
 }
 
@@ -3866,11 +3947,9 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     create := decision.(*playerlib.AICreateUnitDecision)
                     log.Printf("ai %v creating %+v", player.Wizard.Name, create)
 
-                    existingStack := player.FindStack(create.X, create.Y, create.Plane)
-                    if existingStack == nil || len(existingStack.Units()) < 9 {
-                        overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
-                        player.AddUnit(overworldUnit)
-                    }
+                    overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+                    player.AddUnit(overworldUnit)
+                    game.ResolveStackAt(create.X, create.Y, create.Plane)
                 case *playerlib.AIBuildOutpostDecision:
                     build := decision.(*playerlib.AIBuildOutpostDecision)
 
@@ -4437,6 +4516,8 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     var state combat.CombatState
     var defeatedDefenders int
     var defeatedAttackers int
+    var recalledAttackers []units.StackUnit
+    var recalledDefenders []units.StackUnit
 
     oldDrawer := game.Drawer
     var combatScreen *combat.CombatScreen
@@ -4482,6 +4563,13 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         defeatedDefenders = combatScreen.Model.DefeatedDefenders
         defeatedAttackers = combatScreen.Model.DefeatedAttackers
+
+        for _, unit := range combatScreen.Model.AttackingArmy.RecalledUnits {
+            recalledAttackers = append(recalledAttackers, unit.Unit.(units.StackUnit))
+        }
+        for _, unit := range combatScreen.Model.DefendingArmy.RecalledUnits {
+            recalledDefenders = append(recalledDefenders, unit.Unit.(units.StackUnit))
+        }
     }
 
     // experience
@@ -4653,7 +4741,15 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     // ebiten.SetCursorMode(ebiten.CursorModeVisible)
 
-    // FIXME: handle spells like recall hero
+    // recall units
+    relocateUnits := func(player *playerlib.Player, units []units.StackUnit) {
+        for _, unit := range units {
+            game.RelocateUnit(player, unit)
+        }
+    }
+
+    relocateUnits(attacker, recalledAttackers)
+    relocateUnits(defender, recalledDefenders)
 
     // remove dead units
     killUnits := func (player *playerlib.Player, stack *playerlib.UnitStack, landscape combat.CombatLandscape){
@@ -6660,6 +6756,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 }
                 overworldUnit.AddExperience(newUnit.Experience)
                 player.AddUnit(overworldUnit)
+                game.ResolveStackAt(city.X, city.Y, city.Plane)
 
                 if player.AIBehavior != nil {
                     player.AIBehavior.ProducedUnit(city, player)
@@ -7899,4 +7996,22 @@ func (game *Game) CastingDetectableByHuman(caster *playerlib.Player) bool {
         }
     }
     return false
+}
+
+func (game *Game) RelocateUnit(player *playerlib.Player, unit units.StackUnit) {
+    summonCity := player.FindSummoningCity()
+    if summonCity == nil {
+        return
+    }
+
+    player.UpdateUnitLocation(unit, summonCity.X, summonCity.Y, summonCity.Plane)
+
+    allStacks := player.FindAllStacks(summonCity.X, summonCity.Y, summonCity.Plane)
+    for i := 1; i < len(allStacks); i++ {
+        player.MergeStacks(allStacks[0], allStacks[i])
+    }
+
+    game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
+
+    unit.SetBusy(units.BusyStatusNone)
 }

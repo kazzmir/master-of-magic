@@ -193,18 +193,15 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                return true
             }
             after := func (unit units.StackUnit) bool {
-                unit.RemoveEnchantment(data.UnitEnchantmentLycanthropy)
                 overworldUnit, ok := unit.(*units.OverworldUnit)
                 if ok {
-                    // damage := overworldUnit.GetMaxHealth() - overworldUnit.Health
                     overworldUnit.Unit = units.WereWolf
-                    // overworldUnit.Health = overworldUnit.GetMaxHealth() - damage
                     overworldUnit.Experience = 0
                     // unit keeps weapon bonus and enchantments
                 }
                 return true
             }
-            game.doCastUnitEnchantmentFull(player, spell, data.UnitEnchantmentLycanthropy, before, after)
+            game.doCastOnUnit(player, spell, 4, before, after)
 
         /*
             TOWN ENCHANTMENTS
@@ -421,7 +418,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Great Unsummoning
                 Spell Binding
                 Stasis
-                Word of Recall
                 Fire Storm
                 Black Wind
                 Death Wish
@@ -549,6 +545,31 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 return true
             }
             game.doCastNewCityBuilding(spell, player, LocationTypeFriendlyCity, building.BuildingFortress, "Your fortress is already in this city", after)
+        case "Word of Recall":
+            before := func (unit units.StackUnit) bool {
+                summonCity := player.FindSummoningCity()
+                if summonCity == nil {
+                    return false
+                }
+
+                if unit.GetX() == summonCity.X && unit.GetY() == summonCity.Y {
+                    game.Events <- &GameEventNotice{Message: "Your unit is already in this city"}
+                    return false
+                }
+
+                if unit.GetPlane() != summonCity.Plane && game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
+                    game.Events <- &GameEventNotice{Message: "Your unit cannot planar travel to this location"}
+                    return false
+                }
+
+               return true
+            }
+            after := func (unit units.StackUnit) bool {
+                game.RelocateUnit(player, unit)
+
+                return true
+            }
+            game.doCastOnUnit(player, spell, 1, before, after)
 
         default:
             log.Printf("Warning: casting unhandled spell '%v'", spell.Name)
@@ -639,7 +660,7 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
     }
 }
 
-func (game *Game) doCastUnitEnchantmentFull(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment, before UnitEnchantmentCallback, after UnitEnchantmentCallback) {
+func (game *Game) doCastOnUnit(player *playerlib.Player, spell spellbook.Spell, animationIndex int, before UnitEnchantmentCallback, after UnitEnchantmentCallback) {
     var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
     selected = func (yield coroutine.YieldFunc, tileX int, tileY int){
         game.doMoveCamera(yield, tileX, tileY)
@@ -652,19 +673,12 @@ func (game *Game) doCastUnitEnchantmentFull(player *playerlib.Player, spell spel
             return
         }
 
-        if unit.HasEnchantment(enchantment) {
-            game.Events <- &GameEventNotice{Message: fmt.Sprintf("That unit already has %v cast on it", spell.Name)}
-            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
-            return
-        }
-
         if !before(unit) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
             return
         }
 
-        game.doCastOnMap(yield, tileX, tileY, enchantment.CastAnimationIndex(), false, spell.Sound, func (x int, y int, animationFrame int) {})
-        unit.AddEnchantment(enchantment)
+        game.doCastOnMap(yield, tileX, tileY, animationIndex, false, spell.Sound, func (x int, y int, animationFrame int) {})
 
         after(unit)
 
@@ -672,6 +686,26 @@ func (game *Game) doCastUnitEnchantmentFull(player *playerlib.Player, spell spel
     }
 
     game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+}
+
+func (game *Game) doCastUnitEnchantmentFull(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment, customBefore UnitEnchantmentCallback, customAfter UnitEnchantmentCallback) {
+    before := func (unit units.StackUnit) bool {
+        if unit.HasEnchantment(enchantment) {
+            game.Events <- &GameEventNotice{Message: fmt.Sprintf("That unit already has %v cast on it", spell.Name)}
+            return false
+        }
+
+        return customBefore(unit)
+    }
+
+    after := func (unit units.StackUnit) bool {
+        unit.AddEnchantment(enchantment)
+
+        return customAfter(unit)
+    }
+
+    game.doCastOnUnit(player, spell, enchantment.CastAnimationIndex(), before, after)
+
 }
 
 func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {
@@ -803,6 +837,7 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
     if summonCity != nil {
         overworldUnit := units.MakeOverworldUnitFromUnit(unit, summonCity.X, summonCity.Y, summonCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
         player.AddUnit(overworldUnit)
+        game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
         game.RefreshUI()
     }
 }
