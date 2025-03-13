@@ -40,10 +40,9 @@ type Engine struct {
 }
 
 func createWarlockArmy(player *player.Player) *combat.Army {
-    return &combat.Army{
-        Player: player,
-        Units: []*combat.ArmyUnit{
-            /*
+    army := &combat.Army{Player: player}
+
+    /*
             &combat.ArmyUnit{
                 Unit: units.HighElfSpearmen,
                 Facing: units.FacingDownRight,
@@ -52,12 +51,15 @@ func createWarlockArmy(player *player.Player) *combat.Army {
                 Health: units.HighElfSpearmen.GetMaxHealth(),
             },
             */
-            &combat.ArmyUnit{
-                Unit: units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
-                Facing: units.FacingDownRight,
-                X: 12,
-                Y: 10,
-            },
+            /*
+    unit1 := &combat.ArmyUnit{
+        Unit: units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
+        Facing: units.FacingDownRight,
+        X: 12,
+        Y: 10,
+    },
+    */
+    unit1 := units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo())
             /*
             &combat.ArmyUnit{
                 Unit: units.HighElfSpearmen,
@@ -74,8 +76,9 @@ func createWarlockArmy(player *player.Player) *combat.Army {
                 Health: units.HighElfSpearmen.GetMaxHealth(),
             },
             */
-        },
-    }
+
+    army.AddUnit(unit1)
+    return army
 }
 
 func createWarlockArmyN(player *player.Player, count int) *combat.Army {
@@ -132,90 +135,50 @@ func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
 }
 
 func createHighMenBowmanArmy(player *player.Player) *combat.Army {
-    return &combat.Army{
-        Player: player,
-        Units: []*combat.ArmyUnit{
-            &combat.ArmyUnit{
-                Unit: units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
-                Facing: units.FacingDownRight,
-                X: 12,
-                Y: 10,
-            },
-        },
-    }
+    army := combat.Army{Player: player}
+    unit := units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo())
+    army.AddUnit(unit)
+    return &army
 }
 
 func createGreatDrakeArmy(player *player.Player) *combat.Army{
-    return &combat.Army{
-        Player: player,
-        Units: []*combat.ArmyUnit{
-            &combat.ArmyUnit{
-                Unit: units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
-                Facing: units.FacingUpLeft,
-                X: 10,
-                Y: 17,
-            },
-            &combat.ArmyUnit{
-                Unit: units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
-                Facing: units.FacingUpLeft,
-                X: 9,
-                Y: 18,
-            },
-        },
-    }
+    army := combat.Army{Player: player}
+    army.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+    army.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+    return &army
 }
 
 func createSettlerArmy(player *player.Player, count int) *combat.Army{
-    var armyUnits []*combat.ArmyUnit
+    army := combat.Army{Player: player}
 
-    for i := 0; i < count; i++ {
-        armyUnits = append(armyUnits, &combat.ArmyUnit{
-            Unit: units.MakeOverworldUnitFromUnit(units.HighElfSettlers, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
-            Facing: units.FacingUpLeft,
-            X: 10,
-            Y: 17,
-        })
+    for range count {
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSettlers, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
     }
 
-    return &combat.Army{
-        Player: player,
-        Units: armyUnits,
-    }
+    return &army
 }
 
 func createArchAngelArmy(player *player.Player) *combat.Army {
-    var armyUnits []*combat.ArmyUnit
+    army := combat.Army{Player: player}
 
-    armyUnits = append(armyUnits, &combat.ArmyUnit{
-        Unit: units.MakeOverworldUnitFromUnit(units.ArchAngel, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
-    })
+    army.AddUnit(units.MakeOverworldUnitFromUnit(units.ArchAngel, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
 
-    return &combat.Army{
-        Player: player,
-        Units: armyUnits,
-    }
+    return &army
 }
 
 func createDeathCreatureArmy(player *player.Player) *combat.Army {
-    var armyUnits []*combat.ArmyUnit
+    army := combat.Army{Player: player}
 
-    armyUnits = append(armyUnits, &combat.ArmyUnit{
-        Unit: units.MakeOverworldUnitFromUnit(units.DemonLord, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
-    })
+    army.AddUnit(units.MakeOverworldUnitFromUnit(units.DemonLord, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
 
     // not death, but whatever
-    armyUnits = append(armyUnits, &combat.ArmyUnit{
-        Unit: units.MakeOverworldUnitFromUnit(units.HellHounds, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
-    })
+    army.AddUnit(units.MakeOverworldUnitFromUnit(units.HellHounds, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
 
-    return &combat.Army{
-        Player: player,
-        Units: armyUnits,
-    }
+    return &army
 }
 
-func createHeroArmy(player *player.Player, cache *lbx.LbxCache) *combat.Army{
-    var armyUnits []*combat.ArmyUnit
+func createHeroArmy(player *player.Player, cache *lbx.LbxCache) *combat.Army {
+    army := combat.Army{Player: player}
 
     rakir := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroRakir, "bubba")
 
@@ -232,9 +195,7 @@ func createHeroArmy(player *player.Player, cache *lbx.LbxCache) *combat.Army{
         },
     }
 
-    armyUnits = append(armyUnits, &combat.ArmyUnit{
-        Unit: rakir,
-    })
+    army.AddUnit(rakir)
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
@@ -255,29 +216,19 @@ func createHeroArmy(player *player.Player, cache *lbx.LbxCache) *combat.Army{
     torin := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroTorin, "warby")
     torin.Equipment[0] = &item
 
-    armyUnits = append(armyUnits, &combat.ArmyUnit{
-        Unit: torin,
-    })
+    army.AddUnit(torin)
 
-    return &combat.Army{
-        Player: player,
-        Units: armyUnits,
-    }
+    return &army
 }
 
 func createWeakArmy(player *player.Player) *combat.Army {
-    var armyUnits []*combat.ArmyUnit
+    army := combat.Army{Player: player}
 
     for range 2 {
-        armyUnits = append(armyUnits, &combat.ArmyUnit{
-            Unit: units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()),
-        })
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
     }
 
-    return &combat.Army{
-        Player: player,
-        Units: armyUnits,
-    }
+    return &army
 }
 
 type BasicCatchment struct {
@@ -316,8 +267,8 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingArmy := createLizardmenArmy(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
-    defendingArmy.Units[0].AddCurse(data.UnitCurseBlackSleep)
-    defendingArmy.Units[1].AddCurse(data.UnitCurseConfusion)
+    defendingArmy.GetUnits()[0].AddCurse(data.UnitCurseBlackSleep)
+    defendingArmy.GetUnits()[1].AddCurse(data.UnitCurseConfusion)
 
     /*
     defendingArmy.AddEnchantment(data.CombatEnchantmentCounterMagic)
@@ -396,7 +347,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     for range 2 {
-        attackingArmy.KillUnit(attackingArmy.Units[0])
+        attackingArmy.KillUnit(attackingArmy.GetUnits()[0])
     }
 
     // attackingArmy.Units[0].AddCurse(data.UnitCurseConfusion)
@@ -690,22 +641,20 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
 
     attackingArmy := createArchAngelArmy(attackingPlayer)
 
-    attackingArmy.Units = append(attackingArmy.Units, &combat.ArmyUnit{
-        Unit: units.MakeOverworldUnitFromUnit(units.GiantSpiders, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()),
-    })
+    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GiantSpiders, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()))
 
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     attackingArmy.AddEnchantment(data.CombatEnchantmentWrack)
 
-    for _, unit := range attackingArmy.Units {
+    for _, unit := range attackingArmy.GetUnits() {
         unit.AddCurse(data.UnitCurseVertigo)
         unit.AddCurse(data.UnitCurseShatter)
     }
 
     defendingArmy.AddEnchantment(data.CombatEnchantmentEntangle)
 
-    for _, unit := range defendingArmy.Units {
+    for _, unit := range defendingArmy.GetUnits() {
         unit.AddEnchantment(data.UnitEnchantmentGiantStrength)
         unit.AddEnchantment(data.UnitEnchantmentHolyArmor)
     }

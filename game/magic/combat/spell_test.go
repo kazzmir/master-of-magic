@@ -198,7 +198,7 @@ func TestFireballSpell(test *testing.T){
     spellObject := &TestSpellSystem{
         createFireballProjectile: func (target *ArmyUnit, cost int) *Projectile {
             createdFireball = true
-            if target != defendingArmy.Units[0] {
+            if target != defendingArmy.units[0] {
                 test.Errorf("Expected the defender to be targeted")
             }
 
@@ -217,7 +217,7 @@ func TestFireballSpell(test *testing.T){
                 test.Errorf("Expected event to be select unit")
             }
 
-            selectUnit.SelectTarget(defendingArmy.Units[0])
+            selectUnit.SelectTarget(defendingArmy.units[0])
         default:
             test.Errorf("Expected select unit event")
     }

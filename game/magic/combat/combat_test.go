@@ -157,9 +157,9 @@ func TestBasicMelee(test *testing.T){
 
     observer := &TestObserver{
         Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
-            if attackingArmy.Units[0] == meleeAttacker {
+            if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee = true
-            } else if defendingArmy.Units[0] == meleeAttacker {
+            } else if defendingArmy.units[0] == meleeAttacker {
                 defenderMelee = true
             }
         },
@@ -167,7 +167,7 @@ func TestBasicMelee(test *testing.T){
     combat.Observer.AddObserver(observer)
 
     // even if both units kill each other, they both get to attack
-    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+    combat.meleeAttack(attackingArmy.units[0], defendingArmy.units[0])
 
     if !attackerMelee || !defenderMelee {
         test.Errorf("Error: attacker and defender should have both attacked")
@@ -206,9 +206,9 @@ func TestAttackerHaste(test *testing.T){
 
     observer := &TestObserver{
         Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
-            if attackingArmy.Units[0] == meleeAttacker {
+            if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee += 1
-            } else if defendingArmy.Units[0] == meleeAttacker {
+            } else if defendingArmy.units[0] == meleeAttacker {
                 defenderMelee += 1
             }
         },
@@ -216,7 +216,7 @@ func TestAttackerHaste(test *testing.T){
     combat.Observer.AddObserver(observer)
 
     // attacker should get to attack twice
-    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+    combat.meleeAttack(attackingArmy.units[0], defendingArmy.units[0])
 
     if attackerMelee != 2 {
         test.Errorf("Error: attacker should have attacked twice")
@@ -263,9 +263,9 @@ func TestFirstStrike(test *testing.T){
 
     observer := &TestObserver{
         Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
-            if attackingArmy.Units[0] == meleeAttacker {
+            if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee += 1
-            } else if defendingArmy.Units[0] == meleeAttacker {
+            } else if defendingArmy.units[0] == meleeAttacker {
                 defenderMelee += 1
             }
         },
@@ -273,7 +273,7 @@ func TestFirstStrike(test *testing.T){
     combat.Observer.AddObserver(observer)
 
     // attacker should get to attack first
-    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+    combat.meleeAttack(attackingArmy.units[0], defendingArmy.units[0])
 
     if attackerMelee != 1 {
         test.Errorf("Error: attacker should have attacked once")
@@ -323,16 +323,16 @@ func TestFirstStrikeNegate(test *testing.T){
 
     observer := &TestObserver{
         Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
-            if attackingArmy.Units[0] == meleeAttacker {
+            if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee += 1
-            } else if defendingArmy.Units[0] == meleeAttacker {
+            } else if defendingArmy.units[0] == meleeAttacker {
                 defenderMelee += 1
             }
         },
     }
     combat.Observer.AddObserver(observer)
 
-    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+    combat.meleeAttack(attackingArmy.units[0], defendingArmy.units[0])
 
     if attackerMelee != 1 {
         test.Errorf("Error: attacker should have attacked once")
@@ -381,21 +381,21 @@ func TestThrowAttack(test *testing.T){
 
     observer := &TestObserver{
         Throw: func(throwAttacker *ArmyUnit, throwDefender *ArmyUnit, damage int){
-            if throwAttacker == attackingArmy.Units[0] {
+            if throwAttacker == attackingArmy.units[0] {
                 attackerThrow += 1
             }
         },
         Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
-            if attackingArmy.Units[0] == meleeAttacker {
+            if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee += 1
-            } else if defendingArmy.Units[0] == meleeAttacker {
+            } else if defendingArmy.units[0] == meleeAttacker {
                 defenderMelee += 1
             }
         },
     }
     combat.Observer.AddObserver(observer)
 
-    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+    combat.meleeAttack(attackingArmy.units[0], defendingArmy.units[0])
 
     if attackerThrow != 1 {
         test.Errorf("Error: attacker should have thrown once")
@@ -453,26 +453,26 @@ func TestThrownTouchAttack(test *testing.T){
 
     observer := &TestObserver{
         Throw: func(throwAttacker *ArmyUnit, throwDefender *ArmyUnit, damage int){
-            if throwAttacker == attackingArmy.Units[0] {
+            if throwAttacker == attackingArmy.units[0] {
                 attackerThrow += 1
             }
         },
         PoisonTouch: func(poisonAttacker *ArmyUnit, poisonDefender *ArmyUnit, damage int){
-            if attackingArmy.Units[0] == poisonAttacker {
+            if attackingArmy.units[0] == poisonAttacker {
                 attackerPoison += 1
             }
         },
         Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
-            if attackingArmy.Units[0] == meleeAttacker {
+            if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee += 1
-            } else if defendingArmy.Units[0] == meleeAttacker {
+            } else if defendingArmy.units[0] == meleeAttacker {
                 defenderMelee += 1
             }
         },
     }
     combat.Observer.AddObserver(observer)
 
-    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+    combat.meleeAttack(attackingArmy.units[0], defendingArmy.units[0])
 
     if attackerThrow != 1 {
         test.Errorf("Error: attacker should have thrown once")
@@ -529,14 +529,14 @@ func TestFear(test *testing.T){
 
     observer := &TestObserver{
         Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
-            if attackingArmy.Units[0] == meleeAttacker {
+            if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee += 1
-            } else if defendingArmy.Units[0] == meleeAttacker {
+            } else if defendingArmy.units[0] == meleeAttacker {
                 defenderMelee += 1
             }
         },
         Fear: func(fearAttacker *ArmyUnit, fearDefender *ArmyUnit, fear int){
-            if fearAttacker != attackingArmy.Units[0] {
+            if fearAttacker != attackingArmy.units[0] {
                 test.Errorf("Error: attacker should have caused fear")
             }
 
@@ -547,7 +547,7 @@ func TestFear(test *testing.T){
     }
     combat.Observer.AddObserver(observer)
 
-    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+    combat.meleeAttack(attackingArmy.units[0], defendingArmy.units[0])
 
     if attackerMelee != 1 {
         test.Errorf("Error: attacker should have attacked once")
@@ -586,15 +586,15 @@ func TestCounterAttackPenalty(test *testing.T){
 
     combat.Initialize(spellbook.Spells{}, 0, 0)
 
-    if defendingArmy.Units[0].GetCounterAttackToHit() != 30 {
+    if defendingArmy.units[0].GetCounterAttackToHit() != 30 {
         test.Errorf("Error: defender should have normal 30%% counter attack to-hit")
     }
 
     // attack twice
-    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
-    combat.meleeAttack(attackingArmy.Units[0], defendingArmy.Units[0])
+    combat.meleeAttack(attackingArmy.units[0], defendingArmy.units[0])
+    combat.meleeAttack(attackingArmy.units[0], defendingArmy.units[0])
 
-    if defendingArmy.Units[0].GetCounterAttackToHit() != 20 {
+    if defendingArmy.units[0].GetCounterAttackToHit() != 20 {
         test.Errorf("Error: defender should have 20%% counter attack to-hit")
     }
 }
