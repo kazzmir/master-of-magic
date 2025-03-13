@@ -642,7 +642,7 @@ func (unit *ArmyUnit) GetRangedAttackDamageType() units.Damage {
 }
 
 func (unit *ArmyUnit) GetDamage() int {
-    return unit.Unit.GetMaxHealth() - unit.Unit.GetHealth()
+    return unit.Unit.GetDamage()
 }
 
 func (unit *ArmyUnit) GetRealm() data.MagicType {
@@ -2421,7 +2421,6 @@ func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, uni
     newUnit := ArmyUnit{
         Unit: &units.OverworldUnit{
             Unit: unit,
-            Health: unit.GetMaxHealth(),
         },
         Facing: facing,
         Moving: false,

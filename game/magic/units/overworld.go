@@ -34,7 +34,8 @@ type OverworldUnit struct {
     X int
     Y int
     Id uint64
-    Health int
+    Damage int
+    // Health int
     // to get the level, use the conversion functions in experience.go
     Experience int
     WeaponBonus data.WeaponBonus
@@ -263,14 +264,15 @@ func (unit *OverworldUnit) GetRawUnit() Unit {
     return unit.Unit
 }
 
+// amount is a positive number to heal
 func (unit *OverworldUnit) AdjustHealth(amount int) {
-    unit.Health += amount
-    if unit.Health < 0 {
-        unit.Health = 0
+    unit.Damage -= amount
+    if unit.Damage < 0 {
+        unit.Damage = 0
     }
 
-    if unit.Health > unit.GetMaxHealth() {
-        unit.Health = unit.GetMaxHealth()
+    if unit.Damage > unit.GetMaxHealth() {
+        unit.Damage = unit.GetMaxHealth()
     }
 }
 
@@ -291,7 +293,11 @@ func (unit *OverworldUnit) GetCombatRangeIndex(facing Facing) int {
 }
 
 func (unit *OverworldUnit) GetHealth() int {
-    return unit.Health
+    return unit.GetMaxHealth() - unit.Damage
+}
+
+func (unit *OverworldUnit) GetDamage() int {
+    return unit.Damage
 }
 
 func (unit *OverworldUnit) GetMaxHealth() int {
@@ -731,7 +737,6 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
         Banner: banner,
         Plane: plane,
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
-        Health: unit.GetMaxHealth(),
         ExperienceInfo: experienceInfo,
         X: x,
         Y: y,

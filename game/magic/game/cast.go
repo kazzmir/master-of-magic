@@ -196,9 +196,9 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 unit.RemoveEnchantment(data.UnitEnchantmentLycanthropy)
                 overworldUnit, ok := unit.(*units.OverworldUnit)
                 if ok {
-                    damage := overworldUnit.GetMaxHealth() - overworldUnit.Health
+                    // damage := overworldUnit.GetMaxHealth() - overworldUnit.Health
                     overworldUnit.Unit = units.WereWolf
-                    overworldUnit.Health = overworldUnit.GetMaxHealth() - damage
+                    // overworldUnit.Health = overworldUnit.GetMaxHealth() - damage
                     overworldUnit.Experience = 0
                     // unit keeps weapon bonus and enchantments
                 }

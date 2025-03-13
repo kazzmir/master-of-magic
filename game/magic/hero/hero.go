@@ -525,17 +525,21 @@ func (hero *Hero) GetHireFee() int {
 }
 
 func (hero *Hero) AdjustHealth(amount int) {
-    hero.Unit.Health += amount
-    if hero.Unit.Health < 0 {
-        hero.Unit.Health = 0
+    hero.Unit.Damage -= amount
+    if hero.Unit.Damage < 0 {
+        hero.Unit.Damage = 0
     }
-    if hero.Unit.Health > hero.GetMaxHealth() {
-        hero.Unit.Health = hero.GetMaxHealth()
+    if hero.Unit.Damage > hero.GetMaxHealth() {
+        hero.Unit.Damage = hero.GetMaxHealth()
     }
 
     if hero.GetHealth() <= 0 {
         hero.SetStatus(StatusDead)
     }
+}
+
+func (hero *Hero) GetDamage() int {
+    return hero.Unit.Damage
 }
 
 func (hero *Hero) GetBusy() units.BusyStatus {

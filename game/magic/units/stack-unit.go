@@ -82,6 +82,7 @@ type StackUnit interface {
     GetAttackSound() AttackSound
     GetCombatRangeIndex(Facing) int
     GetHealth() int
+    GetDamage() int
     GetMaxHealth() int
     GetMovementSound() MovementSound
     GetRangeAttackSound() RangeAttackSound
