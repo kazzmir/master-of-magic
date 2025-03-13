@@ -66,7 +66,7 @@ func (map_ *Map) Copy() *Map {
     }
 }
 
-func (map_ *Map) findContinent(seen map[image.Point]bool, x int, y int) Continent {
+func (map_ *Map) findContinent(seen map[image.Point]struct{}, x int, y int) Continent {
     rows := map_.Rows()
     columns := map_.Columns()
 
@@ -87,7 +87,7 @@ func (map_ *Map) findContinent(seen map[image.Point]bool, x int, y int) Continen
                 continue
             }
 
-            seen[image.Pt(x, y)] = true
+            seen[image.Pt(x, y)] = struct{}{}
 
             if GetTile(map_.Terrain[x][y]).IsLand() {
                 continent = append(continent, image.Pt(x, y))
@@ -116,11 +116,11 @@ func (map_ *Map) findContinent(seen map[image.Point]bool, x int, y int) Continen
 
 // given a point on a continent, return all the points for that continent
 func (map_ *Map) FindContinent(x int, y int) Continent {
-    return map_.findContinent(make(map[image.Point]bool), x, y)
+    return map_.findContinent(make(map[image.Point]struct{}), x, y)
 }
 
 func (map_ *Map) FindContinents() []Continent {
-    seen := make(map[image.Point]bool)
+    seen := make(map[image.Point]struct{})
 
     var continents []Continent
 
@@ -278,9 +278,9 @@ func (map_ *Map) generateLandCellularAutomata(plane data.Plane){
 }
 
 // put down other tiles like forests, mountains, special nodes, etc
-func (map_ *Map) placeRandomTerrainTiles(plane data.Plane){
+func (map_ *Map) placeRandomTerrainTiles(plane data.Plane, continents []Continent) {
 
-    continents := map_.FindContinents()
+    // continents := map_.FindContinents()
 
     randomGrasslands := func(y int) int {
         choices := []int{
@@ -376,8 +376,8 @@ func (map_ *Map) placeRandomTerrainTiles(plane data.Plane){
     }
 }
 
-func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane) {
-    continents := map_.FindContinents()
+func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane, continents []Continent) {
+    // continents := map_.FindContinents()
 
     getSides := func(point image.Point) (*set.Set[image.Point], *set.Set[TerrainType]) {
         // get points and terrains on cardinal sides of a point
@@ -566,9 +566,12 @@ func (map_ *Map) getTerrainAt(x int, y int, data *TerrainData) TerrainType {
     return data.Tiles[index].Tile.TerrainType()
 }
 
-// given a position in the terrain matrix, find a tile that fits the tile and all its neighbors
 func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) (int, error) {
-    region := make(map[Direction]TerrainType)
+    return map_.resolveTile(x, y, data, plane, make(map[Direction]TerrainType))
+}
+
+// given a position in the terrain matrix, find a tile that fits the tile and all its neighbors
+func (map_ *Map) resolveTile(x int, y int, data *TerrainData, plane data.Plane, region map[Direction]TerrainType) (int, error) {
     region[Center] = map_.getTerrainAt(x, y, data)
     region[West] = map_.getTerrainAt(x-1, y, data)
     region[NorthWest] = map_.getTerrainAt(x-1, y-1, data)
@@ -610,9 +613,10 @@ func (map_ *Map) ResolveTile(x int, y int, data *TerrainData, plane data.Plane) 
 }
 
 func (map_ *Map) ResolveTiles(data *TerrainData, plane data.Plane) {
+    region := make(map[Direction]TerrainType)
     for x := 0; x < map_.Columns(); x++ {
         for y := 0; y < map_.Rows(); y++ {
-            choice, err := map_.ResolveTile(x, y, data, plane)
+            choice, err := map_.resolveTile(x, y, data, plane, region)
             if err == nil {
                 map_.Terrain[x][y] = choice
             }
@@ -671,8 +675,9 @@ func GenerateLandCellularAutomata(columns int, rows int, data *TerrainData, plan
     map_ := MakeMap(rows, columns)
     map_.generateLandCellularAutomata(plane)
     map_.removeSmallIslands(100, plane)
-    map_.placeRandomTerrainTiles(plane)
-    map_.placeRivers(100, data, plane)
+    continents := map_.FindContinents()
+    map_.placeRandomTerrainTiles(plane, continents)
+    map_.placeRivers(100, data, plane, continents)
     map_.ResolveTiles(data, plane)
     end := time.Now()
     log.Printf("Generated %vx%v %v map in %v", columns, rows, plane, end.Sub(start))
