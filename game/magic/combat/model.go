@@ -1653,6 +1653,18 @@ func (army *Army) RemoveEnchantment(enchamtent data.CombatEnchantment) {
     })
 }
 
+// remove mutations done to the underlying stack units
+func (army *Army) Cleanup() {
+    // loop through all unit references and set the enchantment provider to nil
+    for _, unit := range army.KilledUnits {
+        unit.Unit.SetEnchantmentProvider(nil)
+    }
+
+    for _, unit := range army.units {
+        unit.Unit.SetEnchantmentProvider(nil)
+    }
+}
+
 func (army *Army) GetUnits() []*ArmyUnit {
     return army.units
 }
@@ -3441,6 +3453,8 @@ func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
         model.AttackingArmy.RemoveUnit(unit)
     }
 
+    unit.Unit.SetEnchantmentProvider(nil)
+
     model.Tiles[unit.Y][unit.X].Unit = nil
 
     if unit == model.SelectedUnit {
@@ -3588,6 +3602,9 @@ func (model *CombatModel) Finish() {
 
     killUnits(model.DefendingArmy)
     killUnits(model.AttackingArmy)
+
+    model.DefendingArmy.Cleanup()
+    model.AttackingArmy.Cleanup()
 }
 
 // returns true if the spell should be dispelled (due to counter magic, magic nodes, etc)
