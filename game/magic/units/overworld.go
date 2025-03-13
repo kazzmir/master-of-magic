@@ -43,6 +43,8 @@ type OverworldUnit struct {
     Busy BusyStatus
 
     Enchantments []data.UnitEnchantment
+
+    // this should be set during combat to the ArmyUnit, and unset at all other times
     ExtraEnchantments EnchantmentProvider
 }
 
