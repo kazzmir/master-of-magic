@@ -797,6 +797,18 @@ func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) *Projectil
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, heal)
 }
 
+func (combat *CombatScreen) CreateHeroismProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: the images should be mostly with with transparency
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentHeroism)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
     explodeImages := images
@@ -2318,7 +2330,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
 
     // try a ranged attack first
     if aiUnit.RangedAttacks > 0 {
-        candidates := slices.Clone(otherArmy.Units)
+        candidates := slices.Clone(otherArmy.units)
         slices.SortFunc(candidates, func (a *ArmyUnit, b *ArmyUnit) int {
             return cmp.Compare(computeTileDistance(aiUnit.X, aiUnit.Y, a.X, a.Y), computeTileDistance(aiUnit.X, aiUnit.Y, b.X, b.Y))
         })
@@ -2331,7 +2343,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         }
     }
 
-    for _, unit := range otherArmy.Units {
+    for _, unit := range otherArmy.units {
         if combat.withinMeleeRange(aiUnit, unit) && combat.Model.canMeleeAttack(aiUnit, unit) {
             combat.doMelee(yield, aiUnit, unit)
             return
@@ -2390,7 +2402,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
     }
 
     // should filter by enemies that we can attack, so non-flyers do not move toward flyers
-    candidates := filterReachable(slices.Clone(otherArmy.Units))
+    candidates := filterReachable(slices.Clone(otherArmy.units))
 
     slices.SortFunc(candidates, func (a *ArmyUnit, b *ArmyUnit) int {
         aPath := getPath(a)
@@ -2483,13 +2495,13 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         return CombatStateDefenderFlee
     }
 
-    if len(combat.Model.AttackingArmy.Units) == 0 {
+    if len(combat.Model.AttackingArmy.units) == 0 {
         combat.Model.AddLogEvent("Defender wins!")
         combat.Model.Finish()
         return CombatStateDefenderWin
     }
 
-    if len(combat.Model.DefendingArmy.Units) == 0 {
+    if len(combat.Model.DefendingArmy.units) == 0 {
         combat.Model.AddLogEvent("Attacker wins!")
         combat.Model.Finish()
         return CombatStateAttackerWin
@@ -3415,12 +3427,12 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
     }
 
     // sort units in top down order before drawing them
-    allUnits := make([]*ArmyUnit, 0, len(combat.Model.DefendingArmy.Units) + len(combat.Model.AttackingArmy.Units))
-    for _, unit := range combat.Model.DefendingArmy.Units {
+    allUnits := make([]*ArmyUnit, 0, len(combat.Model.DefendingArmy.units) + len(combat.Model.AttackingArmy.units))
+    for _, unit := range combat.Model.DefendingArmy.units {
         allUnits = append(allUnits, unit)
     }
 
-    for _, unit := range combat.Model.AttackingArmy.Units {
+    for _, unit := range combat.Model.AttackingArmy.units {
         allUnits = append(allUnits, unit)
     }
 

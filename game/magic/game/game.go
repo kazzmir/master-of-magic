@@ -4542,7 +4542,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         attackerFame += winner
         defenderFame += loser
 
-        for _, unit := range attackingArmy.Units {
+        for _, unit := range attackingArmy.GetUnits() {
             if unit.Unit.GetHealth() > 0 {
                 attackerStack.AddUnit(unit.Unit)
                 unit.Unit.SetBanner(attacker.GetBanner())
@@ -4555,7 +4555,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         defenderFame += winner
         attackerFame += loser
 
-        for _, unit := range defendingArmy.Units {
+        for _, unit := range defendingArmy.GetUnits() {
             if unit.Unit.GetHealth() > 0 {
                 defenderStack.AddUnit(unit.Unit)
                 unit.Unit.SetBanner(defender.GetBanner())
