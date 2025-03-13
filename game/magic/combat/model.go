@@ -3988,7 +3988,8 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 castedCallback()
             }, targetAny)
         case "Word of Recall":
-            // FIXME:  check planar seal and summoning circle?
+            // FIXME: check planar seal and summoning circle?
+            // FIXME: not summoned units
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWordOfRecallProjectile(target))
                 castedCallback()
