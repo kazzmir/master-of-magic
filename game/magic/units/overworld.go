@@ -21,6 +21,10 @@ const (
     BusyStatusPatrol // any unit can patrol
 )
 
+type EnchantmentProvider interface {
+    HasEnchantmentOnly(data.UnitEnchantment) bool
+}
+
 type OverworldUnit struct {
     ExperienceInfo ExperienceInfo
     Unit Unit
@@ -39,6 +43,7 @@ type OverworldUnit struct {
     Busy BusyStatus
 
     Enchantments []data.UnitEnchantment
+    ExtraEnchantments EnchantmentProvider
 }
 
 func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
@@ -50,7 +55,7 @@ func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
 }
 
 func (unit *OverworldUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
-    return slices.Contains(unit.Enchantments, enchantment)
+    return slices.Contains(unit.Enchantments, enchantment) || (unit.ExtraEnchantments != nil && unit.ExtraEnchantments.HasEnchantmentOnly(enchantment))
 }
 
 func (unit *OverworldUnit) GetBusy() BusyStatus {

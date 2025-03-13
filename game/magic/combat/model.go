@@ -1132,6 +1132,10 @@ func (unit *ArmyUnit) HasAbility(ability data.AbilityType) bool {
     return false
 }
 
+func (unit *ArmyUnit) HasEnchantmentOnly(enchantment data.UnitEnchantment) bool {
+    return slices.Contains(unit.Enchantments, enchantment)
+}
+
 func (unit *ArmyUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
     if unit.Unit.HasEnchantment(enchantment) {
         return true
