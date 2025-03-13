@@ -879,7 +879,8 @@ func (player *Player) MergeStacks(stack1 *UnitStack, stack2 *UnitStack) *UnitSta
 }
 
 // teleport/move the unit to a new location. The unit should be removed from its current stack and added to a whatever
-// stack exists at the given location
+// stack exists at the given location.
+// a presumption is that the unit is already part of the player's Units list. The unit is not added to the Units list in this method
 func (player *Player) UpdateUnitLocation(unit units.StackUnit, x int, y int, plane data.Plane) {
     oldStack := player.FindStackByUnit(unit)
     if oldStack != nil {
