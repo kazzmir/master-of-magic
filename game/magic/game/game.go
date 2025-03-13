@@ -3259,7 +3259,7 @@ func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
     game.Camera.Center(game.CurrentMap().WrapX(x), y)
 }
 
-// try to find a nearby position that the given stack can move to
+// try to find a nearby position that the given unit can move to
 func (game *Game) FindEscapePosition(player *playerlib.Player, unit units.StackUnit) []image.Point {
     x := unit.GetX()
     y := unit.GetY()
