@@ -8004,8 +8004,7 @@ func (game *Game) RelocateUnit(player *playerlib.Player, unit units.StackUnit) {
         return
     }
 
-    unit.SetX(summonCity.X)
-    unit.SetY(summonCity.Y)
+    player.UpdateUnitLocation(unit, summonCity.X, summonCity.Y, summonCity.Plane)
 
     allStacks := player.FindAllStacks(summonCity.X, summonCity.Y, summonCity.Plane)
     for i := 1; i < len(allStacks); i++ {
