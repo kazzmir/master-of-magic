@@ -57,6 +57,43 @@ func BenchmarkAngle(bench *testing.B){
     tmp(final)
 }
 
+func TestUnitHealth(test *testing.T) {
+    unit := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
+    armyUnit := ArmyUnit{
+        Unit: unit,
+    }
+
+    if armyUnit.Figures() != 8 {
+        test.Errorf("Error: figures should be 8")
+    }
+
+    if armyUnit.GetDamage() != 0 {
+        test.Errorf("Error: damage should be 0")
+    }
+
+    // each figure has 2 hp, so taking one damage should keep 8 figures
+    armyUnit.TakeDamage(1)
+
+    if armyUnit.Figures() != 8 {
+        test.Errorf("Error: figures should be 8")
+    }
+
+    if armyUnit.GetDamage() != 1 {
+        test.Errorf("Error: damage should be 1")
+    }
+
+    // kill one figure
+    armyUnit.TakeDamage(1)
+
+    if armyUnit.Figures() != 7 {
+        test.Errorf("Error: figures should be 7")
+    }
+
+    if armyUnit.GetDamage() != 2 {
+        test.Errorf("Error: damage should be 2")
+    }
+}
+
 type TestObserver struct {
     Melee func(attacker *ArmyUnit, defender *ArmyUnit, damageRoll int)
     Throw func(attacker *ArmyUnit, defender *ArmyUnit, defenderDamage int)
