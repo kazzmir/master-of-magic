@@ -3993,7 +3993,13 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWordOfRecallProjectile(target))
                 castedCallback()
-            }, targetAny)
+            }, func (target *ArmyUnit) bool {
+                if target.Summoned {
+                    return false
+                }
+
+                return true
+            })
         case "Disintegrate":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateDisintegrateProjectile(target))
