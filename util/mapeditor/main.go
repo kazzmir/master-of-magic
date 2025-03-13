@@ -168,8 +168,9 @@ func (editor *Editor) Update() error {
                 editor.setMap(makeEmptyMap(editor.Data, 100, 200, editor.Plane))
             case ebiten.KeyG:
                 start := time.Now()
-                towers := maplib.GeneratePlaneTowerPositions(0, 6)
-                editor.setMap(maplib.MakeMap(editor.Data, 0, data.MagicSettingNormal, data.DifficultyAverage, editor.Plane, nil, towers))
+                landSize := 0
+                towers := maplib.GeneratePlaneTowerPositions(landSize, 6)
+                editor.setMap(maplib.MakeMap(editor.Data, landSize, data.MagicSettingNormal, data.DifficultyAverage, editor.Plane, nil, towers))
                 end := time.Now()
                 log.Printf("Generate map took %v", end.Sub(start))
             case ebiten.KeyS:
