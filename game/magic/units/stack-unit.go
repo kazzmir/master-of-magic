@@ -31,6 +31,7 @@ type StackUnit interface {
     AddEnchantment(data.UnitEnchantment)
     HasEnchantment(data.UnitEnchantment) bool
     RemoveEnchantment(data.UnitEnchantment)
+    SetEnchantmentProvider(EnchantmentProvider)
 
     MeleeEnchantmentBonus(data.UnitEnchantment) int
     DefenseEnchantmentBonus(data.UnitEnchantment) int
@@ -81,6 +82,7 @@ type StackUnit interface {
     GetAttackSound() AttackSound
     GetCombatRangeIndex(Facing) int
     GetHealth() int
+    GetDamage() int
     GetMaxHealth() int
     GetMovementSound() MovementSound
     GetRangeAttackSound() RangeAttackSound

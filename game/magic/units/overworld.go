@@ -21,6 +21,10 @@ const (
     BusyStatusPatrol // any unit can patrol
 )
 
+type EnchantmentProvider interface {
+    HasEnchantmentOnly(data.UnitEnchantment) bool
+}
+
 type OverworldUnit struct {
     ExperienceInfo ExperienceInfo
     Unit Unit
@@ -30,7 +34,8 @@ type OverworldUnit struct {
     X int
     Y int
     Id uint64
-    Health int
+    Damage int
+    // Health int
     // to get the level, use the conversion functions in experience.go
     Experience int
     WeaponBonus data.WeaponBonus
@@ -39,6 +44,13 @@ type OverworldUnit struct {
     Busy BusyStatus
 
     Enchantments []data.UnitEnchantment
+
+    // this should be set during combat to the ArmyUnit, and unset at all other times
+    ExtraEnchantments EnchantmentProvider
+}
+
+func (unit *OverworldUnit) SetEnchantmentProvider(provider EnchantmentProvider) {
+    unit.ExtraEnchantments = provider
 }
 
 func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
@@ -50,7 +62,7 @@ func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
 }
 
 func (unit *OverworldUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
-    return slices.Contains(unit.Enchantments, enchantment)
+    return slices.Contains(unit.Enchantments, enchantment) || (unit.ExtraEnchantments != nil && unit.ExtraEnchantments.HasEnchantmentOnly(enchantment))
 }
 
 func (unit *OverworldUnit) GetBusy() BusyStatus {
@@ -252,14 +264,15 @@ func (unit *OverworldUnit) GetRawUnit() Unit {
     return unit.Unit
 }
 
+// amount is a positive number to heal
 func (unit *OverworldUnit) AdjustHealth(amount int) {
-    unit.Health += amount
-    if unit.Health < 0 {
-        unit.Health = 0
+    unit.Damage -= amount
+    if unit.Damage < 0 {
+        unit.Damage = 0
     }
 
-    if unit.Health > unit.GetMaxHealth() {
-        unit.Health = unit.GetMaxHealth()
+    if unit.Damage > unit.GetMaxHealth() {
+        unit.Damage = unit.GetMaxHealth()
     }
 }
 
@@ -280,7 +293,11 @@ func (unit *OverworldUnit) GetCombatRangeIndex(facing Facing) int {
 }
 
 func (unit *OverworldUnit) GetHealth() int {
-    return unit.Health
+    return unit.GetMaxHealth() - unit.Damage
+}
+
+func (unit *OverworldUnit) GetDamage() int {
+    return unit.Damage
 }
 
 func (unit *OverworldUnit) GetMaxHealth() int {
@@ -720,7 +737,6 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
         Banner: banner,
         Plane: plane,
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
-        Health: unit.GetMaxHealth(),
         ExperienceInfo: experienceInfo,
         X: x,
         Y: y,

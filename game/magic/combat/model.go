@@ -642,7 +642,7 @@ func (unit *ArmyUnit) GetRangedAttackDamageType() units.Damage {
 }
 
 func (unit *ArmyUnit) GetDamage() int {
-    return unit.Unit.GetMaxHealth() - unit.Unit.GetHealth()
+    return unit.Unit.GetDamage()
 }
 
 func (unit *ArmyUnit) GetRealm() data.MagicType {
@@ -1132,6 +1132,10 @@ func (unit *ArmyUnit) HasAbility(ability data.AbilityType) bool {
     return false
 }
 
+func (unit *ArmyUnit) HasEnchantmentOnly(enchantment data.UnitEnchantment) bool {
+    return slices.Contains(unit.Enchantments, enchantment)
+}
+
 func (unit *ArmyUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
     if unit.Unit.HasEnchantment(enchantment) {
         return true
@@ -1618,7 +1622,7 @@ type Army struct {
     Range fraction.Fraction
     // when counter magic is cast, this field tracks how much 'counter magic' strength is available to dispel
     CounterMagic int
-    Units []*ArmyUnit
+    units []*ArmyUnit
     KilledUnits []*ArmyUnit
     Auto bool
     Fled bool
@@ -1650,11 +1654,27 @@ func (army *Army) RemoveEnchantment(enchamtent data.CombatEnchantment) {
     })
 }
 
+// remove mutations done to the underlying stack units
+func (army *Army) Cleanup() {
+    // loop through all unit references and set the enchantment provider to nil
+    for _, unit := range army.KilledUnits {
+        unit.Unit.SetEnchantmentProvider(nil)
+    }
+
+    for _, unit := range army.units {
+        unit.Unit.SetEnchantmentProvider(nil)
+    }
+}
+
+func (army *Army) GetUnits() []*ArmyUnit {
+    return army.units
+}
+
 // a number that mostly represents the strength of this army
 func (army *Army) GetPower() int {
     power := 0
 
-    for _, unit := range army.Units {
+    for _, unit := range army.units {
         power += unit.GetPower()
     }
 
@@ -1669,15 +1689,18 @@ func (army *Army) IsAI() bool {
  * the units are laid out correctly
  */
 func (army *Army) AddUnit(unit units.StackUnit){
-    army.AddArmyUnit(&ArmyUnit{
+    armyUnit := &ArmyUnit{
         Unit: unit,
         Facing: units.FacingDownRight,
         // Health: unit.GetMaxHealth(),
-    })
+    }
+    // Warning: it is imperative that unit.SetEnchantmentProvider(nil) is called when combat ends
+    unit.SetEnchantmentProvider(armyUnit)
+    army.AddArmyUnit(armyUnit)
 }
 
 func (army *Army) AddArmyUnit(unit *ArmyUnit){
-    army.Units = append(army.Units, unit)
+    army.units = append(army.units, unit)
 }
 
 func (army *Army) LayoutUnits(team Team){
@@ -1696,7 +1719,7 @@ func (army *Army) LayoutUnits(team Team){
     cy := y
 
     row := 0
-    for _, unit := range army.Units {
+    for _, unit := range army.units {
         unit.X = cx
         unit.Y = cy
         unit.Facing = facing
@@ -1715,7 +1738,7 @@ func (army *Army) RaiseDeadUnit(unit *ArmyUnit, x int, y int){
     unit.RaiseFromDead()
     unit.X = x
     unit.Y = y
-    army.Units = append(army.Units, unit)
+    army.units = append(army.units, unit)
     army.KilledUnits = slices.DeleteFunc(army.KilledUnits, func(check *ArmyUnit) bool {
         return check == unit
     })
@@ -1727,15 +1750,9 @@ func (army *Army) KillUnit(kill *ArmyUnit){
 }
 
 func (army *Army) RemoveUnit(remove *ArmyUnit){
-    var units []*ArmyUnit
-
-    for _, unit := range army.Units {
-        if remove != unit {
-            units = append(units, unit)
-        }
-    }
-
-    army.Units = units
+    army.units = slices.DeleteFunc(army.units, func(check *ArmyUnit) bool {
+        return check == remove
+    })
 }
 
 // represents a unit that is not part of the army, for things like magic vortex, for things like magic vortex
@@ -1887,7 +1904,7 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
     model.DefendingArmy.Range = computeRangeToFortress(model.Plane, overworldX, overworldY, model.DefendingArmy.Player)
     model.AttackingArmy.Range = computeRangeToFortress(model.Plane, overworldX, overworldY, model.AttackingArmy.Player)
 
-    for _, unit := range model.DefendingArmy.Units {
+    for _, unit := range model.DefendingArmy.units {
         unit.Model = model
         unit.Team = TeamDefender
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
@@ -1895,7 +1912,7 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
         model.Tiles[unit.Y][unit.X].Unit = unit
     }
 
-    for _, unit := range model.AttackingArmy.Units {
+    for _, unit := range model.AttackingArmy.units {
         unit.Model = model
         unit.Team = TeamAttacker
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
@@ -1945,9 +1962,9 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
 
     switch team {
         case TeamAttacker:
-            for i := 0; i < len(model.AttackingArmy.Units); i++ {
-                model.TurnAttacker = (model.TurnAttacker + 1) % len(model.AttackingArmy.Units)
-                unit := model.AttackingArmy.Units[model.TurnAttacker]
+            for i := 0; i < len(model.AttackingArmy.units); i++ {
+                model.TurnAttacker = (model.TurnAttacker + 1) % len(model.AttackingArmy.units)
+                unit := model.AttackingArmy.units[model.TurnAttacker]
 
                 if unit.IsAsleep() || unit.ConfusionAction == ConfusionActionDoNothing {
                     unit.LastTurn = model.CurrentTurn
@@ -1967,9 +1984,9 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
             }
             return nil
         case TeamDefender:
-            for i := 0; i < len(model.DefendingArmy.Units); i++ {
-                model.TurnDefender = (model.TurnDefender + 1) % len(model.DefendingArmy.Units)
-                unit := model.DefendingArmy.Units[model.TurnDefender]
+            for i := 0; i < len(model.DefendingArmy.units); i++ {
+                model.TurnDefender = (model.TurnDefender + 1) % len(model.DefendingArmy.units)
+                unit := model.DefendingArmy.units[model.TurnDefender]
 
                 if unit.IsAsleep() || unit.ConfusionAction == ConfusionActionDoNothing {
                     unit.LastTurn = model.CurrentTurn
@@ -2009,7 +2026,7 @@ func (model *CombatModel) NextTurn() {
     defenderWrack := model.IsEnchantmentActive(data.CombatEnchantmentWrack, TeamAttacker)
 
     /* reset movement */
-    for _, unit := range model.DefendingArmy.Units {
+    for _, unit := range model.DefendingArmy.units {
         unit.ResetTurnData()
 
         if defenderLeakMana {
@@ -2048,7 +2065,7 @@ func (model *CombatModel) NextTurn() {
     attackerTerror := model.IsEnchantmentActive(data.CombatEnchantmentTerror, TeamDefender)
     attackerWrack := model.IsEnchantmentActive(data.CombatEnchantmentWrack, TeamDefender)
 
-    for _, unit := range model.AttackingArmy.Units {
+    for _, unit := range model.AttackingArmy.units {
         // increase collateral damage to the town for each unit that is within the town area
         if model.InsideTown(unit.X, unit.Y) {
             model.CollateralDamage += 1
@@ -2084,8 +2101,8 @@ func (model *CombatModel) NextTurn() {
 
 func (model *CombatModel) IsTeamAlive(team Team) bool {
     switch team {
-        case TeamDefender: return len(model.DefendingArmy.Units) > 0
-        case TeamAttacker: return len(model.AttackingArmy.Units) > 0
+        case TeamDefender: return len(model.DefendingArmy.units) > 0
+        case TeamAttacker: return len(model.AttackingArmy.units) > 0
     }
 
     return false
@@ -2109,17 +2126,17 @@ func (model *CombatModel) doCallLightning(army *Army) {
     })
     */
 
-    if len(army.Units) == 0 {
+    if len(army.units) == 0 {
         return
     }
 
     count := rand.N(3) + 3
 
     for range count {
-        choice := rand.N(len(army.Units))
+        choice := rand.N(len(army.units))
 
         model.Events <- &CombatEventCreateLightningBolt{
-            Target: army.Units[choice],
+            Target: army.units[choice],
             Strength: 8,
         }
     }
@@ -2286,7 +2303,7 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
     }
 
     // enemy unit enchantments
-    for _, unit := range targetArmy.Units {
+    for _, unit := range targetArmy.units {
         if unit.Unit.GetHealth() > 0 {
             model.DoDisenchantUnit(allSpells, unit, targetArmy.Player, disenchantStrength)
         }
@@ -2294,7 +2311,7 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
 
     // friendly unit curses
     playerArmy := model.GetArmyForPlayer(caster)
-    for _, unit := range playerArmy.Units {
+    for _, unit := range playerArmy.units {
         if unit.Unit.GetHealth() > 0 {
             model.DoDisenchantUnitCurses(allSpells, unit, targetArmy.Player, disenchantStrength)
         }
@@ -2405,7 +2422,6 @@ func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, uni
     newUnit := ArmyUnit{
         Unit: &units.OverworldUnit{
             Unit: unit,
-            Health: unit.GetMaxHealth(),
         },
         Facing: facing,
         Moving: false,
@@ -2417,15 +2433,16 @@ func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, uni
     }
 
     newUnit.Model = model
+    newUnit.Unit.SetEnchantmentProvider(&newUnit)
 
     model.Tiles[y][x].Unit = &newUnit
 
     if player == model.DefendingArmy.Player {
         newUnit.Team = TeamDefender
-        model.DefendingArmy.Units = append(model.DefendingArmy.Units, &newUnit)
+        model.DefendingArmy.units = append(model.DefendingArmy.units, &newUnit)
     } else {
         newUnit.Team = TeamAttacker
-        model.AttackingArmy.Units = append(model.AttackingArmy.Units, &newUnit)
+        model.AttackingArmy.units = append(model.AttackingArmy.units, &newUnit)
     }
 }
 
@@ -3436,6 +3453,8 @@ func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
         model.AttackingArmy.RemoveUnit(unit)
     }
 
+    unit.Unit.SetEnchantmentProvider(nil)
+
     model.Tiles[unit.Y][unit.X].Unit = nil
 
     if unit == model.SelectedUnit {
@@ -3524,11 +3543,11 @@ func DoStrategicCombat(attackingArmy *Army, defendingArmy *Army) (CombatState, i
         DefendingArmy: defendingArmy,
     }
 
-    for _, unit := range attackingArmy.Units {
+    for _, unit := range attackingArmy.units {
         unit.Model = &fakeModel
     }
 
-    for _, unit := range defendingArmy.Units {
+    for _, unit := range defendingArmy.units {
         unit.Model = &fakeModel
     }
 
@@ -3540,22 +3559,22 @@ func DoStrategicCombat(attackingArmy *Army, defendingArmy *Army) (CombatState, i
     // FIXME: Allow fleeing?
 
     if attackingPower > defendingPower {
-        for _, unit := range defendingArmy.Units {
+        for _, unit := range defendingArmy.units {
             unit.TakeDamage(unit.Unit.GetMaxHealth())
         }
 
-        return CombatStateAttackerWin, 0, len(defendingArmy.Units)
+        return CombatStateAttackerWin, 0, len(defendingArmy.units)
     } else {
-        for _, unit := range attackingArmy.Units {
+        for _, unit := range attackingArmy.units {
             unit.TakeDamage(unit.Unit.GetMaxHealth())
         }
 
-        return CombatStateDefenderWin, len(attackingArmy.Units), 0
+        return CombatStateDefenderWin, len(attackingArmy.units), 0
     }
 }
 
 func (model *CombatModel) flee(army *Army) {
-    for _, unit := range army.Units {
+    for _, unit := range army.units {
         // FIXME: units unable to move always die
 
         // heroes have a 25% chance to die, normal units 50%
@@ -3581,7 +3600,7 @@ func (model *CombatModel) flee(army *Army) {
 func (model *CombatModel) Finish() {
     // kill all units that are bound or possessed, or summoned units
     killUnits := func(army *Army) {
-        for _, unit := range army.Units {
+        for _, unit := range army.units {
             if unit.Unit.GetHealth() > 0 {
                 if unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession) || unit.Summoned {
                     unit.TakeDamage(unit.Unit.GetHealth())
@@ -3592,6 +3611,9 @@ func (model *CombatModel) Finish() {
 
     killUnits(model.DefendingArmy)
     killUnits(model.AttackingArmy)
+
+    model.DefendingArmy.Cleanup()
+    model.AttackingArmy.Cleanup()
 }
 
 // returns true if the spell should be dispelled (due to counter magic, magic nodes, etc)
@@ -3697,13 +3719,13 @@ func (model *CombatModel) DoAllUnitsSpell(player *playerlib.Player, spell spellb
     var units []*ArmyUnit
 
     if player == model.DefendingArmy.Player && targetKind == TargetEnemy {
-        units = model.AttackingArmy.Units
+        units = model.AttackingArmy.units
     } else if player == model.AttackingArmy.Player && targetKind == TargetEnemy {
-        units = model.DefendingArmy.Units
+        units = model.DefendingArmy.units
     } else if player == model.DefendingArmy.Player && targetKind == TargetFriend {
-        units = model.DefendingArmy.Units
+        units = model.DefendingArmy.units
     } else if player == model.AttackingArmy.Player && targetKind == TargetFriend {
-        units = model.AttackingArmy.Units
+        units = model.AttackingArmy.units
     }
 
     model.Events <- &CombatPlaySound{
@@ -3757,6 +3779,7 @@ type SpellSystem interface {
     CreateCreatureBindingProjectile(target *ArmyUnit) *Projectile
     CreatePetrifyProjectile(target *ArmyUnit) *Projectile
     CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile
+    CreateHeroismProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4283,7 +4306,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             })
         case "Call Chaos":
             otherArmy := model.GetOppositeArmyForPlayer(player)
-            for _, unit := range otherArmy.Units {
+            for _, unit := range otherArmy.units {
                 switch rand.N(8) {
                     // nothing
                     case 0:
@@ -4453,9 +4476,33 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 }
             }
 
+        case "Heroism":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateHeroismProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRace() == data.RaceFantastic {
+                    return false
+                }
+
+                if target.GetRealm() == data.DeathMagic {
+                    return false
+                }
+
+                // elite level for both units and heroes is 3
+                if target.GetExperienceData().ToInt() >= 3 {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentHeroism) {
+                    return false
+                }
+
+                return true
+            })
+
         /*
         unit enchantments:
-        Heroism
         Holy Armor
         Holy Weapon
         Invulnerability
