@@ -48,6 +48,10 @@ type OverworldUnit struct {
     ExtraEnchantments EnchantmentProvider
 }
 
+func (unit *OverworldUnit) SetEnchantmentProvider(provider EnchantmentProvider) {
+    unit.ExtraEnchantments = provider
+}
+
 func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
     unit.Enchantments = append(unit.Enchantments, enchantment)
     // keep list sorted

@@ -625,6 +625,10 @@ func (hero *Hero) GetEnchantments() []data.UnitEnchantment {
     return append(hero.Unit.GetEnchantments(), artifactsEnchantments...)
 }
 
+func (hero *Hero) SetEnchantmentProvider(provider units.EnchantmentProvider) {
+    hero.Unit.SetEnchantmentProvider(provider)
+}
+
 // note that HasEnchantment is not the same as contains(GetEnchantments(), enchantment) because HasEnchantment will search
 // in the artifacts as well. GetEnchantments will only return the enchantments that have been explicitly cast on a unit
 func (hero *Hero) HasEnchantment(enchantment data.UnitEnchantment) bool {
