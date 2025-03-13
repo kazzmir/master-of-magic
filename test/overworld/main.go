@@ -4603,7 +4603,11 @@ func createScenario50(cache *lbx.LbxCache) *gamelib.Game {
 
 // Relocate units
 func createScenario51_52(cache *lbx.LbxCache, kill bool) *gamelib.Game {
-    log.Printf("Running scenario 50: relocate units")
+    scenario := 51
+    if kill {
+        scenario = 52
+    }
+    log.Printf("Running scenario %v: relocate units", scenario)
     wizard := setup.WizardCustom{
         Name: "bob",
         Banner: data.BannerRed,
