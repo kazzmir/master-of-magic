@@ -98,9 +98,6 @@ func (system *TestSpellSystem) CreateWordOfDeathProjectile(target *ArmyUnit) *Pr
 func (system *TestSpellSystem) CreateSummoningCircle(x int, y int) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateResistElementsProjectile(target *ArmyUnit) *Projectile {
-    return nil
-}
 func (system *TestSpellSystem) CreateMindStormProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
@@ -160,6 +157,46 @@ func (system *TestSpellSystem) CreateHolyWeaponProjectile(target *ArmyUnit) *Pro
 }
 
 func (system *TestSpellSystem) CreateInvulnerabilityProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateLionHeartProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateRighteousnessProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateTrueSightProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateElementalArmorProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateGiantStrengthProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateIronSkinProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateStoneSkinProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateRegenerationProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateResistElementsProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateFlightProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
 

@@ -343,6 +343,16 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Holy Armor"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Holy Weapon"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Invulnerability"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Lionheart"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Righteousness"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("True Sight"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Elemental Armor"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Iron Skin"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Regeneration"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Resist Elements"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Stone Skin"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Flight"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
@@ -353,11 +363,16 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
         attackingArmy.KillUnit(attackingArmy.GetUnits()[0])
     }
 
+    /*
+    attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentLionHeart)
+    attackingArmy.GetUnits()[1].Unit.AddEnchantment(data.UnitEnchantmentLionHeart)
+    */
+
     // attackingArmy.Units[0].AddCurse(data.UnitCurseConfusion)
 
     // return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
     combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
-    combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
+    // combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
     return combatScreen
 }
 

@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     // "github.com/kazzmir/master-of-magic/game/magic/hero"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -50,7 +51,7 @@ func NewEngine(scenario int) (*Engine, error) {
         Player: attackingPlayer,
     }
 
-    model := combat.MakeCombatModel(cache, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 0, 0, make(chan combat.CombatEvent))
+    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 0, 0, make(chan combat.CombatEvent))
 
     /*
     rakir := hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, data.BannerRed, &ExperienceInfo{}), hero.HeroRakir, "Rakir")

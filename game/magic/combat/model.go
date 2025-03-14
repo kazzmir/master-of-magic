@@ -10,7 +10,6 @@ import (
     "time"
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
-    "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -622,6 +621,10 @@ func (unit *ArmyUnit) IsFlying() bool {
     return unit.Unit.IsFlying() && !unit.HasCurse(data.UnitCurseWeb)
 }
 
+func (unit *ArmyUnit) IsSwimmer() bool {
+    return unit.Unit.IsSwimmer()
+}
+
 func (unit *ArmyUnit) GetAbilities() []data.Ability {
     return unit.Unit.GetAbilities()
 }
@@ -683,11 +686,34 @@ func (unit *ArmyUnit) GetBaseResistance() int {
 }
 
 func (unit *ArmyUnit) GetFullHitPoints() int {
-    return unit.Unit.GetHitPoints()
+    base := unit.Unit.GetHitPoints()
+    for _, enchantment := range unit.Enchantments {
+        base += unit.Unit.HitPointsEnchantmentBonus(enchantment)
+    }
+    return base
+}
+
+func (unit *ArmyUnit) GetHealth() int {
+    return unit.GetMaxHealth() - unit.GetDamage()
+}
+
+func (unit *ArmyUnit) GetMaxHealth() int {
+    return unit.GetFullHitPoints() * unit.GetCount()
 }
 
 func (unit *ArmyUnit) GetHitPoints() int {
-    return unit.Unit.GetHealth() / unit.Unit.GetCount()
+    return (unit.GetMaxHealth() - unit.GetDamage()) / unit.GetCount()
+    /*
+    base := unit.Unit.GetHitPoints()
+
+    for _, enchantment := range unit.Enchantments {
+        base += unit.Unit.HitPointsEnchantmentBonus(enchantment)
+    }
+
+    return base
+    */
+
+    // return unit.Unit.GetHealth() / unit.Unit.GetCount()
 }
 
 func (unit *ArmyUnit) GetRangedAttackDamageType() units.Damage {
@@ -851,6 +877,7 @@ func (unit *ArmyUnit) GetCounterAttackToHit() int {
     return max(10, base - reduction)
 }
 
+// FIXME: needs a type passed in (melee, ranged, etc)
 func (unit *ArmyUnit) GetToHitMelee() int {
     modifier := 0
 
@@ -880,7 +907,7 @@ func (unit *ArmyUnit) GetToHitMelee() int {
 }
 
 func (unit *ArmyUnit) GetFullResistance() int {
-    return unit.Unit.GetResistance()
+    return unit.GetResistance()
 }
 
 // get the resistance of the unit, taking into account enchantments and curses that apply to the specific magic type
@@ -976,7 +1003,7 @@ func (unit *ArmyUnit) GetResistance() int {
 }
 
 func (unit *ArmyUnit) GetFullDefense() int {
-    return unit.Unit.GetDefense()
+    return unit.GetDefense()
 }
 
 // get defense against a specific magic type
@@ -1057,7 +1084,7 @@ func (unit *ArmyUnit) GetDefense() int {
 }
 
 func (unit *ArmyUnit) GetFullRangedAttackPower() int {
-    return unit.Unit.GetRangedAttackPower()
+    return unit.GetRangedAttackPower()
 }
 
 func (unit *ArmyUnit) GetRangedAttackPower() int {
@@ -1096,7 +1123,7 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
 }
 
 func (unit *ArmyUnit) GetFullMeleeAttackPower() int {
-    return unit.Unit.GetMeleeAttackPower()
+    return unit.GetMeleeAttackPower()
 }
 
 func (unit *ArmyUnit) GetMeleeAttackPower() int {
@@ -1405,8 +1432,6 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, m
                 hasImmunity = true
             }
 
-            // defenseRolls += unit.GetResistances(data.UnitEnchantmentResistElements, data.UnitEnchantmentBless, data.UnitEnchantmentElementalArmor)
-
         case units.DamageFire:
             defenseRolls = unit.GetDefenseFor(modifiers.Magic)
             if unit.HasAbility(data.AbilityLargeShield) {
@@ -1678,8 +1703,8 @@ func (unit *ArmyUnit) Figures() int {
     // health per figure = max health / figures
     // figures = health / health per figure
 
-    health_per_figure := float64(unit.Unit.GetMaxHealth()) / float64(unit.Unit.GetCount())
-    return int(math.Ceil(float64(unit.Unit.GetHealth()) / health_per_figure))
+    health_per_figure := float64(unit.GetMaxHealth()) / float64(unit.GetCount())
+    return int(math.Ceil(float64(unit.GetHealth()) / health_per_figure))
 }
 
 type Army struct {
@@ -1892,7 +1917,7 @@ type CombatModel struct {
     GlobalEnchantments []data.CombatEnchantment
 }
 
-func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
+func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
     model := &CombatModel{
         Turn: TeamDefender,
         Plane: plane,
@@ -1904,12 +1929,6 @@ func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
         DefendingArmy: defendingArmy,
         CurrentTurn: 0,
         Events: events,
-    }
-
-    allSpells, err := spellbook.ReadSpellsFromCache(cache)
-    if err != nil {
-        log.Printf("Error: unable to read spells: %v", err)
-        allSpells = spellbook.Spells{}
     }
 
     model.Initialize(allSpells, overworldX, overworldY)
@@ -2106,6 +2125,10 @@ func (model *CombatModel) NextTurn() {
             }
         }
 
+        if unit.HasAbility(data.AbilityRegeneration) {
+            unit.Heal(1)
+        }
+
         if defenderWrack {
             damage := 0
             for range unit.Figures() {
@@ -2114,7 +2137,7 @@ func (model *CombatModel) NextTurn() {
                 }
             }
             unit.TakeDamage(damage)
-            if unit.Unit.GetHealth() <= 0 {
+            if unit.GetHealth() <= 0 {
                 model.KillUnit(unit)
             }
         }
@@ -2150,6 +2173,10 @@ func (model *CombatModel) NextTurn() {
             }
         }
 
+        if unit.HasAbility(data.AbilityRegeneration) {
+            unit.Heal(1)
+        }
+
         if attackerWrack {
             damage := 0
             for range unit.Figures() {
@@ -2158,7 +2185,7 @@ func (model *CombatModel) NextTurn() {
                 }
             }
             unit.TakeDamage(damage)
-            if unit.Unit.GetHealth() <= 0 {
+            if unit.GetHealth() <= 0 {
                 model.KillUnit(unit)
             }
         }
@@ -2370,7 +2397,7 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
 
     // enemy unit enchantments
     for _, unit := range targetArmy.units {
-        if unit.Unit.GetHealth() > 0 {
+        if unit.GetHealth() > 0 {
             model.DoDisenchantUnit(allSpells, unit, targetArmy.Player, disenchantStrength)
         }
     }
@@ -2378,7 +2405,7 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
     // friendly unit curses
     playerArmy := model.GetArmyForPlayer(caster)
     for _, unit := range playerArmy.units {
-        if unit.Unit.GetHealth() > 0 {
+        if unit.GetHealth() > 0 {
             model.DoDisenchantUnitCurses(allSpells, unit, targetArmy.Player, disenchantStrength)
         }
     }
@@ -2913,7 +2940,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
         damageFuncs = append(damageFuncs, func(){
             defender.TakeDamage(damage)
             model.Observer.PoisonTouchAttack(attacker, defender, damage)
-            model.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+            model.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.GetHealth()))
         })
     }
 
@@ -2933,13 +2960,13 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             if damage > 0 {
                 // cannot steal more life than the target has
-                damage = min(damage, defender.Unit.GetHealth())
+                damage = min(damage, defender.GetHealth())
 
                 damageFuncs = append(damageFuncs, func(){
                     // FIXME: if the unit dies they can become undead
                     defender.TakeDamage(damage)
                     attacker.Heal(damage)
-                    model.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+                    model.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.GetHealth()))
 
                     model.Observer.LifeStealTouchAttack(attacker, defender, damage)
                 })
@@ -2965,7 +2992,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             damageFuncs = append(damageFuncs, func(){
                 defender.TakeDamage(damage)
 
-                model.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                model.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.StoningTouchAttack(attacker, defender, damage)
             })
@@ -3003,7 +3030,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             damageFuncs = append(damageFuncs, func(){
                 defender.TakeDamage(damage)
-                model.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                model.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DispelEvilTouchAttack(attacker, defender, damage)
             })
@@ -3025,7 +3052,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             damageFuncs = append(damageFuncs, func(){
                 defender.TakeDamage(damage)
 
-                model.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                model.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DeathTouchAttack(attacker, defender, damage)
             })
@@ -3045,7 +3072,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             damageFuncs = append(damageFuncs, func(){
                 defender.TakeDamage(damage)
-                model.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                model.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DestructionAttack(attacker, defender, damage)
             })
@@ -3079,7 +3106,7 @@ func (model *CombatModel) ComputeWallDefense(attacker *ArmyUnit, defender *ArmyU
 func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDamage int) {
     if immolationDamage > 0 {
         hurt := defender.ApplyAreaDamage(immolationDamage, units.DamageImmolation, 0)
-        model.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
+        model.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.GetHealth()))
     }
 }
 
@@ -3092,7 +3119,7 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
     }
 
     hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, modifiers)
-    model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
+    model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.GetHealth()))
 }
 
 func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) {
@@ -3314,7 +3341,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     })
 
                     model.Observer.ThrowAttack(attacker, defender, damage)
-                    model.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+                    model.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.GetHealth()))
                 }
 
                 model.ApplyImmolationDamage(defender, immolationDamage)
@@ -3482,14 +3509,14 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     for round := range 7 {
         doRound(round)
         end := false
-        if defender.Unit.GetHealth() <= 0 {
+        if defender.GetHealth() <= 0 {
             model.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
             model.KillUnit(defender)
             end = true
             model.Observer.UnitKilled(defender)
         }
 
-        if attacker.Unit.GetHealth() <= 0 {
+        if attacker.GetHealth() <= 0 {
             model.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
             model.KillUnit(attacker)
             end = true
@@ -3665,7 +3692,7 @@ func (model *CombatModel) flee(army *Army) {
         }
 
         if rand.IntN(100) < chance {
-            unit.TakeDamage(unit.Unit.GetHealth())
+            unit.TakeDamage(unit.GetHealth())
             model.RemoveUnit(unit)
             model.DiedWhileFleeing += 1
         }
@@ -3675,12 +3702,23 @@ func (model *CombatModel) flee(army *Army) {
 // called when the battle ends
 func (model *CombatModel) Finish() {
     // kill all units that are bound or possessed, or summoned units
+    // also regenerate units with the regeneration ability
     killUnits := func(army *Army) {
         for _, unit := range army.units {
-            if unit.Unit.GetHealth() > 0 {
+            if unit.HasAbility(data.AbilityRegeneration) {
+                unit.Heal(unit.GetMaxHealth())
+            }
+
+            if unit.GetHealth() > 0 {
                 if unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession) || unit.Summoned {
-                    unit.TakeDamage(unit.Unit.GetHealth())
+                    unit.TakeDamage(unit.GetHealth())
                 }
+            }
+        }
+
+        for _, unit := range army.KilledUnits {
+            if unit.HasAbility(data.AbilityRegeneration) {
+                unit.Heal(unit.GetMaxHealth())
             }
         }
     }
@@ -3842,7 +3880,6 @@ type SpellSystem interface {
     CreateDeathSpellProjectile(target *ArmyUnit) *Projectile
     CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile
     CreateSummoningCircle(x int, y int) *Projectile
-    CreateResistElementsProjectile(target *ArmyUnit) *Projectile
     CreateMindStormProjectile(target *ArmyUnit) *Projectile
     CreateBlessProjectile(target *ArmyUnit) *Projectile
     CreateWeaknessProjectile(target *ArmyUnit) *Projectile
@@ -3859,6 +3896,16 @@ type SpellSystem interface {
     CreateHolyArmorProjectile(target *ArmyUnit) *Projectile
     CreateHolyWeaponProjectile(target *ArmyUnit) *Projectile
     CreateInvulnerabilityProjectile(target *ArmyUnit) *Projectile
+    CreateLionHeartProjectile(target *ArmyUnit) *Projectile
+    CreateRighteousnessProjectile(target *ArmyUnit) *Projectile
+    CreateTrueSightProjectile(target *ArmyUnit) *Projectile
+    CreateElementalArmorProjectile(target *ArmyUnit) *Projectile
+    CreateGiantStrengthProjectile(target *ArmyUnit) *Projectile
+    CreateIronSkinProjectile(target *ArmyUnit) *Projectile
+    CreateStoneSkinProjectile(target *ArmyUnit) *Projectile
+    CreateRegenerationProjectile(target *ArmyUnit) *Projectile
+    CreateResistElementsProjectile(target *ArmyUnit) *Projectile
+    CreateFlightProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4155,13 +4202,6 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 model.addNewUnit(player, x, y, units.Demon, units.FacingDown, true)
                 castedCallback()
             }
-        case "Resist Elements":
-            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateResistElementsProjectile(target))
-                target.AddEnchantment(data.UnitEnchantmentResistElements)
-                castedCallback()
-            }, targetAny)
-
         case "Disenchant Area", "Disenchant True":
             // show some animation and play sound
 
@@ -4638,19 +4678,127 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Lionheart":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateLionHeartProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRealm() == data.DeathMagic {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentLionHeart) {
+                    return false
+                }
+
+                return true
+            })
+        case "Righteousness":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateRighteousnessProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRealm() == data.DeathMagic {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                    return false
+                }
+
+                return true
+            })
+        case "True Sight":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateTrueSightProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRealm() == data.DeathMagic {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentTrueSight) {
+                    return false
+                }
+
+                return true
+            })
+        case "Elemental Armor":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateElementalArmorProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentElementalArmor) {
+                    return false
+                }
+
+                return true
+            })
+        case "Giant Strength":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateGiantStrengthProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentGiantStrength) {
+                    return false
+                }
+
+                return true
+            })
+        case "Iron Skin":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateIronSkinProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                // if a target has stone skin they cannot also have iron skin
+                if target.HasEnchantment(data.UnitEnchantmentIronSkin) || target.HasEnchantment(data.UnitEnchantmentStoneSkin) {
+                    return false
+                }
+
+                return true
+            })
+        case "Regeneration":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateRegenerationProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasAbility(data.AbilityRegeneration){
+                    return false
+                }
+
+                return true
+            })
+        case "Resist Elements":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateResistElementsProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentResistElements) {
+                    return false
+                }
+
+                return true
+            })
+        case "Stone Skin":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateStoneSkinProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                // if a target has iron skin they cannot also have stone skin
+                if target.HasEnchantment(data.UnitEnchantmentIronSkin) || target.HasEnchantment(data.UnitEnchantmentStoneSkin) {
+                    return false
+                }
+
+                return true
+            })
+        case "Flight":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateFlightProjectile(target))
+                castedCallback()
+            }, targetAny)
 
         /*
         unit enchantments:
-        Lionheart
-        Righteousness
-        True Sight
-        Elemental Armor
-        Giant Strength
-        Iron Skin
-        Regeneration
-        Resist Elements
-        Stone Skin
-        Flight
         Guardian Wind
         Haste
         Invisibility

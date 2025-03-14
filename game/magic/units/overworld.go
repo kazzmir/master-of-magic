@@ -451,7 +451,7 @@ func (unit *OverworldUnit) MovementSpeedEnchantmentBonus(base int, enchantments 
     }
 
     if flying {
-        base = 3
+        base = max(base, 3)
     }
 
     if haste {
@@ -589,8 +589,10 @@ func (unit *OverworldUnit) RangedEnchantmentBonus(enchantment data.UnitEnchantme
     switch enchantment {
         case data.UnitEnchantmentBlackChannels: return 1
         case data.UnitEnchantmentFlameBlade: return 2
-        case data.UnitEnchantmentLionHeart: return 3
-        case data.UnitEnchantmentGiantStrength: return 1
+        case data.UnitEnchantmentLionHeart:
+            if unit.GetRangedAttackDamageType() != DamageRangedMagical {
+                return 3
+            }
     }
 
     return 0
@@ -696,6 +698,7 @@ func (unit *OverworldUnit) HitPointsEnchantmentBonus(enchantment data.UnitEnchan
     return 0
 }
 
+// does not account for damage
 func (unit *OverworldUnit) GetHitPoints() int {
     base := unit.GetBaseHitPoints()
 

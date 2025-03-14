@@ -137,8 +137,12 @@ func RenderUnitInfo(screen *ebiten.Image, imageCache *util.ImageCache, unit *Arm
 
     unitMoves := unit.GetMovementSpeed()
 
-    // FIXME: show wings if flying, or the water thing if can walk on water
-    smallBoot, err := imageCache.GetImage("unitview.lbx", 24, 0)
+    movementImage, err := imageCache.GetImage("unitview.lbx", 24, 0)
+    if unit.IsFlying() {
+        movementImage, _ = imageCache.GetImage("unitview.lbx", 25, 0)
+    } else if unit.IsSwimmer() {
+        movementImage, _ = imageCache.GetImage("unitview.lbx", 26, 0)
+    }
     if err == nil {
         var options ebiten.DrawImageOptions
         options = defaultOptions
@@ -146,8 +150,8 @@ func RenderUnitInfo(screen *ebiten.Image, imageCache *util.ImageCache, unit *Arm
         options.GeoM.Translate(x + fonts.SmallFont.MeasureTextWidth("Damage ", 1), y)
 
         for i := 0; i < unitMoves; i++ {
-            scale.DrawScaled(screen, smallBoot, &options)
-            options.GeoM.Translate(float64(smallBoot.Bounds().Dx()), 0)
+            scale.DrawScaled(screen, movementImage, &options)
+            options.GeoM.Translate(float64(movementImage.Bounds().Dx()), 0)
         }
     }
 
