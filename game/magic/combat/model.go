@@ -3780,6 +3780,7 @@ type SpellSystem interface {
     CreatePetrifyProjectile(target *ArmyUnit) *Projectile
     CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile
     CreateHeroismProjectile(target *ArmyUnit) *Projectile
+    CreateHolyArmorProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4506,10 +4507,28 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Holy Armor":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateHolyArmorProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRace() == data.RaceFantastic {
+                    return false
+                }
+
+                if target.GetRealm() == data.DeathMagic {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentHolyArmor) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Holy Armor
         Holy Weapon
         Invulnerability
         Lionheart
