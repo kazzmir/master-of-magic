@@ -1428,8 +1428,6 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, m
                 hasImmunity = true
             }
 
-            // defenseRolls += unit.GetResistances(data.UnitEnchantmentResistElements, data.UnitEnchantmentBless, data.UnitEnchantmentElementalArmor)
-
         case units.DamageFire:
             defenseRolls = unit.GetDefenseFor(modifiers.Magic)
             if unit.HasAbility(data.AbilityLargeShield) {

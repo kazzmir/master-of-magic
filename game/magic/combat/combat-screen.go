@@ -861,8 +861,8 @@ func (combat *CombatScreen) CreateTrueSightProjectile(target *ArmyUnit) *Project
 }
 
 func (combat *CombatScreen) CreateElementalArmorProjectile(target *ArmyUnit) *Projectile {
-    // FIXME: show nature animation
-    images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 0)
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
