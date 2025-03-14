@@ -175,6 +175,10 @@ func (system *TestSpellSystem) CreateTrueSightProjectile(target *ArmyUnit) *Proj
     return nil
 }
 
+func (system *TestSpellSystem) CreateElementalArmorProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }

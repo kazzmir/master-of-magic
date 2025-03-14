@@ -860,6 +860,18 @@ func (combat *CombatScreen) CreateTrueSightProjectile(target *ArmyUnit) *Project
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
+func (combat *CombatScreen) CreateElementalArmorProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: show nature animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentElementalArmor)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateRighteousnessProjectile(target *ArmyUnit) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)

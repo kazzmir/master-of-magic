@@ -3879,6 +3879,7 @@ type SpellSystem interface {
     CreateLionHeartProjectile(target *ArmyUnit) *Projectile
     CreateRighteousnessProjectile(target *ArmyUnit) *Projectile
     CreateTrueSightProjectile(target *ArmyUnit) *Projectile
+    CreateElementalArmorProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4703,10 +4704,21 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Elemental Armor":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateElementalArmorProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentElementalArmor) {
+                    return false
+                }
+
+                return true
+            })
+
 
         /*
         unit enchantments:
-        Elemental Armor
         Giant Strength
         Iron Skin
         Regeneration
