@@ -2121,6 +2121,10 @@ func (model *CombatModel) NextTurn() {
             }
         }
 
+        if unit.HasAbility(data.AbilityRegeneration) {
+            unit.Heal(1)
+        }
+
         if defenderWrack {
             damage := 0
             for range unit.Figures() {
@@ -2163,6 +2167,10 @@ func (model *CombatModel) NextTurn() {
             if rand.N(10) + 1 > unit.GetResistance() + 1 {
                 unit.MovesLeft = fraction.Zero()
             }
+        }
+
+        if unit.HasAbility(data.AbilityRegeneration) {
+            unit.Heal(1)
         }
 
         if attackerWrack {
