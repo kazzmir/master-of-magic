@@ -1701,8 +1701,8 @@ func (unit *ArmyUnit) Figures() int {
     // health per figure = max health / figures
     // figures = health / health per figure
 
-    health_per_figure := float64(unit.Unit.GetMaxHealth()) / float64(unit.Unit.GetCount())
-    return int(math.Ceil(float64(unit.Unit.GetHealth()) / health_per_figure))
+    health_per_figure := float64(unit.GetMaxHealth()) / float64(unit.GetCount())
+    return int(math.Ceil(float64(unit.GetHealth()) / health_per_figure))
 }
 
 type Army struct {

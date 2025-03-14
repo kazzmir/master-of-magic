@@ -551,7 +551,7 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
 
     damage := func(unit *ArmyUnit) {
         unit.ApplyDamage(unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageCold, DamageModifiers{Magic: data.NatureMagic})
-        if unit.Unit.GetHealth() <= 0 {
+        if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
     }
@@ -568,7 +568,7 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
         fireDamage := unit.ApplyDamage(unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageFire, DamageModifiers{Magic: data.ChaosMagic})
 
         combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
-        if unit.Unit.GetHealth() <= 0 {
+        if unit.GetHealth() <= 0 {
             combat.Model.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
             combat.Model.KillUnit(unit)
         }
@@ -585,7 +585,7 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength 
 
     damage := func(unit *ArmyUnit) {
         combat.Model.ApplyImmolationDamage(unit, strength)
-        if unit.Unit.GetHealth() <= 0 {
+        if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
     }
@@ -599,7 +599,7 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Project
 
     damage := func (unit *ArmyUnit) {
         unit.ApplyDamage(unit.ReduceInvulnerability(15), units.DamageRangedMagical, DamageModifiers{})
-        if unit.Unit.GetHealth() <= 0 {
+        if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
     }
@@ -626,7 +626,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
         }
 
         unit.TakeDamage(damage)
-        if unit.Unit.GetHealth() <= 0 {
+        if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
     }
@@ -640,7 +640,7 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, stren
 
     damage := func (unit *ArmyUnit) {
         unit.ApplyDamage(unit.ReduceInvulnerability(ComputeRoll(15, 30)), units.DamageRangedMagical, DamageModifiers{Magic: data.SorceryMagic})
-        if unit.Unit.GetHealth() <= 0 {
+        if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
     }
@@ -655,7 +655,7 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projecti
 
     effect := func(unit *ArmyUnit) {
         unit.TakeDamage(10)
-        if unit.Unit.GetHealth() <= 0 {
+        if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
     }
@@ -687,7 +687,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Exploding: true,
         Effect: func(unit *ArmyUnit) {
             unit.ApplyDamage(unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
-            if unit.Unit.GetHealth() <= 0 {
+            if unit.GetHealth() <= 0 {
                 combat.Model.KillUnit(unit)
             }
         },
@@ -726,7 +726,7 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Pro
                 unit.ApplyDamage(unit.ReduceInvulnerability(ComputeRoll(strength + 1, 30)), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             }
 
-            if unit.Unit.GetHealth() <= 0 {
+            if unit.GetHealth() <= 0 {
                 combat.Model.KillUnit(unit)
             }
         },
@@ -754,7 +754,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
                 army.ManaPool += damage * 3
             }
 
-            if unit.Unit.GetHealth() <= 0 {
+            if unit.GetHealth() <= 0 {
                 combat.Model.KillUnit(unit)
             }
         }
@@ -769,7 +769,7 @@ func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) *Proje
 
     damage := func (unit *ArmyUnit) {
         combat.Model.ApplyImmolationDamage(unit, 15)
-        if unit.Unit.GetHealth() <= 0 {
+        if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
     }
@@ -947,7 +947,7 @@ func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit) *Projectil
 
         // FIXME: do stoning damage, which is irreversable
         unit.TakeDamage(damage)
-        if unit.Unit.GetHealth() <= 0 {
+        if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
     }
@@ -1067,7 +1067,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
 
         // FIXME: apply irreversable damage
         unit.TakeDamage(damage)
-        if unit.Unit.GetHealth() <= 0 {
+        if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
     }
@@ -1102,7 +1102,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projec
         }
 
         unit.TakeDamage(damage)
-        if unit.Unit.GetHealth() <= 0 {
+        if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
     }
@@ -1125,7 +1125,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Proje
         }
 
         unit.TakeDamage(damage)
-        if unit.Unit.GetHealth() <= 0 {
+        if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
     }
@@ -1226,7 +1226,7 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
         }
 
         unit.TakeDamage(damage)
-        if unit.Unit.GetHealth() <= 0 {
+        if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
     }
@@ -1606,7 +1606,7 @@ func betweenAngle(check float64, angle float64, spread float64) bool {
 
 func (combat *CombatScreen) TileIsEmpty(x int, y int) bool {
     unit := combat.Model.GetUnit(x, y)
-    if unit != nil && unit.Unit.GetHealth() > 0 {
+    if unit != nil && unit.GetHealth() > 0 {
         return false
     }
     /*
@@ -1818,7 +1818,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
     tileDistance := computeTileDistance(attacker.X, attacker.Y, defender.X, defender.Y)
 
     effect := func (target *ArmyUnit){
-        if target.Unit.GetHealth() <= 0 {
+        if target.GetHealth() <= 0 {
             return
         }
 
@@ -1843,7 +1843,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         }
         target.TakeDamage(damage)
         */
-        if target.Unit.GetHealth() <= 0 {
+        if target.GetHealth() <= 0 {
             combat.Model.KillUnit(target)
         }
     }
@@ -2279,7 +2279,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
                 if !mover.IsFlying() && combat.Model.InsideWallOfFire(targetX, targetY) && !combat.Model.InsideWallOfFire(mover.X, mover.Y) {
                     combat.Model.ApplyWallOfFireDamage(mover)
 
-                    if mover.Unit.GetHealth() <= 0 {
+                    if mover.GetHealth() <= 0 {
                         // this feels dangerous to do here but it seems to work
                         combat.Model.KillUnit(mover)
                         return
@@ -2741,7 +2741,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
    }
 
     // the unit died or is out of moves
-    if combat.Model.SelectedUnit != nil && (combat.Model.SelectedUnit.Unit.GetHealth() <= 0 || combat.Model.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
+    if combat.Model.SelectedUnit != nil && (combat.Model.SelectedUnit.GetHealth() <= 0 || combat.Model.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
         combat.Model.DoneTurn()
     }
 
@@ -2901,7 +2901,7 @@ func (combat *CombatScreen) DrawHealthBar(screen *ebiten.Image, x int, y int, un
 
     vector.StrokeLine(screen, float32(scale.Scale(x)), float32(scale.Scale(y)), float32(scale.Scale(x + healthWidth)), float32(scale.Scale(y)), float32(scale.Scale(1)), color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
 
-    healthPercent := float64(unit.Unit.GetHealth()) / float64(unit.Unit.GetMaxHealth())
+    healthPercent := float64(unit.GetHealth()) / float64(unit.GetMaxHealth())
     healthLength := float64(healthWidth) * healthPercent
 
     // always show at least one point of health
