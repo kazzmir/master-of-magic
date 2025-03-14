@@ -3878,6 +3878,7 @@ type SpellSystem interface {
     CreateRighteousnessProjectile(target *ArmyUnit) *Projectile
     CreateTrueSightProjectile(target *ArmyUnit) *Projectile
     CreateElementalArmorProjectile(target *ArmyUnit) *Projectile
+    CreateGiantStrengthProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4713,11 +4714,20 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Giant Strength":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateGiantStrengthProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentGiantStrength) {
+                    return false
+                }
 
+                return true
+            })
 
         /*
         unit enchantments:
-        Giant Strength
         Iron Skin
         Regeneration
         Resist Elements

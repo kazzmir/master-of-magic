@@ -589,8 +589,10 @@ func (unit *OverworldUnit) RangedEnchantmentBonus(enchantment data.UnitEnchantme
     switch enchantment {
         case data.UnitEnchantmentBlackChannels: return 1
         case data.UnitEnchantmentFlameBlade: return 2
-        case data.UnitEnchantmentLionHeart: return 3
-        case data.UnitEnchantmentGiantStrength: return 1
+        case data.UnitEnchantmentLionHeart:
+            if unit.GetRangedAttackDamageType() != DamageRangedMagical {
+                return 3
+            }
     }
 
     return 0
