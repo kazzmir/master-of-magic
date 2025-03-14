@@ -1207,7 +1207,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         for _, spell := range page.Spells.Spells {
 
             // invalid spell?
-            if spell.Invalid() {
+            if spell.Invalid() || spell.Cost(false) == 0 {
                 continue
             }
 
