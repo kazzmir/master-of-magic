@@ -18,6 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/functional"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     globalMouse "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
@@ -2017,6 +2018,8 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
 
     combat.UI.AddElements(elements)
 
+    canTargetMemo := functional.Memoize(canTarget)
+
     for !quit {
         combat.Counter += 1
 
@@ -2038,11 +2041,11 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
             combat.MouseState = CombatClickHud
         } else {
             unit := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
-            if unit == nil || (selectTeam != TeamEither && unit.Team != selectTeam) || !canTarget(unit){
+            if unit == nil || (selectTeam != TeamEither && unit.Team != selectTeam) || !canTargetMemo(unit){
                 combat.MouseState = CombatNotOk
             }
 
-            if unit != nil && canTarget(unit) && inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
+            if unit != nil && canTargetMemo(unit) && inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
                 if selectTeam == TeamEither || unit.Team == selectTeam {
 
