@@ -3698,12 +3698,23 @@ func (model *CombatModel) flee(army *Army) {
 // called when the battle ends
 func (model *CombatModel) Finish() {
     // kill all units that are bound or possessed, or summoned units
+    // also regenerate units with the regeneration ability
     killUnits := func(army *Army) {
         for _, unit := range army.units {
+            if unit.HasAbility(data.AbilityRegeneration) {
+                unit.Heal(unit.GetMaxHealth())
+            }
+
             if unit.GetHealth() > 0 {
                 if unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession) || unit.Summoned {
                     unit.TakeDamage(unit.GetHealth())
                 }
+            }
+        }
+
+        for _, unit := range army.KilledUnits {
+            if unit.HasAbility(data.AbilityRegeneration) {
+                unit.Heal(unit.GetMaxHealth())
             }
         }
     }
