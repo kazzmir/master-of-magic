@@ -25,6 +25,14 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+type DamageSource int
+const (
+    DamageSourceNormal DamageSource = iota
+    DamageSourceHero
+    DamageSourceFantastic
+    DamageSourceSpell
+)
+
 type ZoneType struct {
     // fighting in a city
     City *citylib.City
@@ -554,6 +562,43 @@ func (unit *ArmyUnit) IsAsleep() bool {
 
 func (unit *ArmyUnit) IsWebbed() bool {
     return unit.WebHealth > 0
+}
+
+func (unit *ArmyUnit) GetDamageSource() DamageSource {
+    if unit.Unit.IsHero() {
+        return DamageSourceHero
+    }
+
+    if unit.GetRace() == data.RaceFantastic {
+        return DamageSourceFantastic
+    }
+
+    return DamageSourceNormal
+}
+
+func (unit *ArmyUnit) CanNegateWeaponImmunity() bool {
+    // any non-normal weapon
+    if unit.GetWeaponBonus() != data.WeaponNone {
+        return true
+    }
+
+    enchantments := []data.UnitEnchantment{
+        data.UnitEnchantmentEldritchWeapon,
+        data.UnitEnchantmentFlameBlade,
+        data.UnitEnchantmentHolyWeapon,
+    }
+
+    for _, enchantment := range enchantments {
+        if unit.HasEnchantment(enchantment) {
+            return true
+        }
+    }
+
+    if unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) {
+        return true
+    }
+
+    return false
 }
 
 func (unit *ArmyUnit) ProcessWeb() {
@@ -1310,11 +1355,13 @@ type DamageModifiers struct {
     // any protection offered by the city wall
     WallDefense int
 
+    NegateWeaponImmunity bool
+
     // if the damage comes from a specific realm (for spells or magic damage)
     Magic data.MagicType
 }
 
-func (unit *ArmyUnit) ComputeDefense(damage units.Damage, modifiers DamageModifiers) int {
+func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, modifiers DamageModifiers) int {
     if unit.IsAsleep() {
         return 0
     }
@@ -1387,6 +1434,13 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, modifiers DamageModifi
             defenseRolls = unit.GetDefense()
     }
 
+    switch damage {
+        case units.DamageMeleePhysical, units.DamageRangedPhysical, units.DamageThrown:
+            if unit.HasAbility(data.AbilityWeaponImmunity) && !modifiers.NegateWeaponImmunity && source == DamageSourceNormal {
+                defenseRolls = max(defenseRolls, 10)
+            }
+    }
+
     if modifiers.ArmorPiercing {
         defenseRolls /= 2
     }
@@ -1433,7 +1487,7 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
         // FIXME: should this toHit=30 be based on the unit's toHitMelee?
         damage := ComputeRoll(attackStrength, 30)
 
-        defense := unit.ComputeDefense(damageType, DamageModifiers{WallDefense: wallDefense})
+        defense := unit.ComputeDefense(damageType, DamageSourceSpell, DamageModifiers{WallDefense: wallDefense})
 
         // can't do more damage than a single figure has HP
         figureDamage := min(damage - defense, health_per_figure)
@@ -1462,7 +1516,7 @@ func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, modifiers
     taken := 0
     for damage > 0 && unit.Unit.GetHealth() > 0 {
         // compute defense, apply damage to lead figure. if lead figure dies, apply damage to next figure
-        defense := unit.ComputeDefense(damageType, modifiers)
+        defense := unit.ComputeDefense(damageType, unit.GetDamageSource(), modifiers)
         damage -= defense
 
         if damage > 0 {
@@ -3038,6 +3092,7 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
         WallDefense: model.ComputeWallDefense(attacker, defender),
         ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
         Illusion: attacker.HasAbility(data.AbilityIllusion),
+        NegateWeaponImmunity: attacker.CanNegateWeaponImmunity(),
     }
 
     hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, modifiers)
@@ -3257,7 +3312,11 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
 
                 if throwDamage > 0 {
-                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, DamageModifiers{ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing)})
+                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, DamageModifiers{
+                        ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
+                        NegateWeaponImmunity: attacker.CanNegateWeaponImmunity(),
+                    })
+
                     model.Observer.ThrowAttack(attacker, defender, damage)
                     model.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
                 }
