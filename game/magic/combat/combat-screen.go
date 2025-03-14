@@ -908,6 +908,18 @@ func (combat *CombatScreen) CreateRegenerationProjectile(target *ArmyUnit) *Proj
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
+func (combat *CombatScreen) CreateResistElementsProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 0)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentResistElements)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateRighteousnessProjectile(target *ArmyUnit) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
@@ -1203,13 +1215,6 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Proje
     }
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
-}
-
-func (combat *CombatScreen) CreateResistElementsProjectile(target *ArmyUnit) *Projectile {
-    images, _ := combat.ImageCache.GetImages("specfx.lbx", 0)
-    explodeImages := images
-
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, func (*ArmyUnit){})
 }
 
 func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) *Projectile {

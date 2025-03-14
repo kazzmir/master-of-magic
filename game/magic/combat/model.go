@@ -3876,7 +3876,6 @@ type SpellSystem interface {
     CreateDeathSpellProjectile(target *ArmyUnit) *Projectile
     CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile
     CreateSummoningCircle(x int, y int) *Projectile
-    CreateResistElementsProjectile(target *ArmyUnit) *Projectile
     CreateMindStormProjectile(target *ArmyUnit) *Projectile
     CreateBlessProjectile(target *ArmyUnit) *Projectile
     CreateWeaknessProjectile(target *ArmyUnit) *Projectile
@@ -3900,6 +3899,7 @@ type SpellSystem interface {
     CreateGiantStrengthProjectile(target *ArmyUnit) *Projectile
     CreateIronSkinProjectile(target *ArmyUnit) *Projectile
     CreateRegenerationProjectile(target *ArmyUnit) *Projectile
+    CreateResistElementsProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4196,13 +4196,6 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 model.addNewUnit(player, x, y, units.Demon, units.FacingDown, true)
                 castedCallback()
             }
-        case "Resist Elements":
-            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateResistElementsProjectile(target))
-                target.AddEnchantment(data.UnitEnchantmentResistElements)
-                castedCallback()
-            }, targetAny)
-
         case "Disenchant Area", "Disenchant True":
             // show some animation and play sound
 
@@ -4769,11 +4762,20 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Resist Elements":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateResistElementsProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentResistElements) {
+                    return false
+                }
 
+                return true
+            })
 
         /*
         unit enchantments:
-        Resist Elements
         Stone Skin
         Flight
         Guardian Wind
