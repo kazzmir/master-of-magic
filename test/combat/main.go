@@ -352,6 +352,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Regeneration"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Resist Elements"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Stone Skin"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Flight"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
@@ -371,7 +372,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
     combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
-    combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
+    // combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
     return combatScreen
 }
 

@@ -61,6 +61,8 @@ type UnitView interface {
     UnitAbilities
     UnitExperience
 
+    IsFlying() bool
+    IsSwimmer() bool
     GetCount() int
     GetBanner() data.BannerType
     GetName() string

@@ -621,6 +621,10 @@ func (unit *ArmyUnit) IsFlying() bool {
     return unit.Unit.IsFlying() && !unit.HasCurse(data.UnitCurseWeb)
 }
 
+func (unit *ArmyUnit) IsSwimmer() bool {
+    return unit.Unit.IsSwimmer()
+}
+
 func (unit *ArmyUnit) GetAbilities() []data.Ability {
     return unit.Unit.GetAbilities()
 }
@@ -3901,6 +3905,7 @@ type SpellSystem interface {
     CreateStoneSkinProjectile(target *ArmyUnit) *Projectile
     CreateRegenerationProjectile(target *ArmyUnit) *Projectile
     CreateResistElementsProjectile(target *ArmyUnit) *Projectile
+    CreateFlightProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4786,10 +4791,14 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Flight":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateFlightProjectile(target))
+                castedCallback()
+            }, targetAny)
 
         /*
         unit enchantments:
-        Flight
         Guardian Wind
         Haste
         Invisibility

@@ -196,6 +196,10 @@ func (system *TestSpellSystem) CreateResistElementsProjectile(target *ArmyUnit) 
     return nil
 }
 
+func (system *TestSpellSystem) CreateFlightProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }

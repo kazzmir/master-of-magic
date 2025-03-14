@@ -451,7 +451,7 @@ func (unit *OverworldUnit) MovementSpeedEnchantmentBonus(base int, enchantments 
     }
 
     if flying {
-        base = 3
+        base = max(base, 3)
     }
 
     if haste {
