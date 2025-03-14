@@ -38,6 +38,7 @@ type StackUnit interface {
     RangedEnchantmentBonus(data.UnitEnchantment) int
     ResistanceEnchantmentBonus(data.UnitEnchantment) int
     MovementSpeedEnchantmentBonus(int, []data.UnitEnchantment) int
+    HitPointsEnchantmentBonus(data.UnitEnchantment) int
 
     IsUndead() bool
     SetUndead()

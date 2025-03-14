@@ -163,6 +163,10 @@ func (system *TestSpellSystem) CreateInvulnerabilityProjectile(target *ArmyUnit)
     return nil
 }
 
+func (system *TestSpellSystem) CreateLionHeartProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }

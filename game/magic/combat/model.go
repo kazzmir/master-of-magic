@@ -685,8 +685,24 @@ func (unit *ArmyUnit) GetFullHitPoints() int {
     return unit.Unit.GetHitPoints()
 }
 
+func (unit *ArmyUnit) GetHealth() int {
+    return unit.GetMaxHealth() - unit.GetDamage()
+}
+
+func (unit *ArmyUnit) GetMaxHealth() int {
+    return unit.GetHitPoints() * unit.GetCount()
+}
+
 func (unit *ArmyUnit) GetHitPoints() int {
-    return unit.Unit.GetHealth() / unit.Unit.GetCount()
+    base := unit.Unit.GetHitPoints()
+
+    for _, enchantment := range unit.Enchantments {
+        base += unit.Unit.HitPointsEnchantmentBonus(enchantment)
+    }
+
+    return base
+
+    // return unit.Unit.GetHealth() / unit.Unit.GetCount()
 }
 
 func (unit *ArmyUnit) GetRangedAttackDamageType() units.Damage {
@@ -2107,7 +2123,7 @@ func (model *CombatModel) NextTurn() {
                 }
             }
             unit.TakeDamage(damage)
-            if unit.Unit.GetHealth() <= 0 {
+            if unit.GetHealth() <= 0 {
                 model.KillUnit(unit)
             }
         }
@@ -2151,7 +2167,7 @@ func (model *CombatModel) NextTurn() {
                 }
             }
             unit.TakeDamage(damage)
-            if unit.Unit.GetHealth() <= 0 {
+            if unit.GetHealth() <= 0 {
                 model.KillUnit(unit)
             }
         }
@@ -2363,7 +2379,7 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
 
     // enemy unit enchantments
     for _, unit := range targetArmy.units {
-        if unit.Unit.GetHealth() > 0 {
+        if unit.GetHealth() > 0 {
             model.DoDisenchantUnit(allSpells, unit, targetArmy.Player, disenchantStrength)
         }
     }
@@ -2371,7 +2387,7 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
     // friendly unit curses
     playerArmy := model.GetArmyForPlayer(caster)
     for _, unit := range playerArmy.units {
-        if unit.Unit.GetHealth() > 0 {
+        if unit.GetHealth() > 0 {
             model.DoDisenchantUnitCurses(allSpells, unit, targetArmy.Player, disenchantStrength)
         }
     }
@@ -2906,7 +2922,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
         damageFuncs = append(damageFuncs, func(){
             defender.TakeDamage(damage)
             model.Observer.PoisonTouchAttack(attacker, defender, damage)
-            model.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+            model.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.GetHealth()))
         })
     }
 
@@ -2926,13 +2942,13 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             if damage > 0 {
                 // cannot steal more life than the target has
-                damage = min(damage, defender.Unit.GetHealth())
+                damage = min(damage, defender.GetHealth())
 
                 damageFuncs = append(damageFuncs, func(){
                     // FIXME: if the unit dies they can become undead
                     defender.TakeDamage(damage)
                     attacker.Heal(damage)
-                    model.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+                    model.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.GetHealth()))
 
                     model.Observer.LifeStealTouchAttack(attacker, defender, damage)
                 })
@@ -2958,7 +2974,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             damageFuncs = append(damageFuncs, func(){
                 defender.TakeDamage(damage)
 
-                model.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                model.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.StoningTouchAttack(attacker, defender, damage)
             })
@@ -2996,7 +3012,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             damageFuncs = append(damageFuncs, func(){
                 defender.TakeDamage(damage)
-                model.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                model.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DispelEvilTouchAttack(attacker, defender, damage)
             })
@@ -3018,7 +3034,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             damageFuncs = append(damageFuncs, func(){
                 defender.TakeDamage(damage)
 
-                model.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                model.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DeathTouchAttack(attacker, defender, damage)
             })
@@ -3038,7 +3054,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             damageFuncs = append(damageFuncs, func(){
                 defender.TakeDamage(damage)
-                model.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.Unit.GetHealth()))
+                model.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DestructionAttack(attacker, defender, damage)
             })
@@ -3072,7 +3088,7 @@ func (model *CombatModel) ComputeWallDefense(attacker *ArmyUnit, defender *ArmyU
 func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDamage int) {
     if immolationDamage > 0 {
         hurt := defender.ApplyAreaDamage(immolationDamage, units.DamageImmolation, 0)
-        model.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
+        model.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.GetHealth()))
     }
 }
 
@@ -3085,7 +3101,7 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
     }
 
     hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, modifiers)
-    model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
+    model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.GetHealth()))
 }
 
 func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) {
@@ -3307,7 +3323,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     })
 
                     model.Observer.ThrowAttack(attacker, defender, damage)
-                    model.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.Unit.GetHealth()))
+                    model.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.GetHealth()))
                 }
 
                 model.ApplyImmolationDamage(defender, immolationDamage)
@@ -3475,14 +3491,14 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     for round := range 7 {
         doRound(round)
         end := false
-        if defender.Unit.GetHealth() <= 0 {
+        if defender.GetHealth() <= 0 {
             model.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
             model.KillUnit(defender)
             end = true
             model.Observer.UnitKilled(defender)
         }
 
-        if attacker.Unit.GetHealth() <= 0 {
+        if attacker.GetHealth() <= 0 {
             model.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
             model.KillUnit(attacker)
             end = true
@@ -3658,7 +3674,7 @@ func (model *CombatModel) flee(army *Army) {
         }
 
         if rand.IntN(100) < chance {
-            unit.TakeDamage(unit.Unit.GetHealth())
+            unit.TakeDamage(unit.GetHealth())
             model.RemoveUnit(unit)
             model.DiedWhileFleeing += 1
         }
@@ -3670,9 +3686,9 @@ func (model *CombatModel) Finish() {
     // kill all units that are bound or possessed, or summoned units
     killUnits := func(army *Army) {
         for _, unit := range army.units {
-            if unit.Unit.GetHealth() > 0 {
+            if unit.GetHealth() > 0 {
                 if unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession) || unit.Summoned {
-                    unit.TakeDamage(unit.Unit.GetHealth())
+                    unit.TakeDamage(unit.GetHealth())
                 }
             }
         }
@@ -3852,6 +3868,7 @@ type SpellSystem interface {
     CreateHolyArmorProjectile(target *ArmyUnit) *Projectile
     CreateHolyWeaponProjectile(target *ArmyUnit) *Projectile
     CreateInvulnerabilityProjectile(target *ArmyUnit) *Projectile
+    CreateLionHeartProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4631,10 +4648,24 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Lionheart":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateLionHeartProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRealm() == data.DeathMagic {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentLionHeart) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Lionheart
         Righteousness
         True Sight
         Elemental Armor
