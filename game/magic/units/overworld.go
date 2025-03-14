@@ -696,6 +696,7 @@ func (unit *OverworldUnit) HitPointsEnchantmentBonus(enchantment data.UnitEnchan
     return 0
 }
 
+// does not account for damage
 func (unit *OverworldUnit) GetHitPoints() int {
     base := unit.GetBaseHitPoints()
 

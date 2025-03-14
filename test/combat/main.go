@@ -354,6 +354,9 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
         attackingArmy.KillUnit(attackingArmy.GetUnits()[0])
     }
 
+    attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentLionHeart)
+    attackingArmy.GetUnits()[1].Unit.AddEnchantment(data.UnitEnchantmentLionHeart)
+
     // attackingArmy.Units[0].AddCurse(data.UnitCurseConfusion)
 
     // return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)

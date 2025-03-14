@@ -682,7 +682,11 @@ func (unit *ArmyUnit) GetBaseResistance() int {
 }
 
 func (unit *ArmyUnit) GetFullHitPoints() int {
-    return unit.Unit.GetHitPoints()
+    base := unit.Unit.GetHitPoints()
+    for _, enchantment := range unit.Enchantments {
+        base += unit.Unit.HitPointsEnchantmentBonus(enchantment)
+    }
+    return base
 }
 
 func (unit *ArmyUnit) GetHealth() int {
@@ -690,10 +694,12 @@ func (unit *ArmyUnit) GetHealth() int {
 }
 
 func (unit *ArmyUnit) GetMaxHealth() int {
-    return unit.GetHitPoints() * unit.GetCount()
+    return unit.GetFullHitPoints() * unit.GetCount()
 }
 
 func (unit *ArmyUnit) GetHitPoints() int {
+    return (unit.GetMaxHealth() - unit.GetDamage()) / unit.GetCount()
+    /*
     base := unit.Unit.GetHitPoints()
 
     for _, enchantment := range unit.Enchantments {
@@ -701,6 +707,7 @@ func (unit *ArmyUnit) GetHitPoints() int {
     }
 
     return base
+    */
 
     // return unit.Unit.GetHealth() / unit.Unit.GetCount()
 }
@@ -866,6 +873,7 @@ func (unit *ArmyUnit) GetCounterAttackToHit() int {
     return max(10, base - reduction)
 }
 
+// FIXME: needs a type passed in (melee, ranged, etc)
 func (unit *ArmyUnit) GetToHitMelee() int {
     modifier := 0
 
@@ -895,7 +903,7 @@ func (unit *ArmyUnit) GetToHitMelee() int {
 }
 
 func (unit *ArmyUnit) GetFullResistance() int {
-    return unit.Unit.GetResistance()
+    return unit.GetResistance()
 }
 
 // get the resistance of the unit, taking into account enchantments and curses that apply to the specific magic type
@@ -991,7 +999,7 @@ func (unit *ArmyUnit) GetResistance() int {
 }
 
 func (unit *ArmyUnit) GetFullDefense() int {
-    return unit.Unit.GetDefense()
+    return unit.GetDefense()
 }
 
 // get defense against a specific magic type
@@ -1072,7 +1080,7 @@ func (unit *ArmyUnit) GetDefense() int {
 }
 
 func (unit *ArmyUnit) GetFullRangedAttackPower() int {
-    return unit.Unit.GetRangedAttackPower()
+    return unit.GetRangedAttackPower()
 }
 
 func (unit *ArmyUnit) GetRangedAttackPower() int {
@@ -1111,7 +1119,7 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
 }
 
 func (unit *ArmyUnit) GetFullMeleeAttackPower() int {
-    return unit.Unit.GetMeleeAttackPower()
+    return unit.GetMeleeAttackPower()
 }
 
 func (unit *ArmyUnit) GetMeleeAttackPower() int {
