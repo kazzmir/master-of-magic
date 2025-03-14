@@ -342,6 +342,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Heroism"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Holy Armor"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Holy Weapon"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Invulnerability"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)

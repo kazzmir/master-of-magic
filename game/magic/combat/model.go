@@ -564,6 +564,14 @@ func (unit *ArmyUnit) ProcessWeb() {
     }
 }
 
+func (unit *ArmyUnit) ReduceInvulnerability(damage int) int {
+    if unit.HasEnchantment(data.UnitEnchantmentInvulnerability) {
+        return max(0, damage - 2)
+    }
+
+    return damage
+}
+
 func (unit *ArmyUnit) IsFlying() bool {
     // a webbed unit is not flying
     return unit.Unit.IsFlying() && !unit.HasCurse(data.UnitCurseWeb)
@@ -1426,8 +1434,13 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
         damage := ComputeRoll(attackStrength, 30)
 
         defense := unit.ComputeDefense(damageType, DamageModifiers{WallDefense: wallDefense})
+
         // can't do more damage than a single figure has HP
         figureDamage := min(damage - defense, health_per_figure)
+        if unit.HasEnchantment(data.UnitEnchantmentInvulnerability) {
+            figureDamage = max(0, figureDamage - 2)
+        }
+
         if figureDamage > 0 {
             totalDamage += figureDamage
         }
@@ -1451,6 +1464,7 @@ func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, modifiers
         // compute defense, apply damage to lead figure. if lead figure dies, apply damage to next figure
         defense := unit.ComputeDefense(damageType, modifiers)
         damage -= defense
+
         if damage > 0 {
             health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
             healthLeft := unit.Unit.GetHealth() % unit.Figures()
@@ -1518,7 +1532,7 @@ func (unit *ArmyUnit) SetRangedAttacks(attacks int) {
 }
 
 // given the distance to the target in tiles, return the amount of range damage done
-func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
+func (unit *ArmyUnit) ComputeRangeDamage(defender *ArmyUnit, tileDistance int) int {
 
     toHit := unit.GetToHitMelee()
 
@@ -1545,13 +1559,13 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
 
     damage := 0
     for range unit.Figures() {
-        damage += ComputeRoll(unit.GetRangedAttackPower(), toHit)
+        damage += defender.ReduceInvulnerability(ComputeRoll(unit.GetRangedAttackPower(), toHit))
     }
 
     return damage
 }
 
-func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int, counterAttack bool) (int, bool) {
+func (unit *ArmyUnit) ComputeMeleeDamage(defender *ArmyUnit, fearFigure int, counterAttack bool) (int, bool) {
 
     if unit.GetMeleeAttackPower() == 0 {
         return 0, false
@@ -1568,7 +1582,7 @@ func (unit *ArmyUnit) ComputeMeleeDamage(fearFigure int, counterAttack bool) (in
             // counter attack to-hit might be penalized
             toHit = unit.GetCounterAttackToHit()
         }
-        damage += ComputeRoll(unit.GetMeleeAttackPower(), toHit)
+        damage += defender.ReduceInvulnerability(ComputeRoll(unit.GetMeleeAttackPower(), toHit))
     }
 
     return damage, hit
@@ -2721,7 +2735,8 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
             fireDamage := 0
             // one breath attack per figure
             for range attacker.Figures() {
-                fireDamage += defender.ApplyDamage(ComputeRoll(strength, attacker.GetToHitMelee()), units.DamageFire, DamageModifiers{Magic: data.ChaosMagic})
+                attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee())
+                fireDamage += defender.ApplyDamage(defender.ReduceInvulnerability(attackerDamage), units.DamageFire, DamageModifiers{Magic: data.ChaosMagic})
             }
             model.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
             // damage += fireDamage
@@ -2736,7 +2751,8 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         damage = append(damage, func(){
             lightningDamage := 0
             for range attacker.Figures() {
-                lightningDamage += defender.ApplyDamage(ComputeRoll(strength, attacker.GetToHitMelee()), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee())
+                lightningDamage += defender.ApplyDamage(defender.ReduceInvulnerability(attackerDamage), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             }
             model.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
             // damage += lightningDamage
@@ -2813,7 +2829,7 @@ func (model *CombatModel) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit) 
         for range attacker.Figures() {
             if rand.N(100) < attacker.GetToHitMelee() {
                 // damage += defender.ApplyDamage(strength, units.DamageThrown, false)
-                damage += strength
+                damage += defender.ReduceInvulnerability(strength)
             }
         }
 
@@ -3023,6 +3039,7 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
         ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
         Illusion: attacker.HasAbility(data.AbilityIllusion),
     }
+
     hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, modifiers)
     model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.Unit.GetHealth()))
 }
@@ -3293,7 +3310,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
             case 4:
                 if attacker.HasAbility(data.AbilityFirstStrike) && !defender.HasAbility(data.AbilityNegateFirstStrike) {
-                    attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear, false)
+                    attackerDamage, hit := attacker.ComputeMeleeDamage(defender, attackerFear, false)
 
                     // asleep units take full attack power as damage
                     if defender.IsAsleep() {
@@ -3352,7 +3369,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
 
                 // attacker has not melee attacked yet, so let them do it now, or they have haste so they can attack again
                 for range attacks {
-                    attackerDamage, hit := attacker.ComputeMeleeDamage(attackerFear, false)
+                    attackerDamage, hit := attacker.ComputeMeleeDamage(defender, attackerFear, false)
 
                     if defender.IsAsleep() {
                         hit = true
@@ -3380,7 +3397,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 if !defender.IsAsleep() {
                     // defender does counter-attack
                     for range counters {
-                        defenderDamage, hit := defender.ComputeMeleeDamage(defenderFear, true)
+                        defenderDamage, hit := defender.ComputeMeleeDamage(attacker, defenderFear, true)
 
                         // attacker can't possibly be asleep, so no need to check here
 
@@ -3786,6 +3803,7 @@ type SpellSystem interface {
     CreateHeroismProjectile(target *ArmyUnit) *Projectile
     CreateHolyArmorProjectile(target *ArmyUnit) *Projectile
     CreateHolyWeaponProjectile(target *ArmyUnit) *Projectile
+    CreateInvulnerabilityProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4550,10 +4568,24 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Invulnerability":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateInvulnerabilityProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRealm() == data.DeathMagic {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentInvulnerability) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Invulnerability
         Lionheart
         Righteousness
         True Sight

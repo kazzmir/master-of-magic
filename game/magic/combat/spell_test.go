@@ -159,6 +159,10 @@ func (system *TestSpellSystem) CreateHolyWeaponProjectile(target *ArmyUnit) *Pro
     return nil
 }
 
+func (system *TestSpellSystem) CreateInvulnerabilityProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }
