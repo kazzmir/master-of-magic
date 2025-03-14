@@ -187,6 +187,10 @@ func (system *TestSpellSystem) CreateIronSkinProjectile(target *ArmyUnit) *Proje
     return nil
 }
 
+func (system *TestSpellSystem) CreateRegenerationProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }

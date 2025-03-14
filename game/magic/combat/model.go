@@ -3880,6 +3880,7 @@ type SpellSystem interface {
     CreateElementalArmorProjectile(target *ArmyUnit) *Projectile
     CreateGiantStrengthProjectile(target *ArmyUnit) *Projectile
     CreateIronSkinProjectile(target *ArmyUnit) *Projectile
+    CreateRegenerationProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4738,10 +4739,21 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Regeneration":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateRegenerationProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasAbility(data.AbilityRegeneration){
+                    return false
+                }
+
+                return true
+            })
+
 
         /*
         unit enchantments:
-        Regeneration
         Resist Elements
         Stone Skin
         Flight

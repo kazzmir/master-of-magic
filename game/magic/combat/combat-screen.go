@@ -896,6 +896,18 @@ func (combat *CombatScreen) CreateIronSkinProjectile(target *ArmyUnit) *Projecti
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
+func (combat *CombatScreen) CreateRegenerationProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 0)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentRegeneration)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateRighteousnessProjectile(target *ArmyUnit) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
