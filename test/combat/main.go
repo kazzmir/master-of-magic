@@ -344,6 +344,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Holy Weapon"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Invulnerability"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Lionheart"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Righteousness"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
@@ -354,8 +355,10 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
         attackingArmy.KillUnit(attackingArmy.GetUnits()[0])
     }
 
+    /*
     attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentLionHeart)
     attackingArmy.GetUnits()[1].Unit.AddEnchantment(data.UnitEnchantmentLionHeart)
+    */
 
     // attackingArmy.Units[0].AddCurse(data.UnitCurseConfusion)
 

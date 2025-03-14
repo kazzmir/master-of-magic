@@ -3877,6 +3877,7 @@ type SpellSystem interface {
     CreateHolyWeaponProjectile(target *ArmyUnit) *Projectile
     CreateInvulnerabilityProjectile(target *ArmyUnit) *Projectile
     CreateLionHeartProjectile(target *ArmyUnit) *Projectile
+    CreateRighteousnessProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4671,10 +4672,24 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Righteousness":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateRighteousnessProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRealm() == data.DeathMagic {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentRighteousness) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Righteousness
         True Sight
         Elemental Armor
         Giant Strength

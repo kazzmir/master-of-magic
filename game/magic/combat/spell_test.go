@@ -167,6 +167,10 @@ func (system *TestSpellSystem) CreateLionHeartProjectile(target *ArmyUnit) *Proj
     return nil
 }
 
+func (system *TestSpellSystem) CreateRighteousnessProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }
