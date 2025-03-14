@@ -1490,11 +1490,7 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
         defense := unit.ComputeDefense(damageType, DamageSourceSpell, DamageModifiers{WallDefense: wallDefense})
 
         // can't do more damage than a single figure has HP
-        figureDamage := min(damage - defense, health_per_figure)
-        if unit.HasEnchantment(data.UnitEnchantmentInvulnerability) {
-            figureDamage = max(0, figureDamage - 2)
-        }
-
+        figureDamage := unit.ReduceInvulnerability(min(damage - defense, health_per_figure))
         if figureDamage > 0 {
             totalDamage += figureDamage
         }
