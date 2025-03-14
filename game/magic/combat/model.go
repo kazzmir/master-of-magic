@@ -3898,6 +3898,7 @@ type SpellSystem interface {
     CreateElementalArmorProjectile(target *ArmyUnit) *Projectile
     CreateGiantStrengthProjectile(target *ArmyUnit) *Projectile
     CreateIronSkinProjectile(target *ArmyUnit) *Projectile
+    CreateStoneSkinProjectile(target *ArmyUnit) *Projectile
     CreateRegenerationProjectile(target *ArmyUnit) *Projectile
     CreateResistElementsProjectile(target *ArmyUnit) *Projectile
 
@@ -4773,10 +4774,21 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Stone Skin":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateStoneSkinProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                // if a target has iron skin they cannot also have stone skin
+                if target.HasEnchantment(data.UnitEnchantmentIronSkin) || target.HasEnchantment(data.UnitEnchantmentStoneSkin) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Stone Skin
         Flight
         Guardian Wind
         Haste
