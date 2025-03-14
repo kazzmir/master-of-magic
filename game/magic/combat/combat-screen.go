@@ -339,7 +339,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         AttackingWizardFont: attackingWizardFont,
         DefendingWizardFont: defendingWizardFont,
 
-        Model: MakeCombatModel(cache, defendingArmy, attackingArmy, landscape, plane, zone, overworldX, overworldY, events),
+        Model: MakeCombatModel(allSpells, defendingArmy, attackingArmy, landscape, plane, zone, overworldX, overworldY, events),
     }
 
     combat.Drawer = combat.NormalDraw

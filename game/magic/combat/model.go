@@ -10,7 +10,6 @@ import (
     "time"
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
-    "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -1892,7 +1891,7 @@ type CombatModel struct {
     GlobalEnchantments []data.CombatEnchantment
 }
 
-func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
+func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
     model := &CombatModel{
         Turn: TeamDefender,
         Plane: plane,
@@ -1904,12 +1903,6 @@ func MakeCombatModel(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
         DefendingArmy: defendingArmy,
         CurrentTurn: 0,
         Events: events,
-    }
-
-    allSpells, err := spellbook.ReadSpellsFromCache(cache)
-    if err != nil {
-        log.Printf("Error: unable to read spells: %v", err)
-        allSpells = spellbook.Spells{}
     }
 
     model.Initialize(allSpells, overworldX, overworldY)

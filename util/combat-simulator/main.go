@@ -28,6 +28,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/util/common"
 
@@ -408,9 +409,29 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
         Player: cpuPlayer,
     }
 
+    makeHero := func (unit *units.OverworldUnit) *herolib.Hero {
+        for _, hero := range herolib.AllHeroTypes() {
+            heroUnit := hero.GetUnit()
+            if heroUnit.Equals(unit.Unit) {
+                newHero := herolib.MakeHero(unit, hero, hero.DefaultName())
+                newHero.SetExtraAbilities()
+                return newHero
+            }
+        }
+
+        log.Printf("Unknown hero unit: %v", unit.Unit)
+
+        return nil
+    }
+
     for _, unit := range combatDescription.DefenderUnits {
         made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, cpuPlayer.Wizard.Banner, cpuPlayer.MakeExperienceInfo())
-        defendingArmy.AddUnit(made)
+
+        if made.GetRace() == data.RaceHero {
+            defendingArmy.AddUnit(makeHero(made))
+        } else {
+            defendingArmy.AddUnit(made)
+        }
     }
 
     defendingArmy.LayoutUnits(combat.TeamDefender)
@@ -421,7 +442,11 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
 
     for _, unit := range combatDescription.AttackerUnits {
         made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, humanPlayer.Wizard.Banner, humanPlayer.MakeExperienceInfo())
-        attackingArmy.AddUnit(made)
+        if made.GetRace() == data.RaceHero {
+            attackingArmy.AddUnit(makeHero(made))
+        } else {
+            attackingArmy.AddUnit(made)
+        }
     }
 
     attackingArmy.LayoutUnits(combat.TeamAttacker)
