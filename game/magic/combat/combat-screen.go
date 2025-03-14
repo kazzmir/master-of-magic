@@ -823,6 +823,18 @@ func (combat *CombatScreen) CreateHolyArmorProjectile(target *ArmyUnit) *Project
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
+func (combat *CombatScreen) CreateHolyWeaponProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: the images should be mostly with with transparency
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentHolyWeapon)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
     explodeImages := images

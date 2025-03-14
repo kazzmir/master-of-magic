@@ -1522,6 +1522,8 @@ func (unit *ArmyUnit) ComputeRangeDamage(tileDistance int) int {
 
     toHit := unit.GetToHitMelee()
 
+    // FIXME: if the unit has Holy Weapon and this is a magic ranged attack then the +10% to-hit should not apply
+
     // magical attacks don't suffer a to-hit penalty
     if unit.Unit.GetRangedAttackDamageType() != units.DamageRangedMagical {
 
@@ -2713,6 +2715,8 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         strength := int(attacker.GetAbilityValue(data.AbilityFireBreath))
         hit = true
 
+        // FIXME: the tohit value here should not include the Holy Weapon bonus
+
         damage = append(damage, func(){
             fireDamage := 0
             // one breath attack per figure
@@ -3781,6 +3785,7 @@ type SpellSystem interface {
     CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile
     CreateHeroismProjectile(target *ArmyUnit) *Projectile
     CreateHolyArmorProjectile(target *ArmyUnit) *Projectile
+    CreateHolyWeaponProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4526,10 +4531,28 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Holy Weapon":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateHolyWeaponProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRace() == data.RaceFantastic {
+                    return false
+                }
+
+                if target.GetRealm() == data.DeathMagic {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentHolyWeapon) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Holy Weapon
         Invulnerability
         Lionheart
         Righteousness
