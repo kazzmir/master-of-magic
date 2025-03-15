@@ -77,6 +77,7 @@ func createScenario(cache *lbx.LbxCache, saveGame *load.SaveGame) *gamelib.Game 
     player.ArcanusFog = saveGame.ToFogMap(data.PlaneArcanus)
     player.MyrrorFog = saveGame.ToFogMap(data.PlaneMyrror)
     player.UpdateFogVisibility()
+    player.Cities = saveGame.ToCities(player, 0, game)
 
     for i := 1; i < int(saveGame.NumPlayers); i++ {
         wizard := saveGame.ToWizard(i)
@@ -85,6 +86,9 @@ func createScenario(cache *lbx.LbxCache, saveGame *load.SaveGame) *gamelib.Game 
     }
 
     game.Camera.Center(20, 20)
+    if len(player.Cities) > 0 {
+        game.Camera.Center(player.Cities[0].X, player.Cities[0].Y)
+    }
 
     return game
 }

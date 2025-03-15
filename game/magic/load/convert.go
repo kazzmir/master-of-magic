@@ -1,15 +1,21 @@
 package load
 
-
 import (
-    "image"
+	"fmt"
+	"image"
 
-    "github.com/kazzmir/master-of-magic/game/magic/data"
-    "github.com/kazzmir/master-of-magic/game/magic/terrain"
-    "github.com/kazzmir/master-of-magic/game/magic/maplib"
-    "github.com/kazzmir/master-of-magic/game/magic/setup"
+	buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+	citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+	"github.com/kazzmir/master-of-magic/game/magic/data"
+	gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
+	"github.com/kazzmir/master-of-magic/game/magic/maplib"
+	playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+	"github.com/kazzmir/master-of-magic/game/magic/setup"
+	"github.com/kazzmir/master-of-magic/game/magic/terrain"
+	"github.com/kazzmir/master-of-magic/game/magic/units"
+	"github.com/kazzmir/master-of-magic/lib/set"
 
-    "github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 func (saveGame *SaveGame) ToMap(terrainData *terrain.TerrainData, plane data.Plane, cityProvider maplib.CityProvider) *maplib.Map {
@@ -275,4 +281,80 @@ func (saveGame *SaveGame) ToFogMap(plane data.Plane) data.FogMap {
     }
 
     return out
+}
+
+func (saveGame *SaveGame) ToCities(player *playerlib.Player, playerIndex int8, game *gamelib.Game) []*citylib.City {
+    cities := []*citylib.City{}
+
+    for index := 0; index < int(saveGame.NumCities); index++ {
+        cityData := saveGame.Cities[index]
+
+        if cityData.Owner != playerIndex {
+            continue
+        }
+
+        plane := data.Plane(cityData.Plane)
+
+        var race data.Race
+        switch cityData.Race {
+            case 0: race = data.RaceBarbarian
+            case 1: race = data.RaceBeastmen
+            case 2: race = data.RaceDarkElf
+            case 3: race = data.RaceDraconian
+            case 4: race = data.RaceDwarf
+            case 5: race = data.RaceGnoll
+            case 6: race = data.RaceHalfling
+            case 7: race = data.RaceHighElf
+            case 8: race = data.RaceHighMen
+            case 9: race = data.RaceKlackon
+            case 10: race = data.RaceLizard
+            case 11: race = data.RaceNomad
+            case 12: race = data.RaceOrc
+            case 13: race = data.RaceTroll
+        }
+
+        // FIXME: parse cityData.NumBuildings and cityData.Buildings
+        buildings := set.MakeSet[buildinglib.Building]()
+
+        // FIXME: parse cityData.Enchantments
+        enchantments := set.MakeSet[citylib.Enchantment]()
+
+        // FIXME: parse cityData.Construction
+        producingBuilding := buildinglib.BuildingTradeGoods
+        producingUnit := units.UnitNone
+
+        catchmentProvider := game.ArcanusMap
+        if plane == data.PlaneMyrror {
+            catchmentProvider = game.MyrrorMap
+        }
+
+        fmt.Printf("%v\n", cityData.Size)
+
+        city := citylib.City{
+            Population: 1000 * int(cityData.Population) + 10 * int(cityData.Population10),
+            Farmers: int(cityData.Farmers),
+            Workers: int(cityData.Population - cityData.Farmers),
+            Rebels: 0,
+            Name: string(cityData.Name),
+            Plane: plane,
+            Race: race,
+            X: int(cityData.X),
+            Y: int(cityData.Y),
+            Outpost: cityData.Size == 0,
+            Buildings: buildings,
+            SoldBuilding: cityData.SoldBuilding == 1,
+            Enchantments: enchantments,
+            Production: float32(cityData.Production),
+            ProducingBuilding: producingBuilding,
+            ProducingUnit: producingUnit,
+            CatchmentProvider: catchmentProvider,
+            CityServices: game,
+            ReignProvider: player,
+            BuildingInfo: game.BuildingInfo,
+        }
+        city.UpdateUnrest()
+        cities = append(cities, &city)
+    }
+
+    return cities
 }
