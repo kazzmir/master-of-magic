@@ -55,11 +55,11 @@ func (engine *Engine) Update() error {
 }
 
 func createGame(cache *lbx.LbxCache, saveGame *load.SaveGame) *gamelib.Game {
-    game := gamelib.MakeGame(cache, saveGame.ToSettings())
+    game := gamelib.MakeGame(cache, saveGame.ConvertSettings())
 
     // load data
-    game.ArcanusMap = saveGame.ToMap(game.ArcanusMap.Data, data.PlaneArcanus, nil)
-    game.MyrrorMap = saveGame.ToMap(game.MyrrorMap.Data, data.PlaneMyrror, nil)
+    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, nil)
+    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, nil)
     game.TurnNumber = uint64(saveGame.Turn)
     // FIXME: game.ArtifactPool
     // FIXME: game.RandomEvents
@@ -69,20 +69,20 @@ func createGame(cache *lbx.LbxCache, saveGame *load.SaveGame) *gamelib.Game {
     // FIXME: game.PurifyWorkMyrror
     // FIXME: game.Players
 
-    wizard := saveGame.ToWizard(0)
+    wizard := saveGame.ConvertWizard(0)
 
     player := game.AddPlayer(wizard, true)
     player.LiftFog(20, 20, 50, data.PlaneArcanus)
     player.LiftFog(20, 20, 50, data.PlaneMyrror)
-    player.ArcanusFog = saveGame.ToFogMap(data.PlaneArcanus)
-    player.MyrrorFog = saveGame.ToFogMap(data.PlaneMyrror)
+    player.ArcanusFog = saveGame.ConvertFogMap(data.PlaneArcanus)
+    player.MyrrorFog = saveGame.ConvertFogMap(data.PlaneMyrror)
     player.UpdateFogVisibility()
-    player.Cities = saveGame.ToCities(player, 0, game)
+    player.Cities = saveGame.ConvertCities(player, 0, game)
 
     for i := 1; i < int(saveGame.NumPlayers); i++ {
-        wizard := saveGame.ToWizard(i)
+        wizard := saveGame.ConvertWizard(i)
         enemy := game.AddPlayer(wizard, false)
-        enemy.Cities = saveGame.ToCities(enemy, int8(i), game)
+        enemy.Cities = saveGame.ConvertCities(enemy, int8(i), game)
         player.AwarePlayer(enemy)
     }
 

@@ -17,7 +17,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func (saveGame *SaveGame) ToMap(terrainData *terrain.TerrainData, plane data.Plane, cityProvider maplib.CityProvider) *maplib.Map {
+func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane data.Plane, cityProvider maplib.CityProvider) *maplib.Map {
 
     map_ := maplib.Map{
         Data: terrainData,
@@ -115,7 +115,7 @@ func (saveGame *SaveGame) ToMap(terrainData *terrain.TerrainData, plane data.Pla
     return &map_
 }
 
-func (saveGame *SaveGame) ToSettings() setup.NewGameSettings {
+func (saveGame *SaveGame) ConvertSettings() setup.NewGameSettings {
     return setup.NewGameSettings{
         Difficulty:  data.DifficultySetting(saveGame.Difficulty),
         Opponents: int(saveGame.NumPlayers) - 1,
@@ -124,7 +124,7 @@ func (saveGame *SaveGame) ToSettings() setup.NewGameSettings {
     }
 }
 
-func (saveGame *SaveGame) ToWizard(index int) setup.WizardCustom {
+func (saveGame *SaveGame) ConvertWizard(index int) setup.WizardCustom {
     playerData := saveGame.PlayerData[index]
 
     retorts := []data.Retort{}
@@ -256,7 +256,7 @@ func (saveGame *SaveGame) ToWizard(index int) setup.WizardCustom {
     }
 }
 
-func (saveGame *SaveGame) ToFogMap(plane data.Plane) data.FogMap {
+func (saveGame *SaveGame) ConvertFogMap(plane data.Plane) data.FogMap {
     out := make([][]data.FogType, WorldWidth)
     for i := range WorldWidth {
         out[i] = make([]data.FogType, WorldHeight)
@@ -282,7 +282,7 @@ func (saveGame *SaveGame) ToFogMap(plane data.Plane) data.FogMap {
     return out
 }
 
-func (saveGame *SaveGame) ToCities(player *playerlib.Player, playerIndex int8, game *gamelib.Game) []*citylib.City {
+func (saveGame *SaveGame) ConvertCities(player *playerlib.Player, playerIndex int8, game *gamelib.Game) []*citylib.City {
     cities := []*citylib.City{}
 
     for index := 0; index < int(saveGame.NumCities); index++ {
