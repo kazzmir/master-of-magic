@@ -3952,6 +3952,7 @@ type SpellSystem interface {
     CreateGuardianWindProjectile(target *ArmyUnit) *Projectile
     CreateHasteProjectile(target *ArmyUnit) *Projectile
     CreateInvisibilityProjectile(target *ArmyUnit) *Projectile
+    CreateMagicImmunityProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4883,10 +4884,20 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Magic Immunity":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateMagicImmunityProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasAbility(data.AbilityMagicImmunity) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Magic Immunity
         Resist Magic
         Spell Lock
         Eldritch Weapon
