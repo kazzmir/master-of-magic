@@ -3152,8 +3152,6 @@ func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         return false
     }
 
-    // FIXME: check if defender has missle immunity and attacker is using regular non-magical attacks
-    // FIXME: check if defender has magic immunity and attacker is using magical attacks
     // FIXME: check if defender has invisible, and attacker doesn't have illusions immunity
 
     if model.InsideWallOfDarkness(defender.X, defender.Y) && !model.InsideWallOfDarkness(attacker.X, attacker.Y) {
@@ -3906,6 +3904,7 @@ type SpellSystem interface {
     CreateRegenerationProjectile(target *ArmyUnit) *Projectile
     CreateResistElementsProjectile(target *ArmyUnit) *Projectile
     CreateFlightProjectile(target *ArmyUnit) *Projectile
+    CreateGuardianWindProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4795,11 +4794,29 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateFlightProjectile(target))
                 castedCallback()
-            }, targetAny)
+            }, func (target *ArmyUnit) bool {
+                // we could check if the unit has the flight ability, but the Flight spell also grants
+                // 3 movement, so its still worthwhile to cast Flight on a unit that has less than 3 movement speed
+                if target.HasEnchantment(data.UnitEnchantmentFlight) {
+                    return false
+                }
+
+                return true
+            })
+        case "Guardian Wind":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateGuardianWindProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentGuardianWind) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Guardian Wind
         Haste
         Invisibility
         Magic Immunity

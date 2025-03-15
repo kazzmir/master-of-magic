@@ -122,7 +122,7 @@ func createLizardmenArmy(player *player.Player, count int) *combat.Army {
     return &army
 }
 
-func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
+func createHighMenBowmanArmyN(player *player.Player, count int) *combat.Army {
     army := combat.Army{
         Player: player,
     }
@@ -131,7 +131,7 @@ func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
         army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
     }
 
-    return army
+    return &army
 }
 
 func createHighMenBowmanArmy(player *player.Player) *combat.Army {
@@ -263,8 +263,8 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
         }, false, 0, 0, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
-    defendingArmy := createLizardmenArmy(defendingPlayer, 3)
+    defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
+    // defendingArmy := createLizardmenArmy(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingArmy.GetUnits()[0].AddCurse(data.UnitCurseBlackSleep)
@@ -353,6 +353,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Resist Elements"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Stone Skin"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Flight"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Guardian Wind"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)

@@ -968,6 +968,18 @@ func (combat *CombatScreen) CreateFlightProjectile(target *ArmyUnit) *Projectile
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
+func (combat *CombatScreen) CreateGuardianWindProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentGuardianWind)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
     explodeImages := images
@@ -1923,10 +1935,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
             return
         }
 
-        // FIXME: apply defenses for magic immunity or missle immunity
-
         damage := attacker.ComputeRangeDamage(target, tileDistance)
-        // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
         // FIXME: for magical damage, set the Magic damage modifier for the proper realm
         target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
