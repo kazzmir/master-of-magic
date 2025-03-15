@@ -3,6 +3,7 @@ package load
 import (
     "image"
 
+    "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -124,7 +125,7 @@ func (saveGame *SaveGame) ConvertSettings() setup.NewGameSettings {
     }
 }
 
-func (saveGame *SaveGame) ConvertWizard(index int) setup.WizardCustom {
+func (saveGame *SaveGame) convertWizard(index int) setup.WizardCustom {
     playerData := saveGame.PlayerData[index]
 
     retorts := []data.Retort{}
@@ -256,7 +257,7 @@ func (saveGame *SaveGame) ConvertWizard(index int) setup.WizardCustom {
     }
 }
 
-func (saveGame *SaveGame) ConvertFogMap(plane data.Plane) data.FogMap {
+func (saveGame *SaveGame) convertFogMap(plane data.Plane) data.FogMap {
     out := make([][]data.FogType, WorldWidth)
     for i := range WorldWidth {
         out[i] = make([]data.FogType, WorldHeight)
@@ -282,7 +283,7 @@ func (saveGame *SaveGame) ConvertFogMap(plane data.Plane) data.FogMap {
     return out
 }
 
-func (saveGame *SaveGame) ConvertCities(player *playerlib.Player, playerIndex int8, game *gamelib.Game) []*citylib.City {
+func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex int8, game *gamelib.Game) []*citylib.City {
     cities := []*citylib.City{}
 
     for index := 0; index < int(saveGame.NumCities); index++ {
@@ -354,4 +355,43 @@ func (saveGame *SaveGame) ConvertCities(player *playerlib.Player, playerIndex in
     }
 
     return cities
+}
+
+func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
+    game := gamelib.MakeGame(cache, saveGame.ConvertSettings())
+
+    // load data
+    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, nil)
+    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, nil)
+    game.TurnNumber = uint64(saveGame.Turn)
+    // FIXME: game.ArtifactPool
+    // FIXME: game.RandomEvents
+    // FIXME: game.RoadWorkArcanus
+    // FIXME: game.RoadWorkMyrror
+    // FIXME: game.PurifyWorkArcanus
+    // FIXME: game.PurifyWorkMyrror
+    // FIXME: game.Players
+
+    wizard := saveGame.convertWizard(0)
+
+    player := game.AddPlayer(wizard, true)
+    player.ArcanusFog = saveGame.convertFogMap(data.PlaneArcanus)
+    player.MyrrorFog = saveGame.convertFogMap(data.PlaneMyrror)
+    player.Cities = saveGame.convertCities(player, 0, game)
+
+    for i := 1; i < int(saveGame.NumPlayers); i++ {
+        wizard := saveGame.convertWizard(i)
+        enemy := game.AddPlayer(wizard, false)
+        enemy.Cities = saveGame.convertCities(enemy, int8(i), game)
+    }
+
+    game.Camera.Center(20, 20)
+    if len(player.Cities) > 0 {
+        game.Camera.Center(player.Cities[0].X, player.Cities[0].Y)
+    }
+
+
+    player.UpdateFogVisibility()
+
+    return game
 }

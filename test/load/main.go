@@ -3,6 +3,7 @@ package main
 import (
     "os"
     "fmt"
+    "flag"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -54,54 +55,23 @@ func (engine *Engine) Update() error {
     return nil
 }
 
-func createGame(cache *lbx.LbxCache, saveGame *load.SaveGame) *gamelib.Game {
-    game := gamelib.MakeGame(cache, saveGame.ConvertSettings())
-
-    // load data
-    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, nil)
-    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, nil)
-    game.TurnNumber = uint64(saveGame.Turn)
-    // FIXME: game.ArtifactPool
-    // FIXME: game.RandomEvents
-    // FIXME: game.RoadWorkArcanus
-    // FIXME: game.RoadWorkMyrror
-    // FIXME: game.PurifyWorkArcanus
-    // FIXME: game.PurifyWorkMyrror
-    // FIXME: game.Players
-
-    wizard := saveGame.ConvertWizard(0)
-
-    player := game.AddPlayer(wizard, true)
-    player.LiftFog(20, 20, 50, data.PlaneArcanus)
-    player.LiftFog(20, 20, 50, data.PlaneMyrror)
-    player.ArcanusFog = saveGame.ConvertFogMap(data.PlaneArcanus)
-    player.MyrrorFog = saveGame.ConvertFogMap(data.PlaneMyrror)
-    player.UpdateFogVisibility()
-    player.Cities = saveGame.ConvertCities(player, 0, game)
-
-    for i := 1; i < int(saveGame.NumPlayers); i++ {
-        wizard := saveGame.ConvertWizard(i)
-        enemy := game.AddPlayer(wizard, false)
-        enemy.Cities = saveGame.ConvertCities(enemy, int8(i), game)
-        player.AwarePlayer(enemy)
-    }
-
-    game.Camera.Center(20, 20)
-    if len(player.Cities) > 0 {
-        game.Camera.Center(player.Cities[0].X, player.Cities[0].Y)
-    }
-
-    // player.Admin = true
-    // player.LiftFog(20, 20, 50, data.PlaneArcanus)
-
-    return game
-}
-
-func NewEngine(saveGame *load.SaveGame) (*Engine, error) {
+func NewEngine(saveGame *load.SaveGame, admin bool) (*Engine, error) {
     cache := lbx.AutoCache()
 
-    game := createGame(cache, saveGame)
-    game.DoNextTurn()
+    game := saveGame.Convert(cache)
+    // game.DoNextTurn()
+
+    if admin {
+        player := game.Players[0]
+        player.Admin = true
+        player.LiftFogAll(data.PlaneArcanus)
+        player.LiftFogAll(data.PlaneMyrror)
+        for _, other := range game.Players {
+            if player != other {
+                player.AwarePlayer(other)
+            }
+        }
+    }
 
     run := func(yield coroutine.YieldFunc) error {
         for game.Update(yield) != gamelib.GameStateQuit {
@@ -124,12 +94,28 @@ func NewEngine(saveGame *load.SaveGame) (*Engine, error) {
 }
 
 func main(){
-    if len(os.Args) < 2 {
-        fmt.Printf("Give a GAM file to load\n")
+
+    var admin bool
+
+    flag.BoolVar(&admin, "admin", false, "Make the player an admin (optional)")
+    flag.Usage = func() {
+        fmt.Fprintf(os.Stderr, "Usage: %v [options] filename\n\n", os.Args[0])
+        fmt.Fprintln(os.Stderr, "Options:")
+        flag.PrintDefaults()
+        fmt.Fprintln(os.Stderr, "\nExample:")
+        fmt.Fprintln(os.Stderr, "  ", os.Args[0], "--admin SAVE1.GAM")
+    }
+
+    flag.Parse()
+
+    positionalArgs := flag.Args()
+
+    if len(positionalArgs) < 1 {
+        flag.Usage()
         return
     }
 
-    reader, err := os.Open(os.Args[1])
+    reader, err := os.Open(positionalArgs[0])
     if err != nil {
         fmt.Printf("Error opening file: %v\n", err)
         return
@@ -152,7 +138,7 @@ func main(){
     audio.Initialize()
     mouse.Initialize()
 
-    engine, err := NewEngine(saveGame)
+    engine, err := NewEngine(saveGame, admin)
     if err != nil {
         fmt.Printf("Error: unable to load engine: %v", err)
         return
