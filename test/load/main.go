@@ -75,6 +75,12 @@ func createScenario(cache *lbx.LbxCache, saveGame *load.SaveGame) *gamelib.Game 
     player.LiftFog(20, 20, 50, data.PlaneArcanus)
     player.LiftFog(20, 20, 50, data.PlaneMyrror)
 
+    for i := 1; i < int(saveGame.NumPlayers); i++ {
+        wizard := saveGame.ToWizard(i)
+        enemy := game.AddPlayer(wizard, false)
+        player.AwarePlayer(enemy)
+    }
+
     game.Camera.Center(20, 20)
 
     return game
