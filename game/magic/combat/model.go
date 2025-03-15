@@ -959,7 +959,7 @@ func (unit *ArmyUnit) GetResistanceFor(magic data.MagicType) int {
         }
     }
 
-    if unit.HasAbility(data.DeathImmunity) && magic == data.DeathMagic {
+    if unit.HasAbility(data.AbilityDeathImmunity) && magic == data.DeathMagic {
         modifier = 50
     }
 
