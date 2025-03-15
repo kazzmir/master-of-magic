@@ -3167,7 +3167,7 @@ func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         return false
     }
 
-    if defender.HasAbility(data.AbilityIllusion) && !attacker.HasAbility(data.AbilityIllusionsImmunity) {
+    if defender.HasAbility(data.AbilityInvisibility) && !attacker.HasAbility(data.AbilityIllusionsImmunity) {
         return false
     }
 
@@ -3598,6 +3598,22 @@ func (model *CombatModel) IsAIControlled(unit *ArmyUnit) bool {
     } else {
         return (model.AttackingArmy.IsAI() && !isConfused) || (model.DefendingArmy.IsAI() && isConfused)
     }
+}
+
+func (model *CombatModel) IsAdjacentToEnemy(unit *ArmyUnit) bool {
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            x := unit.X + dx
+            y := unit.Y + dy
+
+            otherUnit := model.GetUnit(x, y)
+            if otherUnit != nil && otherUnit.Team != unit.Team {
+                return true
+            }
+        }
+    }
+
+    return false
 }
 
 func (model *CombatModel) GetArmyForPlayer(player *playerlib.Player) *Army {

@@ -3495,6 +3495,17 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
         }
     }
 
+    teamHasIllusionImmunity := functional.Memoize(func(team Team) bool {
+        army := combat.Model.GetArmyForTeam(team)
+        for _, unit := range army.units {
+            if unit.HasAbility(data.AbilityIllusionsImmunity) {
+                return true
+            }
+        }
+
+        return false
+    })
+
     renderUnit := func(unit *ArmyUnit){
         banner := unit.Unit.GetBanner()
         combatImages, _ := combat.ImageCache.GetImagesTransform(unit.Unit.GetCombatLbxFile(), unit.Unit.GetCombatIndex(unit.Facing), banner.String(), units.MakeUpdateUnitColorsFunc(banner))
@@ -3552,7 +3563,17 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
             // _ = index
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
-            if unit.IsAsleep() {
+            if unit.HasAbility(data.AbilityInvisibility) {
+                // might not be visible at all, or is semi-visible if next to an enemy unit or if the enemy team has
+                // any units with illusions immunity
+                canBeSeen := teamHasIllusionImmunity(oppositeTeam(unit.Team)) || combat.Model.IsAdjacentToEnemy(unit)
+                if canBeSeen {
+                    unitview.RenderCombatSemiInvisible(screen, combatImages[index], unitOptions, unit.Figures(), combat.Counter, &combat.ImageCache)
+                } else {
+                    // if can't be seen then don't render anything at all
+                }
+
+            } else if unit.IsAsleep() {
                 unitview.RenderCombatUnitGrey(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
             } else {
                 warpCreature := false

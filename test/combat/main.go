@@ -366,8 +366,8 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
         attackingArmy.KillUnit(attackingArmy.GetUnits()[0])
     }
 
+    attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentTrueSight)
     /*
-    attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentLionHeart)
     attackingArmy.GetUnits()[1].Unit.AddEnchantment(data.UnitEnchantmentLionHeart)
     */
 
@@ -375,6 +375,10 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
     combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
+
+    // lame but we have to do this after the model has been created
+    defendingArmy.GetUnits()[2].AddEnchantment(data.UnitEnchantmentInvisibility)
+
     // combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
     return combatScreen
 }
