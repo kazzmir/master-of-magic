@@ -118,3 +118,135 @@ func (saveGame *SaveGame) ToSettings() setup.NewGameSettings {
         Magic: data.MagicSetting(saveGame.Magic),
     }
 }
+
+func (saveGame *SaveGame) ToWizard(index int) setup.WizardCustom {
+    playerData := saveGame.PlayerData[index]
+
+    retorts := []data.Retort{}
+    if playerData.RetortAlchemy == 1 {
+        retorts = append(retorts, data.RetortAlchemy)
+    }
+    if playerData.RetortWarlord == 1 {
+        retorts = append(retorts, data.RetortWarlord)
+    }
+    if playerData.RetortChaosMastery == 1 {
+        retorts = append(retorts, data.RetortChaosMastery)
+    }
+    if playerData.RetortNatureMastery == 1 {
+        retorts = append(retorts, data.RetortNatureMastery)
+    }
+    if playerData.RetortSorceryMastery == 1 {
+        retorts = append(retorts, data.RetortSorceryMastery)
+    }
+    if playerData.RetortInfernalPower == 1 {
+        retorts = append(retorts, data.RetortInfernalPower)
+    }
+    if playerData.RetortDivinePower == 1 {
+        retorts = append(retorts, data.RetortDivinePower)
+    }
+    if playerData.RetortSageMaster == 1 {
+        retorts = append(retorts, data.RetortSageMaster)
+    }
+    if playerData.RetortChanneler == 1 {
+        retorts = append(retorts, data.RetortChanneler)
+    }
+    if playerData.RetortMyrran == 1 {
+        retorts = append(retorts, data.RetortMyrran)
+    }
+    if playerData.RetortArchmage == 1 {
+        retorts = append(retorts, data.RetortArchmage)
+    }
+    if playerData.RetortNodeMastery == 1 {
+        retorts = append(retorts, data.RetortNodeMastery)
+    }
+    if playerData.RetortManaFocusing == 1 {
+        retorts = append(retorts, data.RetortManaFocusing)
+    }
+    if playerData.RetortFamous == 1 {
+        retorts = append(retorts, data.RetortFamous)
+    }
+    if playerData.RetortRunemaster == 1 {
+        retorts = append(retorts, data.RetortRunemaster)
+    }
+    if playerData.RetortConjurer == 1 {
+        retorts = append(retorts, data.RetortConjurer)
+    }
+    if playerData.RetortCharismatic == 1 {
+        retorts = append(retorts, data.RetortCharismatic)
+    }
+    if playerData.RetortArtificer == 1 {
+        retorts = append(retorts, data.RetortArtificer)
+    }
+
+    books := []data.WizardBook{}
+    if playerData.SpellRanks[0] != 0 {
+        books = append(books, data.WizardBook{Magic: data.NatureMagic, Count: int(playerData.SpellRanks[0])})
+    }
+    if playerData.SpellRanks[1] != 0 {
+        books = append(books, data.WizardBook{Magic: data.SorceryMagic, Count: int(playerData.SpellRanks[1])})
+    }
+    if playerData.SpellRanks[2] != 0 {
+        books = append(books, data.WizardBook{Magic: data.ChaosMagic, Count: int(playerData.SpellRanks[2])})
+    }
+    if playerData.SpellRanks[3] != 0 {
+        books = append(books, data.WizardBook{Magic: data.LifeMagic, Count: int(playerData.SpellRanks[3])})
+    }
+    if playerData.SpellRanks[4] != 0 {
+        books = append(books, data.WizardBook{Magic: data.DeathMagic, Count: int(playerData.SpellRanks[4])})
+    }
+
+    var race data.Race
+    switch playerData.CapitalRace {
+        case 0: race = data.RaceBarbarian
+        case 1: race = data.RaceBeastmen
+        case 2: race = data.RaceDarkElf
+        case 3: race = data.RaceDraconian
+        case 4: race = data.RaceDwarf
+        case 5: race = data.RaceGnoll
+        case 6: race = data.RaceHalfling
+        case 7: race = data.RaceHighElf
+        case 8: race = data.RaceHighMen
+        case 9: race = data.RaceKlackon
+        case 10: race = data.RaceLizard
+        case 11: race = data.RaceNomad
+        case 12: race = data.RaceOrc
+        case 13: race = data.RaceTroll
+    }
+
+    var banner data.BannerType
+    switch playerData.BannerId {
+        case 0: banner = data.BannerBlue
+        case 1: banner = data.BannerGreen
+        case 2: banner = data.BannerPurple
+        case 3: banner = data.BannerRed
+        case 4: banner = data.BannerYellow
+    }
+
+    var base data.WizardBase
+    switch playerData.WizardId {
+        case 0: base = data.WizardMerlin
+        case 1: base = data.WizardRaven
+        case 2: base = data.WizardSharee
+        case 3: base = data.WizardLoPan
+        case 4: base = data.WizardJafar
+        case 5: base = data.WizardOberic
+        case 6: base = data.WizardRjak
+        case 7: base = data.WizardSssra
+        case 8: base = data.WizardTauron
+        case 9: base = data.WizardFreya
+        case 10: base = data.WizardHorus
+        case 11: base = data.WizardAriel
+        case 12: base = data.WizardTlaloc
+        case 13: base = data.WizardKali
+    }
+
+    return setup.WizardCustom{
+        Name: string(playerData.WizardName),
+        Portrait: int(playerData.WizardId),
+        Base: base,
+        Retorts: retorts,
+        Books: books,
+        Race: race,
+        Banner: banner,
+    }
+}

@@ -832,12 +832,12 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    out.RetortNodeMastery, err = lbx.ReadN[int8](playerReader)
+    out.RetortManaFocusing, err = lbx.ReadN[int8](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
 
-    out.RetortManaFocusing, err = lbx.ReadN[int8](playerReader)
+    out.RetortNodeMastery, err = lbx.ReadN[int8](playerReader)
     if err != nil {
         return PlayerData{}, err
     }

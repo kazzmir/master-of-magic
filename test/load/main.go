@@ -10,7 +10,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/data"
-    "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/load"
@@ -58,16 +57,25 @@ func (engine *Engine) Update() error {
 func createScenario(cache *lbx.LbxCache, saveGame *load.SaveGame) *gamelib.Game {
     game := gamelib.MakeGame(cache, saveGame.ToSettings())
 
+    // load data
     game.ArcanusMap = saveGame.ToMap(game.ArcanusMap.Data, data.PlaneArcanus, nil)
     game.MyrrorMap = saveGame.ToMap(game.MyrrorMap.Data, data.PlaneMyrror, nil)
+    game.TurnNumber = uint64(saveGame.Turn)
+    // FIXME: game.ArtifactPool
+    // FIXME: game.RandomEvents
+    // FIXME: game.RoadWorkArcanus
+    // FIXME: game.RoadWorkMyrror
+    // FIXME: game.PurifyWorkArcanus
+    // FIXME: game.PurifyWorkMyrror
+    // FIXME: game.Players
 
-    game.Plane = data.PlaneArcanus
-    game.Camera.Center(20, 20)
+    wizard := saveGame.ToWizard(0)
 
-    // FIXME: load players
-    player := game.AddPlayer(setup.WizardCustom{Name: "bob", Banner: data.BannerBlue, Race: data.RaceTroll}, true)
+    player := game.AddPlayer(wizard, true)
     player.LiftFog(20, 20, 50, data.PlaneArcanus)
     player.LiftFog(20, 20, 50, data.PlaneMyrror)
+
+    game.Camera.Center(20, 20)
 
     return game
 }
