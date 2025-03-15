@@ -91,8 +91,10 @@ func RenderCombatSemiInvisible(screen *ebiten.Image, use *ebiten.Image, options 
     groundHeight := float64(6)
 
     var greyScale colorm.ColorM
-    greyScale.ChangeHSV(0, 0, 1.1)
-    greyScale.Scale(1, 1, 1, 0.45)
+    greyScale.Scale(0, 0, 0, 0.45)
+    greyScale.Translate(32, 32, 32, 0)
+    // greyScale.ChangeHSV(0, 0, 1.1)
+    // greyScale.Scale(1, 1, 1, 0.45)
     var greyOptions colorm.DrawImageOptions
 
     geoM := options.GeoM
