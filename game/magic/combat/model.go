@@ -871,8 +871,8 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
     return unit.Unit.GetAbilityValue(ability)
 }
 
-func (unit *ArmyUnit) GetCounterAttackToHit() int {
-    base := unit.GetToHitMelee()
+func (unit *ArmyUnit) GetCounterAttackToHit(defender *ArmyUnit) int {
+    base := unit.GetToHitMelee(defender)
     // if somehow the unit already has <10% tohit then just return that
     if base < 10 {
         return base
@@ -886,7 +886,7 @@ func (unit *ArmyUnit) GetCounterAttackToHit() int {
 }
 
 // FIXME: needs a type passed in (melee, ranged, etc)
-func (unit *ArmyUnit) GetToHitMelee() int {
+func (unit *ArmyUnit) GetToHitMelee(defender *ArmyUnit) int {
     modifier := 0
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) ||
@@ -896,6 +896,10 @@ func (unit *ArmyUnit) GetToHitMelee() int {
 
     if unit.HasCurse(data.UnitCurseVertigo) {
         modifier -= 20
+    }
+
+    if defender.HasAbility(data.AbilityInvisibility) && !unit.HasAbility(data.AbilityIllusionsImmunity) {
+        modifier -= 10
     }
 
     // FIXME: blur doesn't affect to hit, instead it directly reduces damage points
@@ -1617,7 +1621,7 @@ func (unit *ArmyUnit) SetRangedAttacks(attacks int) {
 // given the distance to the target in tiles, return the amount of range damage done
 func (unit *ArmyUnit) ComputeRangeDamage(defender *ArmyUnit, tileDistance int) int {
 
-    toHit := unit.GetToHitMelee()
+    toHit := unit.GetToHitMelee(defender)
 
     // FIXME: if the unit has Holy Weapon and this is a magic ranged attack then the +10% to-hit should not apply
 
@@ -1660,10 +1664,10 @@ func (unit *ArmyUnit) ComputeMeleeDamage(defender *ArmyUnit, fearFigure int, cou
         // even if all figures fail to cause damage, it still counts as a hit for touch purposes
         hit = true
 
-        toHit := unit.GetToHitMelee()
+        toHit := unit.GetToHitMelee(defender)
         if counterAttack {
             // counter attack to-hit might be penalized
-            toHit = unit.GetCounterAttackToHit()
+            toHit = unit.GetCounterAttackToHit(defender)
         }
         damage += defender.ReduceInvulnerability(ComputeRoll(unit.GetMeleeAttackPower(), toHit))
     }
@@ -2820,7 +2824,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
             fireDamage := 0
             // one breath attack per figure
             for range attacker.Figures() {
-                attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee())
+                attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee(defender))
                 fireDamage += defender.ApplyDamage(defender.ReduceInvulnerability(attackerDamage), units.DamageFire, DamageModifiers{Magic: data.ChaosMagic})
             }
             model.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
@@ -2836,7 +2840,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         damage = append(damage, func(){
             lightningDamage := 0
             for range attacker.Figures() {
-                attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee())
+                attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee(defender))
                 lightningDamage += defender.ApplyDamage(defender.ReduceInvulnerability(attackerDamage), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             }
             model.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
@@ -2912,7 +2916,7 @@ func (model *CombatModel) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit) 
         strength := int(attacker.GetAbilityValue(data.AbilityThrown))
         damage := 0
         for range attacker.Figures() {
-            if rand.N(100) < attacker.GetToHitMelee() {
+            if rand.N(100) < attacker.GetToHitMelee(defender) {
                 // damage += defender.ApplyDamage(strength, units.DamageThrown, false)
                 damage += defender.ReduceInvulnerability(strength)
             }
@@ -3160,6 +3164,10 @@ func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     }
 
     if attacker.Team == defender.Team && attacker.ConfusionAction != ConfusionActionEnemyControl {
+        return false
+    }
+
+    if defender.HasAbility(data.AbilityIllusion) && !attacker.HasAbility(data.AbilityIllusionsImmunity) {
         return false
     }
 

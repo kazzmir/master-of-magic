@@ -623,7 +623,7 @@ func TestCounterAttackPenalty(test *testing.T){
 
     combat.Initialize(spellbook.Spells{}, 0, 0)
 
-    if defendingArmy.units[0].GetCounterAttackToHit() != 30 {
+    if defendingArmy.units[0].GetCounterAttackToHit(attackingArmy.GetUnits()[0]) != 30 {
         test.Errorf("Error: defender should have normal 30%% counter attack to-hit")
     }
 
@@ -631,7 +631,7 @@ func TestCounterAttackPenalty(test *testing.T){
     combat.meleeAttack(attackingArmy.units[0], defendingArmy.units[0])
     combat.meleeAttack(attackingArmy.units[0], defendingArmy.units[0])
 
-    if defendingArmy.units[0].GetCounterAttackToHit() != 20 {
+    if defendingArmy.units[0].GetCounterAttackToHit(attackingArmy.GetUnits()[0]) != 20 {
         test.Errorf("Error: defender should have 20%% counter attack to-hit")
     }
 }
