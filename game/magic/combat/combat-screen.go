@@ -980,6 +980,18 @@ func (combat *CombatScreen) CreateGuardianWindProjectile(target *ArmyUnit) *Proj
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
+func (combat *CombatScreen) CreateHasteProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentHaste)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
     explodeImages := images
@@ -2424,12 +2436,23 @@ func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *A
         attacker.MovesLeft = fraction.FromInt(0)
     }
 
-    attacker.RangedAttacks -= 1
-
     attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
 
-    // FIXME: could use a for/yield loop here to update projectiles
-    combat.createRangeAttack(attacker, defender)
+    attacks := 1
+    // haste does two ranged attacks
+    if attacker.HasEnchantment(data.UnitEnchantmentHaste) {
+        // caster's don't get to attack twice
+        if attacker.GetRangedAttackDamageType() == units.DamageRangedMagical && attacker.CastingSkill > 0 {
+        } else {
+            attacks = min(2, attacker.RangedAttacks)
+        }
+    }
+
+    for range attacks {
+        attacker.UseRangeAttack()
+        // FIXME: could use a for/yield loop here to update projectiles
+        combat.createRangeAttack(attacker, defender)
+    }
 
     sound, err := combat.AudioCache.GetSound(attacker.Unit.GetRangeAttackSound().LbxIndex())
     if err == nil {

@@ -354,6 +354,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Stone Skin"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Flight"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Guardian Wind"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Haste"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)

@@ -563,6 +563,14 @@ func (unit *ArmyUnit) IsWebbed() bool {
     return unit.WebHealth > 0
 }
 
+func (unit *ArmyUnit) UseRangeAttack() {
+    if unit.GetRangedAttackDamageType() == units.DamageRangedMagical && unit.CastingSkill > 0 {
+        unit.CastingSkill = max(0, unit.CastingSkill - 3)
+    } else if unit.RangedAttacks > 0 {
+        unit.RangedAttacks -= 1
+    }
+}
+
 func (unit *ArmyUnit) GetDamageSource() DamageSource {
     if unit.Unit.IsHero() {
         return DamageSourceHero
@@ -3136,7 +3144,10 @@ func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         return false
     }
 
-    if attacker.RangedAttacks <= 0 {
+    hasRangedAttacks := attacker.RangedAttacks > 0
+    hasCastingAttacks := attacker.GetRangedAttackDamageType() == units.DamageRangedMagical && attacker.CastingSkill >= 3
+
+    if !hasRangedAttacks && !hasCastingAttacks {
         return false
     }
 
@@ -3905,6 +3916,7 @@ type SpellSystem interface {
     CreateResistElementsProjectile(target *ArmyUnit) *Projectile
     CreateFlightProjectile(target *ArmyUnit) *Projectile
     CreateGuardianWindProjectile(target *ArmyUnit) *Projectile
+    CreateHasteProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4814,10 +4826,20 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Haste":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateHasteProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentHaste) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Haste
         Invisibility
         Magic Immunity
         Resist Magic

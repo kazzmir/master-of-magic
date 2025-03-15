@@ -204,6 +204,10 @@ func (system *TestSpellSystem) CreateGuardianWindProjectile(target *ArmyUnit) *P
     return nil
 }
 
+func (system *TestSpellSystem) CreateHasteProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }
