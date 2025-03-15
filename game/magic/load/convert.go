@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -107,4 +108,13 @@ func (saveGame *SaveGame) ToMap(terrainData *terrain.TerrainData, plane data.Pla
     }
 
     return &map_
+}
+
+func (saveGame *SaveGame) ToSettings() setup.NewGameSettings {
+    return setup.NewGameSettings{
+        Difficulty:  data.DifficultySetting(saveGame.Difficulty),
+        Opponents: int(saveGame.NumPlayers) - 1,
+        LandSize: int(saveGame.LandSize),
+        Magic: data.MagicSetting(saveGame.Magic),
+    }
 }
