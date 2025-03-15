@@ -74,6 +74,9 @@ func createScenario(cache *lbx.LbxCache, saveGame *load.SaveGame) *gamelib.Game 
     player := game.AddPlayer(wizard, true)
     player.LiftFog(20, 20, 50, data.PlaneArcanus)
     player.LiftFog(20, 20, 50, data.PlaneMyrror)
+    player.ArcanusFog = saveGame.ToFogMap(data.PlaneArcanus)
+    player.MyrrorFog = saveGame.ToFogMap(data.PlaneMyrror)
+    player.UpdateFogVisibility()
 
     for i := 1; i < int(saveGame.NumPlayers); i++ {
         wizard := saveGame.ToWizard(i)

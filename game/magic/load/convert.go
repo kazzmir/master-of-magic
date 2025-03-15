@@ -250,3 +250,29 @@ func (saveGame *SaveGame) ToWizard(index int) setup.WizardCustom {
         Banner: banner,
     }
 }
+
+func (saveGame *SaveGame) ToFogMap(plane data.Plane) data.FogMap {
+    out := make([][]data.FogType, WorldWidth)
+    for i := range WorldWidth {
+        out[i] = make([]data.FogType, WorldHeight)
+    }
+
+    for x := range WorldWidth {
+        for y := range WorldHeight {
+            var value int8
+            if plane == data.PlaneArcanus {
+                value = saveGame.ArcanusExplored[x][y]
+            } else {
+                value = saveGame.MyrrorExplored[x][y]
+            }
+
+            if value == 0 {
+                out[x][y] = data.FogTypeUnexplored
+            } else {
+                out[x][y] = data.FogTypeExplored
+            }
+        }
+    }
+
+    return out
+}
