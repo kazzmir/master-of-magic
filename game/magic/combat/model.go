@@ -3917,6 +3917,7 @@ type SpellSystem interface {
     CreateFlightProjectile(target *ArmyUnit) *Projectile
     CreateGuardianWindProjectile(target *ArmyUnit) *Projectile
     CreateHasteProjectile(target *ArmyUnit) *Projectile
+    CreateInvisibilityProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4837,10 +4838,20 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Invisiblity":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateInvisibilityProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasAbility(data.AbilityInvisibility) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Invisibility
         Magic Immunity
         Resist Magic
         Spell Lock

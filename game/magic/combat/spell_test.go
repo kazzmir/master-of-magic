@@ -208,6 +208,10 @@ func (system *TestSpellSystem) CreateHasteProjectile(target *ArmyUnit) *Projecti
     return nil
 }
 
+func (system *TestSpellSystem) CreateInvisibilityProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }
