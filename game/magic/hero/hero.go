@@ -870,6 +870,10 @@ func (hero *Hero) HasItemAbility(ability data.ItemAbility) bool {
     })
 }
 
+func (hero *Hero) IsInvisible() bool {
+    return hero.HasAbility(data.AbilityInvisibility)
+}
+
 func (hero *Hero) IsFlying() bool {
     return hero.Unit.IsFlying()
 }

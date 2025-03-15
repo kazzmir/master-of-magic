@@ -629,6 +629,10 @@ func (unit *ArmyUnit) IsFlying() bool {
     return unit.Unit.IsFlying() && !unit.HasCurse(data.UnitCurseWeb)
 }
 
+func (unit *ArmyUnit) IsInvisible() bool {
+    return unit.HasAbility(data.AbilityInvisibility)
+}
+
 func (unit *ArmyUnit) IsSwimmer() bool {
     return unit.Unit.IsSwimmer()
 }

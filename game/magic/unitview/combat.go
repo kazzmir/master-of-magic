@@ -86,6 +86,7 @@ func CombatPoints(count int) []image.Point {
     return nil
 }
 
+// draws the unit semi-transparently in a solid greyish color
 func RenderCombatSemiInvisible(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, timeCounter uint64, imageCache *util.ImageCache) {
     // the ground is always 6 pixels above the bottom of the unit image
     groundHeight := float64(6)
@@ -93,8 +94,6 @@ func RenderCombatSemiInvisible(screen *ebiten.Image, use *ebiten.Image, options 
     var greyScale colorm.ColorM
     greyScale.Scale(0, 0, 0, 0.45)
     greyScale.Translate(32, 32, 32, 0)
-    // greyScale.ChangeHSV(0, 0, 1.1)
-    // greyScale.Scale(1, 1, 1, 0.45)
     var greyOptions colorm.DrawImageOptions
 
     geoM := options.GeoM

@@ -29,6 +29,7 @@ type CombatView interface {
     GetBanner() data.BannerType
     GetEnchantments() []data.UnitEnchantment
     GetCount() int
+    IsInvisible() bool
 }
 
 func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit CombatView, options ebiten.DrawImageOptions, grey bool, counter uint64) {
@@ -46,11 +47,15 @@ func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
         RenderCombatTile(screen, imageCache, options)
 
-        first := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
-        if grey {
-            RenderCombatUnitGrey(screen, use, options, unit.GetCount(), first, counter, imageCache)
+        if unit.IsInvisible() {
+            RenderCombatSemiInvisible(screen, use, options, unit.GetCount(), counter, imageCache)
         } else {
-            RenderCombatUnit(screen, use, options, unit.GetCount(), first, counter, imageCache)
+            first := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
+            if grey {
+                RenderCombatUnitGrey(screen, use, options, unit.GetCount(), first, counter, imageCache)
+            } else {
+                RenderCombatUnit(screen, use, options, unit.GetCount(), first, counter, imageCache)
+            }
         }
     }
 }
