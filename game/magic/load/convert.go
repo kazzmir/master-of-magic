@@ -1,21 +1,20 @@
 package load
 
 import (
-	"fmt"
-	"image"
+    "image"
 
-	buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
-	citylib "github.com/kazzmir/master-of-magic/game/magic/city"
-	"github.com/kazzmir/master-of-magic/game/magic/data"
-	gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
-	"github.com/kazzmir/master-of-magic/game/magic/maplib"
-	playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
-	"github.com/kazzmir/master-of-magic/game/magic/setup"
-	"github.com/kazzmir/master-of-magic/game/magic/terrain"
-	"github.com/kazzmir/master-of-magic/game/magic/units"
-	"github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
-	"github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2"
 )
 
 func (saveGame *SaveGame) ToMap(terrainData *terrain.TerrainData, plane data.Plane, cityProvider maplib.CityProvider) *maplib.Map {
@@ -327,8 +326,6 @@ func (saveGame *SaveGame) ToCities(player *playerlib.Player, playerIndex int8, g
         if plane == data.PlaneMyrror {
             catchmentProvider = game.MyrrorMap
         }
-
-        fmt.Printf("%v\n", cityData.Size)
 
         city := citylib.City{
             Population: 1000 * int(cityData.Population) + 10 * int(cityData.Population10),

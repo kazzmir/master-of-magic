@@ -54,7 +54,7 @@ func (engine *Engine) Update() error {
     return nil
 }
 
-func createScenario(cache *lbx.LbxCache, saveGame *load.SaveGame) *gamelib.Game {
+func createGame(cache *lbx.LbxCache, saveGame *load.SaveGame) *gamelib.Game {
     game := gamelib.MakeGame(cache, saveGame.ToSettings())
 
     // load data
@@ -82,6 +82,7 @@ func createScenario(cache *lbx.LbxCache, saveGame *load.SaveGame) *gamelib.Game 
     for i := 1; i < int(saveGame.NumPlayers); i++ {
         wizard := saveGame.ToWizard(i)
         enemy := game.AddPlayer(wizard, false)
+        enemy.Cities = saveGame.ToCities(enemy, int8(i), game)
         player.AwarePlayer(enemy)
     }
 
@@ -90,13 +91,16 @@ func createScenario(cache *lbx.LbxCache, saveGame *load.SaveGame) *gamelib.Game 
         game.Camera.Center(player.Cities[0].X, player.Cities[0].Y)
     }
 
+    // player.Admin = true
+    // player.LiftFog(20, 20, 50, data.PlaneArcanus)
+
     return game
 }
 
 func NewEngine(saveGame *load.SaveGame) (*Engine, error) {
     cache := lbx.AutoCache()
 
-    game := createScenario(cache, saveGame)
+    game := createGame(cache, saveGame)
     game.DoNextTurn()
 
     run := func(yield coroutine.YieldFunc) error {
