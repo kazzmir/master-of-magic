@@ -974,6 +974,11 @@ func (unit *ArmyUnit) GetResistanceFor(magic data.MagicType) int {
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
+    // charmed heroes have +30 resistance during battle
+    if unit.HasAbility(data.AbilityCharmed) {
+        modifier += 30
+    }
+
     for _, enchantment := range unit.Enchantments {
         modifier += unit.Unit.ResistanceEnchantmentBonus(enchantment)
     }
@@ -2869,7 +2874,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
 
             for range defender.Figures() {
                 if rand.N(10) + 1 > defender.GetResistance() - resistance {
-                    stoneDamage += defender.Unit.GetHitPoints()
+                    stoneDamage += defender.GetHitPoints()
                 }
             }
 
@@ -2890,8 +2895,9 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
             deathDamage := 0
 
             for range defender.Figures() {
+                // FIXME: use resistance for death magic here?
                 if rand.N(10) + 1 > defender.GetResistance() - resistance {
-                    deathDamage += defender.Unit.GetHitPoints()
+                    deathDamage += defender.GetHitPoints()
                 }
             }
 
@@ -3001,7 +3007,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             // for each failed resistance roll, the defender takes damage equal to one figure's hit points
             for range attacker.Figures() - fearFigure {
                 if rand.N(10) + 1 > defenderResistance - modifier {
-                    damage += defender.Unit.GetHitPoints()
+                    damage += defender.GetHitPoints()
                 }
             }
 
@@ -3040,7 +3046,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             for range attacker.Figures() - fearFigure {
                 if rand.N(10) + 1 > defenderResistance {
-                    damage += defender.Unit.GetHitPoints()
+                    damage += defender.GetHitPoints()
                 }
             }
 
@@ -3061,7 +3067,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             for range attacker.Figures() - fearFigure {
                 if rand.N(10) + 1 > defenderResistance - modifier {
-                    damage += defender.Unit.GetHitPoints()
+                    damage += defender.GetHitPoints()
                 }
             }
 
@@ -3082,7 +3088,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             damage := 0
             for range attacker.Figures() - fearFigure {
                 if rand.N(10) + 1 > defenderResistance {
-                    damage += defender.Unit.GetHitPoints()
+                    damage += defender.GetHitPoints()
                 }
             }
 

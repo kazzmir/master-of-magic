@@ -1484,7 +1484,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 }
             }
 
-            if combat.Model.SelectedUnit != nil {
+            if combat.Model.SelectedUnit != nil && combat.IsUnitVisible(combat.Model.SelectedUnit) {
 
                 rightImage, _ := combat.ImageCache.GetImageTransform(combat.Model.SelectedUnit.Unit.GetCombatLbxFile(), combat.Model.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0, player.Wizard.Banner.String(), units.MakeUpdateUnitColorsFunc(player.Wizard.Banner))
                 options.GeoM.Reset()
@@ -3346,8 +3346,7 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     combat.Drawer(screen)
 }
 
-func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
-
+func (combat *CombatScreen) makeIsUnitVisibleFunc() func(*ArmyUnit) bool {
     teamHasIllusionImmunity := functional.Memoize(func(team Team) bool {
         army := combat.Model.GetArmyForTeam(team)
         for _, unit := range army.units {
@@ -3359,11 +3358,18 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
         return false
     })
 
-    isVisible := functional.Memoize(func(unit *ArmyUnit) bool {
+    return func(unit *ArmyUnit) bool {
         owner := combat.Model.GetArmy(unit)
         return owner.Player.IsHuman() || teamHasIllusionImmunity(oppositeTeam(unit.Team)) || combat.Model.IsAdjacentToEnemy(unit)
-    })
+    }
+}
 
+func (combat *CombatScreen) IsUnitVisible(unit *ArmyUnit) bool {
+    return combat.makeIsUnitVisibleFunc()(unit)
+}
+
+func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
+    isVisible := functional.Memoize(combat.makeIsUnitVisibleFunc())
 
     animationIndex := combat.Counter / 8
 
