@@ -93,6 +93,7 @@ func RenderCombatSemiInvisible(screen *ebiten.Image, use *ebiten.Image, options 
 
     var greyScale colorm.ColorM
     greyScale.Scale(0, 0, 0, 0.45)
+    greyScale.Scale(0, 0, 0, float64(options.ColorScale.A()))
     greyScale.Translate(32, 32, 32, 0)
     var greyOptions colorm.DrawImageOptions
 
@@ -116,6 +117,7 @@ func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebite
     groundHeight := float64(6)
 
     var greyScale colorm.ColorM
+    greyScale.Scale(1, 1, 1, float64(options.ColorScale.A()))
     greyScale.ChangeHSV(0, 0, 1)
     var greyOptions colorm.DrawImageOptions
 
