@@ -3611,7 +3611,8 @@ func (model *CombatModel) IsAdjacentToEnemy(unit *ArmyUnit) bool {
             y := unit.Y + dy
 
             otherUnit := model.GetUnit(x, y)
-            if otherUnit != nil && otherUnit.Team != unit.Team {
+            // confused units can see their own teammates
+            if otherUnit != nil && (otherUnit.ConfusionAction == ConfusionActionEnemyControl || otherUnit.Team != unit.Team) {
                 return true
             }
         }

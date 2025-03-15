@@ -3348,6 +3348,23 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
 
 func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
+    teamHasIllusionImmunity := functional.Memoize(func(team Team) bool {
+        army := combat.Model.GetArmyForTeam(team)
+        for _, unit := range army.units {
+            if unit.HasAbility(data.AbilityIllusionsImmunity) {
+                return true
+            }
+        }
+
+        return false
+    })
+
+    isVisible := functional.Memoize(func(unit *ArmyUnit) bool {
+        owner := combat.Model.GetArmy(unit)
+        return owner.Player.IsHuman() || teamHasIllusionImmunity(oppositeTeam(unit.Team)) || combat.Model.IsAdjacentToEnemy(unit)
+    })
+
+
     animationIndex := combat.Counter / 8
 
     var options ebiten.DrawImageOptions
@@ -3453,7 +3470,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
-    if combat.Model.SelectedUnit != nil {
+    if combat.Model.SelectedUnit != nil && isVisible(combat.Model.SelectedUnit) {
         var path pathfinding.Path
         ok := false
 
@@ -3494,17 +3511,6 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             combat.DrawHighlightedTile(screen, combat.Model.SelectedUnit.X, combat.Model.SelectedUnit.Y, &useMatrix, minColor, maxColor)
         }
     }
-
-    teamHasIllusionImmunity := functional.Memoize(func(team Team) bool {
-        army := combat.Model.GetArmyForTeam(team)
-        for _, unit := range army.units {
-            if unit.HasAbility(data.AbilityIllusionsImmunity) {
-                return true
-            }
-        }
-
-        return false
-    })
 
     renderUnit := func(unit *ArmyUnit){
         banner := unit.Unit.GetBanner()
@@ -3566,7 +3572,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             if unit.IsInvisible() {
                 // might not be visible at all, or is semi-visible if next to an enemy unit or if the enemy team has
                 // any units with illusions immunity
-                canBeSeen := teamHasIllusionImmunity(oppositeTeam(unit.Team)) || combat.Model.IsAdjacentToEnemy(unit)
+                canBeSeen := isVisible(unit)
                 if canBeSeen {
                     unitview.RenderCombatSemiInvisible(screen, combatImages[index], unitOptions, unit.Figures(), combat.Counter, &combat.ImageCache)
                 } else {
@@ -3703,7 +3709,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
     combat.UI.Draw(combat.UI, screen)
 
-    if combat.Model.HighlightedUnit != nil {
+    if combat.Model.HighlightedUnit != nil && isVisible(combat.Model.HighlightedUnit) {
         combat.ShowUnitInfo(screen, combat.Model.HighlightedUnit)
     }
 

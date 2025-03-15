@@ -378,6 +378,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // lame but we have to do this after the model has been created
     defendingArmy.GetUnits()[2].AddEnchantment(data.UnitEnchantmentInvisibility)
+    attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentInvisibility)
 
     // combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
     return combatScreen
