@@ -902,7 +902,7 @@ func (unit *ArmyUnit) GetToHitMelee(defender *ArmyUnit) int {
         modifier -= 20
     }
 
-    if defender.HasAbility(data.AbilityInvisibility) && !unit.HasAbility(data.AbilityIllusionsImmunity) {
+    if defender.IsInvisible() && !unit.HasAbility(data.AbilityIllusionsImmunity) {
         modifier -= 10
     }
 
@@ -3171,7 +3171,7 @@ func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         return false
     }
 
-    if defender.HasAbility(data.AbilityInvisibility) && !attacker.HasAbility(data.AbilityIllusionsImmunity) {
+    if defender.IsInvisible() && !attacker.HasAbility(data.AbilityIllusionsImmunity) {
         return false
     }
 
@@ -4871,7 +4871,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 model.AddProjectile(spellSystem.CreateInvisibilityProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                if target.HasAbility(data.AbilityInvisibility) {
+                if target.IsInvisible() {
                     return false
                 }
 

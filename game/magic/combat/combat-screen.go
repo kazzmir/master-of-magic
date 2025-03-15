@@ -3563,7 +3563,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
             // _ = index
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
-            if unit.HasAbility(data.AbilityInvisibility) {
+            if unit.IsInvisible() {
                 // might not be visible at all, or is semi-visible if next to an enemy unit or if the enemy team has
                 // any units with illusions immunity
                 canBeSeen := teamHasIllusionImmunity(oppositeTeam(unit.Team)) || combat.Model.IsAdjacentToEnemy(unit)
