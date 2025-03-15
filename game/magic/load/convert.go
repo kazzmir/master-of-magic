@@ -285,6 +285,43 @@ func (saveGame *SaveGame) convertFogMap(plane data.Plane) data.FogMap {
 
 func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex int8, game *gamelib.Game) []*citylib.City {
     cities := []*citylib.City{}
+    buildingMap := map[int]buildinglib.Building{
+        0x01: buildinglib.BuildingTradeGoods,
+        0x02: buildinglib.BuildingHousing,
+        0x03: buildinglib.BuildingBarracks,
+        0x04: buildinglib.BuildingArmory,
+        0x05: buildinglib.BuildingFightersGuild,
+        0x06: buildinglib.BuildingArmorersGuild,
+        0x07: buildinglib.BuildingWarCollege,
+        0x08: buildinglib.BuildingSmithy,
+        0x09: buildinglib.BuildingStables,
+        0x0A: buildinglib.BuildingAnimistsGuild,
+        0x0B: buildinglib.BuildingFantasticStable,
+        0x0C: buildinglib.BuildingShipwrightsGuild,
+        0x0D: buildinglib.BuildingShipYard,
+        0x0E: buildinglib.BuildingMaritimeGuild,
+        0x0F: buildinglib.BuildingSawmill,
+        0x10: buildinglib.BuildingLibrary,
+        0x11: buildinglib.BuildingSagesGuild,
+        0x12: buildinglib.BuildingOracle,
+        0x13: buildinglib.BuildingAlchemistsGuild,
+        0x14: buildinglib.BuildingUniversity,
+        0x15: buildinglib.BuildingWizardsGuild,
+        0x16: buildinglib.BuildingShrine,
+        0x17: buildinglib.BuildingTemple,
+        0x18: buildinglib.BuildingParthenon,
+        0x19: buildinglib.BuildingCathedral,
+        0x1A: buildinglib.BuildingMarketplace,
+        0x1B: buildinglib.BuildingBank,
+        0x1C: buildinglib.BuildingMerchantsGuild,
+        0x1D: buildinglib.BuildingGranary,
+        0x1E: buildinglib.BuildingFarmersMarket,
+        0x1F: buildinglib.BuildingForestersGuild,
+        0x20: buildinglib.BuildingBuildersHall,
+        0x21: buildinglib.BuildingMechaniciansGuild,
+        0x22: buildinglib.BuildingMinersGuild,
+        0x23: buildinglib.BuildingCityWalls,
+    }
 
     for index := 0; index < int(saveGame.NumCities); index++ {
         cityData := saveGame.Cities[index]
@@ -313,15 +350,23 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
             case 13: race = data.RaceTroll
         }
 
-        // FIXME: parse cityData.NumBuildings and cityData.Buildings
         buildings := set.MakeSet[buildinglib.Building]()
+        for index, building := range buildingMap {
+            if int8(cityData.Buildings[index]) == 0 || int8(cityData.Buildings[index]) == 1 {
+                buildings.Insert(building)
+            }
+        }
 
         // FIXME: parse cityData.Enchantments
         enchantments := set.MakeSet[citylib.Enchantment]()
 
-        // FIXME: parse cityData.Construction
-        producingBuilding := buildinglib.BuildingTradeGoods
+        producingBuilding := buildinglib.BuildingNone
         producingUnit := units.UnitNone
+        if cityData.Construction < 100 {  // FIXME: verify
+            producingBuilding = buildingMap[int(cityData.Construction)]
+        } else {
+            producingUnit = units.UnitNone // FIXME: parse unit
+        }
 
         catchmentProvider := game.ArcanusMap
         if plane == data.PlaneMyrror {
@@ -378,6 +423,7 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     player.ArcanusFog = saveGame.convertFogMap(data.PlaneArcanus)
     player.MyrrorFog = saveGame.convertFogMap(data.PlaneMyrror)
     player.Cities = saveGame.convertCities(player, 0, game)
+    player.UpdateFogVisibility()
 
     for i := 1; i < int(saveGame.NumPlayers); i++ {
         wizard := saveGame.convertWizard(i)
@@ -385,13 +431,12 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
         enemy.Cities = saveGame.convertCities(enemy, int8(i), game)
     }
 
+    // FIXME: neutral player
+
     game.Camera.Center(20, 20)
     if len(player.Cities) > 0 {
         game.Camera.Center(player.Cities[0].X, player.Cities[0].Y)
     }
-
-
-    player.UpdateFogVisibility()
 
     return game
 }

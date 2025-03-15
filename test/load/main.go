@@ -59,7 +59,7 @@ func NewEngine(saveGame *load.SaveGame, admin bool) (*Engine, error) {
     cache := lbx.AutoCache()
 
     game := saveGame.Convert(cache)
-    // game.DoNextTurn()
+    game.DoNextTurn()
 
     if admin {
         player := game.Players[0]
