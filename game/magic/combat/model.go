@@ -959,9 +959,8 @@ func (unit *ArmyUnit) GetResistanceFor(magic data.MagicType) int {
         }
     }
 
-    // this ability only applies in combat
-    if unit.HasAbility(data.AbilityCharmed) {
-        modifier += 30
+    if unit.HasAbility(data.DeathImmunity) && magic == data.DeathMagic {
+        modifier = 50
     }
 
     if unit.HasAbility(data.AbilityMagicImmunity) {
