@@ -968,6 +968,42 @@ func (combat *CombatScreen) CreateFlightProjectile(target *ArmyUnit) *Projectile
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
+func (combat *CombatScreen) CreateGuardianWindProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentGuardianWind)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateHasteProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentHaste)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateInvisibilityProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentInvisibility)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
     explodeImages := images
@@ -1448,7 +1484,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 }
             }
 
-            if combat.Model.SelectedUnit != nil {
+            if combat.Model.SelectedUnit != nil && combat.IsUnitVisible(combat.Model.SelectedUnit) {
 
                 rightImage, _ := combat.ImageCache.GetImageTransform(combat.Model.SelectedUnit.Unit.GetCombatLbxFile(), combat.Model.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0, player.Wizard.Banner.String(), units.MakeUpdateUnitColorsFunc(player.Wizard.Banner))
                 options.GeoM.Reset()
@@ -1923,10 +1959,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
             return
         }
 
-        // FIXME: apply defenses for magic immunity or missle immunity
-
         damage := attacker.ComputeRangeDamage(target, tileDistance)
-        // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
         // FIXME: for magical damage, set the Magic damage modifier for the proper realm
         target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
@@ -2415,12 +2448,23 @@ func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *A
         attacker.MovesLeft = fraction.FromInt(0)
     }
 
-    attacker.RangedAttacks -= 1
-
     attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
 
-    // FIXME: could use a for/yield loop here to update projectiles
-    combat.createRangeAttack(attacker, defender)
+    attacks := 1
+    // haste does two ranged attacks
+    if attacker.HasEnchantment(data.UnitEnchantmentHaste) {
+        // caster's don't get to attack twice
+        if attacker.GetRangedAttackDamageType() == units.DamageRangedMagical && attacker.CastingSkill > 0 {
+        } else {
+            attacks = min(2, attacker.RangedAttacks)
+        }
+    }
+
+    for range attacks {
+        attacker.UseRangeAttack()
+        // FIXME: could use a for/yield loop here to update projectiles
+        combat.createRangeAttack(attacker, defender)
+    }
 
     sound, err := combat.AudioCache.GetSound(attacker.Unit.GetRangeAttackSound().LbxIndex())
     if err == nil {
@@ -3302,7 +3346,30 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     combat.Drawer(screen)
 }
 
+func (combat *CombatScreen) makeIsUnitVisibleFunc() func(*ArmyUnit) bool {
+    teamHasIllusionImmunity := functional.Memoize(func(team Team) bool {
+        army := combat.Model.GetArmyForTeam(team)
+        for _, unit := range army.units {
+            if unit.HasAbility(data.AbilityIllusionsImmunity) {
+                return true
+            }
+        }
+
+        return false
+    })
+
+    return func(unit *ArmyUnit) bool {
+        owner := combat.Model.GetArmy(unit)
+        return owner.Player.IsHuman() || teamHasIllusionImmunity(oppositeTeam(unit.Team)) || combat.Model.IsAdjacentToEnemy(unit)
+    }
+}
+
+func (combat *CombatScreen) IsUnitVisible(unit *ArmyUnit) bool {
+    return combat.makeIsUnitVisibleFunc()(unit)
+}
+
 func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
+    isVisible := functional.Memoize(combat.makeIsUnitVisibleFunc())
 
     animationIndex := combat.Counter / 8
 
@@ -3409,7 +3476,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
-    if combat.Model.SelectedUnit != nil {
+    if combat.Model.SelectedUnit != nil && isVisible(combat.Model.SelectedUnit) {
         var path pathfinding.Path
         ok := false
 
@@ -3508,7 +3575,17 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
             // _ = index
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
-            if unit.IsAsleep() {
+            if unit.IsInvisible() {
+                // might not be visible at all, or is semi-visible if next to an enemy unit or if the enemy team has
+                // any units with illusions immunity
+                canBeSeen := isVisible(unit)
+                if canBeSeen {
+                    unitview.RenderCombatSemiInvisible(screen, combatImages[index], unitOptions, unit.Figures(), combat.Counter, &combat.ImageCache)
+                } else {
+                    // if can't be seen then don't render anything at all
+                }
+
+            } else if unit.IsAsleep() {
                 unitview.RenderCombatUnitGrey(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
             } else {
                 warpCreature := false
@@ -3638,7 +3715,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
     combat.UI.Draw(combat.UI, screen)
 
-    if combat.Model.HighlightedUnit != nil {
+    if combat.Model.HighlightedUnit != nil && isVisible(combat.Model.HighlightedUnit) {
         combat.ShowUnitInfo(screen, combat.Model.HighlightedUnit)
     }
 

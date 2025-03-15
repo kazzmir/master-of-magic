@@ -563,6 +563,14 @@ func (unit *ArmyUnit) IsWebbed() bool {
     return unit.WebHealth > 0
 }
 
+func (unit *ArmyUnit) UseRangeAttack() {
+    if unit.GetRangedAttackDamageType() == units.DamageRangedMagical && unit.CastingSkill > 0 {
+        unit.CastingSkill = max(0, unit.CastingSkill - 3)
+    } else if unit.RangedAttacks > 0 {
+        unit.RangedAttacks -= 1
+    }
+}
+
 func (unit *ArmyUnit) GetDamageSource() DamageSource {
     if unit.Unit.IsHero() {
         return DamageSourceHero
@@ -619,6 +627,10 @@ func (unit *ArmyUnit) ReduceInvulnerability(damage int) int {
 func (unit *ArmyUnit) IsFlying() bool {
     // a webbed unit is not flying
     return unit.Unit.IsFlying() && !unit.HasCurse(data.UnitCurseWeb)
+}
+
+func (unit *ArmyUnit) IsInvisible() bool {
+    return unit.HasAbility(data.AbilityInvisibility)
 }
 
 func (unit *ArmyUnit) IsSwimmer() bool {
@@ -863,8 +875,8 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
     return unit.Unit.GetAbilityValue(ability)
 }
 
-func (unit *ArmyUnit) GetCounterAttackToHit() int {
-    base := unit.GetToHitMelee()
+func (unit *ArmyUnit) GetCounterAttackToHit(defender *ArmyUnit) int {
+    base := unit.GetToHitMelee(defender)
     // if somehow the unit already has <10% tohit then just return that
     if base < 10 {
         return base
@@ -878,7 +890,7 @@ func (unit *ArmyUnit) GetCounterAttackToHit() int {
 }
 
 // FIXME: needs a type passed in (melee, ranged, etc)
-func (unit *ArmyUnit) GetToHitMelee() int {
+func (unit *ArmyUnit) GetToHitMelee(defender *ArmyUnit) int {
     modifier := 0
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) ||
@@ -888,6 +900,10 @@ func (unit *ArmyUnit) GetToHitMelee() int {
 
     if unit.HasCurse(data.UnitCurseVertigo) {
         modifier -= 20
+    }
+
+    if defender.IsInvisible() && !unit.HasAbility(data.AbilityIllusionsImmunity) {
+        modifier -= 10
     }
 
     // FIXME: blur doesn't affect to hit, instead it directly reduces damage points
@@ -943,9 +959,8 @@ func (unit *ArmyUnit) GetResistanceFor(magic data.MagicType) int {
         }
     }
 
-    // this ability only applies in combat
-    if unit.HasAbility(data.AbilityCharmed) {
-        modifier += 30
+    if unit.HasAbility(data.AbilityDeathImmunity) && magic == data.DeathMagic {
+        modifier = 50
     }
 
     if unit.HasAbility(data.AbilityMagicImmunity) {
@@ -957,6 +972,11 @@ func (unit *ArmyUnit) GetResistanceFor(magic data.MagicType) int {
 
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
+
+    // charmed heroes have +30 resistance during battle
+    if unit.HasAbility(data.AbilityCharmed) {
+        modifier += 30
+    }
 
     for _, enchantment := range unit.Enchantments {
         modifier += unit.Unit.ResistanceEnchantmentBonus(enchantment)
@@ -1609,7 +1629,7 @@ func (unit *ArmyUnit) SetRangedAttacks(attacks int) {
 // given the distance to the target in tiles, return the amount of range damage done
 func (unit *ArmyUnit) ComputeRangeDamage(defender *ArmyUnit, tileDistance int) int {
 
-    toHit := unit.GetToHitMelee()
+    toHit := unit.GetToHitMelee(defender)
 
     // FIXME: if the unit has Holy Weapon and this is a magic ranged attack then the +10% to-hit should not apply
 
@@ -1652,10 +1672,10 @@ func (unit *ArmyUnit) ComputeMeleeDamage(defender *ArmyUnit, fearFigure int, cou
         // even if all figures fail to cause damage, it still counts as a hit for touch purposes
         hit = true
 
-        toHit := unit.GetToHitMelee()
+        toHit := unit.GetToHitMelee(defender)
         if counterAttack {
             // counter attack to-hit might be penalized
-            toHit = unit.GetCounterAttackToHit()
+            toHit = unit.GetCounterAttackToHit(defender)
         }
         damage += defender.ReduceInvulnerability(ComputeRoll(unit.GetMeleeAttackPower(), toHit))
     }
@@ -2812,7 +2832,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
             fireDamage := 0
             // one breath attack per figure
             for range attacker.Figures() {
-                attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee())
+                attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee(defender))
                 fireDamage += defender.ApplyDamage(defender.ReduceInvulnerability(attackerDamage), units.DamageFire, DamageModifiers{Magic: data.ChaosMagic})
             }
             model.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
@@ -2828,7 +2848,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         damage = append(damage, func(){
             lightningDamage := 0
             for range attacker.Figures() {
-                attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee())
+                attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee(defender))
                 lightningDamage += defender.ApplyDamage(defender.ReduceInvulnerability(attackerDamage), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             }
             model.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
@@ -2853,7 +2873,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
 
             for range defender.Figures() {
                 if rand.N(10) + 1 > defender.GetResistance() - resistance {
-                    stoneDamage += defender.Unit.GetHitPoints()
+                    stoneDamage += defender.GetHitPoints()
                 }
             }
 
@@ -2874,8 +2894,9 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
             deathDamage := 0
 
             for range defender.Figures() {
+                // FIXME: use resistance for death magic here?
                 if rand.N(10) + 1 > defender.GetResistance() - resistance {
-                    deathDamage += defender.Unit.GetHitPoints()
+                    deathDamage += defender.GetHitPoints()
                 }
             }
 
@@ -2904,7 +2925,7 @@ func (model *CombatModel) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit) 
         strength := int(attacker.GetAbilityValue(data.AbilityThrown))
         damage := 0
         for range attacker.Figures() {
-            if rand.N(100) < attacker.GetToHitMelee() {
+            if rand.N(100) < attacker.GetToHitMelee(defender) {
                 // damage += defender.ApplyDamage(strength, units.DamageThrown, false)
                 damage += defender.ReduceInvulnerability(strength)
             }
@@ -2985,7 +3006,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             // for each failed resistance roll, the defender takes damage equal to one figure's hit points
             for range attacker.Figures() - fearFigure {
                 if rand.N(10) + 1 > defenderResistance - modifier {
-                    damage += defender.Unit.GetHitPoints()
+                    damage += defender.GetHitPoints()
                 }
             }
 
@@ -3024,7 +3045,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             for range attacker.Figures() - fearFigure {
                 if rand.N(10) + 1 > defenderResistance {
-                    damage += defender.Unit.GetHitPoints()
+                    damage += defender.GetHitPoints()
                 }
             }
 
@@ -3045,7 +3066,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             for range attacker.Figures() - fearFigure {
                 if rand.N(10) + 1 > defenderResistance - modifier {
-                    damage += defender.Unit.GetHitPoints()
+                    damage += defender.GetHitPoints()
                 }
             }
 
@@ -3066,7 +3087,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             damage := 0
             for range attacker.Figures() - fearFigure {
                 if rand.N(10) + 1 > defenderResistance {
-                    damage += defender.Unit.GetHitPoints()
+                    damage += defender.GetHitPoints()
                 }
             }
 
@@ -3136,7 +3157,10 @@ func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         return false
     }
 
-    if attacker.RangedAttacks <= 0 {
+    hasRangedAttacks := attacker.RangedAttacks > 0
+    hasCastingAttacks := attacker.GetRangedAttackDamageType() == units.DamageRangedMagical && attacker.CastingSkill >= 3
+
+    if !hasRangedAttacks && !hasCastingAttacks {
         return false
     }
 
@@ -3152,8 +3176,10 @@ func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         return false
     }
 
-    // FIXME: check if defender has missle immunity and attacker is using regular non-magical attacks
-    // FIXME: check if defender has magic immunity and attacker is using magical attacks
+    if defender.IsInvisible() && !attacker.HasAbility(data.AbilityIllusionsImmunity) {
+        return false
+    }
+
     // FIXME: check if defender has invisible, and attacker doesn't have illusions immunity
 
     if model.InsideWallOfDarkness(defender.X, defender.Y) && !model.InsideWallOfDarkness(attacker.X, attacker.Y) {
@@ -3583,6 +3609,23 @@ func (model *CombatModel) IsAIControlled(unit *ArmyUnit) bool {
     }
 }
 
+func (model *CombatModel) IsAdjacentToEnemy(unit *ArmyUnit) bool {
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            x := unit.X + dx
+            y := unit.Y + dy
+
+            otherUnit := model.GetUnit(x, y)
+            // confused units can see their own teammates
+            if otherUnit != nil && (otherUnit.ConfusionAction == ConfusionActionEnemyControl || otherUnit.Team != unit.Team) {
+                return true
+            }
+        }
+    }
+
+    return false
+}
+
 func (model *CombatModel) GetArmyForPlayer(player *playerlib.Player) *Army {
     if model.DefendingArmy.Player == player {
         return model.DefendingArmy
@@ -3906,6 +3949,9 @@ type SpellSystem interface {
     CreateRegenerationProjectile(target *ArmyUnit) *Projectile
     CreateResistElementsProjectile(target *ArmyUnit) *Projectile
     CreateFlightProjectile(target *ArmyUnit) *Projectile
+    CreateGuardianWindProjectile(target *ArmyUnit) *Projectile
+    CreateHasteProjectile(target *ArmyUnit) *Projectile
+    CreateInvisibilityProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4795,13 +4841,51 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateFlightProjectile(target))
                 castedCallback()
-            }, targetAny)
+            }, func (target *ArmyUnit) bool {
+                // we could check if the unit has the flight ability, but the Flight spell also grants
+                // 3 movement, so its still worthwhile to cast Flight on a unit that has less than 3 movement speed
+                if target.HasEnchantment(data.UnitEnchantmentFlight) {
+                    return false
+                }
+
+                return true
+            })
+        case "Guardian Wind":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateGuardianWindProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentGuardianWind) {
+                    return false
+                }
+
+                return true
+            })
+        case "Haste":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateHasteProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentHaste) {
+                    return false
+                }
+
+                return true
+            })
+        case "Invisiblity":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateInvisibilityProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.IsInvisible() {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Guardian Wind
-        Haste
-        Invisibility
         Magic Immunity
         Resist Magic
         Spell Lock

@@ -122,7 +122,7 @@ func createLizardmenArmy(player *player.Player, count int) *combat.Army {
     return &army
 }
 
-func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
+func createHighMenBowmanArmyN(player *player.Player, count int) *combat.Army {
     army := combat.Army{
         Player: player,
     }
@@ -131,7 +131,7 @@ func createHighMenBowmanArmyN(player *player.Player, count int) combat.Army {
         army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
     }
 
-    return army
+    return &army
 }
 
 func createHighMenBowmanArmy(player *player.Player) *combat.Army {
@@ -263,8 +263,8 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
         }, false, 0, 0, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
-    defendingArmy := createLizardmenArmy(defendingPlayer, 3)
+    defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
+    // defendingArmy := createLizardmenArmy(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingArmy.GetUnits()[0].AddCurse(data.UnitCurseBlackSleep)
@@ -353,6 +353,9 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Resist Elements"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Stone Skin"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Flight"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Guardian Wind"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Haste"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Invisiblity"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
@@ -363,8 +366,8 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
         attackingArmy.KillUnit(attackingArmy.GetUnits()[0])
     }
 
+    attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentTrueSight)
     /*
-    attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentLionHeart)
     attackingArmy.GetUnits()[1].Unit.AddEnchantment(data.UnitEnchantmentLionHeart)
     */
 
@@ -372,6 +375,11 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
     combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
+
+    // lame but we have to do this after the model has been created
+    defendingArmy.GetUnits()[2].AddEnchantment(data.UnitEnchantmentInvisibility)
+    attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentInvisibility)
+
     // combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
     return combatScreen
 }

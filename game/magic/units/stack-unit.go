@@ -15,6 +15,7 @@ type StackUnit interface {
     IsSwimmer() bool
     IsSailing() bool
     IsLandWalker() bool
+    IsInvisible() bool
     GetName() string
     GetFullName() string
     GetTitle() string

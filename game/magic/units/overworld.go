@@ -212,6 +212,10 @@ func (unit *OverworldUnit) IsFlying() bool {
     return unit.Unit.Flying || unit.HasEnchantment(data.UnitEnchantmentFlight) || unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings)
 }
 
+func (unit *OverworldUnit) IsInvisible() bool {
+    return unit.HasAbility(data.AbilityInvisibility)
+}
+
 func (unit *OverworldUnit) IsSailing() bool {
     return unit.GetRawUnit().Sailing
 }
