@@ -3820,7 +3820,7 @@ func (model *CombatModel) flee(army *Army) {
 }
 
 // called when the battle ends
-func (model *CombatModel) Finish() {
+func (model *CombatModel) FinishCombat() {
     // kill all units that are bound or possessed, or summoned units
     // also regenerate units with the regeneration ability
     killUnits := func(army *Army) {

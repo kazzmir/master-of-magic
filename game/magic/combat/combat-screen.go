@@ -2808,25 +2808,25 @@ func (combat *CombatScreen) UpdateMouseState() {
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     if combat.Model.AttackingArmy.Fled {
         combat.Model.flee(combat.Model.AttackingArmy)
-        combat.Model.Finish()
+        combat.Model.FinishCombat()
         return CombatStateAttackerFlee
     }
 
     if combat.Model.DefendingArmy.Fled {
         combat.Model.flee(combat.Model.DefendingArmy)
-        combat.Model.Finish()
+        combat.Model.FinishCombat()
         return CombatStateDefenderFlee
     }
 
     if len(combat.Model.AttackingArmy.units) == 0 {
         combat.Model.AddLogEvent("Defender wins!")
-        combat.Model.Finish()
+        combat.Model.FinishCombat()
         return CombatStateDefenderWin
     }
 
     if len(combat.Model.DefendingArmy.units) == 0 {
         combat.Model.AddLogEvent("Attacker wins!")
-        combat.Model.Finish()
+        combat.Model.FinishCombat()
         return CombatStateAttackerWin
     }
 
