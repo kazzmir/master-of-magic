@@ -630,7 +630,7 @@ func (unit *ArmyUnit) IsFlying() bool {
 }
 
 func (unit *ArmyUnit) IsInvisible() bool {
-    return unit.HasAbility(data.AbilityInvisibility)
+    return unit.HasAbility(data.AbilityInvisibility) || unit.Model.IsEnchantmentActive(data.CombatEnchantmentMassInvisibility, unit.Team)
 }
 
 func (unit *ArmyUnit) IsSwimmer() bool {
@@ -1245,10 +1245,6 @@ func (unit *ArmyUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
         if check == enchantment {
             return true
         }
-    }
-
-    if enchantment == data.UnitEnchantmentInvisibility && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMassInvisibility, unit.Team) {
-        return true
     }
 
     return false

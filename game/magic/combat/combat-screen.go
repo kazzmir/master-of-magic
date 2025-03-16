@@ -2212,7 +2212,9 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
 
     combat.UI.AddElements(elements)
 
-    canTargetMemo := functional.Memoize(canTarget)
+    canTargetMemo := functional.Memoize(func (target *ArmyUnit) bool {
+        return canTarget(target) && combat.IsUnitVisible(target)
+    })
 
     for !quit {
         combat.Counter += 1
@@ -3419,6 +3421,10 @@ func (combat *CombatScreen) makeIsUnitVisibleFunc() func(*ArmyUnit) bool {
     })
 
     return func(unit *ArmyUnit) bool {
+        if !unit.IsInvisible() {
+            return true
+        }
+
         owner := combat.Model.GetArmy(unit)
         return owner.Player.IsHuman() || teamHasIllusionImmunity(oppositeTeam(unit.Team)) || combat.Model.IsAdjacentToEnemy(unit)
     }

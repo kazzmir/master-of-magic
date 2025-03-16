@@ -312,6 +312,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Mass Healing"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Cracks Call"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Earth To Mud"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Mass Invisibility"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Web"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Banish"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Dispel Magic True"))
@@ -382,7 +383,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // lame but we have to do this after the model has been created
     defendingArmy.GetUnits()[2].AddEnchantment(data.UnitEnchantmentInvisibility)
-    attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentInvisibility)
+    // attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentInvisibility)
 
     // combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
     return combatScreen
