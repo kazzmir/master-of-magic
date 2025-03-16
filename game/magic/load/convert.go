@@ -641,8 +641,20 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
 }
 
 func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
-    game := gamelib.MakeGame(cache, saveGame.convertSettings())
+    // FIXME: add all remaining information from saveGame
+    // saveGame.Unit
+    // saveGame.HeroData
+    // saveGame.PlayerData
+    // saveGame.GrandVizier
+    // saveGame.Nodes
+    // saveGame.Fortresses
+    // saveGame.Towers
+    // saveGame.Items
+    // saveGame.Units / saveGame.NumUnits
+    // saveGame.Events
+    // saveGame.PremadeItems
 
+    game := gamelib.MakeGame(cache, saveGame.convertSettings())
     game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, nil)
     game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, nil)
     game.TurnNumber = uint64(saveGame.Turn)
