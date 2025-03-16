@@ -638,7 +638,12 @@ func (unit *ArmyUnit) IsSwimmer() bool {
 }
 
 func (unit *ArmyUnit) GetAbilities() []data.Ability {
-    return unit.Unit.GetAbilities()
+    var enchantmentAbilities []data.Ability
+    for _, enchantment := range unit.Enchantments {
+        enchantmentAbilities = append(enchantmentAbilities, enchantment.Abilities()...)
+    }
+
+    return append(unit.Unit.GetAbilities(), enchantmentAbilities...)
 }
 
 func (unit *ArmyUnit) GetArtifactSlots() []artifact.ArtifactSlot {

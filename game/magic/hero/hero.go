@@ -1462,7 +1462,12 @@ func (hero *Hero) GetBaseProgression() []string {
 }
 
 func (hero *Hero) GetAbilities() []data.Ability {
-    return hero.Abilities
+    var enchantmentAbilities []data.Ability
+    for _, enchantment := range hero.GetEnchantments() {
+        enchantmentAbilities = append(enchantmentAbilities, enchantment.Abilities()...)
+    }
+
+    return append(hero.Abilities, enchantmentAbilities...)
 }
 
 func (hero *Hero) GetTitle() string {

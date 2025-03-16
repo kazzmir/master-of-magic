@@ -734,7 +734,13 @@ func (unit *OverworldUnit) GetBaseHitPoints() int {
 
 func (unit *OverworldUnit) GetAbilities() []data.Ability {
     // FIXME: should the added death abilities from being undead be added here?
-    return unit.Unit.GetAbilities()
+
+    var enchantmentAbilities []data.Ability
+    for _, enchantment := range unit.Enchantments {
+        enchantmentAbilities = append(enchantmentAbilities, enchantment.Abilities()...)
+    }
+
+    return append(unit.Unit.GetAbilities(), enchantmentAbilities...)
 }
 
 func MakeOverworldUnit(unit Unit, x int, y int, plane data.Plane) *OverworldUnit {
