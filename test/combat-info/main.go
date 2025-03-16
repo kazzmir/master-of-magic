@@ -74,7 +74,7 @@ func NewEngine(scenario int) (*Engine, error) {
     unit.AddCurse(data.UnitCurseMindStorm)
     unit.AddEnchantment(data.UnitEnchantmentEndurance)
     unit.AddEnchantment(data.UnitEnchantmentLionHeart)
-    unit.TakeDamage(5)
+    unit.TakeDamage(5, combat.DamageNormal)
 
     // log.Printf("Base %v Defense %v Full Defense %v", unit.GetBaseDefense(), unit.GetDefense(), unit.GetFullDefense())
 
