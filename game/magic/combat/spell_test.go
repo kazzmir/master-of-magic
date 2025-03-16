@@ -216,6 +216,10 @@ func (system *TestSpellSystem) CreateMagicImmunityProjectile(target *ArmyUnit) *
     return nil
 }
 
+func (system *TestSpellSystem) CreateResistMagicProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }

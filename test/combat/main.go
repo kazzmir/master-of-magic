@@ -357,6 +357,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Haste"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Invisiblity"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Magic Immunity"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Resist Magic"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
