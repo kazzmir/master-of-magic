@@ -638,7 +638,12 @@ func (unit *ArmyUnit) IsSwimmer() bool {
 }
 
 func (unit *ArmyUnit) GetAbilities() []data.Ability {
-    return unit.Unit.GetAbilities()
+    var enchantmentAbilities []data.Ability
+    for _, enchantment := range unit.Enchantments {
+        enchantmentAbilities = append(enchantmentAbilities, enchantment.Abilities()...)
+    }
+
+    return append(unit.Unit.GetAbilities(), enchantmentAbilities...)
 }
 
 func (unit *ArmyUnit) GetArtifactSlots() []artifact.ArtifactSlot {
@@ -1029,6 +1034,11 @@ func (unit *ArmyUnit) GetFullDefense() int {
 
 // get defense against a specific magic type
 func (unit *ArmyUnit) GetDefenseFor(magic data.MagicType) int {
+    // berserk prevents any enchantments from applying
+    if unit.HasEnchantment(data.UnitEnchantmentBerserk) {
+        return 0
+    }
+
     base := unit.GetDefense()
     modifier := 0
 
@@ -1054,7 +1064,7 @@ func (unit *ArmyUnit) GetDefenseFor(magic data.MagicType) int {
 }
 
 func (unit *ArmyUnit) GetDefense() int {
-    if unit.HasEnchantment(data.UnitEnchantmentBlackChannels) {
+    if unit.HasEnchantment(data.UnitEnchantmentBerserk) {
         return 0
     }
 
@@ -2890,7 +2900,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
             stoneDamage := 0
 
             for range defender.Figures() {
-                if rand.N(10) + 1 > defender.GetResistance() - resistance {
+                if rand.N(10) + 1 > defender.GetResistanceFor(data.NatureMagic) - resistance {
                     stoneDamage += defender.GetHitPoints()
                 }
             }
@@ -3977,6 +3987,9 @@ type SpellSystem interface {
     CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile
     CreateFlameBladeProjectile(target *ArmyUnit) *Projectile
     CreateImmolationProjectile(target *ArmyUnit) *Projectile
+    CreateBerserkProjectile(target *ArmyUnit) *Projectile
+    CreateCloakOfFearProjectile(target *ArmyUnit) *Projectile
+    CreateWraithFormProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4902,7 +4915,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 model.AddProjectile(spellSystem.CreateInvisibilityProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                if target.IsInvisible() {
+                if target.HasEnchantment(data.UnitEnchantmentInvisibility) {
                     return false
                 }
 
@@ -4982,13 +4995,51 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Berserk":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateBerserkProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentBerserk) {
+                    return false
+                }
 
-        /*
-        unit enchantments:
-        Berserk
-        Cloak of Fear
-        Wraith Form
-         */
+                if target.GetRealm() == data.LifeMagic {
+                    return false
+                }
+
+                return true
+            })
+        case "Cloak of Fear":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateCloakOfFearProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentCloakOfFear) {
+                    return false
+                }
+
+                if target.GetRealm() == data.LifeMagic {
+                    return false
+                }
+
+                return true
+            })
+        case "Wraith Form":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateWraithFormProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentWraithForm) {
+                    return false
+                }
+
+                if target.GetRealm() == data.LifeMagic {
+                    return false
+                }
+
+                return true
+            })
 
         default:
             log.Printf("Unhandled spell %v", spell.Name)

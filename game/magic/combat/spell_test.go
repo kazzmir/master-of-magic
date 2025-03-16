@@ -236,6 +236,18 @@ func (system *TestSpellSystem) CreateImmolationProjectile(target *ArmyUnit) *Pro
     return nil
 }
 
+func (system *TestSpellSystem) CreateBerserkProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateCloakOfFearProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateWraithFormProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }
