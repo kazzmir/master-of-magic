@@ -1029,6 +1029,11 @@ func (unit *ArmyUnit) GetFullDefense() int {
 
 // get defense against a specific magic type
 func (unit *ArmyUnit) GetDefenseFor(magic data.MagicType) int {
+    // berserk prevents any enchantments from applying
+    if unit.HasEnchantment(data.UnitEnchantmentBerserk) {
+        return 0
+    }
+
     base := unit.GetDefense()
     modifier := 0
 
@@ -1054,7 +1059,7 @@ func (unit *ArmyUnit) GetDefenseFor(magic data.MagicType) int {
 }
 
 func (unit *ArmyUnit) GetDefense() int {
-    if unit.HasEnchantment(data.UnitEnchantmentBlackChannels) {
+    if unit.HasEnchantment(data.UnitEnchantmentBerserk) {
         return 0
     }
 
@@ -3977,6 +3982,7 @@ type SpellSystem interface {
     CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile
     CreateFlameBladeProjectile(target *ArmyUnit) *Projectile
     CreateImmolationProjectile(target *ArmyUnit) *Projectile
+    CreateBerserkProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4982,10 +4988,25 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Berserk":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateBerserkProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentBerserk) {
+                    return false
+                }
+
+                if target.GetRealm() == data.LifeMagic {
+                    return false
+                }
+
+                return true
+            })
+
 
         /*
         unit enchantments:
-        Berserk
         Cloak of Fear
         Wraith Form
          */
