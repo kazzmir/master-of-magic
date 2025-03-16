@@ -212,6 +212,30 @@ func (system *TestSpellSystem) CreateInvisibilityProjectile(target *ArmyUnit) *P
     return nil
 }
 
+func (system *TestSpellSystem) CreateMagicImmunityProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateResistMagicProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateSpellLockProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateFlameBladeProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateImmolationProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }

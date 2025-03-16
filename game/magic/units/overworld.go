@@ -592,7 +592,10 @@ func (unit *OverworldUnit) GetFullRangedAttackPower() int {
 func (unit *OverworldUnit) RangedEnchantmentBonus(enchantment data.UnitEnchantment) int {
     switch enchantment {
         case data.UnitEnchantmentBlackChannels: return 1
-        case data.UnitEnchantmentFlameBlade: return 2
+        case data.UnitEnchantmentFlameBlade:
+            if unit.GetRangedAttackDamageType() == DamageRangedPhysical {
+                return 2
+            }
         case data.UnitEnchantmentLionHeart:
             if unit.GetRangedAttackDamageType() != DamageRangedMagical {
                 return 3

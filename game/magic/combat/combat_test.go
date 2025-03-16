@@ -4,6 +4,7 @@ import (
     // "log"
     "testing"
     "math"
+    "slices"
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
@@ -275,7 +276,7 @@ func TestFirstStrike(test *testing.T){
     }
 
     attackerUnit := units.LizardSpearmen
-    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbility(data.AbilityFirstStrike))
+    attackerUnit.Abilities = append(slices.Clone(attackerUnit.Abilities), data.MakeAbility(data.AbilityFirstStrike))
     // ensure attacker can kill the defender in one hit
     attackerUnit.MeleeAttackPower = 10000
 
@@ -332,12 +333,12 @@ func TestFirstStrikeNegate(test *testing.T){
     }
 
     attackerUnit := units.LizardSpearmen
-    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbility(data.AbilityFirstStrike))
+    attackerUnit.Abilities = append(slices.Clone(attackerUnit.Abilities), data.MakeAbility(data.AbilityFirstStrike))
     // ensure attacker can kill the defender in one hit
     attackerUnit.MeleeAttackPower = 10000
 
     defenderUnit := units.LizardSpearmen
-    defenderUnit.Abilities = append(defenderUnit.Abilities, data.MakeAbility(data.AbilityNegateFirstStrike))
+    defenderUnit.Abilities = append(slices.Clone(defenderUnit.Abilities), data.MakeAbility(data.AbilityNegateFirstStrike))
 
     defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
     attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
@@ -390,7 +391,7 @@ func TestThrowAttack(test *testing.T){
     }
 
     attackerUnit := units.LizardSpearmen
-    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbilityValue(data.AbilityThrown, 10000), data.MakeAbilityValue(data.AbilityToHit, 100))
+    attackerUnit.Abilities = append(slices.Clone(attackerUnit.Abilities), data.MakeAbilityValue(data.AbilityThrown, 10000), data.MakeAbilityValue(data.AbilityToHit, 100))
     // ensure attacker can kill the defender in one hit
     attackerUnit.MeleeAttackPower = 10000
 
@@ -457,7 +458,7 @@ func TestThrownTouchAttack(test *testing.T){
     }
 
     attackerUnit := units.LizardSpearmen
-    attackerUnit.Abilities = append(attackerUnit.Abilities,
+    attackerUnit.Abilities = append(slices.Clone(attackerUnit.Abilities),
         data.MakeAbilityValue(data.AbilityThrown, 10000),
         data.MakeAbilityValue(data.AbilityToHit, 100),
         data.MakeAbilityValue(data.AbilityPoisonTouch, 10),
@@ -539,7 +540,7 @@ func TestFear(test *testing.T){
     }
 
     attackerUnit := units.LizardSpearmen
-    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbility(data.AbilityCauseFear))
+    attackerUnit.Abilities = append(slices.Clone(attackerUnit.Abilities), data.MakeAbility(data.AbilityCauseFear))
 
     defenderUnit := units.LizardSwordsmen
     // ensure all units become afraid

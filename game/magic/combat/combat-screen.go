@@ -612,6 +612,10 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
+        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+            return
+        }
+
         modifier := 4
         if unit.Unit.IsUndead() {
             modifier = 9
@@ -1004,6 +1008,78 @@ func (combat *CombatScreen) CreateInvisibilityProjectile(target *ArmyUnit) *Proj
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
+func (combat *CombatScreen) CreateMagicImmunityProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentMagicImmunity)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateResistMagicProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentResistMagic)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateSpellLockProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentSpellLock)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentEldritchWeapon)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateFlameBladeProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentFlameBlade)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateImmolationProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentImmolation)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
     explodeImages := images
@@ -1195,6 +1271,10 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
     explodeImages := images
 
     damage := func (unit *ArmyUnit){
+        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+            return
+        }
+
         modifier := 2
         if unit.Unit.IsUndead() {
             modifier = 7
@@ -1353,6 +1433,10 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
+        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+            return
+        }
+
         resistance := unit.GetResistanceFor(data.SorceryMagic) - reduceResistance - 3
         damage := 0
 
@@ -1968,6 +2052,8 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
             combat.Model.doTouchAttack(attacker, target, 0)
         }
 
+        combat.Model.ApplyImmolationDamage(defender, combat.Model.immolationDamage(attacker, defender))
+
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 
         /*
@@ -2152,7 +2238,9 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
 
     combat.UI.AddElements(elements)
 
-    canTargetMemo := functional.Memoize(canTarget)
+    canTargetMemo := functional.Memoize(func (target *ArmyUnit) bool {
+        return canTarget(target) && combat.IsUnitVisible(target)
+    })
 
     for !quit {
         combat.Counter += 1
@@ -2339,7 +2427,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     defer cancel()
 
     sound, err := combat.AudioCache.GetSound(mover.Unit.GetMovementSound().LbxIndex())
-    if err == nil {
+    if err == nil && combat.IsUnitVisible(mover) {
         // keep playing movement sound in a loop until the unit stops moving
         go func(){
             // defer sound.Pause()
@@ -3359,6 +3447,10 @@ func (combat *CombatScreen) makeIsUnitVisibleFunc() func(*ArmyUnit) bool {
     })
 
     return func(unit *ArmyUnit) bool {
+        if !unit.IsInvisible() {
+            return true
+        }
+
         owner := combat.Model.GetArmy(unit)
         return owner.Player.IsHuman() || teamHasIllusionImmunity(oppositeTeam(unit.Team)) || combat.Model.IsAdjacentToEnemy(unit)
     }

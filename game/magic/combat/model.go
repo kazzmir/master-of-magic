@@ -630,7 +630,7 @@ func (unit *ArmyUnit) IsFlying() bool {
 }
 
 func (unit *ArmyUnit) IsInvisible() bool {
-    return unit.HasAbility(data.AbilityInvisibility)
+    return unit.HasAbility(data.AbilityInvisibility) || unit.Model.IsEnchantmentActive(data.CombatEnchantmentMassInvisibility, unit.Team)
 }
 
 func (unit *ArmyUnit) IsSwimmer() bool {
@@ -798,6 +798,7 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                 modifier -= 1
             }
 
+            // count metal fires, but only if flame blade is not active
             if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
                 modifier += 1
             }
@@ -1108,6 +1109,10 @@ func (unit *ArmyUnit) GetFullRangedAttackPower() int {
 }
 
 func (unit *ArmyUnit) GetRangedAttackPower() int {
+    if unit.Unit.GetRangedAttackPower() == 0 {
+        return 0
+    }
+
     modifier := 0
 
     for _, enchantment := range unit.Enchantments {
@@ -1128,7 +1133,7 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
     }
 
     if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
-        if unit.Unit.GetRangedAttackPower() > 0 {
+        if unit.GetRangedAttackDamageType() == units.DamageRangedPhysical {
             modifier += 1
         }
     }
@@ -1245,10 +1250,6 @@ func (unit *ArmyUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
         if check == enchantment {
             return true
         }
-    }
-
-    if enchantment == data.UnitEnchantmentInvisibility && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMassInvisibility, unit.Team) {
-        return true
     }
 
     return false
@@ -1404,6 +1405,8 @@ type DamageModifiers struct {
 
     NegateWeaponImmunity bool
 
+    EldritchWeapon bool
+
     // if the damage comes from a specific realm (for spells or magic damage)
     Magic data.MagicType
 }
@@ -1413,7 +1416,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, m
         return 0
     }
 
-    toDefend := unit.ToDefend()
+    toDefend := unit.ToDefend(modifiers)
     var defenseRolls int
 
     hasImmunity := false
@@ -1706,12 +1709,16 @@ func (unit *ArmyUnit) CauseFear() int {
     return fear
 }
 
-func (unit *ArmyUnit) ToDefend() int {
+func (unit *ArmyUnit) ToDefend(modifiers DamageModifiers) int {
     modifier := 0
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) ||
        unit.Model.IsEnchantmentActive(data.CombatEnchantmentPrayer, unit.Team) {
         modifier += 10
+    }
+
+    if modifiers.EldritchWeapon {
+        modifier -= 10
     }
 
     return 30 + modifier
@@ -2431,14 +2438,25 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
     }
 }
 
+// only removes enchantments (not curses)
 func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
     var removedEnchantments []data.UnitEnchantment
 
     choices := append(unit.Unit.GetEnchantments(), unit.Enchantments...)
 
+    // if the unit has spell lock then only that spell can be dispelled. once it is dispelled then the
+    // other choices become valid targets
+    if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+        choices = []data.UnitEnchantment{data.UnitEnchantmentSpellLock}
+    }
+
     for _, enchantment := range choices {
         spell := allSpells.FindByName(enchantment.SpellName())
         cost := spell.Cost(false)
+        // spell lock has a unique cost for the purposes of dispelling
+        if enchantment == data.UnitEnchantmentSpellLock {
+            cost = 150
+        }
         dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
         if spellbook.RollDispelChance(dispellChance) {
             removedEnchantments = append(removedEnchantments, enchantment)
@@ -2894,8 +2912,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
             deathDamage := 0
 
             for range defender.Figures() {
-                // FIXME: use resistance for death magic here?
-                if rand.N(10) + 1 > defender.GetResistance() - resistance {
+                if rand.N(10) + 1 > defender.GetResistanceFor(data.DeathMagic) - resistance {
                     deathDamage += defender.GetHitPoints()
                 }
             }
@@ -3137,6 +3154,7 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
         ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
         Illusion: attacker.HasAbility(data.AbilityIllusion),
         NegateWeaponImmunity: attacker.CanNegateWeaponImmunity(),
+        EldritchWeapon: attacker.HasEnchantment(data.UnitEnchantmentEldritchWeapon),
     }
 
     hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, modifiers)
@@ -3364,6 +3382,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     damage := defender.ApplyDamage(throwDamage, units.DamageThrown, DamageModifiers{
                         ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
                         NegateWeaponImmunity: attacker.CanNegateWeaponImmunity(),
+                        EldritchWeapon: attacker.HasEnchantment(data.UnitEnchantmentEldritchWeapon),
                     })
 
                     model.Observer.ThrowAttack(attacker, defender, damage)
@@ -3952,6 +3971,12 @@ type SpellSystem interface {
     CreateGuardianWindProjectile(target *ArmyUnit) *Projectile
     CreateHasteProjectile(target *ArmyUnit) *Projectile
     CreateInvisibilityProjectile(target *ArmyUnit) *Projectile
+    CreateMagicImmunityProjectile(target *ArmyUnit) *Projectile
+    CreateResistMagicProjectile(target *ArmyUnit) *Projectile
+    CreateSpellLockProjectile(target *ArmyUnit) *Projectile
+    CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile
+    CreateFlameBladeProjectile(target *ArmyUnit) *Projectile
+    CreateImmolationProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4883,15 +4908,83 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Magic Immunity":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateMagicImmunityProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasAbility(data.AbilityMagicImmunity) {
+                    return false
+                }
+
+                return true
+            })
+        case "Resist Magic":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateResistMagicProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentResistMagic) {
+                    return false
+                }
+
+                return true
+            })
+        case "Spell Lock":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateSpellLockProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentSpellLock) {
+                    return false
+                }
+
+                return true
+            })
+        case "Eldritch Weapon":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateEldritchWeaponProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRace() == data.RaceFantastic {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentEldritchWeapon) {
+                    return false
+                }
+
+                return true
+            })
+        case "Flame Blade":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateFlameBladeProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRace() == data.RaceFantastic {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentFlameBlade) {
+                    return false
+                }
+
+                return true
+            })
+        case "Immolation":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateImmolationProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasAbility(data.AbilityImmolation) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Magic Immunity
-        Resist Magic
-        Spell Lock
-        Eldritch Weapon
-        Flame Blade
-        Immolation
         Berserk
         Cloak of Fear
         Wraith Form
