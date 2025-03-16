@@ -2912,8 +2912,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
             deathDamage := 0
 
             for range defender.Figures() {
-                // FIXME: use resistance for death magic here?
-                if rand.N(10) + 1 > defender.GetResistance() - resistance {
+                if rand.N(10) + 1 > defender.GetResistanceFor(data.DeathMagic) - resistance {
                     deathDamage += defender.GetHitPoints()
                 }
             }
