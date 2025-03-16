@@ -2895,7 +2895,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
             stoneDamage := 0
 
             for range defender.Figures() {
-                if rand.N(10) + 1 > defender.GetResistance() - resistance {
+                if rand.N(10) + 1 > defender.GetResistanceFor(data.NatureMagic) - resistance {
                     stoneDamage += defender.GetHitPoints()
                 }
             }
@@ -3983,6 +3983,7 @@ type SpellSystem interface {
     CreateFlameBladeProjectile(target *ArmyUnit) *Projectile
     CreateImmolationProjectile(target *ArmyUnit) *Projectile
     CreateBerserkProjectile(target *ArmyUnit) *Projectile
+    CreateCloakOfFearProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4908,7 +4909,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 model.AddProjectile(spellSystem.CreateInvisibilityProjectile(target))
                 castedCallback()
             }, func (target *ArmyUnit) bool {
-                if target.IsInvisible() {
+                if target.HasEnchantment(data.UnitEnchantmentInvisibility) {
                     return false
                 }
 
@@ -5003,11 +5004,24 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Cloak of Fear":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateCloakOfFearProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentCloakOfFear) {
+                    return false
+                }
 
+                if target.GetRealm() == data.LifeMagic {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Cloak of Fear
         Wraith Form
          */
 
