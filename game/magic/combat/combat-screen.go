@@ -2427,7 +2427,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     defer cancel()
 
     sound, err := combat.AudioCache.GetSound(mover.Unit.GetMovementSound().LbxIndex())
-    if err == nil {
+    if err == nil && combat.IsUnitVisible(mover) {
         // keep playing movement sound in a loop until the unit stops moving
         go func(){
             // defer sound.Pause()
