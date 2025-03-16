@@ -1431,6 +1431,8 @@ type DamageModifiers struct {
 
     // if the damage comes from a specific realm (for spells or magic damage)
     Magic data.MagicType
+
+    DamageType DamageType
 }
 
 func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, modifiers DamageModifiers) int {
@@ -1600,7 +1602,7 @@ func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, modifiers
             }
 
             take := min(healthLeft, damage)
-            unit.TakeDamage(take, DamageNormal)
+            unit.TakeDamage(take, modifiers.DamageType)
             damage -= take
 
             taken += take
@@ -3184,6 +3186,11 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
         Illusion: attacker.HasAbility(data.AbilityIllusion),
         NegateWeaponImmunity: attacker.CanNegateWeaponImmunity(),
         EldritchWeapon: attacker.HasEnchantment(data.UnitEnchantmentEldritchWeapon),
+        DamageType: DamageNormal,
+    }
+
+    if attacker.HasAbility(data.AbilityCreateUndead) {
+        modifiers.DamageType = DamageUndead
     }
 
     hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, modifiers)
