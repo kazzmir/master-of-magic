@@ -116,7 +116,7 @@ func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane dat
     return &map_
 }
 
-func (saveGame *SaveGame) ConvertSettings() setup.NewGameSettings {
+func (saveGame *SaveGame) convertSettings() setup.NewGameSettings {
     return setup.NewGameSettings{
         Difficulty:  data.DifficultySetting(saveGame.Difficulty),
         Opponents: int(saveGame.NumPlayers) - 1,
@@ -283,7 +283,7 @@ func (saveGame *SaveGame) convertFogMap(plane data.Plane) data.FogMap {
     return out
 }
 
-func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex int8, game *gamelib.Game) []*citylib.City {
+func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex int8, wizards []setup.WizardCustom, game *gamelib.Game) []*citylib.City {
     cities := []*citylib.City{}
     buildingMap := map[int]buildinglib.Building{
         0x01: buildinglib.BuildingTradeGoods,
@@ -321,6 +321,35 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
         0x21: buildinglib.BuildingMechaniciansGuild,
         0x22: buildinglib.BuildingMinersGuild,
         0x23: buildinglib.BuildingCityWalls,
+    }
+
+    enchantmentMap := map[int]data.CityEnchantment{
+        0x00: data.CityEnchantmentWallOfFire,
+        0x01: data.CityEnchantmentChaosRift,
+        0x02: data.CityEnchantmentDarkRituals,
+        0x03: data.CityEnchantmentEvilPresence,
+        0x04: data.CityEnchantmentCursedLands,
+        0x05: data.CityEnchantmentPestilence,
+        0x06: data.CityEnchantmentCloudOfShadow,
+        0x07: data.CityEnchantmentFamine,
+        0x08: data.CityEnchantmentFlyingFortress,
+        0x09: data.CityEnchantmentNatureWard,
+        0x0A: data.CityEnchantmentSorceryWard,
+        0x0B: data.CityEnchantmentChaosWard,
+        0x0C: data.CityEnchantmentLifeWard,
+        0x0D: data.CityEnchantmentDeathWard,
+        0x0E: data.CityEnchantmentNaturesEye,
+        0x0F: data.CityEnchantmentEarthGate,
+        0x10: data.CityEnchantmentStreamOfLife,
+        0x11: data.CityEnchantmentGaiasBlessing,
+        0x12: data.CityEnchantmentInspirations,
+        0x13: data.CityEnchantmentProsperity,
+        0x14: data.CityEnchantmentAstralGate,
+        0x15: data.CityEnchantmentHeavenlyLight,
+        0x16: data.CityEnchantmentConsecration,
+        0x17: data.CityEnchantmentWallOfDarkness,
+        0x18: data.CityEnchantmentAltarOfBattle,
+        // 0x19: data.CityEnchantmentNightshade, // FIXME add nightshade
     }
 
     unitMap := map[int]units.Unit {
@@ -558,8 +587,16 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
             }
         }
 
-        // FIXME: parse cityData.Enchantments
         enchantments := set.MakeSet[citylib.Enchantment]()
+        for index, enchantment := range enchantmentMap {
+            value := int8(cityData.Enchantments[index])
+            if value != 0 {
+                enchantments.Insert(citylib.Enchantment{
+                    Enchantment: enchantment,
+                    Owner: wizards[value-1].Banner,
+                })
+            }
+        }
 
         producingBuilding := buildinglib.BuildingNone
         producingUnit := units.UnitNone
@@ -604,9 +641,8 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
 }
 
 func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
-    game := gamelib.MakeGame(cache, saveGame.ConvertSettings())
+    game := gamelib.MakeGame(cache, saveGame.convertSettings())
 
-    // load data
     game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, nil)
     game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, nil)
     game.TurnNumber = uint64(saveGame.Turn)
@@ -618,18 +654,21 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // FIXME: game.PurifyWorkMyrror
     // FIXME: game.Players
 
-    wizard := saveGame.convertWizard(0)
+    wizards := []setup.WizardCustom{}
+    for index := range saveGame.NumPlayers {
+        wizards = append(wizards, saveGame.convertWizard(int(index)))
+    }
 
-    player := game.AddPlayer(wizard, true)
+    // FIXME: make a convertPlayer instead of using AddPlayer
+    player := game.AddPlayer(wizards[0], true)
     player.ArcanusFog = saveGame.convertFogMap(data.PlaneArcanus)
     player.MyrrorFog = saveGame.convertFogMap(data.PlaneMyrror)
-    player.Cities = saveGame.convertCities(player, 0, game)
+    player.Cities = saveGame.convertCities(player, 0, wizards, game)
     player.UpdateFogVisibility()
 
-    for i := 1; i < int(saveGame.NumPlayers); i++ {
-        wizard := saveGame.convertWizard(i)
-        enemy := game.AddPlayer(wizard, false)
-        enemy.Cities = saveGame.convertCities(enemy, int8(i), game)
+    for index := 1; index < int(saveGame.NumPlayers); index++ {
+        enemy := game.AddPlayer(wizards[index], false)
+        enemy.Cities = saveGame.convertCities(enemy, int8(index), wizards, game)
     }
 
     // FIXME: neutral player
