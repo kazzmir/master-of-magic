@@ -1914,6 +1914,8 @@ func (army *Army) KillUnit(kill *ArmyUnit){
     // units that died due to irreversable damage are gone forever
     if kill.DeathReason() != DamageIrreversable {
         army.KilledUnits = append(army.KilledUnits, kill)
+    } else {
+        kill.Unit.SetEnchantmentProvider(nil)
     }
     army.RemoveUnit(kill)
 }
@@ -3820,12 +3822,16 @@ func (model *CombatModel) flee(army *Army) {
 }
 
 // called when the battle ends
-func (model *CombatModel) FinishCombat() {
+func (model *CombatModel) FinishCombat(state CombatState) {
+    var undeadUnits []*ArmyUnit
+
     // kill all units that are bound or possessed, or summoned units
     // also regenerate units with the regeneration ability
-    killUnits := func(army *Army) {
+    killUnits := func(army *Army, team Team) {
+        wonBattle := state.IsWinner(team)
+
         for _, unit := range army.units {
-            if unit.HasAbility(data.AbilityRegeneration) {
+            if wonBattle && unit.HasAbility(data.AbilityRegeneration) {
                 unit.Heal(unit.GetMaxHealth())
             }
 
@@ -3837,14 +3843,36 @@ func (model *CombatModel) FinishCombat() {
         }
 
         for _, unit := range army.KilledUnits {
-            if unit.HasAbility(data.AbilityRegeneration) {
+            if wonBattle && unit.HasAbility(data.AbilityRegeneration) {
                 unit.Heal(unit.GetMaxHealth())
+            }
+
+            if !wonBattle {
+                // raise unit as an undead unit for the opposing team
+                if unit.DeathReason() == DamageUndead && unit.GetRace() != data.RaceHero {
+                    undeadUnits = append(undeadUnits, unit)
+                }
             }
         }
     }
 
-    killUnits(model.DefendingArmy)
-    killUnits(model.AttackingArmy)
+    killUnits(model.DefendingArmy, TeamDefender)
+    killUnits(model.AttackingArmy, TeamAttacker)
+
+    // FIXME: show zombie animation when combat ends
+    if state.IsWinner(TeamDefender) {
+        for _, unit := range undeadUnits {
+            unit.Unit.SetUndead()
+            unit.Unit.AdjustHealth(unit.GetMaxHealth())
+            model.DefendingArmy.AddArmyUnit(unit)
+        }
+    } else if state.IsWinner(TeamAttacker) {
+        for _, unit := range undeadUnits {
+            unit.Unit.SetUndead()
+            unit.Unit.AdjustHealth(unit.GetMaxHealth())
+            model.AttackingArmy.AddArmyUnit(unit)
+        }
+    }
 
     model.DefendingArmy.Cleanup()
     model.AttackingArmy.Cleanup()

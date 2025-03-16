@@ -47,6 +47,17 @@ const (
     CombatStateNoCombat
 )
 
+func (state CombatState) IsWinner(team Team) bool {
+    switch state {
+        case CombatStateAttackerWin: return team == TeamAttacker
+        case CombatStateDefenderWin: return team == TeamDefender
+        case CombatStateAttackerFlee: return team == TeamDefender
+        case CombatStateDefenderFlee: return team == TeamAttacker
+    }
+
+    return false
+}
+
 func (state CombatState) String() string {
     switch state {
         case CombatStateRunning: return "Running"
@@ -2808,25 +2819,25 @@ func (combat *CombatScreen) UpdateMouseState() {
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     if combat.Model.AttackingArmy.Fled {
         combat.Model.flee(combat.Model.AttackingArmy)
-        combat.Model.FinishCombat()
+        combat.Model.FinishCombat(CombatStateAttackerFlee)
         return CombatStateAttackerFlee
     }
 
     if combat.Model.DefendingArmy.Fled {
         combat.Model.flee(combat.Model.DefendingArmy)
-        combat.Model.FinishCombat()
+        combat.Model.FinishCombat(CombatStateDefenderFlee)
         return CombatStateDefenderFlee
     }
 
     if len(combat.Model.AttackingArmy.units) == 0 {
         combat.Model.AddLogEvent("Defender wins!")
-        combat.Model.FinishCombat()
+        combat.Model.FinishCombat(CombatStateDefenderWin)
         return CombatStateDefenderWin
     }
 
     if len(combat.Model.DefendingArmy.units) == 0 {
         combat.Model.AddLogEvent("Attacker wins!")
-        combat.Model.FinishCombat()
+        combat.Model.FinishCombat(CombatStateAttackerWin)
         return CombatStateAttackerWin
     }
 
