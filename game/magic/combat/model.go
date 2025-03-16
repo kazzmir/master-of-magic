@@ -1404,6 +1404,8 @@ type DamageModifiers struct {
 
     NegateWeaponImmunity bool
 
+    EldritchWeapon bool
+
     // if the damage comes from a specific realm (for spells or magic damage)
     Magic data.MagicType
 }
@@ -1413,7 +1415,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, m
         return 0
     }
 
-    toDefend := unit.ToDefend()
+    toDefend := unit.ToDefend(modifiers)
     var defenseRolls int
 
     hasImmunity := false
@@ -1706,12 +1708,16 @@ func (unit *ArmyUnit) CauseFear() int {
     return fear
 }
 
-func (unit *ArmyUnit) ToDefend() int {
+func (unit *ArmyUnit) ToDefend(modifiers DamageModifiers) int {
     modifier := 0
 
     if unit.Model.IsEnchantmentActive(data.CombatEnchantmentHighPrayer, unit.Team) ||
        unit.Model.IsEnchantmentActive(data.CombatEnchantmentPrayer, unit.Team) {
         modifier += 10
+    }
+
+    if modifiers.EldritchWeapon {
+        modifier -= 10
     }
 
     return 30 + modifier
@@ -3148,6 +3154,7 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
         ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
         Illusion: attacker.HasAbility(data.AbilityIllusion),
         NegateWeaponImmunity: attacker.CanNegateWeaponImmunity(),
+        EldritchWeapon: attacker.HasEnchantment(data.UnitEnchantmentEldritchWeapon),
     }
 
     hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, modifiers)
@@ -3375,6 +3382,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     damage := defender.ApplyDamage(throwDamage, units.DamageThrown, DamageModifiers{
                         ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
                         NegateWeaponImmunity: attacker.CanNegateWeaponImmunity(),
+                        EldritchWeapon: attacker.HasEnchantment(data.UnitEnchantmentEldritchWeapon),
                     })
 
                     model.Observer.ThrowAttack(attacker, defender, damage)
@@ -3966,6 +3974,7 @@ type SpellSystem interface {
     CreateMagicImmunityProjectile(target *ArmyUnit) *Projectile
     CreateResistMagicProjectile(target *ArmyUnit) *Projectile
     CreateSpellLockProjectile(target *ArmyUnit) *Projectile
+    CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4930,10 +4939,24 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Eldritch Weapon":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateEldritchWeaponProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRace() == data.RaceFantastic {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentEldritchWeapon) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Eldritch Weapon
         Flame Blade
         Immolation
         Berserk

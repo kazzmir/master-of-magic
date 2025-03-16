@@ -224,6 +224,10 @@ func (system *TestSpellSystem) CreateSpellLockProjectile(target *ArmyUnit) *Proj
     return nil
 }
 
+func (system *TestSpellSystem) CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }

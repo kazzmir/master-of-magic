@@ -359,6 +359,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Magic Immunity"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Resist Magic"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Spell Lock"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Eldritch Weapon"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
@@ -369,8 +370,8 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
         attackingArmy.KillUnit(attackingArmy.GetUnits()[0])
     }
 
-    attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentTrueSight)
     /*
+    attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentTrueSight)
     attackingArmy.GetUnits()[1].Unit.AddEnchantment(data.UnitEnchantmentLionHeart)
     */
 
