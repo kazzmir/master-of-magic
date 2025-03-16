@@ -2431,14 +2431,25 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
     }
 }
 
+// only removes enchantments (not curses)
 func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
     var removedEnchantments []data.UnitEnchantment
 
     choices := append(unit.Unit.GetEnchantments(), unit.Enchantments...)
 
+    // if the unit has spell lock then only that spell can be dispelled. once it is dispelled then the
+    // other choices become valid targets
+    if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+        choices = []data.UnitEnchantment{data.UnitEnchantmentSpellLock}
+    }
+
     for _, enchantment := range choices {
         spell := allSpells.FindByName(enchantment.SpellName())
         cost := spell.Cost(false)
+        // spell lock has a unique cost for the purposes of dispelling
+        if enchantment == data.UnitEnchantmentSpellLock {
+            cost = 150
+        }
         dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
         if spellbook.RollDispelChance(dispellChance) {
             removedEnchantments = append(removedEnchantments, enchantment)
@@ -3954,6 +3965,7 @@ type SpellSystem interface {
     CreateInvisibilityProjectile(target *ArmyUnit) *Projectile
     CreateMagicImmunityProjectile(target *ArmyUnit) *Projectile
     CreateResistMagicProjectile(target *ArmyUnit) *Projectile
+    CreateSpellLockProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4907,10 +4919,20 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Spell Lock":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateSpellLockProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentSpellLock) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Spell Lock
         Eldritch Weapon
         Flame Blade
         Immolation

@@ -612,6 +612,10 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
+        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+            return
+        }
+
         modifier := 4
         if unit.Unit.IsUndead() {
             modifier = 9
@@ -1028,6 +1032,18 @@ func (combat *CombatScreen) CreateResistMagicProjectile(target *ArmyUnit) *Proje
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
+func (combat *CombatScreen) CreateSpellLockProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentSpellLock)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
     explodeImages := images
@@ -1219,6 +1235,10 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
     explodeImages := images
 
     damage := func (unit *ArmyUnit){
+        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+            return
+        }
+
         modifier := 2
         if unit.Unit.IsUndead() {
             modifier = 7
@@ -1377,6 +1397,10 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
+        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+            return
+        }
+
         resistance := unit.GetResistanceFor(data.SorceryMagic) - reduceResistance - 3
         damage := 0
 
