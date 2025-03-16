@@ -798,6 +798,7 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                 modifier -= 1
             }
 
+            // count metal fires, but only if flame blade is not active
             if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
                 modifier += 1
             }
@@ -1108,6 +1109,10 @@ func (unit *ArmyUnit) GetFullRangedAttackPower() int {
 }
 
 func (unit *ArmyUnit) GetRangedAttackPower() int {
+    if unit.Unit.GetRangedAttackPower() == 0 {
+        return 0
+    }
+
     modifier := 0
 
     for _, enchantment := range unit.Enchantments {
@@ -1128,7 +1133,7 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
     }
 
     if unit.Unit.GetRace() != data.RaceFantastic && unit.Model.IsEnchantmentActive(data.CombatEnchantmentMetalFires, unit.Team) && !unit.HasEnchantment(data.UnitEnchantmentFlameBlade) {
-        if unit.Unit.GetRangedAttackPower() > 0 {
+        if unit.GetRangedAttackDamageType() == units.DamageRangedPhysical {
             modifier += 1
         }
     }
@@ -3971,6 +3976,7 @@ type SpellSystem interface {
     CreateResistMagicProjectile(target *ArmyUnit) *Projectile
     CreateSpellLockProjectile(target *ArmyUnit) *Projectile
     CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile
+    CreateFlameBladeProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4950,10 +4956,24 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Flame Blade":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateFlameBladeProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.GetRace() == data.RaceFantastic {
+                    return false
+                }
+
+                if target.HasEnchantment(data.UnitEnchantmentFlameBlade) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Flame Blade
         Immolation
         Berserk
         Cloak of Fear
