@@ -232,6 +232,10 @@ func (system *TestSpellSystem) CreateFlameBladeProjectile(target *ArmyUnit) *Pro
     return nil
 }
 
+func (system *TestSpellSystem) CreateImmolationProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }

@@ -3977,6 +3977,7 @@ type SpellSystem interface {
     CreateSpellLockProjectile(target *ArmyUnit) *Projectile
     CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile
     CreateFlameBladeProjectile(target *ArmyUnit) *Projectile
+    CreateImmolationProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -4971,10 +4972,20 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Immolation":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateImmolationProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasAbility(data.AbilityImmolation) {
+                    return false
+                }
+
+                return true
+            })
 
         /*
         unit enchantments:
-        Immolation
         Berserk
         Cloak of Fear
         Wraith Form

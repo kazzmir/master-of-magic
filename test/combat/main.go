@@ -362,6 +362,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Spell Lock"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Eldritch Weapon"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Flame Blade"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Immolation"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
