@@ -3984,6 +3984,7 @@ type SpellSystem interface {
     CreateImmolationProjectile(target *ArmyUnit) *Projectile
     CreateBerserkProjectile(target *ArmyUnit) *Projectile
     CreateCloakOfFearProjectile(target *ArmyUnit) *Projectile
+    CreateWraithFormProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
 }
@@ -5019,11 +5020,21 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+        case "Wraith Form":
+            model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
+                model.AddProjectile(spellSystem.CreateWraithFormProjectile(target))
+                castedCallback()
+            }, func (target *ArmyUnit) bool {
+                if target.HasEnchantment(data.UnitEnchantmentWraithForm) {
+                    return false
+                }
 
-        /*
-        unit enchantments:
-        Wraith Form
-         */
+                if target.GetRealm() == data.LifeMagic {
+                    return false
+                }
+
+                return true
+            })
 
         default:
             log.Printf("Unhandled spell %v", spell.Name)

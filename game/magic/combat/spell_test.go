@@ -244,6 +244,10 @@ func (system *TestSpellSystem) CreateCloakOfFearProjectile(target *ArmyUnit) *Pr
     return nil
 }
 
+func (system *TestSpellSystem) CreateWraithFormProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }
