@@ -376,6 +376,9 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
         attackingArmy.KillUnit(attackingArmy.GetUnits()[0])
     }
 
+    attackingArmy.GetUnits()[0].TakeDamage(2, combat.DamageIrreversable)
+    attackingArmy.GetUnits()[1].TakeDamage(2, combat.DamageNormal)
+
     /*
     attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentTrueSight)
     attackingArmy.GetUnits()[1].Unit.AddEnchantment(data.UnitEnchantmentLionHeart)

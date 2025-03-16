@@ -1540,6 +1540,23 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, m
     return defense
 }
 
+// returns the damage reason why this unit died, which is the largest source of damage
+func (unit *ArmyUnit) DeathReason() DamageType {
+    if unit.NormalDamage >= unit.IrreversableDamage && unit.NormalDamage >= unit.UndeadDamage {
+        return DamageNormal
+    }
+
+    if unit.UndeadDamage >= unit.IrreversableDamage && unit.UndeadDamage >= unit.NormalDamage {
+        return DamageUndead
+    }
+
+    if unit.IrreversableDamage >= unit.NormalDamage && unit.IrreversableDamage >= unit.UndeadDamage {
+        return DamageIrreversable
+    }
+
+    return DamageNormal
+}
+
 func (unit *ArmyUnit) TakeDamage(damage int, damageType DamageType) {
     // the first figure should take damage, and if it dies then the next unit takes damage, etc
     unit.Unit.AdjustHealth(-damage)
@@ -1552,8 +1569,8 @@ func (unit *ArmyUnit) TakeDamage(damage int, damageType DamageType) {
 }
 
 func (unit *ArmyUnit) Heal(amount int){
-    maxHeal := unit.GetMaxHealth() - unit.IrreversableDamage
-    unit.Unit.AdjustHealth(min(amount, maxHeal))
+    maxHeal := unit.GetDamage() - unit.IrreversableDamage
+    unit.Unit.AdjustHealth(max(0, min(amount, maxHeal)))
 }
 
 // apply damage to each individual figure such that each figure gets to individually block damage.
@@ -1894,7 +1911,10 @@ func (army *Army) RaiseDeadUnit(unit *ArmyUnit, x int, y int){
 }
 
 func (army *Army) KillUnit(kill *ArmyUnit){
-    army.KilledUnits = append(army.KilledUnits, kill)
+    // units that died due to irreversable damage are gone forever
+    if kill.DeathReason() != DamageIrreversable {
+        army.KilledUnits = append(army.KilledUnits, kill)
+    }
     army.RemoveUnit(kill)
 }
 
