@@ -263,8 +263,8 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
         }, false, 0, 0, nil)
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
-    // defendingArmy := createLizardmenArmy(defendingPlayer, 3)
+    // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
+    defendingArmy := createLizardmenArmy(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingArmy.GetUnits()[0].AddCurse(data.UnitCurseBlackSleep)

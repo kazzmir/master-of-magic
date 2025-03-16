@@ -2052,6 +2052,8 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
             combat.Model.doTouchAttack(attacker, target, 0)
         }
 
+        combat.Model.ApplyImmolationDamage(defender, combat.Model.immolationDamage(attacker, defender))
+
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 
         /*
