@@ -7859,19 +7859,22 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             // nx := overworld.Map.WrapX(x - overworld.Camera.GetX()) + overworld.Camera.GetX() + 6
 
             options.GeoM.Translate((x + float64(stack.OffsetX())) * float64(tileWidth), (y + float64(stack.OffsetY())) * float64(tileHeight))
-            options.GeoM.Concat(geom)
 
             leader := stack.Leader()
 
             unitBack, err := units.GetUnitBackgroundImage(leader.GetBanner(), overworld.ImageCache)
             if err == nil {
+                saveGeom := options.GeoM
+                options.GeoM.Concat(geom)
                 scale.DrawScaled(screen, unitBack, &options)
+                options.GeoM = saveGeom
             }
 
             pic, err := GetUnitImage(leader, overworld.ImageCache, leader.GetBanner())
             if err == nil {
                 // screen scale is already taken into account, so we can translate by 1 pixel here
                 options.GeoM.Translate(1, 1)
+                options.GeoM.Concat(geom)
 
                 if leader.GetBusy() != units.BusyStatusNone {
                     var patrolOptions colorm.DrawImageOptions
