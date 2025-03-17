@@ -763,7 +763,7 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
  */
 func (unit *OverworldUnit) NaturalHeal(rate float64) {
     // undead creatures never heal
-    if unit.IsUndead() {
+    if unit.IsUndead() || unit.GetRealm() == data.DeathMagic {
         return
     }
 
