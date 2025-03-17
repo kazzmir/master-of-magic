@@ -1970,6 +1970,9 @@ type CombatModel struct {
     Projectiles []*Projectile
     Plane data.Plane
 
+    // units that became undead once combat ends
+    UndeadUnits []*ArmyUnit
+
     Events chan CombatEvent
 
     TurnAttacker int
@@ -3832,8 +3835,6 @@ func (model *CombatModel) flee(army *Army) {
 
 // called when the battle ends
 func (model *CombatModel) FinishCombat(state CombatState) {
-    var undeadUnits []*ArmyUnit
-
     // kill all units that are bound or possessed, or summoned units
     // also regenerate units with the regeneration ability
     killUnits := func(army *Army, team Team) {
@@ -3859,7 +3860,7 @@ func (model *CombatModel) FinishCombat(state CombatState) {
             if !wonBattle {
                 // raise unit as an undead unit for the opposing team
                 if unit.DeathReason() == DamageUndead && unit.GetRace() != data.RaceHero {
-                    undeadUnits = append(undeadUnits, unit)
+                    model.UndeadUnits = append(model.UndeadUnits, unit)
                 }
             }
         }
@@ -3868,19 +3869,9 @@ func (model *CombatModel) FinishCombat(state CombatState) {
     killUnits(model.DefendingArmy, TeamDefender)
     killUnits(model.AttackingArmy, TeamAttacker)
 
-    // FIXME: show zombie animation when combat ends
-    if state.IsWinner(TeamDefender) {
-        for _, unit := range undeadUnits {
-            unit.Unit.SetUndead()
-            unit.Unit.AdjustHealth(unit.GetMaxHealth())
-            model.DefendingArmy.AddArmyUnit(unit)
-        }
-    } else if state.IsWinner(TeamAttacker) {
-        for _, unit := range undeadUnits {
-            unit.Unit.SetUndead()
-            unit.Unit.AdjustHealth(unit.GetMaxHealth())
-            model.AttackingArmy.AddArmyUnit(unit)
-        }
+    for _, unit := range model.UndeadUnits {
+        unit.Unit.SetUndead()
+        unit.Unit.AdjustHealth(unit.GetMaxHealth())
     }
 
     model.DefendingArmy.Cleanup()

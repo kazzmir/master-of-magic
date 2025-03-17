@@ -4561,9 +4561,23 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         game.Music.PopSong()
 
+        // FIXME: show create undead animation (cmbtfx.lbx 27) if there are new undead units
+
+        switch state {
+            case combat.CombatStateAttackerWin, combat.CombatStateDefenderFlee:
+                for _, unit := range combatScreen.Model.UndeadUnits {
+                    attacker.AddUnit(unit.Unit)
+                }
+            case combat.CombatStateDefenderWin, combat.CombatStateAttackerFlee:
+                for _, unit := range combatScreen.Model.UndeadUnits {
+                    defender.AddUnit(unit.Unit)
+                }
+        }
+
         defeatedDefenders = combatScreen.Model.DefeatedDefenders
         defeatedAttackers = combatScreen.Model.DefeatedAttackers
 
+        // FIXME: resolve the attacker/defender stack at the end of combat?
         for _, unit := range combatScreen.Model.AttackingArmy.RecalledUnits {
             recalledAttackers = append(recalledAttackers, unit.Unit.(units.StackUnit))
         }
@@ -4738,8 +4752,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             }
         }
     }
-
-    // ebiten.SetCursorMode(ebiten.CursorModeVisible)
 
     // recall units
     relocateUnits := func(player *playerlib.Player, units []units.StackUnit) {
