@@ -206,10 +206,11 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /*
             TOWN ENCHANTMENTS
                 TODO:
-                Earth Gate
                 Flying Fortress
                 Spell Ward
         */
+        case "Earth Gate":
+            game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentEarthGate)
         case "Astral Gate":
             game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentAstralGate)
         case "Heavenly Light":
