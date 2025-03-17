@@ -32,6 +32,13 @@ const (
     DamageSourceSpell
 )
 
+type DamageType int
+const (
+    DamageNormal DamageType = iota
+    DamageIrreversable
+    DamageUndead
+)
+
 type ZoneType struct {
     // fighting in a city
     City *citylib.City
@@ -503,6 +510,11 @@ type ArmyUnit struct {
     CastingSkill float32
     Casted bool
 
+    // track total damage applied to this unit
+    NormalDamage int
+    IrreversableDamage int
+    UndeadDamage int
+
     // health of the web spell cast on this unit
     WebHealth int
 
@@ -547,9 +559,9 @@ func (unit *ArmyUnit) IsUndead() bool {
 
 func (unit *ArmyUnit) RaiseFromDead() {
     // make sure health is 0 first
-    unit.TakeDamage(unit.Unit.GetMaxHealth())
+    unit.Unit.AdjustHealth(-unit.GetMaxHealth())
     // then raise to 1/2
-    unit.Heal(unit.Unit.GetMaxHealth()/2)
+    unit.Heal(unit.GetMaxHealth()/2)
     unit.Enchantments = nil
     unit.Curses = nil
     unit.WebHealth = 0
@@ -1419,6 +1431,8 @@ type DamageModifiers struct {
 
     // if the damage comes from a specific realm (for spells or magic damage)
     Magic data.MagicType
+
+    DamageType DamageType
 }
 
 func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, modifiers DamageModifiers) int {
@@ -1526,20 +1540,48 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, m
     return defense
 }
 
-func (unit *ArmyUnit) TakeDamage(damage int) {
+// returns the damage reason why this unit died, which is the largest source of damage
+func (unit *ArmyUnit) DeathReason() DamageType {
+    if unit.NormalDamage >= unit.IrreversableDamage && unit.NormalDamage >= unit.UndeadDamage {
+        return DamageNormal
+    }
+
+    if unit.UndeadDamage >= unit.IrreversableDamage && unit.UndeadDamage >= unit.NormalDamage {
+
+        invalid := unit.Unit.IsHero() || unit.GetRealm() == data.DeathMagic || unit.Summoned || unit.HasAbility(data.AbilityMagicImmunity)
+        if !invalid {
+            return DamageUndead
+        }
+    }
+
+    if unit.IrreversableDamage >= unit.NormalDamage && unit.IrreversableDamage >= unit.UndeadDamage {
+        return DamageIrreversable
+    }
+
+    return DamageNormal
+}
+
+func (unit *ArmyUnit) TakeDamage(damage int, damageType DamageType) {
     // the first figure should take damage, and if it dies then the next unit takes damage, etc
     unit.Unit.AdjustHealth(-damage)
+
+    switch damageType {
+        case DamageNormal: unit.NormalDamage += damage
+        case DamageIrreversable: unit.IrreversableDamage += damage
+        case DamageUndead: unit.UndeadDamage += damage
+    }
 }
 
 func (unit *ArmyUnit) Heal(amount int){
-    unit.Unit.AdjustHealth(amount)
+    maxHeal := unit.GetDamage() - unit.IrreversableDamage
+    unit.Unit.AdjustHealth(max(0, min(amount, maxHeal)))
 }
 
 // apply damage to each individual figure such that each figure gets to individually block damage.
 // this could potentially allow a damage of 5 to destroy a unit with 4 figures of 1HP each
 func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damage, wallDefense int) int {
     totalDamage := 0
-    health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
+    health_per_figure := unit.GetMaxHealth() / unit.GetCount()
 
     for range unit.Figures() {
         // FIXME: should this toHit=30 be based on the unit's toHitMelee?
@@ -1555,7 +1597,7 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
     }
 
     totalDamage = min(totalDamage, unit.Unit.GetHealth())
-    unit.TakeDamage(totalDamage)
+    unit.TakeDamage(totalDamage, DamageNormal)
     return totalDamage
 }
 
@@ -1574,14 +1616,14 @@ func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, modifiers
         damage -= defense
 
         if damage > 0 {
-            health_per_figure := unit.Unit.GetMaxHealth() / unit.Unit.GetCount()
+            health_per_figure := unit.GetMaxHealth() / unit.GetCount()
             healthLeft := unit.Unit.GetHealth() % unit.Figures()
             if healthLeft == 0 {
                 healthLeft = health_per_figure
             }
 
             take := min(healthLeft, damage)
-            unit.TakeDamage(take)
+            unit.TakeDamage(take, modifiers.DamageType)
             damage -= take
 
             taken += take
@@ -1873,7 +1915,12 @@ func (army *Army) RaiseDeadUnit(unit *ArmyUnit, x int, y int){
 }
 
 func (army *Army) KillUnit(kill *ArmyUnit){
-    army.KilledUnits = append(army.KilledUnits, kill)
+    // units that died due to irreversable damage are gone forever
+    if kill.DeathReason() != DamageIrreversable {
+        army.KilledUnits = append(army.KilledUnits, kill)
+    } else {
+        kill.Unit.SetEnchantmentProvider(nil)
+    }
     army.RemoveUnit(kill)
 }
 
@@ -1922,6 +1969,9 @@ type CombatModel struct {
     OtherUnits []*OtherUnit
     Projectiles []*Projectile
     Plane data.Plane
+
+    // units that became undead once combat ends
+    UndeadUnits []*ArmyUnit
 
     Events chan CombatEvent
 
@@ -2173,7 +2223,7 @@ func (model *CombatModel) NextTurn() {
                     damage += 1
                 }
             }
-            unit.TakeDamage(damage)
+            unit.TakeDamage(damage, DamageNormal)
             if unit.GetHealth() <= 0 {
                 model.KillUnit(unit)
             }
@@ -2221,7 +2271,7 @@ func (model *CombatModel) NextTurn() {
                     damage += 1
                 }
             }
-            unit.TakeDamage(damage)
+            unit.TakeDamage(damage, DamageNormal)
             if unit.GetHealth() <= 0 {
                 model.KillUnit(unit)
             }
@@ -2888,9 +2938,11 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
     return damage, hit
 }
 
-func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (int, bool) {
+// returns normal damage, irreversable damage, and whether or not the attack hit
+func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (int, int, bool) {
     // FIXME: take into account the attack strength of the unit, and modifiers from spells/magic nodes
 
+    irreversableDamage := 0
     damage := 0
     hit := false
     if attacker.HasAbility(data.AbilityStoningGaze) {
@@ -2905,8 +2957,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
                 }
             }
 
-            // FIXME: this should be irreversable damage
-            damage += stoneDamage
+            irreversableDamage += stoneDamage
             hit = true
 
             model.Observer.StoneGazeAttack(attacker, defender, stoneDamage)
@@ -2944,7 +2995,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
         model.AddLogEvent(fmt.Sprintf("%v uses doom gaze on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), doomDamage))
     }
 
-    return damage, hit
+    return damage, irreversableDamage, hit
 }
 
 func (model *CombatModel) doThrowAttack(attacker *ArmyUnit, defender *ArmyUnit) (int, bool) {
@@ -2985,8 +3036,13 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             }
         }
 
+        damageType := DamageNormal
+        if attacker.HasAbility(data.AbilityCreateUndead) {
+            damageType = DamageUndead
+        }
+
         damageFuncs = append(damageFuncs, func(){
-            defender.TakeDamage(damage)
+            defender.TakeDamage(damage, damageType)
             model.Observer.PoisonTouchAttack(attacker, defender, damage)
             model.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.GetHealth()))
         })
@@ -3011,8 +3067,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
                 damage = min(damage, defender.GetHealth())
 
                 damageFuncs = append(damageFuncs, func(){
-                    // FIXME: if the unit dies they can become undead
-                    defender.TakeDamage(damage)
+                    defender.TakeDamage(damage, DamageUndead)
                     attacker.Heal(damage)
                     model.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.GetHealth()))
 
@@ -3038,7 +3093,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             }
 
             damageFuncs = append(damageFuncs, func(){
-                defender.TakeDamage(damage)
+                defender.TakeDamage(damage, DamageIrreversable)
 
                 model.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
@@ -3077,7 +3132,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             }
 
             damageFuncs = append(damageFuncs, func(){
-                defender.TakeDamage(damage)
+                defender.TakeDamage(damage, DamageIrreversable)
                 model.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DispelEvilTouchAttack(attacker, defender, damage)
@@ -3098,7 +3153,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             }
 
             damageFuncs = append(damageFuncs, func(){
-                defender.TakeDamage(damage)
+                defender.TakeDamage(damage, DamageNormal)
 
                 model.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
@@ -3119,7 +3174,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             }
 
             damageFuncs = append(damageFuncs, func(){
-                defender.TakeDamage(damage)
+                defender.TakeDamage(damage, DamageIrreversable)
                 model.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DestructionAttack(attacker, defender, damage)
@@ -3165,6 +3220,11 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
         Illusion: attacker.HasAbility(data.AbilityIllusion),
         NegateWeaponImmunity: attacker.CanNegateWeaponImmunity(),
         EldritchWeapon: attacker.HasEnchantment(data.UnitEnchantmentEldritchWeapon),
+        DamageType: DamageNormal,
+    }
+
+    if attacker.HasAbility(data.AbilityCreateUndead) {
+        modifiers.DamageType = DamageUndead
     }
 
     hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, modifiers)
@@ -3380,7 +3440,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     }
                 }
 
-                gazeDamage, hit := model.doGazeAttack(attacker, defender)
+                gazeDamage, gazeIrreversableDamage, hit := model.doGazeAttack(attacker, defender)
                 if hit {
                     immolationDamage += model.immolationDamage(attacker, defender)
                     if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
@@ -3404,13 +3464,14 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     f()
                 }
 
-                defender.TakeDamage(gazeDamage)
+                defender.TakeDamage(gazeDamage, DamageNormal)
+                defender.TakeDamage(gazeIrreversableDamage, DamageIrreversable)
 
             case 1:
                 immolationDamage := 0
                 damageFuncs := []func(){}
 
-                gazeDamage, hit := model.doGazeAttack(defender, attacker)
+                gazeDamage, gazeIrreversableDamage, hit := model.doGazeAttack(defender, attacker)
                 if hit {
                     immolationDamage += model.immolationDamage(defender, attacker)
                     if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
@@ -3422,7 +3483,8 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 for _, f := range damageFuncs {
                     f()
                 }
-                attacker.TakeDamage(gazeDamage)
+                attacker.TakeDamage(gazeDamage, DamageNormal)
+                attacker.TakeDamage(gazeIrreversableDamage, DamageIrreversable)
 
             case 2:
 
@@ -3735,13 +3797,13 @@ func DoStrategicCombat(attackingArmy *Army, defendingArmy *Army) (CombatState, i
 
     if attackingPower > defendingPower {
         for _, unit := range defendingArmy.units {
-            unit.TakeDamage(unit.Unit.GetMaxHealth())
+            unit.TakeDamage(unit.GetMaxHealth(), DamageNormal)
         }
 
         return CombatStateAttackerWin, 0, len(defendingArmy.units)
     } else {
         for _, unit := range attackingArmy.units {
-            unit.TakeDamage(unit.Unit.GetMaxHealth())
+            unit.TakeDamage(unit.GetMaxHealth(), DamageNormal)
         }
 
         return CombatStateDefenderWin, len(attackingArmy.units), 0
@@ -3764,7 +3826,7 @@ func (model *CombatModel) flee(army *Army) {
         }
 
         if rand.IntN(100) < chance {
-            unit.TakeDamage(unit.GetHealth())
+            unit.TakeDamage(unit.GetHealth(), DamageNormal)
             model.RemoveUnit(unit)
             model.DiedWhileFleeing += 1
         }
@@ -3772,31 +3834,45 @@ func (model *CombatModel) flee(army *Army) {
 }
 
 // called when the battle ends
-func (model *CombatModel) Finish() {
+func (model *CombatModel) FinishCombat(state CombatState) {
     // kill all units that are bound or possessed, or summoned units
     // also regenerate units with the regeneration ability
-    killUnits := func(army *Army) {
+    killUnits := func(army *Army, team Team) {
+        wonBattle := state.IsWinner(team)
+
         for _, unit := range army.units {
-            if unit.HasAbility(data.AbilityRegeneration) {
+            if wonBattle && unit.HasAbility(data.AbilityRegeneration) {
                 unit.Heal(unit.GetMaxHealth())
             }
 
             if unit.GetHealth() > 0 {
                 if unit.HasCurse(data.UnitCurseCreatureBinding) || unit.HasCurse(data.UnitCursePossession) || unit.Summoned {
-                    unit.TakeDamage(unit.GetHealth())
+                    unit.TakeDamage(unit.GetHealth(), DamageNormal)
                 }
             }
         }
 
         for _, unit := range army.KilledUnits {
-            if unit.HasAbility(data.AbilityRegeneration) {
+            if wonBattle && unit.HasAbility(data.AbilityRegeneration) {
                 unit.Heal(unit.GetMaxHealth())
+            }
+
+            if !wonBattle {
+                // raise unit as an undead unit for the opposing team
+                if unit.DeathReason() == DamageUndead && unit.GetRace() != data.RaceHero {
+                    model.UndeadUnits = append(model.UndeadUnits, unit)
+                }
             }
         }
     }
 
-    killUnits(model.DefendingArmy)
-    killUnits(model.AttackingArmy)
+    killUnits(model.DefendingArmy, TeamDefender)
+    killUnits(model.AttackingArmy, TeamAttacker)
+
+    for _, unit := range model.UndeadUnits {
+        unit.Unit.SetUndead()
+        unit.Unit.AdjustHealth(unit.GetMaxHealth())
+    }
 
     model.DefendingArmy.Cleanup()
     model.AttackingArmy.Cleanup()
@@ -4653,7 +4729,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 army := model.GetArmyForPlayer(player)
                 army.AddArmyUnit(killedUnit)
                 killedUnit.Unit.SetUndead()
-                killedUnit.Heal(killedUnit.Unit.GetMaxHealth())
+                killedUnit.Heal(killedUnit.GetMaxHealth())
                 killedUnit.X = x
                 killedUnit.Y = y
                 killedUnit.Team = model.GetTeamForArmy(army)

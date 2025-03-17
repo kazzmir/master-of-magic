@@ -47,6 +47,17 @@ const (
     CombatStateNoCombat
 )
 
+func (state CombatState) IsWinner(team Team) bool {
+    switch state {
+        case CombatStateAttackerWin: return team == TeamAttacker
+        case CombatStateDefenderWin: return team == TeamDefender
+        case CombatStateAttackerFlee: return team == TeamDefender
+        case CombatStateDefenderFlee: return team == TeamAttacker
+    }
+
+    return false
+}
+
 func (state CombatState) String() string {
     switch state {
         case CombatStateRunning: return "Running"
@@ -629,7 +640,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
             }
         }
 
-        unit.TakeDamage(damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -658,7 +669,7 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projecti
     explodeImages := images[3:]
 
     effect := func(unit *ArmyUnit) {
-        unit.TakeDamage(10)
+        unit.TakeDamage(10, DamageNormal)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -749,7 +760,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
         resistance := unit.GetResistanceFor(data.LifeMagic) - reduceResistance
         damage := rand.N(10) + 1 - resistance
         if damage > 0 {
-            unit.TakeDamage(damage)
+            unit.TakeDamage(damage, DamageUndead)
             if unitCaster != nil {
                 unitCaster.Heal(damage)
             } else {
@@ -1202,7 +1213,7 @@ func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit) *Projectil
         }
 
         // FIXME: do stoning damage, which is irreversable
-        unit.TakeDamage(damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1325,8 +1336,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
             }
         }
 
-        // FIXME: apply irreversable damage
-        unit.TakeDamage(damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1361,7 +1371,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projec
             }
         }
 
-        unit.TakeDamage(damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1384,7 +1394,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Proje
             }
         }
 
-        unit.TakeDamage(damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1482,7 +1492,7 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
             }
         }
 
-        unit.TakeDamage(damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -2809,25 +2819,25 @@ func (combat *CombatScreen) UpdateMouseState() {
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     if combat.Model.AttackingArmy.Fled {
         combat.Model.flee(combat.Model.AttackingArmy)
-        combat.Model.Finish()
+        combat.Model.FinishCombat(CombatStateAttackerFlee)
         return CombatStateAttackerFlee
     }
 
     if combat.Model.DefendingArmy.Fled {
         combat.Model.flee(combat.Model.DefendingArmy)
-        combat.Model.Finish()
+        combat.Model.FinishCombat(CombatStateDefenderFlee)
         return CombatStateDefenderFlee
     }
 
     if len(combat.Model.AttackingArmy.units) == 0 {
         combat.Model.AddLogEvent("Defender wins!")
-        combat.Model.Finish()
+        combat.Model.FinishCombat(CombatStateDefenderWin)
         return CombatStateDefenderWin
     }
 
     if len(combat.Model.DefendingArmy.units) == 0 {
         combat.Model.AddLogEvent("Attacker wins!")
-        combat.Model.Finish()
+        combat.Model.FinishCombat(CombatStateAttackerWin)
         return CombatStateAttackerWin
     }
 
