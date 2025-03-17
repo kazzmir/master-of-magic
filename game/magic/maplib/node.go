@@ -74,27 +74,6 @@ func makeZone(plane data.Plane) []image.Point {
     }
 
     return out
-
-    /*
-    possible := make([]image.Point, 0, maxSize * maxSize)
-    for x := -maxSize / 2; x <= maxSize / 2; x++ {
-        for y := -maxSize / 2; y <= maxSize / 2; y++ {
-            if x == 0 && y == 0 {
-                continue
-            }
-            possible = append(possible, image.Pt(x, y))
-        }
-    }
-
-    // choose N points from the possible points
-    choices := rand.Perm(len(possible))[:numPoints]
-
-    for _, choice := range choices {
-        out = append(out, possible[choice])
-    }
-
-    return out
-    */
 }
 
 /* budget for making encounter monsters is zone size + bonus

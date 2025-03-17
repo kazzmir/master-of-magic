@@ -1162,12 +1162,12 @@ func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
     return getExtra[*ExtraMagicNode](mapObject.ExtraMap[image.Pt(x, y)], ExtraKindMagicNode)
 }
 
-// return the node that contains x/y in its influence zone. only nodes that have been melded are considered
+// return the node that contains x/y in its influence zone
 // this is a bit slow in that it checks the entire map
 func (mapObject* Map) GetMagicInfluence(x int, y int) *ExtraMagicNode {
     for point, extras := range mapObject.ExtraMap {
         magicNode := getExtra[*ExtraMagicNode](extras, ExtraKindMagicNode)
-        if magicNode != nil && magicNode.MeldingWizard != nil && magicNode.ContainsPoint(x - point.X, y - point.Y) {
+        if magicNode != nil && magicNode.ContainsPoint(x - point.X, y - point.Y) {
             return magicNode
         }
     }

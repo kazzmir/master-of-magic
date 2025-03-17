@@ -4506,12 +4506,7 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
 func (game *Game) GetInfluenceMagic(x int, y int, plane data.Plane) data.MagicType {
     map_ := game.GetMap(plane)
 
-    node := map_.GetMagicNode(x, y)
-    if node != nil {
-        return node.Kind.MagicType()
-    }
-
-    node = map_.GetMagicInfluence(x, y)
+    node := map_.GetMagicInfluence(x, y)
     if node != nil {
         return node.Kind.MagicType()
     }
