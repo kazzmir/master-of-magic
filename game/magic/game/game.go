@@ -1004,15 +1004,37 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
     applyConjunction := func (node *maplib.ExtraMagicNode) float64 {
         nodePower := node.GetPower(magicBonus)
 
-        if magicConjunction != maplib.MagicNodeNone {
-            if magicConjunction != node.Kind {
-                return nodePower * 0.5
-            }
-
-            return nodePower * 2
+        if nodePower < 0 {
+            return nodePower
         }
 
-        return nodePower
+        multiplier := 1.0
+
+        if magicConjunction != maplib.MagicNodeNone {
+            if magicConjunction != node.Kind {
+                multiplier *= 0.5
+            } else {
+                multiplier *= 2
+            }
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortNodeMastery) {
+            multiplier *= 2
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortChaosMastery) && node.Kind == maplib.MagicNodeChaos {
+            multiplier *= 2
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortNatureMastery) && node.Kind == maplib.MagicNodeNature {
+            multiplier *= 2
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortSorceryMastery) && node.Kind == maplib.MagicNodeSorcery {
+            multiplier *= 2
+        }
+
+        return nodePower * multiplier
     }
 
     for _, node := range game.ArcanusMap.GetMeldedNodes(player) {
