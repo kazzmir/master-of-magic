@@ -57,6 +57,22 @@ type ZoneType struct {
     SorceryNode bool
 }
 
+func (zone *ZoneType) GetMagic() data.MagicType {
+    if zone.ChaosNode {
+        return data.ChaosMagic
+    }
+
+    if zone.NatureNode {
+        return data.NatureMagic
+    }
+
+    if zone.SorceryNode {
+        return data.SorceryMagic
+    }
+
+    return data.MagicNone
+}
+
 type Team int
 
 const (
@@ -1979,6 +1995,7 @@ type CombatModel struct {
     OtherUnits []*OtherUnit
     Projectiles []*Projectile
     Plane data.Plane
+    Zone ZoneType
 
     // units that became undead once combat ends
     UndeadUnits []*ArmyUnit
@@ -2026,6 +2043,7 @@ func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingA
         DefendingArmy: defendingArmy,
         CurrentTurn: 0,
         Events: events,
+        Zone: zone,
     }
 
     model.Initialize(allSpells, overworldX, overworldY)
@@ -3888,8 +3906,23 @@ func (model *CombatModel) FinishCombat(state CombatState) {
     model.AttackingArmy.Cleanup()
 }
 
+func (model *CombatModel) InsideMagicNode() bool {
+    return model.Zone.GetMagic() != data.MagicNone
+}
+
 // returns true if the spell should be dispelled (due to counter magic, magic nodes, etc)
 func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.Player) bool {
+    // FIXME: what should come first, counter magic or node dispel?
+    if model.InsideMagicNode() && !caster.Wizard.RetortEnabled(data.RetortNodeMastery) {
+        nodeMagic := model.Zone.GetMagic()
+        if spell.Magic != nodeMagic {
+            chance := spellbook.ComputeDispelChance(50, spell.Cost(false), spell.Magic, &caster.Wizard)
+            if spellbook.RollDispelChance(chance) {
+                return true
+            }
+        }
+    }
+
     opposite := model.GetOppositeArmyForPlayer(caster)
     if opposite.CounterMagic > 0 {
         chance := spellbook.ComputeDispelChance(opposite.CounterMagic, spell.Cost(false), spell.Magic, &caster.Wizard)
@@ -3901,8 +3934,6 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
 
         return spellbook.RollDispelChance(chance)
     }
-
-    // FIXME: check dispel from magic nodes
 
     return false
 }
