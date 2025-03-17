@@ -818,6 +818,10 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
         if value > 0 {
             modifier := float32(0)
 
+            if unit.GetRealm() == unit.Model.Influence {
+                modifier += 2
+            }
+
             for _, enchantment := range unit.Enchantments {
                 modifier += float32(unit.Unit.MeleeEnchantmentBonus(enchantment))
             }
@@ -864,6 +868,10 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
 
             shattered := false
 
+            if unit.GetRealm() == unit.Model.Influence {
+                modifier += 2
+            }
+
             for _, curse := range unit.Curses {
                 switch curse {
                     case data.UnitCurseMindStorm: modifier -= 5
@@ -909,6 +917,8 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
 
         return value
     }
+
+    // FIXME: add magic influence to doom gaze (and maybe other gazes)
 
     return unit.Unit.GetAbilityValue(ability)
 }
@@ -1011,6 +1021,11 @@ func (unit *ArmyUnit) GetResistanceFor(magic data.MagicType) int {
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
+    // magic node influencing fantastic creatures
+    if unit.GetRealm() == unit.Model.Influence {
+        modifier += 2
+    }
+
     // charmed heroes have +30 resistance during battle
     if unit.HasAbility(data.AbilityCharmed) {
         modifier += 30
@@ -1102,6 +1117,11 @@ func (unit *ArmyUnit) GetDefense() int {
 
     modifier := 0
 
+    // magic node influencing fantastic creatures
+    if unit.GetRealm() == unit.Model.Influence {
+        modifier += 2
+    }
+
     for _, enchantment := range unit.Enchantments {
         modifier += unit.Unit.DefenseEnchantmentBonus(enchantment)
     }
@@ -1157,6 +1177,11 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
 
     modifier := 0
 
+    // magic node influencing fantastic creatures
+    if unit.GetRealm() == unit.Model.Influence {
+        modifier += 2
+    }
+
     for _, enchantment := range unit.Enchantments {
         modifier += unit.Unit.RangedEnchantmentBonus(enchantment)
     }
@@ -1195,6 +1220,11 @@ func (unit *ArmyUnit) GetFullMeleeAttackPower() int {
 
 func (unit *ArmyUnit) GetMeleeAttackPower() int {
     modifier := 0
+
+    // magic node influencing fantastic creatures
+    if unit.GetRealm() == unit.Model.Influence {
+        modifier += 2
+    }
 
     for _, enchantment := range unit.Enchantments {
         modifier += unit.Unit.MeleeEnchantmentBonus(enchantment)
