@@ -910,6 +910,10 @@ func (hero *Hero) GetCount() int {
     return 1
 }
 
+func (hero *Hero) GetVisibleCount() int {
+    return 1
+}
+
 func (hero *Hero) GetUpkeepGold() int {
     if hero.HasAbility(data.AbilityNoble) {
         return 0

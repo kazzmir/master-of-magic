@@ -74,6 +74,7 @@ type StackUnit interface {
     GetCombatLbxFile() string
     GetCombatIndex(Facing) int
     GetCount() int
+    GetVisibleCount() int
     GetMovementSpeed() int
     GetProductionCost() int
     GetFullRangedAttackPower() int
