@@ -15,23 +15,67 @@ import (
  */
 func makeZone(plane data.Plane) []image.Point {
     // choose X points
-    maxSize := 4
+    // maxSize := 4
     numPoints := 0
     if plane == data.PlaneArcanus {
-        maxSize = 4
+        // maxSize = 4
         numPoints = 5 + rand.IntN(5)
     } else if plane == data.PlaneMyrror {
-        maxSize = 5
+        // maxSize = 5
         numPoints = 10 + rand.IntN(10)
     }
 
-    chosen := make(map[image.Point]bool)
+    // chosen := make(map[image.Point]bool)
     out := make([]image.Point, 0, numPoints)
 
     // always choose the center, which is where the node itself is
-    chosen[image.Pt(0, 0)] = true
+    // chosen[image.Pt(0, 0)] = true
     out = append(out, image.Pt(0, 0))
 
+    numPoints -= 1
+
+    abs := func (x int) int {
+        if x < 0 {
+            return -x
+        }
+        return x
+    }
+
+    // return the points that are distance away from the center, including the corners
+    getPoints := func (distance int) []image.Point {
+        var possible []image.Point
+        for x := -distance; x <= distance; x++ {
+            for y := -distance; y <= distance; y++ {
+                if abs(x) == distance || abs(y) == distance {
+                    possible = append(possible, image.Pt(x, y))
+                }
+            }
+        }
+        return possible
+    }
+
+    // take the first N points
+    distance1 := getPoints(1)
+    for _, choice := range rand.Perm(len(distance1)) {
+        if numPoints == 0 {
+            break
+        }
+        out = append(out, distance1[choice])
+        numPoints -= 1
+    }
+
+    distance2 := getPoints(2)
+    for _, choice := range rand.Perm(len(distance2)) {
+        if numPoints == 0 {
+            break
+        }
+        out = append(out, distance2[choice])
+        numPoints -= 1
+    }
+
+    return out
+
+    /*
     possible := make([]image.Point, 0, maxSize * maxSize)
     for x := -maxSize / 2; x <= maxSize / 2; x++ {
         for y := -maxSize / 2; y <= maxSize / 2; y++ {
@@ -50,6 +94,7 @@ func makeZone(plane data.Plane) []image.Point {
     }
 
     return out
+    */
 }
 
 /* budget for making encounter monsters is zone size + bonus
