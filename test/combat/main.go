@@ -173,6 +173,7 @@ func createDeathCreatureArmy(player *player.Player) *combat.Army {
 
     // not death, but whatever
     army.AddUnit(units.MakeOverworldUnitFromUnit(units.HellHounds, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+    army.AddUnit(units.MakeOverworldUnitFromUnit(units.Hydra, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
 
     return &army
 }

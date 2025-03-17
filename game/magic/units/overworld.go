@@ -398,6 +398,10 @@ func (unit *OverworldUnit) GetCount() int {
     return unit.Unit.GetCount()
 }
 
+func (unit *OverworldUnit) GetVisibleCount() int {
+    return unit.Unit.GetVisibleCount()
+}
+
 func (unit *OverworldUnit) GetUpkeepGold() int {
     if unit.IsUndead() {
         return 0

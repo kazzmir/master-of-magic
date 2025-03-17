@@ -694,6 +694,10 @@ func (unit *ArmyUnit) GetCount() int {
     return unit.Unit.GetCount()
 }
 
+func (unit *ArmyUnit) GetVisibleCount() int {
+    return unit.Unit.GetVisibleCount()
+}
+
 func (unit *ArmyUnit) GetBaseDefense() int {
     return unit.Unit.GetBaseDefense()
 }
@@ -1783,6 +1787,12 @@ func (unit *ArmyUnit) Figures() int {
     // figures = health / health per figure
 
     health_per_figure := float64(unit.GetMaxHealth()) / float64(unit.GetCount())
+    return int(math.Ceil(float64(unit.GetHealth()) / health_per_figure))
+}
+
+// lame to need another function just for visible figures
+func (unit *ArmyUnit) VisibleFigures() int {
+    health_per_figure := float64(unit.GetMaxHealth()) / float64(unit.GetVisibleCount())
     return int(math.Ceil(float64(unit.GetHealth()) / health_per_figure))
 }
 
