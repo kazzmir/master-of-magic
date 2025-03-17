@@ -1547,7 +1547,11 @@ func (unit *ArmyUnit) DeathReason() DamageType {
     }
 
     if unit.UndeadDamage >= unit.IrreversableDamage && unit.UndeadDamage >= unit.NormalDamage {
-        return DamageUndead
+
+        invalid := unit.Unit.IsHero() || unit.GetRealm() == data.DeathMagic || unit.Summoned || unit.HasAbility(data.AbilityMagicImmunity)
+        if !invalid {
+            return DamageUndead
+        }
     }
 
     if unit.IrreversableDamage >= unit.NormalDamage && unit.IrreversableDamage >= unit.UndeadDamage {
@@ -3029,8 +3033,13 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             }
         }
 
+        damageType := DamageNormal
+        if attacker.HasAbility(data.AbilityCreateUndead) {
+            damageType = DamageUndead
+        }
+
         damageFuncs = append(damageFuncs, func(){
-            defender.TakeDamage(damage, DamageNormal)
+            defender.TakeDamage(damage, damageType)
             model.Observer.PoisonTouchAttack(attacker, defender, damage)
             model.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.GetHealth()))
         })
