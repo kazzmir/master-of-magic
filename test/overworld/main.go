@@ -1060,6 +1060,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Stream of Life"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Altar of Battle"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Astral Gate"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Earth Gate"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Cloud of Shadow"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Summoning Circle"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Move Fortress"))

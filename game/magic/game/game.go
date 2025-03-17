@@ -3531,7 +3531,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
     quitMoving:
     for i, step := range stack.CurrentPath {
-        if stack.OutOfMoves() {
+        if stack.AnyOutOfMoves() {
             break
         }
 
@@ -3734,22 +3734,39 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                             game.RefreshUI()
                         }
 
-                        path := game.FindPath(oldX, oldY, newX, newY, player, stack, player.GetFog(game.Plane))
-                        if path == nil {
-                            game.blinkRed(yield)
-                            if inactiveStack != nil {
-                                player.MergeStacks(stack, inactiveStack)
-                            }
-                        } else {
-                            // FIXME: i'm not sure this can ever occur in practice
-                            if inactiveStack != nil {
-                                inactiveStack.CurrentPath = stack.CurrentPath
-                            }
-                            stack.CurrentPath = path
+                        oldCity := player.FindCity(oldX, oldY, stack.Plane())
+                        newCity := player.FindCity(newX, newY, stack.Plane())
 
-                            select {
-                                case game.Events <- &GameEventMoveUnit{Player: player}:
-                                default:
+                        // unit can move instantly to the new city if they are standing on a city with earth gate
+                        // and the new city also has earth gate
+                        if oldCity != nil && newCity != nil && oldCity.HasEnchantment(data.CityEnchantmentEarthGate) && newCity.HasEnchantment(data.CityEnchantmentEarthGate) && stack.GetRemainingMoves().GreaterThan(fraction.Zero()) {
+                            stack.UseMovement(fraction.FromInt(1))
+                            newCityStack := player.FindStack(newX, newY, stack.Plane())
+                            if newCityStack != nil {
+                                player.MergeStacks(newCityStack, stack)
+                            } else {
+                                stack.SetX(newX)
+                                stack.SetY(newY)
+                            }
+                            game.RefreshUI()
+                        } else {
+                            path := game.FindPath(oldX, oldY, newX, newY, player, stack, player.GetFog(game.Plane))
+                            if path == nil {
+                                game.blinkRed(yield)
+                                if inactiveStack != nil {
+                                    player.MergeStacks(stack, inactiveStack)
+                                }
+                            } else {
+                                // FIXME: i'm not sure this can ever occur in practice
+                                if inactiveStack != nil {
+                                    inactiveStack.CurrentPath = stack.CurrentPath
+                                }
+                                stack.CurrentPath = path
+
+                                select {
+                                    case game.Events <- &GameEventMoveUnit{Player: player}:
+                                    default:
+                                }
                             }
                         }
                     }
