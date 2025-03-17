@@ -3324,7 +3324,7 @@ func (game *Game) FindEscapePosition(player *playerlib.Player, unit units.StackU
 
             // can not contain a friendly full stack
             existing := player.FindStack(cx, cy, plane)
-            if existing != nil && len(existing.Units()) >= 9 {
+            if existing != nil && len(existing.Units()) >= data.MaxUnitsInStack {
                 continue
             }
 
@@ -3349,7 +3349,7 @@ func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
     }
 
     count := len(stack.Units())
-    if count <= 9 {
+    if count <= data.MaxUnitsInStack {
         return
     }
 
@@ -3375,14 +3375,14 @@ func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
             }
 
             count -= 1
-            if count <= 9 {
+            if count <= data.MaxUnitsInStack {
                 break
             }
         }
     }
 
     // kill units until enough room
-    if count > 9 {
+    if count > data.MaxUnitsInStack {
         stackUnits = stack.Units()
         slices.SortFunc(stackUnits, func(unitA, unitB units.StackUnit) int {
             // non-heros before heroes
@@ -3408,7 +3408,7 @@ func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
             log.Printf("Unit %v killed by ResolveStack", unit)
             player.RemoveUnit(unit)
             count -= 1
-            if count <= 9 {
+            if count <= data.MaxUnitsInStack {
                 break
             }
         }
