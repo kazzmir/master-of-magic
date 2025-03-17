@@ -59,4 +59,9 @@ func TestInfluence(test *testing.T) {
     if node == nil || node.Kind.MagicType() != data.NatureMagic {
         test.Errorf("Expected NatureMagic at 5,5")
     }
+
+    node = xmap.GetMagicInfluence(4, 4)
+    if node != nil {
+        test.Errorf("Expected no magic at 4,4")
+    }
 }
