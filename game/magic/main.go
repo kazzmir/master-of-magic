@@ -172,9 +172,11 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
         distance := -1
 
         for _, city := range allCities {
-            d := int(euclideanDistance(x, y, city.X, city.Y))
-            if distance == -1 || d < distance {
-                distance = d
+            if city.Plane == startingPlane {
+                d := int(euclideanDistance(x, y, city.X, city.Y))
+                if distance == -1 || d < distance {
+                    distance = d
+                }
             }
         }
 
