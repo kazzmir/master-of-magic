@@ -51,7 +51,7 @@ func NewEngine(scenario int) (*Engine, error) {
         Player: attackingPlayer,
     }
 
-    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 0, 0, make(chan combat.CombatEvent))
+    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent))
 
     /*
     rakir := hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, data.BannerRed, &ExperienceInfo{}), hero.HeroRakir, "Rakir")

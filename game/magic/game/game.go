@@ -1004,15 +1004,37 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
     applyConjunction := func (node *maplib.ExtraMagicNode) float64 {
         nodePower := node.GetPower(magicBonus)
 
-        if magicConjunction != maplib.MagicNodeNone {
-            if magicConjunction != node.Kind {
-                return nodePower * 0.5
-            }
-
-            return nodePower * 2
+        if nodePower < 0 {
+            return nodePower
         }
 
-        return nodePower
+        multiplier := 1.0
+
+        if magicConjunction != maplib.MagicNodeNone {
+            if magicConjunction != node.Kind {
+                multiplier *= 0.5
+            } else {
+                multiplier *= 2
+            }
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortNodeMastery) {
+            multiplier *= 2
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortChaosMastery) && node.Kind == maplib.MagicNodeChaos {
+            multiplier *= 2
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortNatureMastery) && node.Kind == maplib.MagicNodeNature {
+            multiplier *= 2
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortSorceryMastery) && node.Kind == maplib.MagicNodeSorcery {
+            multiplier *= 2
+        }
+
+        return nodePower * multiplier
     }
 
     for _, node := range game.ArcanusMap.GetMeldedNodes(player) {
@@ -4480,6 +4502,18 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
     return combat.CombatLandscapeGrass
 }
 
+// get the kind of magic that is influencing the given tile
+func (game *Game) GetInfluenceMagic(x int, y int, plane data.Plane) data.MagicType {
+    map_ := game.GetMap(plane)
+
+    node := map_.GetMagicInfluence(x, y)
+    if node != nil {
+        return node.Kind.MagicType()
+    }
+
+    return data.MagicNone
+}
+
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
  * this also shows the raze city ui so that fame can be incorporated based on whether the city is razed or not
  */
@@ -4529,7 +4563,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-        combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone, attackerStack.X(), attackerStack.Y())
+        combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone, game.GetInfluenceMagic(attackerStack.X(), attackerStack.Y(), attackerStack.Plane()), attackerStack.X(), attackerStack.Y())
 
         if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentHeavenlyLight) {
             combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentTrueLight)

@@ -57,6 +57,22 @@ type ZoneType struct {
     SorceryNode bool
 }
 
+func (zone *ZoneType) GetMagic() data.MagicType {
+    if zone.ChaosNode {
+        return data.ChaosMagic
+    }
+
+    if zone.NatureNode {
+        return data.NatureMagic
+    }
+
+    if zone.SorceryNode {
+        return data.SorceryMagic
+    }
+
+    return data.MagicNone
+}
+
 type Team int
 
 const (
@@ -802,6 +818,10 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
         if value > 0 {
             modifier := float32(0)
 
+            if unit.GetRealm() == unit.Model.Influence {
+                modifier += 2
+            }
+
             for _, enchantment := range unit.Enchantments {
                 modifier += float32(unit.Unit.MeleeEnchantmentBonus(enchantment))
             }
@@ -848,6 +868,10 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
 
             shattered := false
 
+            if unit.GetRealm() == unit.Model.Influence {
+                modifier += 2
+            }
+
             for _, curse := range unit.Curses {
                 switch curse {
                     case data.UnitCurseMindStorm: modifier -= 5
@@ -893,6 +917,8 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
 
         return value
     }
+
+    // FIXME: add magic influence to doom gaze (and maybe other gazes)
 
     return unit.Unit.GetAbilityValue(ability)
 }
@@ -995,6 +1021,11 @@ func (unit *ArmyUnit) GetResistanceFor(magic data.MagicType) int {
 func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
+    // magic node influencing fantastic creatures
+    if unit.GetRealm() == unit.Model.Influence {
+        modifier += 2
+    }
+
     // charmed heroes have +30 resistance during battle
     if unit.HasAbility(data.AbilityCharmed) {
         modifier += 30
@@ -1086,6 +1117,11 @@ func (unit *ArmyUnit) GetDefense() int {
 
     modifier := 0
 
+    // magic node influencing fantastic creatures
+    if unit.GetRealm() == unit.Model.Influence {
+        modifier += 2
+    }
+
     for _, enchantment := range unit.Enchantments {
         modifier += unit.Unit.DefenseEnchantmentBonus(enchantment)
     }
@@ -1141,6 +1177,11 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
 
     modifier := 0
 
+    // magic node influencing fantastic creatures
+    if unit.GetRealm() == unit.Model.Influence {
+        modifier += 2
+    }
+
     for _, enchantment := range unit.Enchantments {
         modifier += unit.Unit.RangedEnchantmentBonus(enchantment)
     }
@@ -1179,6 +1220,11 @@ func (unit *ArmyUnit) GetFullMeleeAttackPower() int {
 
 func (unit *ArmyUnit) GetMeleeAttackPower() int {
     modifier := 0
+
+    // magic node influencing fantastic creatures
+    if unit.GetRealm() == unit.Model.Influence {
+        modifier += 2
+    }
 
     for _, enchantment := range unit.Enchantments {
         modifier += unit.Unit.MeleeEnchantmentBonus(enchantment)
@@ -1979,6 +2025,9 @@ type CombatModel struct {
     OtherUnits []*OtherUnit
     Projectiles []*Projectile
     Plane data.Plane
+    Zone ZoneType
+    // the type of magic that is influencing this combat because the combat takes place near a magic node
+    Influence data.MagicType
 
     // units that became undead once combat ends
     UndeadUnits []*ArmyUnit
@@ -2014,7 +2063,7 @@ type CombatModel struct {
     GlobalEnchantments []data.CombatEnchantment
 }
 
-func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
+func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
     model := &CombatModel{
         Turn: TeamDefender,
         Plane: plane,
@@ -2026,6 +2075,8 @@ func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingA
         DefendingArmy: defendingArmy,
         CurrentTurn: 0,
         Events: events,
+        Zone: zone,
+        Influence: influence,
     }
 
     model.Initialize(allSpells, overworldX, overworldY)
@@ -3888,8 +3939,23 @@ func (model *CombatModel) FinishCombat(state CombatState) {
     model.AttackingArmy.Cleanup()
 }
 
+func (model *CombatModel) InsideMagicNode() bool {
+    return model.Zone.GetMagic() != data.MagicNone
+}
+
 // returns true if the spell should be dispelled (due to counter magic, magic nodes, etc)
 func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.Player) bool {
+    // FIXME: what should come first, counter magic or node dispel?
+    if model.InsideMagicNode() && !caster.Wizard.RetortEnabled(data.RetortNodeMastery) {
+        nodeMagic := model.Zone.GetMagic()
+        if spell.Magic != nodeMagic {
+            chance := spellbook.ComputeDispelChance(50, spell.Cost(false), spell.Magic, &caster.Wizard)
+            if spellbook.RollDispelChance(chance) {
+                return true
+            }
+        }
+    }
+
     opposite := model.GetOppositeArmyForPlayer(caster)
     if opposite.CounterMagic > 0 {
         chance := spellbook.ComputeDispelChance(opposite.CounterMagic, spell.Cost(false), spell.Magic, &caster.Wizard)
@@ -3901,8 +3967,6 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
 
         return spellbook.RollDispelChance(chance)
     }
-
-    // FIXME: check dispel from magic nodes
 
     return false
 }

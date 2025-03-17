@@ -451,7 +451,7 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
 
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    combatScreen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, humanPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 0, 0)
+    combatScreen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, humanPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
     engine.Combat = combatScreen
 
     run := func(yield coroutine.YieldFunc) error {

@@ -2,7 +2,10 @@ package maplib
 
 import (
     "testing"
+    "image"
+
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
 func TestMap(t *testing.T) {
@@ -29,5 +32,36 @@ func TestMap(t *testing.T) {
         if distance != test.distance {
             t.Errorf("Distance from %d to %d is %d, expected %d", test.x1, test.x2, distance, test.distance)
         }
+    }
+}
+
+type FakeWizard struct {
+}
+
+func (fake *FakeWizard) GetBanner() data.BannerType {
+    return data.BannerGreen
+}
+
+func TestInfluence(test *testing.T) {
+    xmap := Map{
+        ExtraMap: make(map[image.Point]map[ExtraKind]ExtraTile),
+    }
+
+    xmap.ExtraMap[image.Pt(2, 2)] = map[ExtraKind]ExtraTile{
+        ExtraKindMagicNode: &ExtraMagicNode{
+            Kind: MagicNodeNature,
+            MeldingWizard: &FakeWizard{},
+            Zone: []image.Point{image.Pt(0, 0), image.Pt(1, 0), image.Pt(3, 3)},
+        },
+    }
+
+    node := xmap.GetMagicInfluence(5, 5)
+    if node == nil || node.Kind.MagicType() != data.NatureMagic {
+        test.Errorf("Expected NatureMagic at 5,5")
+    }
+
+    node = xmap.GetMagicInfluence(4, 4)
+    if node != nil {
+        test.Errorf("Expected no magic at 4,4")
     }
 }
