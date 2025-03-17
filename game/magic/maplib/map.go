@@ -6,6 +6,7 @@ import (
     "math/rand/v2"
     "image"
     "image/color"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -43,6 +44,16 @@ const (
 
     MagicNodeNone
 )
+
+func (magicNode MagicNode) MagicType() data.MagicType {
+    switch magicNode {
+        case MagicNodeNature: return data.NatureMagic
+        case MagicNodeSorcery: return data.SorceryMagic
+        case MagicNodeChaos: return data.ChaosMagic
+    }
+
+    return data.MagicNone
+}
 
 func (magicNode MagicNode) Name() string {
     switch magicNode {
@@ -382,6 +393,7 @@ type ExtraMagicNode struct {
     Kind MagicNode
 
     // list of points that are affected by the node
+    // this could be a map to be more optimal for lookups
     Zone []image.Point
 
     // if this node is melded, then this player receives the power
@@ -392,6 +404,10 @@ type ExtraMagicNode struct {
     Warped bool
     // the wizard that cast warp node (so it can be dispelled)
     WarpedOwner Wizard
+}
+
+func (node *ExtraMagicNode) ContainsPoint(x int, y int) bool {
+    return slices.Contains(node.Zone, image.Pt(x, y))
 }
 
 func (node *ExtraMagicNode) DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int){
@@ -1144,6 +1160,19 @@ func (mapObject *Map) HasMagicNode(x int, y int) bool {
 
 func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
     return getExtra[*ExtraMagicNode](mapObject.ExtraMap[image.Pt(x, y)], ExtraKindMagicNode)
+}
+
+// return the node that contains x/y in its influence zone. only nodes that have been melded are considered
+// this is a bit slow in that it checks the entire map
+func (mapObject* Map) GetMagicInfluence(x int, y int) *ExtraMagicNode {
+    for point, extras := range mapObject.ExtraMap {
+        magicNode := getExtra[*ExtraMagicNode](extras, ExtraKindMagicNode)
+        if magicNode != nil && magicNode.MeldingWizard != nil && magicNode.ContainsPoint(x - point.X, y - point.Y) {
+            return magicNode
+        }
+    }
+
+    return nil
 }
 
 func (mapObject *Map) SetVolcano(x int, y int, caster Wizard) {

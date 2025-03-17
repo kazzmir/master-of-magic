@@ -1996,6 +1996,8 @@ type CombatModel struct {
     Projectiles []*Projectile
     Plane data.Plane
     Zone ZoneType
+    // the type of magic that is influencing this combat because the combat takes place near a magic node
+    Influence data.MagicType
 
     // units that became undead once combat ends
     UndeadUnits []*ArmyUnit
@@ -2031,7 +2033,7 @@ type CombatModel struct {
     GlobalEnchantments []data.CombatEnchantment
 }
 
-func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
+func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
     model := &CombatModel{
         Turn: TeamDefender,
         Plane: plane,
@@ -2044,6 +2046,7 @@ func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingA
         CurrentTurn: 0,
         Events: events,
         Zone: zone,
+        Influence: influence,
     }
 
     model.Initialize(allSpells, overworldX, overworldY)
