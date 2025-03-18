@@ -227,12 +227,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         case "Spell Ward":
             game.doCastSpellWard(player, spell)
-
-        /*
-            TOWN ENCHANTMENTS
-                TODO:
-                Flying Fortress
-        */
+        case "Flying Fortress":
+            game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentFlyingFortress)
         case "Earth Gate":
             game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentEarthGate)
         case "Astral Gate":
@@ -966,47 +962,51 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         game.Drawer = oldDrawer
     }()
 
-    var cities []*citylib.City
-    var citiesMiniMap []maplib.MiniMapCity
-    var stacks []*playerlib.UnitStack
-    var fog data.FogMap
-
-    for i, player := range game.Players {
-        for _, city := range player.Cities {
-            if city.Plane == game.Plane {
-                cities = append(cities, city)
-                citiesMiniMap = append(citiesMiniMap, city)
-            }
-        }
-
-        for _, stack := range player.Stacks {
-            if stack.Plane() == game.Plane {
-                stacks = append(stacks, stack)
-            }
-        }
-
-        if i == 0 {
-            fog = player.GetFog(game.Plane)
-        }
-    }
-
     fonts := fontslib.MakeSurveyorFonts(game.Cache)
     castingFont := fonts.SurveyorFont
     whiteFont := fonts.WhiteFont
 
-    overworld := Overworld{
-        Camera: game.Camera,
-        Counter: game.Counter,
-        Map: game.CurrentMap(),
-        Cities: cities,
-        CitiesMiniMap: citiesMiniMap,
-        Stacks: stacks,
-        SelectedStack: nil,
-        ImageCache: &game.ImageCache,
-        Fog: fog,
-        ShowAnimation: game.State == GameStateUnitMoving,
-        FogBlack: game.GetFogImage(),
+    makeOverworld := func () Overworld {
+        var cities []*citylib.City
+        var citiesMiniMap []maplib.MiniMapCity
+        var stacks []*playerlib.UnitStack
+        var fog data.FogMap
+
+        for i, player := range game.Players {
+            for _, city := range player.Cities {
+                if city.Plane == game.Plane {
+                    cities = append(cities, city)
+                    citiesMiniMap = append(citiesMiniMap, city)
+                }
+            }
+
+            for _, stack := range player.Stacks {
+                if stack.Plane() == game.Plane {
+                    stacks = append(stacks, stack)
+                }
+            }
+
+            if i == 0 {
+                fog = player.GetFog(game.Plane)
+            }
+        }
+
+        return Overworld{
+            Camera: game.Camera,
+            Counter: game.Counter,
+            Map: game.CurrentMap(),
+            Cities: cities,
+            CitiesMiniMap: citiesMiniMap,
+            Stacks: stacks,
+            SelectedStack: nil,
+            ImageCache: &game.ImageCache,
+            Fog: fog,
+            ShowAnimation: game.State == GameStateUnitMoving,
+            FogBlack: game.GetFogImage(),
+        }
     }
+
+    overworld := makeOverworld()
 
     cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
 
@@ -1059,15 +1059,28 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
     ui.SetElementsFromArray(nil)
 
-    makeButton := func(lbxIndex int, x int, y int) *uilib.UIElement {
-        button, _ := game.ImageCache.GetImage("main.lbx", lbxIndex, 0)
+    makeButton2 := func(lbxIndex int, x int, y int, action func()) *uilib.UIElement {
+        buttons, _ := game.ImageCache.GetImages("main.lbx", lbxIndex)
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(x), float64(y))
+        current := 0
         return &uilib.UIElement{
+            Rect: util.ImageRect(x, y, buttons[0]),
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                scale.DrawScaled(screen, button, &options)
+                scale.DrawScaled(screen, buttons[current], &options)
+            },
+            LeftClick: func(element *uilib.UIElement){
+                current = 1
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                action()
+                current = 0
             },
         }
+    }
+
+    makeButton := func(lbxIndex int, x int, y int) *uilib.UIElement {
+        return makeButton2(lbxIndex, x, y, func(){})
     }
 
     // game
@@ -1089,7 +1102,10 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     ui.AddElement(makeButton(6, 226, 4))
 
     // plane button
-    ui.AddElement(makeButton(7, 270, 4))
+    ui.AddElement(makeButton2(7, 270, 4, func (){
+        game.SwitchPlane()
+        overworld = makeOverworld()
+    }))
 
     quit := false
 

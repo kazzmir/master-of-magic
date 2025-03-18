@@ -179,6 +179,9 @@ type Tile struct {
 
     Wall *set.Set[WallKind]
 
+    // if combat is in a city with flying fortress then this tile might be flying (in the clouds)
+    Flying bool
+
     // true if this tile is inside the wall of fire/darkness
     InsideTown bool
     InsideFire bool
@@ -285,11 +288,14 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             return townSquare.Min.X + x, townSquare.Min.Y + y
         }
 
+        flyingFortress := zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentFlyingFortress)
+
         // clear all space around the city
         for x := townSquare.Min.X; x <= townSquare.Max.X; x++ {
             for y := townSquare.Min.Y; y <= townSquare.Max.Y; y++ {
                 tiles[y][x].ExtraObject.Index = -1
                 tiles[y][x].InsideTown = true
+                tiles[y][x].Flying = flyingFortress
             }
         }
 
@@ -2383,7 +2389,7 @@ func (model *CombatModel) doCallLightning(army *Army) {
     }
 }
 
-func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTraverseWall bool) (pathfinding.Path, bool) {
+func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTraverseWall bool, isFlying bool) (pathfinding.Path, bool) {
 
     tileEmpty := func (x int, y int) bool {
         return model.GetUnit(x, y) == nil
@@ -2444,6 +2450,11 @@ func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTravers
                         canMove = false
                     }
 
+                    // if the unit is not flying, then it can't move through a cloud tile
+                    if canMove && !isFlying && model.IsCloudTile(x, y) != model.IsCloudTile(cx, cy) {
+                        canMove = false
+                    }
+
                     // can't move through a city wall
                     if canMove && !canTraverseWall && model.InsideCityWall(cx, cy) != model.InsideCityWall(x, y) {
                         // FIXME: handle destroyed walls here
@@ -2475,7 +2486,7 @@ func (model *CombatModel) FindPath(unit *ArmyUnit, x int, y int) (pathfinding.Pa
         return path, len(path) > 0
     }
 
-    path, ok = model.computePath(unit.X, unit.Y, x, y, unit.CanTraverseWall())
+    path, ok = model.computePath(unit.X, unit.Y, x, y, unit.CanTraverseWall(), unit.IsFlying())
     if !ok {
         unit.Paths[end] = nil
         // log.Printf("No such path from %v,%v -> %v,%v", unit.X, unit.Y, x, y)
@@ -2900,6 +2911,14 @@ func (model *CombatModel) GetCityGateCoordinates() (int, int) {
 
 func (model *CombatModel) InsideAnyWall(x int, y int) bool {
     return model.InsideWallOfFire(x, y) || model.InsideWallOfDarkness(x, y) || model.InsideCityWall(x, y)
+}
+
+func (model *CombatModel) IsCloudTile(x int, y int) bool {
+    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
+        return false
+    }
+
+    return model.Tiles[y][x].Flying
 }
 
 func distance(x1 float64, y1 float64, x2 float64, y2 float64) float64 {
@@ -3358,6 +3377,10 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     }
 
     if attacker.GetMeleeAttackPower() <= 0 {
+        return false
+    }
+
+    if !attacker.IsFlying() && model.IsCloudTile(attacker.X, attacker.Y) != model.IsCloudTile(defender.X, defender.Y) {
         return false
     }
 

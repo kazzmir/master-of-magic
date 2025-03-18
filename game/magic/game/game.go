@@ -5617,12 +5617,7 @@ func (game *Game) ComputeCityStackInfo() CityStackInfo {
     return out
 }
 
-func (game *Game) SwitchPlane() {
-    switch game.Plane {
-        case data.PlaneArcanus: game.Plane = data.PlaneMyrror
-        case data.PlaneMyrror: game.Plane = data.PlaneArcanus
-    }
-
+func (game *Game) doPlanarTraval() {
     // no switching planes if the global enchantment planar seal is in effect
     if !game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
         player := game.Players[0]
@@ -5709,6 +5704,13 @@ func (game *Game) SwitchPlane() {
             }
 
         }
+    }
+}
+
+func (game *Game) SwitchPlane() {
+    switch game.Plane {
+        case data.PlaneArcanus: game.Plane = data.PlaneMyrror
+        case data.PlaneMyrror: game.Plane = data.PlaneArcanus
     }
 }
 
@@ -5844,6 +5846,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     // plane button
     elements = append(elements, makeButton(7, 270, 4, false, func(){
         game.SwitchPlane()
+        game.doPlanarTraval()
 
         game.RefreshUI()
     }))
