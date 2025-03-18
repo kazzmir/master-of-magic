@@ -192,6 +192,7 @@ type CombatScreen struct {
     InfoFont *font.Font
     WhiteFont *font.Font
     DrawRoad bool
+    DrawClouds bool
     AllSpells spellbook.Spells
     // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
     TopDownOrder []image.Point
@@ -340,6 +341,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Mouse: mouseData,
         CameraScale: 1,
         DrawRoad: zone.City != nil,
+        DrawClouds: zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentFlyingFortress),
         DebugFont: debugFont,
         HudFont: hudFont,
         InfoFont: infoFont,
@@ -3563,7 +3565,17 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
         options.GeoM.Translate(tx, ty)
         options.GeoM.Translate(0, float64(tile0.Bounds().Dy())/2)
         scale.DrawScaled(screen, road, &options)
+    }
 
+    if combat.DrawClouds {
+        tx, ty := tilePosition(TownCenterX, TownCenterY-5)
+
+        clouds, _ := combat.ImageCache.GetImage("cmbtcity.lbx", 113, 0)
+        options.GeoM.Reset()
+        options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+        options.GeoM.Translate(tx, ty)
+        options.GeoM.Translate(0, float64(tile0.Bounds().Dy())/2)
+        scale.DrawScaled(screen, clouds, &options)
     }
 
     // then draw extra stuff on top
