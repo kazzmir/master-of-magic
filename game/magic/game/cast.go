@@ -131,7 +131,26 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 data.UnitEnchantmentChaosChannelsDemonWings,
                 data.UnitEnchantmentChaosChannelsFireBreath,
             }
-            game.doCastUnitEnchantment(player, spell, choices[rand.N(len(choices))])
+
+            choice := choices[rand.N(len(choices))]
+
+            before := func (unit units.StackUnit) bool {
+                for _, enchantment := range choices {
+                    if unit.HasEnchantment(enchantment) {
+                        game.Events <- &GameEventNotice{Message: "That unit cannot be targeted"}
+                        return false
+                    }
+                }
+
+                return true
+            }
+
+            after := func (unit units.StackUnit) bool {
+                unit.AddEnchantment(choice)
+                return true
+            }
+
+            game.doCastOnUnit(player, spell, choice.CastAnimationIndex(), before, after)
         case "Endurance":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentEndurance)
         case "Holy Armor":
@@ -784,7 +803,6 @@ func (game *Game) doCastUnitEnchantmentFull(player *playerlib.Player, spell spel
     }
 
     game.doCastOnUnit(player, spell, enchantment.CastAnimationIndex(), before, after)
-
 }
 
 func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {
