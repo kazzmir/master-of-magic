@@ -2818,6 +2818,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
 
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
+    var lastEvent GameEvent
     for {
         select {
             case event := <-game.Events:
@@ -2825,7 +2826,12 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventMagicView:
                         game.doMagicView(yield)
                     case *GameEventRefreshUI:
-                        game.HudUI = game.MakeHudUI()
+                        // compress ui refreshes
+                        switch lastEvent.(type) {
+                            case *GameEventRefreshUI: // nothing, since we just did a refresh
+                                log.Printf("ignoring refresh ui")
+                            default: game.HudUI = game.MakeHudUI()
+                        }
                     case *GameEventHireHero:
                         hire := event.(*GameEventHireHero)
                         if hire.Player.IsHuman() {
@@ -2970,6 +2976,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         moveUnit := event.(*GameEventMoveUnit)
                         game.doMoveSelectedUnit(yield, moveUnit.Player)
                 }
+
+                lastEvent = event
             default:
                 return
         }
@@ -3522,6 +3530,13 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     stepsTaken := 0
     stopMoving := false
     var mergeStack *playerlib.UnitStack
+    // kind of a hack, in case the stack couldn't move due to spell ward or something we attempt to merge
+    // the stack with whatever stack it is standing on
+    for _, otherStack := range player.FindAllStacks(stack.X(), stack.Y(), stack.Plane()) {
+        if otherStack != stack {
+            mergeStack = otherStack
+        }
+    }
 
     getStack := func(x int, y int) *playerlib.UnitStack {
         return player.FindStack(mapUse.WrapX(x), y, stack.Plane())
@@ -3654,7 +3669,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     }
 
     // only merge stacks if both stacks are stopped, otherwise they can move through each other
-    if len(stack.CurrentPath) == 0 && mergeStack != nil {
+    if len(stack.CurrentPath) == 0 && mergeStack != nil && mergeStack.X() == stack.X() && mergeStack.Y() == stack.Y() {
         stack = player.MergeStacks(mergeStack, stack)
         player.SelectedStack = stack
         game.RefreshUI()
