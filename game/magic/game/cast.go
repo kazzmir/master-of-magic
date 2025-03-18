@@ -631,18 +631,6 @@ func (game *Game) doCastSpellWard(player *playerlib.Player, spell spellbook.Spel
         data.CityEnchantmentChaosWard,
     }
 
-    getName := func (ward data.CityEnchantment) string {
-        switch ward {
-            case data.CityEnchantmentLifeWard: return "Life Ward"
-            case data.CityEnchantmentSorceryWard: return "Sorcery Ward"
-            case data.CityEnchantmentNatureWard: return "Nature Ward"
-            case data.CityEnchantmentDeathWard: return "Death Ward"
-            case data.CityEnchantmentChaosWard: return "Chaos Ward"
-        }
-
-        return ""
-    }
-
     var selectCity func (coroutine.YieldFunc, int, int)
     selectCity = func (yield coroutine.YieldFunc, tileX int, tileY int) {
         // FIXME: Show this only for enemies if detect magic is active and the city is known to the human player
@@ -682,7 +670,7 @@ func (game *Game) doCastSpellWard(player *playerlib.Player, spell spellbook.Spel
             return cmp.Compare(a, b)
         }) {
             selections = append(selections, uilib.Selection{
-                Name: getName(ward),
+                Name: ward.Name(),
                 Action: func(){
                     selected(ward)
                 },
