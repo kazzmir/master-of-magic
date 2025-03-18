@@ -157,26 +157,28 @@ func (unit *OverworldUnit) GetRace() data.Race {
         return data.RaceFantastic
     }
 
-    // chaos channeled units are treated as fantastic
-    chaosChanneled := []data.UnitEnchantment{
-        data.UnitEnchantmentChaosChannelsDemonWings,
-        data.UnitEnchantmentChaosChannelsDemonSkin,
-        data.UnitEnchantmentChaosChannelsFireBreath,
-    }
-
-    for _, enchantment := range chaosChanneled {
-        if unit.HasEnchantment(enchantment) {
-            return data.RaceFantastic
-        }
+    if unit.IsChaosChanneled() {
+        return data.RaceFantastic
     }
 
     return unit.Unit.Race
+}
+
+func (unit *OverworldUnit) IsChaosChanneled() bool {
+    return unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings) ||
+       unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonSkin) ||
+       unit.HasEnchantment(data.UnitEnchantmentChaosChannelsFireBreath)
 }
 
 func (unit *OverworldUnit) GetRealm() data.MagicType {
     if unit.IsUndead() {
         return data.DeathMagic
     }
+
+    if unit.IsChaosChanneled() {
+        return data.ChaosMagic
+    }
+
     return unit.Unit.Realm
 }
 
