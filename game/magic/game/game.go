@@ -3752,15 +3752,27 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                         // unit can move instantly to the new city if they are standing on a city with earth gate
                         // and the new city also has earth gate
                         if oldCity != nil && newCity != nil && oldCity.HasEnchantment(data.CityEnchantmentEarthGate) && newCity.HasEnchantment(data.CityEnchantmentEarthGate) && stack.GetRemainingMoves().GreaterThan(fraction.Zero()) {
-                            stack.UseMovement(fraction.FromInt(1))
-                            newCityStack := player.FindStack(newX, newY, stack.Plane())
-                            if newCityStack != nil {
-                                player.MergeStacks(newCityStack, stack)
-                            } else {
-                                stack.SetX(newX)
-                                stack.SetY(newY)
+                            // the other city might be protected by spell ward
+                            canMove := true
+                            for _, unit := range stack.ActiveUnits() {
+                                if !newCity.CanEnter(unit) {
+                                    canMove = false
+                                    game.Events <- &GameEventNotice{Message: fmt.Sprintf("%v can not enter the city of %v", unit.GetRawUnit().Name, newCity.Name)}
+                                    break
+                                }
                             }
-                            game.RefreshUI()
+
+                            if canMove {
+                                stack.UseMovement(fraction.FromInt(1))
+                                newCityStack := player.FindStack(newX, newY, stack.Plane())
+                                if newCityStack != nil {
+                                    player.MergeStacks(newCityStack, stack)
+                                } else {
+                                    stack.SetX(newX)
+                                    stack.SetY(newY)
+                                }
+                                game.RefreshUI()
+                            }
                         } else {
                             path := game.FindPath(oldX, oldY, newX, newY, player, stack, player.GetFog(game.Plane))
                             if path == nil {
@@ -3924,6 +3936,16 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
             if !move.ConfirmEncounter(encounter) {
                 move.Invalid()
                 return
+            }
+        }
+
+        newCity := game.FindCity(to.X, to.Y, stack.Plane())
+        if newCity != nil {
+            for _, unit := range stack.ActiveUnits() {
+                if !newCity.CanEnter(unit) {
+                    move.Invalid()
+                    return
+                }
             }
         }
 
@@ -5623,12 +5645,21 @@ func (game *Game) SwitchPlane() {
                     tile := mapPlane.GetTile(activeStack.X(), activeStack.Y())
                     canMove = cityOppositePlane != nil || activeStack.AllFlyers() || tile.Tile.IsLand()
 
+                    if cityOppositePlane != nil {
+                        for _, unit := range activeStack.ActiveUnits() {
+                            if !cityOppositePlane.CanEnter(unit) {
+                                canMove = false
+                                break
+                            }
+                        }
+                    }
+
                     // cannot planar travel if there is an encounter node
-                    if mapPlane.GetEncounter(activeStack.X(), activeStack.Y()) != nil {
+                    if canMove && mapPlane.GetEncounter(activeStack.X(), activeStack.Y()) != nil {
                         canMove = false
                     }
 
-                    if tile.Tile.IsWater() && activeStack.AllLandWalkers() {
+                    if canMove && tile.Tile.IsWater() && activeStack.AllLandWalkers() {
                         canMove = false
                     }
                 }
