@@ -3380,6 +3380,10 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         return false
     }
 
+    if !attacker.IsFlying() && model.IsCloudTile(attacker.X, attacker.Y) != model.IsCloudTile(defender.X, defender.Y) {
+        return false
+    }
+
     containsWall := func(x int, y int) bool {
         wall := model.Tiles[y][x].Wall
         return wall != nil && !wall.Contains(WallKindGate)
