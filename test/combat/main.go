@@ -499,6 +499,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disrupt"))
 
     attackingArmy := createGreatDrakeArmy(attackingPlayer)
+    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcCavalry, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()))
     // attackingArmy := createWeakArmy(attackingPlayer)
     // attackingArmy := createHighMenBowmanArmy(attackingPlayer)
     // attackingArmy := createHeroArmy(attackingPlayer)

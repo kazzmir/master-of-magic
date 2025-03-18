@@ -2699,7 +2699,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         if !found {
             combat.Model.Tiles[unit.Y][unit.X].Unit = nil
             var ok bool
-            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, unit.CanTraverseWall())
+            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, unit.CanTraverseWall(), unit.IsFlying())
             combat.Model.Tiles[unit.Y][unit.X].Unit = unit
             if ok {
                 paths[unit] = path
@@ -2787,7 +2787,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         // if inside a city wall, then move towards the gate
         gateX, gateY := combat.Model.GetCityGateCoordinates()
         if gateX != -1 && gateY != -1 {
-            path, ok := combat.Model.computePath(aiUnit.X, aiUnit.Y, gateX, gateY, aiUnit.CanTraverseWall())
+            path, ok := combat.Model.computePath(aiUnit.X, aiUnit.Y, gateX, gateY, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
             if ok && len(path) > 1 && aiUnit.CanFollowPath(path) {
                 combat.doMoveUnit(yield, aiUnit, path[1:])
                 return
