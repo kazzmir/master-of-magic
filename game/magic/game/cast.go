@@ -1246,6 +1246,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             if city != nil {
                                 if !city.CanTarget(spell) {
                                     game.doNotice(yield, ui, fmt.Sprintf("You cannot cast %v on this city", spell.Name))
+                                    break
                                 } else {
                                     return tileX, tileY, false
                                 }
