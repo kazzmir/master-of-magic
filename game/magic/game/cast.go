@@ -8,6 +8,7 @@ import (
     "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/set"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
@@ -621,32 +622,58 @@ func (game *Game) doCastSpellWard(player *playerlib.Player, spell spellbook.Spel
         return ""
     }
 
-    quit, cancel := context.WithCancel(context.Background())
+    var selectCity func (coroutine.YieldFunc, int, int)
+    selectCity = func (yield coroutine.YieldFunc, tileX int, tileY int) {
+        // FIXME: Show this only for enemies if detect magic is active and the city is known to the human player
+        game.doMoveCamera(yield, tileX, tileY)
+        chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
+        if chosenCity == nil {
+            return
+        }
 
-    selected := func (ward data.CityEnchantment){
-        // invoking cancel removes the selection ui group
-        cancel()
-        game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, ward)
+        choices := set.NewSet(wards...)
+
+        for _, enchantment := range choices.Values() {
+            if chosenCity.HasEnchantment(enchantment) {
+                choices.Remove(enchantment)
+            }
+        }
+
+        if choices.Size() == 0 {
+            game.Events <- &GameEventNotice{Message: "No wards are available to cast on this city."}
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selectCity}
+            return
+        }
+
+        quit, cancel := context.WithCancel(context.Background())
+
+        selected := func (ward data.CityEnchantment){
+            // invoking cancel removes the selection ui group
+            cancel()
+            // game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, ward)
+        }
+
+        var selections []uilib.Selection
+
+        for _, ward := range choices.Values() {
+            selections = append(selections, uilib.Selection{
+                Name: getName(ward),
+                Action: func(){
+                    selected(ward)
+                },
+            })
+        }
+
+        uiGroup := uilib.MakeGroup()
+
+        uiGroup.AddElements(uilib.MakeSelectionUI(uiGroup, game.Cache, &game.ImageCache, 40, 10, "Select a Spell Ward to cast", selections, false))
+        game.Events <- &GameEventRunUI{
+            Group: uiGroup,
+            Quit: quit,
+        }
     }
 
-    var selections []uilib.Selection
-
-    for _, ward := range wards {
-        selections = append(selections, uilib.Selection{
-            Name: getName(ward),
-            Action: func(){
-                selected(ward)
-            },
-        })
-    }
-
-    uiGroup := uilib.MakeGroup()
-
-    uiGroup.AddElements(uilib.MakeSelectionUI(uiGroup, game.Cache, &game.ImageCache, 40, 10, "Select a Spell Ward to cast", selections, false))
-    game.Events <- &GameEventRunUI{
-        Group: uiGroup,
-        Quit: quit,
-    }
+    game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selectCity}
 }
 
 func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, disenchantTrue bool, tileX int, tileY int) {
