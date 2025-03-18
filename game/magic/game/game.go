@@ -2132,7 +2132,7 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, back
 
                 choices := append(append(normalChoices, scaleChoices...), xbrChoices...)
 
-                ui.AddElements(uilib.MakeSelectionUI(ui, game.Cache, imageCache, 40, 10, "Resolution", choices))
+                ui.AddElements(uilib.MakeSelectionUI(ui, game.Cache, imageCache, 40, 10, "Resolution", choices, true))
             },
             Draw: func (element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
@@ -2617,14 +2617,14 @@ func (game *Game) ShowFizzleSpell(spell spellbook.Spell, caster *playerlib.Playe
 
 /* show the given message in an error popup on the screen
  */
-func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
+func (game *Game) doNotice(yield coroutine.YieldFunc, ui *uilib.UI, message string) {
     beep, err := audio.LoadSound(game.Cache, 0)
     if err == nil {
         beep.Play()
     }
 
     quit := false
-    game.HudUI.AddElement(uilib.MakeErrorElement(game.HudUI, game.Cache, &game.ImageCache, message, func(){
+    ui.AddElement(uilib.MakeErrorElement(ui, game.Cache, &game.ImageCache, message, func(){
         quit = true
     }))
 
@@ -2632,7 +2632,7 @@ func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
 
     for !quit {
         game.Counter += 1
-        game.HudUI.StandardUpdate()
+        ui.StandardUpdate()
         yield()
     }
 
@@ -2818,6 +2818,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
 
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
+    var lastEvent GameEvent
     for {
         select {
             case event := <-game.Events:
@@ -2825,7 +2826,11 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventMagicView:
                         game.doMagicView(yield)
                     case *GameEventRefreshUI:
-                        game.HudUI = game.MakeHudUI()
+                        // compress ui refreshes
+                        switch lastEvent.(type) {
+                            case *GameEventRefreshUI: // nothing, since we just did a refresh
+                            default: game.HudUI = game.MakeHudUI()
+                        }
                     case *GameEventHireHero:
                         hire := event.(*GameEventHireHero)
                         if hire.Player.IsHuman() {
@@ -2857,7 +2862,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doBanish(yield, banishEvent.Attacker, banishEvent.Defender)
                     case *GameEventNotice:
                         notice := event.(*GameEventNotice)
-                        game.doNotice(yield, notice.Message)
+                        game.doNotice(yield, game.HudUI, notice.Message)
                     case *GameEventCastSpellBook:
                         game.ShowSpellBookCastUI(yield, game.Players[0])
                     case *GameEventCityListView:
@@ -2970,6 +2975,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         moveUnit := event.(*GameEventMoveUnit)
                         game.doMoveSelectedUnit(yield, moveUnit.Player)
                 }
+
+                lastEvent = event
             default:
                 return
         }
@@ -3522,6 +3529,13 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     stepsTaken := 0
     stopMoving := false
     var mergeStack *playerlib.UnitStack
+    // kind of a hack, in case the stack couldn't move due to spell ward or something we attempt to merge
+    // the stack with whatever stack it is standing on
+    for _, otherStack := range player.FindAllStacks(stack.X(), stack.Y(), stack.Plane()) {
+        if otherStack != stack {
+            mergeStack = otherStack
+        }
+    }
 
     getStack := func(x int, y int) *playerlib.UnitStack {
         return player.FindStack(mapUse.WrapX(x), y, stack.Plane())
@@ -3537,6 +3551,18 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
         oldX := stack.X()
         oldY := stack.Y()
+
+        city := entityInfo.FindCity(step.X, step.Y, stack.Plane())
+        if city != nil {
+            // units might not be able to enter a city if the city has spell wards in effect
+            for _, unit := range stack.ActiveUnits() {
+                if !city.CanEnter(unit) {
+                    stopMoving = true
+                    game.Events <- &GameEventNotice{Message: fmt.Sprintf("%v can not enter the city of %v", unit.GetRawUnit().Name, city.Name)}
+                    break quitMoving
+                }
+            }
+        }
 
         terrainCost, canMove := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), step.X, step.Y, mapUse, getStack)
 
@@ -3642,7 +3668,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     }
 
     // only merge stacks if both stacks are stopped, otherwise they can move through each other
-    if len(stack.CurrentPath) == 0 && mergeStack != nil {
+    if len(stack.CurrentPath) == 0 && mergeStack != nil && mergeStack.X() == stack.X() && mergeStack.Y() == stack.Y() {
         stack = player.MergeStacks(mergeStack, stack)
         player.SelectedStack = stack
         game.RefreshUI()
@@ -3740,15 +3766,27 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                         // unit can move instantly to the new city if they are standing on a city with earth gate
                         // and the new city also has earth gate
                         if oldCity != nil && newCity != nil && oldCity.HasEnchantment(data.CityEnchantmentEarthGate) && newCity.HasEnchantment(data.CityEnchantmentEarthGate) && stack.GetRemainingMoves().GreaterThan(fraction.Zero()) {
-                            stack.UseMovement(fraction.FromInt(1))
-                            newCityStack := player.FindStack(newX, newY, stack.Plane())
-                            if newCityStack != nil {
-                                player.MergeStacks(newCityStack, stack)
-                            } else {
-                                stack.SetX(newX)
-                                stack.SetY(newY)
+                            // the other city might be protected by spell ward
+                            canMove := true
+                            for _, unit := range stack.ActiveUnits() {
+                                if !newCity.CanEnter(unit) {
+                                    canMove = false
+                                    game.Events <- &GameEventNotice{Message: fmt.Sprintf("%v can not enter the city of %v", unit.GetRawUnit().Name, newCity.Name)}
+                                    break
+                                }
                             }
-                            game.RefreshUI()
+
+                            if canMove {
+                                stack.UseMovement(fraction.FromInt(1))
+                                newCityStack := player.FindStack(newX, newY, stack.Plane())
+                                if newCityStack != nil {
+                                    player.MergeStacks(newCityStack, stack)
+                                } else {
+                                    stack.SetX(newX)
+                                    stack.SetY(newY)
+                                }
+                                game.RefreshUI()
+                            }
                         } else {
                             path := game.FindPath(oldX, oldY, newX, newY, player, stack, player.GetFog(game.Plane))
                             if path == nil {
@@ -3912,6 +3950,16 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
             if !move.ConfirmEncounter(encounter) {
                 move.Invalid()
                 return
+            }
+        }
+
+        newCity, _ := game.FindCity(to.X, to.Y, stack.Plane())
+        if newCity != nil {
+            for _, unit := range stack.ActiveUnits() {
+                if !newCity.CanEnter(unit) {
+                    move.Invalid()
+                    return
+                }
             }
         }
 
@@ -4855,7 +4903,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     killUnits(defender, defenderStack, landscape)
 
     if showHeroNotice {
-        game.doNotice(yield, "One or more heroes died in combat. You must redistribute their equipment.")
+        game.doNotice(yield, game.HudUI, "One or more heroes died in combat. You must redistribute their equipment.")
     }
 
     return state
@@ -4971,7 +5019,7 @@ func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
         },
     }
 
-    game.HudUI.AddElements(uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Tax Per Population", taxes))
+    game.HudUI.AddElements(uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Tax Per Population", taxes, true))
 }
 
 func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc, player *playerlib.Player){
@@ -5078,7 +5126,7 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         },
     }
 
-    return uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Select An Advisor", advisors)
+    return uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Select An Advisor", advisors, true)
 }
 
 func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerlib.Player){
@@ -5611,12 +5659,21 @@ func (game *Game) SwitchPlane() {
                     tile := mapPlane.GetTile(activeStack.X(), activeStack.Y())
                     canMove = cityOppositePlane != nil || activeStack.AllFlyers() || tile.Tile.IsLand()
 
+                    if cityOppositePlane != nil {
+                        for _, unit := range activeStack.ActiveUnits() {
+                            if !cityOppositePlane.CanEnter(unit) {
+                                canMove = false
+                                break
+                            }
+                        }
+                    }
+
                     // cannot planar travel if there is an encounter node
-                    if mapPlane.GetEncounter(activeStack.X(), activeStack.Y()) != nil {
+                    if canMove && mapPlane.GetEncounter(activeStack.X(), activeStack.Y()) != nil {
                         canMove = false
                     }
 
-                    if tile.Tile.IsWater() && activeStack.AllLandWalkers() {
+                    if canMove && tile.Tile.IsWater() && activeStack.AllLandWalkers() {
                         canMove = false
                     }
                 }

@@ -77,10 +77,6 @@ func MakeNewBuildingView(cache *lbx.LbxCache, city *citylib.City, player *player
 
     ui.SetElementsFromArray(nil)
 
-    // just to silence log warning
-    ui.AddElement(&uilib.UIElement{
-    })
-
     return ui, quit, nil
 }
 

@@ -664,7 +664,7 @@ type Selection struct {
     Hotkey string
 }
 
-func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.ImageCache, cornerX int, cornerY int, selectionTitle string, choices []Selection) []*UIElement {
+func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.ImageCache, cornerX int, cornerY int, selectionTitle string, choices []Selection, canCancel bool) []*UIElement {
     var elements []*UIElement
 
     fontLbx, err := lbxCache.GetLbxFile("fonts.lbx")
@@ -730,11 +730,14 @@ func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.Im
     elements = append(elements, &UIElement{
         Layer: 1,
         NotLeftClicked: func(this *UIElement){
-            getAlpha = ui.MakeFadeOut(fadeSpeed)
+            // if the user cannot cancel then they have to select one of the options
+            if canCancel {
+                getAlpha = ui.MakeFadeOut(fadeSpeed)
 
-            ui.AddDelay(fadeSpeed, func(){
-                ui.RemoveElements(elements)
-            })
+                ui.AddDelay(fadeSpeed, func(){
+                    ui.RemoveElements(elements)
+                })
+            }
         },
         Draw: func(element *UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions

@@ -1064,6 +1064,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Cloud of Shadow"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Summoning Circle"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Move Fortress"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Spell Ward"))
 
     // global enchantments
     player.KnownSpells.AddSpell(allSpells.FindByName("Nature Awareness"))
@@ -1170,6 +1171,8 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city3.Workers = 4
     city3.ResetCitizens()
     enemy.AddCity(city3)
+
+    city3.AddEnchantment(data.CityEnchantmentDeathWard, enemy.GetBanner())
 
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x, y - 1, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo()))
