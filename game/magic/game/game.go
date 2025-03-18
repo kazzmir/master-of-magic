@@ -2617,14 +2617,14 @@ func (game *Game) ShowFizzleSpell(spell spellbook.Spell, caster *playerlib.Playe
 
 /* show the given message in an error popup on the screen
  */
-func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
+func (game *Game) doNotice(yield coroutine.YieldFunc, ui *uilib.UI, message string) {
     beep, err := audio.LoadSound(game.Cache, 0)
     if err == nil {
         beep.Play()
     }
 
     quit := false
-    game.HudUI.AddElement(uilib.MakeErrorElement(game.HudUI, game.Cache, &game.ImageCache, message, func(){
+    ui.AddElement(uilib.MakeErrorElement(ui, game.Cache, &game.ImageCache, message, func(){
         quit = true
     }))
 
@@ -2632,7 +2632,7 @@ func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
 
     for !quit {
         game.Counter += 1
-        game.HudUI.StandardUpdate()
+        ui.StandardUpdate()
         yield()
     }
 
@@ -2857,7 +2857,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doBanish(yield, banishEvent.Attacker, banishEvent.Defender)
                     case *GameEventNotice:
                         notice := event.(*GameEventNotice)
-                        game.doNotice(yield, notice.Message)
+                        game.doNotice(yield, game.HudUI, notice.Message)
                     case *GameEventCastSpellBook:
                         game.ShowSpellBookCastUI(yield, game.Players[0])
                     case *GameEventCityListView:
@@ -3939,7 +3939,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
             }
         }
 
-        newCity := game.FindCity(to.X, to.Y, stack.Plane())
+        newCity, _ := game.FindCity(to.X, to.Y, stack.Plane())
         if newCity != nil {
             for _, unit := range stack.ActiveUnits() {
                 if !newCity.CanEnter(unit) {
@@ -4889,7 +4889,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     killUnits(defender, defenderStack, landscape)
 
     if showHeroNotice {
-        game.doNotice(yield, "One or more heroes died in combat. You must redistribute their equipment.")
+        game.doNotice(yield, game.HudUI, "One or more heroes died in combat. You must redistribute their equipment.")
     }
 
     return state

@@ -464,7 +464,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
-                // FIXME: it's not obvious if Chaos Ward prevents Raise Volcano from being cast on city center. Left it here because it sounds logical
+                // unclear if chaos ward makes the spell fizzle or if this tile just can't be selected
                 if chosenCity != nil && chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
                     game.ShowFizzleSpell(spell, player)
                     return
@@ -1244,7 +1244,11 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         for _, enemy := range game.GetEnemies(player) {
                             city := enemy.FindCity(tileX, tileY, game.Plane)
                             if city != nil {
-                                return tileX, tileY, false
+                                if !city.CanTarget(spell) {
+                                    game.doNotice(yield, ui, fmt.Sprintf("You cannot cast %v on this city", spell.Name))
+                                } else {
+                                    return tileX, tileY, false
+                                }
                             }
                         }
 
