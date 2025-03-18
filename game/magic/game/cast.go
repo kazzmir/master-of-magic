@@ -650,6 +650,8 @@ func (game *Game) doCastSpellWard(player *playerlib.Player, spell spellbook.Spel
         selected := func (ward data.CityEnchantment){
             // invoking cancel removes the selection ui group
             cancel()
+            // this yield reference comes from a different time in the ui when the tile was being selected
+            // really this should be a GameEvent that shows the enchantment being added
             game.doAddCityEnchantment(yield, chosenCity, player, spell, ward)
         }
 
