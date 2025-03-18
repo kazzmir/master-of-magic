@@ -2132,7 +2132,7 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, back
 
                 choices := append(append(normalChoices, scaleChoices...), xbrChoices...)
 
-                ui.AddElements(uilib.MakeSelectionUI(ui, game.Cache, imageCache, 40, 10, "Resolution", choices))
+                ui.AddElements(uilib.MakeSelectionUI(ui, game.Cache, imageCache, 40, 10, "Resolution", choices, true))
             },
             Draw: func (element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
@@ -4971,7 +4971,7 @@ func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
         },
     }
 
-    game.HudUI.AddElements(uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Tax Per Population", taxes))
+    game.HudUI.AddElements(uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Tax Per Population", taxes, true))
 }
 
 func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc, player *playerlib.Player){
@@ -5078,7 +5078,7 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         },
     }
 
-    return uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Select An Advisor", advisors)
+    return uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Select An Advisor", advisors, true)
 }
 
 func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerlib.Player){

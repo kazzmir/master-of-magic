@@ -1561,7 +1561,7 @@ func (combat *CombatScreen) AddSelectTargetsElements(targets []*ArmyUnit, title 
         })
     }
 
-    combat.UI.AddElements(uilib.MakeSelectionUI(combat.UI, combat.Cache, &combat.ImageCache, 100, 20, title, selections))
+    combat.UI.AddElements(uilib.MakeSelectionUI(combat.UI, combat.Cache, &combat.ImageCache, 100, 20, title, selections, true))
 }
 
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
@@ -1796,7 +1796,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                     },
                 }
 
-                ui.AddElements(uilib.MakeSelectionUI(ui, combat.Cache, &combat.ImageCache, 100, 50, "Who Will Cast", selections))
+                ui.AddElements(uilib.MakeSelectionUI(ui, combat.Cache, &combat.ImageCache, 100, 50, "Who Will Cast", selections, true))
             }
         }
 

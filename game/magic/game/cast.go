@@ -203,11 +203,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
             game.doCastOnUnit(player, spell, 4, before, after)
 
+        case "Spell Ward":
+            game.doCastSpellWard(player, spell)
+
         /*
             TOWN ENCHANTMENTS
                 TODO:
                 Flying Fortress
-                Spell Ward
         */
         case "Earth Gate":
             game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentEarthGate)
@@ -598,6 +600,53 @@ func (game *Game) checkInstantFizzleForCastSpell(player *playerlib.Player, spell
         }
     }
     return false
+}
+
+func (game *Game) doCastSpellWard(player *playerlib.Player, spell spellbook.Spell) {
+    wards := []data.CityEnchantment{
+        data.CityEnchantmentLifeWard, data.CityEnchantmentSorceryWard,
+        data.CityEnchantmentNatureWard, data.CityEnchantmentDeathWard,
+        data.CityEnchantmentChaosWard,
+    }
+
+    getName := func (ward data.CityEnchantment) string {
+        switch ward {
+            case data.CityEnchantmentLifeWard: return "Life Ward"
+            case data.CityEnchantmentSorceryWard: return "Sorcery Ward"
+            case data.CityEnchantmentNatureWard: return "Nature Ward"
+            case data.CityEnchantmentDeathWard: return "Death Ward"
+            case data.CityEnchantmentChaosWard: return "Chaos Ward"
+        }
+
+        return ""
+    }
+
+    quit, cancel := context.WithCancel(context.Background())
+
+    selected := func (ward data.CityEnchantment){
+        // invoking cancel removes the selection ui group
+        cancel()
+        game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, ward)
+    }
+
+    var selections []uilib.Selection
+
+    for _, ward := range wards {
+        selections = append(selections, uilib.Selection{
+            Name: getName(ward),
+            Action: func(){
+                selected(ward)
+            },
+        })
+    }
+
+    uiGroup := uilib.MakeGroup()
+
+    uiGroup.AddElements(uilib.MakeSelectionUI(uiGroup, game.Cache, &game.ImageCache, 40, 10, "Select a Spell Ward to cast", selections, false))
+    game.Events <- &GameEventRunUI{
+        Group: uiGroup,
+        Quit: quit,
+    }
 }
 
 func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, disenchantTrue bool, tileX int, tileY int) {
