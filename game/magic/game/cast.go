@@ -650,7 +650,7 @@ func (game *Game) doCastSpellWard(player *playerlib.Player, spell spellbook.Spel
         selected := func (ward data.CityEnchantment){
             // invoking cancel removes the selection ui group
             cancel()
-            // game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, ward)
+            game.doAddCityEnchantment(yield, chosenCity, player, spell, ward)
         }
 
         var selections []uilib.Selection
@@ -1267,6 +1267,26 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     return 0, 0, true
 }
 
+func (game *Game) doAddCityEnchantment(yield coroutine.YieldFunc, chosenCity *citylib.City, player *playerlib.Player, spell spellbook.Spell, enchantment data.CityEnchantment) {
+    chosenCity.AddEnchantment(enchantment, player.GetBanner())
+    chosenCity.UpdateUnrest()
+
+    yield()
+
+    sound, err := audio.LoadSound(game.Cache, spell.Sound)
+    if err == nil {
+        sound.Play()
+    }
+
+    enchantmentBuilding, ok := buildinglib.EnchantmentBuildings()[enchantment]
+    if !ok {
+        enchantmentBuilding = buildinglib.BuildingNone
+    }
+
+    game.showCastNewBuilding(yield, chosenCity, player, enchantmentBuilding, enchantment.Name())
+    game.RefreshUI()
+}
+
 func (game *Game) doCastCityEnchantmentFull(spell spellbook.Spell, player *playerlib.Player, locationType LocationType, enchantment data.CityEnchantment, before CityCallback, after CityCallback) {
     var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
     selected = func (yield coroutine.YieldFunc, tileX int, tileY int) {
@@ -1287,23 +1307,7 @@ func (game *Game) doCastCityEnchantmentFull(spell spellbook.Spell, player *playe
             return
         }
 
-        chosenCity.AddEnchantment(enchantment, player.GetBanner())
-        chosenCity.UpdateUnrest()
-
-        yield()
-
-        sound, err := audio.LoadSound(game.Cache, spell.Sound)
-        if err == nil {
-            sound.Play()
-        }
-
-        enchantmentBuilding, ok := buildinglib.EnchantmentBuildings()[enchantment]
-        if !ok {
-            enchantmentBuilding = buildinglib.BuildingNone
-        }
-
-        game.showCastNewBuilding(yield, chosenCity, player, enchantmentBuilding, enchantment.Name())
-        game.RefreshUI()
+        game.doAddCityEnchantment(yield, chosenCity, player, spell, enchantment)
 
         after(chosenCity)
     }
