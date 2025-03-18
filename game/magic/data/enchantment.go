@@ -722,11 +722,11 @@ func (enchantment CityEnchantment) IconOffset() int {
         case CityEnchantmentNaturesEye: return 114
         case CityEnchantmentProsperity: return 153
         // FIXME: verify these
-        case CityEnchantmentLifeWard: return 160
-        case CityEnchantmentSorceryWard: return 164
-        case CityEnchantmentNatureWard: return 168
-        case CityEnchantmentDeathWard: return 172
-        case CityEnchantmentChaosWard: return 176
+        case CityEnchantmentLifeWard: return 20
+        case CityEnchantmentSorceryWard: return 35
+        case CityEnchantmentNatureWard: return 50
+        case CityEnchantmentDeathWard: return 65
+        case CityEnchantmentChaosWard: return 80
     }
 
     return 0
