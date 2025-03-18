@@ -1261,6 +1261,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                     case LocationTypeEnemyUnit:
                         // TODO
                         // FIXME: This should consider only tiles with FogTypeVisible
+                        // also consider if the unit is in a city with a spell ward that prevents this unit from being targeted
                 }
             }
         }
