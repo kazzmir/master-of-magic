@@ -141,10 +141,11 @@ func createHighMenBowmanArmy(player *player.Player) *combat.Army {
     return &army
 }
 
-func createGreatDrakeArmy(player *player.Player) *combat.Army{
+func createGreatDrakeArmy(player *player.Player, N int) *combat.Army{
     army := combat.Army{Player: player}
-    army.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
-    army.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+    for range N {
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+    }
     return &army
 }
 
@@ -476,7 +477,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(defendingPlayer)
     // defendingArmy := createSettlerArmy(defendingPlayer, 3)
-    defendingArmy := createLizardmenArmy(defendingPlayer, 3)
+    defendingArmy := createLizardmenArmy(defendingPlayer, 1)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -498,8 +499,8 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disrupt"))
 
-    attackingArmy := createGreatDrakeArmy(attackingPlayer)
-    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcCavalry, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()))
+    attackingArmy := createGreatDrakeArmy(attackingPlayer, 1)
+    // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcCavalry, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()))
     // attackingArmy := createWeakArmy(attackingPlayer)
     // attackingArmy := createHighMenBowmanArmy(attackingPlayer)
     // attackingArmy := createHeroArmy(attackingPlayer)

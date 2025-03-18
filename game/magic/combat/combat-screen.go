@@ -2699,7 +2699,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         if !found {
             combat.Model.Tiles[unit.Y][unit.X].Unit = nil
             var ok bool
-            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, unit.CanTraverseWall(), unit.IsFlying())
+            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
             combat.Model.Tiles[unit.Y][unit.X].Unit = unit
             if ok {
                 paths[unit] = path
@@ -2819,6 +2819,12 @@ func (combat *CombatScreen) UpdateMouseState() {
 }
 
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
+    if combat.Model.CurrentTurn >= MAX_TURNS {
+        combat.Model.AddLogEvent("Combat exceeded maximum number of turns, defender wins")
+        combat.Model.FinishCombat(CombatStateDefenderWin)
+        return CombatStateDefenderWin
+    }
+
     if combat.Model.AttackingArmy.Fled {
         combat.Model.flee(combat.Model.AttackingArmy)
         combat.Model.FinishCombat(CombatStateAttackerFlee)

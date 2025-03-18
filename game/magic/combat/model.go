@@ -24,6 +24,8 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+const MAX_TURNS = 50
+
 type DamageSource int
 const (
     DamageSourceNormal DamageSource = iota
