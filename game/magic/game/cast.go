@@ -5,6 +5,8 @@ import (
     "log"
     "image"
     "context"
+    "slices"
+    "cmp"
     "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -676,7 +678,9 @@ func (game *Game) doCastSpellWard(player *playerlib.Player, spell spellbook.Spel
 
         var selections []uilib.Selection
 
-        for _, ward := range choices.Values() {
+        for _, ward := range slices.SortedFunc(slices.Values(choices.Values()), func (a data.CityEnchantment, b data.CityEnchantment) int {
+            return cmp.Compare(a, b)
+        }) {
             selections = append(selections, uilib.Selection{
                 Name: getName(ward),
                 Action: func(){
