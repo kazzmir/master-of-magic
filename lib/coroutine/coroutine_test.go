@@ -3,7 +3,7 @@ package coroutine
 import (
     "testing"
     "slices"
-    // "fmt"
+    "fmt"
 )
 
 func TestCoroutine1(testing *testing.T) {
@@ -59,3 +59,22 @@ func TestCoroutine2(testing *testing.T){
     }
 }
 
+func TestCoroutineError(test *testing.T) {
+    myError := fmt.Errorf("my error")
+    v1 := func(yield YieldFunc) error {
+        return myError
+    }
+
+    coro := MakeCoroutine(v1)
+    var err error
+    for {
+        err = coro.Run()
+        if err != nil {
+            break
+        }
+    }
+
+    if err != myError {
+        test.Error("error should have been myError")
+    }
+}
