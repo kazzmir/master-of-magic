@@ -2829,7 +2829,6 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         // compress ui refreshes
                         switch lastEvent.(type) {
                             case *GameEventRefreshUI: // nothing, since we just did a refresh
-                                log.Printf("ignoring refresh ui")
                             default: game.HudUI = game.MakeHudUI()
                         }
                     case *GameEventHireHero:
