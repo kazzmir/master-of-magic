@@ -1651,6 +1651,19 @@ func (city *City) GetWeaponBonus() data.WeaponBonus {
     return data.WeaponNone
 }
 
+// true if the unit can enter the city (e.g. not blocked by a ward)
+func (city *City) CanEnter(unit units.StackUnit) bool {
+    switch unit.GetRealm() {
+        case data.NatureMagic: return !city.HasEnchantment(data.CityEnchantmentNatureWard)
+        case data.SorceryMagic: return !city.HasEnchantment(data.CityEnchantmentSorceryWard)
+        case data.LifeMagic: return !city.HasEnchantment(data.CityEnchantmentLifeWard)
+        case data.ChaosMagic: return !city.HasEnchantment(data.CityEnchantmentChaosWard)
+        case data.DeathMagic: return !city.HasEnchantment(data.CityEnchantmentDeathWard)
+    }
+
+    return true
+}
+
 // do all the stuff needed per turn
 // increase population, add production, add food/money, etc
 func (city *City) DoNextTurn(mapObject *maplib.Map) []CityEvent {

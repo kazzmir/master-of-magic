@@ -3538,6 +3538,18 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         oldX := stack.X()
         oldY := stack.Y()
 
+        city := entityInfo.FindCity(step.X, step.Y, stack.Plane())
+        if city != nil {
+            // units might not be able to enter a city if the city has spell wards in effect
+            for _, unit := range stack.ActiveUnits() {
+                if !city.CanEnter(unit) {
+                    stopMoving = true
+                    game.Events <- &GameEventNotice{Message: fmt.Sprintf("%v can not enter the city of %v", unit.GetRawUnit().Name, city.Name)}
+                    break quitMoving
+                }
+            }
+        }
+
         terrainCost, canMove := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), step.X, step.Y, mapUse, getStack)
 
         if canMove {
