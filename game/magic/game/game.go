@@ -7601,6 +7601,7 @@ func (game *Game) DoRandomEvents() {
     game.RandomEvents = keep
 }
 
+// an implementation of combat/UnitDamage that wraps a StackUnit for the purpose of applying damage to a StackUnit
 type UnitDamageWrapper struct {
     Unit units.StackUnit
 }
