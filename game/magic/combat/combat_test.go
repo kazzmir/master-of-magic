@@ -59,7 +59,7 @@ func BenchmarkAngle(bench *testing.B){
 }
 
 func TestUnitHealth(test *testing.T) {
-    unit := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
+    unit := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
     armyUnit := ArmyUnit{
         Unit: unit,
     }
@@ -174,8 +174,8 @@ func TestBasicMelee(test *testing.T){
         Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
-    defender := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -221,8 +221,8 @@ func TestAttackerHaste(test *testing.T){
         Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
-    defender := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -280,8 +280,8 @@ func TestFirstStrike(test *testing.T){
     // ensure attacker can kill the defender in one hit
     attackerUnit.MeleeAttackPower = 10000
 
-    defender := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(attackerUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -340,8 +340,8 @@ func TestFirstStrikeNegate(test *testing.T){
     defenderUnit := units.LizardSpearmen
     defenderUnit.Abilities = append(slices.Clone(defenderUnit.Abilities), data.MakeAbility(data.AbilityNegateFirstStrike))
 
-    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(defenderUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(attackerUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -397,8 +397,8 @@ func TestThrowAttack(test *testing.T){
 
     defenderUnit := units.LizardSpearmen
 
-    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(defenderUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(attackerUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -468,8 +468,8 @@ func TestThrownTouchAttack(test *testing.T){
 
     defenderUnit := units.LizardSpearmen
 
-    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(defenderUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(attackerUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -546,8 +546,8 @@ func TestFear(test *testing.T){
     // ensure all units become afraid
     defenderUnit.Resistance = -100
 
-    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(defenderUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(attackerUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -608,8 +608,8 @@ func TestCounterAttackPenalty(test *testing.T){
     attackerUnit := units.LizardSpearmen
     defenderUnit := units.LizardSwordsmen
 
-    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(defenderUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(attackerUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
