@@ -7601,6 +7601,38 @@ func (game *Game) DoRandomEvents() {
     game.RandomEvents = keep
 }
 
+func (game *Game) doChaosRift() {
+    for _, city := range game.AllCities() {
+        if city.HasEnchantment(data.CityEnchantmentChaosRift) {
+
+            // do 5 magical attacks of strength 8 to units in the city
+            stack, _ := game.FindStack(city.X, city.Y, city.Plane)
+            if stack != nil && !stack.IsEmpty() {
+                /*
+                units := stack.Units()
+                for range 5 {
+                    choice := units[rand.N(len(units))]
+                }
+                */
+            }
+
+            // each building has a 5% chance of being destroyed
+            var destroyedBuildings []buildinglib.Building
+            for _, building := range city.Buildings.Values() {
+                if game.BuildingInfo.ProductionCost(building) != 0 {
+                    if rand.N(100) < 5 {
+                        destroyedBuildings = append(destroyedBuildings, building)
+                    }
+                }
+            }
+
+            for _, building := range destroyedBuildings {
+                city.Buildings.Remove(building)
+            }
+        }
+    }
+}
+
 func (game *Game) EndOfTurn() {
     // put stuff here that should happen when all players have taken their turn
 
@@ -7609,6 +7641,8 @@ func (game *Game) EndOfTurn() {
     game.doArmageddon()
 
     game.doGreatWasting()
+
+    game.doChaosRift()
 
     game.TurnNumber += 1
 
