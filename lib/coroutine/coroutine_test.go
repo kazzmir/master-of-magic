@@ -62,12 +62,13 @@ func TestCoroutine2(testing *testing.T){
 func TestCoroutineError(test *testing.T) {
     myError := fmt.Errorf("my error")
     v1 := func(yield YieldFunc) error {
+        yield()
         return myError
     }
 
     coro := MakeCoroutine(v1)
     var err error
-    for {
+    for range 10 {
         err = coro.Run()
         if err != nil {
             break
