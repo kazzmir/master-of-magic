@@ -327,7 +327,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /*
             GLOBAL ENCHANTMENTS
                 TODO:
-                Charm of Life
                 Holy Arms
                 Planar Seal
                 Herb Mastery
@@ -342,6 +341,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Evil Omens
                 Zombie Mastery
         */
+        case "Charm of Life":
+            enchantment := data.EnchantmentCharmOfLife
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+
         case "Awareness":
             if !player.GlobalEnchantments.Contains(data.EnchantmentAwareness) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentAwareness}
@@ -925,7 +932,7 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
 
     summonCity := player.FindSummoningCity()
     if summonCity != nil {
-        overworldUnit := units.MakeOverworldUnitFromUnit(unit, summonCity.X, summonCity.Y, summonCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+        overworldUnit := units.MakeOverworldUnitFromUnit(unit, summonCity.X, summonCity.Y, summonCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
         player.AddUnit(overworldUnit)
         game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
         game.RefreshUI()
@@ -1819,7 +1826,7 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 func (game *Game) doCastFloatingIsland(yield coroutine.YieldFunc, player *playerlib.Player, tileX int, tileY int) {
     update := func (x int, y int, frame int) {
         if frame == 5 {
-            overworldUnit := units.MakeOverworldUnitFromUnit(units.FloatingIsland, tileX, tileY, game.CurrentMap().Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+            overworldUnit := units.MakeOverworldUnitFromUnit(units.FloatingIsland, tileX, tileY, game.CurrentMap().Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
             player.AddUnit(overworldUnit)
             player.LiftFog(tileX, tileY, 1, game.Plane)
         }

@@ -99,6 +99,19 @@ type CityEnchantmentsProvider interface {
     GetCityEnchantmentsByBanner(banner data.BannerType) []CityEnchantment
 }
 
+// to get enchanments that affect the entire world
+type GlobalEnchantmentsProvider interface {
+    HasEnchantment(enchantment data.Enchantment) bool
+}
+
+// default implementation
+type NoGlobalEnchantments struct {
+}
+
+func (*NoGlobalEnchantments) HasEnchantment(enchantment data.Enchantment) bool {
+    return false
+}
+
 type Player struct {
     // matrix the same size as the map containg information if the tile is explored,
     // unexplored or in the range of sight
@@ -137,7 +150,10 @@ type Player struct {
     // spells that can be researched
     ResearchCandidateSpells spellbook.Spells
 
+    // enchantments owned by this player
     GlobalEnchantments *set.Set[data.Enchantment]
+    // to get enchantments owned by any player
+    GlobalEnchantmentsProvider GlobalEnchantmentsProvider
 
     PowerDistribution PowerDistribution
 
@@ -184,7 +200,7 @@ type Player struct {
     SelectedStack *UnitStack
 }
 
-func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight int, heroNames map[herolib.HeroType]string) *Player {
+func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight int, heroNames map[herolib.HeroType]string, globalEnchantmentProvider GlobalEnchantmentsProvider) *Player {
 
     makeFog := func() data.FogMap {
         fog := make(data.FogMap, mapWidth)
@@ -210,6 +226,7 @@ func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight i
             Research: 1.0/3,
             Skill: 1.0/3,
         },
+        GlobalEnchantmentsProvider: globalEnchantmentProvider,
     }
 }
 
@@ -277,6 +294,11 @@ func (player *Player) GetBanner() data.BannerType {
     return player.Wizard.Banner
 }
 
+// true if this player has the given global enchantment enabled
+func (player *Player) HasEnchantment(enchantment data.Enchantment) bool {
+    return player.GlobalEnchantments.Contains(enchantment)
+}
+
 // how much gold is stored in this city relative to the player's overall wealth
 func (player *Player) ComputePlunderedGold(city *citylib.City) int {
     totalPopulation := 0
@@ -297,6 +319,24 @@ func (player *Player) IsTileExplored(x int, y int, plane data.Plane) bool {
     return fog[x][y] != data.FogTypeUnexplored
 }
 
+type PlayerEnchantmentProvider struct {
+    Player *Player
+}
+
+func (provider *PlayerEnchantmentProvider) HasEnchantment(enchantment data.Enchantment) bool {
+    return provider.Player.GlobalEnchantmentsProvider.HasEnchantment(enchantment)
+}
+
+func (provider *PlayerEnchantmentProvider) HasFriendlyEnchantment(enchantment data.Enchantment) bool {
+    return provider.Player.GlobalEnchantments.Contains(enchantment)
+}
+
+func (player *Player) MakeUnitEnchantmentProvider() units.GlobalEnchantmentProvider {
+    return &PlayerEnchantmentProvider{
+        Player: player,
+    }
+}
+
 /* returns true if the hero was actually added to the player
  */
 func (player *Player) AddHero(hero *herolib.Hero) bool {
@@ -313,7 +353,7 @@ func (player *Player) AddHero(hero *herolib.Hero) bool {
             level := hero.GetHeroExperienceLevel()
             experienceInfo := player.MakeExperienceInfo()
 
-            hero.Unit = units.MakeOverworldUnitFromUnit(hero.GetRawUnit(), fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, experienceInfo)
+            hero.Unit = units.MakeOverworldUnitFromUnit(hero.GetRawUnit(), fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, experienceInfo, player.MakeUnitEnchantmentProvider())
             hero.AdjustHealth(hero.GetMaxHealth())
             hero.AddExperience(level.ExperienceRequired(experienceInfo.HasWarlord(), experienceInfo.Crusade()))
 

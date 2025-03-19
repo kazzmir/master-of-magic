@@ -38,7 +38,7 @@ func NewEngine(scenario int) (*Engine, error) {
     }
     ui.SetElementsFromArray(nil)
 
-    unit := units.MakeOverworldUnitFromUnit(units.HalflingSpearmen, 0, 0, data.PlaneArcanus, data.BannerGreen, &units.NoExperienceInfo{})
+    unit := units.MakeOverworldUnitFromUnit(units.HalflingSpearmen, 0, 0, data.PlaneArcanus, data.BannerGreen, &units.NoExperienceInfo{}, &units.NoEnchantments{})
     unit.Experience = 60
 
     ui.AddGroup(gamelib.MakeHireMercenariesScreenUI(cache, ui, unit, 2, 100, func (hired bool){

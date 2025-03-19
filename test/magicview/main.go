@@ -32,7 +32,7 @@ func NewEngine() (*Engine, error) {
         Base: data.WizardHorus,
         Name: "Horus",
         Banner: data.BannerRed,
-    }, true, 0, 0, nil)
+    }, true, 0, 0, nil, &playerlib.NoGlobalEnchantments{})
 
     player.CastingSkillPower = 280
     player.Gold = 234
@@ -46,7 +46,7 @@ func NewEngine() (*Engine, error) {
         Base: data.WizardMerlin,
         Name: "Merlin",
         Banner: data.BannerPurple,
-    }, false, 0, 0, nil)
+    }, false, 0, 0, nil, &playerlib.NoGlobalEnchantments{})
 
     enemy1.GlobalEnchantments.Insert(data.EnchantmentCrusade)
     enemy1.CastingSpell = allSpells.FindByName("Eldritch Weapon")
@@ -57,7 +57,7 @@ func NewEngine() (*Engine, error) {
         Base: data.WizardFreya,
         Name: "Freya",
         Banner: data.BannerGreen,
-    }, false, 0, 0, nil)
+    }, false, 0, 0, nil, &playerlib.NoGlobalEnchantments{})
 
     enemy2.GlobalEnchantments.Insert(data.EnchantmentNaturesWrath)
 
@@ -65,7 +65,7 @@ func NewEngine() (*Engine, error) {
         Base: data.WizardHorus,
         Name: "Horus",
         Banner: data.BannerYellow,
-    }, false, 0, 0, nil)
+    }, false, 0, 0, nil, &playerlib.NoGlobalEnchantments{})
 
     enemy3.Defeated = true
 
@@ -75,7 +75,7 @@ func NewEngine() (*Engine, error) {
         Base: data.WizardJafar,
         Name: "Jafar",
         Banner: data.BannerBlue,
-    }, false, 0, 0, nil)
+    }, false, 0, 0, nil, &playerlib.NoGlobalEnchantments{})
 
     enemy4.Defeated = true
 

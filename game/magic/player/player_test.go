@@ -11,7 +11,7 @@ func TestHeroNames(test *testing.T) {
     names := make(map[hero.HeroType]string)
     names[hero.HeroFang] = "goofy"
 
-    player := MakePlayer(setup.WizardCustom{}, true, 5, 5, names)
+    player := MakePlayer(setup.WizardCustom{}, true, 5, 5, names, nil)
     fangName := player.HeroPool[hero.HeroFang].GetName()
 
     if fangName != "goofy" {
@@ -22,7 +22,7 @@ func TestHeroNames(test *testing.T) {
 func TestSkillReduction(test *testing.T) {
     setPlayerInvestedPower := func (player *Player, desiredSkill int) { player.CastingSkillPower = desiredSkill * desiredSkill - desiredSkill + 1} // skill^2 - skill + 1, simplification of (skill-1)^2 + skill
     names := make(map[hero.HeroType]string)
-    player := MakePlayer(setup.WizardCustom{}, true, 5, 5, names)
+    player := MakePlayer(setup.WizardCustom{}, true, 5, 5, names, nil)
 
     // Trying to reduce for various values
     for initialSkill := 1; initialSkill < 1000; initialSkill++ {

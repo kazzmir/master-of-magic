@@ -865,6 +865,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                             ui.RemoveGroup(group)
                         }
                         yes := func(){
+                            // FIXME: kill units that now have 0 health
                             player.GlobalEnchantments.Remove(enchantment.Enchantment)
                             player.UpdateUnrest()
                             for _, enemy := range enemies {

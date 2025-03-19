@@ -487,7 +487,7 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
         useNames = make(map[herolib.HeroType]string)
     }
 
-    newPlayer := playerlib.MakePlayer(wizard, human, game.CurrentMap().Width(), game.CurrentMap().Height(), useNames)
+    newPlayer := playerlib.MakePlayer(wizard, human, game.CurrentMap().Width(), game.CurrentMap().Height(), useNames, game)
 
     if !human {
         newPlayer.AIBehavior = ai.MakeEnemyAI()
@@ -2482,7 +2482,7 @@ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
     // create units
     var overworldUnits []*units.OverworldUnit
     for i := 0; i < count; i++ {
-        overworldUnit := units.MakeOverworldUnitFromUnit(*unit, fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+        overworldUnit := units.MakeOverworldUnitFromUnit(*unit, fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
         overworldUnit.Experience = experience
         overworldUnits = append(overworldUnits, overworldUnit)
     }
@@ -4034,7 +4034,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     create := decision.(*playerlib.AICreateUnitDecision)
                     log.Printf("ai %v creating %+v", player.Wizard.Name, create)
 
-                    overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+                    overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
                     player.AddUnit(overworldUnit)
                     game.ResolveStackAt(create.X, create.Y, create.Plane)
                 case *playerlib.AIBuildOutpostDecision:
@@ -4577,6 +4577,17 @@ func (game *Game) GetInfluenceMagic(x int, y int, plane data.Plane) data.MagicTy
     }
 
     return data.MagicNone
+}
+
+// true if any alive player has the given enchantment enabled
+func (game *Game) HasEnchantment(enchantment data.Enchantment) bool {
+    for _, player := range game.Players {
+        if !player.Defeated && player.HasEnchantment(enchantment) {
+            return true
+        }
+    }
+
+    return false
 }
 
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
@@ -6872,7 +6883,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 }
             case *citylib.CityEventNewUnit:
                 newUnit := event.(*citylib.CityEventNewUnit)
-                overworldUnit := units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo())
+                overworldUnit := units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
                 // only normal units get weapon bonuses
                 if overworldUnit.GetRace() != data.RaceFantastic {
                     overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)

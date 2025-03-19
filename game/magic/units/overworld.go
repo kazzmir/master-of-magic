@@ -3,6 +3,7 @@ package units
 import (
     "slices"
     "cmp"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -25,6 +26,23 @@ type EnchantmentProvider interface {
     HasEnchantmentOnly(data.UnitEnchantment) bool
 }
 
+type GlobalEnchantmentProvider interface {
+    // true if the owner of this unit has the enchantment active
+    HasFriendlyEnchantment(data.Enchantment) bool
+    // true if any wizard has the enchantment active (useful for enchantments with negative effects)
+    HasEnchantment(data.Enchantment) bool
+}
+
+// a default empty implementation of GlobalEnchantmentProvider
+type NoEnchantments struct {}
+func (*NoEnchantments) HasFriendlyEnchantment(enchantment data.Enchantment) bool {
+    return false
+}
+
+func (*NoEnchantments) HasEnchantment(enchantment data.Enchantment) bool {
+    return false
+}
+
 type OverworldUnit struct {
     ExperienceInfo ExperienceInfo
     Unit Unit
@@ -44,6 +62,8 @@ type OverworldUnit struct {
     Busy BusyStatus
 
     Enchantments []data.UnitEnchantment
+
+    GlobalEnchantments GlobalEnchantmentProvider
 
     // this should be set during combat to the ArmyUnit, and unset at all other times
     ExtraEnchantments EnchantmentProvider
@@ -704,6 +724,11 @@ func (unit *OverworldUnit) GetFullHitPoints() int {
     for _, enchantment := range unit.Enchantments {
         base += unit.HitPointsEnchantmentBonus(enchantment)
     }
+
+    if unit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentCharmOfLife) {
+        base = int(math.Ceil(float64(base) * 1.25))
+    }
+
     return base
 }
 
@@ -747,16 +772,17 @@ func (unit *OverworldUnit) GetAbilities() []data.Ability {
 }
 
 func MakeOverworldUnit(unit Unit, x int, y int, plane data.Plane) *OverworldUnit {
-    return MakeOverworldUnitFromUnit(unit, x, y, plane, data.BannerBrown, nil)
+    return MakeOverworldUnitFromUnit(unit, x, y, plane, data.BannerBrown, nil, nil)
 }
 
-func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType, experienceInfo ExperienceInfo) *OverworldUnit {
+func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType, experienceInfo ExperienceInfo, globalEnchantment GlobalEnchantmentProvider) *OverworldUnit {
     return &OverworldUnit{
         Unit: unit,
         Banner: banner,
         Plane: plane,
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
         ExperienceInfo: experienceInfo,
+        GlobalEnchantments: globalEnchantment,
         X: x,
         Y: y,
     }

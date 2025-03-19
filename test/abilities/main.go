@@ -161,7 +161,7 @@ func NewEngine(scenario int) (*Engine, error) {
 
             baseUnit.Abilities = allAbilities()
 
-            hero := herolib.MakeHero(units.MakeOverworldUnitFromUnit(baseUnit, 1, 1, data.PlaneArcanus, data.BannerBrown, &Experience{}), herolib.HeroRakir, "rakir")
+            hero := herolib.MakeHero(units.MakeOverworldUnitFromUnit(baseUnit, 1, 1, data.PlaneArcanus, data.BannerBrown, &Experience{}, &units.NoEnchantments{}), herolib.HeroRakir, "rakir")
 
             hero.AddEnchantment(data.UnitEnchantmentBless)
             hero.AddEnchantment(data.UnitEnchantmentGiantStrength)

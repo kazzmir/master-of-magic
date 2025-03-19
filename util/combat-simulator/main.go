@@ -391,12 +391,12 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
     cpuPlayer := playerlib.MakePlayer(setup.WizardCustom{
         Name: "CPU",
         Banner: data.BannerRed,
-    }, false, 0, 0, nil)
+    }, false, 0, 0, nil, &playerlib.NoGlobalEnchantments{})
 
     humanPlayer := playerlib.MakePlayer(setup.WizardCustom{
         Name: "Human",
         Banner: data.BannerGreen,
-    }, true, 0, 0, nil)
+    }, true, 0, 0, nil, &playerlib.NoGlobalEnchantments{})
 
     humanPlayer.CastingSkillPower = 10000
     humanPlayer.Mana = 1000
@@ -425,7 +425,7 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
     }
 
     for _, unit := range combatDescription.DefenderUnits {
-        made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, cpuPlayer.Wizard.Banner, cpuPlayer.MakeExperienceInfo())
+        made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, cpuPlayer.Wizard.Banner, cpuPlayer.MakeExperienceInfo(), cpuPlayer.MakeUnitEnchantmentProvider())
 
         if made.GetRace() == data.RaceHero {
             defendingArmy.AddUnit(makeHero(made))
@@ -441,7 +441,7 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
     }
 
     for _, unit := range combatDescription.AttackerUnits {
-        made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, humanPlayer.Wizard.Banner, humanPlayer.MakeExperienceInfo())
+        made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, humanPlayer.Wizard.Banner, humanPlayer.MakeExperienceInfo(), humanPlayer.MakeUnitEnchantmentProvider())
         if made.GetRace() == data.RaceHero {
             attackingArmy.AddUnit(makeHero(made))
         } else {
