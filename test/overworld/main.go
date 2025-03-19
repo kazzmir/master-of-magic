@@ -1522,11 +1522,17 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.AddBuilding(buildinglib.BuildingFortress)
+    city.AddBuilding(buildinglib.BuildingShrine)
+    city.AddBuilding(buildinglib.BuildingMarketplace)
+    city.AddBuilding(buildinglib.BuildingWizardsGuild)
+    city.AddBuilding(buildinglib.BuildingBank)
     city.Race = wizard.Race
     city.Farmers = 3
     city.Workers = 3
 
     city.ResetCitizens()
+
+    city.AddEnchantment(data.CityEnchantmentChaosRift, data.BannerGreen)
 
     player.AddCity(city)
 

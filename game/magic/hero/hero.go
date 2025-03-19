@@ -596,7 +596,7 @@ func (hero *Hero) GetCombatRangeIndex(facing units.Facing) int {
 }
 
 func (hero *Hero) GetHealth() int {
-    return hero.Unit.GetHealth()
+    return hero.GetMaxHealth() - hero.GetDamage()
 }
 
 func (hero *Hero) GetMaxHealth() int {
