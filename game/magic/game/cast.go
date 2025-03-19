@@ -327,7 +327,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /*
             GLOBAL ENCHANTMENTS
                 TODO:
-                Charm of Life
                 Holy Arms
                 Planar Seal
                 Herb Mastery
@@ -342,6 +341,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Evil Omens
                 Zombie Mastery
         */
+        case "Charm of Life":
+            enchantment := data.EnchantmentCharmOfLife
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+
         case "Awareness":
             if !player.GlobalEnchantments.Contains(data.EnchantmentAwareness) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentAwareness}
