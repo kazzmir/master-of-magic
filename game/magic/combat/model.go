@@ -743,7 +743,7 @@ func (unit *ArmyUnit) GetBaseResistance() int {
 }
 
 func (unit *ArmyUnit) GetFullHitPoints() int {
-    base := unit.Unit.GetHitPoints()
+    base := unit.GetBaseHitPoints()
     for _, enchantment := range unit.Enchantments {
         base += unit.Unit.HitPointsEnchantmentBonus(enchantment)
     }
@@ -1088,7 +1088,7 @@ func (unit *ArmyUnit) GetFullDefense() int {
 }
 
 // get defense against a specific magic type
-func (unit *ArmyUnit) GetDefenseFor(magic data.MagicType) int {
+func GetDefenseFor(unit UnitDamage, magic data.MagicType) int {
     // berserk prevents any enchantments from applying
     if unit.HasEnchantment(data.UnitEnchantmentBerserk) {
         return 0
@@ -1493,7 +1493,20 @@ type DamageModifiers struct {
     DamageType DamageType
 }
 
-func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, modifiers DamageModifiers) int {
+type UnitDamage interface {
+    IsAsleep() bool
+    HasAbility(ability data.AbilityType) bool
+    HasEnchantment(enchantment data.UnitEnchantment) bool
+    GetDefense() int
+    ToDefend(modifiers DamageModifiers) int
+    TakeDamage(damage int, damageType DamageType)
+    GetHealth() int
+    GetMaxHealth() int
+    GetCount() int
+    Figures() int
+}
+
+func ComputeDefense(unit UnitDamage, damage units.Damage, source DamageSource, modifiers DamageModifiers) int {
     if unit.IsAsleep() {
         return 0
     }
@@ -1505,7 +1518,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, m
 
     switch damage {
         case units.DamageRangedMagical:
-            defenseRolls = unit.GetDefenseFor(modifiers.Magic)
+            defenseRolls = GetDefenseFor(unit, modifiers.Magic)
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1523,7 +1536,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, m
                 hasImmunity = true
             }
         case units.DamageImmolation:
-            defenseRolls = unit.GetDefenseFor(data.ChaosMagic)
+            defenseRolls = GetDefenseFor(unit, data.ChaosMagic)
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1538,7 +1551,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, m
             }
 
         case units.DamageFire:
-            defenseRolls = unit.GetDefenseFor(modifiers.Magic)
+            defenseRolls = GetDefenseFor(unit, modifiers.Magic)
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1547,7 +1560,7 @@ func (unit *ArmyUnit) ComputeDefense(damage units.Damage, source DamageSource, m
                 hasImmunity = true
             }
         case units.DamageCold:
-            defenseRolls = unit.GetDefenseFor(modifiers.Magic)
+            defenseRolls = GetDefenseFor(unit, modifiers.Magic)
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1645,7 +1658,7 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
         // FIXME: should this toHit=30 be based on the unit's toHitMelee?
         damage := ComputeRoll(attackStrength, 30)
 
-        defense := unit.ComputeDefense(damageType, DamageSourceSpell, DamageModifiers{WallDefense: wallDefense})
+        defense := ComputeDefense(unit, damageType, DamageSourceSpell, DamageModifiers{WallDefense: wallDefense})
 
         // can't do more damage than a single figure has HP
         figureDamage := unit.ReduceInvulnerability(min(damage - defense, health_per_figure))
@@ -1654,28 +1667,28 @@ func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damag
         }
     }
 
-    totalDamage = min(totalDamage, unit.Unit.GetHealth())
+    totalDamage = min(totalDamage, unit.GetHealth())
     unit.TakeDamage(totalDamage, DamageNormal)
     return totalDamage
 }
 
 // apply damage to lead figure, and if it dies then keep applying remaining damage to the next figure
 // FIXME: its possible that the damage can be passed to ComputeRoll() to determine how much actual damage is done
-func (unit *ArmyUnit) ApplyDamage(damage int, damageType units.Damage, modifiers DamageModifiers) int {
+func ApplyDamage(unit UnitDamage, damage int, damageType units.Damage, source DamageSource, modifiers DamageModifiers) int {
     isMagic := damageType == units.DamageRangedMagical || damageType == units.DamageFire || damageType == units.DamageCold
     if isMagic && unit.HasAbility(data.AbilityMagicImmunity) {
         return 0
     }
 
     taken := 0
-    for damage > 0 && unit.Unit.GetHealth() > 0 {
+    for damage > 0 && unit.GetHealth() > 0 {
         // compute defense, apply damage to lead figure. if lead figure dies, apply damage to next figure
-        defense := unit.ComputeDefense(damageType, unit.GetDamageSource(), modifiers)
+        defense := ComputeDefense(unit, damageType, source, modifiers)
         damage -= defense
 
         if damage > 0 {
             health_per_figure := unit.GetMaxHealth() / unit.GetCount()
-            healthLeft := unit.Unit.GetHealth() % unit.Figures()
+            healthLeft := unit.GetHealth() % unit.Figures()
             if healthLeft == 0 {
                 healthLeft = health_per_figure
             }
@@ -2993,7 +3006,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
             // one breath attack per figure
             for range attacker.Figures() {
                 attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee(defender))
-                fireDamage += defender.ApplyDamage(defender.ReduceInvulnerability(attackerDamage), units.DamageFire, DamageModifiers{Magic: data.ChaosMagic})
+                fireDamage += ApplyDamage(defender, defender.ReduceInvulnerability(attackerDamage), units.DamageFire, attacker.GetDamageSource(), DamageModifiers{Magic: data.ChaosMagic})
             }
             model.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
             // damage += fireDamage
@@ -3009,7 +3022,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
             lightningDamage := 0
             for range attacker.Figures() {
                 attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee(defender))
-                lightningDamage += defender.ApplyDamage(defender.ReduceInvulnerability(attackerDamage), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                lightningDamage += ApplyDamage(defender, defender.ReduceInvulnerability(attackerDamage), units.DamageRangedMagical, attacker.GetDamageSource(), DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             }
             model.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
             // damage += lightningDamage
@@ -3309,7 +3322,7 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
         modifiers.DamageType = DamageUndead
     }
 
-    hurt := defender.ApplyDamage(damage, units.DamageMeleePhysical, modifiers)
+    hurt := ApplyDamage(defender, damage, units.DamageMeleePhysical, attacker.GetDamageSource(), modifiers)
     model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.GetHealth()))
 }
 
@@ -3535,7 +3548,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 }
 
                 if throwDamage > 0 {
-                    damage := defender.ApplyDamage(throwDamage, units.DamageThrown, DamageModifiers{
+                    damage := ApplyDamage(defender, throwDamage, units.DamageThrown, attacker.GetDamageSource(), DamageModifiers{
                         ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
                         NegateWeaponImmunity: attacker.CanNegateWeaponImmunity(),
                         EldritchWeapon: attacker.HasEnchantment(data.UnitEnchantmentEldritchWeapon),

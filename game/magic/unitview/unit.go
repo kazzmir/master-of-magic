@@ -143,6 +143,10 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     options := defaultOptions
     options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), float64(smallFont.Height() + 2))
     renderUpkeep(screen, imageCache, unit, options)
+
+    options.GeoM.Translate(80, 0)
+    x, y = options.GeoM.Apply(0, 0)
+    smallFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("Damage: %v", unit.GetDamage()))
 }
 
 func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions, discountedCost int) {

@@ -7601,6 +7601,53 @@ func (game *Game) DoRandomEvents() {
     game.RandomEvents = keep
 }
 
+func (game *Game) doChaosRift() {
+    for _, city := range game.AllCities() {
+        if city.HasEnchantment(data.CityEnchantmentChaosRift) {
+
+            // do 5 magical attacks of strength 8 to units in the city
+            stack, player := game.FindStack(city.X, city.Y, city.Plane)
+            if stack != nil && !stack.IsEmpty() {
+                stackUnits := stack.Units()
+                for range 5 {
+                    choice := stackUnits[rand.N(len(stackUnits))]
+
+                    // regeneration units are never hurt by overland spells
+                    if choice.HasAbility(data.AbilityRegeneration) {
+                        continue
+                    }
+
+                    wrapper := &UnitDamageWrapper{Unit: choice}
+
+                    combat.ApplyDamage(wrapper, wrapper.ReduceInvulnerability(combat.ComputeRoll(8, 30)), units.DamageRangedMagical, combat.DamageSourceSpell, combat.DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                }
+
+                // check for dead units
+                for _, unit := range stackUnits {
+                    if unit.GetHealth() <= 0 {
+                        player.RemoveUnit(unit)
+                    }
+                }
+            }
+
+            // each building has a 5% chance of being destroyed
+            var destroyedBuildings []buildinglib.Building
+            for _, building := range city.Buildings.Values() {
+                if game.BuildingInfo.ProductionCost(building) != 0 {
+                    if rand.N(100) < 5 {
+                        destroyedBuildings = append(destroyedBuildings, building)
+                    }
+                }
+            }
+
+            for _, building := range destroyedBuildings {
+                // emit a notice?
+                city.Buildings.Remove(building)
+            }
+        }
+    }
+}
+
 func (game *Game) EndOfTurn() {
     // put stuff here that should happen when all players have taken their turn
 
@@ -7609,6 +7656,8 @@ func (game *Game) EndOfTurn() {
     game.doArmageddon()
 
     game.doGreatWasting()
+
+    game.doChaosRift()
 
     game.TurnNumber += 1
 

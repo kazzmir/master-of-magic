@@ -64,6 +64,7 @@ type UnitView interface {
     IsFlying() bool
     IsSwimmer() bool
     IsInvisible() bool
+    GetDamage() int
     GetVisibleCount() int
     GetBanner() data.BannerType
     GetName() string
