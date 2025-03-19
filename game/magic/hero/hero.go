@@ -4,6 +4,7 @@ import (
     "fmt"
     "slices"
     "math/rand/v2"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -1396,6 +1397,10 @@ func (hero *Hero) GetFullHitPoints() int {
 
     for _, enchantment := range hero.GetEnchantments() {
         base += hero.HitPointsEnchantmentBonus(enchantment)
+    }
+
+    if hero.Unit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentCharmOfLife) {
+        base = int(math.Ceil(float64(base) * 1.25))
     }
 
     return base + hero.GetAbilityHealth()
