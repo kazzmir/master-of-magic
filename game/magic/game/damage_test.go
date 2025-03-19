@@ -6,6 +6,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/game/magic/hero"
 )
 
 type NoExperienceInfo struct {
@@ -21,6 +22,7 @@ func (noInfo *NoExperienceInfo) Crusade() bool {
 
 func TestDamageNormal(test *testing.T) {
     testUnit := units.LizardSpearmen
+    // prevent defense rolls so the damage is deterministic
     testUnit.Defense = 0
 
     baseUnit := units.MakeOverworldUnitFromUnit(testUnit, 1, 1, data.PlaneArcanus, data.BannerRed, &NoExperienceInfo{})
@@ -29,24 +31,63 @@ func TestDamageNormal(test *testing.T) {
         Unit: baseUnit,
     }
 
-    if wrapper.GetHealth() != 16 {
-        test.Errorf("expected health to be 16, got %d", wrapper.GetHealth())
+    maxHealth := testUnit.HitPoints * testUnit.Count
+
+    if wrapper.GetHealth() != maxHealth {
+        test.Errorf("expected health to be %v, got %d", maxHealth, wrapper.GetHealth())
     }
 
-    if baseUnit.GetHealth() != 16 {
-        test.Errorf("expected health to be 16, got %d", baseUnit.GetHealth())
+    if baseUnit.GetHealth() != maxHealth {
+        test.Errorf("expected health to be %v, got %d", maxHealth, baseUnit.GetHealth())
     }
 
-    damage := combat.ApplyDamage(&wrapper, 4, units.DamageRangedMagical, combat.DamageSourceSpell, combat.DamageModifiers{Magic: data.ChaosMagic})
-    if damage != 4 {
-        test.Errorf("expected 4 damage, got %d", damage)
+    strength := 4
+
+    damage := combat.ApplyDamage(&wrapper, strength, units.DamageRangedMagical, combat.DamageSourceSpell, combat.DamageModifiers{Magic: data.ChaosMagic})
+    if damage != strength {
+        test.Errorf("expected %v damage, got %d", strength, damage)
     }
 
-    if wrapper.GetHealth() != 12 {
-        test.Errorf("expected health to be 12, got %d", wrapper.GetHealth())
+    if wrapper.GetHealth() != maxHealth - strength {
+        test.Errorf("expected health to be %v, got %d", maxHealth - strength, wrapper.GetHealth())
     }
 
-    if baseUnit.GetHealth() != 12 {
-        test.Errorf("expected health to be 12, got %d", baseUnit.GetHealth())
+    if baseUnit.GetHealth() != maxHealth - strength {
+        test.Errorf("expected health to be %v, got %d", maxHealth - strength, baseUnit.GetHealth())
+    }
+}
+
+func TestDamageHero(test *testing.T) {
+    testUnit := units.HeroRakir
+    // prevent defense rolls so the damage is deterministic
+    testUnit.Defense = 0
+
+    baseUnit := hero.MakeHero(units.MakeOverworldUnitFromUnit(testUnit, 1, 1, data.PlaneArcanus, data.BannerRed, &NoExperienceInfo{}), hero.HeroRakir, "Rakir")
+
+    wrapper := UnitDamageWrapper{
+        Unit: baseUnit,
+    }
+
+    if wrapper.GetHealth() != units.HeroRakir.HitPoints {
+        test.Errorf("expected health to be %v, got %d", units.HeroRakir.HitPoints, wrapper.GetHealth())
+    }
+
+    if baseUnit.GetHealth() != units.HeroRakir.HitPoints {
+        test.Errorf("expected health to be %v, got %d", units.HeroRakir.HitPoints, baseUnit.GetHealth())
+    }
+
+    strength := 4
+
+    damage := combat.ApplyDamage(&wrapper, strength, units.DamageRangedMagical, combat.DamageSourceSpell, combat.DamageModifiers{Magic: data.ChaosMagic})
+    if damage != strength {
+        test.Errorf("expected %v damage, got %d", strength, damage)
+    }
+
+    if wrapper.GetHealth() != units.HeroRakir.HitPoints - strength {
+        test.Errorf("expected health to be %v, got %d", units.HeroRakir.HitPoints - strength, wrapper.GetHealth())
+    }
+
+    if baseUnit.GetHealth() != units.HeroRakir.HitPoints - strength {
+        test.Errorf("expected health to be %v, got %d", units.HeroRakir.HitPoints - strength, baseUnit.GetHealth())
     }
 }
