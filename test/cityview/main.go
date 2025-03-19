@@ -157,11 +157,11 @@ func NewEngine() (*Engine, error) {
     city.AddEnchantment(data.CityEnchantmentSorceryWard, data.BannerRed)
 
     for i := 0; i < 2; i++ {
-        unit := units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo())
+        unit := units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
         player.AddUnit(unit)
     }
     for i := 0; i < 4; i++ {
-        unit := units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo())
+        unit := units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
         player.AddUnit(unit)
     }
 

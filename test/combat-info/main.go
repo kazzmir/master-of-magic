@@ -60,7 +60,7 @@ func NewEngine(scenario int) (*Engine, error) {
     */
 
     // warlock := units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, data.BannerRed, &ExperienceInfo{})
-    slingers := units.MakeOverworldUnitFromUnit(units.Slingers, 1, 1, data.PlaneArcanus, data.BannerRed, &ExperienceInfo{})
+    slingers := units.MakeOverworldUnitFromUnit(units.Slingers, 1, 1, data.PlaneArcanus, data.BannerRed, &ExperienceInfo{}, &units.NoEnchantments{})
 
     // angel := units.MakeOverworldUnitFromUnit(units.ArchAngel, 1, 1, data.PlaneArcanus, data.BannerRed, &ExperienceInfo{})
 

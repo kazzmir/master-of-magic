@@ -261,7 +261,7 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
     player.AddCity(introCity)
 
     for _, unit := range startingUnits(player.Wizard.Race) {
-        player.AddUnit(units.MakeOverworldUnitFromUnit(unit, cityX, cityY, startingPlane, wizard.Banner, player.MakeExperienceInfo()))
+        player.AddUnit(units.MakeOverworldUnitFromUnit(unit, cityX, cityY, startingPlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     }
 
     player.LiftFog(cityX, cityY, 3, introCity.Plane)

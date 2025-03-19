@@ -83,8 +83,8 @@ func (no *NoServices) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[da
 }
 
 func TestChangeCityOwner(test *testing.T){
-    player1 := playerlib.MakePlayer(setup.WizardCustom{Banner: data.BannerRed, Race: data.RaceDraconian}, true, 1, 1, make(map[herolib.HeroType]string))
-    player2 := playerlib.MakePlayer(setup.WizardCustom{Banner: data.BannerGreen, Race: data.RaceDarkElf}, true, 1, 1, make(map[herolib.HeroType]string))
+    player1 := playerlib.MakePlayer(setup.WizardCustom{Banner: data.BannerRed, Race: data.RaceDraconian}, true, 1, 1, make(map[herolib.HeroType]string), nil)
+    player2 := playerlib.MakePlayer(setup.WizardCustom{Banner: data.BannerGreen, Race: data.RaceDarkElf}, true, 1, 1, make(map[herolib.HeroType]string), nil)
     player1.TaxRate = fraction.Zero()
     player2.TaxRate = fraction.FromInt(2)
 

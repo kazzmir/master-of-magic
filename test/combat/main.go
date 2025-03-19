@@ -59,7 +59,7 @@ func createWarlockArmy(player *player.Player) *combat.Army {
         Y: 10,
     },
     */
-    unit1 := units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo())
+    unit1 := units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
             /*
             &combat.ArmyUnit{
                 Unit: units.HighElfSpearmen,
@@ -87,7 +87,7 @@ func createWarlockArmyN(player *player.Player, count int) *combat.Army {
     }
 
     for i := 0; i < count; i++ {
-        warlock := units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo())
+        warlock := units.MakeOverworldUnitFromUnit(units.Warlocks, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
         if i == 0 {
             warlock.AddEnchantment(data.UnitEnchantmentGiantStrength)
         }
@@ -103,7 +103,7 @@ func createArmyN(player *player.Player, unit units.Unit, count int) *combat.Army
     }
 
     for i := 0; i < count; i++ {
-        made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo())
+        made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
         army.AddUnit(made)
     }
 
@@ -116,7 +116,7 @@ func createLizardmenArmy(player *player.Player, count int) *combat.Army {
     }
 
     for range count {
-        army.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSwordsmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSwordsmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     }
 
     return &army
@@ -128,7 +128,7 @@ func createHighMenBowmanArmyN(player *player.Player, count int) *combat.Army {
     }
 
     for i := 0; i < count; i++ {
-        army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     }
 
     return &army
@@ -136,7 +136,7 @@ func createHighMenBowmanArmyN(player *player.Player, count int) *combat.Army {
 
 func createHighMenBowmanArmy(player *player.Player) *combat.Army {
     army := combat.Army{Player: player}
-    unit := units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo())
+    unit := units.MakeOverworldUnitFromUnit(units.HighMenBowmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
     army.AddUnit(unit)
     return &army
 }
@@ -144,7 +144,7 @@ func createHighMenBowmanArmy(player *player.Player) *combat.Army {
 func createGreatDrakeArmy(player *player.Player, N int) *combat.Army{
     army := combat.Army{Player: player}
     for range N {
-        army.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     }
     return &army
 }
@@ -153,7 +153,7 @@ func createSettlerArmy(player *player.Player, count int) *combat.Army{
     army := combat.Army{Player: player}
 
     for range count {
-        army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSettlers, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSettlers, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     }
 
     return &army
@@ -162,7 +162,7 @@ func createSettlerArmy(player *player.Player, count int) *combat.Army{
 func createArchAngelArmy(player *player.Player) *combat.Army {
     army := combat.Army{Player: player}
 
-    army.AddUnit(units.MakeOverworldUnitFromUnit(units.ArchAngel, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+    army.AddUnit(units.MakeOverworldUnitFromUnit(units.ArchAngel, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
     return &army
 }
@@ -170,11 +170,11 @@ func createArchAngelArmy(player *player.Player) *combat.Army {
 func createDeathCreatureArmy(player *player.Player) *combat.Army {
     army := combat.Army{Player: player}
 
-    army.AddUnit(units.MakeOverworldUnitFromUnit(units.DemonLord, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+    army.AddUnit(units.MakeOverworldUnitFromUnit(units.DemonLord, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
     // not death, but whatever
-    army.AddUnit(units.MakeOverworldUnitFromUnit(units.HellHounds, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
-    army.AddUnit(units.MakeOverworldUnitFromUnit(units.Hydra, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+    army.AddUnit(units.MakeOverworldUnitFromUnit(units.HellHounds, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    army.AddUnit(units.MakeOverworldUnitFromUnit(units.Hydra, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
     return &army
 }
@@ -182,7 +182,7 @@ func createDeathCreatureArmy(player *player.Player) *combat.Army {
 func createHeroArmy(player *player.Player, cache *lbx.LbxCache) *combat.Army {
     army := combat.Army{Player: player}
 
-    rakir := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroRakir, "bubba")
+    rakir := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), herolib.HeroRakir, "bubba")
 
     rakir.Equipment[0] = &artifact.Artifact{
         Type: artifact.ArtifactTypeSword,
@@ -215,7 +215,7 @@ func createHeroArmy(player *player.Player, cache *lbx.LbxCache) *combat.Army {
         },
     }
 
-    torin := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()), herolib.HeroTorin, "warby")
+    torin := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), herolib.HeroTorin, "warby")
     torin.Equipment[0] = &item
 
     army.AddUnit(torin)
@@ -227,7 +227,7 @@ func createWeakArmy(player *player.Player) *combat.Army {
     army := combat.Army{Player: player}
 
     for range 2 {
-        army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo()))
+        army.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSpearmen, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     }
 
     return &army
@@ -258,11 +258,18 @@ func (basic *BasicCatchment) TileDistance(x1 int, y1 int, x2 int, y2 int) int {
     return int(math.Sqrt(float64(dx * dx + dy * dy)))
 }
 
+type noGlobalEnchantments struct {
+}
+
+func (*noGlobalEnchantments) HasEnchantment(enchantment data.Enchantment) bool {
+    return false
+}
+
 func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
             Banner: data.BannerBrown,
-        }, false, 0, 0, nil)
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
@@ -286,7 +293,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerGreen,
-        }, true, 0, 0, nil)
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
 
     fortressCity := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, &BasicCatchment{}, nil, attackingPlayer)
     fortressCity.Buildings.Insert(buildinglib.BuildingFortress)
@@ -403,7 +410,7 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
             Banner: data.BannerBlue,
-        }, false, 0, 0, nil)
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -420,7 +427,7 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerRed,
-        }, true, 0, 0, nil)
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
 
     attackingPlayer.CastingSkillPower = 10
 
@@ -435,7 +442,7 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
             Banner: data.BannerBlue,
-        }, false, 0, 0, nil)
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -450,7 +457,7 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerRed,
-        }, true, 0, 0, nil)
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
 
     attackingPlayer.CastingSkillPower = 10000
     attackingPlayer.Mana = 10000
@@ -473,7 +480,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, 0, 0, nil)
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(defendingPlayer)
     // defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -490,7 +497,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, 0, 0, nil)
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
 
     attackingPlayer.CastingSkillPower = 10000
     attackingPlayer.Mana = 1000
@@ -522,7 +529,7 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, 0, 0, nil)
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -540,7 +547,7 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, 0, 0, nil)
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
 
     attackingPlayer.CastingSkillPower = 10
     attackingPlayer.TaxRate = fraction.Zero()
@@ -559,7 +566,7 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, 0, 0, nil)
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -577,7 +584,7 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, 0, 0, nil)
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
 
     attackingPlayer.CastingSkillPower = 10
     attackingPlayer.TaxRate = fraction.Zero()
@@ -597,7 +604,7 @@ func makeScenario7(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, 0, 0, nil)
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -615,7 +622,7 @@ func makeScenario7(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, 0, 0, nil)
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
 
     attackingPlayer.CastingSkillPower = 10
     attackingPlayer.TaxRate = fraction.Zero()
@@ -635,7 +642,7 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, 0, 0, nil)
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createDeathCreatureArmy(defendingPlayer)
@@ -655,7 +662,7 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, 0, 0, nil)
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
 
     attackingPlayer.TaxRate = fraction.Zero()
 
@@ -684,7 +691,7 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
 
     attackingArmy := createArchAngelArmy(attackingPlayer)
 
-    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GiantSpiders, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()))
+    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GiantSpiders, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
 
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 

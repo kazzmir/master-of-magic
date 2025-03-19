@@ -254,11 +254,11 @@ func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
 
 func TestFireballSpell(test *testing.T){
     defendingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackerUnit := units.LizardSpearmen

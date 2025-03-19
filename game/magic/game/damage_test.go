@@ -25,7 +25,7 @@ func TestDamageNormal(test *testing.T) {
     // prevent defense rolls so the damage is deterministic
     testUnit.Defense = 0
 
-    baseUnit := units.MakeOverworldUnitFromUnit(testUnit, 1, 1, data.PlaneArcanus, data.BannerRed, &NoExperienceInfo{})
+    baseUnit := units.MakeOverworldUnitFromUnit(testUnit, 1, 1, data.PlaneArcanus, data.BannerRed, &NoExperienceInfo{}, &units.NoEnchantments{})
 
     wrapper := UnitDamageWrapper{
         Unit: baseUnit,
@@ -62,7 +62,7 @@ func TestDamageHero(test *testing.T) {
     // prevent defense rolls so the damage is deterministic
     testUnit.Defense = 0
 
-    baseUnit := hero.MakeHero(units.MakeOverworldUnitFromUnit(testUnit, 1, 1, data.PlaneArcanus, data.BannerRed, &NoExperienceInfo{}), hero.HeroRakir, "Rakir")
+    baseUnit := hero.MakeHero(units.MakeOverworldUnitFromUnit(testUnit, 1, 1, data.PlaneArcanus, data.BannerRed, &NoExperienceInfo{}, &units.NoEnchantments{}), hero.HeroRakir, "Rakir")
 
     wrapper := UnitDamageWrapper{
         Unit: baseUnit,
