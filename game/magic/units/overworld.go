@@ -3,6 +3,7 @@ package units
 import (
     "slices"
     "cmp"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -723,6 +724,11 @@ func (unit *OverworldUnit) GetFullHitPoints() int {
     for _, enchantment := range unit.Enchantments {
         base += unit.HitPointsEnchantmentBonus(enchantment)
     }
+
+    if unit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentCharmOfLife) {
+        base = int(math.Ceil(float64(base) * 1.25))
+    }
+
     return base
 }
 
