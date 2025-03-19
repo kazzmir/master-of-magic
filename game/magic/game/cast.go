@@ -276,9 +276,16 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         /*
             TOWN CURSES
-                TODO:
-                Chaos Rift
         */
+        case "Chaos Rift":
+            before := func (city *citylib.City) bool {
+                if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
+                    game.ShowFizzleSpell(spell, player)
+                    return false
+                }
+                return true
+            }
+            game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentChaosRift, before, noCityCallback)
         case "Cursed Lands":
             before := func (city *citylib.City) bool {
                 if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
