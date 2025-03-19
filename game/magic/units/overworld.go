@@ -307,7 +307,7 @@ func (unit *OverworldUnit) GetDamage() int {
 }
 
 func (unit *OverworldUnit) GetMaxHealth() int {
-    return unit.GetHitPoints() * unit.GetCount()
+    return unit.GetFullHitPoints() * unit.GetCount()
 }
 
 func (unit *OverworldUnit) GetToHitMelee() int {
@@ -700,7 +700,11 @@ func (unit *OverworldUnit) GetBaseResistance() int {
 }
 
 func (unit *OverworldUnit) GetFullHitPoints() int {
-    return unit.GetHitPoints()
+    base := unit.GetBaseHitPoints()
+    for _, enchantment := range unit.Enchantments {
+        base += unit.HitPointsEnchantmentBonus(enchantment)
+    }
+    return base
 }
 
 func (unit *OverworldUnit) HitPointsEnchantmentBonus(enchantment data.UnitEnchantment) int {
@@ -711,15 +715,8 @@ func (unit *OverworldUnit) HitPointsEnchantmentBonus(enchantment data.UnitEnchan
     return 0
 }
 
-// does not account for damage
 func (unit *OverworldUnit) GetHitPoints() int {
-    base := unit.GetBaseHitPoints()
-
-    for _, enchantment := range unit.Enchantments {
-        base += unit.HitPointsEnchantmentBonus(enchantment)
-    }
-
-    return base
+    return (unit.GetMaxHealth() - unit.GetDamage()) / unit.GetCount()
 }
 
 func (unit *OverworldUnit) GetBaseHitPoints() int {

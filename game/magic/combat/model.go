@@ -743,7 +743,7 @@ func (unit *ArmyUnit) GetBaseResistance() int {
 }
 
 func (unit *ArmyUnit) GetFullHitPoints() int {
-    base := unit.Unit.GetHitPoints()
+    base := unit.GetBaseHitPoints()
     for _, enchantment := range unit.Enchantments {
         base += unit.Unit.HitPointsEnchantmentBonus(enchantment)
     }
