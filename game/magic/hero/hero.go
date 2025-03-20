@@ -285,6 +285,7 @@ type Hero struct {
 func MakeHeroSimple(heroType HeroType) *Hero {
     unit := units.MakeOverworldUnit(heroType.GetUnit(), 0, 0, data.PlaneArcanus)
     unit.ExperienceInfo = &units.NoExperienceInfo{}
+    unit.GlobalEnchantments = &units.NoEnchantments{}
     return MakeHero(unit, heroType, heroType.DefaultName())
 }
 
