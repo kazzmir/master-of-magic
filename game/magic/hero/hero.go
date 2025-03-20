@@ -896,6 +896,10 @@ func (hero *Hero) SetBanner(banner data.BannerType) {
     hero.Unit.SetBanner(banner)
 }
 
+func (hero *Hero) SetGlobalEnchantmentProvider(provider units.GlobalEnchantmentProvider) {
+    hero.Unit.SetGlobalEnchantmentProvider(provider)
+}
+
 func (hero *Hero) GetCombatLbxFile() string {
     return hero.Unit.GetCombatLbxFile()
 }
@@ -973,7 +977,7 @@ func (hero *Hero) GetHeroExperienceLevel() units.HeroExperienceLevel {
 }
 
 func (hero *Hero) SetExperienceInfo(info units.ExperienceInfo) {
-    hero.Unit.ExperienceInfo = info
+    hero.Unit.SetExperienceInfo(info)
 }
 
 func (hero *Hero) ResetOwner() {

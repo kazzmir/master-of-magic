@@ -409,6 +409,14 @@ func (unit *OverworldUnit) HasItemAbility(ability data.ItemAbility) bool {
     return false
 }
 
+func (unit *OverworldUnit) SetGlobalEnchantmentProvider(provider GlobalEnchantmentProvider) {
+    unit.GlobalEnchantments = provider
+}
+
+func (unit *OverworldUnit) SetExperienceInfo(info ExperienceInfo) {
+    unit.ExperienceInfo = info
+}
+
 func (unit *OverworldUnit) SetBanner(banner data.BannerType) {
     unit.Banner = banner
 }

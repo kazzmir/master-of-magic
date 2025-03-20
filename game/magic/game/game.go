@@ -4354,12 +4354,12 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
         return combat.CombatStateNoCombat
     }
 
-    defender := playerlib.Player{
-        Wizard: setup.WizardCustom{
-            Name: encounter.Type.ShortName(),
-        },
-        StrategicCombat: true,
+    wizard := setup.WizardCustom{
+        Name: encounter.Type.ShortName(),
     }
+
+    defender := playerlib.MakePlayer(wizard, false, 1, 1, make(map[herolib.HeroType]string), game)
+    defender.StrategicCombat = true
 
     var enemies []units.StackUnit
 
@@ -4383,7 +4383,7 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
         case maplib.EncounterTypeChaosNode: zone.ChaosNode = true
     }
 
-    result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
+    result := game.doCombat(yield, player, stack, defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
     if result == combat.CombatStateAttackerWin {
         mapUse.RemoveEncounter(x, y)
 
@@ -4754,10 +4754,15 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         attackerFame += winner
         defenderFame += loser
 
+        // some units might have been raised from the dead but been owned by the opposite side
         for _, unit := range attackingArmy.GetUnits() {
             if unit.Unit.GetHealth() > 0 {
                 attackerStack.AddUnit(unit.Unit)
+                // FIXME: its annoying to have to set all 3 of these fields. maybe consolidate them into just
+                // SetOwner(player)
                 unit.Unit.SetBanner(attacker.GetBanner())
+                unit.Unit.SetGlobalEnchantmentProvider(attacker.MakeUnitEnchantmentProvider())
+                unit.Unit.SetExperienceInfo(attacker.MakeExperienceInfo())
                 defender.RemoveUnit(unit.Unit)
             }
         }
@@ -4771,6 +4776,8 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             if unit.Unit.GetHealth() > 0 {
                 defenderStack.AddUnit(unit.Unit)
                 unit.Unit.SetBanner(defender.GetBanner())
+                unit.Unit.SetGlobalEnchantmentProvider(defender.MakeUnitEnchantmentProvider())
+                unit.Unit.SetExperienceInfo(defender.MakeExperienceInfo())
                 attacker.RemoveUnit(unit.Unit)
             }
         }
