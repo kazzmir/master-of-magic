@@ -1883,6 +1883,7 @@ type Army struct {
     RecalledUnits []*ArmyUnit
 
     Enchantments []data.CombatEnchantment
+    Cleanups []func()
 }
 
 func (army *Army) AddEnchantment(enchantment data.CombatEnchantment) bool {
@@ -1909,13 +1910,8 @@ func (army *Army) RemoveEnchantment(enchamtent data.CombatEnchantment) {
 
 // remove mutations done to the underlying stack units
 func (army *Army) Cleanup() {
-    // loop through all unit references and set the enchantment provider to nil
-    for _, unit := range army.KilledUnits {
-        unit.Unit.SetEnchantmentProvider(nil)
-    }
-
-    for _, unit := range army.units {
-        unit.Unit.SetEnchantmentProvider(nil)
+    for _, cleanup := range army.Cleanups {
+        cleanup()
     }
 }
 
@@ -1949,6 +1945,9 @@ func (army *Army) AddUnit(unit units.StackUnit){
     }
     // Warning: it is imperative that unit.SetEnchantmentProvider(nil) is called when combat ends
     unit.SetEnchantmentProvider(armyUnit)
+    army.Cleanups = append(army.Cleanups, func(){
+        unit.SetEnchantmentProvider(nil)
+    })
     army.AddArmyUnit(armyUnit)
 }
 
@@ -2001,8 +2000,6 @@ func (army *Army) KillUnit(kill *ArmyUnit){
     // units that died due to irreversable damage are gone forever
     if kill.DeathReason() != DamageIrreversable {
         army.KilledUnits = append(army.KilledUnits, kill)
-    } else {
-        kill.Unit.SetEnchantmentProvider(nil)
     }
     army.RemoveUnit(kill)
 }
@@ -2063,6 +2060,8 @@ type CombatModel struct {
 
     TurnAttacker int
     TurnDefender int
+
+    Cleanups []func()
 
     // track how many units were killed on each side, so experience
     // can be given out after combat ends
@@ -2718,6 +2717,9 @@ func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, uni
 
     newUnit.Model = model
     newUnit.Unit.SetEnchantmentProvider(&newUnit)
+    model.Cleanups = append(model.Cleanups, func (){
+        newUnit.Unit.SetEnchantmentProvider(nil)
+    })
 
     model.Tiles[y][x].Unit = &newUnit
 
@@ -3778,8 +3780,6 @@ func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
         model.AttackingArmy.RemoveUnit(unit)
     }
 
-    unit.Unit.SetEnchantmentProvider(nil)
-
     model.Tiles[unit.Y][unit.X].Unit = nil
 
     if unit == model.SelectedUnit {
@@ -3981,6 +3981,10 @@ func (model *CombatModel) FinishCombat(state CombatState) {
 
     model.DefendingArmy.Cleanup()
     model.AttackingArmy.Cleanup()
+
+    for _, cleanups := range model.Cleanups {
+        cleanups()
+    }
 }
 
 func (model *CombatModel) InsideMagicNode() bool {
