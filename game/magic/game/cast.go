@@ -327,7 +327,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /*
             GLOBAL ENCHANTMENTS
                 TODO:
-                Planar Seal
                 Herb Mastery
                 Nature's Wrath
                 Aura of Majesty
@@ -359,6 +358,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                     unit.RemoveEnchantment(data.UnitEnchantmentHolyWeapon)
                 }
 
+                game.RefreshUI()
+            }
+        case "Planar Seal":
+            enchantment := data.EnchantmentPlanarSeal
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
                 game.RefreshUI()
             }
 
