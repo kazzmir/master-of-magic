@@ -487,7 +487,7 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
         useNames = make(map[herolib.HeroType]string)
     }
 
-    newPlayer := playerlib.MakePlayer(wizard, human, game.CurrentMap().Width(), game.CurrentMap().Height(), useNames)
+    newPlayer := playerlib.MakePlayer(wizard, human, game.CurrentMap().Width(), game.CurrentMap().Height(), useNames, game)
 
     if !human {
         newPlayer.AIBehavior = ai.MakeEnemyAI()
@@ -1004,15 +1004,37 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
     applyConjunction := func (node *maplib.ExtraMagicNode) float64 {
         nodePower := node.GetPower(magicBonus)
 
-        if magicConjunction != maplib.MagicNodeNone {
-            if magicConjunction != node.Kind {
-                return nodePower * 0.5
-            }
-
-            return nodePower * 2
+        if nodePower < 0 {
+            return nodePower
         }
 
-        return nodePower
+        multiplier := 1.0
+
+        if magicConjunction != maplib.MagicNodeNone {
+            if magicConjunction != node.Kind {
+                multiplier *= 0.5
+            } else {
+                multiplier *= 2
+            }
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortNodeMastery) {
+            multiplier *= 2
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortChaosMastery) && node.Kind == maplib.MagicNodeChaos {
+            multiplier *= 2
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortNatureMastery) && node.Kind == maplib.MagicNodeNature {
+            multiplier *= 2
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortSorceryMastery) && node.Kind == maplib.MagicNodeSorcery {
+            multiplier *= 2
+        }
+
+        return nodePower * multiplier
     }
 
     for _, node := range game.ArcanusMap.GetMeldedNodes(player) {
@@ -2110,7 +2132,7 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, back
 
                 choices := append(append(normalChoices, scaleChoices...), xbrChoices...)
 
-                ui.AddElements(uilib.MakeSelectionUI(ui, game.Cache, imageCache, 40, 10, "Resolution", choices))
+                ui.AddElements(uilib.MakeSelectionUI(ui, game.Cache, imageCache, 40, 10, "Resolution", choices, true))
             },
             Draw: func (element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
@@ -2460,7 +2482,7 @@ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
     // create units
     var overworldUnits []*units.OverworldUnit
     for i := 0; i < count; i++ {
-        overworldUnit := units.MakeOverworldUnitFromUnit(*unit, fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+        overworldUnit := units.MakeOverworldUnitFromUnit(*unit, fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
         overworldUnit.Experience = experience
         overworldUnits = append(overworldUnits, overworldUnit)
     }
@@ -2595,14 +2617,14 @@ func (game *Game) ShowFizzleSpell(spell spellbook.Spell, caster *playerlib.Playe
 
 /* show the given message in an error popup on the screen
  */
-func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
+func (game *Game) doNotice(yield coroutine.YieldFunc, ui *uilib.UI, message string) {
     beep, err := audio.LoadSound(game.Cache, 0)
     if err == nil {
         beep.Play()
     }
 
     quit := false
-    game.HudUI.AddElement(uilib.MakeErrorElement(game.HudUI, game.Cache, &game.ImageCache, message, func(){
+    ui.AddElement(uilib.MakeErrorElement(ui, game.Cache, &game.ImageCache, message, func(){
         quit = true
     }))
 
@@ -2610,7 +2632,7 @@ func (game *Game) doNotice(yield coroutine.YieldFunc, message string) {
 
     for !quit {
         game.Counter += 1
-        game.HudUI.StandardUpdate()
+        ui.StandardUpdate()
         yield()
     }
 
@@ -2796,6 +2818,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
 
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
+    var lastEvent GameEvent
     for {
         select {
             case event := <-game.Events:
@@ -2803,7 +2826,11 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventMagicView:
                         game.doMagicView(yield)
                     case *GameEventRefreshUI:
-                        game.HudUI = game.MakeHudUI()
+                        // compress ui refreshes
+                        switch lastEvent.(type) {
+                            case *GameEventRefreshUI: // nothing, since we just did a refresh
+                            default: game.HudUI = game.MakeHudUI()
+                        }
                     case *GameEventHireHero:
                         hire := event.(*GameEventHireHero)
                         if hire.Player.IsHuman() {
@@ -2835,7 +2862,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doBanish(yield, banishEvent.Attacker, banishEvent.Defender)
                     case *GameEventNotice:
                         notice := event.(*GameEventNotice)
-                        game.doNotice(yield, notice.Message)
+                        game.doNotice(yield, game.HudUI, notice.Message)
                     case *GameEventCastSpellBook:
                         game.ShowSpellBookCastUI(yield, game.Players[0])
                     case *GameEventCityListView:
@@ -2948,6 +2975,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         moveUnit := event.(*GameEventMoveUnit)
                         game.doMoveSelectedUnit(yield, moveUnit.Player)
                 }
+
+                lastEvent = event
             default:
                 return
         }
@@ -3302,7 +3331,7 @@ func (game *Game) FindEscapePosition(player *playerlib.Player, unit units.StackU
 
             // can not contain a friendly full stack
             existing := player.FindStack(cx, cy, plane)
-            if existing != nil && len(existing.Units()) >= 9 {
+            if existing != nil && len(existing.Units()) >= data.MaxUnitsInStack {
                 continue
             }
 
@@ -3327,7 +3356,7 @@ func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
     }
 
     count := len(stack.Units())
-    if count <= 9 {
+    if count <= data.MaxUnitsInStack {
         return
     }
 
@@ -3353,14 +3382,14 @@ func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
             }
 
             count -= 1
-            if count <= 9 {
+            if count <= data.MaxUnitsInStack {
                 break
             }
         }
     }
 
     // kill units until enough room
-    if count > 9 {
+    if count > data.MaxUnitsInStack {
         stackUnits = stack.Units()
         slices.SortFunc(stackUnits, func(unitA, unitB units.StackUnit) int {
             // non-heros before heroes
@@ -3386,7 +3415,7 @@ func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
             log.Printf("Unit %v killed by ResolveStack", unit)
             player.RemoveUnit(unit)
             count -= 1
-            if count <= 9 {
+            if count <= data.MaxUnitsInStack {
                 break
             }
         }
@@ -3500,6 +3529,13 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     stepsTaken := 0
     stopMoving := false
     var mergeStack *playerlib.UnitStack
+    // kind of a hack, in case the stack couldn't move due to spell ward or something we attempt to merge
+    // the stack with whatever stack it is standing on
+    for _, otherStack := range player.FindAllStacks(stack.X(), stack.Y(), stack.Plane()) {
+        if otherStack != stack {
+            mergeStack = otherStack
+        }
+    }
 
     getStack := func(x int, y int) *playerlib.UnitStack {
         return player.FindStack(mapUse.WrapX(x), y, stack.Plane())
@@ -3509,12 +3545,24 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
     quitMoving:
     for i, step := range stack.CurrentPath {
-        if stack.OutOfMoves() {
+        if stack.AnyOutOfMoves() {
             break
         }
 
         oldX := stack.X()
         oldY := stack.Y()
+
+        city := entityInfo.FindCity(step.X, step.Y, stack.Plane())
+        if city != nil {
+            // units might not be able to enter a city if the city has spell wards in effect
+            for _, unit := range stack.ActiveUnits() {
+                if !city.CanEnter(unit) {
+                    stopMoving = true
+                    game.Events <- &GameEventNotice{Message: fmt.Sprintf("%v can not enter the city of %v", unit.GetRawUnit().Name, city.Name)}
+                    break quitMoving
+                }
+            }
+        }
 
         terrainCost, canMove := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), step.X, step.Y, mapUse, getStack)
 
@@ -3620,7 +3668,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     }
 
     // only merge stacks if both stacks are stopped, otherwise they can move through each other
-    if len(stack.CurrentPath) == 0 && mergeStack != nil {
+    if len(stack.CurrentPath) == 0 && mergeStack != nil && mergeStack.X() == stack.X() && mergeStack.Y() == stack.Y() {
         stack = player.MergeStacks(mergeStack, stack)
         player.SelectedStack = stack
         game.RefreshUI()
@@ -3712,22 +3760,51 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                             game.RefreshUI()
                         }
 
-                        path := game.FindPath(oldX, oldY, newX, newY, player, stack, player.GetFog(game.Plane))
-                        if path == nil {
-                            game.blinkRed(yield)
-                            if inactiveStack != nil {
-                                player.MergeStacks(stack, inactiveStack)
+                        oldCity := player.FindCity(oldX, oldY, stack.Plane())
+                        newCity := player.FindCity(newX, newY, stack.Plane())
+
+                        // unit can move instantly to the new city if they are standing on a city with earth gate
+                        // and the new city also has earth gate
+                        if oldCity != nil && newCity != nil && oldCity.HasEnchantment(data.CityEnchantmentEarthGate) && newCity.HasEnchantment(data.CityEnchantmentEarthGate) && stack.GetRemainingMoves().GreaterThan(fraction.Zero()) {
+                            // the other city might be protected by spell ward
+                            canMove := true
+                            for _, unit := range stack.ActiveUnits() {
+                                if !newCity.CanEnter(unit) {
+                                    canMove = false
+                                    game.Events <- &GameEventNotice{Message: fmt.Sprintf("%v can not enter the city of %v", unit.GetRawUnit().Name, newCity.Name)}
+                                    break
+                                }
+                            }
+
+                            if canMove {
+                                stack.UseMovement(fraction.FromInt(1))
+                                newCityStack := player.FindStack(newX, newY, stack.Plane())
+                                if newCityStack != nil {
+                                    player.MergeStacks(newCityStack, stack)
+                                } else {
+                                    stack.SetX(newX)
+                                    stack.SetY(newY)
+                                }
+                                game.RefreshUI()
                             }
                         } else {
-                            // FIXME: i'm not sure this can ever occur in practice
-                            if inactiveStack != nil {
-                                inactiveStack.CurrentPath = stack.CurrentPath
-                            }
-                            stack.CurrentPath = path
+                            path := game.FindPath(oldX, oldY, newX, newY, player, stack, player.GetFog(game.Plane))
+                            if path == nil {
+                                game.blinkRed(yield)
+                                if inactiveStack != nil {
+                                    player.MergeStacks(stack, inactiveStack)
+                                }
+                            } else {
+                                // FIXME: i'm not sure this can ever occur in practice
+                                if inactiveStack != nil {
+                                    inactiveStack.CurrentPath = stack.CurrentPath
+                                }
+                                stack.CurrentPath = path
 
-                            select {
-                                case game.Events <- &GameEventMoveUnit{Player: player}:
-                                default:
+                                select {
+                                    case game.Events <- &GameEventMoveUnit{Player: player}:
+                                    default:
+                                }
                             }
                         }
                     }
@@ -3876,6 +3953,16 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
             }
         }
 
+        newCity, _ := game.FindCity(to.X, to.Y, stack.Plane())
+        if newCity != nil {
+            for _, unit := range stack.ActiveUnits() {
+                if !newCity.CanEnter(unit) {
+                    move.Invalid()
+                    return
+                }
+            }
+        }
+
         stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
 
         if game.Players[0].IsVisible(oldX, oldY, stack.Plane()) {
@@ -3947,7 +4034,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     create := decision.(*playerlib.AICreateUnitDecision)
                     log.Printf("ai %v creating %+v", player.Wizard.Name, create)
 
-                    overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+                    overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
                     player.AddUnit(overworldUnit)
                     game.ResolveStackAt(create.X, create.Y, create.Plane)
                 case *playerlib.AIBuildOutpostDecision:
@@ -4267,12 +4354,12 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
         return combat.CombatStateNoCombat
     }
 
-    defender := playerlib.Player{
-        Wizard: setup.WizardCustom{
-            Name: encounter.Type.ShortName(),
-        },
-        StrategicCombat: true,
+    wizard := setup.WizardCustom{
+        Name: encounter.Type.ShortName(),
     }
+
+    defender := playerlib.MakePlayer(wizard, false, 1, 1, make(map[herolib.HeroType]string), game)
+    defender.StrategicCombat = true
 
     var enemies []units.StackUnit
 
@@ -4296,7 +4383,7 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
         case maplib.EncounterTypeChaosNode: zone.ChaosNode = true
     }
 
-    result := game.doCombat(yield, player, stack, &defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
+    result := game.doCombat(yield, player, stack, defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
     if result == combat.CombatStateAttackerWin {
         mapUse.RemoveEncounter(x, y)
 
@@ -4480,6 +4567,29 @@ func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.Comb
     return combat.CombatLandscapeGrass
 }
 
+// get the kind of magic that is influencing the given tile
+func (game *Game) GetInfluenceMagic(x int, y int, plane data.Plane) data.MagicType {
+    map_ := game.GetMap(plane)
+
+    node := map_.GetMagicInfluence(x, y)
+    if node != nil {
+        return node.Kind.MagicType()
+    }
+
+    return data.MagicNone
+}
+
+// true if any alive player has the given enchantment enabled
+func (game *Game) HasEnchantment(enchantment data.Enchantment) bool {
+    for _, player := range game.Players {
+        if !player.Defeated && player.HasEnchantment(enchantment) {
+            return true
+        }
+    }
+
+    return false
+}
+
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
  * this also shows the raze city ui so that fame can be incorporated based on whether the city is razed or not
  */
@@ -4529,7 +4639,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-        combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone, attackerStack.X(), attackerStack.Y())
+        combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone, game.GetInfluenceMagic(attackerStack.X(), attackerStack.Y(), attackerStack.Plane()), attackerStack.X(), attackerStack.Y())
 
         if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentHeavenlyLight) {
             combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentTrueLight)
@@ -4561,9 +4671,23 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         game.Music.PopSong()
 
+        // FIXME: show create undead animation (cmbtfx.lbx 27) if there are new undead units
+
+        switch state {
+            case combat.CombatStateAttackerWin, combat.CombatStateDefenderFlee:
+                for _, unit := range combatScreen.Model.UndeadUnits {
+                    attacker.AddUnit(unit.Unit)
+                }
+            case combat.CombatStateDefenderWin, combat.CombatStateAttackerFlee:
+                for _, unit := range combatScreen.Model.UndeadUnits {
+                    defender.AddUnit(unit.Unit)
+                }
+        }
+
         defeatedDefenders = combatScreen.Model.DefeatedDefenders
         defeatedAttackers = combatScreen.Model.DefeatedAttackers
 
+        // FIXME: resolve the attacker/defender stack at the end of combat?
         for _, unit := range combatScreen.Model.AttackingArmy.RecalledUnits {
             recalledAttackers = append(recalledAttackers, unit.Unit.(units.StackUnit))
         }
@@ -4630,10 +4754,15 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         attackerFame += winner
         defenderFame += loser
 
+        // some units might have been raised from the dead but been owned by the opposite side
         for _, unit := range attackingArmy.GetUnits() {
             if unit.Unit.GetHealth() > 0 {
                 attackerStack.AddUnit(unit.Unit)
+                // FIXME: its annoying to have to set all 3 of these fields. maybe consolidate them into just
+                // SetOwner(player)
                 unit.Unit.SetBanner(attacker.GetBanner())
+                unit.Unit.SetGlobalEnchantmentProvider(attacker.MakeUnitEnchantmentProvider())
+                unit.Unit.SetExperienceInfo(attacker.MakeExperienceInfo())
                 defender.RemoveUnit(unit.Unit)
             }
         }
@@ -4647,6 +4776,8 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             if unit.Unit.GetHealth() > 0 {
                 defenderStack.AddUnit(unit.Unit)
                 unit.Unit.SetBanner(defender.GetBanner())
+                unit.Unit.SetGlobalEnchantmentProvider(defender.MakeUnitEnchantmentProvider())
+                unit.Unit.SetExperienceInfo(defender.MakeExperienceInfo())
                 attacker.RemoveUnit(unit.Unit)
             }
         }
@@ -4739,8 +4870,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
     }
 
-    // ebiten.SetCursorMode(ebiten.CursorModeVisible)
-
     // recall units
     relocateUnits := func(player *playerlib.Player, units []units.StackUnit) {
         for _, unit := range units {
@@ -4792,7 +4921,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     killUnits(defender, defenderStack, landscape)
 
     if showHeroNotice {
-        game.doNotice(yield, "One or more heroes died in combat. You must redistribute their equipment.")
+        game.doNotice(yield, game.HudUI, "One or more heroes died in combat. You must redistribute their equipment.")
     }
 
     return state
@@ -4908,7 +5037,7 @@ func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
         },
     }
 
-    game.HudUI.AddElements(uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Tax Per Population", taxes))
+    game.HudUI.AddElements(uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Tax Per Population", taxes, true))
 }
 
 func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc, player *playerlib.Player){
@@ -5015,7 +5144,7 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         },
     }
 
-    return uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Select An Advisor", advisors)
+    return uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Select An Advisor", advisors, true)
 }
 
 func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerlib.Player){
@@ -5506,12 +5635,7 @@ func (game *Game) ComputeCityStackInfo() CityStackInfo {
     return out
 }
 
-func (game *Game) SwitchPlane() {
-    switch game.Plane {
-        case data.PlaneArcanus: game.Plane = data.PlaneMyrror
-        case data.PlaneMyrror: game.Plane = data.PlaneArcanus
-    }
-
+func (game *Game) doPlanarTraval() {
     // no switching planes if the global enchantment planar seal is in effect
     if !game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
         player := game.Players[0]
@@ -5548,12 +5672,21 @@ func (game *Game) SwitchPlane() {
                     tile := mapPlane.GetTile(activeStack.X(), activeStack.Y())
                     canMove = cityOppositePlane != nil || activeStack.AllFlyers() || tile.Tile.IsLand()
 
+                    if cityOppositePlane != nil {
+                        for _, unit := range activeStack.ActiveUnits() {
+                            if !cityOppositePlane.CanEnter(unit) {
+                                canMove = false
+                                break
+                            }
+                        }
+                    }
+
                     // cannot planar travel if there is an encounter node
-                    if mapPlane.GetEncounter(activeStack.X(), activeStack.Y()) != nil {
+                    if canMove && mapPlane.GetEncounter(activeStack.X(), activeStack.Y()) != nil {
                         canMove = false
                     }
 
-                    if tile.Tile.IsWater() && activeStack.AllLandWalkers() {
+                    if canMove && tile.Tile.IsWater() && activeStack.AllLandWalkers() {
                         canMove = false
                     }
                 }
@@ -5589,6 +5722,13 @@ func (game *Game) SwitchPlane() {
             }
 
         }
+    }
+}
+
+func (game *Game) SwitchPlane() {
+    switch game.Plane {
+        case data.PlaneArcanus: game.Plane = data.PlaneMyrror
+        case data.PlaneMyrror: game.Plane = data.PlaneArcanus
     }
 }
 
@@ -5724,6 +5864,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
     // plane button
     elements = append(elements, makeButton(7, 270, 4, false, func(){
         game.SwitchPlane()
+        game.doPlanarTraval()
 
         game.RefreshUI()
     }))
@@ -6749,7 +6890,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 }
             case *citylib.CityEventNewUnit:
                 newUnit := event.(*citylib.CityEventNewUnit)
-                overworldUnit := units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo())
+                overworldUnit := units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
                 // only normal units get weapon bonuses
                 if overworldUnit.GetRace() != data.RaceFantastic {
                     overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
@@ -7478,6 +7619,53 @@ func (game *Game) DoRandomEvents() {
     game.RandomEvents = keep
 }
 
+func (game *Game) doChaosRift() {
+    for _, city := range game.AllCities() {
+        if city.HasEnchantment(data.CityEnchantmentChaosRift) {
+
+            // do 5 magical attacks of strength 8 to units in the city
+            stack, player := game.FindStack(city.X, city.Y, city.Plane)
+            if stack != nil && !stack.IsEmpty() {
+                stackUnits := stack.Units()
+                for range 5 {
+                    choice := stackUnits[rand.N(len(stackUnits))]
+
+                    // regeneration units are never hurt by overland spells
+                    if choice.HasAbility(data.AbilityRegeneration) {
+                        continue
+                    }
+
+                    wrapper := &UnitDamageWrapper{Unit: choice}
+
+                    combat.ApplyDamage(wrapper, wrapper.ReduceInvulnerability(combat.ComputeRoll(8, 30)), units.DamageRangedMagical, combat.DamageSourceSpell, combat.DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                }
+
+                // check for dead units
+                for _, unit := range stackUnits {
+                    if unit.GetHealth() <= 0 {
+                        player.RemoveUnit(unit)
+                    }
+                }
+            }
+
+            // each building has a 5% chance of being destroyed
+            var destroyedBuildings []buildinglib.Building
+            for _, building := range city.Buildings.Values() {
+                if game.BuildingInfo.ProductionCost(building) != 0 {
+                    if rand.N(100) < 5 {
+                        destroyedBuildings = append(destroyedBuildings, building)
+                    }
+                }
+            }
+
+            for _, building := range destroyedBuildings {
+                // emit a notice?
+                city.Buildings.Remove(building)
+            }
+        }
+    }
+}
+
 func (game *Game) EndOfTurn() {
     // put stuff here that should happen when all players have taken their turn
 
@@ -7486,6 +7674,8 @@ func (game *Game) EndOfTurn() {
     game.doArmageddon()
 
     game.doGreatWasting()
+
+    game.doChaosRift()
 
     game.TurnNumber += 1
 
@@ -7813,19 +8003,22 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             // nx := overworld.Map.WrapX(x - overworld.Camera.GetX()) + overworld.Camera.GetX() + 6
 
             options.GeoM.Translate((x + float64(stack.OffsetX())) * float64(tileWidth), (y + float64(stack.OffsetY())) * float64(tileHeight))
-            options.GeoM.Concat(geom)
 
             leader := stack.Leader()
 
             unitBack, err := units.GetUnitBackgroundImage(leader.GetBanner(), overworld.ImageCache)
             if err == nil {
+                saveGeom := options.GeoM
+                options.GeoM.Concat(geom)
                 scale.DrawScaled(screen, unitBack, &options)
+                options.GeoM = saveGeom
             }
 
             pic, err := GetUnitImage(leader, overworld.ImageCache, leader.GetBanner())
             if err == nil {
                 // screen scale is already taken into account, so we can translate by 1 pixel here
                 options.GeoM.Translate(1, 1)
+                options.GeoM.Concat(geom)
 
                 if leader.GetBusy() != units.BusyStatusNone {
                     var patrolOptions colorm.DrawImageOptions

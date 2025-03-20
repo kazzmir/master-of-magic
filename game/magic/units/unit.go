@@ -194,6 +194,13 @@ func (unit *Unit) GetCount() int {
     return unit.Count
 }
 
+func (unit *Unit) GetVisibleCount() int {
+    if unit.Equals(Hydra) {
+        return 1
+    }
+    return unit.Count
+}
+
 func (unit *Unit) GetUpkeepGold() int {
     return unit.UpkeepGold
 }
@@ -1355,7 +1362,6 @@ var Efreet Unit = Unit{
     CastingCost: 550,
 }
 
-// FIXME: hydra has 9 virtual figures, one for each head
 var Hydra Unit = Unit{
     LbxFile: "units2.lbx",
     Index: 43,
@@ -1363,7 +1369,8 @@ var Hydra Unit = Unit{
     CombatLbxFile: "figure11.lbx",
     CombatIndex: 104,
     UpkeepMana: 14,
-    Count: 1,
+    // visible count will be 1, so only one figure gets drawn
+    Count: 9,
     MovementSound: MovementSoundBigSteps,
     AttackSound: AttackSoundMonster2,
     Realm: data.ChaosMagic,

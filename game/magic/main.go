@@ -172,9 +172,11 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
         distance := -1
 
         for _, city := range allCities {
-            d := int(euclideanDistance(x, y, city.X, city.Y))
-            if distance == -1 || d < distance {
-                distance = d
+            if city.Plane == startingPlane {
+                d := int(euclideanDistance(x, y, city.X, city.Y))
+                if distance == -1 || d < distance {
+                    distance = d
+                }
             }
         }
 
@@ -189,6 +191,7 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
         X, Y int
         // distance to closest city
         Distance int
+        Population int
     }
 
     var cityX int
@@ -197,12 +200,27 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
     for range 10 {
         x, y, ok := game.FindValidCityLocation(startingPlane)
         if ok {
-            locations = append(locations, CityLocation{X: x, Y: y, Distance: closestDistance(x, y)})
+            distance := closestDistance(x, y)
+            // either there are no other cities nearby (distance=0) or the closest city is farther than 10 squares away
+            if distance == 0 || distance > 10 {
+                locations = append(locations, CityLocation{X: x, Y: y, Distance: distance, Population: game.ComputeMaximumPopulation(x, y, startingPlane)})
+            }
         }
     }
 
+    // compute a weighted sum of distance to other cities and maximum population of the location
+    computeValue := func (point CityLocation) float64 {
+        distance := point.Distance
+        // assume a distance if no other cities are nearby
+        if distance == 0 {
+            distance = 150
+        }
+
+        return math.Log2(float64(distance)) * 2 + float64(point.Population) * 0.5
+    }
+
     slices.SortFunc(locations, func(pointA, pointB CityLocation) int {
-        return cmp.Compare(pointA.Distance, pointB.Distance)
+        return cmp.Compare(computeValue(pointA), computeValue(pointB))
     })
 
     if len(locations) > 0 {
@@ -243,7 +261,7 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
     player.AddCity(introCity)
 
     for _, unit := range startingUnits(player.Wizard.Race) {
-        player.AddUnit(units.MakeOverworldUnitFromUnit(unit, cityX, cityY, startingPlane, wizard.Banner, player.MakeExperienceInfo()))
+        player.AddUnit(units.MakeOverworldUnitFromUnit(unit, cityX, cityY, startingPlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     }
 
     player.LiftFog(cityX, cityY, 3, introCity.Plane)

@@ -28,7 +28,8 @@ type CombatView interface {
     GetCombatIndex(facing units.Facing) int
     GetBanner() data.BannerType
     GetEnchantments() []data.UnitEnchantment
-    GetCount() int
+    GetVisibleCount() int
+    IsInvisible() bool
 }
 
 func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit CombatView, options ebiten.DrawImageOptions, grey bool, counter uint64) {
@@ -46,11 +47,15 @@ func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
         RenderCombatTile(screen, imageCache, options)
 
-        first := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
-        if grey {
-            RenderCombatUnitGrey(screen, use, options, unit.GetCount(), first, counter, imageCache)
+        if unit.IsInvisible() {
+            RenderCombatSemiInvisible(screen, use, options, unit.GetVisibleCount(), counter, imageCache)
         } else {
-            RenderCombatUnit(screen, use, options, unit.GetCount(), first, counter, imageCache)
+            first := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
+            if grey {
+                RenderCombatUnitGrey(screen, use, options, unit.GetVisibleCount(), first, counter, imageCache)
+            } else {
+                RenderCombatUnit(screen, use, options, unit.GetVisibleCount(), first, counter, imageCache)
+            }
         }
     }
 }
@@ -138,6 +143,10 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     options := defaultOptions
     options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), float64(smallFont.Height() + 2))
     renderUpkeep(screen, imageCache, unit, options)
+
+    options.GeoM.Translate(80, 0)
+    x, y = options.GeoM.Apply(0, 0)
+    smallFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("Damage: %v", unit.GetDamage()))
 }
 
 func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitView, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions, discountedCost int) {

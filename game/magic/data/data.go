@@ -3,6 +3,8 @@ package data
 const ScreenWidth = 320
 const ScreenHeight = 200
 
+const MaxUnitsInStack = 9
+
 type BannerType int
 const (
     BannerGreen BannerType = iota

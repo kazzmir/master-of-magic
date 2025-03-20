@@ -99,10 +99,10 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 30, data.PlaneArcanus)
 
-    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil, &units.NoEnchantments{}))
 
     for i := 0; i < 5; i++ {
-        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil))
+        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, nil, &units.NoEnchantments{}))
         _ = fireElemental
     }
 
@@ -118,8 +118,8 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
     }, false)
 
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil, &units.NoEnchantments{}))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, nil, &units.NoEnchantments{}))
 
     game.Camera.Center(stack.X(), stack.Y())
 

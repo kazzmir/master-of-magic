@@ -15,6 +15,7 @@ type StackUnit interface {
     IsSwimmer() bool
     IsSailing() bool
     IsLandWalker() bool
+    IsInvisible() bool
     GetName() string
     GetFullName() string
     GetTitle() string
@@ -44,6 +45,9 @@ type StackUnit interface {
     SetUndead()
     GetBanner() data.BannerType
     SetBanner(data.BannerType)
+    SetGlobalEnchantmentProvider(GlobalEnchantmentProvider)
+    SetExperienceInfo(ExperienceInfo)
+
     SetWeaponBonus(data.WeaponBonus)
     GetWeaponBonus() data.WeaponBonus
     GetX() int
@@ -73,6 +77,7 @@ type StackUnit interface {
     GetCombatLbxFile() string
     GetCombatIndex(Facing) int
     GetCount() int
+    GetVisibleCount() int
     GetMovementSpeed() int
     GetProductionCost() int
     GetFullRangedAttackPower() int

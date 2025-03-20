@@ -5,9 +5,12 @@ import (
     "log"
     "image"
     "context"
+    "slices"
+    "cmp"
     "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/set"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
@@ -130,7 +133,26 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 data.UnitEnchantmentChaosChannelsDemonWings,
                 data.UnitEnchantmentChaosChannelsFireBreath,
             }
-            game.doCastUnitEnchantment(player, spell, choices[rand.N(len(choices))])
+
+            choice := choices[rand.N(len(choices))]
+
+            before := func (unit units.StackUnit) bool {
+                for _, enchantment := range choices {
+                    if unit.HasEnchantment(enchantment) {
+                        game.Events <- &GameEventNotice{Message: "That unit cannot be targeted"}
+                        return false
+                    }
+                }
+
+                return true
+            }
+
+            after := func (unit units.StackUnit) bool {
+                unit.AddEnchantment(choice)
+                return true
+            }
+
+            game.doCastOnUnit(player, spell, choice.CastAnimationIndex(), before, after)
         case "Endurance":
             game.doCastUnitEnchantment(player, spell, data.UnitEnchantmentEndurance)
         case "Holy Armor":
@@ -203,13 +225,12 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
             game.doCastOnUnit(player, spell, 4, before, after)
 
-        /*
-            TOWN ENCHANTMENTS
-                TODO:
-                Earth Gate
-                Flying Fortress
-                Spell Ward
-        */
+        case "Spell Ward":
+            game.doCastSpellWard(player, spell)
+        case "Flying Fortress":
+            game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentFlyingFortress)
+        case "Earth Gate":
+            game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentEarthGate)
         case "Astral Gate":
             game.doCastCityEnchantment(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentAstralGate)
         case "Heavenly Light":
@@ -255,9 +276,16 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         /*
             TOWN CURSES
-                TODO:
-                Chaos Rift
         */
+        case "Chaos Rift":
+            before := func (city *citylib.City) bool {
+                if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
+                    game.ShowFizzleSpell(spell, player)
+                    return false
+                }
+                return true
+            }
+            game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentChaosRift, before, noCityCallback)
         case "Cursed Lands":
             before := func (city *citylib.City) bool {
                 if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
@@ -299,8 +327,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /*
             GLOBAL ENCHANTMENTS
                 TODO:
-                Charm of Life
-                Holy Arms
                 Planar Seal
                 Herb Mastery
                 Nature's Wrath
@@ -314,6 +340,28 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Evil Omens
                 Zombie Mastery
         */
+        case "Charm of Life":
+            enchantment := data.EnchantmentCharmOfLife
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+
+        case "Holy Arms":
+            enchantment := data.EnchantmentHolyArms
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+
+                // all units implicitly have holy weapon, so the actual enchantment is removed from all units
+                for _, unit := range player.Units {
+                    unit.RemoveEnchantment(data.UnitEnchantmentHolyWeapon)
+                }
+
+                game.RefreshUI()
+            }
+
         case "Awareness":
             if !player.GlobalEnchantments.Contains(data.EnchantmentAwareness) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentAwareness}
@@ -460,7 +508,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
-                // FIXME: it's not obvious if Chaos Ward prevents Raise Volcano from being cast on city center. Left it here because it sounds logical
+                // unclear if chaos ward makes the spell fizzle or if this tile just can't be selected
                 if chosenCity != nil && chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
                     game.ShowFizzleSpell(spell, player)
                     return
@@ -599,6 +647,69 @@ func (game *Game) checkInstantFizzleForCastSpell(player *playerlib.Player, spell
     return false
 }
 
+func (game *Game) doCastSpellWard(player *playerlib.Player, spell spellbook.Spell) {
+    wards := []data.CityEnchantment{
+        data.CityEnchantmentLifeWard, data.CityEnchantmentSorceryWard,
+        data.CityEnchantmentNatureWard, data.CityEnchantmentDeathWard,
+        data.CityEnchantmentChaosWard,
+    }
+
+    var selectCity func (coroutine.YieldFunc, int, int)
+    selectCity = func (yield coroutine.YieldFunc, tileX int, tileY int) {
+        // FIXME: Show this only for enemies if detect magic is active and the city is known to the human player
+        game.doMoveCamera(yield, tileX, tileY)
+        chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
+        if chosenCity == nil {
+            return
+        }
+
+        choices := set.NewSet(wards...)
+
+        for _, enchantment := range choices.Values() {
+            if chosenCity.HasEnchantment(enchantment) {
+                choices.Remove(enchantment)
+            }
+        }
+
+        if choices.Size() == 0 {
+            game.Events <- &GameEventNotice{Message: "No wards are available to cast on this city."}
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selectCity}
+            return
+        }
+
+        quit, cancel := context.WithCancel(context.Background())
+
+        selected := func (ward data.CityEnchantment){
+            // invoking cancel removes the selection ui group
+            cancel()
+            // this yield reference comes from a different time in the ui when the tile was being selected
+            // really this should be a GameEvent that shows the enchantment being added
+            game.doAddCityEnchantment(yield, chosenCity, player, spell, ward)
+        }
+
+        var selections []uilib.Selection
+
+        for _, ward := range slices.SortedFunc(slices.Values(choices.Values()), cmp.Compare) {
+            selections = append(selections, uilib.Selection{
+                Name: ward.Name(),
+                Action: func(){
+                    selected(ward)
+                },
+            })
+        }
+
+        uiGroup := uilib.MakeGroup()
+
+        uiGroup.AddElements(uilib.MakeSelectionUI(uiGroup, game.Cache, &game.ImageCache, 40, 10, "Select a Spell Ward to cast", selections, false))
+        game.Events <- &GameEventRunUI{
+            Group: uiGroup,
+            Quit: quit,
+        }
+    }
+
+    game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selectCity}
+}
+
 func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, disenchantTrue bool, tileX int, tileY int) {
     game.doCastOnMap(yield, tileX, tileY, 9, false, spell.Sound, func (x int, y int, animationFrame int){})
 
@@ -705,7 +816,6 @@ func (game *Game) doCastUnitEnchantmentFull(player *playerlib.Player, spell spel
     }
 
     game.doCastOnUnit(player, spell, enchantment.CastAnimationIndex(), before, after)
-
 }
 
 func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellbook.Spell, enchantment data.UnitEnchantment) {
@@ -835,7 +945,7 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
 
     summonCity := player.FindSummoningCity()
     if summonCity != nil {
-        overworldUnit := units.MakeOverworldUnitFromUnit(unit, summonCity.X, summonCity.Y, summonCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+        overworldUnit := units.MakeOverworldUnitFromUnit(unit, summonCity.X, summonCity.Y, summonCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
         player.AddUnit(overworldUnit)
         game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
         game.RefreshUI()
@@ -879,47 +989,51 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         game.Drawer = oldDrawer
     }()
 
-    var cities []*citylib.City
-    var citiesMiniMap []maplib.MiniMapCity
-    var stacks []*playerlib.UnitStack
-    var fog data.FogMap
-
-    for i, player := range game.Players {
-        for _, city := range player.Cities {
-            if city.Plane == game.Plane {
-                cities = append(cities, city)
-                citiesMiniMap = append(citiesMiniMap, city)
-            }
-        }
-
-        for _, stack := range player.Stacks {
-            if stack.Plane() == game.Plane {
-                stacks = append(stacks, stack)
-            }
-        }
-
-        if i == 0 {
-            fog = player.GetFog(game.Plane)
-        }
-    }
-
     fonts := fontslib.MakeSurveyorFonts(game.Cache)
     castingFont := fonts.SurveyorFont
     whiteFont := fonts.WhiteFont
 
-    overworld := Overworld{
-        Camera: game.Camera,
-        Counter: game.Counter,
-        Map: game.CurrentMap(),
-        Cities: cities,
-        CitiesMiniMap: citiesMiniMap,
-        Stacks: stacks,
-        SelectedStack: nil,
-        ImageCache: &game.ImageCache,
-        Fog: fog,
-        ShowAnimation: game.State == GameStateUnitMoving,
-        FogBlack: game.GetFogImage(),
+    makeOverworld := func () Overworld {
+        var cities []*citylib.City
+        var citiesMiniMap []maplib.MiniMapCity
+        var stacks []*playerlib.UnitStack
+        var fog data.FogMap
+
+        for i, player := range game.Players {
+            for _, city := range player.Cities {
+                if city.Plane == game.Plane {
+                    cities = append(cities, city)
+                    citiesMiniMap = append(citiesMiniMap, city)
+                }
+            }
+
+            for _, stack := range player.Stacks {
+                if stack.Plane() == game.Plane {
+                    stacks = append(stacks, stack)
+                }
+            }
+
+            if i == 0 {
+                fog = player.GetFog(game.Plane)
+            }
+        }
+
+        return Overworld{
+            Camera: game.Camera,
+            Counter: game.Counter,
+            Map: game.CurrentMap(),
+            Cities: cities,
+            CitiesMiniMap: citiesMiniMap,
+            Stacks: stacks,
+            SelectedStack: nil,
+            ImageCache: &game.ImageCache,
+            Fog: fog,
+            ShowAnimation: game.State == GameStateUnitMoving,
+            FogBlack: game.GetFogImage(),
+        }
     }
+
+    overworld := makeOverworld()
 
     cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
 
@@ -972,15 +1086,28 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
     ui.SetElementsFromArray(nil)
 
-    makeButton := func(lbxIndex int, x int, y int) *uilib.UIElement {
-        button, _ := game.ImageCache.GetImage("main.lbx", lbxIndex, 0)
+    makeButton2 := func(lbxIndex int, x int, y int, action func()) *uilib.UIElement {
+        buttons, _ := game.ImageCache.GetImages("main.lbx", lbxIndex)
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(x), float64(y))
+        current := 0
         return &uilib.UIElement{
+            Rect: util.ImageRect(x, y, buttons[0]),
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                scale.DrawScaled(screen, button, &options)
+                scale.DrawScaled(screen, buttons[current], &options)
+            },
+            LeftClick: func(element *uilib.UIElement){
+                current = 1
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                action()
+                current = 0
             },
         }
+    }
+
+    makeButton := func(lbxIndex int, x int, y int) *uilib.UIElement {
+        return makeButton2(lbxIndex, x, y, func(){})
     }
 
     // game
@@ -1002,7 +1129,10 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     ui.AddElement(makeButton(6, 226, 4))
 
     // plane button
-    ui.AddElement(makeButton(7, 270, 4))
+    ui.AddElement(makeButton2(7, 270, 4, func (){
+        game.SwitchPlane()
+        overworld = makeOverworld()
+    }))
 
     quit := false
 
@@ -1165,7 +1295,12 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         for _, enemy := range game.GetEnemies(player) {
                             city := enemy.FindCity(tileX, tileY, game.Plane)
                             if city != nil {
-                                return tileX, tileY, false
+                                if !city.CanTarget(spell) {
+                                    game.doNotice(yield, ui, fmt.Sprintf("You cannot cast %v on this city", spell.Name))
+                                    break
+                                } else {
+                                    return tileX, tileY, false
+                                }
                             }
                         }
 
@@ -1178,6 +1313,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                     case LocationTypeEnemyUnit:
                         // TODO
                         // FIXME: This should consider only tiles with FogTypeVisible
+                        // also consider if the unit is in a city with a spell ward that prevents this unit from being targeted
                 }
             }
         }
@@ -1188,6 +1324,26 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     }
 
     return 0, 0, true
+}
+
+func (game *Game) doAddCityEnchantment(yield coroutine.YieldFunc, chosenCity *citylib.City, player *playerlib.Player, spell spellbook.Spell, enchantment data.CityEnchantment) {
+    chosenCity.AddEnchantment(enchantment, player.GetBanner())
+    chosenCity.UpdateUnrest()
+
+    yield()
+
+    sound, err := audio.LoadSound(game.Cache, spell.Sound)
+    if err == nil {
+        sound.Play()
+    }
+
+    enchantmentBuilding, ok := buildinglib.EnchantmentBuildings()[enchantment]
+    if !ok {
+        enchantmentBuilding = buildinglib.BuildingNone
+    }
+
+    game.showCastNewBuilding(yield, chosenCity, player, enchantmentBuilding, enchantment.Name())
+    game.RefreshUI()
 }
 
 func (game *Game) doCastCityEnchantmentFull(spell spellbook.Spell, player *playerlib.Player, locationType LocationType, enchantment data.CityEnchantment, before CityCallback, after CityCallback) {
@@ -1210,23 +1366,7 @@ func (game *Game) doCastCityEnchantmentFull(spell spellbook.Spell, player *playe
             return
         }
 
-        chosenCity.AddEnchantment(enchantment, player.GetBanner())
-        chosenCity.UpdateUnrest()
-
-        yield()
-
-        sound, err := audio.LoadSound(game.Cache, spell.Sound)
-        if err == nil {
-            sound.Play()
-        }
-
-        enchantmentBuilding, ok := buildinglib.EnchantmentBuildings()[enchantment]
-        if !ok {
-            enchantmentBuilding = buildinglib.BuildingNone
-        }
-
-        game.showCastNewBuilding(yield, chosenCity, player, enchantmentBuilding, enchantment.Name())
-        game.RefreshUI()
+        game.doAddCityEnchantment(yield, chosenCity, player, spell, enchantment)
 
         after(chosenCity)
     }
@@ -1699,7 +1839,7 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 func (game *Game) doCastFloatingIsland(yield coroutine.YieldFunc, player *playerlib.Player, tileX int, tileY int) {
     update := func (x int, y int, frame int) {
         if frame == 5 {
-            overworldUnit := units.MakeOverworldUnitFromUnit(units.FloatingIsland, tileX, tileY, game.CurrentMap().Plane, player.Wizard.Banner, player.MakeExperienceInfo())
+            overworldUnit := units.MakeOverworldUnitFromUnit(units.FloatingIsland, tileX, tileY, game.CurrentMap().Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
             player.AddUnit(overworldUnit)
             player.LiftFog(tileX, tileY, 1, game.Plane)
         }

@@ -47,6 +47,17 @@ const (
     CombatStateNoCombat
 )
 
+func (state CombatState) IsWinner(team Team) bool {
+    switch state {
+        case CombatStateAttackerWin: return team == TeamAttacker
+        case CombatStateDefenderWin: return team == TeamDefender
+        case CombatStateAttackerFlee: return team == TeamDefender
+        case CombatStateDefenderFlee: return team == TeamAttacker
+    }
+
+    return false
+}
+
 func (state CombatState) String() string {
     switch state {
         case CombatStateRunning: return "Running"
@@ -181,6 +192,7 @@ type CombatScreen struct {
     InfoFont *font.Font
     WhiteFont *font.Font
     DrawRoad bool
+    DrawClouds bool
     AllSpells spellbook.Spells
     // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
     TopDownOrder []image.Point
@@ -239,7 +251,7 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
 }
 
 // player is always the human player
-func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, landscape CombatLandscape, plane data.Plane, zone ZoneType, overworldX int, overworldY int) *CombatScreen {
+func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int) *CombatScreen {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -329,6 +341,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Mouse: mouseData,
         CameraScale: 1,
         DrawRoad: zone.City != nil,
+        DrawClouds: zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentFlyingFortress),
         DebugFont: debugFont,
         HudFont: hudFont,
         InfoFont: infoFont,
@@ -340,7 +353,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         AttackingWizardFont: attackingWizardFont,
         DefendingWizardFont: defendingWizardFont,
 
-        Model: MakeCombatModel(allSpells, defendingArmy, attackingArmy, landscape, plane, zone, overworldX, overworldY, events),
+        Model: MakeCombatModel(allSpells, defendingArmy, attackingArmy, landscape, plane, zone, influence, overworldX, overworldY, events),
     }
 
     combat.Drawer = combat.NormalDraw
@@ -550,7 +563,7 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        unit.ApplyDamage(unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageCold, DamageModifiers{Magic: data.NatureMagic})
+        ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -565,7 +578,7 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        fireDamage := unit.ApplyDamage(unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageFire, DamageModifiers{Magic: data.ChaosMagic})
+        fireDamage := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
 
         combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.GetHealth() <= 0 {
@@ -598,7 +611,7 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Project
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        unit.ApplyDamage(unit.ReduceInvulnerability(15), units.DamageRangedMagical, DamageModifiers{})
+        ApplyDamage(unit, unit.ReduceInvulnerability(15), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -612,6 +625,10 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
+        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+            return
+        }
+
         modifier := 4
         if unit.Unit.IsUndead() {
             modifier = 9
@@ -625,7 +642,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
             }
         }
 
-        unit.TakeDamage(damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -639,7 +656,7 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, stren
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        unit.ApplyDamage(unit.ReduceInvulnerability(ComputeRoll(15, 30)), units.DamageRangedMagical, DamageModifiers{Magic: data.SorceryMagic})
+        ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(15, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -654,7 +671,7 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projecti
     explodeImages := images[3:]
 
     effect := func(unit *ArmyUnit) {
-        unit.TakeDamage(10)
+        unit.TakeDamage(10, DamageNormal)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -686,7 +703,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
         Effect: func(unit *ArmyUnit) {
-            unit.ApplyDamage(unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+            ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             if unit.GetHealth() <= 0 {
                 combat.Model.KillUnit(unit)
             }
@@ -723,7 +740,7 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Pro
 
             // 10 separate attacks are different than a single 55-point attack due to defense
             for strength := range 10 {
-                unit.ApplyDamage(unit.ReduceInvulnerability(ComputeRoll(strength + 1, 30)), units.DamageRangedMagical, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength + 1, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             }
 
             if unit.GetHealth() <= 0 {
@@ -745,7 +762,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
         resistance := unit.GetResistanceFor(data.LifeMagic) - reduceResistance
         damage := rand.N(10) + 1 - resistance
         if damage > 0 {
-            unit.TakeDamage(damage)
+            unit.TakeDamage(damage, DamageUndead)
             if unitCaster != nil {
                 unitCaster.Heal(damage)
             } else {
@@ -968,6 +985,150 @@ func (combat *CombatScreen) CreateFlightProjectile(target *ArmyUnit) *Projectile
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
+func (combat *CombatScreen) CreateGuardianWindProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentGuardianWind)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateHasteProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentHaste)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateInvisibilityProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentInvisibility)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateMagicImmunityProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentMagicImmunity)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateResistMagicProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentResistMagic)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateSpellLockProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentSpellLock)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentEldritchWeapon)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateFlameBladeProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentFlameBlade)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateImmolationProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentImmolation)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateBerserkProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 4)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentBerserk)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateCloakOfFearProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 4)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentCloakOfFear)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
+func (combat *CombatScreen) CreateWraithFormProjectile(target *ArmyUnit) *Projectile {
+    // FIXME: verify this animation
+    images, _ := combat.ImageCache.GetImages("specfx.lbx", 4)
+    explodeImages := images
+
+    effect := func (unit *ArmyUnit){
+        unit.AddEnchantment(data.UnitEnchantmentWraithForm)
+    }
+
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
+}
+
 func (combat *CombatScreen) CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
     explodeImages := images
@@ -1054,7 +1215,7 @@ func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit) *Projectil
         }
 
         // FIXME: do stoning damage, which is irreversable
-        unit.TakeDamage(damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1159,6 +1320,10 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
     explodeImages := images
 
     damage := func (unit *ArmyUnit){
+        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+            return
+        }
+
         modifier := 2
         if unit.Unit.IsUndead() {
             modifier = 7
@@ -1173,8 +1338,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
             }
         }
 
-        // FIXME: apply irreversable damage
-        unit.TakeDamage(damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1209,7 +1373,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projec
             }
         }
 
-        unit.TakeDamage(damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1232,7 +1396,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Proje
             }
         }
 
-        unit.TakeDamage(damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1317,6 +1481,10 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
+        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+            return
+        }
+
         resistance := unit.GetResistanceFor(data.SorceryMagic) - reduceResistance - 3
         damage := 0
 
@@ -1326,7 +1494,7 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
             }
         }
 
-        unit.TakeDamage(damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1395,7 +1563,7 @@ func (combat *CombatScreen) AddSelectTargetsElements(targets []*ArmyUnit, title 
         })
     }
 
-    combat.UI.AddElements(uilib.MakeSelectionUI(combat.UI, combat.Cache, &combat.ImageCache, 100, 20, title, selections))
+    combat.UI.AddElements(uilib.MakeSelectionUI(combat.UI, combat.Cache, &combat.ImageCache, 100, 20, title, selections, true))
 }
 
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
@@ -1448,7 +1616,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 }
             }
 
-            if combat.Model.SelectedUnit != nil {
+            if combat.Model.SelectedUnit != nil && combat.IsUnitVisible(combat.Model.SelectedUnit) {
 
                 rightImage, _ := combat.ImageCache.GetImageTransform(combat.Model.SelectedUnit.Unit.GetCombatLbxFile(), combat.Model.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0, player.Wizard.Banner.String(), units.MakeUpdateUnitColorsFunc(player.Wizard.Banner))
                 options.GeoM.Reset()
@@ -1630,7 +1798,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                     },
                 }
 
-                ui.AddElements(uilib.MakeSelectionUI(ui, combat.Cache, &combat.ImageCache, 100, 50, "Who Will Cast", selections))
+                ui.AddElements(uilib.MakeSelectionUI(ui, combat.Cache, &combat.ImageCache, 100, 50, "Who Will Cast", selections, true))
             }
         }
 
@@ -1923,17 +2091,16 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
             return
         }
 
-        // FIXME: apply defenses for magic immunity or missle immunity
-
         damage := attacker.ComputeRangeDamage(target, tileDistance)
-        // defense := target.ComputeDefense(attacker.Unit.GetRangedAttackDamageType())
 
         // FIXME: for magical damage, set the Magic damage modifier for the proper realm
-        target.ApplyDamage(damage, attacker.Unit.GetRangedAttackDamageType(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
+        ApplyDamage(target, damage, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
             combat.Model.doTouchAttack(attacker, target, 0)
         }
+
+        combat.Model.ApplyImmolationDamage(defender, combat.Model.immolationDamage(attacker, defender))
 
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 
@@ -2119,7 +2286,9 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
 
     combat.UI.AddElements(elements)
 
-    canTargetMemo := functional.Memoize(canTarget)
+    canTargetMemo := functional.Memoize(func (target *ArmyUnit) bool {
+        return canTarget(target) && combat.IsUnitVisible(target)
+    })
 
     for !quit {
         combat.Counter += 1
@@ -2306,7 +2475,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     defer cancel()
 
     sound, err := combat.AudioCache.GetSound(mover.Unit.GetMovementSound().LbxIndex())
-    if err == nil {
+    if err == nil && combat.IsUnitVisible(mover) {
         // keep playing movement sound in a loop until the unit stops moving
         go func(){
             // defer sound.Pause()
@@ -2415,12 +2584,23 @@ func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *A
         attacker.MovesLeft = fraction.FromInt(0)
     }
 
-    attacker.RangedAttacks -= 1
-
     attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
 
-    // FIXME: could use a for/yield loop here to update projectiles
-    combat.createRangeAttack(attacker, defender)
+    attacks := 1
+    // haste does two ranged attacks
+    if attacker.HasEnchantment(data.UnitEnchantmentHaste) {
+        // caster's don't get to attack twice
+        if attacker.GetRangedAttackDamageType() == units.DamageRangedMagical && attacker.CastingSkill > 0 {
+        } else {
+            attacks = min(2, attacker.RangedAttacks)
+        }
+    }
+
+    for range attacks {
+        attacker.UseRangeAttack()
+        // FIXME: could use a for/yield loop here to update projectiles
+        combat.createRangeAttack(attacker, defender)
+    }
 
     sound, err := combat.AudioCache.GetSound(attacker.Unit.GetRangeAttackSound().LbxIndex())
     if err == nil {
@@ -2519,7 +2699,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         if !found {
             combat.Model.Tiles[unit.Y][unit.X].Unit = nil
             var ok bool
-            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, unit.CanTraverseWall())
+            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
             combat.Model.Tiles[unit.Y][unit.X].Unit = unit
             if ok {
                 paths[unit] = path
@@ -2607,7 +2787,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         // if inside a city wall, then move towards the gate
         gateX, gateY := combat.Model.GetCityGateCoordinates()
         if gateX != -1 && gateY != -1 {
-            path, ok := combat.Model.computePath(aiUnit.X, aiUnit.Y, gateX, gateY, aiUnit.CanTraverseWall())
+            path, ok := combat.Model.computePath(aiUnit.X, aiUnit.Y, gateX, gateY, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
             if ok && len(path) > 1 && aiUnit.CanFollowPath(path) {
                 combat.doMoveUnit(yield, aiUnit, path[1:])
                 return
@@ -2639,27 +2819,33 @@ func (combat *CombatScreen) UpdateMouseState() {
 }
 
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
+    if combat.Model.CurrentTurn >= MAX_TURNS {
+        combat.Model.AddLogEvent("Combat exceeded maximum number of turns, defender wins")
+        combat.Model.FinishCombat(CombatStateDefenderWin)
+        return CombatStateDefenderWin
+    }
+
     if combat.Model.AttackingArmy.Fled {
         combat.Model.flee(combat.Model.AttackingArmy)
-        combat.Model.Finish()
+        combat.Model.FinishCombat(CombatStateAttackerFlee)
         return CombatStateAttackerFlee
     }
 
     if combat.Model.DefendingArmy.Fled {
         combat.Model.flee(combat.Model.DefendingArmy)
-        combat.Model.Finish()
+        combat.Model.FinishCombat(CombatStateDefenderFlee)
         return CombatStateDefenderFlee
     }
 
     if len(combat.Model.AttackingArmy.units) == 0 {
         combat.Model.AddLogEvent("Defender wins!")
-        combat.Model.Finish()
+        combat.Model.FinishCombat(CombatStateDefenderWin)
         return CombatStateDefenderWin
     }
 
     if len(combat.Model.DefendingArmy.units) == 0 {
         combat.Model.AddLogEvent("Attacker wins!")
-        combat.Model.Finish()
+        combat.Model.FinishCombat(CombatStateAttackerWin)
         return CombatStateAttackerWin
     }
 
@@ -3302,7 +3488,34 @@ func (combat *CombatScreen) Draw(screen *ebiten.Image){
     combat.Drawer(screen)
 }
 
+func (combat *CombatScreen) makeIsUnitVisibleFunc() func(*ArmyUnit) bool {
+    teamHasIllusionImmunity := functional.Memoize(func(team Team) bool {
+        army := combat.Model.GetArmyForTeam(team)
+        for _, unit := range army.units {
+            if unit.HasAbility(data.AbilityIllusionsImmunity) {
+                return true
+            }
+        }
+
+        return false
+    })
+
+    return func(unit *ArmyUnit) bool {
+        if !unit.IsInvisible() {
+            return true
+        }
+
+        owner := combat.Model.GetArmy(unit)
+        return owner.Player.IsHuman() || teamHasIllusionImmunity(oppositeTeam(unit.Team)) || combat.Model.IsAdjacentToEnemy(unit)
+    }
+}
+
+func (combat *CombatScreen) IsUnitVisible(unit *ArmyUnit) bool {
+    return combat.makeIsUnitVisibleFunc()(unit)
+}
+
 func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
+    isVisible := functional.Memoize(combat.makeIsUnitVisibleFunc())
 
     animationIndex := combat.Counter / 8
 
@@ -3358,7 +3571,17 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
         options.GeoM.Translate(tx, ty)
         options.GeoM.Translate(0, float64(tile0.Bounds().Dy())/2)
         scale.DrawScaled(screen, road, &options)
+    }
 
+    if combat.DrawClouds {
+        tx, ty := tilePosition(TownCenterX, TownCenterY-5)
+
+        clouds, _ := combat.ImageCache.GetImage("cmbtcity.lbx", 113, 0)
+        options.GeoM.Reset()
+        options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+        options.GeoM.Translate(tx, ty)
+        options.GeoM.Translate(0, float64(tile0.Bounds().Dy())/2)
+        scale.DrawScaled(screen, clouds, &options)
     }
 
     // then draw extra stuff on top
@@ -3409,7 +3632,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
-    if combat.Model.SelectedUnit != nil {
+    if combat.Model.SelectedUnit != nil && isVisible(combat.Model.SelectedUnit) {
         var path pathfinding.Path
         ok := false
 
@@ -3508,8 +3731,18 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
             // _ = index
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
-            if unit.IsAsleep() {
-                unitview.RenderCombatUnitGrey(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
+            if unit.IsInvisible() {
+                // might not be visible at all, or is semi-visible if next to an enemy unit or if the enemy team has
+                // any units with illusions immunity
+                canBeSeen := isVisible(unit)
+                if canBeSeen {
+                    unitview.RenderCombatSemiInvisible(screen, combatImages[index], unitOptions, unit.VisibleFigures(), combat.Counter, &combat.ImageCache)
+                } else {
+                    // if can't be seen then don't render anything at all
+                }
+
+            } else if unit.IsAsleep() {
+                unitview.RenderCombatUnitGrey(screen, combatImages[index], unitOptions, unit.VisibleFigures(), use, combat.Counter, &combat.ImageCache)
             } else {
                 warpCreature := false
                 for _, curse := range unit.GetCurses() {
@@ -3529,7 +3762,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                     unitOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xb5, G: 0x5e, B: 0xf3, A: 0xff})
                 }
 
-                unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.Figures(), use, combat.Counter, &combat.ImageCache)
+                unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.VisibleFigures(), use, combat.Counter, &combat.ImageCache)
 
                 if warpCreature {
                     unitOptions.ColorScale = savedColor
@@ -3638,7 +3871,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
     combat.UI.Draw(combat.UI, screen)
 
-    if combat.Model.HighlightedUnit != nil {
+    if combat.Model.HighlightedUnit != nil && isVisible(combat.Model.HighlightedUnit) {
         combat.ShowUnitInfo(screen, combat.Model.HighlightedUnit)
     }
 

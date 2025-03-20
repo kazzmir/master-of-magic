@@ -4,6 +4,7 @@ import (
     "fmt"
     "slices"
     "math/rand/v2"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -284,6 +285,7 @@ type Hero struct {
 func MakeHeroSimple(heroType HeroType) *Hero {
     unit := units.MakeOverworldUnit(heroType.GetUnit(), 0, 0, data.PlaneArcanus)
     unit.ExperienceInfo = &units.NoExperienceInfo{}
+    unit.GlobalEnchantments = &units.NoEnchantments{}
     return MakeHero(unit, heroType, heroType.DefaultName())
 }
 
@@ -579,12 +581,8 @@ func (hero *Hero) SetUndead() {
     hero.Unit.SetUndead()
 }
 
-// heroes are never part of a magic realm (life, death, etc), unless it is undead
 func (hero *Hero) GetRealm() data.MagicType {
-    if hero.IsUndead() {
-        return data.DeathMagic
-    }
-    return data.MagicNone
+    return hero.Unit.GetRealm()
 }
 
 // for mythril/adamantium, heroes dont use those
@@ -600,11 +598,11 @@ func (hero *Hero) GetCombatRangeIndex(facing units.Facing) int {
 }
 
 func (hero *Hero) GetHealth() int {
-    return hero.Unit.GetHealth()
+    return hero.GetMaxHealth() - hero.GetDamage()
 }
 
 func (hero *Hero) GetMaxHealth() int {
-    return hero.GetHitPoints()
+    return hero.GetFullHitPoints() * hero.GetCount()
 }
 
 func (hero *Hero) AddExperience(amount int) {
@@ -870,6 +868,10 @@ func (hero *Hero) HasItemAbility(ability data.ItemAbility) bool {
     })
 }
 
+func (hero *Hero) IsInvisible() bool {
+    return hero.HasAbility(data.AbilityInvisibility)
+}
+
 func (hero *Hero) IsFlying() bool {
     return hero.Unit.IsFlying()
 }
@@ -894,6 +896,10 @@ func (hero *Hero) SetBanner(banner data.BannerType) {
     hero.Unit.SetBanner(banner)
 }
 
+func (hero *Hero) SetGlobalEnchantmentProvider(provider units.GlobalEnchantmentProvider) {
+    hero.Unit.SetGlobalEnchantmentProvider(provider)
+}
+
 func (hero *Hero) GetCombatLbxFile() string {
     return hero.Unit.GetCombatLbxFile()
 }
@@ -903,6 +909,10 @@ func (hero *Hero) GetCombatIndex(facing units.Facing) int {
 }
 
 func (hero *Hero) GetCount() int {
+    return 1
+}
+
+func (hero *Hero) GetVisibleCount() int {
     return 1
 }
 
@@ -967,7 +977,7 @@ func (hero *Hero) GetHeroExperienceLevel() units.HeroExperienceLevel {
 }
 
 func (hero *Hero) SetExperienceInfo(info units.ExperienceInfo) {
-    hero.Unit.ExperienceInfo = info
+    hero.Unit.SetExperienceInfo(info)
 }
 
 func (hero *Hero) ResetOwner() {
@@ -1388,7 +1398,17 @@ func (hero *Hero) GetResistance() int {
 }
 
 func (hero *Hero) GetFullHitPoints() int {
-    return hero.GetHitPoints()
+    base := hero.GetBaseHitPoints()
+
+    for _, enchantment := range hero.GetEnchantments() {
+        base += hero.HitPointsEnchantmentBonus(enchantment)
+    }
+
+    if hero.Unit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentCharmOfLife) {
+        base = int(math.Ceil(float64(base) * 1.25))
+    }
+
+    return base + hero.GetAbilityHealth()
 }
 
 func (hero *Hero) HitPointsEnchantmentBonus(enchantment data.UnitEnchantment) int {
@@ -1396,13 +1416,7 @@ func (hero *Hero) HitPointsEnchantmentBonus(enchantment data.UnitEnchantment) in
 }
 
 func (hero *Hero) GetHitPoints() int {
-    base := hero.GetBaseHitPoints()
-
-    for _, enchantment := range hero.GetEnchantments() {
-        base += hero.HitPointsEnchantmentBonus(enchantment)
-    }
-
-    return base + hero.GetAbilityHealth()
+    return (hero.GetMaxHealth() - hero.GetDamage()) / hero.GetCount()
 }
 
 func (hero *Hero) GetBaseHitPoints() int {
@@ -1458,7 +1472,12 @@ func (hero *Hero) GetBaseProgression() []string {
 }
 
 func (hero *Hero) GetAbilities() []data.Ability {
-    return hero.Abilities
+    var enchantmentAbilities []data.Ability
+    for _, enchantment := range hero.GetEnchantments() {
+        enchantmentAbilities = append(enchantmentAbilities, enchantment.Abilities()...)
+    }
+
+    return append(hero.Abilities, enchantmentAbilities...)
 }
 
 func (hero *Hero) GetTitle() string {

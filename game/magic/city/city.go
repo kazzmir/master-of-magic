@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
 )
 
@@ -1649,6 +1650,32 @@ func (city *City) GetWeaponBonus() data.WeaponBonus {
     }
 
     return data.WeaponNone
+}
+
+// true if the unit can enter the city (e.g. not blocked by a ward)
+func (city *City) CanEnter(unit units.StackUnit) bool {
+    if city.IsProtectedAgainst(unit.GetRealm()) {
+        return false
+    }
+
+    return true
+}
+
+// true if this city has a spell ward against the given magic
+func (city *City) IsProtectedAgainst(magic data.MagicType) bool {
+    switch magic {
+        case data.NatureMagic: return city.HasEnchantment(data.CityEnchantmentNatureWard)
+        case data.SorceryMagic: return city.HasEnchantment(data.CityEnchantmentSorceryWard)
+        case data.LifeMagic: return city.HasEnchantment(data.CityEnchantmentLifeWard)
+        case data.ChaosMagic: return city.HasEnchantment(data.CityEnchantmentChaosWard)
+        case data.DeathMagic: return city.HasEnchantment(data.CityEnchantmentDeathWard)
+    }
+
+    return false
+}
+
+func (city *City) CanTarget(spell spellbook.Spell) bool {
+    return !city.IsProtectedAgainst(spell.Magic)
 }
 
 // do all the stuff needed per turn

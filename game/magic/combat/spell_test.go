@@ -200,17 +200,65 @@ func (system *TestSpellSystem) CreateFlightProjectile(target *ArmyUnit) *Project
     return nil
 }
 
+func (system *TestSpellSystem) CreateGuardianWindProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateHasteProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateInvisibilityProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateMagicImmunityProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateResistMagicProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateSpellLockProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateFlameBladeProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateImmolationProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateBerserkProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateCloakOfFearProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *TestSpellSystem) CreateWraithFormProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
 func (system *TestSpellSystem) GetAllSpells() spellbook.Spells {
     return spellbook.Spells{}
 }
 
 func TestFireballSpell(test *testing.T){
     defendingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackerUnit := units.LizardSpearmen

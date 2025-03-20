@@ -4,6 +4,7 @@ import (
     // "log"
     "testing"
     "math"
+    "slices"
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
@@ -58,7 +59,7 @@ func BenchmarkAngle(bench *testing.B){
 }
 
 func TestUnitHealth(test *testing.T) {
-    unit := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
+    unit := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
     armyUnit := ArmyUnit{
         Unit: unit,
     }
@@ -72,7 +73,7 @@ func TestUnitHealth(test *testing.T) {
     }
 
     // each figure has 2 hp, so taking one damage should keep 8 figures
-    armyUnit.TakeDamage(1)
+    armyUnit.TakeDamage(1, DamageNormal)
 
     if armyUnit.Figures() != 8 {
         test.Errorf("Error: figures should be 8")
@@ -83,7 +84,7 @@ func TestUnitHealth(test *testing.T) {
     }
 
     // kill one figure
-    armyUnit.TakeDamage(1)
+    armyUnit.TakeDamage(1, DamageNormal)
 
     if armyUnit.Figures() != 7 {
         test.Errorf("Error: figures should be 7")
@@ -166,15 +167,15 @@ func (observer *TestObserver) UnitKilled(unit *ArmyUnit){
 
 func TestBasicMelee(test *testing.T){
     defendingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
-    defender := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -213,15 +214,15 @@ func TestBasicMelee(test *testing.T){
 
 func TestAttackerHaste(test *testing.T){
     defendingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
-    defender := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -267,20 +268,20 @@ func TestAttackerHaste(test *testing.T){
 // attacker should melee first and cause enough damage to kill the defender
 func TestFirstStrike(test *testing.T){
     defendingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackerUnit := units.LizardSpearmen
-    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbility(data.AbilityFirstStrike))
+    attackerUnit.Abilities = append(slices.Clone(attackerUnit.Abilities), data.MakeAbility(data.AbilityFirstStrike))
     // ensure attacker can kill the defender in one hit
     attackerUnit.MeleeAttackPower = 10000
 
-    defender := units.MakeOverworldUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(attackerUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -324,23 +325,23 @@ func TestFirstStrike(test *testing.T){
 // first strike is negated, so units attack each other at the same time
 func TestFirstStrikeNegate(test *testing.T){
     defendingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackerUnit := units.LizardSpearmen
-    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbility(data.AbilityFirstStrike))
+    attackerUnit.Abilities = append(slices.Clone(attackerUnit.Abilities), data.MakeAbility(data.AbilityFirstStrike))
     // ensure attacker can kill the defender in one hit
     attackerUnit.MeleeAttackPower = 10000
 
     defenderUnit := units.LizardSpearmen
-    defenderUnit.Abilities = append(defenderUnit.Abilities, data.MakeAbility(data.AbilityNegateFirstStrike))
+    defenderUnit.Abilities = append(slices.Clone(defenderUnit.Abilities), data.MakeAbility(data.AbilityNegateFirstStrike))
 
-    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(defenderUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(attackerUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -382,22 +383,22 @@ func TestFirstStrikeNegate(test *testing.T){
 
 func TestThrowAttack(test *testing.T){
     defendingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackerUnit := units.LizardSpearmen
-    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbilityValue(data.AbilityThrown, 10000), data.MakeAbilityValue(data.AbilityToHit, 100))
+    attackerUnit.Abilities = append(slices.Clone(attackerUnit.Abilities), data.MakeAbilityValue(data.AbilityThrown, 10000), data.MakeAbilityValue(data.AbilityToHit, 100))
     // ensure attacker can kill the defender in one hit
     attackerUnit.MeleeAttackPower = 10000
 
     defenderUnit := units.LizardSpearmen
 
-    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(defenderUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(attackerUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -449,15 +450,15 @@ func TestThrowAttack(test *testing.T){
 
 func TestThrownTouchAttack(test *testing.T){
     defendingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackerUnit := units.LizardSpearmen
-    attackerUnit.Abilities = append(attackerUnit.Abilities,
+    attackerUnit.Abilities = append(slices.Clone(attackerUnit.Abilities),
         data.MakeAbilityValue(data.AbilityThrown, 10000),
         data.MakeAbilityValue(data.AbilityToHit, 100),
         data.MakeAbilityValue(data.AbilityPoisonTouch, 10),
@@ -467,8 +468,8 @@ func TestThrownTouchAttack(test *testing.T){
 
     defenderUnit := units.LizardSpearmen
 
-    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(defenderUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(attackerUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -531,22 +532,22 @@ func TestThrownTouchAttack(test *testing.T){
 // attacker causes fear in defender, so defender does not attack
 func TestFear(test *testing.T){
     defendingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackerUnit := units.LizardSpearmen
-    attackerUnit.Abilities = append(attackerUnit.Abilities, data.MakeAbility(data.AbilityCauseFear))
+    attackerUnit.Abilities = append(slices.Clone(attackerUnit.Abilities), data.MakeAbility(data.AbilityCauseFear))
 
     defenderUnit := units.LizardSwordsmen
     // ensure all units become afraid
     defenderUnit.Resistance = -100
 
-    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(defenderUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(attackerUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -597,18 +598,18 @@ func TestFear(test *testing.T){
 
 func TestCounterAttackPenalty(test *testing.T){
     defendingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackerUnit := units.LizardSpearmen
     defenderUnit := units.LizardSwordsmen
 
-    defender := units.MakeOverworldUnit(defenderUnit, 0, 0, data.PlaneArcanus)
-    attacker := units.MakeOverworldUnit(attackerUnit, 0, 0, data.PlaneArcanus)
+    defender := units.MakeOverworldUnitFromUnit(defenderUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(attackerUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
     defendingArmy.AddUnit(defender)
     attackingArmy.AddUnit(attacker)
@@ -623,7 +624,7 @@ func TestCounterAttackPenalty(test *testing.T){
 
     combat.Initialize(spellbook.Spells{}, 0, 0)
 
-    if defendingArmy.units[0].GetCounterAttackToHit() != 30 {
+    if defendingArmy.units[0].GetCounterAttackToHit(attackingArmy.GetUnits()[0]) != 30 {
         test.Errorf("Error: defender should have normal 30%% counter attack to-hit")
     }
 
@@ -631,7 +632,7 @@ func TestCounterAttackPenalty(test *testing.T){
     combat.meleeAttack(attackingArmy.units[0], defendingArmy.units[0])
     combat.meleeAttack(attackingArmy.units[0], defendingArmy.units[0])
 
-    if defendingArmy.units[0].GetCounterAttackToHit() != 20 {
+    if defendingArmy.units[0].GetCounterAttackToHit(attackingArmy.GetUnits()[0]) != 20 {
         test.Errorf("Error: defender should have 20%% counter attack to-hit")
     }
 }

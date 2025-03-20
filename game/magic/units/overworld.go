@@ -3,6 +3,7 @@ package units
 import (
     "slices"
     "cmp"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -25,6 +26,23 @@ type EnchantmentProvider interface {
     HasEnchantmentOnly(data.UnitEnchantment) bool
 }
 
+type GlobalEnchantmentProvider interface {
+    // true if the owner of this unit has the enchantment active
+    HasFriendlyEnchantment(data.Enchantment) bool
+    // true if any wizard has the enchantment active (useful for enchantments with negative effects)
+    HasEnchantment(data.Enchantment) bool
+}
+
+// a default empty implementation of GlobalEnchantmentProvider
+type NoEnchantments struct {}
+func (*NoEnchantments) HasFriendlyEnchantment(enchantment data.Enchantment) bool {
+    return false
+}
+
+func (*NoEnchantments) HasEnchantment(enchantment data.Enchantment) bool {
+    return false
+}
+
 type OverworldUnit struct {
     ExperienceInfo ExperienceInfo
     Unit Unit
@@ -45,7 +63,14 @@ type OverworldUnit struct {
 
     Enchantments []data.UnitEnchantment
 
-    // this should be set during combat to the ArmyUnit, and unset at all other times
+    GlobalEnchantments GlobalEnchantmentProvider
+
+    // This should be set during combat to the ArmyUnit, and unset at all other times.
+    // This exists because to compute the experience level of a unit we must know if the unit
+    // has heroism enchanted on it, but heroism could be cast as a combat spell in which case normally
+    // the enchantment would be added to the ArmyUnit enchantment list, which this unit does not have access to.
+    // So instead we allow this unit to access the enchanments of the enclosing ArmyUnit to detect
+    // if heroism is active.
     ExtraEnchantments EnchantmentProvider
 }
 
@@ -61,8 +86,19 @@ func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
     })
 }
 
-func (unit *OverworldUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
+// checks enchantments on the unit itself, ignoring global enchantments
+func (unit *OverworldUnit) hasUnitEnchantment(enchantment data.UnitEnchantment) bool {
     return slices.Contains(unit.Enchantments, enchantment) || (unit.ExtraEnchantments != nil && unit.ExtraEnchantments.HasEnchantmentOnly(enchantment))
+}
+
+func (unit *OverworldUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
+    if unit.GetRace() != data.RaceFantastic && enchantment == data.UnitEnchantmentHolyWeapon {
+        if unit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentHolyArms) {
+            return true
+        }
+    }
+
+    return unit.hasUnitEnchantment(enchantment)
 }
 
 func (unit *OverworldUnit) GetBusy() BusyStatus {
@@ -109,7 +145,13 @@ func (unit *OverworldUnit) RemoveEnchantment(toRemove data.UnitEnchantment) {
 }
 
 func (unit *OverworldUnit) GetEnchantments() []data.UnitEnchantment {
-    return slices.Clone(unit.Enchantments)
+    out := slices.Clone(unit.Enchantments)
+
+    if unit.GetRace() != data.RaceFantastic && unit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentHolyArms) {
+        out = append(out, data.UnitEnchantmentHolyWeapon)
+    }
+
+    return out
 }
 
 func (unit *OverworldUnit) GetLbxFile() string {
@@ -157,26 +199,28 @@ func (unit *OverworldUnit) GetRace() data.Race {
         return data.RaceFantastic
     }
 
-    // chaos channeled units are treated as fantastic
-    chaosChanneled := []data.UnitEnchantment{
-        data.UnitEnchantmentChaosChannelsDemonWings,
-        data.UnitEnchantmentChaosChannelsDemonSkin,
-        data.UnitEnchantmentChaosChannelsFireBreath,
-    }
-
-    for _, enchantment := range chaosChanneled {
-        if unit.HasEnchantment(enchantment) {
-            return data.RaceFantastic
-        }
+    if unit.IsChaosChanneled() {
+        return data.RaceFantastic
     }
 
     return unit.Unit.Race
+}
+
+func (unit *OverworldUnit) IsChaosChanneled() bool {
+    return unit.hasUnitEnchantment(data.UnitEnchantmentChaosChannelsDemonWings) ||
+       unit.hasUnitEnchantment(data.UnitEnchantmentChaosChannelsDemonSkin) ||
+       unit.hasUnitEnchantment(data.UnitEnchantmentChaosChannelsFireBreath)
 }
 
 func (unit *OverworldUnit) GetRealm() data.MagicType {
     if unit.IsUndead() {
         return data.DeathMagic
     }
+
+    if unit.IsChaosChanneled() {
+        return data.ChaosMagic
+    }
+
     return unit.Unit.Realm
 }
 
@@ -210,6 +254,10 @@ func (unit *OverworldUnit) SetMovesLeft(moves fraction.Fraction) {
 
 func (unit *OverworldUnit) IsFlying() bool {
     return unit.Unit.Flying || unit.HasEnchantment(data.UnitEnchantmentFlight) || unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings)
+}
+
+func (unit *OverworldUnit) IsInvisible() bool {
+    return unit.HasAbility(data.AbilityInvisibility)
 }
 
 func (unit *OverworldUnit) IsSailing() bool {
@@ -301,7 +349,7 @@ func (unit *OverworldUnit) GetDamage() int {
 }
 
 func (unit *OverworldUnit) GetMaxHealth() int {
-    return unit.GetHitPoints() * unit.GetCount()
+    return unit.GetFullHitPoints() * unit.GetCount()
 }
 
 func (unit *OverworldUnit) GetToHitMelee() int {
@@ -366,6 +414,14 @@ func (unit *OverworldUnit) HasItemAbility(ability data.ItemAbility) bool {
     return false
 }
 
+func (unit *OverworldUnit) SetGlobalEnchantmentProvider(provider GlobalEnchantmentProvider) {
+    unit.GlobalEnchantments = provider
+}
+
+func (unit *OverworldUnit) SetExperienceInfo(info ExperienceInfo) {
+    unit.ExperienceInfo = info
+}
+
 func (unit *OverworldUnit) SetBanner(banner data.BannerType) {
     unit.Banner = banner
 }
@@ -392,6 +448,10 @@ func (unit *OverworldUnit) GetCombatIndex(facing Facing) int {
 
 func (unit *OverworldUnit) GetCount() int {
     return unit.Unit.GetCount()
+}
+
+func (unit *OverworldUnit) GetVisibleCount() int {
+    return unit.Unit.GetVisibleCount()
 }
 
 func (unit *OverworldUnit) GetUpkeepGold() int {
@@ -522,7 +582,7 @@ func (unit *OverworldUnit) GetHeroExperienceLevel() HeroExperienceLevel {
 }
 
 func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
-    // fantastic creatures can never gain any levels, but undead units can have experience
+    // pure fantastic creatures can never gain any levels, but undead units can have experience, so don't use GetRace() here
     if unit.Unit.Race == data.RaceFantastic {
         return ExperienceRecruit
     }
@@ -588,7 +648,10 @@ func (unit *OverworldUnit) GetFullRangedAttackPower() int {
 func (unit *OverworldUnit) RangedEnchantmentBonus(enchantment data.UnitEnchantment) int {
     switch enchantment {
         case data.UnitEnchantmentBlackChannels: return 1
-        case data.UnitEnchantmentFlameBlade: return 2
+        case data.UnitEnchantmentFlameBlade:
+            if unit.GetRangedAttackDamageType() == DamageRangedPhysical {
+                return 2
+            }
         case data.UnitEnchantmentLionHeart:
             if unit.GetRangedAttackDamageType() != DamageRangedMagical {
                 return 3
@@ -687,7 +750,16 @@ func (unit *OverworldUnit) GetBaseResistance() int {
 }
 
 func (unit *OverworldUnit) GetFullHitPoints() int {
-    return unit.GetHitPoints()
+    base := unit.GetBaseHitPoints()
+    for _, enchantment := range unit.Enchantments {
+        base += unit.HitPointsEnchantmentBonus(enchantment)
+    }
+
+    if unit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentCharmOfLife) {
+        base = int(math.Ceil(float64(base) * 1.25))
+    }
+
+    return base
 }
 
 func (unit *OverworldUnit) HitPointsEnchantmentBonus(enchantment data.UnitEnchantment) int {
@@ -698,15 +770,8 @@ func (unit *OverworldUnit) HitPointsEnchantmentBonus(enchantment data.UnitEnchan
     return 0
 }
 
-// does not account for damage
 func (unit *OverworldUnit) GetHitPoints() int {
-    base := unit.GetBaseHitPoints()
-
-    for _, enchantment := range unit.Enchantments {
-        base += unit.HitPointsEnchantmentBonus(enchantment)
-    }
-
-    return base
+    return (unit.GetMaxHealth() - unit.GetDamage()) / unit.GetCount()
 }
 
 func (unit *OverworldUnit) GetBaseHitPoints() int {
@@ -727,20 +792,27 @@ func (unit *OverworldUnit) GetBaseHitPoints() int {
 
 func (unit *OverworldUnit) GetAbilities() []data.Ability {
     // FIXME: should the added death abilities from being undead be added here?
-    return unit.Unit.GetAbilities()
+
+    var enchantmentAbilities []data.Ability
+    for _, enchantment := range unit.Enchantments {
+        enchantmentAbilities = append(enchantmentAbilities, enchantment.Abilities()...)
+    }
+
+    return append(unit.Unit.GetAbilities(), enchantmentAbilities...)
 }
 
 func MakeOverworldUnit(unit Unit, x int, y int, plane data.Plane) *OverworldUnit {
-    return MakeOverworldUnitFromUnit(unit, x, y, plane, data.BannerBrown, nil)
+    return MakeOverworldUnitFromUnit(unit, x, y, plane, data.BannerBrown, &NoExperienceInfo{}, &NoEnchantments{})
 }
 
-func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType, experienceInfo ExperienceInfo) *OverworldUnit {
+func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType, experienceInfo ExperienceInfo, globalEnchantment GlobalEnchantmentProvider) *OverworldUnit {
     return &OverworldUnit{
         Unit: unit,
         Banner: banner,
         Plane: plane,
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
         ExperienceInfo: experienceInfo,
+        GlobalEnchantments: globalEnchantment,
         X: x,
         Y: y,
     }
@@ -750,7 +822,7 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
  */
 func (unit *OverworldUnit) NaturalHeal(rate float64) {
     // undead creatures never heal
-    if unit.IsUndead() {
+    if unit.IsUndead() || unit.GetRealm() == data.DeathMagic {
         return
     }
 

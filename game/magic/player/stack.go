@@ -319,6 +319,18 @@ func (stack *UnitStack) EnableMovers(){
     }
 }
 
+// use up movement points for all active units, but don't move anywhere
+func (stack *UnitStack) UseMovement(cost fraction.Fraction){
+    normalize := units.NormalizeCoordinateFunc(func (x int, y int) (int, int) {
+        return x, y
+    })
+    for _, unit := range stack.units {
+        if stack.active[unit] {
+            unit.Move(0, 0, cost, normalize)
+        }
+    }
+}
+
 func (stack *UnitStack) Move(dx int, dy int, cost fraction.Fraction, normalize units.NormalizeCoordinateFunc){
     transport := stack.HasSailingUnits(true)
     for _, unit := range stack.units {
