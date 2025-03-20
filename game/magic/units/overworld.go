@@ -789,7 +789,7 @@ func (unit *OverworldUnit) GetAbilities() []data.Ability {
 }
 
 func MakeOverworldUnit(unit Unit, x int, y int, plane data.Plane) *OverworldUnit {
-    return MakeOverworldUnitFromUnit(unit, x, y, plane, data.BannerBrown, nil, nil)
+    return MakeOverworldUnitFromUnit(unit, x, y, plane, data.BannerBrown, &NoExperienceInfo{}, &NoEnchantments{})
 }
 
 func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType, experienceInfo ExperienceInfo, globalEnchantment GlobalEnchantmentProvider) *OverworldUnit {
