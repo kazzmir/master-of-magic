@@ -819,6 +819,12 @@ func (unit *ArmyUnit) IsMagicImmune(magic data.MagicType) bool {
     return false
 }
 
+// true if this unit has the same realm as the current magic node
+func (unit *ArmyUnit) UnderNodeInfluence() bool {
+    realm := unit.GetRealm()
+    return realm != data.MagicNone && realm == unit.Model.Influence
+}
+
 func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
     // metal fires adds 1 to thrown attacks
     if ability == data.AbilityThrown {
@@ -826,7 +832,7 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
         if value > 0 {
             modifier := float32(0)
 
-            if unit.GetRealm() == unit.Model.Influence {
+            if unit.UnderNodeInfluence() {
                 modifier += 2
             }
 
@@ -876,7 +882,7 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
 
             shattered := false
 
-            if unit.GetRealm() == unit.Model.Influence {
+            if unit.UnderNodeInfluence() {
                 modifier += 2
             }
 
@@ -1030,7 +1036,7 @@ func (unit *ArmyUnit) GetResistance() int {
     modifier := 0
 
     // magic node influencing fantastic creatures
-    if unit.GetRealm() == unit.Model.Influence {
+    if unit.UnderNodeInfluence() {
         modifier += 2
     }
 
@@ -1126,7 +1132,7 @@ func (unit *ArmyUnit) GetDefense() int {
     modifier := 0
 
     // magic node influencing fantastic creatures
-    if unit.GetRealm() == unit.Model.Influence {
+    if unit.UnderNodeInfluence() {
         modifier += 2
     }
 
@@ -1186,7 +1192,7 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
     modifier := 0
 
     // magic node influencing fantastic creatures
-    if unit.GetRealm() == unit.Model.Influence {
+    if unit.UnderNodeInfluence() {
         modifier += 2
     }
 
@@ -1230,7 +1236,7 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
     modifier := 0
 
     // magic node influencing fantastic creatures
-    if unit.GetRealm() == unit.Model.Influence {
+    if unit.UnderNodeInfluence() {
         modifier += 2
     }
 
