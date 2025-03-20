@@ -626,6 +626,9 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
                 buildings.Insert(building)
             }
         }
+        if cityData.X == saveGame.Fortresses[playerIndex].X && cityData.Y == saveGame.Fortresses[playerIndex].Y && cityData.Plane == saveGame.Fortresses[playerIndex].Plane && saveGame.Fortresses[playerIndex].Active == 1 {
+            buildings.Insert(buildinglib.BuildingFortress)
+        }
 
         enchantments := set.MakeSet[citylib.Enchantment]()
         for index, enchantment := range enchantmentMap {
@@ -686,7 +689,6 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // saveGame.HeroData
     // saveGame.PlayerData
     // saveGame.GrandVizier
-    // saveGame.Fortresses
     // saveGame.Items
     // saveGame.Units / saveGame.NumUnits
     // saveGame.Events
