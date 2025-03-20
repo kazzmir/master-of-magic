@@ -327,7 +327,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /*
             GLOBAL ENCHANTMENTS
                 TODO:
-                Holy Arms
                 Planar Seal
                 Herb Mastery
                 Nature's Wrath
@@ -346,6 +345,20 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             if !player.GlobalEnchantments.Contains(enchantment) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
                 player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+
+        case "Holy Arms":
+            enchantment := data.EnchantmentHolyArms
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+
+                // all units implicitly have holy weapon, so the actual enchantment is removed from all units
+                for _, unit := range player.Units {
+                    unit.RemoveEnchantment(data.UnitEnchantmentHolyWeapon)
+                }
+
                 game.RefreshUI()
             }
 

@@ -45,6 +45,9 @@ type StackUnit interface {
     SetUndead()
     GetBanner() data.BannerType
     SetBanner(data.BannerType)
+    SetGlobalEnchantmentProvider(GlobalEnchantmentProvider)
+    SetExperienceInfo(ExperienceInfo)
+
     SetWeaponBonus(data.WeaponBonus)
     GetWeaponBonus() data.WeaponBonus
     GetX() int
