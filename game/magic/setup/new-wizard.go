@@ -296,6 +296,11 @@ type WizardCustom struct {
     Banner data.BannerType
 }
 
+// FIXME: remove me
+func (wizard *WizardCustom) GetBanner() data.BannerType {
+    return wizard.Banner
+}
+
 func (wizard *WizardCustom) MostBooks() data.MagicType {
     max := 0
     kind := data.LifeMagic

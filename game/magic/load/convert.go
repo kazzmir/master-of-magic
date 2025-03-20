@@ -18,7 +18,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane data.Plane, cityProvider maplib.CityProvider) *maplib.Map {
+func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane data.Plane, cityProvider maplib.CityProvider, wizards []maplib.Wizard) *maplib.Map {
 
     map_ := maplib.Map{
         Data: terrainData,
@@ -110,6 +110,46 @@ func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane dat
             Budget: 0,
             Units: nil,
             ExploredBy: nil,
+        }
+    }
+
+    for _, node := range saveGame.Nodes {
+
+        if node.Plane == 0 && plane != data.PlaneArcanus || node.Plane != 0 && plane != data.PlaneMyrror {
+            continue
+        }
+
+        var nodeType maplib.MagicNode
+        switch NodeType(node.NodeType) {
+            case NodeTypeSorcery:
+                nodeType = maplib.MagicNodeSorcery
+            case NodeTypeNature:
+                nodeType = maplib.MagicNodeNature
+            case NodeTypeChaos:
+                nodeType = maplib.MagicNodeChaos
+        }
+
+        var meldingWizard maplib.Wizard
+        if node.Owner > -1 {
+            meldingWizard = wizards[node.Owner]
+        }
+
+        zone := []image.Point{}
+        for i := range node.Power {
+            zone = append(zone, image.Pt(int(node.AuraX[i])-int(node.X), int(node.AuraY[i])-int(node.Y)))
+        }
+
+        point := image.Pt(int(node.X), int(node.Y))
+        if map_.ExtraMap[point] == nil {
+            map_.ExtraMap[point] = make(map[maplib.ExtraKind]maplib.ExtraTile)
+        }
+        map_.ExtraMap[point][maplib.ExtraKindMagicNode] = &maplib.ExtraMagicNode{
+            Kind: nodeType,
+            Zone: zone,
+            MeldingWizard: meldingWizard,
+            Warped: (node.Flags & 0x01) != 0,
+            GuardianSpiritMeld: (node.Flags & 0x02) != 0,
+            // FIXME: WarpedOwner
         }
     }
 
@@ -646,17 +686,25 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // saveGame.HeroData
     // saveGame.PlayerData
     // saveGame.GrandVizier
-    // saveGame.Nodes
     // saveGame.Fortresses
-    // saveGame.Towers
     // saveGame.Items
     // saveGame.Units / saveGame.NumUnits
     // saveGame.Events
     // saveGame.PremadeItems
+    wizards := []setup.WizardCustom{}
+    for index := range saveGame.NumPlayers {
+        wizards = append(wizards, saveGame.convertWizard(int(index)))
+    }
+
+    // FIXME: pass players instead
+    var wizardInterfaces []maplib.Wizard
+    for _, wizard := range wizards {
+        wizardInterfaces = append(wizardInterfaces, &wizard)
+    }
 
     game := gamelib.MakeGame(cache, saveGame.convertSettings())
-    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, nil)
-    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, nil)
+    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, nil, wizardInterfaces)
+    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, nil, wizardInterfaces)
     game.TurnNumber = uint64(saveGame.Turn)
     // FIXME: game.ArtifactPool
     // FIXME: game.RandomEvents
@@ -666,10 +714,6 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // FIXME: game.PurifyWorkMyrror
     // FIXME: game.Players
 
-    wizards := []setup.WizardCustom{}
-    for index := range saveGame.NumPlayers {
-        wizards = append(wizards, saveGame.convertWizard(int(index)))
-    }
 
     // FIXME: make a convertPlayer instead of using AddPlayer
     player := game.AddPlayer(wizards[0], true)

@@ -1111,7 +1111,7 @@ type NodeData struct {
     AuraX []byte
     AuraY []byte
     NodeType int8
-    Meld int8
+    Flags int8
 }
 
 func loadNodes(reader io.Reader) ([]NodeData, error) {
@@ -1167,7 +1167,7 @@ func loadNodes(reader io.Reader) ([]NodeData, error) {
             return nil, err
         }
 
-        data.Meld, err = lbx.ReadN[int8](nodeReader)
+        data.Flags, err = lbx.ReadN[int8](nodeReader)
         if err != nil {
             return nil, err
         }
