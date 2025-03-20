@@ -4807,6 +4807,89 @@ func createScenario53(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// natures wrath
+func createScenario54(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 54: natures wrath")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceHalfling,
+        Retorts: []data.Retort{},
+        Books: []data.WizardBook{
+            {
+                Magic: data.DeathMagic,
+                Count: 11,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+    game.Plane = data.PlaneArcanus
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player := game.AddPlayer(wizard, true)
+    player.CastingSkillPower += 500000
+    player.Gold = 1000
+    player.Mana = 10000
+    player.KnownSpells.AddSpell(allSpells.FindByName("Corruption"))
+
+    x, y, _ := game.FindValidCityLocationOnShore(game.Plane)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHalfling, game.BuildingInfo, game.CurrentMap(), game, player)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.ProducingBuilding = buildinglib.BuildingNone
+    city.ProducingUnit = units.HalflingSpearmen
+    city.Race = wizard.Race
+    city.Farmers = 13
+    city.Workers = 3
+    city.AddBuilding(buildinglib.BuildingFortress)
+    city.AddBuilding(buildinglib.BuildingGranary)
+    city.AddBuilding(buildinglib.BuildingMarketplace)
+    city.AddBuilding(buildinglib.BuildingBank)
+    city.AddBuilding(buildinglib.BuildingFarmersMarket)
+    city.AddBuilding(buildinglib.BuildingWizardsGuild)
+    city.AddBuilding(buildinglib.BuildingArmory)
+    city.ResetCitizens()
+
+    player.AddCity(city)
+    player.LiftFog(x, y, 4, data.PlaneArcanus)
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSpearmen, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Hydra, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+
+    enemyWizard := setup.WizardCustom{
+        Name: "enemy",
+        Banner: data.BannerGreen,
+        Race: data.RaceBeastmen,
+    }
+    enemy := game.AddPlayer(enemyWizard, false)
+    x1 := game.ArcanusMap.WrapX(x-1)
+    enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.BeastmenSpearmen, x1, y-1, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo(), enemy.MakeUnitEnchantmentProvider()))
+    enemy.Mana = 10000
+    enemy.GlobalEnchantments.Insert(data.EnchantmentNaturesWrath)
+
+    x, y, _ = game.FindValidCityLocation(game.Plane)
+
+    city = citylib.MakeCity("Test City", x, y, enemy.Wizard.Race, game.BuildingInfo, game.CurrentMap(), game, enemy)
+    city.Population = 14000
+    city.Plane = data.PlaneArcanus
+    city.ProducingBuilding = buildinglib.BuildingHousing
+    city.ProducingUnit = units.UnitNone
+    city.AddBuilding(buildinglib.BuildingGranary)
+    city.Farmers = 10
+    city.Workers = 4
+    city.ResetCitizens()
+    enemy.AddCity(city)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -4866,6 +4949,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 51: game = createScenario51_52(cache, false)
         case 52: game = createScenario51_52(cache, true)
         case 53: game = createScenario53(cache)
+        case 54: game = createScenario54(cache)
         default: game = createScenario1(cache)
     }
 

@@ -4614,6 +4614,7 @@ func (game *Game) maybeDoNaturesWrath(caster *playerlib.Player) {
 
             // FIXME: emit a message for each building that was destroyed
             for _, building := range toRemove {
+                log.Printf("Natures wrath: destroy building %v", building)
                 city.RemoveBuilding(building)
             }
 
@@ -4622,6 +4623,7 @@ func (game *Game) maybeDoNaturesWrath(caster *playerlib.Player) {
             if stack != nil {
                 for _, unit := range stack.Units() {
                     if rand.N(100) < 15 {
+                        log.Printf("Natures wrath: destroy unit %v", unit.GetName())
                         removeUnits = append(removeUnits, unit)
                     }
                 }
