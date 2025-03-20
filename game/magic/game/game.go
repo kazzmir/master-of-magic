@@ -6942,6 +6942,11 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
             }
         }
 
+        // heal all the way up
+        if player.HasEnchantment(data.EnchantmentHerbMastery) {
+            rate = 1
+        }
+
         stack.NaturalHeal(rate)
         stack.ResetMoves()
         stack.EnableMovers()
