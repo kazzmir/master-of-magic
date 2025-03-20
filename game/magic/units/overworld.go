@@ -65,7 +65,12 @@ type OverworldUnit struct {
 
     GlobalEnchantments GlobalEnchantmentProvider
 
-    // this should be set during combat to the ArmyUnit, and unset at all other times
+    // This should be set during combat to the ArmyUnit, and unset at all other times.
+    // This exists because to compute the experience level of a unit we must know if the unit
+    // has heroism enchanted on it, but heroism could be cast as a combat spell in which case normally
+    // the enchantment would be added to the ArmyUnit enchantment list, which this unit does not have access to.
+    // So instead we allow this unit to access the enchanments of the enclosing ArmyUnit to detect
+    // if heroism is active.
     ExtraEnchantments EnchantmentProvider
 }
 
@@ -577,7 +582,7 @@ func (unit *OverworldUnit) GetHeroExperienceLevel() HeroExperienceLevel {
 }
 
 func (unit *OverworldUnit) GetExperienceLevel() NormalExperienceLevel {
-    // fantastic creatures can never gain any levels, but undead units can have experience
+    // pure fantastic creatures can never gain any levels, but undead units can have experience, so don't use GetRace() here
     if unit.Unit.Race == data.RaceFantastic {
         return ExperienceRecruit
     }
