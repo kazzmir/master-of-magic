@@ -629,6 +629,9 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
         if cityData.X == saveGame.Fortresses[playerIndex].X && cityData.Y == saveGame.Fortresses[playerIndex].Y && cityData.Plane == saveGame.Fortresses[playerIndex].Plane && saveGame.Fortresses[playerIndex].Active == 1 {
             buildings.Insert(buildinglib.BuildingFortress)
         }
+        if int16(cityData.X) == saveGame.PlayerData[playerIndex].SummonX && int16(cityData.Y) == saveGame.PlayerData[playerIndex].SummonY && int16(cityData.Plane) == saveGame.PlayerData[playerIndex].SummonPlane {
+            buildings.Insert(buildinglib.BuildingSummoningCircle)
+        }
 
         enchantments := set.MakeSet[citylib.Enchantment]()
         for index, enchantment := range enchantmentMap {
