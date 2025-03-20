@@ -332,7 +332,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             GLOBAL ENCHANTMENTS
                 TODO:
                 Aura of Majesty
-                Suppress Magic
                 Time Stop
                 Wind Mastery
                 Chaos Surge
@@ -341,6 +340,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Evil Omens
                 Zombie Mastery
         */
+        case "Suppress Magic":
+            enchantment := data.EnchantmentSuppressMagic
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
         case "Nature's Wrath":
             enchantment := data.EnchantmentNaturesWrath
             if !player.GlobalEnchantments.Contains(enchantment) {
@@ -650,22 +656,33 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
 // Returns true if the spell is rolled to be instantly fizzled on cast (caused by spells like Life Force)
 func (game *Game) checkInstantFizzleForCastSpell(player *playerlib.Player, spell spellbook.Spell) bool {
-    // Tranquility effect: if it's a chaos spell, it should either resist a strength 500 dispel check or fizzle right away.
-    if spell.IsOfRealm(data.ChaosMagic) {
-        for _, checkingPlayer := range game.Players {
+    dispelChances := 0
+
+    for _, checkingPlayer := range game.Players {
+
+        // Tranquility effect: if it's a chaos spell, it should either resist a strength 500 dispel check or fizzle right away.
+        if spell.IsOfRealm(data.ChaosMagic) {
             // FIXME: Not sure if multiple instances of Tranquility stack or are checked separately.
-            if checkingPlayer != player && checkingPlayer.GlobalEnchantments.Contains(data.EnchantmentTranquility) {
-                return spellbook.RollDispelChance(spellbook.ComputeDispelChance(500, spell.Cost(true), spell.Magic, &player.Wizard))
+            if checkingPlayer != player && checkingPlayer.HasEnchantment(data.EnchantmentTranquility) {
+                dispelChances += 1
             }
         }
-    }
-    // Life Force effect: if it's a death spell, it should either resist a strength 500 dispel check or fizzle right away.
-    if spell.IsOfRealm(data.DeathMagic) {
-        for _, checkingPlayer := range game.Players {
+        // Life Force effect: if it's a death spell, it should either resist a strength 500 dispel check or fizzle right away.
+        if spell.IsOfRealm(data.DeathMagic) {
             // FIXME: Not sure if multiple instances of Life Force stack or are checked separately.
-            if checkingPlayer != player && checkingPlayer.GlobalEnchantments.Contains(data.EnchantmentLifeForce) {
-                return spellbook.RollDispelChance(spellbook.ComputeDispelChance(500, spell.Cost(true), spell.Magic, &player.Wizard))
+            if checkingPlayer != player && checkingPlayer.HasEnchantment(data.EnchantmentLifeForce) {
+                dispelChances += 1
             }
+        }
+
+        if checkingPlayer != player && checkingPlayer.HasEnchantment(data.EnchantmentSuppressMagic) {
+            dispelChances += 1
+        }
+    }
+
+    for range dispelChances {
+        if spellbook.RollDispelChance(spellbook.ComputeDispelChance(500, spell.Cost(true), spell.Magic, &player.Wizard)) {
+            return true
         }
     }
     return false
