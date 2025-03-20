@@ -353,6 +353,12 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             if !player.GlobalEnchantments.Contains(enchantment) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
                 player.GlobalEnchantments.Insert(enchantment)
+
+                // all units implicitly have holy weapon, so the actual enchantment is removed from all units
+                for _, unit := range player.Units {
+                    unit.RemoveEnchantment(data.UnitEnchantmentHolyWeapon)
+                }
+
                 game.RefreshUI()
             }
 

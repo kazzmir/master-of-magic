@@ -81,8 +81,19 @@ func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
     })
 }
 
-func (unit *OverworldUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
+// checks enchantments on the unit itself, ignoring global enchantments
+func (unit *OverworldUnit) hasUnitEnchantment(enchantment data.UnitEnchantment) bool {
     return slices.Contains(unit.Enchantments, enchantment) || (unit.ExtraEnchantments != nil && unit.ExtraEnchantments.HasEnchantmentOnly(enchantment))
+}
+
+func (unit *OverworldUnit) HasEnchantment(enchantment data.UnitEnchantment) bool {
+    if unit.GetRace() != data.RaceFantastic && enchantment == data.UnitEnchantmentHolyWeapon {
+        if unit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentHolyArms) {
+            return true
+        }
+    }
+
+    return unit.hasUnitEnchantment(enchantment)
 }
 
 func (unit *OverworldUnit) GetBusy() BusyStatus {
@@ -129,7 +140,13 @@ func (unit *OverworldUnit) RemoveEnchantment(toRemove data.UnitEnchantment) {
 }
 
 func (unit *OverworldUnit) GetEnchantments() []data.UnitEnchantment {
-    return slices.Clone(unit.Enchantments)
+    out := slices.Clone(unit.Enchantments)
+
+    if unit.GetRace() != data.RaceFantastic && unit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentHolyArms) {
+        out = append(out, data.UnitEnchantmentHolyWeapon)
+    }
+
+    return out
 }
 
 func (unit *OverworldUnit) GetLbxFile() string {
@@ -185,9 +202,9 @@ func (unit *OverworldUnit) GetRace() data.Race {
 }
 
 func (unit *OverworldUnit) IsChaosChanneled() bool {
-    return unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings) ||
-       unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonSkin) ||
-       unit.HasEnchantment(data.UnitEnchantmentChaosChannelsFireBreath)
+    return unit.hasUnitEnchantment(data.UnitEnchantmentChaosChannelsDemonWings) ||
+       unit.hasUnitEnchantment(data.UnitEnchantmentChaosChannelsDemonSkin) ||
+       unit.hasUnitEnchantment(data.UnitEnchantmentChaosChannelsFireBreath)
 }
 
 func (unit *OverworldUnit) GetRealm() data.MagicType {
