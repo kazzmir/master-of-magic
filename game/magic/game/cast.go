@@ -72,6 +72,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         return
     }
 
+    if spell.IsOfRealm(data.ChaosMagic) || spell.IsOfRealm(data.DeathMagic) {
+        game.maybeDoNaturesWrath(player)
+    }
+
     switch spell.Name {
         /*
             SUMMONING SPELLS
@@ -327,7 +331,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /*
             GLOBAL ENCHANTMENTS
                 TODO:
-                Nature's Wrath
                 Aura of Majesty
                 Suppress Magic
                 Time Stop
@@ -338,6 +341,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Evil Omens
                 Zombie Mastery
         */
+        case "Nature's Wrath":
+            enchantment := data.EnchantmentNaturesWrath
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+
         case "Charm of Life":
             enchantment := data.EnchantmentCharmOfLife
             if !player.GlobalEnchantments.Contains(enchantment) {
