@@ -327,7 +327,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /*
             GLOBAL ENCHANTMENTS
                 TODO:
-                Holy Arms
                 Planar Seal
                 Herb Mastery
                 Nature's Wrath
@@ -343,6 +342,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         */
         case "Charm of Life":
             enchantment := data.EnchantmentCharmOfLife
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+
+        case "Holy Arms":
+            enchantment := data.EnchantmentHolyArms
             if !player.GlobalEnchantments.Contains(enchantment) {
                 game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
                 player.GlobalEnchantments.Insert(enchantment)
