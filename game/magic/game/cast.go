@@ -72,6 +72,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         return
     }
 
+    if spell.IsOfRealm(data.ChaosMagic) || spell.IsOfRealm(data.DeathMagic) {
+        game.maybeDoNaturesWrath(player)
+    }
+
     switch spell.Name {
         /*
             SUMMONING SPELLS

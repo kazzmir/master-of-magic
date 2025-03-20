@@ -4590,6 +4590,50 @@ func (game *Game) HasEnchantment(enchantment data.Enchantment) bool {
     return false
 }
 
+// true if any alive player that is not the given one has the given enchantment enabled
+func (game *Game) HasRivalEnchantment(original *playerlib.Player, enchantment data.Enchantment) bool {
+    for _, player := range game.Players {
+        if !player.Defeated && player != original && player.HasEnchantment(enchantment) {
+            return true
+        }
+    }
+
+    return false
+}
+
+// 5% chance to destroy a building in every city, and 15% chance to destroy a garrisoned unit
+func (game *Game) maybeDoNaturesWrath(caster *playerlib.Player) {
+    if game.HasRivalEnchantment(caster, data.EnchantmentNaturesWrath) {
+        for _, city := range caster.Cities {
+            var toRemove []buildinglib.Building
+            for _, building := range city.Buildings.Values() {
+                if rand.N(100) < 5 {
+                    toRemove = append(toRemove, building)
+                }
+            }
+
+            // FIXME: emit a message for each building that was destroyed
+            for _, building := range toRemove {
+                city.RemoveBuilding(building)
+            }
+
+            stack := caster.FindStack(city.X, city.Y, city.Plane)
+            var removeUnits []units.StackUnit
+            if stack != nil {
+                for _, unit := range stack.Units() {
+                    if rand.N(100) < 15 {
+                        removeUnits = append(removeUnits, unit)
+                    }
+                }
+            }
+
+            for _, unit := range removeUnits {
+                caster.RemoveUnit(unit)
+            }
+        }
+    }
+}
+
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
  * this also shows the raze city ui so that fame can be incorporated based on whether the city is razed or not
  */
@@ -5187,10 +5231,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                 player.Mana -= castingCost
                 player.RemainingCastingSkill -= castingCost
 
-                select {
-                    case game.Events<- &GameEventCastSpell{Player: player, Spell: spell}:
-                    default:
-                }
+                game.doCastSpell(player, spell)
             } else {
                 player.CastingSpell = spell
             }
@@ -6776,16 +6817,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         player.Mana -= manaSpent
 
         if player.CastingSpell.Cost(true) <= player.CastingSpellProgress {
-
-            if player.IsHuman() {
-                select {
-                    case game.Events<- &GameEventCastSpell{Player: player, Spell: player.CastingSpell}:
-                    default:
-                        log.Printf("Error: unable to invoke cast spell because event queue is full")
-                }
-            } else {
-                game.doCastSpell(player, player.CastingSpell)
-            }
+            game.doCastSpell(player, player.CastingSpell)
             player.CastingSpell = spellbook.Spell{}
             player.CastingSpellProgress = 0
         }
