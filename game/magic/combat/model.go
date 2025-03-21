@@ -1180,10 +1180,6 @@ func (unit *ArmyUnit) GetDefense() int {
     return max(0, final)
 }
 
-func (unit *ArmyUnit) GetFullRangedAttackPower() int {
-    return unit.GetRangedAttackPower()
-}
-
 func (unit *ArmyUnit) GetRangedAttackPower() int {
     if unit.Unit.GetRangedAttackPower() == 0 {
         return 0

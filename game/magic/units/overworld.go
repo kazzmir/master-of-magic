@@ -680,10 +680,6 @@ func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
     return base
 }
 
-func (unit *OverworldUnit) GetFullRangedAttackPower() int {
-    return unit.GetRangedAttackPower()
-}
-
 func (unit *OverworldUnit) RangedEnchantmentBonus(enchantment data.UnitEnchantment) int {
     switch enchantment {
         case data.UnitEnchantmentBlackChannels: return 1

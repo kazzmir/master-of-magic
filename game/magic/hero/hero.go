@@ -1126,10 +1126,6 @@ func (hero *Hero) getBaseRangedAttackPowerProgression(level units.HeroExperience
     return 0
 }
 
-func (hero *Hero) GetFullRangedAttackPower() int {
-    return hero.GetRangedAttackPower()
-}
-
 func (hero *Hero) RangedEnchantmentBonus(enchantment data.UnitEnchantment) int {
     return hero.Unit.RangedEnchantmentBonus(enchantment)
 }

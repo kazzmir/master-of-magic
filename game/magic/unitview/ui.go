@@ -24,7 +24,6 @@ type UnitStats interface {
     GetWeaponBonus() data.WeaponBonus
     GetBaseMeleeAttackPower() int
     GetMeleeAttackPower() int
-    GetFullRangedAttackPower() int
     GetBaseRangedAttackPower() int
     GetRangedAttackPower() int
     GetRangedAttackDamageType() units.Damage

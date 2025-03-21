@@ -273,7 +273,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     }
 
     if rangeIcon != nil && rangeIconGold != nil {
-        showNIcons(rangeIcon, unit.GetBaseRangedAttackPower(), rangeIconGold, unit.GetFullRangedAttackPower() - unit.GetBaseRangedAttackPower(), unit.GetRangedAttackPower() - unit.GetFullRangedAttackPower(), x, y)
+        showNIcons(rangeIcon, unit.GetBaseRangedAttackPower(), rangeIconGold, unit.GetRangedAttackPower() - unit.GetBaseRangedAttackPower(), 0, x, y)
     }
 
     y += float64(descriptionFont.Height())

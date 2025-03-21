@@ -79,7 +79,6 @@ type StackUnit interface {
     GetVisibleCount() int
     GetMovementSpeed() fraction.Fraction
     GetProductionCost() int
-    GetFullRangedAttackPower() int
     GetRangedAttackPower() int
     GetFullResistance() int
     GetResistance() int
