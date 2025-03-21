@@ -15,7 +15,9 @@ import (
 const NumHeroes = 35
 const NumPlayers = 6
 const NumPlayerHeroes = 6
-const NumSpells = 240
+const NumSpellsPerMagicRealm = 40
+const NumMagicRealms = 6
+const NumSpells = NumMagicRealms * NumSpellsPerMagicRealm
 
 // hero indexes as dos mom defines them
 type HeroIndex int

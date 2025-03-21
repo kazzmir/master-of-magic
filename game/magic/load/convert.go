@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
@@ -723,6 +724,26 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         }
     }
 
+    spellMap := make(map[int]spellbook.Spell)
+    for index, spell := range game.AllSpells().Spells {
+        spellMap[index] = spell
+    }
+
+    researchingSpell := spellMap[int(playerData.ResearchingSpellIndex)]
+    researchCandidateSpells := spellbook.Spells{}
+    researchCandidateSpells.Spells = append(researchCandidateSpells.Spells, researchingSpell)
+
+    knownSpells := spellbook.Spells{}
+    researchPoolSpells := spellbook.Spells{}
+    for index, spell := range playerData.SpellsList {
+        if spell > 0 {
+            researchPoolSpells.Spells = append(researchPoolSpells.Spells, spellMap[index+1])
+        }
+        if spell == 2 {
+            knownSpells.Spells = append(knownSpells.Spells, spellMap[index+1])
+        }
+    }
+
     // FIXME: Add remaining infos from playerData
     // Personality
     // Objective
@@ -730,20 +751,13 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     // PowerBase
     // Volcanoes
     // VolcanoPower
-    // ResearchSpells
     // AverageUnitCost
     // CombatSkillLeft
-    // CastingCostRemaining
-    // CastingCostOriginal
-    // CastingSpellIndex
     // SkillLeft
     // NominalSkill
     // VaultItems
     // Diplomacy
-    // ResearchCostRemaining
     // SpellCastingSkill
-    // ResearchingSpellIndex
-    // SpellsList
     // DefeatedWizards
     // Astrology
     // Population
@@ -778,15 +792,15 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         BookOrderSeed2: rand.Uint64(),
         StrategicCombat: !human,
         Admin: false,
-        // FIXME: KnownSpells
-        // FIXME: ResearchPoolSpells
-        // FIXME: ResearchCandidateSpells
-        // FIXME: ResearchingSpell
-        // FIXME: ResearchProgress
+        KnownSpells: knownSpells,
+        ResearchCandidateSpells: researchCandidateSpells,
+        ResearchPoolSpells: researchPoolSpells,
+        ResearchingSpell: researchingSpell,
+        ResearchProgress: researchingSpell.ResearchCost - int(playerData.ResearchCostRemaining),
+        CastingSpell: spellMap[int(playerData.CastingSpellIndex)],
+        CastingSpellProgress: int(playerData.CastingCostOriginal - playerData.CastingCostRemaining),
         // FIXME: CastingSkillPower
         // FIXME: RemainingCastingSkill
-        // FIXME: CastingSpell
-        // FIXME: CastingSpellProgress
         GlobalEnchantments: globalEnchantments,
         GlobalEnchantmentsProvider: game,
         PlayerRelations: playerRelations,
