@@ -162,6 +162,21 @@ func (unit *OverworldUnit) GetAbilityValue(ability data.AbilityType) float32 {
         return 0
     }
 
+    if ability == data.AbilityDoomGaze {
+        value := unit.Unit.GetAbilityValue(ability)
+        if value == 0 {
+            return 0
+        }
+
+        modifier := float32(0)
+
+        if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+            modifier += 2
+        }
+
+        return value + modifier
+    }
+
     return unit.Unit.GetAbilityValue(ability)
 }
 
