@@ -3622,6 +3622,7 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warship, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    // player.AddUnit(units.MakeOverworldUnitFromUnit(units.Galley, x-1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
     enemy1 := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",
