@@ -486,32 +486,31 @@ func (unit *OverworldUnit) GetBaseMovementSpeed() int {
     return unit.Unit.GetMovementSpeed()
 }
 
-// FIXME: this can return a fraction
-func (unit *OverworldUnit) GetMovementSpeed() int {
-    base := unit.GetBaseMovementSpeed()
+func (unit *OverworldUnit) GetMovementSpeed() fraction.Fraction {
+    base := fraction.FromInt(unit.GetBaseMovementSpeed())
 
     base = unit.MovementSpeedEnchantmentBonus(base, unit.Enchantments)
 
-    modifier := 1.0
+    modifier := fraction.FromInt(1)
 
     if unit.IsSailing() {
         if unit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentWindMastery) {
-            modifier += 0.5
+            modifier = modifier.Add(fraction.Make(1, 2))
         }
 
         if unit.GlobalEnchantments.HasRivalEnchantment(data.EnchantmentWindMastery) {
-            modifier -= 0.5
+            modifier = modifier.Subtract(fraction.Make(1, 2))
         }
     }
 
-    return int(float64(base) * modifier)
+    return base.Multiply(modifier)
 }
 
 func (unit *OverworldUnit) GetProductionCost() int {
     return unit.Unit.GetProductionCost()
 }
 
-func (unit *OverworldUnit) MovementSpeedEnchantmentBonus(base int, enchantments []data.UnitEnchantment) int {
+func (unit *OverworldUnit) MovementSpeedEnchantmentBonus(base fraction.Fraction, enchantments []data.UnitEnchantment) fraction.Fraction {
 
     endurance := false
     flying := false
@@ -526,15 +525,15 @@ func (unit *OverworldUnit) MovementSpeedEnchantmentBonus(base int, enchantments 
     }
 
     if endurance {
-        base += 1
+        base = base.Add(fraction.FromInt(1))
     }
 
     if flying {
-        base = max(base, 3)
+        base = base.Max(fraction.FromInt(3))
     }
 
     if haste {
-        base *= 2
+        base = base.Multiply(fraction.FromInt(2))
     }
 
     return base
@@ -853,7 +852,7 @@ func (unit *OverworldUnit) NaturalHeal(rate float64) {
 }
 
 func (unit *OverworldUnit) ResetMoves() {
-    unit.MovesLeft = fraction.FromInt(unit.GetMovementSpeed())
+    unit.MovesLeft = unit.GetMovementSpeed()
 }
 
 func (unit *OverworldUnit) HasMovesLeft() bool {

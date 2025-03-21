@@ -132,7 +132,7 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
         options = defaultOptions
         options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 0)
 
-        for i := 0; i < unitMoves; i++ {
+        for i := 0; i < unitMoves.ToInt(); i++ {
             screen.DrawImage(movementImage, scale.ScaleOptions(options))
             options.GeoM.Translate(float64(movementImage.Bounds().Dx()), 0)
         }
@@ -165,7 +165,7 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
         options = defaultOptions
         options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 9)
 
-        for i := 0; i < unitMoves; i++ {
+        for i := 0; i < unitMoves.ToInt(); i++ {
             screen.DrawImage(smallBoot, &options)
             options.GeoM.Translate(float64(smallBoot.Bounds().Dx()), 0)
         }

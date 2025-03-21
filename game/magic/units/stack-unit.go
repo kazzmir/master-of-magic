@@ -38,7 +38,7 @@ type StackUnit interface {
     DefenseEnchantmentBonus(data.UnitEnchantment) int
     RangedEnchantmentBonus(data.UnitEnchantment) int
     ResistanceEnchantmentBonus(data.UnitEnchantment) int
-    MovementSpeedEnchantmentBonus(int, []data.UnitEnchantment) int
+    MovementSpeedEnchantmentBonus(fraction.Fraction, []data.UnitEnchantment) fraction.Fraction
     HitPointsEnchantmentBonus(data.UnitEnchantment) int
 
     IsUndead() bool
@@ -78,7 +78,7 @@ type StackUnit interface {
     GetCombatIndex(Facing) int
     GetCount() int
     GetVisibleCount() int
-    GetMovementSpeed() int
+    GetMovementSpeed() fraction.Fraction
     GetProductionCost() int
     GetFullRangedAttackPower() int
     GetRangedAttackPower() int

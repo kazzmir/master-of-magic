@@ -2621,7 +2621,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
     // attacking takes 50% of movement points
     // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
 
-    pointsUsed := fraction.FromInt(attacker.GetMovementSpeed()).Divide(fraction.FromInt(2))
+    pointsUsed := attacker.GetMovementSpeed().Divide(fraction.FromInt(2))
     if pointsUsed.LessThan(fraction.FromInt(1)) {
         pointsUsed = fraction.FromInt(1)
     }
