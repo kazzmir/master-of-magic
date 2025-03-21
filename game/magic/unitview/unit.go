@@ -132,6 +132,7 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
         options = defaultOptions
         options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 0)
 
+        // FIXME: draw half a movement icon if the unit has 0.5 movement?
         for i := 0; i < unitMoves.ToInt(); i++ {
             screen.DrawImage(movementImage, scale.ScaleOptions(options))
             options.GeoM.Translate(float64(movementImage.Bounds().Dx()), 0)
