@@ -149,7 +149,8 @@ func RenderUnitInfo(screen *ebiten.Image, imageCache *util.ImageCache, unit *Arm
         options.GeoM.Reset()
         options.GeoM.Translate(x + fonts.SmallFont.MeasureTextWidth("Damage ", 1), y)
 
-        for i := 0; i < unitMoves; i++ {
+        // FIXME: draw half a movement image if the unit has a half movement point?
+        for i := 0; i < unitMoves.ToInt(); i++ {
             scale.DrawScaled(screen, movementImage, &options)
             options.GeoM.Translate(float64(movementImage.Bounds().Dx()), 0)
         }

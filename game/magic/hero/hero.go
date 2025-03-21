@@ -775,7 +775,7 @@ func (hero *Hero) NaturalHeal(rate float64) {
 }
 
 func (hero *Hero) ResetMoves() {
-    hero.Unit.MovesLeft = fraction.FromInt(hero.GetMovementSpeed())
+    hero.Unit.ResetMoves()
 }
 
 func (hero *Hero) SetId(id uint64) {
@@ -783,11 +783,11 @@ func (hero *Hero) SetId(id uint64) {
 }
 
 func (hero *Hero) GetMovesLeft() fraction.Fraction {
-    return hero.Unit.GetMovesLeft()
+    return fraction.Zero().Max(hero.GetMovementSpeed().Subtract(hero.Unit.MovesUsed))
 }
 
 func (hero *Hero) SetMovesLeft(moves fraction.Fraction) {
-    hero.Unit.SetMovesLeft(moves)
+    hero.Unit.MovesUsed = hero.GetMovementSpeed().Subtract(moves)
 }
 
 func (hero *Hero) GetAttackSound() units.AttackSound {
@@ -932,11 +932,11 @@ func (hero *Hero) GetUpkeepMana() int {
     return hero.Unit.GetUpkeepMana()
 }
 
-func (hero *Hero) MovementSpeedEnchantmentBonus(base int, enchantments []data.UnitEnchantment) int {
+func (hero *Hero) MovementSpeedEnchantmentBonus(base fraction.Fraction, enchantments []data.UnitEnchantment) fraction.Fraction {
     return hero.Unit.MovementSpeedEnchantmentBonus(base, enchantments)
 }
 
-func (hero *Hero) GetMovementSpeed() int {
+func (hero *Hero) GetMovementSpeed() fraction.Fraction {
     base := hero.Unit.GetBaseMovementSpeed()
 
     for _, item := range hero.Equipment {
@@ -945,7 +945,7 @@ func (hero *Hero) GetMovementSpeed() int {
         }
     }
 
-    return hero.Unit.MovementSpeedEnchantmentBonus(base, hero.GetEnchantments())
+    return hero.Unit.MovementSpeedEnchantmentBonus(fraction.FromInt(base), hero.GetEnchantments())
 }
 
 func (hero *Hero) GetProductionCost() int {

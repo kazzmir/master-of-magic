@@ -1448,8 +1448,8 @@ func (unit *ArmyUnit) CanCast() bool {
     return false
 }
 
-func (unit *ArmyUnit) GetMovementSpeed() int {
-    modifier := 0
+func (unit *ArmyUnit) GetMovementSpeed() fraction.Fraction {
+    modifier := fraction.Zero()
     base := unit.Unit.GetMovementSpeed()
 
     base = unit.Unit.MovementSpeedEnchantmentBonus(base, unit.Enchantments)
@@ -1458,15 +1458,15 @@ func (unit *ArmyUnit) GetMovementSpeed() int {
         unaffected := unit.IsFlying() || unit.HasAbility(data.AbilityNonCorporeal)
 
         if !unaffected {
-            modifier -= 1
+            modifier = modifier.Subtract(fraction.FromInt(1))
         }
     }
 
-    return max(0, base + modifier)
+    return fraction.Zero().Max(base.Add(modifier))
 }
 
 func (unit *ArmyUnit) ResetTurnData() {
-    unit.MovesLeft = fraction.FromInt(unit.GetMovementSpeed())
+    unit.MovesLeft = unit.GetMovementSpeed()
     unit.Paths = make(map[image.Point]pathfinding.Path)
     unit.Casted = false
     unit.Attacked = 0

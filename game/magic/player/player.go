@@ -102,6 +102,7 @@ type CityEnchantmentsProvider interface {
 // to get enchanments that affect the entire world
 type GlobalEnchantmentsProvider interface {
     HasEnchantment(enchantment data.Enchantment) bool
+    HasRivalEnchantment(player *Player, enchantment data.Enchantment) bool
 }
 
 // default implementation
@@ -109,6 +110,10 @@ type NoGlobalEnchantments struct {
 }
 
 func (*NoGlobalEnchantments) HasEnchantment(enchantment data.Enchantment) bool {
+    return false
+}
+
+func (*NoGlobalEnchantments) HasRivalEnchantment(player *Player, enchantment data.Enchantment) bool {
     return false
 }
 
@@ -329,6 +334,10 @@ func (provider *PlayerEnchantmentProvider) HasEnchantment(enchantment data.Encha
 
 func (provider *PlayerEnchantmentProvider) HasFriendlyEnchantment(enchantment data.Enchantment) bool {
     return provider.Player.GlobalEnchantments.Contains(enchantment)
+}
+
+func (provider *PlayerEnchantmentProvider) HasRivalEnchantment(enchantment data.Enchantment) bool {
+    return provider.Player.GlobalEnchantmentsProvider.HasRivalEnchantment(provider.Player, enchantment)
 }
 
 func (player *Player) MakeUnitEnchantmentProvider() units.GlobalEnchantmentProvider {

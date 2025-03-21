@@ -41,6 +41,10 @@ func FromInt(numerator int) Fraction {
     }
 }
 
+func (fraction Fraction) ToInt() int {
+    return int(fraction.ToFloat())
+}
+
 func (fraction Fraction) ToFloat() float64 {
     if fraction.Numerator == 0 {
         return 0
@@ -101,6 +105,14 @@ func (fraction Fraction) Subtract(other Fraction) Fraction {
         Numerator: fraction.Numerator * other.Denominator - other.Numerator * fraction.Denominator,
         Denominator: fraction.Denominator * other.Denominator,
     }.Reduce()
+}
+
+// return whichever fraction is larger
+func (fraction Fraction) Max(other Fraction) Fraction {
+    if fraction.GreaterThan(other) {
+        return fraction
+    }
+    return other
 }
 
 func (fraction Fraction) Negate() Fraction {

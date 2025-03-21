@@ -8,6 +8,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -76,7 +77,7 @@ type UnitView interface {
     GetUpkeepGold() int
     GetUpkeepFood() int
     GetUpkeepMana() int
-    GetMovementSpeed() int
+    GetMovementSpeed() fraction.Fraction
     GetProductionCost() int
 }
 
