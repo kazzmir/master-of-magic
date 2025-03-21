@@ -758,10 +758,6 @@ func (unit *OverworldUnit) GetDefense() int {
     return base + modifier
 }
 
-func (unit *OverworldUnit) GetFullResistance() int {
-    return unit.GetResistance()
-}
-
 func (unit *OverworldUnit) GetResistance() int {
     base := unit.GetBaseResistance()
 

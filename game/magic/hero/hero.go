@@ -1393,10 +1393,6 @@ func (hero *Hero) GetAbilityResearch() int {
     return extra
 }
 
-func (hero *Hero) GetFullResistance() int {
-    return hero.GetResistance()
-}
-
 func (hero *Hero) GetResistance() int {
     base := hero.GetBaseResistance()
 

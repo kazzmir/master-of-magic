@@ -984,10 +984,6 @@ func (unit *ArmyUnit) GetToHitMelee(defender *ArmyUnit) int {
     return max(0, unit.Unit.GetToHitMelee() + modifier)
 }
 
-func (unit *ArmyUnit) GetFullResistance() int {
-    return unit.GetResistance()
-}
-
 // get the resistance of the unit, taking into account enchantments and curses that apply to the specific magic type
 func (unit *ArmyUnit) GetResistanceFor(magic data.MagicType) int {
     base := unit.GetResistance()

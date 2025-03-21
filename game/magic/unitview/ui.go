@@ -30,7 +30,6 @@ type UnitStats interface {
     GetFullDefense() int
     GetBaseDefense() int
     GetDefense() int
-    GetFullResistance() int
     GetResistance() int
     GetBaseResistance() int
     GetHitPoints() int

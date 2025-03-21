@@ -288,7 +288,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     resistIcon, _ := imageCache.GetImage("unitview.lbx", 27, 0)
     resistGold, _ := imageCache.GetImage("unitview.lbx", 49, 0)
-    showNIcons(resistIcon, unit.GetBaseResistance(), resistGold, unit.GetFullResistance() - unit.GetBaseResistance(), unit.GetResistance() - unit.GetFullResistance(), x, y)
+    showNIcons(resistIcon, unit.GetBaseResistance(), resistGold, unit.GetResistance() - unit.GetBaseResistance(), 0, x, y)
 
     y += float64(descriptionFont.Height())
     descriptionFont.PrintOptions(screen, x, y, fontOptions, "Hits")

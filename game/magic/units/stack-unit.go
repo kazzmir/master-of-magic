@@ -80,7 +80,6 @@ type StackUnit interface {
     GetMovementSpeed() fraction.Fraction
     GetProductionCost() int
     GetRangedAttackPower() int
-    GetFullResistance() int
     GetResistance() int
     AdjustHealth(amount int)
     GetAttackSound() AttackSound
