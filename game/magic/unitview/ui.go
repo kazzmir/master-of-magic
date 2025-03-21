@@ -27,7 +27,6 @@ type UnitStats interface {
     GetBaseRangedAttackPower() int
     GetRangedAttackPower() int
     GetRangedAttackDamageType() units.Damage
-    GetFullDefense() int
     GetBaseDefense() int
     GetDefense() int
     GetResistance() int

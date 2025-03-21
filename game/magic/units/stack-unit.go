@@ -63,7 +63,6 @@ type StackUnit interface {
     HasItemAbility(data.ItemAbility) bool
     GetAbilityValue(data.AbilityType) float32
     GetAbilities() []data.Ability
-    GetFullDefense() int
     GetBaseDefense() int
     GetDefense() int
     GetFullHitPoints() int

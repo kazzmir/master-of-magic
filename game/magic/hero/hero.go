@@ -1178,10 +1178,6 @@ func (hero *Hero) getBaseDefenseProgression(level units.HeroExperienceLevel) int
     return 0
 }
 
-func (hero *Hero) GetFullDefense() int {
-    return hero.GetDefense()
-}
-
 func (hero *Hero) GetDefense() int {
     base := hero.GetBaseDefense()
 

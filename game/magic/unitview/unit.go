@@ -281,7 +281,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     armorIcon, _ := imageCache.GetImage("unitview.lbx", 22, 0)
     armorGold, _ := imageCache.GetImage("unitview.lbx", 44, 0)
-    showNIcons(armorIcon, unit.GetBaseDefense(), armorGold, unit.GetFullDefense() - unit.GetBaseDefense(), unit.GetDefense() - unit.GetFullDefense(), x, y)
+    showNIcons(armorIcon, unit.GetBaseDefense(), armorGold, unit.GetDefense() - unit.GetBaseDefense(), 0, x, y)
 
     y += float64(descriptionFont.Height())
     descriptionFont.PrintOptions(screen, x, y, fontOptions, "Resist")

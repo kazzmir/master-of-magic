@@ -737,10 +737,6 @@ func (unit *OverworldUnit) GetBaseDefense() int {
     return defense
 }
 
-func (unit *OverworldUnit) GetFullDefense() int {
-    return unit.GetDefense()
-}
-
 func (unit *OverworldUnit) GetDefense() int {
     base := unit.GetBaseDefense()
 

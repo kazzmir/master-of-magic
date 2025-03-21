@@ -1085,10 +1085,6 @@ func (unit *ArmyUnit) GetResistance() int {
     return max(0, unit.Unit.GetResistance() + modifier)
 }
 
-func (unit *ArmyUnit) GetFullDefense() int {
-    return unit.GetDefense()
-}
-
 // get defense against a specific magic type
 func GetDefenseFor(unit UnitDamage, magic data.MagicType) int {
     // berserk prevents any enchantments from applying
