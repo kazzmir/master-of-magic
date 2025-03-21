@@ -2,7 +2,9 @@ package load
 
 import (
     "image"
+    "math/rand/v2"
 
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -10,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/ai"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
@@ -18,7 +21,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane data.Plane, cityProvider maplib.CityProvider, wizards []maplib.Wizard) *maplib.Map {
+func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane data.Plane, cityProvider maplib.CityProvider, players []*playerlib.Player) *maplib.Map {
 
     map_ := maplib.Map{
         Data: terrainData,
@@ -131,7 +134,7 @@ func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane dat
 
         var meldingWizard maplib.Wizard
         if node.Owner > -1 {
-            meldingWizard = wizards[node.Owner]
+            meldingWizard = players[node.Owner]
         }
 
         zone := []image.Point{}
@@ -165,8 +168,8 @@ func (saveGame *SaveGame) convertSettings() setup.NewGameSettings {
     }
 }
 
-func (saveGame *SaveGame) convertWizard(index int) setup.WizardCustom {
-    playerData := saveGame.PlayerData[index]
+func (saveGame *SaveGame) convertWizard(playerIndex int) setup.WizardCustom {
+    playerData := saveGame.PlayerData[playerIndex]
 
     retorts := []data.Retort{}
     if playerData.RetortAlchemy == 1 {
@@ -323,7 +326,7 @@ func (saveGame *SaveGame) convertFogMap(plane data.Plane) data.FogMap {
     return out
 }
 
-func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex int8, wizards []setup.WizardCustom, game *gamelib.Game) []*citylib.City {
+func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex int, wizards []setup.WizardCustom, game *gamelib.Game) []*citylib.City {
     cities := []*citylib.City{}
     buildingMap := map[int]buildinglib.Building{
         0x01: buildinglib.BuildingTradeGoods,
@@ -596,7 +599,7 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
     for index := 0; index < int(saveGame.NumCities); index++ {
         cityData := saveGame.Cities[index]
 
-        if cityData.Owner != playerIndex {
+        if int(cityData.Owner) != playerIndex {
             continue
         }
 
@@ -686,57 +689,161 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
     return cities
 }
 
+func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardCustom, game *gamelib.Game) *playerlib.Player {
+    playerData := saveGame.PlayerData[playerIndex]
+    human := playerIndex == 0
+
+    var aiBehavior playerlib.AIBehavior
+    if playerIndex == 5 {
+        aiBehavior = ai.MakeRaiderAI()
+    } else if !human {
+        aiBehavior = ai.MakeEnemyAI()
+    }
+
+    // FIXME: parse global enchantments
+    globalEnchantments := set.MakeSet[data.Enchantment]()
+
+    // FIXME: parse player relations
+    playerRelations := make(map[*playerlib.Player]*playerlib.Relationship)
+
+    var arcanusFog, myrrorFog data.FogMap
+    if human {
+        arcanusFog = saveGame.convertFogMap(data.PlaneArcanus)
+        myrrorFog = saveGame.convertFogMap(data.PlaneMyrror)
+    } else {
+        arcanusFog = make([][]data.FogType, WorldWidth)
+        myrrorFog = make([][]data.FogType, WorldWidth)
+        for x := range WorldWidth {
+            arcanusFog[x] = make([]data.FogType, WorldHeight)
+            myrrorFog[x] = make([]data.FogType, WorldHeight)
+            for y := range WorldHeight{
+                arcanusFog[x][y] = data.FogTypeExplored
+                myrrorFog[x][y] = data.FogTypeExplored
+            }
+        }
+    }
+
+    // FIXME: Add remaining infos from playerData
+    // Personality
+    // Objective
+    // MasteryResearch
+    // PowerBase
+    // Volcanoes
+    // VolcanoPower
+    // ResearchSpells
+    // AverageUnitCost
+    // CombatSkillLeft
+    // CastingCostRemaining
+    // CastingCostOriginal
+    // CastingSpellIndex
+    // SkillLeft
+    // NominalSkill
+    // VaultItems
+    // Diplomacy
+    // ResearchCostRemaining
+    // SpellCastingSkill
+    // ResearchingSpellIndex
+    // SpellsList
+    // DefeatedWizards
+    // Astrology
+    // Population
+    // Historian
+    // GlobalEnchantments
+    // MagicStrategy
+    // Hostility
+    // ReevaluateHostilityCountdown
+    // ReevaluateMagicStrategyCountdown
+    // ReevaluateMagicPowerCountdown
+    // PeaceDuration
+    // TargetWizard
+    // PrimaryRealm
+    // SecondaryRealm
+
+    player := playerlib.Player{
+        Wizard: wizards[playerIndex],
+        TaxRate: fraction.Make(int(playerData.TaxRate), 2),
+        PowerDistribution: playerlib.PowerDistribution{
+            Mana: float64(playerData.ManaRatio) / 100,
+            Research: float64(playerData.ResearchRatio) / 100,
+            Skill: float64(playerData.SkillRatio) / 100,
+        },
+        Gold: int(playerData.GoldReserve),
+        Mana: int(playerData.ManaReserve),
+        Human: human,
+        AIBehavior: aiBehavior,
+        // FIXME: Defeated
+        // FIXME: Banished
+        Fame: int(playerData.Fame),
+        BookOrderSeed1: rand.Uint64(),
+        BookOrderSeed2: rand.Uint64(),
+        StrategicCombat: !human,
+        Admin: false,
+        // FIXME: KnownSpells
+        // FIXME: ResearchPoolSpells
+        // FIXME: ResearchCandidateSpells
+        // FIXME: ResearchingSpell
+        // FIXME: ResearchProgress
+        // FIXME: CastingSkillPower
+        // FIXME: RemainingCastingSkill
+        // FIXME: CastingSpell
+        // FIXME: CastingSpellProgress
+        GlobalEnchantments: globalEnchantments,
+        GlobalEnchantmentsProvider: game,
+        PlayerRelations: playerRelations,
+        // FIXME: HeroPool createHeroes(herolib.ReadNamesPerWizard(game.Cache))
+        // FIXME: Heroes
+        // FIXME: VaultEquipment
+        // FIXME: CreateArtifact
+        // FIXME: Units
+        // FIXME: Stacks
+        // FIXME: UnitId
+        // FIXME: SelectedStack
+        ArcanusFog: arcanusFog,
+        MyrrorFog: myrrorFog,
+    }
+
+    player.Cities = saveGame.convertCities(&player, playerIndex, wizards, game)
+    player.UpdateResearchCandidates()
+    player.UpdateFogVisibility()
+
+    return &player
+}
+
 func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
+    game := gamelib.MakeGame(cache, saveGame.convertSettings())
+    game.TurnNumber = uint64(saveGame.Turn)
+
+    wizards := []setup.WizardCustom{}
+    for playerIndex := range saveGame.NumPlayers {
+        wizards = append(wizards, saveGame.convertWizard(int(playerIndex)))
+    }
+
+    for playerIndex := range saveGame.NumPlayers {
+        player := saveGame.convertPlayer(int(playerIndex), wizards, game)
+        game.Players = append(game.Players, player)
+    }
+
     // FIXME: add all remaining information from saveGame
     // saveGame.Unit
     // saveGame.HeroData
-    // saveGame.PlayerData
     // saveGame.GrandVizier
     // saveGame.Items
     // saveGame.Units / saveGame.NumUnits
     // saveGame.Events
     // saveGame.PremadeItems
-    wizards := []setup.WizardCustom{}
-    for index := range saveGame.NumPlayers {
-        wizards = append(wizards, saveGame.convertWizard(int(index)))
-    }
 
-    // FIXME: pass players instead
-    var wizardInterfaces []maplib.Wizard
-    for _, wizard := range wizards {
-        wizardInterfaces = append(wizardInterfaces, &wizard)
-    }
-
-    game := gamelib.MakeGame(cache, saveGame.convertSettings())
-    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, nil, wizardInterfaces)
-    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, nil, wizardInterfaces)
-    game.TurnNumber = uint64(saveGame.Turn)
+    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, nil, game.Players)
+    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, nil, game.Players)
     // FIXME: game.ArtifactPool
     // FIXME: game.RandomEvents
     // FIXME: game.RoadWorkArcanus
     // FIXME: game.RoadWorkMyrror
     // FIXME: game.PurifyWorkArcanus
     // FIXME: game.PurifyWorkMyrror
-    // FIXME: game.Players
-
-
-    // FIXME: make a convertPlayer instead of using AddPlayer
-    player := game.AddPlayer(wizards[0], true)
-    player.ArcanusFog = saveGame.convertFogMap(data.PlaneArcanus)
-    player.MyrrorFog = saveGame.convertFogMap(data.PlaneMyrror)
-    player.Cities = saveGame.convertCities(player, 0, wizards, game)
-    player.UpdateFogVisibility()
-
-    for index := 1; index < int(saveGame.NumPlayers); index++ {
-        enemy := game.AddPlayer(wizards[index], false)
-        enemy.Cities = saveGame.convertCities(enemy, int8(index), wizards, game)
-    }
-
-    // FIXME: neutral player
 
     game.Camera.Center(20, 20)
-    if len(player.Cities) > 0 {
-        game.Camera.Center(player.Cities[0].X, player.Cities[0].Y)
+    if len(game.Players[0].Cities) > 0 {
+        game.Camera.Center(game.Players[0].Cities[0].X, game.Players[0].Cities[0].Y)
     }
 
     return game
