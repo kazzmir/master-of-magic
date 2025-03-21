@@ -816,21 +816,41 @@ func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
 
         // melee bonus applies to thrown and breath attacks
         if ability == data.AbilityThrown {
-            abilityBonus := hero.GetAbilityMelee()
-            if abilityBonus > 0 {
-                return ref.Value * float32(abilityBonus) / 2
+            if ref.Value == 0 {
+                return 0
             }
 
-            return ref.Value
+            modifier := float32(0)
+
+            if hero.GetRealm() == data.ChaosMagic && hero.Unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+                modifier += 2
+            }
+
+            abilityBonus := hero.GetAbilityMelee()
+            if abilityBonus > 0 {
+                return ref.Value * float32(abilityBonus) / 2 + modifier
+            }
+
+            return ref.Value + modifier
         }
 
         if ability == data.AbilityFireBreath {
-            abilityBonus := hero.GetAbilityMelee()
-            if abilityBonus > 0 {
-                return ref.Value * float32(abilityBonus) / 2
+            if ref.Value == 0 {
+                return 0
             }
 
-            return ref.Value
+            modifier := float32(0)
+
+            if hero.GetRealm() == data.ChaosMagic && hero.Unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+                modifier += 2
+            }
+
+            abilityBonus := hero.GetAbilityMelee()
+            if abilityBonus > 0 {
+                return ref.Value * float32(abilityBonus) / 2 + modifier
+            }
+
+            return ref.Value + modifier
         }
 
         return ref.Value
@@ -1056,6 +1076,10 @@ func (hero *Hero) GetMeleeAttackPower() int {
 
     for _, enchantment := range hero.GetEnchantments() {
         base += hero.MeleeEnchantmentBonus(enchantment)
+    }
+
+    if hero.GetRealm() == data.ChaosMagic && hero.Unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+        base += 2
     }
 
     return base + hero.GetAbilityMelee()

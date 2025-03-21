@@ -130,12 +130,33 @@ func (unit *OverworldUnit) SetUndead() {
 func (unit *OverworldUnit) GetAbilityValue(ability data.AbilityType) float32 {
     if ability == data.AbilityFireBreath {
         value := unit.Unit.GetAbilityValue(ability)
+        modifier := float32(0)
+
+        if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+            modifier += 2
+        }
+
         if value > 0 {
-            return value
+            return value + modifier
         }
 
         if unit.HasEnchantment(data.UnitEnchantmentChaosChannelsFireBreath) {
             return 2
+        }
+
+        return 0
+    }
+
+    if ability == data.AbilityThrown {
+        value := unit.Unit.GetAbilityValue(ability)
+        modifier := float32(0)
+
+        if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+            modifier += 2
+        }
+
+        if value > 0 {
+            return value + modifier
         }
 
         return 0
@@ -636,6 +657,10 @@ func (unit *OverworldUnit) GetMeleeAttackPower() int {
         modifier += unit.MeleeEnchantmentBonus(enchantment)
     }
 
+    if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+        modifier += 2
+    }
+
     return base + modifier
 }
 
@@ -695,6 +720,10 @@ func (unit *OverworldUnit) GetRangedAttackPower() int {
 
     for _, enchantment := range unit.Enchantments {
         base += unit.RangedEnchantmentBonus(enchantment)
+    }
+
+    if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+        base += 2
     }
 
     return base
