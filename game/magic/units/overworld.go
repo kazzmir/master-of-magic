@@ -31,11 +31,17 @@ type GlobalEnchantmentProvider interface {
     HasFriendlyEnchantment(data.Enchantment) bool
     // true if any wizard has the enchantment active (useful for enchantments with negative effects)
     HasEnchantment(data.Enchantment) bool
+    // true if any wizard other than the owner has this enchantment active
+    HasRivalEnchantment(data.Enchantment) bool
 }
 
 // a default empty implementation of GlobalEnchantmentProvider
 type NoEnchantments struct {}
 func (*NoEnchantments) HasFriendlyEnchantment(enchantment data.Enchantment) bool {
+    return false
+}
+
+func (*NoEnchantments) HasRivalEnchantment(enchantment data.Enchantment) bool {
     return false
 }
 
@@ -480,12 +486,25 @@ func (unit *OverworldUnit) GetBaseMovementSpeed() int {
     return unit.Unit.GetMovementSpeed()
 }
 
+// FIXME: this can return a fraction
 func (unit *OverworldUnit) GetMovementSpeed() int {
     base := unit.GetBaseMovementSpeed()
 
     base = unit.MovementSpeedEnchantmentBonus(base, unit.Enchantments)
 
-    return base
+    modifier := 1.0
+
+    if unit.IsSailing() {
+        if unit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentWindMastery) {
+            modifier += 0.5
+        }
+
+        if unit.GlobalEnchantments.HasRivalEnchantment(data.EnchantmentWindMastery) {
+            modifier -= 0.5
+        }
+    }
+
+    return int(float64(base) * modifier)
 }
 
 func (unit *OverworldUnit) GetProductionCost() int {

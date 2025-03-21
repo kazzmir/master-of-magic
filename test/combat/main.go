@@ -265,6 +265,10 @@ func (*noGlobalEnchantments) HasEnchantment(enchantment data.Enchantment) bool {
     return false
 }
 
+func (*noGlobalEnchantments) HasRivalEnchantment(player *player.Player, enchantment data.Enchantment) bool {
+    return false
+}
+
 func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
