@@ -63,13 +63,11 @@ type StackUnit interface {
     HasItemAbility(data.ItemAbility) bool
     GetAbilityValue(data.AbilityType) float32
     GetAbilities() []data.Ability
-    GetFullDefense() int
     GetBaseDefense() int
     GetDefense() int
     GetFullHitPoints() int
     GetBaseHitPoints() int
     GetHitPoints() int
-    GetFullMeleeAttackPower() int
     GetBaseMeleeAttackPower() int
     GetMeleeAttackPower() int
     GetBaseRangedAttackPower() int
@@ -80,9 +78,7 @@ type StackUnit interface {
     GetVisibleCount() int
     GetMovementSpeed() fraction.Fraction
     GetProductionCost() int
-    GetFullRangedAttackPower() int
     GetRangedAttackPower() int
-    GetFullResistance() int
     GetResistance() int
     AdjustHealth(amount int)
     GetAttackSound() AttackSound

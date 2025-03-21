@@ -130,8 +130,14 @@ func (unit *OverworldUnit) SetUndead() {
 func (unit *OverworldUnit) GetAbilityValue(ability data.AbilityType) float32 {
     if ability == data.AbilityFireBreath {
         value := unit.Unit.GetAbilityValue(ability)
+        modifier := float32(0)
+
+        if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+            modifier += 2
+        }
+
         if value > 0 {
-            return value
+            return value + modifier
         }
 
         if unit.HasEnchantment(data.UnitEnchantmentChaosChannelsFireBreath) {
@@ -139,6 +145,36 @@ func (unit *OverworldUnit) GetAbilityValue(ability data.AbilityType) float32 {
         }
 
         return 0
+    }
+
+    if ability == data.AbilityThrown {
+        value := unit.Unit.GetAbilityValue(ability)
+        modifier := float32(0)
+
+        if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+            modifier += 2
+        }
+
+        if value > 0 {
+            return value + modifier
+        }
+
+        return 0
+    }
+
+    if ability == data.AbilityDoomGaze {
+        value := unit.Unit.GetAbilityValue(ability)
+        if value == 0 {
+            return 0
+        }
+
+        modifier := float32(0)
+
+        if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+            modifier += 2
+        }
+
+        return value + modifier
     }
 
     return unit.Unit.GetAbilityValue(ability)
@@ -571,10 +607,6 @@ func (unit *OverworldUnit) DefenseEnchantmentBonus(enchantment data.UnitEnchantm
     return 0
 }
 
-func (unit *OverworldUnit) GetFullMeleeAttackPower() int {
-    return unit.GetMeleeAttackPower()
-}
-
 func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
     power := unit.Unit.GetMeleeAttackPower()
 
@@ -636,6 +668,10 @@ func (unit *OverworldUnit) GetMeleeAttackPower() int {
         modifier += unit.MeleeEnchantmentBonus(enchantment)
     }
 
+    if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+        modifier += 2
+    }
+
     return base + modifier
 }
 
@@ -657,10 +693,6 @@ func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
     }
 
     return base
-}
-
-func (unit *OverworldUnit) GetFullRangedAttackPower() int {
-    return unit.GetRangedAttackPower()
 }
 
 func (unit *OverworldUnit) RangedEnchantmentBonus(enchantment data.UnitEnchantment) int {
@@ -697,6 +729,10 @@ func (unit *OverworldUnit) GetRangedAttackPower() int {
         base += unit.RangedEnchantmentBonus(enchantment)
     }
 
+    if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+        base += 2
+    }
+
     return base
 }
 
@@ -716,10 +752,6 @@ func (unit *OverworldUnit) GetBaseDefense() int {
     return defense
 }
 
-func (unit *OverworldUnit) GetFullDefense() int {
-    return unit.GetDefense()
-}
-
 func (unit *OverworldUnit) GetDefense() int {
     base := unit.GetBaseDefense()
 
@@ -735,10 +767,6 @@ func (unit *OverworldUnit) GetDefense() int {
     }
 
     return base + modifier
-}
-
-func (unit *OverworldUnit) GetFullResistance() int {
-    return unit.GetResistance()
 }
 
 func (unit *OverworldUnit) GetResistance() int {

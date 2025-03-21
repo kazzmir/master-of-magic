@@ -984,10 +984,6 @@ func (unit *ArmyUnit) GetToHitMelee(defender *ArmyUnit) int {
     return max(0, unit.Unit.GetToHitMelee() + modifier)
 }
 
-func (unit *ArmyUnit) GetFullResistance() int {
-    return unit.GetResistance()
-}
-
 // get the resistance of the unit, taking into account enchantments and curses that apply to the specific magic type
 func (unit *ArmyUnit) GetResistanceFor(magic data.MagicType) int {
     base := unit.GetResistance()
@@ -1089,10 +1085,6 @@ func (unit *ArmyUnit) GetResistance() int {
     return max(0, unit.Unit.GetResistance() + modifier)
 }
 
-func (unit *ArmyUnit) GetFullDefense() int {
-    return unit.GetDefense()
-}
-
 // get defense against a specific magic type
 func GetDefenseFor(unit UnitDamage, magic data.MagicType) int {
     // berserk prevents any enchantments from applying
@@ -1180,10 +1172,6 @@ func (unit *ArmyUnit) GetDefense() int {
     return max(0, final)
 }
 
-func (unit *ArmyUnit) GetFullRangedAttackPower() int {
-    return unit.GetRangedAttackPower()
-}
-
 func (unit *ArmyUnit) GetRangedAttackPower() int {
     if unit.Unit.GetRangedAttackPower() == 0 {
         return 0
@@ -1226,10 +1214,6 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
     }
 
     return max(0, final)
-}
-
-func (unit *ArmyUnit) GetFullMeleeAttackPower() int {
-    return unit.GetMeleeAttackPower()
 }
 
 func (unit *ArmyUnit) GetMeleeAttackPower() int {

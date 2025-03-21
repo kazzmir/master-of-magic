@@ -22,17 +22,13 @@ import (
 
 type UnitStats interface {
     GetWeaponBonus() data.WeaponBonus
-    GetFullMeleeAttackPower() int
     GetBaseMeleeAttackPower() int
     GetMeleeAttackPower() int
-    GetFullRangedAttackPower() int
     GetBaseRangedAttackPower() int
     GetRangedAttackPower() int
     GetRangedAttackDamageType() units.Damage
-    GetFullDefense() int
     GetBaseDefense() int
     GetDefense() int
-    GetFullResistance() int
     GetResistance() int
     GetBaseResistance() int
     GetHitPoints() int

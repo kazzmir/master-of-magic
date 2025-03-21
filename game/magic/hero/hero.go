@@ -816,21 +816,41 @@ func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
 
         // melee bonus applies to thrown and breath attacks
         if ability == data.AbilityThrown {
-            abilityBonus := hero.GetAbilityMelee()
-            if abilityBonus > 0 {
-                return ref.Value * float32(abilityBonus) / 2
+            if ref.Value == 0 {
+                return 0
             }
 
-            return ref.Value
+            modifier := float32(0)
+
+            if hero.GetRealm() == data.ChaosMagic && hero.Unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+                modifier += 2
+            }
+
+            abilityBonus := hero.GetAbilityMelee()
+            if abilityBonus > 0 {
+                return ref.Value * float32(abilityBonus) / 2 + modifier
+            }
+
+            return ref.Value + modifier
         }
 
         if ability == data.AbilityFireBreath {
-            abilityBonus := hero.GetAbilityMelee()
-            if abilityBonus > 0 {
-                return ref.Value * float32(abilityBonus) / 2
+            if ref.Value == 0 {
+                return 0
             }
 
-            return ref.Value
+            modifier := float32(0)
+
+            if hero.GetRealm() == data.ChaosMagic && hero.Unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+                modifier += 2
+            }
+
+            abilityBonus := hero.GetAbilityMelee()
+            if abilityBonus > 0 {
+                return ref.Value * float32(abilityBonus) / 2 + modifier
+            }
+
+            return ref.Value + modifier
         }
 
         return ref.Value
@@ -1029,10 +1049,6 @@ func (hero *Hero) getBaseMeleeAttackPowerProgression(level units.HeroExperienceL
     return 0
 }
 
-func (hero *Hero) GetFullMeleeAttackPower() int {
-    return hero.GetMeleeAttackPower()
-}
-
 func (hero *Hero) MeleeEnchantmentBonus(enchantment data.UnitEnchantment) int {
     return hero.Unit.MeleeEnchantmentBonus(enchantment)
 }
@@ -1056,6 +1072,10 @@ func (hero *Hero) GetMeleeAttackPower() int {
 
     for _, enchantment := range hero.GetEnchantments() {
         base += hero.MeleeEnchantmentBonus(enchantment)
+    }
+
+    if hero.GetRealm() == data.ChaosMagic && hero.Unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+        base += 2
     }
 
     return base + hero.GetAbilityMelee()
@@ -1104,10 +1124,6 @@ func (hero *Hero) getBaseRangedAttackPowerProgression(level units.HeroExperience
         case units.ExperienceDemiGod: return 8
     }
     return 0
-}
-
-func (hero *Hero) GetFullRangedAttackPower() int {
-    return hero.GetRangedAttackPower()
 }
 
 func (hero *Hero) RangedEnchantmentBonus(enchantment data.UnitEnchantment) int {
@@ -1160,10 +1176,6 @@ func (hero *Hero) getBaseDefenseProgression(level units.HeroExperienceLevel) int
         case units.ExperienceDemiGod: return 4
     }
     return 0
-}
-
-func (hero *Hero) GetFullDefense() int {
-    return hero.GetDefense()
 }
 
 func (hero *Hero) GetDefense() int {
@@ -1375,10 +1387,6 @@ func (hero *Hero) GetAbilityResearch() int {
     }
 
     return extra
-}
-
-func (hero *Hero) GetFullResistance() int {
-    return hero.GetResistance()
 }
 
 func (hero *Hero) GetResistance() int {

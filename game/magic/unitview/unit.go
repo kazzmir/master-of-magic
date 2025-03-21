@@ -252,7 +252,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
             weaponGold, _ = imageCache.GetImage("unitview.lbx", 39, 0)
     }
 
-    showNIcons(weaponIcon, unit.GetBaseMeleeAttackPower(), weaponGold, unit.GetFullMeleeAttackPower() - unit.GetBaseMeleeAttackPower(), unit.GetMeleeAttackPower() - unit.GetFullMeleeAttackPower(), x, y)
+    showNIcons(weaponIcon, unit.GetBaseMeleeAttackPower(), weaponGold, unit.GetMeleeAttackPower() - unit.GetBaseMeleeAttackPower(), 0, x, y)
 
     y += float64(descriptionFont.Height())
     descriptionFont.PrintOptions(screen, x, y, fontOptions, "Range")
@@ -273,7 +273,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     }
 
     if rangeIcon != nil && rangeIconGold != nil {
-        showNIcons(rangeIcon, unit.GetBaseRangedAttackPower(), rangeIconGold, unit.GetFullRangedAttackPower() - unit.GetBaseRangedAttackPower(), unit.GetRangedAttackPower() - unit.GetFullRangedAttackPower(), x, y)
+        showNIcons(rangeIcon, unit.GetBaseRangedAttackPower(), rangeIconGold, unit.GetRangedAttackPower() - unit.GetBaseRangedAttackPower(), 0, x, y)
     }
 
     y += float64(descriptionFont.Height())
@@ -281,14 +281,14 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     armorIcon, _ := imageCache.GetImage("unitview.lbx", 22, 0)
     armorGold, _ := imageCache.GetImage("unitview.lbx", 44, 0)
-    showNIcons(armorIcon, unit.GetBaseDefense(), armorGold, unit.GetFullDefense() - unit.GetBaseDefense(), unit.GetDefense() - unit.GetFullDefense(), x, y)
+    showNIcons(armorIcon, unit.GetBaseDefense(), armorGold, unit.GetDefense() - unit.GetBaseDefense(), 0, x, y)
 
     y += float64(descriptionFont.Height())
     descriptionFont.PrintOptions(screen, x, y, fontOptions, "Resist")
 
     resistIcon, _ := imageCache.GetImage("unitview.lbx", 27, 0)
     resistGold, _ := imageCache.GetImage("unitview.lbx", 49, 0)
-    showNIcons(resistIcon, unit.GetBaseResistance(), resistGold, unit.GetFullResistance() - unit.GetBaseResistance(), unit.GetResistance() - unit.GetFullResistance(), x, y)
+    showNIcons(resistIcon, unit.GetBaseResistance(), resistGold, unit.GetResistance() - unit.GetBaseResistance(), 0, x, y)
 
     y += float64(descriptionFont.Height())
     descriptionFont.PrintOptions(screen, x, y, fontOptions, "Hits")
