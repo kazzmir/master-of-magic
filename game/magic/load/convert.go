@@ -701,8 +701,40 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         aiBehavior = ai.MakeEnemyAI()
     }
 
-    // FIXME: parse global enchantments
+    enchantmentMap := map[int]data.Enchantment{
+        0x00: data.EnchantmentEternalNight,
+        0x01: data.EnchantmentEvilOmens,
+        0x02: data.EnchantmentZombieMastery,
+        0x03: data.EnchantmentAuraOfMajesty,
+        0x04: data.EnchantmentWindMastery,
+        0x05: data.EnchantmentSuppressMagic,
+        0x06: data.EnchantmentTimeStop,
+        0x07: data.EnchantmentNatureAwareness,
+        0x08: data.EnchantmentNaturesWrath,
+        0x09: data.EnchantmentHerbMastery,
+        0x0A: data.EnchantmentChaosSurge,
+        0x0B: data.EnchantmentDoomMastery,
+        0x0C: data.EnchantmentGreatWasting,
+        0x0D: data.EnchantmentMeteorStorm,
+        0x0E: data.EnchantmentArmageddon,
+        0x0F: data.EnchantmentTranquility,
+        0x10: data.EnchantmentLifeForce,
+        0x11: data.EnchantmentCrusade,
+        0x12: data.EnchantmentJustCause,
+        0x13: data.EnchantmentHolyArms,
+        0x14: data.EnchantmentPlanarSeal,
+        0x15: data.EnchantmentCharmOfLife,
+        0x16: data.EnchantmentDetectMagic,
+        0x17: data.EnchantmentAwareness,
+    }
+
     globalEnchantments := set.MakeSet[data.Enchantment]()
+    for index, enchantment := range enchantmentMap {
+        value := int8(playerData.GlobalEnchantments[index])
+        if value != 0 {
+            globalEnchantments.Insert(enchantment)
+        }
+    }
 
     // FIXME: parse player relations
     playerRelations := make(map[*playerlib.Player]*playerlib.Relationship)
@@ -762,7 +794,6 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     // Astrology
     // Population
     // Historian
-    // GlobalEnchantments
     // MagicStrategy
     // Hostility
     // ReevaluateHostilityCountdown
