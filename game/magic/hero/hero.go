@@ -775,7 +775,7 @@ func (hero *Hero) NaturalHeal(rate float64) {
 }
 
 func (hero *Hero) ResetMoves() {
-    hero.Unit.MovesLeft = hero.GetMovementSpeed()
+    hero.Unit.ResetMoves()
 }
 
 func (hero *Hero) SetId(id uint64) {
@@ -783,11 +783,11 @@ func (hero *Hero) SetId(id uint64) {
 }
 
 func (hero *Hero) GetMovesLeft() fraction.Fraction {
-    return hero.Unit.GetMovesLeft()
+    return fraction.Zero().Max(hero.GetMovementSpeed().Subtract(hero.Unit.MovesUsed))
 }
 
 func (hero *Hero) SetMovesLeft(moves fraction.Fraction) {
-    hero.Unit.SetMovesLeft(moves)
+    hero.Unit.MovesUsed = hero.GetMovementSpeed().Subtract(moves)
 }
 
 func (hero *Hero) GetAttackSound() units.AttackSound {
