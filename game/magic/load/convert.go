@@ -779,6 +779,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     // FIXME: Add remaining infos from playerData
     // Personality
     // Objective
+
     // MasteryResearch
     // PowerBase
     // Volcanoes
@@ -794,7 +795,6 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     // Astrology
     // Population
     // Historian
-    // MagicStrategy
     // Hostility
     // ReevaluateHostilityCountdown
     // ReevaluateMagicStrategyCountdown
@@ -876,6 +876,8 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // saveGame.Units / saveGame.NumUnits
     // saveGame.Events
     // saveGame.PremadeItems
+    // saveGame.ArcanusMapSquareFlags
+    // saveGame.MyrrorMapSquareFlags
 
     game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, nil, game.Players)
     game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, nil, game.Players)
