@@ -22,7 +22,6 @@ import (
 
 type UnitStats interface {
     GetWeaponBonus() data.WeaponBonus
-    GetFullMeleeAttackPower() int
     GetBaseMeleeAttackPower() int
     GetMeleeAttackPower() int
     GetFullRangedAttackPower() int

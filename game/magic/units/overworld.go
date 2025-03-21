@@ -592,10 +592,6 @@ func (unit *OverworldUnit) DefenseEnchantmentBonus(enchantment data.UnitEnchantm
     return 0
 }
 
-func (unit *OverworldUnit) GetFullMeleeAttackPower() int {
-    return unit.GetMeleeAttackPower()
-}
-
 func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
     power := unit.Unit.GetMeleeAttackPower()
 

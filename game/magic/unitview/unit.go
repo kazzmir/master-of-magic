@@ -252,7 +252,7 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
             weaponGold, _ = imageCache.GetImage("unitview.lbx", 39, 0)
     }
 
-    showNIcons(weaponIcon, unit.GetBaseMeleeAttackPower(), weaponGold, unit.GetFullMeleeAttackPower() - unit.GetBaseMeleeAttackPower(), unit.GetMeleeAttackPower() - unit.GetFullMeleeAttackPower(), x, y)
+    showNIcons(weaponIcon, unit.GetBaseMeleeAttackPower(), weaponGold, unit.GetMeleeAttackPower() - unit.GetBaseMeleeAttackPower(), 0, x, y)
 
     y += float64(descriptionFont.Height())
     descriptionFont.PrintOptions(screen, x, y, fontOptions, "Range")

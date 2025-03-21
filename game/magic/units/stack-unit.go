@@ -69,7 +69,6 @@ type StackUnit interface {
     GetFullHitPoints() int
     GetBaseHitPoints() int
     GetHitPoints() int
-    GetFullMeleeAttackPower() int
     GetBaseMeleeAttackPower() int
     GetMeleeAttackPower() int
     GetBaseRangedAttackPower() int

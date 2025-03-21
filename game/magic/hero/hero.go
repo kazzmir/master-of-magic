@@ -1049,10 +1049,6 @@ func (hero *Hero) getBaseMeleeAttackPowerProgression(level units.HeroExperienceL
     return 0
 }
 
-func (hero *Hero) GetFullMeleeAttackPower() int {
-    return hero.GetMeleeAttackPower()
-}
-
 func (hero *Hero) MeleeEnchantmentBonus(enchantment data.UnitEnchantment) int {
     return hero.Unit.MeleeEnchantmentBonus(enchantment)
 }

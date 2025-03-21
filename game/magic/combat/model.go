@@ -1228,10 +1228,6 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
     return max(0, final)
 }
 
-func (unit *ArmyUnit) GetFullMeleeAttackPower() int {
-    return unit.GetMeleeAttackPower()
-}
-
 func (unit *ArmyUnit) GetMeleeAttackPower() int {
     modifier := 0
 
