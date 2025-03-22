@@ -11,6 +11,7 @@ import (
     "bytes"
 
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/functional"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
@@ -1305,22 +1306,27 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         ui.AddElement(button)
     }
 
+    // the final artifact cost can be cached because the final cost is only a function of the base artifact cost
+    artifactCost := functional.Memoize(func (cost int) int {
+        spellName := ""
+        switch creationType {
+            case CreationEnchantItem: spellName = "Enchant Item"
+            case CreationCreateArtifact: spellName = "Create Artifact"
+        }
+        spell := spellbook.Spell{
+            Name: spellName,
+            OverrideCost: currentArtifact.Cost,
+            Magic: data.ArcaneMagic,
+            Eligibility: spellbook.EligibilityOverlandOnly,
+            Section: spellbook.SectionSpecial,
+        }
+
+        return spellbook.ComputeSpellCost(wizard, spell, false, false)
+    })
+
     ui.AddElement(&uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            spellName := ""
-            switch creationType {
-                case CreationEnchantItem: spellName = "Enchant Item"
-                case CreationCreateArtifact: spellName = "Create Artifact"
-            }
-            spell := spellbook.Spell{
-                Name: spellName,
-                OverrideCost: currentArtifact.Cost,
-                Magic: data.ArcaneMagic,
-                Eligibility: spellbook.EligibilityOverlandOnly,
-                Section: spellbook.SectionSpecial,
-            }
-
-            fonts.PowerFontWhite.PrintOptions(screen, 198, 185, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Cost: %v", spellbook.ComputeSpellCost(wizard, spell, false, false)))
+            fonts.PowerFontWhite.PrintOptions(screen, 198, 185, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Cost: %v", artifactCost(currentArtifact.Cost)))
         },
     })
 
