@@ -673,8 +673,7 @@ func (player *Player) SpellResearchPerTurn(power int) float64 {
 }
 
 // the casting cost of a spell can be reduced based on retorts/spell books
-func (player *Player) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {
-    wizard := &player.Wizard
+func computeEffectiveSpellCost(wizard *setup.WizardCustom, spell spellbook.Spell, overland bool, hasEvilOmens bool) int {
     base := float64(spell.Cost(overland))
     modifier := float64(0)
 
@@ -707,13 +706,17 @@ func (player *Player) ComputeEffectiveSpellCost(spell spellbook.Spell, overland 
 
     evilOmens := float64(1.0)
 
-    if player.GlobalEnchantmentsProvider.HasEnchantment(data.EnchantmentEvilOmens) {
+    if hasEvilOmens {
         if spell.Magic == data.LifeMagic || spell.Magic == data.NatureMagic {
             evilOmens = 1.5
         }
     }
 
     return int(max(0, base * (1 - modifier) * evilOmens))
+}
+
+func (player *Player) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {
+    return computeEffectiveSpellCost(&player.Wizard, spell, overland, player.GlobalEnchantmentsProvider.HasEnchantment(data.EnchantmentEvilOmens))
 }
 
 func (player *Player) GoldPerTurn() int {
