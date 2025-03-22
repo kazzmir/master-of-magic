@@ -975,9 +975,11 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    player.CastingSkillPower += 500000
+    player.CastingSkillPower += 100000
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player.ResearchPoolSpells = allSpells
 
     // summoning
     player.KnownSpells.AddSpell(allSpells.FindByName("Guardian Spirit"))

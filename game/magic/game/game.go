@@ -5225,7 +5225,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                 player.CreateArtifact = created
             }
 
-            castingCost := spell.Cost(true)
+            castingCost := player.ComputeEffectiveSpellCost(spell, true)
 
             // FIXME: if the player has runemaster and the spell is arcane, then apply a -25% reduction. Don't apply
             // to create artifact or enchant item because the reduction has already been applied
@@ -6831,7 +6831,9 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
             manaSpent = player.RemainingCastingSkill
         }
 
-        remainingMana := player.CastingSpell.Cost(true) - player.CastingSpellProgress
+        spellCost := player.ComputeEffectiveSpellCost(player.CastingSpell, true)
+
+        remainingMana := spellCost - player.CastingSpellProgress
         if remainingMana < manaSpent {
             manaSpent = remainingMana
         }
@@ -6839,7 +6841,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         player.CastingSpellProgress += manaSpent
         player.Mana -= manaSpent
 
-        if player.CastingSpell.Cost(true) <= player.CastingSpellProgress {
+        if spellCost <= player.CastingSpellProgress {
             game.doCastSpell(player, player.CastingSpell)
             player.CastingSpell = spellbook.Spell{}
             player.CastingSpellProgress = 0

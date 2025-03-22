@@ -217,6 +217,8 @@ type SpellCaster interface {
     // given research points and a spell, return the actual number of research points per turn
     // made towards that spell
     ComputeEffectiveResearchPerTurn(float64, Spell) int
+    // the actual cost to cast the spell
+    ComputeEffectiveSpellCost(spell Spell, overland bool) int
 }
 
 /* three modes:
@@ -519,7 +521,9 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                         spellTextNormalFont.PrintOptions(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &scaleOptions}, fmt.Sprintf("Research Cost:%v (%v %v)", spell.ResearchCost, turns, turnString))
                         y += float64(spellTextNormalFont.Height())
                     } else {
-                        turns := spell.Cost(true) / castingSkill
+                        spellCost := caster.ComputeEffectiveSpellCost(spell, true)
+
+                        turns := spellCost / castingSkill
                         if turns < 1 {
                             turns = 1
                         }
@@ -527,7 +531,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                         if turns > 1 {
                             turnString = "turns"
                         }
-                        spellTextNormalFont.PrintOptions(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &scaleOptions}, fmt.Sprintf("Casting cost:%v (%v %v)", spell.Cost(true), turns, turnString))
+                        spellTextNormalFont.PrintOptions(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &scaleOptions}, fmt.Sprintf("Casting cost:%v (%v %v)", spellCost, turns, turnString))
                         y += float64(spellTextNormalFont.Height())
                     }
 
