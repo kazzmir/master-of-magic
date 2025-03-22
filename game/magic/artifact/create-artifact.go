@@ -11,6 +11,7 @@ import (
     "bytes"
 
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/functional"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
@@ -315,7 +316,7 @@ func getName(artifact *Artifact, customName string) string {
     return prefix + base + postfix
 }
 
-func calculateCost(artifact *Artifact, costs map[Power]int, artificer bool, runemaster bool) int {
+func calculateCost(artifact *Artifact, costs map[Power]int) int {
     base := 0
     switch artifact.Type {
         case ArtifactTypeSword: base = 100
@@ -346,21 +347,10 @@ func calculateCost(artifact *Artifact, costs map[Power]int, artificer bool, rune
     }
 
     cost := base + powerCost + spellCost
-
-    reduction := 0.0
-
-    if artificer {
-        reduction += 0.5
-    }
-
-    if runemaster {
-        reduction += 0.25
-    }
-
-    return int(float64(cost) - float64(cost) * reduction)
+    return cost
 }
 
-func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, fonts ArtifactFonts, picLow int, picHigh int, powerGroups [][]Power, costs map[Power]int, artifact *Artifact, customName *string, selectCount *int, artificer bool, runemaster bool) []*uilib.UIElement {
+func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, fonts ArtifactFonts, picLow int, picHigh int, powerGroups [][]Power, costs map[Power]int, artifact *Artifact, customName *string, selectCount *int) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     // image
@@ -543,7 +533,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                             *selectCount -= 1
                             artifact.RemovePower(power)
                             artifact.Name = getName(artifact, *customName)
-                            artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
+                            artifact.Cost = calculateCost(artifact, costs)
                             lastPower = nil
                         } else {
                             // something was already selected in this group, so the count doesn't change
@@ -551,7 +541,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                             artifact.RemovePower(*lastPower)
                             artifact.AddPower(power)
                             artifact.Name = getName(artifact, *customName)
-                            artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
+                            artifact.Cost = calculateCost(artifact, costs)
                             lastPower = &power
                         }
                     } else {
@@ -560,7 +550,7 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
                             groupSelect = i
                             artifact.AddPower(power)
                             artifact.Name = getName(artifact, *customName)
-                            artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
+                            artifact.Cost = calculateCost(artifact, costs)
                             lastPower = &power
                         } else {
                             ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item", func(){}))
@@ -804,7 +794,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
     return elements
 }
 
-func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, artifact *Artifact, customName *string, fonts ArtifactFonts, powers []Power, compatibilities map[Power]set.Set[ArtifactType], costs map[Power]int, selectCount *int, magicLevel MagicLevel, availableSpells spellbook.Spells, artificer bool, runemaster bool) []*uilib.UIElement {
+func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, artifact *Artifact, customName *string, fonts ArtifactFonts, powers []Power, compatibilities map[Power]set.Set[ArtifactType], costs map[Power]int, selectCount *int, wizard spellbook.Wizard, availableSpells spellbook.Spells) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     var group1 []Power
@@ -852,7 +842,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         selected := make([]bool, len(group))
         for i, power := range group {
             artifactTypes := compatibilities[power]
-            if artifactTypes.Contains(artifact.Type) && magicLevel.MagicLevel(power.Magic) >= power.Amount {
+            if artifactTypes.Contains(artifact.Type) && wizard.MagicLevel(power.Magic) >= power.Amount {
                 totalItems += 1
                 xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, 1)), y + fonts.PowerFont.Height())
                 elements = append(elements, &uilib.UIElement{
@@ -871,7 +861,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                                     *selectCount -= 1
                                     artifact.RemovePower(power)
                                     artifact.Name = getName(artifact, *customName)
-                                    artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
+                                    artifact.Cost = calculateCost(artifact, costs)
                                     lastPower = nil
                                 } else {
                                     // something was already selected in this group, so the count doesn't change
@@ -879,7 +869,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                                     artifact.RemovePower(*lastPower)
                                     artifact.AddPower(power)
                                     artifact.Name = getName(artifact, *customName)
-                                    artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
+                                    artifact.Cost = calculateCost(artifact, costs)
                                     lastPower = &power
                                 }
                             } else {
@@ -888,7 +878,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                                     groupSelect = i
                                     artifact.AddPower(power)
                                     artifact.Name = getName(artifact, *customName)
-                                    artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
+                                    artifact.Cost = calculateCost(artifact, costs)
                                     lastPower = &power
                                 } else {
                                     ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item", func(){}))
@@ -900,7 +890,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                             if selected[i] {
                                 artifact.RemovePower(power)
                                 artifact.Name = getName(artifact, *customName)
-                                artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
+                                artifact.Cost = calculateCost(artifact, costs)
                                 selected[i] = false
                                 *selectCount -= 1
                             } else if *selectCount < 4 {
@@ -909,7 +899,7 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
 
                                 artifact.AddPower(power)
                                 artifact.Name = getName(artifact, *customName)
-                                artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
+                                artifact.Cost = calculateCost(artifact, costs)
                             } else {
                                 ui.AddElement(uilib.MakeErrorElement(ui, cache, imageCache, "Only four powers may be enchanted into an item", func(){}))
                             }
@@ -966,13 +956,13 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
                         }
                         artifact.AddPower(addedPower)
                         artifact.Name = getName(artifact, *customName)
-                        artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
+                        artifact.Cost = calculateCost(artifact, costs)
                     }))
                 } else {
                     artifact.RemovePower(addedPower)
                     addedPower = Power{Type: PowerTypeNone}
                     artifact.Name = getName(artifact, *customName)
-                    artifact.Cost = calculateCost(artifact, costs, artificer, runemaster)
+                    artifact.Cost = calculateCost(artifact, costs)
                 }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -1188,7 +1178,7 @@ func makeFonts(cache *lbx.LbxCache) ArtifactFonts {
 /* returns the artifact that was created and true,
  * otherwise false for cancelled
  */
-func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, creationType CreationScreen, magicLevel MagicLevel, artificer bool, runemaster bool, availableSpells spellbook.Spells, draw *func(*ebiten.Image)) (*Artifact, bool) {
+func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, creationType CreationScreen, wizard spellbook.Wizard, availableSpells spellbook.Spells, draw *func(*ebiten.Image)) (*Artifact, bool) {
     fonts := makeFonts(cache)
 
     imageCache := util.MakeImageCache(cache)
@@ -1228,8 +1218,8 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         artifact.Type = artifactType
         groups := groupPowers(powers, costs, compatibilities, artifactType, creationType)
         selectCount := 0
-        elements := makePowersFull(ui, cache, &imageCache, fonts, picLow, picHigh, groups, costs, &artifact, &customName, &selectCount, artificer, runemaster)
-        abilityElements := makeAbilityElements(ui, cache, &imageCache, &artifact, &customName, fonts, powers, compatibilities, costs, &selectCount, magicLevel, availableSpells, artificer, runemaster)
+        elements := makePowersFull(ui, cache, &imageCache, fonts, picLow, picHigh, groups, costs, &artifact, &customName, &selectCount)
+        abilityElements := makeAbilityElements(ui, cache, &imageCache, &artifact, &customName, fonts, powers, compatibilities, costs, &selectCount, wizard, availableSpells)
         return PowerArtifact{
             Elements: elements,
             AbilityElements: abilityElements,
@@ -1263,7 +1253,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         ui.AddElements(powers[index].AbilityElements)
         currentArtifact = powers[index].Artifact
         currentArtifact.Name = getName(currentArtifact, customName)
-        currentArtifact.Cost = calculateCost(currentArtifact, costs, artificer, runemaster)
+        currentArtifact.Cost = calculateCost(currentArtifact, costs)
     }
 
     var selectedButton *uilib.UIElement
@@ -1316,9 +1306,27 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
         ui.AddElement(button)
     }
 
+    // the final artifact cost can be cached because the final cost is only a function of the base artifact cost
+    artifactCost := functional.Memoize(func (cost int) int {
+        spellName := ""
+        switch creationType {
+            case CreationEnchantItem: spellName = "Enchant Item"
+            case CreationCreateArtifact: spellName = "Create Artifact"
+        }
+        spell := spellbook.Spell{
+            Name: spellName,
+            OverrideCost: currentArtifact.Cost,
+            Magic: data.ArcaneMagic,
+            Eligibility: spellbook.EligibilityOverlandOnly,
+            Section: spellbook.SectionSpecial,
+        }
+
+        return spellbook.ComputeSpellCost(wizard, spell, false, false)
+    })
+
     ui.AddElement(&uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            fonts.PowerFontWhite.PrintOptions(screen, 198, 185, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Cost: %v", currentArtifact.Cost))
+            fonts.PowerFontWhite.PrintOptions(screen, 198, 185, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Cost: %v", artifactCost(currentArtifact.Cost)))
         },
     })
 

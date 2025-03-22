@@ -5,6 +5,8 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
 func TestHeroNames(test *testing.T) {
@@ -49,5 +51,31 @@ func TestSkillReduction(test *testing.T) {
     actualReduction := player.ReduceCastingSkill(7)
     if actualReduction != 5 {
         test.Errorf("Reduction of 5 by 7 doesn't work: reduced by %d, actual skill after reduction is %d", actualReduction, player.ComputeCastingSkill())
+    }
+}
+
+func TestResearchPoints(test *testing.T) {
+    natureSpell := spellbook.Spell{
+        ResearchCost: 200,
+        Magic: data.NatureMagic,
+    }
+
+    // 10% from nature magic books, 25% from sage master
+    wizard := setup.WizardCustom{
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.NatureMagic,
+                Count: 8,
+            },
+        },
+        Retorts: []data.Retort{
+            data.RetortSageMaster,
+        },
+    }
+
+    points := 15.0
+
+    if computeEffectiveResearchPerTurn(&wizard, points, natureSpell) != int(points * (1 + 0.1 + 0.25)) {
+        test.Errorf("Research points computation doesn't work")
     }
 }

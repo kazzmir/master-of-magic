@@ -1566,6 +1566,17 @@ func (combat *CombatScreen) AddSelectTargetsElements(targets []*ArmyUnit, title 
     combat.UI.AddElements(uilib.MakeSelectionUI(combat.UI, combat.Cache, &combat.ImageCache, 100, 20, title, selections, true))
 }
 
+type UnitCaster struct {
+}
+
+func (caster *UnitCaster) ComputeEffectiveResearchPerTurn(research float64, spell spellbook.Spell) int {
+    return int(research)
+}
+
+func (caster *UnitCaster) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {
+    return spell.Cost(overland)
+}
+
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     var elements []*uilib.UIElement
 
@@ -1709,13 +1720,14 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             // the lower of the mana pool (casting skill) or the wizard's mana divided by the range
             minimumMana := min(army.ManaPool, int(float64(army.Player.Mana) / army.Range.ToFloat()))
 
-            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, player, func (spell spellbook.Spell, picked bool){
                 if picked {
                     // player mana and skill should go down accordingly
                     combat.Model.InvokeSpell(combat, player, nil, spell, func(){
+                        spellCost := player.ComputeEffectiveSpellCost(spell, false)
                         army.Casted = true
-                        army.ManaPool -= spell.Cost(false)
-                        player.Mana -= int(float64(spell.Cost(false)) * army.Range.ToFloat())
+                        army.ManaPool -= spellCost
+                        player.Mana -= int(float64(spellCost) * army.Range.ToFloat())
                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
                     })
                 }
@@ -1748,6 +1760,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                                     if hasCharge && charge > 0 {
                                         caster.SpellCharges[spell] -= 1
                                     } else {
+                                        // units pay the full cost of a spell with no modifiers
                                         caster.CastingSkill -= float32(spell.Cost(false))
                                     }
                                     caster.Casted = true
@@ -1783,7 +1796,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             }
 
                             // what is casting skill based on for a unit?
-                            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, unitSpells.CombatSpells(), caster.SpellCharges, int(caster.CastingSkill), spellbook.Spell{}, 0, false, func (spell spellbook.Spell, picked bool){
+                            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, unitSpells.CombatSpells(), caster.SpellCharges, int(caster.CastingSkill), spellbook.Spell{}, 0, false, &UnitCaster{}, func (spell spellbook.Spell, picked bool){
                                 if picked {
                                     doCast(spell)
                                 }

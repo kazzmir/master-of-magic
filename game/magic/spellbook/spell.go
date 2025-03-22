@@ -213,6 +213,63 @@ func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
 }
 */
 
+type SpellCaster interface {
+    // given research points and a spell, return the actual number of research points per turn
+    // made towards that spell
+    ComputeEffectiveResearchPerTurn(float64, Spell) int
+    // the actual cost to cast the spell
+    ComputeEffectiveSpellCost(spell Spell, overland bool) int
+}
+
+type Wizard interface {
+    RetortEnabled(retort data.Retort) bool
+    MagicLevel(magic data.MagicType) int
+}
+
+// the casting cost of a spell can be reduced based on retorts/spell books
+func ComputeSpellCost(wizard Wizard, spell Spell, overland bool, hasEvilOmens bool) int {
+    base := float64(spell.Cost(overland))
+    modifier := float64(0)
+
+    if wizard.RetortEnabled(data.RetortRunemaster) && spell.Magic == data.ArcaneMagic {
+        modifier += 0.25
+    }
+
+    if wizard.RetortEnabled(data.RetortChaosMastery) && spell.Magic == data.ChaosMagic {
+        modifier += 0.15
+    }
+
+    if wizard.RetortEnabled(data.RetortNatureMastery) && spell.Magic == data.NatureMagic {
+        modifier += 0.15
+    }
+
+    if wizard.RetortEnabled(data.RetortSorceryMastery) && spell.Magic == data.SorceryMagic {
+        modifier += 0.15
+    }
+
+    if wizard.RetortEnabled(data.RetortConjurer) && spell.IsSummoning() {
+        modifier += 0.25
+    }
+
+    if wizard.RetortEnabled(data.RetortArtificer) && (spell.Name == "Enchant Item" || spell.Name == "Create Artifact") {
+        modifier += 0.5
+    }
+
+    // for each book above 7, reduce cost by 10%
+    realmBooks := max(0, wizard.MagicLevel(spell.Magic) - 7)
+    modifier += float64(realmBooks) * 0.1
+
+    evilOmens := float64(1.0)
+
+    if hasEvilOmens {
+        if spell.Magic == data.LifeMagic || spell.Magic == data.NatureMagic {
+            evilOmens = 1.5
+        }
+    }
+
+    return int(max(0, base * (1 - modifier) * evilOmens))
+}
+
 /* three modes:
  * 1. when a new spell is learned, flip to the page where the spell would go and show the sparkle animation over the new spell
  * 2. flip to the 'research spells' page and let the user pick a new spell
@@ -221,7 +278,7 @@ func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
  *
  * This function does all 3, which makes it kind of ugly and has too many parameters.
  */
-func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, researchingSpell Spell, researchProgress int, researchPoints int, castingSkill int, learnedSpell Spell, pickResearchSpell bool, chosenSpell *Spell, drawFunc *func(screen *ebiten.Image)) {
+func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, researchingSpell Spell, researchProgress int, researchPoints float64, castingSkill int, learnedSpell Spell, pickResearchSpell bool, chosenSpell *Spell, caster SpellCaster, drawFunc *func(screen *ebiten.Image)) {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -499,9 +556,9 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                     y += float64(spellTitleNormalFont.Height())
 
                     if page.IsResearch {
-                        turns := spell.ResearchCost / researchPoints
+                        turns := spell.ResearchCost / caster.ComputeEffectiveResearchPerTurn(researchPoints, spell)
                         if spell.Name == researchingSpell.Name {
-                            turns = (spell.ResearchCost - researchProgress) / researchPoints
+                            turns = (spell.ResearchCost - researchProgress) / caster.ComputeEffectiveResearchPerTurn(researchPoints, spell)
                         }
                         if turns < 1 {
                             turns = 1
@@ -513,7 +570,9 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                         spellTextNormalFont.PrintOptions(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &scaleOptions}, fmt.Sprintf("Research Cost:%v (%v %v)", spell.ResearchCost, turns, turnString))
                         y += float64(spellTextNormalFont.Height())
                     } else {
-                        turns := spell.Cost(true) / castingSkill
+                        spellCost := caster.ComputeEffectiveSpellCost(spell, true)
+
+                        turns := spellCost / castingSkill
                         if turns < 1 {
                             turns = 1
                         }
@@ -521,7 +580,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                         if turns > 1 {
                             turnString = "turns"
                         }
-                        spellTextNormalFont.PrintOptions(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &scaleOptions}, fmt.Sprintf("Casting cost:%v (%v %v)", spell.Cost(true), turns, turnString))
+                        spellTextNormalFont.PrintOptions(pageImage, x, y, font.FontOptions{Scale: scale.ScaleAmount, Options: &scaleOptions}, fmt.Sprintf("Casting cost:%v (%v %v)", spellCost, turns, turnString))
                         y += float64(spellTextNormalFont.Height())
                     }
 
@@ -1087,7 +1146,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
 // selected a spell or because they canceled the ui
 // if a spell is chosen then it will be passed in as the first argument to the callback along with true
 // if the ui is cancelled then the second argument will be false
-func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charges map[Spell]int, castingSkill int, currentSpell Spell, currentProgress int, overland bool, chosenCallback func(Spell, bool)) []*uilib.UIElement {
+func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charges map[Spell]int, castingSkill int, currentSpell Spell, currentProgress int, overland bool, caster SpellCaster, chosenCallback func(Spell, bool)) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
@@ -1181,14 +1240,14 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
             // it could be the cast that the spell was granted by a charge, so the spellbook doesn't have it
             if spells.Contains(spell) {
-                return spell.Cost(overland) <= castingSkill
+                return caster.ComputeEffectiveSpellCost(spell, overland) <= castingSkill
             } else {
                 return false
             }
 
         }
 
-        return spell.Cost(overland) <= castingSkill
+        return caster.ComputeEffectiveSpellCost(spell, overland) <= castingSkill
     }
 
     spellPages := computeHalfPages(useSpells, 6)
@@ -1207,7 +1266,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         for _, spell := range page.Spells.Spells {
 
             // invalid spell?
-            if spell.Invalid() || spell.Cost(false) == 0 {
+            if spell.Invalid() {
                 continue
             }
 
@@ -1235,10 +1294,10 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
             spellX, spellY := spellOptions.GeoM.Apply(0, 0)
 
-            costRemaining := spell.Cost(overland)
+            costRemaining := caster.ComputeEffectiveSpellCost(spell, overland)
             if overland {
                 if spell.Name == currentSpell.Name {
-                    costRemaining = currentSpell.Cost(overland)
+                    costRemaining = caster.ComputeEffectiveSpellCost(currentSpell, overland)
                     costRemaining -= currentProgress
                 }
             }
@@ -1278,7 +1337,12 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                 // in combat the number of icons is how many times the spell can be cast given the casting cost of the spell
                 // and the casting skill of the user
 
-                iconCount = castingSkill / spell.Cost(false)
+                // if this ever occurs this is a bug, the cost of a combat spell should never be 0
+                if spell.Cost(false) == 0 {
+                    iconCount = 1
+                } else {
+                    iconCount = castingSkill / caster.ComputeEffectiveSpellCost(spell, false)
+                }
             }
 
             iconOptions := spellOptions
@@ -1509,11 +1573,25 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             if !overland {
                 // in combat, the cost of the spell cannot exceed the casting skill
                 // maximum additional strength is whatever the casting skill is minus the cost of the spell
-                extraStrength = min(spell.Cost(overland) * 4, castingSkill - spell.Cost(overland))
+                // extraStrength = min(spell.Cost(overland) * 4, castingSkill - spell.Cost(overland))
+
+                // the extra strength that can be put into variable spells is based on the final casting skill
+                // of the caster that has to take the cost modifiers into account
+                for extraStrength > 0 {
+                    spell.OverrideCost = spell.BaseCost(overland) + extraStrength
+                    if caster.ComputeEffectiveSpellCost(spell, overland) <= castingSkill {
+                        break
+                    }
+
+                    extraStrength -= 1
+                }
+
+                spell.OverrideCost = 0
             }
 
             if extraStrength > 0 {
                 powerGroup = makeAdditionalPowerElements(cache, &imageCache, extraStrength, func(amount int){
+                    // modifiers to the cost will be applied later
                     spell.OverrideCost = spell.Cost(overland) + amount
                     ui.RemoveGroup(powerGroup)
                     shutdownFinal()

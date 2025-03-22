@@ -5101,7 +5101,7 @@ func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc, player *playerlib.
     }
 
     power := game.ComputePower(player)
-    spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, player.ResearchingSpell, player.ResearchProgress, int(player.SpellResearchPerTurn(power)), player.ComputeOverworldCastingSkill(), spellbook.Spell{}, false, nil, &newDrawer)
+    spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, player.ResearchingSpell, player.ResearchProgress, player.SpellResearchPerTurn(power), player.ComputeOverworldCastingSkill(), spellbook.Spell{}, false, nil, player, &newDrawer)
 }
 
 func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.Player){
@@ -5119,7 +5119,7 @@ func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.
 
     if len(player.ResearchCandidateSpells.Spells) > 0 {
         power := game.ComputePower(player)
-        spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, spellbook.Spell{}, 0, int(player.SpellResearchPerTurn(power)), player.ComputeOverworldCastingSkill(), spellbook.Spell{}, true, &player.ResearchingSpell, &newDrawer)
+        spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, spellbook.Spell{}, 0, player.SpellResearchPerTurn(power), player.ComputeOverworldCastingSkill(), spellbook.Spell{}, true, &player.ResearchingSpell, player, &newDrawer)
     }
 }
 
@@ -5195,7 +5195,7 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
 }
 
 func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerlib.Player){
-    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, player.KnownSpells.OverlandSpells(), make(map[spellbook.Spell]int), player.ComputeOverworldCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, func (spell spellbook.Spell, picked bool){
+    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, player.KnownSpells.OverlandSpells(), make(map[spellbook.Spell]int), player.ComputeOverworldCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, player, func (spell spellbook.Spell, picked bool){
         if picked {
             if spell.Name == "Create Artifact" || spell.Name == "Enchant Item" {
 
@@ -5214,7 +5214,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                     case "Enchant Item": creation = artifact.CreationEnchantItem
                 }
 
-                created, cancel := artifact.ShowCreateArtifactScreen(yield, game.Cache, creation, &player.Wizard, player.Wizard.RetortEnabled(data.RetortArtificer), player.Wizard.RetortEnabled(data.RetortRunemaster), player.KnownSpells.CombatSpells(), &drawFunc)
+                created, cancel := artifact.ShowCreateArtifactScreen(yield, game.Cache, creation, &player.Wizard, player.KnownSpells.CombatSpells(), &drawFunc)
                 if cancel {
                     return
                 }
@@ -5225,10 +5225,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                 player.CreateArtifact = created
             }
 
-            castingCost := spell.Cost(true)
-
-            // FIXME: if the player has runemaster and the spell is arcane, then apply a -25% reduction. Don't apply
-            // to create artifact or enchant item because the reduction has already been applied
+            castingCost := player.ComputeEffectiveSpellCost(spell, true)
 
             if castingCost <= player.Mana && castingCost <= player.RemainingCastingSkill {
                 player.Mana -= castingCost
@@ -6831,7 +6828,9 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
             manaSpent = player.RemainingCastingSkill
         }
 
-        remainingMana := player.CastingSpell.Cost(true) - player.CastingSpellProgress
+        spellCost := player.ComputeEffectiveSpellCost(player.CastingSpell, true)
+
+        remainingMana := spellCost - player.CastingSpellProgress
         if remainingMana < manaSpent {
             manaSpent = remainingMana
         }
@@ -6839,7 +6838,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         player.CastingSpellProgress += manaSpent
         player.Mana -= manaSpent
 
-        if player.CastingSpell.Cost(true) <= player.CastingSpellProgress {
+        if spellCost <= player.CastingSpellProgress {
             game.doCastSpell(player, player.CastingSpell)
             player.CastingSpell = spellbook.Spell{}
             player.CastingSpellProgress = 0
@@ -6848,7 +6847,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
     if player.ResearchingSpell.Valid() {
         // log.Printf("wizard %v power=%v researching=%v progress=%v/%v perturn=%v", player.Wizard.Name, power, player.ResearchingSpell.Name, player.ResearchProgress, player.ResearchingSpell.ResearchCost, player.SpellResearchPerTurn(power))
-        player.ResearchProgress += int(player.SpellResearchPerTurn(power))
+        player.ResearchProgress += player.ComputeEffectiveResearchPerTurn(player.SpellResearchPerTurn(power), player.ResearchingSpell)
         if player.ResearchProgress >= player.ResearchingSpell.ResearchCost {
 
             if player.IsHuman() {
