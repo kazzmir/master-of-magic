@@ -6952,6 +6952,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 }
 
                 // automatically apply chaos channels to new normal units
+                // checking the race is probably redundant because a new unit built by the city will never be a hero nor fantastic
                 if overworldUnit.GetRace() != data.RaceHero && overworldUnit.GetRace() != data.RaceFantastic && player.HasEnchantment(data.EnchantmentDoomMastery) {
                     game.applyChaosChannels(overworldUnit)
                 }
