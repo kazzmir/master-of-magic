@@ -1490,6 +1490,7 @@ type UnitDamage interface {
     GetDefense() int
     ToDefend(modifiers DamageModifiers) int
     TakeDamage(damage int, damageType DamageType)
+    ReduceInvulnerability(damage int) int
     GetHealth() int
     GetMaxHealth() int
     GetCount() int
@@ -1640,7 +1641,7 @@ func (unit *ArmyUnit) Heal(amount int){
 
 // apply damage to each individual figure such that each figure gets to individually block damage.
 // this could potentially allow a damage of 5 to destroy a unit with 4 figures of 1HP each
-func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damage, wallDefense int) int {
+func ApplyAreaDamage(unit UnitDamage, attackStrength int, damageType units.Damage, wallDefense int) int {
     totalDamage := 0
     health_per_figure := unit.GetMaxHealth() / unit.GetCount()
 
@@ -3295,7 +3296,7 @@ func (model *CombatModel) ComputeWallDefense(attacker *ArmyUnit, defender *ArmyU
 
 func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDamage int) {
     if immolationDamage > 0 {
-        hurt := defender.ApplyAreaDamage(immolationDamage, units.DamageImmolation, 0)
+        hurt := ApplyAreaDamage(defender, immolationDamage, units.DamageImmolation, 0)
         model.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.GetHealth()))
     }
 }
