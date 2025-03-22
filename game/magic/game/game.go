@@ -7733,6 +7733,87 @@ func (game *Game) doChaosRift() {
     }
 }
 
+func (game *Game) doMeteorStorm() {
+    immolate := func (unit units.StackUnit) int {
+        return combat.ApplyAreaDamage(&UnitDamageWrapper{Unit: unit}, 4, units.DamageImmolation, 0)
+    }
+
+    if !game.HasEnchantment(data.EnchantmentMeteorStorm) {
+        return
+    }
+
+    affectedPlayers := set.NewSet[*playerlib.Player]()
+    for _, player := range game.Players {
+        if player.Defeated {
+            continue
+        }
+
+        // add every other player to the affected set.
+        // if another player also cast meteor storm, then ultimately the current player will also
+        // be added to the set, meaning both players' meteor storms affects the other
+        if player.HasEnchantment(data.EnchantmentMeteorStorm) {
+            for _, otherPlayer := range game.Players {
+                if otherPlayer != player {
+                    affectedPlayers.Insert(otherPlayer)
+                }
+            }
+        }
+    }
+
+    entityInfo := game.ComputeCityStackInfo()
+
+    for _, player := range game.Players {
+        if player.Defeated {
+            continue
+        }
+
+        // non-garrisoned units take immolation damage
+        for _, unit := range slices.Clone(player.Units) {
+            if entityInfo.FindCity(unit.GetX(), unit.GetY(), unit.GetPlane()) == nil {
+                immolate(unit)
+                if unit.GetHealth() <= 0 {
+                    player.RemoveUnit(unit)
+                }
+            }
+        }
+
+        if affectedPlayers.Contains(player) {
+            var removeCities []*citylib.City
+            for _, city := range player.Cities {
+                // chaos ward and consecration protect the city
+                if city.HasEnchantment(data.CityEnchantmentChaosWard) || city.HasEnchantment(data.CityEnchantmentConsecration) {
+                    continue
+                }
+
+                // destroy all outposts
+                if city.Outpost {
+                    removeCities = append(removeCities, city)
+                    continue
+                }
+
+                // buildings hae a 1% chance of being destroyed
+                var destroyedBuildings []buildinglib.Building
+                for _, building := range city.Buildings.Values() {
+                    if rand.N(100) == 0 {
+                        // FIXME: include nightshade protection
+                        destroyedBuildings = append(destroyedBuildings, building)
+                    }
+                }
+
+                for _, building := range destroyedBuildings {
+                    city.Buildings.Remove(building)
+                }
+
+            }
+
+            for _, city := range removeCities {
+                player.RemoveCity(city)
+            }
+        }
+    }
+
+}
+
 func (game *Game) EndOfTurn() {
     // put stuff here that should happen when all players have taken their turn
 
@@ -7743,6 +7824,8 @@ func (game *Game) EndOfTurn() {
     game.doGreatWasting()
 
     game.doChaosRift()
+
+    game.doMeteorStorm()
 
     game.TurnNumber += 1
 

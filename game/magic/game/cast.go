@@ -333,10 +333,16 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 TODO:
                 Aura of Majesty
                 Time Stop
-                Meteor Storm
                 Evil Omens
                 Zombie Mastery
         */
+        case "Meteor Storm":
+            enchantment := data.EnchantmentMeteorStorm
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
         case "Doom Mastery":
             enchantment := data.EnchantmentDoomMastery
             if !player.GlobalEnchantments.Contains(enchantment) {
