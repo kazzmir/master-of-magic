@@ -251,8 +251,9 @@ func ComputeSpellCost(wizard Wizard, spell Spell, overland bool, hasEvilOmens bo
         modifier += 0.25
     }
 
-    // artificer for enchant item and create artifact are handled directly in the artifact creation screen
-    // in artifact/create-artifact.go
+    if wizard.RetortEnabled(data.RetortArtificer) && (spell.Name == "Enchant Item" || spell.Name == "Create Artifact") {
+        modifier += 0.5
+    }
 
     // for each book above 7, reduce cost by 10%
     realmBooks := max(0, wizard.MagicLevel(spell.Magic) - 7)
