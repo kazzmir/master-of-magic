@@ -404,6 +404,7 @@ func (wizard *WizardCustom) SetMagicLevel(kind data.MagicType, count int){
     wizard.Books = out
 }
 
+// number of books for the given magic type
 func (wizard *WizardCustom) MagicLevel(kind data.MagicType) int {
     for _, book := range wizard.Books {
         if book.Magic == kind {
@@ -413,7 +414,6 @@ func (wizard *WizardCustom) MagicLevel(kind data.MagicType) int {
 
     return 0
 }
-
 
 type NewWizardScreen struct {
     LbxCache *lbx.LbxCache
