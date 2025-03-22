@@ -1266,7 +1266,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         for _, spell := range page.Spells.Spells {
 
             // invalid spell?
-            if spell.Invalid() || spell.Cost(false) == 0 {
+            if spell.Invalid() {
                 continue
             }
 
@@ -1337,7 +1337,12 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                 // in combat the number of icons is how many times the spell can be cast given the casting cost of the spell
                 // and the casting skill of the user
 
-                iconCount = castingSkill / caster.ComputeEffectiveSpellCost(spell, false)
+                // if this ever occurs this is a bug, the cost of a combat spell should never be 0
+                if spell.Cost(false) == 0 {
+                    iconCount = 1
+                } else {
+                    iconCount = castingSkill / caster.ComputeEffectiveSpellCost(spell, false)
+                }
             }
 
             iconOptions := spellOptions
