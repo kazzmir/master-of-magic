@@ -1097,7 +1097,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
 // selected a spell or because they canceled the ui
 // if a spell is chosen then it will be passed in as the first argument to the callback along with true
 // if the ui is cancelled then the second argument will be false
-func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charges map[Spell]int, castingSkill int, currentSpell Spell, currentProgress int, overland bool, chosenCallback func(Spell, bool)) []*uilib.UIElement {
+func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charges map[Spell]int, castingSkill int, currentSpell Spell, currentProgress int, overland bool, caster SpellCaster, chosenCallback func(Spell, bool)) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
@@ -1191,14 +1191,14 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
             // it could be the cast that the spell was granted by a charge, so the spellbook doesn't have it
             if spells.Contains(spell) {
-                return spell.Cost(overland) <= castingSkill
+                return caster.ComputeEffectiveSpellCost(spell, overland) <= castingSkill
             } else {
                 return false
             }
 
         }
 
-        return spell.Cost(overland) <= castingSkill
+        return caster.ComputeEffectiveSpellCost(spell, overland) <= castingSkill
     }
 
     spellPages := computeHalfPages(useSpells, 6)
@@ -1245,10 +1245,10 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
             spellX, spellY := spellOptions.GeoM.Apply(0, 0)
 
-            costRemaining := spell.Cost(overland)
+            costRemaining := caster.ComputeEffectiveSpellCost(spell, overland)
             if overland {
                 if spell.Name == currentSpell.Name {
-                    costRemaining = currentSpell.Cost(overland)
+                    costRemaining = caster.ComputeEffectiveSpellCost(currentSpell, overland)
                     costRemaining -= currentProgress
                 }
             }
@@ -1288,7 +1288,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                 // in combat the number of icons is how many times the spell can be cast given the casting cost of the spell
                 // and the casting skill of the user
 
-                iconCount = castingSkill / spell.Cost(false)
+                iconCount = castingSkill / caster.ComputeEffectiveSpellCost(spell, false)
             }
 
             iconOptions := spellOptions
@@ -1519,11 +1519,25 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             if !overland {
                 // in combat, the cost of the spell cannot exceed the casting skill
                 // maximum additional strength is whatever the casting skill is minus the cost of the spell
-                extraStrength = min(spell.Cost(overland) * 4, castingSkill - spell.Cost(overland))
+                // extraStrength = min(spell.Cost(overland) * 4, castingSkill - spell.Cost(overland))
+
+                // the extra strength that can be put into variable spells is based on the final casting skill
+                // of the caster that has to take the cost modifiers into account
+                for extraStrength > 0 {
+                    spell.OverrideCost = spell.BaseCost(overland) + extraStrength
+                    if caster.ComputeEffectiveSpellCost(spell, overland) <= castingSkill {
+                        break
+                    }
+
+                    extraStrength -= 1
+                }
+
+                spell.OverrideCost = 0
             }
 
             if extraStrength > 0 {
                 powerGroup = makeAdditionalPowerElements(cache, &imageCache, extraStrength, func(amount int){
+                    // modifiers to the cost will be applied later
                     spell.OverrideCost = spell.Cost(overland) + amount
                     ui.RemoveGroup(powerGroup)
                     shutdownFinal()
