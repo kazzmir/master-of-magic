@@ -221,6 +221,54 @@ type SpellCaster interface {
     ComputeEffectiveSpellCost(spell Spell, overland bool) int
 }
 
+type Wizard interface {
+    RetortEnabled(retort data.Retort) bool
+    MagicLevel(magic data.MagicType) int
+}
+
+// the casting cost of a spell can be reduced based on retorts/spell books
+func ComputeSpellCost(wizard Wizard, spell Spell, overland bool, hasEvilOmens bool) int {
+    base := float64(spell.Cost(overland))
+    modifier := float64(0)
+
+    if wizard.RetortEnabled(data.RetortRunemaster) && spell.Magic == data.ArcaneMagic {
+        modifier += 0.25
+    }
+
+    if wizard.RetortEnabled(data.RetortChaosMastery) && spell.Magic == data.ChaosMagic {
+        modifier += 0.15
+    }
+
+    if wizard.RetortEnabled(data.RetortNatureMastery) && spell.Magic == data.NatureMagic {
+        modifier += 0.15
+    }
+
+    if wizard.RetortEnabled(data.RetortSorceryMastery) && spell.Magic == data.SorceryMagic {
+        modifier += 0.15
+    }
+
+    if wizard.RetortEnabled(data.RetortConjurer) && spell.IsSummoning() {
+        modifier += 0.25
+    }
+
+    // artificer for enchant item and create artifact are handled directly in the artifact creation screen
+    // in artifact/create-artifact.go
+
+    // for each book above 7, reduce cost by 10%
+    realmBooks := max(0, wizard.MagicLevel(spell.Magic) - 7)
+    modifier += float64(realmBooks) * 0.1
+
+    evilOmens := float64(1.0)
+
+    if hasEvilOmens {
+        if spell.Magic == data.LifeMagic || spell.Magic == data.NatureMagic {
+            evilOmens = 1.5
+        }
+    }
+
+    return int(max(0, base * (1 - modifier) * evilOmens))
+}
+
 /* three modes:
  * 1. when a new spell is learned, flip to the page where the spell would go and show the sparkle animation over the new spell
  * 2. flip to the 'research spells' page and let the user pick a new spell
