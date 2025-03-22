@@ -4030,6 +4030,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 case *playerlib.AIMoveStackDecision:
                     game.doAiMoveUnit(yield, player, decision.(*playerlib.AIMoveStackDecision))
 
+                // mainly for the raider ai
                 case *playerlib.AICreateUnitDecision:
                     create := decision.(*playerlib.AICreateUnitDecision)
                     log.Printf("ai %v creating %+v", player.Wizard.Name, create)
@@ -6779,6 +6780,26 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
     }
 }
 
+func (game *Game) applyChaosChannels(unit *units.OverworldUnit) {
+    choices := set.NewSet(
+        data.UnitEnchantmentChaosChannelsDemonSkin,
+        data.UnitEnchantmentChaosChannelsDemonWings,
+        data.UnitEnchantmentChaosChannelsFireBreath,
+    )
+
+    if unit.IsFlying() {
+        choices.Remove(data.UnitEnchantmentChaosChannelsDemonWings)
+    }
+
+    if unit.GetAbilityValue(data.AbilityFireBreath) > 0 {
+        choices.Remove(data.UnitEnchantmentChaosChannelsFireBreath)
+    }
+
+    slice := choices.Values()
+    choice := slice[rand.N(len(slice))]
+    unit.AddEnchantment(choice)
+}
+
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     disbandedMessages := game.DisbandUnits(player)
 
@@ -6929,6 +6950,13 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 if overworldUnit.GetRace() != data.RaceFantastic {
                     overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
                 }
+
+                // automatically apply chaos channels to new normal units
+                // checking the race is probably redundant because a new unit built by the city will never be a hero nor fantastic
+                if overworldUnit.GetRace() != data.RaceHero && overworldUnit.GetRace() != data.RaceFantastic && player.HasEnchantment(data.EnchantmentDoomMastery) {
+                    game.applyChaosChannels(overworldUnit)
+                }
+
                 overworldUnit.AddExperience(newUnit.Experience)
                 player.AddUnit(overworldUnit)
                 game.ResolveStackAt(city.X, city.Y, city.Plane)
