@@ -213,6 +213,12 @@ func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
 }
 */
 
+type SpellCaster interface {
+    // given research points and a spell, return the actual number of research points per turn
+    // made towards that spell
+    ComputeEffectiveResearchPerTurn(float64, Spell) int
+}
+
 /* three modes:
  * 1. when a new spell is learned, flip to the page where the spell would go and show the sparkle animation over the new spell
  * 2. flip to the 'research spells' page and let the user pick a new spell
@@ -221,7 +227,7 @@ func RightSideFlipRightDistortions1(page *ebiten.Image) util.Distortion {
  *
  * This function does all 3, which makes it kind of ugly and has too many parameters.
  */
-func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, researchingSpell Spell, researchProgress int, researchPoints int, castingSkill int, learnedSpell Spell, pickResearchSpell bool, chosenSpell *Spell, drawFunc *func(screen *ebiten.Image)) {
+func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, researchingSpell Spell, researchProgress int, researchPoints float64, castingSkill int, learnedSpell Spell, pickResearchSpell bool, chosenSpell *Spell, caster SpellCaster, drawFunc *func(screen *ebiten.Image)) {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             ui.IterateElementsByLayer(func (element *uilib.UIElement){
@@ -499,9 +505,9 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
                     y += float64(spellTitleNormalFont.Height())
 
                     if page.IsResearch {
-                        turns := spell.ResearchCost / researchPoints
+                        turns := spell.ResearchCost / caster.ComputeEffectiveResearchPerTurn(researchPoints, spell)
                         if spell.Name == researchingSpell.Name {
-                            turns = (spell.ResearchCost - researchProgress) / researchPoints
+                            turns = (spell.ResearchCost - researchProgress) / caster.ComputeEffectiveResearchPerTurn(researchPoints, spell)
                         }
                         if turns < 1 {
                             turns = 1

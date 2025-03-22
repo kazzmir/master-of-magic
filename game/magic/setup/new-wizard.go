@@ -7,6 +7,7 @@ import (
     "image"
     "image/color"
     "log"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -404,6 +405,7 @@ func (wizard *WizardCustom) SetMagicLevel(kind data.MagicType, count int){
     wizard.Books = out
 }
 
+// number of books for the given magic type
 func (wizard *WizardCustom) MagicLevel(kind data.MagicType) int {
     for _, book := range wizard.Books {
         if book.Magic == kind {
@@ -413,7 +415,6 @@ func (wizard *WizardCustom) MagicLevel(kind data.MagicType) int {
 
     return 0
 }
-
 
 type NewWizardScreen struct {
     LbxCache *lbx.LbxCache
@@ -1060,8 +1061,22 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
         },
     }
 
-    // for each magic book, create a UI element that contains the book dimensions and can draw the book
+    // check that the retorts are still valid, and disable any that are not
+    checkRetorts := func() {
+        var removed []data.Retort
+        for _, retort := range slices.Clone(screen.CustomWizard.Retorts) {
+            if !SatisifiedDependencies(retort, &screen.CustomWizard) {
+                screen.CustomWizard.ToggleRetort(retort, 0)
+                removed = append(removed, retort)
+            }
+        }
 
+        if len(removed) > 0 {
+            screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, fmt.Sprintf("Retorts %v became ineligible", JoinAbilities(removed)), func(){}))
+        }
+    }
+
+    // for each magic book, create a UI element that contains the book dimensions and can draw the book
     for _, book := range books {
         bookY := book.Y
         bookMagic := book.Kind
@@ -1077,6 +1092,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             Rect: image.Rect(x1, y1, x2, y2),
             LeftClick: func(this *uilib.UIElement){
                 screen.CustomWizard.SetMagicLevel(bookMagic, 0)
+                checkRetorts()
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
             },
@@ -1133,6 +1149,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                             screen.CustomWizard.SetMagicLevel(bookMagic, screen.CustomWizard.MagicLevel(bookMagic) + picksLeft())
                         }
                     }
+
+                    checkRetorts()
                 },
                 RightClick: func(this *uilib.UIElement){
                     helpEntries := screen.Help.GetEntriesByName(book.Help)

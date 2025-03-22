@@ -5101,7 +5101,7 @@ func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc, player *playerlib.
     }
 
     power := game.ComputePower(player)
-    spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, player.ResearchingSpell, player.ResearchProgress, int(player.SpellResearchPerTurn(power)), player.ComputeOverworldCastingSkill(), spellbook.Spell{}, false, nil, &newDrawer)
+    spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, player.ResearchingSpell, player.ResearchProgress, player.SpellResearchPerTurn(power), player.ComputeOverworldCastingSkill(), spellbook.Spell{}, false, nil, player, &newDrawer)
 }
 
 func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.Player){
@@ -5119,7 +5119,7 @@ func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.
 
     if len(player.ResearchCandidateSpells.Spells) > 0 {
         power := game.ComputePower(player)
-        spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, spellbook.Spell{}, 0, int(player.SpellResearchPerTurn(power)), player.ComputeOverworldCastingSkill(), spellbook.Spell{}, true, &player.ResearchingSpell, &newDrawer)
+        spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, spellbook.Spell{}, 0, player.SpellResearchPerTurn(power), player.ComputeOverworldCastingSkill(), spellbook.Spell{}, true, &player.ResearchingSpell, player, &newDrawer)
     }
 }
 
@@ -6848,7 +6848,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
     if player.ResearchingSpell.Valid() {
         // log.Printf("wizard %v power=%v researching=%v progress=%v/%v perturn=%v", player.Wizard.Name, power, player.ResearchingSpell.Name, player.ResearchProgress, player.ResearchingSpell.ResearchCost, player.SpellResearchPerTurn(power))
-        player.ResearchProgress += int(player.SpellResearchPerTurn(power))
+        player.ResearchProgress += player.ComputeEffectiveResearchPerTurn(player.SpellResearchPerTurn(power), player.ResearchingSpell)
         if player.ResearchProgress >= player.ResearchingSpell.ResearchCost {
 
             if player.IsHuman() {

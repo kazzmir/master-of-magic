@@ -72,6 +72,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         Retorts: []data.Retort{
             data.RetortAlchemy,
             data.RetortSageMaster,
+            data.RetortRunemaster,
         },
         Books: []data.WizardBook{
             data.WizardBook{

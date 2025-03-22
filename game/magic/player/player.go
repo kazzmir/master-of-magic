@@ -612,6 +612,47 @@ func (player *Player) CastingSkillPerTurn(power int) int {
     return int(float64(power) * player.PowerDistribution.Skill * bonus)
 }
 
+// returns the true effective research per turn for the given spell by taking retorts/spell books into account
+// example: a wizard with runemaster researching an arcane spell will produce 25% more research points
+func computeEffectiveResearchPerTurn(wizard *setup.WizardCustom, research float64, spell spellbook.Spell) int {
+    modifier := float64(0)
+
+    if wizard.RetortEnabled(data.RetortRunemaster) && spell.Magic == data.ArcaneMagic {
+        modifier += 0.25
+    }
+
+    if wizard.RetortEnabled(data.RetortSageMaster) {
+        modifier += 0.25
+    }
+
+    if wizard.RetortEnabled(data.RetortConjurer) && spell.IsSummoning() {
+        modifier += 0.25
+    }
+
+    if wizard.RetortEnabled(data.RetortChaosMastery) && spell.Magic == data.ChaosMagic {
+        modifier += 0.15
+    }
+
+    if wizard.RetortEnabled(data.RetortNatureMastery) && spell.Magic == data.NatureMagic {
+        modifier += 0.15
+    }
+
+    if wizard.RetortEnabled(data.RetortSorceryMastery) && spell.Magic == data.SorceryMagic {
+        modifier += 0.15
+    }
+
+    // for each book above 7, increase points by 10%
+    realmBooks := max(0, wizard.MagicLevel(spell.Magic) - 7)
+    modifier += float64(realmBooks) * 0.1
+
+    return int(research * (1 + modifier))
+}
+
+func (player *Player) ComputeEffectiveResearchPerTurn(research float64, spell spellbook.Spell) int {
+    return computeEffectiveResearchPerTurn(&player.Wizard, research, spell)
+}
+
+// this returns the raw research production per turn, not accounting for retorts or spellbooks
 func (player *Player) SpellResearchPerTurn(power int) float64 {
     research := float64(0)
 
@@ -629,6 +670,53 @@ func (player *Player) SpellResearchPerTurn(power int) float64 {
     }
 
     return research
+}
+
+// the casting cost of a spell can be reduced based on retorts/spell books
+func computeEffectiveSpellCost(wizard *setup.WizardCustom, spell spellbook.Spell, overland bool, hasEvilOmens bool) int {
+    base := float64(spell.Cost(overland))
+    modifier := float64(0)
+
+    if wizard.RetortEnabled(data.RetortRunemaster) && spell.Magic == data.ArcaneMagic {
+        modifier += 0.25
+    }
+
+    if wizard.RetortEnabled(data.RetortChaosMastery) && spell.Magic == data.ChaosMagic {
+        modifier += 0.15
+    }
+
+    if wizard.RetortEnabled(data.RetortNatureMastery) && spell.Magic == data.NatureMagic {
+        modifier += 0.15
+    }
+
+    if wizard.RetortEnabled(data.RetortSorceryMastery) && spell.Magic == data.SorceryMagic {
+        modifier += 0.15
+    }
+
+    if wizard.RetortEnabled(data.RetortConjurer) && spell.IsSummoning() {
+        modifier += 0.25
+    }
+
+    // artificer for enchant item and create artifact are handled directly in the artifact creation screen
+    // in artifact/create-artifact.go
+
+    // for each book above 7, reduce cost by 10%
+    realmBooks := max(0, wizard.MagicLevel(spell.Magic) - 7)
+    modifier += float64(realmBooks) * 0.1
+
+    evilOmens := float64(1.0)
+
+    if hasEvilOmens {
+        if spell.Magic == data.LifeMagic || spell.Magic == data.NatureMagic {
+            evilOmens = 1.5
+        }
+    }
+
+    return int(max(0, base * (1 - modifier) * evilOmens))
+}
+
+func (player *Player) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {
+    return computeEffectiveSpellCost(&player.Wizard, spell, overland, player.GlobalEnchantmentsProvider.HasEnchantment(data.EnchantmentEvilOmens))
 }
 
 func (player *Player) GoldPerTurn() int {
