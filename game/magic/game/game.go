@@ -5227,9 +5227,6 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
 
             castingCost := player.ComputeEffectiveSpellCost(spell, true)
 
-            // FIXME: if the player has runemaster and the spell is arcane, then apply a -25% reduction. Don't apply
-            // to create artifact or enchant item because the reduction has already been applied
-
             if castingCost <= player.Mana && castingCost <= player.RemainingCastingSkill {
                 player.Mana -= castingCost
                 player.RemainingCastingSkill -= castingCost
