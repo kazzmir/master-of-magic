@@ -265,6 +265,10 @@ func (*noGlobalEnchantments) HasEnchantment(enchantment data.Enchantment) bool {
     return false
 }
 
+func (*noGlobalEnchantments) HasRivalEnchantment(player *player.Player, enchantment data.Enchantment) bool {
+    return false
+}
+
 func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
@@ -293,13 +297,19 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerGreen,
+            Books: []data.WizardBook{
+                data.WizardBook{
+                    Magic: data.ChaosMagic,
+                    Count: 8,
+                },
+            },
         }, true, 0, 0, nil, &noGlobalEnchantments{})
 
     fortressCity := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, &BasicCatchment{}, nil, attackingPlayer)
     fortressCity.Buildings.Insert(buildinglib.BuildingFortress)
     attackingPlayer.AddCity(fortressCity)
 
-    attackingPlayer.CastingSkillPower = 10000
+    attackingPlayer.CastingSkillPower = 1000
     attackingPlayer.Mana = 1000
 
     // attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))

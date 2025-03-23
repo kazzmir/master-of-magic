@@ -60,6 +60,10 @@ func (spell Spell) Cost(overland bool) int {
     return spell.BaseCost(overland)
 }
 
+func (spell Spell) IsSummoning() bool {
+    return spell.Section == SectionSummoning
+}
+
 // overland=true if casting in overland, otherwise casting in combat
 // this does not include any additional costs for the spell
 func (spell Spell) BaseCost(overland bool) int {

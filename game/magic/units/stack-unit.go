@@ -38,7 +38,7 @@ type StackUnit interface {
     DefenseEnchantmentBonus(data.UnitEnchantment) int
     RangedEnchantmentBonus(data.UnitEnchantment) int
     ResistanceEnchantmentBonus(data.UnitEnchantment) int
-    MovementSpeedEnchantmentBonus(int, []data.UnitEnchantment) int
+    MovementSpeedEnchantmentBonus(fraction.Fraction, []data.UnitEnchantment) fraction.Fraction
     HitPointsEnchantmentBonus(data.UnitEnchantment) int
 
     IsUndead() bool
@@ -63,13 +63,11 @@ type StackUnit interface {
     HasItemAbility(data.ItemAbility) bool
     GetAbilityValue(data.AbilityType) float32
     GetAbilities() []data.Ability
-    GetFullDefense() int
     GetBaseDefense() int
     GetDefense() int
     GetFullHitPoints() int
     GetBaseHitPoints() int
     GetHitPoints() int
-    GetFullMeleeAttackPower() int
     GetBaseMeleeAttackPower() int
     GetMeleeAttackPower() int
     GetBaseRangedAttackPower() int
@@ -78,11 +76,9 @@ type StackUnit interface {
     GetCombatIndex(Facing) int
     GetCount() int
     GetVisibleCount() int
-    GetMovementSpeed() int
+    GetMovementSpeed() fraction.Fraction
     GetProductionCost() int
-    GetFullRangedAttackPower() int
     GetRangedAttackPower() int
-    GetFullResistance() int
     GetResistance() int
     AdjustHealth(amount int)
     GetAttackSound() AttackSound

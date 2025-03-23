@@ -24,20 +24,34 @@ type Engine struct {
     Cache *lbx.LbxCache
     Coroutine *coroutine.Coroutine
 
-    Artificer bool
-    Runemaster bool
     ShowUpdate int
+    Books Books
 }
 
 type Books struct {
+    Artificer bool
+    Runemaster bool
 }
 
 func (books *Books) MagicLevel(magic data.MagicType) int {
     switch magic {
         case data.ChaosMagic: return 11
+        case data.MagicNone: return 0
     }
 
-    return 11
+    return 0
+}
+
+func (books *Books) RetortEnabled(retort data.Retort) bool {
+    if retort == data.RetortArtificer {
+        return books.Artificer
+    }
+
+    if retort == data.RetortRunemaster {
+        return books.Runemaster
+    }
+
+    return false
 }
 
 func NewEngine() (*Engine, error) {
@@ -60,7 +74,7 @@ func (engine *Engine) ArtifactRoutine() func (coroutine.YieldFunc) error {
     }
 
     return func(yield coroutine.YieldFunc) error {
-        create, cancel := artifact.ShowCreateArtifactScreen(yield, engine.Cache, artifact.CreationCreateArtifact, &Books{}, engine.Artificer, engine.Runemaster, spells.CombatSpells(), &engine.Drawer)
+        create, cancel := artifact.ShowCreateArtifactScreen(yield, engine.Cache, artifact.CreationCreateArtifact, &engine.Books, spells.CombatSpells(), &engine.Drawer)
         if !cancel {
             log.Printf("Create artifact: %+v", create)
         } else {
@@ -80,15 +94,15 @@ func (engine *Engine) Update() error {
         switch key {
             case ebiten.KeyEscape, ebiten.KeyCapsLock: return ebiten.Termination
             case ebiten.KeyF1:
-                engine.Artificer = !engine.Artificer
+                engine.Books.Artificer = !engine.Books.Artificer
                 engine.ShowUpdate = 60
                 engine.Coroutine = coroutine.MakeCoroutine(engine.ArtifactRoutine())
-                log.Printf("Artificer %v Runemaster %v", engine.Artificer, engine.Runemaster)
+                log.Printf("Artificer %v Runemaster %v", engine.Books.Artificer, engine.Books.Runemaster)
             case ebiten.KeyF2:
-                engine.Runemaster = !engine.Runemaster
+                engine.Books.Runemaster = !engine.Books.Runemaster
                 engine.ShowUpdate = 60
                 engine.Coroutine = coroutine.MakeCoroutine(engine.ArtifactRoutine())
-                log.Printf("Artificer %v Runemaster %v", engine.Artificer, engine.Runemaster)
+                log.Printf("Artificer %v Runemaster %v", engine.Books.Artificer, engine.Books.Runemaster)
         }
     }
 
@@ -107,7 +121,7 @@ func (engine *Engine) Draw(screen *ebiten.Image){
     engine.Drawer(screen)
 
     if engine.ShowUpdate > 0 {
-        ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Artificer %v Runemaster %v", engine.Artificer, engine.Runemaster), 0, 0)
+        ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Artificer %v Runemaster %v", engine.Books.Artificer, engine.Books.Runemaster), 0, 0)
     }
 }
 

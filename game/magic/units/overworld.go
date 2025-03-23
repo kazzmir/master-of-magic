@@ -31,11 +31,17 @@ type GlobalEnchantmentProvider interface {
     HasFriendlyEnchantment(data.Enchantment) bool
     // true if any wizard has the enchantment active (useful for enchantments with negative effects)
     HasEnchantment(data.Enchantment) bool
+    // true if any wizard other than the owner has this enchantment active
+    HasRivalEnchantment(data.Enchantment) bool
 }
 
 // a default empty implementation of GlobalEnchantmentProvider
 type NoEnchantments struct {}
 func (*NoEnchantments) HasFriendlyEnchantment(enchantment data.Enchantment) bool {
+    return false
+}
+
+func (*NoEnchantments) HasRivalEnchantment(enchantment data.Enchantment) bool {
     return false
 }
 
@@ -46,7 +52,7 @@ func (*NoEnchantments) HasEnchantment(enchantment data.Enchantment) bool {
 type OverworldUnit struct {
     ExperienceInfo ExperienceInfo
     Unit Unit
-    MovesLeft fraction.Fraction
+    MovesUsed fraction.Fraction
     Banner data.BannerType
     Plane data.Plane
     X int
@@ -124,8 +130,14 @@ func (unit *OverworldUnit) SetUndead() {
 func (unit *OverworldUnit) GetAbilityValue(ability data.AbilityType) float32 {
     if ability == data.AbilityFireBreath {
         value := unit.Unit.GetAbilityValue(ability)
+        modifier := float32(0)
+
+        if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+            modifier += 2
+        }
+
         if value > 0 {
-            return value
+            return value + modifier
         }
 
         if unit.HasEnchantment(data.UnitEnchantmentChaosChannelsFireBreath) {
@@ -133,6 +145,36 @@ func (unit *OverworldUnit) GetAbilityValue(ability data.AbilityType) float32 {
         }
 
         return 0
+    }
+
+    if ability == data.AbilityThrown {
+        value := unit.Unit.GetAbilityValue(ability)
+        modifier := float32(0)
+
+        if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+            modifier += 2
+        }
+
+        if value > 0 {
+            return value + modifier
+        }
+
+        return 0
+    }
+
+    if ability == data.AbilityDoomGaze {
+        value := unit.Unit.GetAbilityValue(ability)
+        if value == 0 {
+            return 0
+        }
+
+        modifier := float32(0)
+
+        if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+            modifier += 2
+        }
+
+        return value + modifier
     }
 
     return unit.Unit.GetAbilityValue(ability)
@@ -245,11 +287,11 @@ func (unit *OverworldUnit) SetId(id uint64) {
 }
 
 func (unit *OverworldUnit) GetMovesLeft() fraction.Fraction {
-    return unit.MovesLeft
+    return fraction.Zero().Max(unit.GetMovementSpeed().Subtract(unit.MovesUsed))
 }
 
 func (unit *OverworldUnit) SetMovesLeft(moves fraction.Fraction) {
-    unit.MovesLeft = moves
+    unit.MovesUsed = unit.GetMovementSpeed().Subtract(moves)
 }
 
 func (unit *OverworldUnit) IsFlying() bool {
@@ -480,19 +522,31 @@ func (unit *OverworldUnit) GetBaseMovementSpeed() int {
     return unit.Unit.GetMovementSpeed()
 }
 
-func (unit *OverworldUnit) GetMovementSpeed() int {
-    base := unit.GetBaseMovementSpeed()
+func (unit *OverworldUnit) GetMovementSpeed() fraction.Fraction {
+    base := fraction.FromInt(unit.GetBaseMovementSpeed())
 
     base = unit.MovementSpeedEnchantmentBonus(base, unit.Enchantments)
 
-    return base
+    modifier := fraction.FromInt(1)
+
+    if unit.IsSailing() {
+        if unit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentWindMastery) {
+            modifier = modifier.Add(fraction.Make(1, 2))
+        }
+
+        if unit.GlobalEnchantments.HasRivalEnchantment(data.EnchantmentWindMastery) {
+            modifier = modifier.Subtract(fraction.Make(1, 2))
+        }
+    }
+
+    return base.Multiply(modifier)
 }
 
 func (unit *OverworldUnit) GetProductionCost() int {
     return unit.Unit.GetProductionCost()
 }
 
-func (unit *OverworldUnit) MovementSpeedEnchantmentBonus(base int, enchantments []data.UnitEnchantment) int {
+func (unit *OverworldUnit) MovementSpeedEnchantmentBonus(base fraction.Fraction, enchantments []data.UnitEnchantment) fraction.Fraction {
 
     endurance := false
     flying := false
@@ -507,15 +561,15 @@ func (unit *OverworldUnit) MovementSpeedEnchantmentBonus(base int, enchantments 
     }
 
     if endurance {
-        base += 1
+        base = base.Add(fraction.FromInt(1))
     }
 
     if flying {
-        base = max(base, 3)
+        base = base.Max(fraction.FromInt(3))
     }
 
     if haste {
-        base *= 2
+        base = base.Multiply(fraction.FromInt(2))
     }
 
     return base
@@ -551,10 +605,6 @@ func (unit *OverworldUnit) DefenseEnchantmentBonus(enchantment data.UnitEnchantm
         case data.UnitEnchantmentStoneSkin: return 1
     }
     return 0
-}
-
-func (unit *OverworldUnit) GetFullMeleeAttackPower() int {
-    return unit.GetMeleeAttackPower()
 }
 
 func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
@@ -618,6 +668,10 @@ func (unit *OverworldUnit) GetMeleeAttackPower() int {
         modifier += unit.MeleeEnchantmentBonus(enchantment)
     }
 
+    if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+        modifier += 2
+    }
+
     return base + modifier
 }
 
@@ -639,10 +693,6 @@ func (unit *OverworldUnit) GetBaseRangedAttackPower() int {
     }
 
     return base
-}
-
-func (unit *OverworldUnit) GetFullRangedAttackPower() int {
-    return unit.GetRangedAttackPower()
 }
 
 func (unit *OverworldUnit) RangedEnchantmentBonus(enchantment data.UnitEnchantment) int {
@@ -679,6 +729,10 @@ func (unit *OverworldUnit) GetRangedAttackPower() int {
         base += unit.RangedEnchantmentBonus(enchantment)
     }
 
+    if unit.GetRealm() == data.ChaosMagic && unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+        base += 2
+    }
+
     return base
 }
 
@@ -698,10 +752,6 @@ func (unit *OverworldUnit) GetBaseDefense() int {
     return defense
 }
 
-func (unit *OverworldUnit) GetFullDefense() int {
-    return unit.GetDefense()
-}
-
 func (unit *OverworldUnit) GetDefense() int {
     base := unit.GetBaseDefense()
 
@@ -717,10 +767,6 @@ func (unit *OverworldUnit) GetDefense() int {
     }
 
     return base + modifier
-}
-
-func (unit *OverworldUnit) GetFullResistance() int {
-    return unit.GetResistance()
 }
 
 func (unit *OverworldUnit) GetResistance() int {
@@ -810,7 +856,6 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
         Unit: unit,
         Banner: banner,
         Plane: plane,
-        MovesLeft: fraction.FromInt(unit.MovementSpeed),
         ExperienceInfo: experienceInfo,
         GlobalEnchantments: globalEnchantment,
         X: x,
@@ -834,20 +879,22 @@ func (unit *OverworldUnit) NaturalHeal(rate float64) {
 }
 
 func (unit *OverworldUnit) ResetMoves() {
-    unit.MovesLeft = fraction.FromInt(unit.GetMovementSpeed())
+    unit.MovesUsed = fraction.Zero()
 }
 
 func (unit *OverworldUnit) HasMovesLeft() bool {
-    return unit.MovesLeft.GreaterThan(fraction.Zero())
+    return unit.GetMovesLeft().GreaterThan(fraction.Zero())
 }
 
 func (unit *OverworldUnit) Move(dx int, dy int, cost fraction.Fraction, normalize NormalizeCoordinateFunc){
     unit.X, unit.Y = normalize(unit.X + dx, unit.Y + dy)
 
-    unit.MovesLeft = unit.MovesLeft.Subtract(cost)
+    unit.MovesUsed = unit.MovesUsed.Add(cost)
+    /*
     if unit.MovesLeft.LessThan(fraction.Zero()) {
         unit.MovesLeft = fraction.Zero()
     }
+    */
 }
 
 func (unit *OverworldUnit) GetArtifactSlots() []artifact.ArtifactSlot {

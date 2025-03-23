@@ -984,10 +984,6 @@ func (unit *ArmyUnit) GetToHitMelee(defender *ArmyUnit) int {
     return max(0, unit.Unit.GetToHitMelee() + modifier)
 }
 
-func (unit *ArmyUnit) GetFullResistance() int {
-    return unit.GetResistance()
-}
-
 // get the resistance of the unit, taking into account enchantments and curses that apply to the specific magic type
 func (unit *ArmyUnit) GetResistanceFor(magic data.MagicType) int {
     base := unit.GetResistance()
@@ -1089,10 +1085,6 @@ func (unit *ArmyUnit) GetResistance() int {
     return max(0, unit.Unit.GetResistance() + modifier)
 }
 
-func (unit *ArmyUnit) GetFullDefense() int {
-    return unit.GetDefense()
-}
-
 // get defense against a specific magic type
 func GetDefenseFor(unit UnitDamage, magic data.MagicType) int {
     // berserk prevents any enchantments from applying
@@ -1180,10 +1172,6 @@ func (unit *ArmyUnit) GetDefense() int {
     return max(0, final)
 }
 
-func (unit *ArmyUnit) GetFullRangedAttackPower() int {
-    return unit.GetRangedAttackPower()
-}
-
 func (unit *ArmyUnit) GetRangedAttackPower() int {
     if unit.Unit.GetRangedAttackPower() == 0 {
         return 0
@@ -1226,10 +1214,6 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
     }
 
     return max(0, final)
-}
-
-func (unit *ArmyUnit) GetFullMeleeAttackPower() int {
-    return unit.GetMeleeAttackPower()
 }
 
 func (unit *ArmyUnit) GetMeleeAttackPower() int {
@@ -1448,8 +1432,8 @@ func (unit *ArmyUnit) CanCast() bool {
     return false
 }
 
-func (unit *ArmyUnit) GetMovementSpeed() int {
-    modifier := 0
+func (unit *ArmyUnit) GetMovementSpeed() fraction.Fraction {
+    modifier := fraction.Zero()
     base := unit.Unit.GetMovementSpeed()
 
     base = unit.Unit.MovementSpeedEnchantmentBonus(base, unit.Enchantments)
@@ -1458,15 +1442,15 @@ func (unit *ArmyUnit) GetMovementSpeed() int {
         unaffected := unit.IsFlying() || unit.HasAbility(data.AbilityNonCorporeal)
 
         if !unaffected {
-            modifier -= 1
+            modifier = modifier.Subtract(fraction.FromInt(1))
         }
     }
 
-    return max(0, base + modifier)
+    return fraction.Zero().Max(base.Add(modifier))
 }
 
 func (unit *ArmyUnit) ResetTurnData() {
-    unit.MovesLeft = fraction.FromInt(unit.GetMovementSpeed())
+    unit.MovesLeft = unit.GetMovementSpeed()
     unit.Paths = make(map[image.Point]pathfinding.Path)
     unit.Casted = false
     unit.Attacked = 0
@@ -1506,6 +1490,7 @@ type UnitDamage interface {
     GetDefense() int
     ToDefend(modifiers DamageModifiers) int
     TakeDamage(damage int, damageType DamageType)
+    ReduceInvulnerability(damage int) int
     GetHealth() int
     GetMaxHealth() int
     GetCount() int
@@ -1656,7 +1641,7 @@ func (unit *ArmyUnit) Heal(amount int){
 
 // apply damage to each individual figure such that each figure gets to individually block damage.
 // this could potentially allow a damage of 5 to destroy a unit with 4 figures of 1HP each
-func (unit *ArmyUnit) ApplyAreaDamage(attackStrength int, damageType units.Damage, wallDefense int) int {
+func ApplyAreaDamage(unit UnitDamage, attackStrength int, damageType units.Damage, wallDefense int) int {
     totalDamage := 0
     health_per_figure := unit.GetMaxHealth() / unit.GetCount()
 
@@ -1877,12 +1862,14 @@ type Army struct {
     CounterMagic int
     units []*ArmyUnit
     KilledUnits []*ArmyUnit
+    RegeneratedUnits []*ArmyUnit
     Auto bool
     Fled bool
     Casted bool
     RecalledUnits []*ArmyUnit
 
     Enchantments []data.CombatEnchantment
+    Cleanups []func()
 }
 
 func (army *Army) AddEnchantment(enchantment data.CombatEnchantment) bool {
@@ -1909,13 +1896,8 @@ func (army *Army) RemoveEnchantment(enchamtent data.CombatEnchantment) {
 
 // remove mutations done to the underlying stack units
 func (army *Army) Cleanup() {
-    // loop through all unit references and set the enchantment provider to nil
-    for _, unit := range army.KilledUnits {
-        unit.Unit.SetEnchantmentProvider(nil)
-    }
-
-    for _, unit := range army.units {
-        unit.Unit.SetEnchantmentProvider(nil)
+    for _, cleanup := range army.Cleanups {
+        cleanup()
     }
 }
 
@@ -1949,6 +1931,9 @@ func (army *Army) AddUnit(unit units.StackUnit){
     }
     // Warning: it is imperative that unit.SetEnchantmentProvider(nil) is called when combat ends
     unit.SetEnchantmentProvider(armyUnit)
+    army.Cleanups = append(army.Cleanups, func(){
+        unit.SetEnchantmentProvider(nil)
+    })
     army.AddArmyUnit(armyUnit)
 }
 
@@ -2001,8 +1986,6 @@ func (army *Army) KillUnit(kill *ArmyUnit){
     // units that died due to irreversable damage are gone forever
     if kill.DeathReason() != DamageIrreversable {
         army.KilledUnits = append(army.KilledUnits, kill)
-    } else {
-        kill.Unit.SetEnchantmentProvider(nil)
     }
     army.RemoveUnit(kill)
 }
@@ -2063,6 +2046,8 @@ type CombatModel struct {
 
     TurnAttacker int
     TurnDefender int
+
+    Cleanups []func()
 
     // track how many units were killed on each side, so experience
     // can be given out after combat ends
@@ -2557,6 +2542,7 @@ func (model *CombatModel) GetObserver() CombatObserver {
 }
 
 // do a dispel roll on all enchantments owned by the other player
+// presumption: disenchantStrength should already have the runemaster bonus applied
 func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *playerlib.Player, disenchantStrength int) {
     targetArmy := model.GetOppositeArmyForPlayer(caster)
 
@@ -2718,6 +2704,9 @@ func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, uni
 
     newUnit.Model = model
     newUnit.Unit.SetEnchantmentProvider(&newUnit)
+    model.Cleanups = append(model.Cleanups, func (){
+        newUnit.Unit.SetEnchantmentProvider(nil)
+    })
 
     model.Tiles[y][x].Unit = &newUnit
 
@@ -3309,7 +3298,7 @@ func (model *CombatModel) ComputeWallDefense(attacker *ArmyUnit, defender *ArmyU
 
 func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDamage int) {
     if immolationDamage > 0 {
-        hurt := defender.ApplyAreaDamage(immolationDamage, units.DamageImmolation, 0)
+        hurt := ApplyAreaDamage(defender, immolationDamage, units.DamageImmolation, 0)
         model.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.GetHealth()))
     }
 }
@@ -3778,8 +3767,6 @@ func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
         model.AttackingArmy.RemoveUnit(unit)
     }
 
-    unit.Unit.SetEnchantmentProvider(nil)
-
     model.Tiles[unit.Y][unit.X].Unit = nil
 
     if unit == model.SelectedUnit {
@@ -3957,18 +3944,35 @@ func (model *CombatModel) FinishCombat(state CombatState) {
             }
         }
 
+        var regeneratedUnits []*ArmyUnit
+        var undeadUnits []*ArmyUnit
+
+        var stillKilledUnits []*ArmyUnit
+
         for _, unit := range army.KilledUnits {
+            killed := true
             if wonBattle && unit.HasAbility(data.AbilityRegeneration) {
                 unit.Heal(unit.GetMaxHealth())
+                regeneratedUnits = append(regeneratedUnits, unit)
+                killed = false
             }
 
             if !wonBattle {
                 // raise unit as an undead unit for the opposing team
                 if unit.DeathReason() == DamageUndead && unit.GetRace() != data.RaceHero {
                     model.UndeadUnits = append(model.UndeadUnits, unit)
+                    killed = false
+                    undeadUnits = append(undeadUnits, unit)
                 }
             }
+
+            if killed {
+                stillKilledUnits = append(stillKilledUnits, unit)
+            }
         }
+
+        army.KilledUnits = stillKilledUnits
+        army.RegeneratedUnits = regeneratedUnits
     }
 
     killUnits(model.DefendingArmy, TeamDefender)
@@ -3981,6 +3985,10 @@ func (model *CombatModel) FinishCombat(state CombatState) {
 
     model.DefendingArmy.Cleanup()
     model.AttackingArmy.Cleanup()
+
+    for _, cleanups := range model.Cleanups {
+        cleanups()
+    }
 }
 
 func (model *CombatModel) InsideMagicNode() bool {
@@ -4002,6 +4010,7 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
 
     opposite := model.GetOppositeArmyForPlayer(caster)
     if opposite.CounterMagic > 0 {
+        // FIXME: should runemaster add to the counter magic dispel strength?
         chance := spellbook.ComputeDispelChance(opposite.CounterMagic, spell.Cost(false), spell.Magic, &caster.Wizard)
         opposite.CounterMagic = max(0, opposite.CounterMagic - 5)
 
@@ -4491,7 +4500,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
             disenchantStrength := spell.Cost(false)
             if spell.Name == "Disenchant True" {
-                // each additional point of mana spent increases the disenchant strength by 3
+                // strength is 3x mana spent
                 disenchantStrength = spell.Cost(false) * 3
             }
 

@@ -30,6 +30,17 @@ func NewEngine() (*Engine, error) {
     return engine, nil
 }
 
+type Caster struct {
+}
+
+func (caster *Caster) ComputeEffectiveResearchPerTurn(research float64, spell spellbook.Spell) int {
+    return int(research)
+}
+
+func (caster *Caster) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {
+    return spell.Cost(overland) / 2
+}
+
 func (engine *Engine) MakeUI() *uilib.UI {
     allSpells, err := spellbook.ReadSpellsFromCache(engine.Cache)
     if err != nil {
@@ -66,7 +77,7 @@ func (engine *Engine) MakeUI() *uilib.UI {
     }
     ui.SetElementsFromArray(nil)
 
-    more := spellbook.MakeSpellBookCastUI(ui, engine.Cache, spells, make(map[spellbook.Spell]int), 60, spellbook.Spell{}, 0, true, func (result spellbook.Spell, picked bool){
+    more := spellbook.MakeSpellBookCastUI(ui, engine.Cache, spells, make(map[spellbook.Spell]int), 60, spellbook.Spell{}, 0, true, &Caster{}, func (result spellbook.Spell, picked bool){
         if picked {
             log.Printf("Picked spell %+v", result)
         }

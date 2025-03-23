@@ -441,7 +441,7 @@ func MakeRandomArtifact(cache *lbx.LbxCache) Artifact {
 
     artifact.Image = chooseImage(artifact.Type)
 
-    artifact.Cost = calculateCost(&artifact, costs, false, false)
+    artifact.Cost = calculateCost(&artifact, costs)
     artifact.Name = getName(&artifact, "")
 
     return artifact

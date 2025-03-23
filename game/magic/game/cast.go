@@ -72,6 +72,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         return
     }
 
+    if spell.IsOfRealm(data.ChaosMagic) || spell.IsOfRealm(data.DeathMagic) {
+        game.maybeDoNaturesWrath(player)
+    }
+
     switch spell.Name {
         /*
             SUMMONING SPELLS
@@ -326,20 +330,84 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         /*
             GLOBAL ENCHANTMENTS
-                TODO:
-                Planar Seal
-                Herb Mastery
-                Nature's Wrath
-                Aura of Majesty
-                Suppress Magic
-                Time Stop
-                Wind Mastery
-                Chaos Surge
-                Doom Mastery
-                Meteor Storm
-                Evil Omens
-                Zombie Mastery
         */
+        case "Aura of Majesty":
+            enchantment := data.EnchantmentAuraOfMajesty
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+
+                for _, other := range player.GetKnownPlayers() {
+                    other.AdjustDiplomaticRelation(player, 10)
+                    player.AdjustDiplomaticRelation(other, 10)
+                }
+
+                game.RefreshUI()
+            }
+        case "Time Stop":
+            enchantment := data.EnchantmentTimeStop
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+        case "Zombie Mastery":
+            enchantment := data.EnchantmentZombieMastery
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+        case "Evil Omens":
+            enchantment := data.EnchantmentEvilOmens
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+        case "Meteor Storm":
+            enchantment := data.EnchantmentMeteorStorm
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+        case "Doom Mastery":
+            enchantment := data.EnchantmentDoomMastery
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+        case "Chaos Surge":
+            enchantment := data.EnchantmentChaosSurge
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+        case "Wind Mastery":
+            enchantment := data.EnchantmentWindMastery
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+        case "Suppress Magic":
+            enchantment := data.EnchantmentSuppressMagic
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+        case "Nature's Wrath":
+            enchantment := data.EnchantmentNaturesWrath
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+
         case "Charm of Life":
             enchantment := data.EnchantmentCharmOfLife
             if !player.GlobalEnchantments.Contains(enchantment) {
@@ -359,6 +427,21 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                     unit.RemoveEnchantment(data.UnitEnchantmentHolyWeapon)
                 }
 
+                game.RefreshUI()
+            }
+        case "Planar Seal":
+            enchantment := data.EnchantmentPlanarSeal
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+                game.RefreshUI()
+            }
+
+        case "Herb Mastery":
+            enchantment := data.EnchantmentHerbMastery
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
                 game.RefreshUI()
             }
 
@@ -626,22 +709,33 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
 // Returns true if the spell is rolled to be instantly fizzled on cast (caused by spells like Life Force)
 func (game *Game) checkInstantFizzleForCastSpell(player *playerlib.Player, spell spellbook.Spell) bool {
-    // Tranquility effect: if it's a chaos spell, it should either resist a strength 500 dispel check or fizzle right away.
-    if spell.IsOfRealm(data.ChaosMagic) {
-        for _, checkingPlayer := range game.Players {
+    dispelChances := 0
+
+    for _, checkingPlayer := range game.Players {
+
+        // Tranquility effect: if it's a chaos spell, it should either resist a strength 500 dispel check or fizzle right away.
+        if spell.IsOfRealm(data.ChaosMagic) {
             // FIXME: Not sure if multiple instances of Tranquility stack or are checked separately.
-            if checkingPlayer != player && checkingPlayer.GlobalEnchantments.Contains(data.EnchantmentTranquility) {
-                return spellbook.RollDispelChance(spellbook.ComputeDispelChance(500, spell.Cost(true), spell.Magic, &player.Wizard))
+            if checkingPlayer != player && checkingPlayer.HasEnchantment(data.EnchantmentTranquility) {
+                dispelChances += 1
             }
         }
-    }
-    // Life Force effect: if it's a death spell, it should either resist a strength 500 dispel check or fizzle right away.
-    if spell.IsOfRealm(data.DeathMagic) {
-        for _, checkingPlayer := range game.Players {
+        // Life Force effect: if it's a death spell, it should either resist a strength 500 dispel check or fizzle right away.
+        if spell.IsOfRealm(data.DeathMagic) {
             // FIXME: Not sure if multiple instances of Life Force stack or are checked separately.
-            if checkingPlayer != player && checkingPlayer.GlobalEnchantments.Contains(data.EnchantmentLifeForce) {
-                return spellbook.RollDispelChance(spellbook.ComputeDispelChance(500, spell.Cost(true), spell.Magic, &player.Wizard))
+            if checkingPlayer != player && checkingPlayer.HasEnchantment(data.EnchantmentLifeForce) {
+                dispelChances += 1
             }
+        }
+
+        if checkingPlayer != player && checkingPlayer.HasEnchantment(data.EnchantmentSuppressMagic) {
+            dispelChances += 1
+        }
+    }
+
+    for range dispelChances {
+        if spellbook.RollDispelChance(spellbook.ComputeDispelChance(500, spell.Cost(true), spell.Magic, &player.Wizard)) {
+            return true
         }
     }
     return false

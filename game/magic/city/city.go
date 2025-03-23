@@ -184,6 +184,10 @@ func (city *City) AddBuilding(building buildinglib.Building){
     city.Buildings.Insert(building)
 }
 
+func (city *City) RemoveBuilding(building buildinglib.Building){
+    city.Buildings.Remove(building)
+}
+
 func (city *City) HasSummoningCircle() bool {
     return city.Buildings.Contains(buildinglib.BuildingSummoningCircle)
 }

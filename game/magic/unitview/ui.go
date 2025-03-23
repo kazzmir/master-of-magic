@@ -8,6 +8,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -21,17 +22,13 @@ import (
 
 type UnitStats interface {
     GetWeaponBonus() data.WeaponBonus
-    GetFullMeleeAttackPower() int
     GetBaseMeleeAttackPower() int
     GetMeleeAttackPower() int
-    GetFullRangedAttackPower() int
     GetBaseRangedAttackPower() int
     GetRangedAttackPower() int
     GetRangedAttackDamageType() units.Damage
-    GetFullDefense() int
     GetBaseDefense() int
     GetDefense() int
-    GetFullResistance() int
     GetResistance() int
     GetBaseResistance() int
     GetHitPoints() int
@@ -76,7 +73,7 @@ type UnitView interface {
     GetUpkeepGold() int
     GetUpkeepFood() int
     GetUpkeepMana() int
-    GetMovementSpeed() int
+    GetMovementSpeed() fraction.Fraction
     GetProductionCost() int
 }
 

@@ -88,6 +88,8 @@ type AIBehavior interface {
 
 type Relationship struct {
     Treaty data.TreatyType
+    // from -100 to +100, where -100 means this player hates the other, and +100 means this player loves the other
+    Relation int
 }
 
 type CityEnchantment struct {
@@ -102,6 +104,7 @@ type CityEnchantmentsProvider interface {
 // to get enchanments that affect the entire world
 type GlobalEnchantmentsProvider interface {
     HasEnchantment(enchantment data.Enchantment) bool
+    HasRivalEnchantment(player *Player, enchantment data.Enchantment) bool
 }
 
 // default implementation
@@ -109,6 +112,10 @@ type NoGlobalEnchantments struct {
 }
 
 func (*NoGlobalEnchantments) HasEnchantment(enchantment data.Enchantment) bool {
+    return false
+}
+
+func (*NoGlobalEnchantments) HasRivalEnchantment(player *Player, enchantment data.Enchantment) bool {
     return false
 }
 
@@ -258,6 +265,19 @@ func (player *Player) GetKnownPlayers() []*Player {
     return out
 }
 
+func (player *Player) UpdateDiplomaticRelations() {
+    // FIXME: relation value should be adjusted each turn
+    // if aura of majesty is in effect by some rival wizard, then the relation value should go up by 1 for that wizard
+}
+
+// adjust the diplomacy value between this player and the other player
+func (player *Player) AdjustDiplomaticRelation(other *Player, amount int) {
+    relation, ok := player.PlayerRelations[other]
+    if ok {
+        relation.Relation = max(min(relation.Relation + amount, 100), -100)
+    }
+}
+
 // this player should now be aware of the other player
 func (player *Player) AwarePlayer(other *Player) {
     _, ok := player.PlayerRelations[other]
@@ -299,6 +319,10 @@ func (player *Player) HasEnchantment(enchantment data.Enchantment) bool {
     return player.GlobalEnchantments.Contains(enchantment)
 }
 
+func (player *Player) RemoveEnchantment(enchantment data.Enchantment) {
+    player.GlobalEnchantments.Remove(enchantment)
+}
+
 // how much gold is stored in this city relative to the player's overall wealth
 func (player *Player) ComputePlunderedGold(city *citylib.City) int {
     totalPopulation := 0
@@ -329,6 +353,10 @@ func (provider *PlayerEnchantmentProvider) HasEnchantment(enchantment data.Encha
 
 func (provider *PlayerEnchantmentProvider) HasFriendlyEnchantment(enchantment data.Enchantment) bool {
     return provider.Player.GlobalEnchantments.Contains(enchantment)
+}
+
+func (provider *PlayerEnchantmentProvider) HasRivalEnchantment(enchantment data.Enchantment) bool {
+    return provider.Player.GlobalEnchantmentsProvider.HasRivalEnchantment(provider.Player, enchantment)
 }
 
 func (player *Player) MakeUnitEnchantmentProvider() units.GlobalEnchantmentProvider {
@@ -603,6 +631,47 @@ func (player *Player) CastingSkillPerTurn(power int) int {
     return int(float64(power) * player.PowerDistribution.Skill * bonus)
 }
 
+// returns the true effective research per turn for the given spell by taking retorts/spell books into account
+// example: a wizard with runemaster researching an arcane spell will produce 25% more research points
+func computeEffectiveResearchPerTurn(wizard *setup.WizardCustom, research float64, spell spellbook.Spell) int {
+    modifier := float64(0)
+
+    if wizard.RetortEnabled(data.RetortRunemaster) && spell.Magic == data.ArcaneMagic {
+        modifier += 0.25
+    }
+
+    if wizard.RetortEnabled(data.RetortSageMaster) {
+        modifier += 0.25
+    }
+
+    if wizard.RetortEnabled(data.RetortConjurer) && spell.IsSummoning() {
+        modifier += 0.25
+    }
+
+    if wizard.RetortEnabled(data.RetortChaosMastery) && spell.Magic == data.ChaosMagic {
+        modifier += 0.15
+    }
+
+    if wizard.RetortEnabled(data.RetortNatureMastery) && spell.Magic == data.NatureMagic {
+        modifier += 0.15
+    }
+
+    if wizard.RetortEnabled(data.RetortSorceryMastery) && spell.Magic == data.SorceryMagic {
+        modifier += 0.15
+    }
+
+    // for each book above 7, increase points by 10%
+    realmBooks := max(0, wizard.MagicLevel(spell.Magic) - 7)
+    modifier += float64(realmBooks) * 0.1
+
+    return int(research * (1 + modifier))
+}
+
+func (player *Player) ComputeEffectiveResearchPerTurn(research float64, spell spellbook.Spell) int {
+    return computeEffectiveResearchPerTurn(&player.Wizard, research, spell)
+}
+
+// this returns the raw research production per turn, not accounting for retorts or spellbooks
 func (player *Player) SpellResearchPerTurn(power int) float64 {
     research := float64(0)
 
@@ -622,7 +691,15 @@ func (player *Player) SpellResearchPerTurn(power int) float64 {
     return research
 }
 
+func (player *Player) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {
+    return spellbook.ComputeSpellCost(&player.Wizard, spell, overland, player.GlobalEnchantmentsProvider.HasEnchantment(data.EnchantmentEvilOmens))
+}
+
 func (player *Player) GoldPerTurn() int {
+    if player.HasEnchantment(data.EnchantmentTimeStop) {
+        return 0
+    }
+
     gold := 0
 
     for _, city := range player.Cities {
@@ -637,6 +714,10 @@ func (player *Player) GoldPerTurn() int {
 }
 
 func (player *Player) FoodPerTurn() int {
+    if player.HasEnchantment(data.EnchantmentTimeStop) {
+        return 0
+    }
+
     food := 0
 
     for _, city := range player.Cities {
@@ -669,6 +750,10 @@ func (player *Player) TotalEnchantmentUpkeep(cityEnchantmentsProvider CityEnchan
 }
 
 func (player *Player) ManaPerTurn(power int, cityEnchantmentsProvider CityEnchantmentsProvider) int {
+    if player.HasEnchantment(data.EnchantmentTimeStop) {
+        return 0
+    }
+
     mana := 0
 
     mana -= player.TotalUnitUpkeepMana()
@@ -991,6 +1076,14 @@ func (player *Player) RemoveCity(city *citylib.City) {
 func (player *Player) AddStack(stack *UnitStack) *UnitStack {
     player.Stacks = append(player.Stacks, stack)
     return stack
+}
+
+// update all the fields that relate the player to the unit
+func (player *Player) UpdateUnit(unit units.StackUnit) units.StackUnit {
+    unit.SetBanner(player.GetBanner())
+    unit.SetGlobalEnchantmentProvider(player.MakeUnitEnchantmentProvider())
+    unit.SetExperienceInfo(player.MakeExperienceInfo())
+    return unit
 }
 
 func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {
