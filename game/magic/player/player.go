@@ -304,6 +304,10 @@ func (player *Player) HasEnchantment(enchantment data.Enchantment) bool {
     return player.GlobalEnchantments.Contains(enchantment)
 }
 
+func (player *Player) RemoveEnchantment(enchantment data.Enchantment) {
+    player.GlobalEnchantments.Remove(enchantment)
+}
+
 // how much gold is stored in this city relative to the player's overall wealth
 func (player *Player) ComputePlunderedGold(city *citylib.City) int {
     totalPopulation := 0
@@ -677,6 +681,10 @@ func (player *Player) ComputeEffectiveSpellCost(spell spellbook.Spell, overland 
 }
 
 func (player *Player) GoldPerTurn() int {
+    if player.HasEnchantment(data.EnchantmentTimeStop) {
+        return 0
+    }
+
     gold := 0
 
     for _, city := range player.Cities {
@@ -691,6 +699,10 @@ func (player *Player) GoldPerTurn() int {
 }
 
 func (player *Player) FoodPerTurn() int {
+    if player.HasEnchantment(data.EnchantmentTimeStop) {
+        return 0
+    }
+
     food := 0
 
     for _, city := range player.Cities {
@@ -723,6 +735,10 @@ func (player *Player) TotalEnchantmentUpkeep(cityEnchantmentsProvider CityEnchan
 }
 
 func (player *Player) ManaPerTurn(power int, cityEnchantmentsProvider CityEnchantmentsProvider) int {
+    if player.HasEnchantment(data.EnchantmentTimeStop) {
+        return 0
+    }
+
     mana := 0
 
     mana -= player.TotalUnitUpkeepMana()
