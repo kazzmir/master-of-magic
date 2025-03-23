@@ -2542,13 +2542,9 @@ func (model *CombatModel) GetObserver() CombatObserver {
 }
 
 // do a dispel roll on all enchantments owned by the other player
+// presumption: disenchantStrength should already have the runemaster bonus applied
 func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *playerlib.Player, disenchantStrength int) {
     targetArmy := model.GetOppositeArmyForPlayer(caster)
-
-    dispelModifier := 1
-    if caster.Wizard.RetortEnabled(data.RetortRunemaster) {
-        dispelModifier = 2
-    }
 
     // enemy combat enchantments
     var removedEnchantments []data.CombatEnchantment
@@ -2556,7 +2552,7 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
         spell := allSpells.FindByName(enchantment.SpellName())
         cost := spell.Cost(false)
         dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &targetArmy.Player.Wizard)
-        if spellbook.RollDispelChance(dispellChance * dispelModifier) {
+        if spellbook.RollDispelChance(dispellChance) {
             removedEnchantments = append(removedEnchantments, enchantment)
         }
     }
@@ -2568,7 +2564,7 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
     // enemy unit enchantments
     for _, unit := range targetArmy.units {
         if unit.GetHealth() > 0 {
-            model.DoDisenchantUnit(allSpells, unit, targetArmy.Player, disenchantStrength, dispelModifier)
+            model.DoDisenchantUnit(allSpells, unit, targetArmy.Player, disenchantStrength)
         }
     }
 
@@ -2576,13 +2572,13 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
     playerArmy := model.GetArmyForPlayer(caster)
     for _, unit := range playerArmy.units {
         if unit.GetHealth() > 0 {
-            model.DoDisenchantUnitCurses(allSpells, unit, targetArmy.Player, disenchantStrength, dispelModifier)
+            model.DoDisenchantUnitCurses(allSpells, unit, targetArmy.Player, disenchantStrength)
         }
     }
 }
 
 // only removes enchantments (not curses)
-func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int, dispelModifier int) {
+func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
     var removedEnchantments []data.UnitEnchantment
 
     choices := append(unit.Unit.GetEnchantments(), unit.Enchantments...)
@@ -2601,7 +2597,7 @@ func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *Arm
             cost = 150
         }
         dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
-        if spellbook.RollDispelChance(dispellChance * dispelModifier) {
+        if spellbook.RollDispelChance(dispellChance) {
             removedEnchantments = append(removedEnchantments, enchantment)
         }
     }
@@ -2611,13 +2607,13 @@ func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *Arm
     }
 }
 
-func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int, dispelModifier int) {
+func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
     var removedEnchantments []data.UnitEnchantment
     for _, enchantment := range unit.GetCurses() {
         spell := allSpells.FindByName(enchantment.SpellName())
         cost := spell.Cost(false)
         dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
-        if spellbook.RollDispelChance(dispellChance * dispelModifier) {
+        if spellbook.RollDispelChance(dispellChance) {
             removedEnchantments = append(removedEnchantments, enchantment)
         }
     }
@@ -4014,6 +4010,7 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
 
     opposite := model.GetOppositeArmyForPlayer(caster)
     if opposite.CounterMagic > 0 {
+        // FIXME: should runemaster add to the counter magic dispel strength?
         chance := spellbook.ComputeDispelChance(opposite.CounterMagic, spell.Cost(false), spell.Magic, &caster.Wizard)
         opposite.CounterMagic = max(0, opposite.CounterMagic - 5)
 
@@ -4396,10 +4393,6 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             model.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
                 disenchantStrength := spell.Cost(false)
 
-                if player.Wizard.RetortEnabled(data.RetortRunemaster) {
-                    disenchantStrength *= 2
-                }
-
                 model.AddProjectile(spellSystem.CreateDispelMagicProjectile(target, player, disenchantStrength))
                 castedCallback()
             }, targetAny)
@@ -4503,7 +4496,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
             disenchantStrength := spell.Cost(false)
             if spell.Name == "Disenchant True" {
-                // each additional point of mana spent increases the disenchant strength by 3
+                // strength is 3x mana spent
                 disenchantStrength = spell.Cost(false) * 3
             }
 

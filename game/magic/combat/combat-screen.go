@@ -1451,15 +1451,10 @@ func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit, caster
         playerArmy := combat.Model.GetArmyForPlayer(caster)
         unitArmy := combat.Model.GetArmy(unit)
 
-        dispelModifier := 1
-        if caster.Wizard.RetortEnabled(data.RetortRunemaster) {
-            dispelModifier = 2
-        }
-
         if playerArmy == unitArmy {
-            combat.Model.DoDisenchantUnitCurses(combat.AllSpells, unit, unitArmy.Player, dispelStrength, dispelModifier)
+            combat.Model.DoDisenchantUnitCurses(combat.AllSpells, unit, unitArmy.Player, dispelStrength)
         } else {
-            combat.Model.DoDisenchantUnit(combat.AllSpells, unit, unitArmy.Player, dispelStrength, dispelModifier)
+            combat.Model.DoDisenchantUnit(combat.AllSpells, unit, unitArmy.Player, dispelStrength)
         }
     }
 
