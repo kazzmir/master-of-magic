@@ -49,6 +49,7 @@ func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane dat
             point := image.Pt(x, y)
 
             map_.Map.Terrain[x][y] = int(terrainSource.Data[x][y]) + terrainOffset
+            map_.ExtraMap[point] = make(map[maplib.ExtraKind]maplib.ExtraTile)
 
             var bonus data.BonusType
             switch terrainSpecials[x][y] {
@@ -64,9 +65,21 @@ func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane dat
                 case 64: bonus = data.BonusWildGame
                 case 128: bonus = data.BonusNightshade
             }
+
             if bonus != data.BonusNone {
-                map_.ExtraMap[point] = make(map[maplib.ExtraKind]maplib.ExtraTile)
                 map_.ExtraMap[point][maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: bonus}
+            }
+
+            if terrainFlags[x][y] & 0x20 != 0 {
+                map_.SetCorruption(x, y)
+            }
+
+            if terrainFlags[x][y] & 0x08 != 0 {
+                map_.SetRoad(x, y, false)
+            }
+
+            if terrainFlags[x][y] & 0x10 != 0 {
+                map_.SetRoad(x, y, true)
             }
         }
     }
@@ -156,14 +169,6 @@ func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane dat
             Warped: (node.Flags & 0x01) != 0,
             GuardianSpiritMeld: (node.Flags & 0x02) != 0,
             // FIXME: WarpedOwner
-        }
-    }
-
-    for y := range(WorldHeight) {
-        for x := range(WorldWidth) {
-            if terrainFlags[x][y] & 0x20 != 0 {
-                map_.SetCorruption(x, y)
-            }
         }
     }
 
@@ -889,8 +894,8 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // saveGame.ArcanusMapSquareFlags
     // saveGame.MyrrorMapSquareFlags
 
-    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, nil, game.Players)
-    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, nil, game.Players)
+    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
+    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
     // FIXME: game.ArtifactPool
     // FIXME: game.RandomEvents
     // FIXME: game.RoadWorkArcanus
