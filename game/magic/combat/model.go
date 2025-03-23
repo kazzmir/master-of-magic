@@ -2542,6 +2542,7 @@ func (model *CombatModel) GetObserver() CombatObserver {
 }
 
 // do a dispel roll on all enchantments owned by the other player
+// presumption: disenchantStrength should already have the runemaster bonus applied
 func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *playerlib.Player, disenchantStrength int) {
     targetArmy := model.GetOppositeArmyForPlayer(caster)
 
@@ -4009,6 +4010,7 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
 
     opposite := model.GetOppositeArmyForPlayer(caster)
     if opposite.CounterMagic > 0 {
+        // FIXME: should runemaster add to the counter magic dispel strength?
         chance := spellbook.ComputeDispelChance(opposite.CounterMagic, spell.Cost(false), spell.Magic, &caster.Wizard)
         opposite.CounterMagic = max(0, opposite.CounterMagic - 5)
 
@@ -4498,7 +4500,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
             disenchantStrength := spell.Cost(false)
             if spell.Name == "Disenchant True" {
-                // each additional point of mana spent increases the disenchant strength by 3
+                // strength is 3x mana spent
                 disenchantStrength = spell.Cost(false) * 3
             }
 
