@@ -1772,5 +1772,35 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         },
     })
 
+    // filter spells by their realm
+    lifeFilter, _ := imageCache.GetImage("spells.lbx", 7, 0)
+    lifeFilterRect := util.ImageRect(150, 10, lifeFilter)
+    lifeSelected := false
+    elements = append(elements, &uilib.UIElement{
+        Rect: lifeFilterRect,
+        Layer: 1,
+        Order: 1,
+        LeftClickRelease: func(this *uilib.UIElement){
+            lifeSelected = !lifeSelected
+            // setupSpells(currentPage)
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            if !lifeSelected {
+                options.ColorScale.ScaleWithColor(color.RGBA{R: 128, G: 128, B: 128, A: 255})
+            } else {
+                options.ColorScale.SetR(1.2)
+                options.ColorScale.SetG(1.2)
+                options.ColorScale.SetB(1.2)
+            }
+
+            vector.DrawFilledRect(screen, scale.Scale(float32(lifeFilterRect.Min.X-1)), scale.Scale(float32(lifeFilterRect.Min.Y-1)), scale.Scale(float32(lifeFilterRect.Dx()+2)), scale.Scale(float32(lifeFilterRect.Dy()+2)), color.RGBA{R: 32, G: 32, B: 32, A: 128}, true)
+
+            options.GeoM.Translate(float64(lifeFilterRect.Min.X), float64(lifeFilterRect.Min.Y))
+            scale.DrawScaled(screen, lifeFilter, &options)
+        },
+    })
+
     return elements
 }
