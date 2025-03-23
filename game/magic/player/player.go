@@ -1047,6 +1047,14 @@ func (player *Player) AddStack(stack *UnitStack) *UnitStack {
     return stack
 }
 
+// update all the fields that relate the player to the unit
+func (player *Player) UpdateUnit(unit units.StackUnit) units.StackUnit {
+    unit.SetBanner(player.GetBanner())
+    unit.SetGlobalEnchantmentProvider(player.MakeUnitEnchantmentProvider())
+    unit.SetExperienceInfo(player.MakeExperienceInfo())
+    return unit
+}
+
 func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {
     unit.SetId(player.UnitId)
     player.UnitId += 1

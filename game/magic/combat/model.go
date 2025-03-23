@@ -1862,6 +1862,7 @@ type Army struct {
     CounterMagic int
     units []*ArmyUnit
     KilledUnits []*ArmyUnit
+    RegeneratedUnits []*ArmyUnit
     Auto bool
     Fled bool
     Casted bool
@@ -3942,18 +3943,35 @@ func (model *CombatModel) FinishCombat(state CombatState) {
             }
         }
 
+        var regeneratedUnits []*ArmyUnit
+        var undeadUnits []*ArmyUnit
+
+        var stillKilledUnits []*ArmyUnit
+
         for _, unit := range army.KilledUnits {
+            killed := true
             if wonBattle && unit.HasAbility(data.AbilityRegeneration) {
                 unit.Heal(unit.GetMaxHealth())
+                regeneratedUnits = append(regeneratedUnits, unit)
+                killed = false
             }
 
             if !wonBattle {
                 // raise unit as an undead unit for the opposing team
                 if unit.DeathReason() == DamageUndead && unit.GetRace() != data.RaceHero {
                     model.UndeadUnits = append(model.UndeadUnits, unit)
+                    killed = false
+                    undeadUnits = append(undeadUnits, unit)
                 }
             }
+
+            if killed {
+                stillKilledUnits = append(stillKilledUnits, unit)
+            }
         }
+
+        army.KilledUnits = stillKilledUnits
+        army.RegeneratedUnits = regeneratedUnits
     }
 
     killUnits(model.DefendingArmy, TeamDefender)

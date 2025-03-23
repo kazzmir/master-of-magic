@@ -785,6 +785,10 @@ func (game *Game) FindValidCityLocationOnContinent(plane data.Plane, x int, y in
     return 0, 0
 }
 
+func randomChoose[T any](choices... T) T {
+    return choices[rand.N(len(choices))]
+}
+
 // given a list of allNames 'A', 'B', 'C', 'A 1', 'B 1', and a list of choices 'A', 'B', 'C'
 // choose the next name that is not in allNames but possibly with some monotonically increasing counter
 // In the above example we would choose 'C 1'
@@ -4708,7 +4712,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             combatScreen.Draw(screen)
         }
 
-        game.Music.PushSong(music.SongCombat1)
+        game.Music.PushSong(randomChoose(music.SongCombat1, music.SongCombat2))
 
         state = combat.CombatStateRunning
         for state == combat.CombatStateRunning {
@@ -4720,17 +4724,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         // FIXME: show create undead animation (cmbtfx.lbx 27) if there are new undead units
 
-        switch state {
-            case combat.CombatStateAttackerWin, combat.CombatStateDefenderFlee:
-                for _, unit := range combatScreen.Model.UndeadUnits {
-                    attacker.AddUnit(unit.Unit)
-                }
-            case combat.CombatStateDefenderWin, combat.CombatStateAttackerFlee:
-                for _, unit := range combatScreen.Model.UndeadUnits {
-                    defender.AddUnit(unit.Unit)
-                }
-        }
-
         defeatedDefenders = combatScreen.Model.DefeatedDefenders
         defeatedAttackers = combatScreen.Model.DefeatedAttackers
 
@@ -4740,21 +4733,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
         for _, unit := range combatScreen.Model.DefendingArmy.RecalledUnits {
             recalledDefenders = append(recalledDefenders, unit.Unit.(units.StackUnit))
-        }
-    }
-
-    // experience
-    if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
-        for _, unit := range attackerStack.Units() {
-            if unit.GetRace() != data.RaceFantastic {
-                game.AddExperience(attacker, unit, defeatedDefenders * 2)
-            }
-        }
-    } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee {
-        for _, unit := range defenderStack.Units() {
-            if unit.GetRace() != data.RaceFantastic {
-                game.AddExperience(defender, unit, defeatedAttackers * 2)
-            }
         }
     }
 
@@ -4966,6 +4944,56 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     killUnits(attacker, attackerStack, landscape)
     killUnits(defender, defenderStack, landscape)
+
+    switch state {
+        case combat.CombatStateAttackerWin, combat.CombatStateDefenderFlee:
+            for _, unit := range combatScreen.Model.UndeadUnits {
+                defender.RemoveUnit(unit.Unit)
+                if len(attackerStack.Units()) < data.MaxUnitsInStack {
+                    attacker.AddUnit(attacker.UpdateUnit(unit.Unit))
+                }
+            }
+
+            if attacker.HasEnchantment(data.EnchantmentZombieMastery) {
+                for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
+                    if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(attackerStack.Units()) < data.MaxUnitsInStack {
+                        attacker.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, attackerStack.X(), attackerStack.Y(), attackerStack.Plane(), attacker.GetBanner(), attacker.MakeExperienceInfo(), attacker.MakeUnitEnchantmentProvider()))
+                    }
+                }
+            }
+
+        case combat.CombatStateDefenderWin, combat.CombatStateAttackerFlee:
+            for _, unit := range combatScreen.Model.UndeadUnits {
+                attacker.RemoveUnit(unit.Unit)
+                if len(defenderStack.Units()) < data.MaxUnitsInStack {
+                    defender.AddUnit(defender.UpdateUnit(unit.Unit))
+                }
+            }
+
+            if defender.HasEnchantment(data.EnchantmentZombieMastery) {
+                for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
+                    if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(defenderStack.Units()) < data.MaxUnitsInStack {
+                        defender.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, defenderStack.X(), defenderStack.Y(), defenderStack.Plane(), defender.GetBanner(), defender.MakeExperienceInfo(), defender.MakeUnitEnchantmentProvider()))
+                    }
+                }
+            }
+
+    }
+
+    // experience
+    if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
+        for _, unit := range attackerStack.Units() {
+            if unit.GetRace() != data.RaceFantastic {
+                game.AddExperience(attacker, unit, defeatedDefenders * 2)
+            }
+        }
+    } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee {
+        for _, unit := range defenderStack.Units() {
+            if unit.GetRace() != data.RaceFantastic {
+                game.AddExperience(defender, unit, defeatedAttackers * 2)
+            }
+        }
+    }
 
     if showHeroNotice {
         game.doNotice(yield, game.HudUI, "One or more heroes died in combat. You must redistribute their equipment.")
