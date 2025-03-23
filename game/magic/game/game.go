@@ -4948,8 +4948,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     switch state {
         case combat.CombatStateAttackerWin, combat.CombatStateDefenderFlee:
             for _, unit := range combatScreen.Model.UndeadUnits {
+                defender.RemoveUnit(unit.Unit)
                 if len(attackerStack.Units()) < data.MaxUnitsInStack {
-                    attacker.AddUnit(unit.Unit)
+                    attacker.AddUnit(attacker.UpdateUnit(unit.Unit))
                 }
             }
 
@@ -4963,8 +4964,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         case combat.CombatStateDefenderWin, combat.CombatStateAttackerFlee:
             for _, unit := range combatScreen.Model.UndeadUnits {
+                attacker.RemoveUnit(unit.Unit)
                 if len(defenderStack.Units()) < data.MaxUnitsInStack {
-                    defender.AddUnit(unit.Unit)
+                    defender.AddUnit(defender.UpdateUnit(unit.Unit))
                 }
             }
 
