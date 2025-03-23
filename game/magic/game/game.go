@@ -6762,6 +6762,15 @@ func (game *Game) GetCityEnchantmentsByBanner(banner data.BannerType) []playerli
 
 // turn off enchantments that can not be afforded
 func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
+    // if time stop is in effect then only check that spell for dissipation, all other spells have no upkeep
+    if player.HasEnchantment(data.EnchantmentTimeStop) {
+        if player.Mana < data.EnchantmentTimeStop.UpkeepMana() {
+            player.RemoveEnchantment(data.EnchantmentTimeStop)
+        }
+
+        return
+    }
+
     isManaIssue := func() bool {
         manaPerTurn := player.ManaPerTurn(power, game)
         return player.Mana + manaPerTurn < 0
@@ -6839,6 +6848,9 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
     game.DissipateEnchantments(player, power)
 
+    // timestop may have dissipated by now
+    timeStop := player.HasEnchantment(data.EnchantmentTimeStop)
+
     player.Gold += player.GoldPerTurn()
     if player.Gold < 0 {
         player.Gold = 0
@@ -6847,6 +6859,10 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     player.Mana += player.ManaPerTurn(power, game)
     if player.Mana < 0 {
         player.Mana = 0
+    }
+
+    if timeStop {
+        player.Mana -= data.EnchantmentTimeStop.UpkeepMana()
     }
 
     if !player.CastingSpell.Invalid() {
@@ -6874,25 +6890,27 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     }
 
     if player.ResearchingSpell.Valid() {
-        // log.Printf("wizard %v power=%v researching=%v progress=%v/%v perturn=%v", player.Wizard.Name, power, player.ResearchingSpell.Name, player.ResearchProgress, player.ResearchingSpell.ResearchCost, player.SpellResearchPerTurn(power))
-        player.ResearchProgress += player.ComputeEffectiveResearchPerTurn(player.SpellResearchPerTurn(power), player.ResearchingSpell)
-        if player.ResearchProgress >= player.ResearchingSpell.ResearchCost {
+        if !timeStop {
+            // log.Printf("wizard %v power=%v researching=%v progress=%v/%v perturn=%v", player.Wizard.Name, power, player.ResearchingSpell.Name, player.ResearchProgress, player.ResearchingSpell.ResearchCost, player.SpellResearchPerTurn(power))
+            player.ResearchProgress += player.ComputeEffectiveResearchPerTurn(player.SpellResearchPerTurn(power), player.ResearchingSpell)
+            if player.ResearchProgress >= player.ResearchingSpell.ResearchCost {
 
-            if player.IsHuman() {
-                select {
-                    case game.Events<- &GameEventLearnedSpell{Player: player, Spell: player.ResearchingSpell}:
-                    default:
+                if player.IsHuman() {
+                    select {
+                        case game.Events<- &GameEventLearnedSpell{Player: player, Spell: player.ResearchingSpell}:
+                        default:
+                    }
                 }
-            }
 
-            // log.Printf("wizard %v learned %v", player.Wizard.Name, player.ResearchingSpell.Name)
+                // log.Printf("wizard %v learned %v", player.Wizard.Name, player.ResearchingSpell.Name)
 
-            player.LearnSpell(player.ResearchingSpell)
+                player.LearnSpell(player.ResearchingSpell)
 
-            if player.IsHuman() {
-                select {
-                    case game.Events<- &GameEventResearchSpell{Player: player}:
-                    default:
+                if player.IsHuman() {
+                    select {
+                        case game.Events<- &GameEventResearchSpell{Player: player}:
+                        default:
+                    }
                 }
             }
         }
@@ -6913,83 +6931,85 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
     var removeCities []*citylib.City
 
-    for _, city := range player.Cities {
-        cityEvents := city.DoNextTurn(game.GetMap(city.Plane))
-        for _, event := range cityEvents {
-            switch event.(type) {
-            case *citylib.CityEventPopulationGrowth:
-                if player.IsHuman() {
-                    growthEvent := event.(*citylib.CityEventPopulationGrowth)
+    if !timeStop {
+        for _, city := range player.Cities {
+            cityEvents := city.DoNextTurn(game.GetMap(city.Plane))
+            for _, event := range cityEvents {
+                switch event.(type) {
+                case *citylib.CityEventPopulationGrowth:
+                    if player.IsHuman() {
+                        growthEvent := event.(*citylib.CityEventPopulationGrowth)
 
-                    verb := "grown"
-                    if !growthEvent.Grow {
-                        verb = "shrunk"
+                        verb := "grown"
+                        if !growthEvent.Grow {
+                            verb = "shrunk"
+                        }
+
+                        scrollEvent := GameEventScroll{
+                            Title: "CITY GROWTH",
+                            Text: fmt.Sprintf("%v has %v to a population of %v.", city.Name, verb, city.Citizens()),
+                        }
+
+                        select {
+                            case game.Events<- &scrollEvent:
+                            default:
+                        }
+                    }
+                case *citylib.CityEventCityAbandoned:
+                    removeCities = append(removeCities, city)
+                    if player.IsHuman() {
+                        select {
+                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The city of %v has been abandoned.", city.Name)}:
+                            default:
+                        }
+                    }
+                case *citylib.CityEventNewBuilding:
+                    newBuilding := event.(*citylib.CityEventNewBuilding)
+
+                    if player.IsHuman() {
+                        select {
+                            case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building, Player: player}:
+                            default:
+                        }
+                    } else {
+                        log.Printf("ai created %v", game.BuildingInfo.Name(newBuilding.Building))
+                    }
+                case *citylib.CityEventOutpostDestroyed:
+                    removeCities = append(removeCities, city)
+                    if player.IsHuman() {
+                        select {
+                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has been deserted.", city.Name)}:
+                            default:
+                        }
+                    }
+                case *citylib.CityEventOutpostHamlet:
+                    if player.IsHuman() {
+                        select {
+                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has grown into a hamlet.", city.Name)}:
+                            default:
+                        }
+                    }
+                case *citylib.CityEventNewUnit:
+                    newUnit := event.(*citylib.CityEventNewUnit)
+                    overworldUnit := units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
+                    // only normal units get weapon bonuses
+                    if overworldUnit.GetRace() != data.RaceFantastic {
+                        overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
                     }
 
-                    scrollEvent := GameEventScroll{
-                        Title: "CITY GROWTH",
-                        Text: fmt.Sprintf("%v has %v to a population of %v.", city.Name, verb, city.Citizens()),
+                    // automatically apply chaos channels to new normal units
+                    // checking the race is probably redundant because a new unit built by the city will never be a hero nor fantastic
+                    if overworldUnit.GetRace() != data.RaceHero && overworldUnit.GetRace() != data.RaceFantastic && player.HasEnchantment(data.EnchantmentDoomMastery) {
+                        game.applyChaosChannels(overworldUnit)
                     }
 
-                    select {
-                        case game.Events<- &scrollEvent:
-                        default:
-                    }
-                }
-            case *citylib.CityEventCityAbandoned:
-                removeCities = append(removeCities, city)
-                if player.IsHuman() {
-                    select {
-                        case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The city of %v has been abandoned.", city.Name)}:
-                        default:
-                    }
-                }
-            case *citylib.CityEventNewBuilding:
-                newBuilding := event.(*citylib.CityEventNewBuilding)
+                    overworldUnit.AddExperience(newUnit.Experience)
+                    player.AddUnit(overworldUnit)
+                    game.ResolveStackAt(city.X, city.Y, city.Plane)
 
-                if player.IsHuman() {
-                    select {
-                        case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building, Player: player}:
-                        default:
+                    if player.AIBehavior != nil {
+                        player.AIBehavior.ProducedUnit(city, player)
                     }
-                } else {
-                    log.Printf("ai created %v", game.BuildingInfo.Name(newBuilding.Building))
-                }
-            case *citylib.CityEventOutpostDestroyed:
-                removeCities = append(removeCities, city)
-                if player.IsHuman() {
-                    select {
-                        case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has been deserted.", city.Name)}:
-                        default:
-                    }
-                }
-            case *citylib.CityEventOutpostHamlet:
-                if player.IsHuman() {
-                    select {
-                        case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has grown into a hamlet.", city.Name)}:
-                        default:
-                    }
-                }
-            case *citylib.CityEventNewUnit:
-                newUnit := event.(*citylib.CityEventNewUnit)
-                overworldUnit := units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
-                // only normal units get weapon bonuses
-                if overworldUnit.GetRace() != data.RaceFantastic {
-                    overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
-                }
-
-                // automatically apply chaos channels to new normal units
-                // checking the race is probably redundant because a new unit built by the city will never be a hero nor fantastic
-                if overworldUnit.GetRace() != data.RaceHero && overworldUnit.GetRace() != data.RaceFantastic && player.HasEnchantment(data.EnchantmentDoomMastery) {
-                    game.applyChaosChannels(overworldUnit)
-                }
-
-                overworldUnit.AddExperience(newUnit.Experience)
-                player.AddUnit(overworldUnit)
-                game.ResolveStackAt(city.X, city.Y, city.Plane)
-
-                if player.AIBehavior != nil {
-                    player.AIBehavior.ProducedUnit(city, player)
                 }
             }
         }
@@ -7846,7 +7866,11 @@ func (game *Game) EndOfTurn() {
 
     game.revertVolcanos()
 
-    game.doArmageddon()
+    // FIXME: the wiki says armageddon will not do anything while time stop is in effect.
+    // figure out what other global spells don't have any effect (great wasting, chaos rift, meteor storm)
+    if !game.HasEnchantment(data.EnchantmentTimeStop) {
+        game.doArmageddon()
+    }
 
     game.doGreatWasting()
 
@@ -7860,11 +7884,16 @@ func (game *Game) EndOfTurn() {
 }
 
 func (game *Game) DoNextTurn(){
-    game.CurrentPlayer += 1
-    if game.CurrentPlayer >= len(game.Players) {
-        // all players did their turn, so the next global turn starts
+    // if time stop is enabled then don't move to the other players, just keep doing the current player
+    if game.CurrentPlayer >= 0 && game.Players[game.CurrentPlayer].HasEnchantment(data.EnchantmentTimeStop) {
         game.EndOfTurn()
-        game.CurrentPlayer = 0
+    } else {
+        game.CurrentPlayer += 1
+        if game.CurrentPlayer >= len(game.Players) {
+            // all players did their turn, so the next global turn starts
+            game.EndOfTurn()
+            game.CurrentPlayer = 0
+        }
     }
 
     if len(game.Players) > 0 {
