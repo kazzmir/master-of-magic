@@ -1813,7 +1813,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         // filter spells by their realm
         pic, _ := imageCache.GetImage("spells.lbx", filter.LbxIndex, 0)
         rect := util.ImageRect(filterX, 10, pic)
-        filterX += pic.Bounds().Dx() + 2
+        filterX += pic.Bounds().Dx() + 3
         selected := false
         elements = append(elements, &uilib.UIElement{
             Rect: rect,
@@ -1847,6 +1847,9 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                 }
 
                 vector.DrawFilledRect(screen, scale.Scale(float32(rect.Min.X-1)), scale.Scale(float32(rect.Min.Y-1)), scale.Scale(float32(rect.Dx()+2)), scale.Scale(float32(rect.Dy()+2)), color.RGBA{R: 32, G: 32, B: 32, A: 128}, true)
+                if selected {
+                    vector.StrokeRect(screen, scale.Scale(float32(rect.Min.X-1)), scale.Scale(float32(rect.Min.Y-1)), scale.Scale(float32(rect.Dx()+2)), scale.Scale(float32(rect.Dy()+2)), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+                }
 
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
                 scale.DrawScaled(screen, pic, &options)
