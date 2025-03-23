@@ -1229,6 +1229,19 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         }
     }
 
+    updateUseSpells := func(lifeFilter bool) {
+        useSpells = spells.Copy()
+        for spell, charge := range charges {
+            if charge > 0 {
+                useSpells.AddSpell(spell)
+            }
+        }
+
+        if lifeFilter {
+            useSpells = useSpells.GetSpellsByMagic(data.LifeMagic)
+        }
+    }
+
     canCast := func (spell Spell) bool {
         // in combat a spell is castable if the caster (a hero) has charges available for that spell,
         // or if the caster has the spell in their spellbook and the casting skill is high enough
@@ -1782,7 +1795,13 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         Order: 1,
         LeftClickRelease: func(this *uilib.UIElement){
             lifeSelected = !lifeSelected
-            // setupSpells(currentPage)
+
+            updateUseSpells(lifeSelected)
+            spellPages = computeHalfPages(useSpells, 6)
+            pageCache = make(map[int]*ebiten.Image)
+            currentPage = 0
+
+            setupSpells(currentPage)
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
