@@ -1862,6 +1862,7 @@ type Army struct {
     CounterMagic int
     units []*ArmyUnit
     KilledUnits []*ArmyUnit
+    RegeneratedUnits []*ArmyUnit
     Auto bool
     Fled bool
     Casted bool
@@ -3970,13 +3971,7 @@ func (model *CombatModel) FinishCombat(state CombatState) {
         }
 
         army.KilledUnits = stillKilledUnits
-
-        // put killed but regenerated units back into the regular list
-        // FIXME: by putting the regenerated units back into the regular list, they get rendered while the end screen is being displayed
-        // these units could be put into a separate 'RegeneratedUnits' list
-        for _, unit := range regeneratedUnits {
-            army.units = append(army.units, unit)
-        }
+        army.RegeneratedUnits = regeneratedUnits
     }
 
     killUnits(model.DefendingArmy, TeamDefender)
