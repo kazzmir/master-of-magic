@@ -1729,6 +1729,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     pageTurnRightRect := image.Rect(0, 0, pageTurnRight.Bounds().Dx(), pageTurnRight.Bounds().Dy()).Add(image.Pt(268, 14))
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
+        Order: 1,
         Rect: pageTurnRightRect,
         LeftClick: func(this *uilib.UIElement){
             if currentPage + 2 < len(spellPages) && !flipping {
@@ -1763,6 +1764,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     elements = append(elements, &uilib.UIElement{
         Rect: pageTurnLeftRect,
         Layer: 1,
+        Order: 1,
         LeftClick: func(this *uilib.UIElement){
             if currentPage >= 2 && !flipping {
                 flipping = true
@@ -1840,7 +1842,10 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                 updateUseSpells(filterMagic)
                 spellPages = computeHalfPages(useSpells, 6)
                 pageCache = make(map[int]*ebiten.Image)
-                currentPage = 0
+                if currentPage >= len(spellPages) {
+                    currentPage = max(0, len(spellPages) - 1)
+                    currentPage -= currentPage % 2
+                }
 
                 setupSpells(currentPage)
             },
