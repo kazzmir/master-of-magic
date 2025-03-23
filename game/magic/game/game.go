@@ -7870,7 +7870,11 @@ func (game *Game) EndOfTurn() {
 
     game.revertVolcanos()
 
-    game.doArmageddon()
+    // FIXME: the wiki says armageddon will not do anything while time stop is in effect.
+    // figure out what other global spells don't have any effect (great wasting, chaos rift, meteor storm)
+    if !game.HasEnchantment(data.EnchantmentTimeStop) {
+        game.doArmageddon()
+    }
 
     game.doGreatWasting()
 
