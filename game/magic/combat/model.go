@@ -3942,9 +3942,12 @@ func (model *CombatModel) FinishCombat(state CombatState) {
             }
         }
 
+        var regeneratedUnits []*ArmyUnit
+
         for _, unit := range army.KilledUnits {
             if wonBattle && unit.HasAbility(data.AbilityRegeneration) {
                 unit.Heal(unit.GetMaxHealth())
+                regeneratedUnits = append(regeneratedUnits, unit)
             }
 
             if !wonBattle {
@@ -3953,6 +3956,16 @@ func (model *CombatModel) FinishCombat(state CombatState) {
                     model.UndeadUnits = append(model.UndeadUnits, unit)
                 }
             }
+        }
+
+        // put killed but regenerated units back into the regular list
+        // FIXME: by putting the regenerated units back into the regular list, they get rendered while the end screen is being displayed
+        for _, unit := range regeneratedUnits {
+            army.KilledUnits = slices.DeleteFunc(army.KilledUnits, func(check *ArmyUnit) bool {
+                return check == unit
+            })
+
+            army.units = append(army.units, unit)
         }
     }
 

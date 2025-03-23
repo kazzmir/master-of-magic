@@ -785,6 +785,10 @@ func (game *Game) FindValidCityLocationOnContinent(plane data.Plane, x int, y in
     return 0, 0
 }
 
+func randomChoose[T any](choices... T) T {
+    return choices[rand.N(len(choices))]
+}
+
 // given a list of allNames 'A', 'B', 'C', 'A 1', 'B 1', and a list of choices 'A', 'B', 'C'
 // choose the next name that is not in allNames but possibly with some monotonically increasing counter
 // In the above example we would choose 'C 1'
@@ -4708,7 +4712,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             combatScreen.Draw(screen)
         }
 
-        game.Music.PushSong(music.SongCombat1)
+        game.Music.PushSong(randomChoose(music.SongCombat1, music.SongCombat2))
 
         state = combat.CombatStateRunning
         for state == combat.CombatStateRunning {
