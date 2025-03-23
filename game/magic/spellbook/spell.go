@@ -1808,14 +1808,23 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         {Magic: data.ArcaneMagic, LbxIndex: 9},
     }
 
+    hasMagic := set.NewSet[data.MagicType]()
+    for _, spell := range useSpells.Spells {
+        hasMagic.Insert(spell.Magic)
+    }
+
+    var filterButtons []*uilib.UIElement
     filterX := 130
     for _, filter := range filters {
+        if !hasMagic.Contains(filter.Magic) {
+            continue
+        }
         // filter spells by their realm
         pic, _ := imageCache.GetImage("spells.lbx", filter.LbxIndex, 0)
         rect := util.ImageRect(filterX, 10, pic)
         filterX += pic.Bounds().Dx() + 3
         selected := false
-        elements = append(elements, &uilib.UIElement{
+        filterButtons = append(filterButtons, &uilib.UIElement{
             Rect: rect,
             Layer: 1,
             Order: 1,
@@ -1855,6 +1864,10 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                 scale.DrawScaled(screen, pic, &options)
             },
         })
+    }
+
+    if len(filterButtons) > 1 {
+        elements = append(elements, filterButtons...)
     }
 
     return elements
