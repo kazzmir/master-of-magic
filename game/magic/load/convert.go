@@ -149,7 +149,7 @@ func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane dat
         }
 
         var meldingWizard maplib.Wizard
-        if node.Owner > -1 {
+        if node.Owner > -1 && players != nil {
             meldingWizard = players[node.Owner]
         }
 
