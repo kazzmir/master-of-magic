@@ -65,6 +65,8 @@ func (engine *Engine) MakeUI() *uilib.UI {
     */
 
     spells = allSpells
+    // spells.AddAllSpells(allSpells.GetSpellsByMagic(data.LifeMagic))
+    // spells.AddAllSpells(allSpells.GetSpellsByMagic(data.NatureMagic))
 
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
