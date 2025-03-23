@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -1229,7 +1230,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         }
     }
 
-    updateUseSpells := func(lifeFilter bool) {
+    updateUseSpells := func(filter *set.Set[data.MagicType]) {
         useSpells = spells.Copy()
         for spell, charge := range charges {
             if charge > 0 {
@@ -1237,8 +1238,14 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             }
         }
 
-        if lifeFilter {
-            useSpells = useSpells.GetSpellsByMagic(data.LifeMagic)
+        if filter.Size() > 0 {
+            var out Spells
+
+            for _, magic := range filter.Values() {
+                out.AddAllSpells(useSpells.GetSpellsByMagic(magic))
+            }
+
+            useSpells = out
         }
     }
 
@@ -1785,41 +1792,67 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         },
     })
 
-    // filter spells by their realm
-    lifeFilter, _ := imageCache.GetImage("spells.lbx", 7, 0)
-    lifeFilterRect := util.ImageRect(150, 10, lifeFilter)
-    lifeSelected := false
-    elements = append(elements, &uilib.UIElement{
-        Rect: lifeFilterRect,
-        Layer: 1,
-        Order: 1,
-        LeftClickRelease: func(this *uilib.UIElement){
-            lifeSelected = !lifeSelected
+    filterMagic := set.NewSet[data.MagicType]()
 
-            updateUseSpells(lifeSelected)
-            spellPages = computeHalfPages(useSpells, 6)
-            pageCache = make(map[int]*ebiten.Image)
-            currentPage = 0
+    type filter struct {
+        Magic data.MagicType
+        LbxIndex int
+    }
 
-            setupSpells(currentPage)
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            options.ColorScale.ScaleAlpha(getAlpha())
-            if !lifeSelected {
-                options.ColorScale.ScaleWithColor(color.RGBA{R: 128, G: 128, B: 128, A: 255})
-            } else {
-                options.ColorScale.SetR(1.2)
-                options.ColorScale.SetG(1.2)
-                options.ColorScale.SetB(1.2)
-            }
+    filters := []filter{
+        {Magic: data.NatureMagic, LbxIndex: 4},
+        {Magic: data.SorceryMagic, LbxIndex: 5},
+        {Magic: data.ChaosMagic, LbxIndex: 6},
+        {Magic: data.LifeMagic, LbxIndex: 7},
+        {Magic: data.DeathMagic, LbxIndex: 8},
+        {Magic: data.ArcaneMagic, LbxIndex: 9},
+    }
 
-            vector.DrawFilledRect(screen, scale.Scale(float32(lifeFilterRect.Min.X-1)), scale.Scale(float32(lifeFilterRect.Min.Y-1)), scale.Scale(float32(lifeFilterRect.Dx()+2)), scale.Scale(float32(lifeFilterRect.Dy()+2)), color.RGBA{R: 32, G: 32, B: 32, A: 128}, true)
+    filterX := 130
+    for _, filter := range filters {
+        // filter spells by their realm
+        pic, _ := imageCache.GetImage("spells.lbx", filter.LbxIndex, 0)
+        rect := util.ImageRect(filterX, 10, pic)
+        filterX += pic.Bounds().Dx() + 2
+        selected := false
+        elements = append(elements, &uilib.UIElement{
+            Rect: rect,
+            Layer: 1,
+            Order: 1,
+            LeftClickRelease: func(this *uilib.UIElement){
+                selected = !selected
 
-            options.GeoM.Translate(float64(lifeFilterRect.Min.X), float64(lifeFilterRect.Min.Y))
-            scale.DrawScaled(screen, lifeFilter, &options)
-        },
-    })
+                if selected {
+                    filterMagic.Insert(filter.Magic)
+                } else {
+                    filterMagic.Remove(filter.Magic)
+                }
+
+                updateUseSpells(filterMagic)
+                spellPages = computeHalfPages(useSpells, 6)
+                pageCache = make(map[int]*ebiten.Image)
+                currentPage = 0
+
+                setupSpells(currentPage)
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(getAlpha())
+                if !selected {
+                    options.ColorScale.ScaleWithColor(color.RGBA{R: 164, G: 164, B: 164, A: 255})
+                } else {
+                    options.ColorScale.SetR(1.2)
+                    options.ColorScale.SetG(1.2)
+                    options.ColorScale.SetB(1.2)
+                }
+
+                vector.DrawFilledRect(screen, scale.Scale(float32(rect.Min.X-1)), scale.Scale(float32(rect.Min.Y-1)), scale.Scale(float32(rect.Dx()+2)), scale.Scale(float32(rect.Dy()+2)), color.RGBA{R: 32, G: 32, B: 32, A: 128}, true)
+
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                scale.DrawScaled(screen, pic, &options)
+            },
+        })
+    }
 
     return elements
 }
