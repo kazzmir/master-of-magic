@@ -4393,6 +4393,10 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             model.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
                 disenchantStrength := spell.Cost(false)
 
+                if player.Wizard.RetortEnabled(data.RetortRunemaster) {
+                    disenchantStrength *= 2
+                }
+
                 model.AddProjectile(spellSystem.CreateDispelMagicProjectile(target, player, disenchantStrength))
                 castedCallback()
             }, targetAny)
