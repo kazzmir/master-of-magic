@@ -13,7 +13,7 @@ type RetortOwner interface {
 // Returns dispel chance against 250.
 // TargetSpellCost may be either a base cost or an effective cost (https://masterofmagic.fandom.com/wiki/Casting_Cost#Dispelling_Magic)
 // If checkTargetSpellOwnerRetorts is true, then Archmage and Mastery retorts will be taken into consideration for dispel resistance
-// FIXME: add Runemaster check here (it should increase the dispel strength)
+// Runemaster is handled at the callsites where dispelling actually takes place
 func ComputeDispelChance(dispelStrength int, targetSpellCost int, targetSpellRealm data.MagicType, targetSpellOwner RetortOwner) int {
 
     dispelResistanceModifier := 1

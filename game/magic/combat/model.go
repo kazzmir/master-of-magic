@@ -2545,13 +2545,18 @@ func (model *CombatModel) GetObserver() CombatObserver {
 func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *playerlib.Player, disenchantStrength int) {
     targetArmy := model.GetOppositeArmyForPlayer(caster)
 
+    dispelModifier := 1
+    if caster.Wizard.RetortEnabled(data.RetortRunemaster) {
+        dispelModifier = 2
+    }
+
     // enemy combat enchantments
     var removedEnchantments []data.CombatEnchantment
     for _, enchantment := range targetArmy.Enchantments {
         spell := allSpells.FindByName(enchantment.SpellName())
         cost := spell.Cost(false)
         dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &targetArmy.Player.Wizard)
-        if spellbook.RollDispelChance(dispellChance) {
+        if spellbook.RollDispelChance(dispellChance * dispelModifier) {
             removedEnchantments = append(removedEnchantments, enchantment)
         }
     }
@@ -2563,7 +2568,7 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
     // enemy unit enchantments
     for _, unit := range targetArmy.units {
         if unit.GetHealth() > 0 {
-            model.DoDisenchantUnit(allSpells, unit, targetArmy.Player, disenchantStrength)
+            model.DoDisenchantUnit(allSpells, unit, targetArmy.Player, disenchantStrength, dispelModifier)
         }
     }
 
@@ -2571,13 +2576,13 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
     playerArmy := model.GetArmyForPlayer(caster)
     for _, unit := range playerArmy.units {
         if unit.GetHealth() > 0 {
-            model.DoDisenchantUnitCurses(allSpells, unit, targetArmy.Player, disenchantStrength)
+            model.DoDisenchantUnitCurses(allSpells, unit, targetArmy.Player, disenchantStrength, dispelModifier)
         }
     }
 }
 
 // only removes enchantments (not curses)
-func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
+func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int, dispelModifier int) {
     var removedEnchantments []data.UnitEnchantment
 
     choices := append(unit.Unit.GetEnchantments(), unit.Enchantments...)
@@ -2596,7 +2601,7 @@ func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *Arm
             cost = 150
         }
         dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
-        if spellbook.RollDispelChance(dispellChance) {
+        if spellbook.RollDispelChance(dispellChance * dispelModifier) {
             removedEnchantments = append(removedEnchantments, enchantment)
         }
     }
@@ -2606,13 +2611,13 @@ func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *Arm
     }
 }
 
-func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
+func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int, dispelModifier int) {
     var removedEnchantments []data.UnitEnchantment
     for _, enchantment := range unit.GetCurses() {
         spell := allSpells.FindByName(enchantment.SpellName())
         cost := spell.Cost(false)
         dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
-        if spellbook.RollDispelChance(dispellChance) {
+        if spellbook.RollDispelChance(dispellChance * dispelModifier) {
             removedEnchantments = append(removedEnchantments, enchantment)
         }
     }
