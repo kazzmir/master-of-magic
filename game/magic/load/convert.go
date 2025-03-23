@@ -710,9 +710,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     human := playerIndex == 0
 
     var aiBehavior playerlib.AIBehavior
-    if playerIndex == 5 {
-        aiBehavior = ai.MakeRaiderAI()
-    } else if !human {
+    if !human {
         aiBehavior = ai.MakeEnemyAI()
     }
 
@@ -882,6 +880,7 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
         player := saveGame.convertPlayer(int(playerIndex), wizards, game)
         game.Players = append(game.Players, player)
     }
+    // FIXME: add neutral player with brown banner and ai.MakeRaiderAI()
 
     // FIXME: add all remaining information from saveGame
     // saveGame.Unit
