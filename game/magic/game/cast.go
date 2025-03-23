@@ -330,9 +330,20 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         /*
             GLOBAL ENCHANTMENTS
-                TODO:
-                Aura of Majesty
         */
+        case "Aura of Majesty":
+            enchantment := data.EnchantmentAuraOfMajesty
+            if !player.GlobalEnchantments.Contains(enchantment) {
+                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
+                player.GlobalEnchantments.Insert(enchantment)
+
+                for _, other := range player.GetKnownPlayers() {
+                    other.AdjustDiplomaticRelation(player, 10)
+                    player.AdjustDiplomaticRelation(other, 10)
+                }
+
+                game.RefreshUI()
+            }
         case "Time Stop":
             enchantment := data.EnchantmentTimeStop
             if !player.GlobalEnchantments.Contains(enchantment) {
