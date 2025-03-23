@@ -88,6 +88,8 @@ type AIBehavior interface {
 
 type Relationship struct {
     Treaty data.TreatyType
+    // from -100 to +100, where -100 means this player hates the other, and +100 means this player loves the other
+    Relation int
 }
 
 type CityEnchantment struct {
@@ -261,6 +263,19 @@ func (player *Player) GetKnownPlayers() []*Player {
     }
 
     return out
+}
+
+func (player *Player) UpdateDiplomaticRelations() {
+    // FIXME: relation value should be adjusted each turn
+    // if aura of majesty is in effect by some rival wizard, then the relation value should go up by 1 for that wizard
+}
+
+// adjust the diplomacy value between this player and the other player
+func (player *Player) AdjustDiplomaticRelation(other *Player, amount int) {
+    relation, ok := player.PlayerRelations[other]
+    if ok {
+        relation.Relation = max(min(relation.Relation + amount, 100), -100)
+    }
 }
 
 // this player should now be aware of the other player
