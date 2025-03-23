@@ -6835,16 +6835,12 @@ func (game *Game) applyChaosChannels(unit *units.OverworldUnit) {
 }
 
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
-    timeStop := player.HasEnchantment(data.EnchantmentTimeStop)
+    disbandedMessages := game.DisbandUnits(player)
 
-    if !timeStop {
-        disbandedMessages := game.DisbandUnits(player)
-
-        if player.IsHuman() && len(disbandedMessages) > 0 {
-            select {
-                case game.Events<- &GameEventScroll{Title: "", Text: strings.Join(disbandedMessages, "\n")}:
-                default:
-            }
+    if player.IsHuman() && len(disbandedMessages) > 0 {
+        select {
+            case game.Events<- &GameEventScroll{Title: "", Text: strings.Join(disbandedMessages, "\n")}:
+            default:
         }
     }
 
@@ -6853,19 +6849,19 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     game.DissipateEnchantments(player, power)
 
     // timestop may have dissipated by now
-    timeStop = player.HasEnchantment(data.EnchantmentTimeStop)
+    timeStop := player.HasEnchantment(data.EnchantmentTimeStop)
 
-    if !timeStop {
-        player.Gold += player.GoldPerTurn()
-        if player.Gold < 0 {
-            player.Gold = 0
-        }
+    player.Gold += player.GoldPerTurn()
+    if player.Gold < 0 {
+        player.Gold = 0
+    }
 
-        player.Mana += player.ManaPerTurn(power, game)
-        if player.Mana < 0 {
-            player.Mana = 0
-        }
-    } else {
+    player.Mana += player.ManaPerTurn(power, game)
+    if player.Mana < 0 {
+        player.Mana = 0
+    }
+
+    if timeStop {
         player.Mana -= data.EnchantmentTimeStop.UpkeepMana()
     }
 
