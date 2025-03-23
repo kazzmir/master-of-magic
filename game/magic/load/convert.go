@@ -36,10 +36,12 @@ func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane dat
     terrainSource := saveGame.ArcanusMap
     terrainOffset := 0
     terrainSpecials := saveGame.ArcanusTerrainSpecials
+    terrainFlags := saveGame.ArcanusMapSquareFlags
     if plane == data.PlaneMyrror {
         terrainSource = saveGame.MyrrorMap
         terrainOffset = terrain.MyrrorStart
         terrainSpecials = saveGame.MyrrorTerrainSpecials
+        terrainFlags = saveGame.MyrrorMapSquareFlags
     }
 
     for y := range(WorldHeight) {
@@ -154,6 +156,14 @@ func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane dat
             Warped: (node.Flags & 0x01) != 0,
             GuardianSpiritMeld: (node.Flags & 0x02) != 0,
             // FIXME: WarpedOwner
+        }
+    }
+
+    for y := range(WorldHeight) {
+        for x := range(WorldWidth) {
+            if terrainFlags[x][y] & 0x20 != 0 {
+                map_.SetCorruption(x, y)
+            }
         }
     }
 

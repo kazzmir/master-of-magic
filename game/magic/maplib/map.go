@@ -1253,7 +1253,13 @@ func (mapObject *Map) HasCorruption(x int, y int) bool {
 }
 
 func (mapObject *Map) SetCorruption(x int, y int) {
-    mapObject.ExtraMap[image.Pt(x, y)][ExtraKindCorruption] = &ExtraCorruption{}
+    point := image.Pt(x, y)
+
+    if mapObject.ExtraMap[point] == nil {
+        mapObject.ExtraMap[point] = make(map[ExtraKind]ExtraTile)
+    }
+
+    mapObject.ExtraMap[point][ExtraKindCorruption] = &ExtraCorruption{}
 }
 
 func (mapObject *Map) RemoveCorruption(x int, y int) {
