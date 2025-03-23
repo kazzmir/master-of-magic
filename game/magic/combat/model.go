@@ -3943,28 +3943,38 @@ func (model *CombatModel) FinishCombat(state CombatState) {
         }
 
         var regeneratedUnits []*ArmyUnit
+        var undeadUnits []*ArmyUnit
+
+        var stillKilledUnits []*ArmyUnit
 
         for _, unit := range army.KilledUnits {
+            killed := true
             if wonBattle && unit.HasAbility(data.AbilityRegeneration) {
                 unit.Heal(unit.GetMaxHealth())
                 regeneratedUnits = append(regeneratedUnits, unit)
+                killed = false
             }
 
             if !wonBattle {
                 // raise unit as an undead unit for the opposing team
                 if unit.DeathReason() == DamageUndead && unit.GetRace() != data.RaceHero {
                     model.UndeadUnits = append(model.UndeadUnits, unit)
+                    killed = false
+                    undeadUnits = append(undeadUnits, unit)
                 }
+            }
+
+            if killed {
+                stillKilledUnits = append(stillKilledUnits, unit)
             }
         }
 
+        army.KilledUnits = stillKilledUnits
+
         // put killed but regenerated units back into the regular list
         // FIXME: by putting the regenerated units back into the regular list, they get rendered while the end screen is being displayed
+        // these units could be put into a separate 'RegeneratedUnits' list
         for _, unit := range regeneratedUnits {
-            army.KilledUnits = slices.DeleteFunc(army.KilledUnits, func(check *ArmyUnit) bool {
-                return check == unit
-            })
-
             army.units = append(army.units, unit)
         }
     }
