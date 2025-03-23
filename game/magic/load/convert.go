@@ -890,8 +890,6 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // saveGame.Units / saveGame.NumUnits
     // saveGame.Events
     // saveGame.PremadeItems
-    // saveGame.ArcanusMapSquareFlags
-    // saveGame.MyrrorMapSquareFlags
 
     game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
     game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
