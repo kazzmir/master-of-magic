@@ -790,7 +790,7 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
 
         var enchantmentList []*uilib.UIElement
 
-        for enchantmentIndex, enchantment := range player.GlobalEnchantments.Values() {
+        for enchantmentIndex, enchantment := range slices.SortedFunc(slices.Values(player.GlobalEnchantments.Values()), cmp.Compare) {
             enchantmentOptions += 1
 
             y := yBase + 5 + 13 * enchantmentIndex
