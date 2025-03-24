@@ -719,6 +719,15 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context, error) {
     group := uilib.MakeGroup()
 
+    dispelStrength := spell.Cost(true)
+    if spell.Name == "Disjunction True" {
+        dispelStrength *= 3
+    }
+
+    if caster.Wizard.RetortEnabled(data.RetortRunemaster) {
+        dispelStrength *= 2
+    }
+
     quit, cancel := context.WithCancel(context.Background())
 
     fadeSpeed := 7
@@ -778,9 +787,22 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
 
             shadow := font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Options: &options}
 
+            rect := image.Rect(uiX + 75, y, uiX + 75 + 100, y + 14)
             group.AddElement(&uilib.UIElement{
                 Layer: 1,
                 Order: 1,
+                Rect: rect,
+                LeftClick: func(element *uilib.UIElement) {
+                    allSpells := game.AllSpells()
+                    targetSpell := allSpells.FindByName(enchantment.String())
+
+                    log.Printf("Dispel %v cost %v with strength %v", enchantment, targetSpell.Cost(true), dispelStrength)
+                    if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &player.Wizard)) {
+                        player.RemoveEnchantment(enchantment)
+                    }
+
+                    cancel()
+                },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     options.ColorScale.ScaleAlpha(fader())
                     options.ColorScale.SetR(1)
