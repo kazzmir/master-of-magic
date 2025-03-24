@@ -862,7 +862,25 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
             },
             LeftClick: func(element *uilib.UIElement) {
                 cancel()
+                hero.SetStatus(herolib.StatusEmployed)
                 caster.AddHeroToSummoningCircle(hero)
+
+                summoningCity := caster.FindSummoningCity()
+                if summoningCity != nil {
+                    game.Plane = summoningCity.Plane
+                    allSpells := game.AllSpells()
+                    spell := allSpells.FindByName("Healing")
+                    healingSound := -1
+                    if spell.Valid() {
+                        healingSound = spell.Sound
+                    }
+                    game.Events <- &GameEventInvokeRoutine{
+                        Routine: func (yield coroutine.YieldFunc) {
+                            game.doCastOnMap(yield, summoningCity.X, summoningCity.Y, 3, false, healingSound, func (x int, y int, animationFrame int) {})
+                            game.RefreshUI()
+                        },
+                    }
+                }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
