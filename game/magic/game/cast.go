@@ -544,7 +544,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
-                Nature's Cures
                 Great Unsummoning
                 Spell Binding
                 Stasis
@@ -552,6 +551,17 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Death Wish
                 Subversion
         */
+        case "Nature's Cures":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                stack := player.FindStack(tileX, tileY, game.Plane)
+                if stack != nil {
+                    // heal all units that aren't undead or death fantastic
+                    game.doCastOnMap(yield, tileX, tileY, 10, false, spell.Sound, func (x int, y int, animationFrame int) {})
+                }
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+
         case "Resurrection":
             heroes := player.GetDeadHeroes()
             if len(heroes) == 0 {
