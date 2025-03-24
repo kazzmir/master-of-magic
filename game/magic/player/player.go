@@ -260,12 +260,25 @@ func (player *Player) GetDeadHeroes() []*herolib.Hero {
     var dead []*herolib.Hero
 
     for _, hero := range player.HeroPool {
-        if hero != nil && hero.Status == herolib.StatusDead {
+        if hero != nil && hero.HeroType != herolib.HeroTorin && hero.Status == herolib.StatusDead {
             dead = append(dead, hero)
         }
     }
 
     return dead
+}
+
+// the number of available slots for a new hero
+func (player *Player) FreeHeroSlots() int {
+    count := 0
+
+    for _, hero := range player.Heroes {
+        if hero == nil {
+            count += 1
+        }
+    }
+
+    return count
 }
 
 func (player *Player) GetKnownPlayers() []*Player {

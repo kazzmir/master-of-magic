@@ -556,8 +556,17 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             heroes := player.GetDeadHeroes()
             if len(heroes) == 0 {
                 game.Events <- &GameEventNotice{Message: "No dead heroes to resurrect"}
+            } else if player.FreeHeroSlots() == 0 {
+                game.Events <- &GameEventNotice{Message: "No free hero slots to resurrect hero"}
             } else {
                 // show selection box for all dead heroes
+
+                group, quit := game.MakeResurrectionUI(player, heroes)
+
+                game.Events <- &GameEventRunUI{
+                    Group: group,
+                    Quit: quit,
+                }
             }
 
         case "Earthquake":
@@ -771,6 +780,73 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         default:
             log.Printf("Warning: casting unhandled spell '%v'", spell.Name)
     }
+}
+
+func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib.Hero) (*uilib.UIElementGroup, context.Context) {
+    group := uilib.MakeGroup()
+
+    quit, cancel := context.WithCancel(context.Background())
+
+    var layer uilib.UILayer = 1
+
+    uiX := 40
+    uiY := 1
+
+    // background
+    group.AddElement(&uilib.UIElement{
+        Layer: layer,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            background, _ := game.ImageCache.GetImage("spellscr.lbx", 45, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(uiX), float64(uiY))
+            scale.DrawScaled(screen, background, &options)
+        },
+        NotLeftClicked: func(element *uilib.UIElement) {
+            cancel()
+        },
+    })
+
+    gridX := 0
+    gridY := 0
+    for _, hero := range slices.SortedFunc(slices.Values(heroes), func (hero1 *herolib.Hero, hero2 *herolib.Hero) int {
+        return cmp.Compare(hero1.Name, hero2.Name)
+    }) {
+        lbxFile, lbxIndex := hero.GetPortraitLbxInfo()
+        pic, _ := game.ImageCache.GetImage(lbxFile, lbxIndex, 0)
+        if pic == nil {
+            log.Printf("Error with hero picture: %v", hero.Name)
+            continue
+        }
+
+        gridWidth := 18
+        gridHeight := 18
+        gapX := 7
+        gapY := 6
+
+        xPos := uiX + 13 + gridX * (gridWidth + gapX)
+        yPos := uiY + 26 + gridY * (gridHeight + gapY)
+
+        rect := image.Rect(xPos, yPos, xPos + gridWidth, yPos + gridHeight)
+        group.AddElement(&uilib.UIElement{
+            Layer: layer,
+            Order: 1,
+            Rect: rect,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Scale(float64(gridWidth) / float64(pic.Bounds().Dx()), float64(gridHeight) / float64(pic.Bounds().Dy()))
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                scale.DrawScaled(screen, pic, &options)
+            },
+        })
+
+        gridX += 1
+        if gridX == 6 {
+            gridX = 0
+            gridY += 1
+        }
+    }
+
+    return group, quit
 }
 
 func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context, error) {

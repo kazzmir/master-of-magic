@@ -5179,6 +5179,78 @@ func createScenario57(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// resurrect heroes
+func createScenario58(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 58: resurrect heroes")
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerRed,
+        Race: data.RaceTroll,
+        Retorts: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+        Magic: data.MagicSettingNormal,
+        Difficulty: data.DifficultyAverage,
+    })
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.CastingSkillPower += 6000
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player.KnownSpells.AddSpell(allSpells.FindByName("Resurrection"))
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
+    city.Population = 6190
+    city.Plane = data.PlaneArcanus
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.AddBuilding(buildinglib.BuildingFortress)
+    city.AddBuilding(buildinglib.BuildingShrine)
+    city.AddBuilding(buildinglib.BuildingMarketplace)
+    city.AddBuilding(buildinglib.BuildingWizardsGuild)
+    city.AddBuilding(buildinglib.BuildingBank)
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+
+    city.ResetCitizens()
+
+    city.AddEnchantment(data.CityEnchantmentChaosRift, data.BannerGreen)
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 5000
+
+    player.LiftFog(x, y, 4, data.PlaneArcanus)
+
+    for _, hero := range player.HeroPool {
+        hero.AdjustHealth(-1000)
+    }
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -5242,6 +5314,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 55: game = createScenario55(cache)
         case 56: game = createScenario56(cache)
         case 57: game = createScenario57(cache)
+        case 58: game = createScenario58(cache)
         default: game = createScenario1(cache)
     }
 
