@@ -550,7 +550,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Great Unsummoning
                 Spell Binding
                 Stasis
-                Fire Storm
                 Black Wind
                 Death Wish
                 Subversion
@@ -572,6 +571,24 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyUnit, SelectedFunc: selected}
+        case "Fire Storm":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                enemyStack, enemy := game.FindStack(tileX, tileY, game.Plane)
+
+                game.doCastOnMap(yield, tileX, tileY, 6, false, spell.Sound, func (x int, y int, animationFrame int) {})
+
+                for _, unit := range enemyStack.Units() {
+                    combat.ApplyAreaDamage(&UnitDamageWrapper{Unit: unit}, 8, units.DamageImmolation, 0)
+                    if unit.GetHealth() <= 0 {
+                        enemy.RemoveUnit(unit)
+                    }
+                }
+
+                yield()
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyUnit, SelectedFunc: selected}
+
         case "Disjunction", "Disjunction True":
             uiGroup, quit, err := game.MakeDisjunctionUI(player, spell)
             if err != nil {
