@@ -366,7 +366,6 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
     rangeBoulderImage, _ := imageCache.GetImageTransform("unitview.lbx", 19, 0, "cut1", cut1PixelFunc)
     defenseImage, _ := imageCache.GetImageTransform("unitview.lbx", 22, 0, "cut1", cut1PixelFunc)
     healthImage, _ := imageCache.GetImageTransform("unitview.lbx", 23, 0, "cut1", cut1PixelFunc)
-    moveImage, _ := imageCache.GetImageTransform("unitview.lbx", 24, 0, "cut1", cut1PixelFunc)
 
     rect := util.ImageRect(posX, posY, background)
     elements = append(elements, &uilib.UIElement{
@@ -464,16 +463,18 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 screen.DrawImage(meleeImage, scale.ScaleOptions(unitOptions))
 
                 unitOptions.GeoM.Translate(20, 0)
-                x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
-                switch unit.GetRangedAttackDamageType() {
-                    case units.DamageNone: // nothing
-                    case units.DamageRangedMagical:
-                        screen.DrawImage(rangeMagicImage, scale.ScaleOptions(unitOptions))
-                    case units.DamageRangedPhysical:
-                        screen.DrawImage(rangeBowImage, scale.ScaleOptions(unitOptions))
-                    case units.DamageRangedBoulder:
-                        screen.DrawImage(rangeBoulderImage, scale.ScaleOptions(unitOptions))
+                if unit.GetRangedAttackPower() > 0 {
+                    x, y = unitOptions.GeoM.Apply(0, 1)
+                    smallFont.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
+                    switch unit.GetRangedAttackDamageType() {
+                        case units.DamageNone: // nothing
+                        case units.DamageRangedMagical:
+                            screen.DrawImage(rangeMagicImage, scale.ScaleOptions(unitOptions))
+                        case units.DamageRangedPhysical:
+                            screen.DrawImage(rangeBowImage, scale.ScaleOptions(unitOptions))
+                        case units.DamageRangedBoulder:
+                            screen.DrawImage(rangeBoulderImage, scale.ScaleOptions(unitOptions))
+                    }
                 }
 
                 unitOptions.GeoM.Translate(20, 0)
@@ -489,7 +490,14 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
 
                 unitOptions.GeoM.Translate(20, 0)
                 x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetMovementSpeed()))
+                smallFont.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetMovementSpeed().ToFloat()))
+
+                moveImage, _ := imageCache.GetImageTransform("unitview.lbx", 24, 0, "cut1", cut1PixelFunc)
+                if unit.IsFlying() {
+                    moveImage, _ = imageCache.GetImageTransform("unitview.lbx", 25, 0, "cut1", cut1PixelFunc)
+                } else if unit.IsSwimmer() {
+                    moveImage, _ = imageCache.GetImageTransform("unitview.lbx", 26, 0, "cut1", cut1PixelFunc)
+                }
 
                 screen.DrawImage(moveImage, scale.ScaleOptions(unitOptions))
 

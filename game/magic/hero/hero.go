@@ -711,11 +711,26 @@ func (hero *Hero) GetToHitMelee() int {
         case units.ExperienceDemiGod: base += 30
     }
 
+    if hero.HasAbility(data.AbilityLucky) {
+        base += 10
+    }
+
     if hero.HasEnchantment(data.UnitEnchantmentHolyWeapon) {
         base += 10
     }
 
     return base + hero.GetAbilityToHit()
+}
+
+func (hero *Hero) GetToDefend() int {
+    base := 30
+    modifier := 0
+
+    if hero.HasAbility(data.AbilityLucky) {
+        modifier += 10
+    }
+
+    return base + modifier
 }
 
 func (hero *Hero) GetLbxFile() string {
@@ -1196,7 +1211,13 @@ func (hero *Hero) GetDefense() int {
 
 func (hero *Hero) GetBaseResistance() int {
     level := hero.GetHeroExperienceLevel()
-    return hero.Unit.GetBaseResistance() + hero.getBaseResistanceProgression(level)
+
+    modifier := 0
+    if hero.HasAbility(data.AbilityLucky) {
+        modifier += 1
+    }
+
+    return hero.Unit.GetBaseResistance() + hero.getBaseResistanceProgression(level) + modifier
 }
 
 func (hero *Hero) getBaseResistanceProgression(level units.HeroExperienceLevel) int {

@@ -97,6 +97,7 @@ type StackUnit interface {
     GetHeroExperienceLevel() HeroExperienceLevel
     GetRawUnit() Unit
     GetToHitMelee() int
+    GetToDefend() int
     CanTouchAttack(Damage) bool
     GetArtifactSlots() []artifact.ArtifactSlot
     GetArtifacts() []*artifact.Artifact

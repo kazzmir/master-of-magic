@@ -25,7 +25,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
-	"github.com/kazzmir/master-of-magic/game/magic/mirror"
+    "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/game/magic/mirror"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -545,7 +546,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Plane Shift
                 Resurrection
                 Earthquake
-                Ice Storm
                 Nature's Cures
                 Great Unsummoning
                 Spell Binding
@@ -555,6 +555,23 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Death Wish
                 Subversion
         */
+        case "Ice Storm":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                enemyStack, enemy := game.FindStack(tileX, tileY, game.Plane)
+
+                game.doCastOnMap(yield, tileX, tileY, 10, false, spell.Sound, func (x int, y int, animationFrame int) {})
+
+                for _, unit := range enemyStack.Units() {
+                    combat.ApplyAreaDamage(&UnitDamageWrapper{Unit: unit}, 6, units.DamageCold, 0)
+                    if unit.GetHealth() <= 0 {
+                        enemy.RemoveUnit(unit)
+                    }
+                }
+
+                yield()
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyUnit, SelectedFunc: selected}
         case "Disjunction", "Disjunction True":
             uiGroup, quit, err := game.MakeDisjunctionUI(player, spell)
             if err != nil {
@@ -1437,6 +1454,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             selectMessage = fmt.Sprintf("Select an enemy city as the target for a %v spell.", spell.Name)
         case LocationTypeFriendlyUnit:
             selectMessage = fmt.Sprintf("Select a friendly unit as the target for a %v spell.", spell.Name)
+        case LocationTypeEnemyUnit:
+            selectMessage = fmt.Sprintf("Select an enemy unit as the target for a %v spell.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
     }
@@ -1697,9 +1716,20 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         }
 
                     case LocationTypeEnemyUnit:
-                        // TODO
-                        // FIXME: This should consider only tiles with FogTypeVisible
                         // also consider if the unit is in a city with a spell ward that prevents this unit from being targeted
+                        if player.IsVisible(tileX, tileY, game.Plane) {
+                            stack := entityInfo.FindStack(tileX, tileY, game.Plane)
+                            if stack != nil && entityInfo.ContainsEnemy(tileX, tileY, game.Plane, player) {
+                                city := entityInfo.FindCity(tileX, tileY, game.Plane)
+
+                                if city != nil && !city.CanTarget(spell) {
+                                    game.doNotice(yield, ui, fmt.Sprintf("You cannot cast %v on this unit", spell.Name))
+                                    break
+                                } else {
+                                    return tileX, tileY, false
+                                }
+                            }
+                        }
                 }
             }
         }
@@ -1833,6 +1863,8 @@ func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, a
         sound, err := audio.LoadSound(game.Cache, soundIndex)
         if err == nil {
             sound.Play()
+        } else {
+            log.Printf("No such sound %v for spell", soundIndex)
         }
     }
 
