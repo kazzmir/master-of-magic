@@ -7096,7 +7096,7 @@ func (game *Game) revertVolcanos() {
 }
 
 // returns the number of people, units, buildings that were lost
-func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (int, int, int) {
+func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (int, int, []buildinglib.Building) {
     // FIXME: destroy buildings with 15% chance and non-flying units with 25% chance
     // https://masterofmagic.fandom.com/wiki/Earthquake
 
@@ -7132,7 +7132,7 @@ func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (in
         }
     }
 
-    return people, len(killedUnits), len(destroyedBuildings)
+    return people, len(killedUnits), destroyedBuildings
 }
 
 // At the beginning of each turn, Awareness clears the fog from all cities for enchantment's owner (newly built included)
@@ -7561,7 +7561,7 @@ func (game *Game) DoRandomEvents() {
 
                         people, units, buildings := game.doEarthquake(city, target)
 
-                        return MakeEarthquakeEvent(game.TurnNumber, city.Name, people, units, buildings), nil
+                        return MakeEarthquakeEvent(game.TurnNumber, city.Name, people, units, len(buildings)), nil
 
                     case RandomEventGreatMeteor:
                         choices := game.AllCities()

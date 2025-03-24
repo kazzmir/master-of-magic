@@ -8,6 +8,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
@@ -91,14 +92,14 @@ func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *player
 }
 
 // FIXME: take in the buildings that were destroyed
-func MakeEarthquakeView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) (*uilib.UI, context.Context, error) {
+func MakeEarthquakeView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) (*uilib.UI, context.Context, func (*set.Set[buildinglib.Building]), error) {
     imageCache := util.MakeImageCache(cache)
 
     background, _ := imageCache.GetImage("spellscr.lbx", 73, 0)
     buildingSlots := makeBuildingSlots(city)
     fonts, err := fontslib.MakeCityViewFonts(cache)
     if err != nil {
-        return nil, context.Background(), err
+        return nil, context.Background(), nil, err
     }
 
     geom := ebiten.GeoM{}
@@ -109,7 +110,20 @@ func MakeEarthquakeView(cache *lbx.LbxCache, city *citylib.City, player *playerl
 
     quit, cancel := context.WithCancel(context.Background())
 
+    quake := true
+
     var ui *uilib.UI
+
+    stopQuake := func (destroyed *set.Set[buildinglib.Building]) {
+        quake = false
+
+        for i, _ := range buildingSlots {
+            if destroyed.Contains(buildingSlots[i].Building) {
+                buildingSlots[i].IsRubble = true
+                buildingSlots[i].RubbleIndex = rand.N(4)
+            }
+        }
+    }
 
     ui = &uilib.UI{
         LeftClick: func() {
@@ -142,7 +156,9 @@ func MakeEarthquakeView(cache *lbx.LbxCache, city *citylib.City, player *playerl
 
             cityScapeScreen := screen.SubImage(scale.ScaleRect(image.Rect(int(x1), int(y1), int(x2), int(y2)))).(*ebiten.Image)
 
-            geom2.Translate(float64(rand.N(6) - 3), float64(rand.N(6) - 3))
+            if quake {
+                geom2.Translate(float64(rand.N(6) - 3), float64(rand.N(6) - 3))
+            }
 
             drawCityScape(cityScapeScreen, city, buildingSlots, buildinglib.BuildingNone, 0, buildinglib.BuildingNone, ui.Counter / 8, &imageCache, fonts, player, geom2, getAlpha())
         },
@@ -152,6 +168,6 @@ func MakeEarthquakeView(cache *lbx.LbxCache, city *citylib.City, player *playerl
 
     ui.SetElementsFromArray(nil)
 
-    return ui, quit, nil
+    return ui, quit, stopQuake, nil
 
 }

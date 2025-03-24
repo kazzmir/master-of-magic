@@ -558,8 +558,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 city, owner := game.FindCity(tileX, tileY, game.Plane)
                 if city != nil {
                     game.showCityEarthquake(yield, city, owner)
-
-                    game.doEarthquake(city, owner)
                 }
 
                 yield()
@@ -1386,7 +1384,7 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
 }
 
 func (game *Game) showCityEarthquake(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player) {
-    ui, quit, err := cityview.MakeEarthquakeView(game.Cache, city, player)
+    ui, quit, updateDestroyed, err := cityview.MakeEarthquakeView(game.Cache, city, player)
     if err != nil {
         log.Printf("Error making new building view: %v", err)
         return
@@ -1407,6 +1405,21 @@ func (game *Game) showCityEarthquake(yield coroutine.YieldFunc, city *citylib.Ci
     yield()
 
     for quit.Err() == nil && game.Counter < counter + 60 {
+        game.Counter += 1
+        ui.StandardUpdate()
+        if yield() != nil {
+            return
+        }
+    }
+
+    _, _, buildings := game.doEarthquake(city, player)
+    destroyed := set.NewSet(buildings...)
+
+    updateDestroyed(destroyed)
+
+    counter = game.Counter
+
+    for quit.Err() == nil && game.Counter < counter + 120 {
         game.Counter += 1
         ui.StandardUpdate()
         if yield() != nil {
