@@ -5238,6 +5238,10 @@ func createScenario58(cache *lbx.LbxCache) *gamelib.Game {
 
     player.AddCity(city)
 
+    for range 7 {
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.TrollSpearmen, city.X, city.Y, city.Plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    }
+
     player.Gold = 1000
     player.Mana = 5000
 
