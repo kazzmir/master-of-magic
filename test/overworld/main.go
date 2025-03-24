@@ -1212,6 +1212,8 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city4.ResetCitizens()
     city4.AddEnchantment(data.CityEnchantmentConsecration, enemy2.GetBanner())
     enemy2.AddCity(city4)
+    enemy2.GlobalEnchantments.Insert(data.EnchantmentJustCause)
+    enemy2.GlobalEnchantments.Insert(data.EnchantmentHerbMastery)
 
     player.LiftFog(x2, y2, 4, city4.Plane)
     player.AwarePlayer(enemy)

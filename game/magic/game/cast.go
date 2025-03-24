@@ -8,9 +8,11 @@ import (
     "slices"
     "cmp"
     "math/rand/v2"
+    "errors"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/font"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
@@ -554,8 +556,12 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Subversion
         */
         case "Disjunction", "Disjunction True":
-            uiGroup, quit := game.MakeDisjunctionUI(player, spell)
-            game.Events <- &GameEventRunUI{Group: uiGroup, Quit: quit}
+            uiGroup, quit, err := game.MakeDisjunctionUI(player, spell)
+            if err != nil {
+                game.Events <- &GameEventNotice{Message: fmt.Sprintf("%v", err)}
+            } else {
+                game.Events <- &GameEventRunUI{Group: uiGroup, Quit: quit}
+            }
 
         case "Create Artifact", "Enchant Item":
             game.Events <- &GameEventSummonArtifact{Player: player}
@@ -710,7 +716,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
     }
 }
 
-func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context) {
+func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context, error) {
     group := uilib.MakeGroup()
 
     quit, cancel := context.WithCancel(context.Background())
@@ -737,17 +743,25 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
         },
     })
 
+    // count how many enchantments are available to disjunction
+    // if this remains 0 then there are no options, so this function will return an error
+    enchantmentOptions := 0
+
+    fonts := fontslib.MakeMagicViewFonts(game.Cache)
+
     // FIXME: only show enchantments of known players?
     for index, player := range caster.GetKnownPlayers() {
         brokenCrystalPicture, _ := game.ImageCache.GetImage("magic.lbx", 51, 0)
         portrait, _ := game.ImageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(player.Wizard.Base, player.GetBanner()), 0)
+
+        yBase := 15 + 46 * index
 
         group.AddElement(&uilib.UIElement{
             Layer: 1,
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(fader())
-                options.GeoM.Translate(uiX + 8, float64(15 + 46 * index))
+                options.GeoM.Translate(uiX + 8, float64(yBase))
                 if player.Defeated {
                     scale.DrawScaled(screen, brokenCrystalPicture, &options)
                 } else {
@@ -756,6 +770,27 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
             },
         })
 
+        for enchantmentIndex, enchantment := range player.GlobalEnchantments.Values() {
+            enchantmentOptions += 1
+
+            y := yBase + 4 + 14 * enchantmentIndex
+            var options ebiten.DrawImageOptions
+
+            shadow := font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Options: &options}
+
+            group.AddElement(&uilib.UIElement{
+                Layer: 1,
+                Order: 1,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    options.ColorScale.ScaleAlpha(fader())
+                    options.ColorScale.SetR(1)
+                    options.ColorScale.SetG(0)
+                    options.ColorScale.SetB(0)
+
+                    fonts.NormalFont.PrintOptions(screen, float64(uiX + 77), float64(y), shadow, enchantment.String())
+                },
+            })
+        }
     }
 
     for i := range 4 - len(caster.GetKnownPlayers()) {
@@ -772,7 +807,12 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
         })
     }
 
-    return group, quit
+    if enchantmentOptions == 0 {
+        cancel()
+        return nil, quit, errors.New("No enchantments to disjunction")
+    }
+
+    return group, quit, nil
 }
 
 // Returns true if the spell is rolled to be instantly fizzled on cast (caused by spells like Life Force)
