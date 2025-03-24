@@ -1551,7 +1551,7 @@ func ComputeDefense(unit UnitDamage, damage units.Damage, source DamageSource, m
                 hasImmunity = true
             }
         case units.DamageCold:
-            defenseRolls = GetDefenseFor(unit, modifiers.Magic)
+            defenseRolls = GetDefenseFor(unit, data.NatureMagic)
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1645,11 +1645,13 @@ func ApplyAreaDamage(unit UnitDamage, attackStrength int, damageType units.Damag
     totalDamage := 0
     health_per_figure := unit.GetMaxHealth() / unit.GetCount()
 
+    modifiers := DamageModifiers{WallDefense: wallDefense}
+
     for range unit.Figures() {
         // FIXME: should this toHit=30 be based on the unit's toHitMelee?
         damage := ComputeRoll(attackStrength, 30)
 
-        defense := ComputeDefense(unit, damageType, DamageSourceSpell, DamageModifiers{WallDefense: wallDefense})
+        defense := ComputeDefense(unit, damageType, DamageSourceSpell, modifiers)
 
         // can't do more damage than a single figure has HP
         figureDamage := unit.ReduceInvulnerability(min(damage - defense, health_per_figure))
