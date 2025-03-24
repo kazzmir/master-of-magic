@@ -792,6 +792,11 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
     uiX := 40
     uiY := 1
 
+    specialFonts := fontslib.MakeSpellSpecialUIFonts(game.Cache)
+
+    var selectedHero *herolib.Hero
+    selectedHero = heroes[0]
+
     // background
     group.AddElement(&uilib.UIElement{
         Layer: layer,
@@ -800,6 +805,12 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(uiX), float64(uiY))
             scale.DrawScaled(screen, background, &options)
+
+            specialFonts.BigOrange.PrintOptions(screen, float64(uiX + background.Bounds().Dx() / 2), float64(uiY + 10), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "Select hero to resurrect")
+
+            if selectedHero != nil {
+                specialFonts.BigOrange.PrintOptions(screen, float64(uiX + background.Bounds().Dx() / 2), float64(uiY + background.Bounds().Dy() - 20), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, selectedHero.GetFullName())
+            }
         },
         NotLeftClicked: func(element *uilib.UIElement) {
             cancel()
@@ -831,6 +842,14 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
             Layer: layer,
             Order: 1,
             Rect: rect,
+            Inside: func(element *uilib.UIElement, x int, y int) {
+                selectedHero = hero
+            },
+            NotInside: func(element *uilib.UIElement) {
+                if selectedHero == hero {
+                    selectedHero = nil
+                }
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Scale(float64(gridWidth) / float64(pic.Bounds().Dx()), float64(gridHeight) / float64(pic.Bounds().Dy()))
