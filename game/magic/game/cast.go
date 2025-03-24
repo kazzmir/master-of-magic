@@ -749,6 +749,10 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
 
             specialFonts.BigOrange.PrintOptions(screen, float64(uiX + background.Bounds().Dx() / 2), 5, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "Select a spell to disjunct.")
         },
+        // a hack to get around go vet complaining that cancel is never called
+        Hack: func(element *uilib.UIElement) {
+            cancel()
+        },
         // maybe click away raises a confirmation box that asks if you want to cancel the spell?
         /*
         NotLeftClicked: func(element *uilib.UIElement) {
