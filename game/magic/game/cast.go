@@ -557,6 +557,11 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 city, owner := game.FindCity(tileX, tileY, game.Plane)
                 if city != nil {
+                    sound, err := audio.LoadSound(game.Cache, spell.Sound)
+                    if err == nil {
+                        sound.Play()
+                    }
+
                     game.showCityEarthquake(yield, city, owner)
                 }
 
@@ -1404,7 +1409,7 @@ func (game *Game) showCityEarthquake(yield coroutine.YieldFunc, city *citylib.Ci
 
     yield()
 
-    for quit.Err() == nil && game.Counter < counter + 60 {
+    for quit.Err() == nil && game.Counter < counter + 120 {
         game.Counter += 1
         ui.StandardUpdate()
         if yield() != nil {
@@ -1419,7 +1424,7 @@ func (game *Game) showCityEarthquake(yield coroutine.YieldFunc, city *citylib.Ci
 
     counter = game.Counter
 
-    for quit.Err() == nil && game.Counter < counter + 120 {
+    for quit.Err() == nil && game.Counter < counter + 180 {
         game.Counter += 1
         ui.StandardUpdate()
         if yield() != nil {
