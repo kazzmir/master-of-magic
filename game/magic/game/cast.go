@@ -840,17 +840,22 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
         yPos := uiY + 26 + gridY * (gridHeight + gapY)
 
         rect := image.Rect(xPos, yPos, xPos + gridWidth, yPos + gridHeight)
+        lookTime := 0
+        maxLookTime := 20
         group.AddElement(&uilib.UIElement{
             Layer: layer,
             Order: 1,
             Rect: rect,
             Inside: func(element *uilib.UIElement, x int, y int) {
                 selectedHero = hero
+                lookTime = min(lookTime + 1, maxLookTime)
             },
             NotInside: func(element *uilib.UIElement) {
                 if selectedHero == hero {
                     selectedHero = nil
                 }
+
+                lookTime = max(lookTime - 1, 0)
             },
             LeftClick: func(element *uilib.UIElement) {
                 cancel()
@@ -860,6 +865,12 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
                 var options ebiten.DrawImageOptions
                 options.GeoM.Scale(float64(gridWidth) / float64(pic.Bounds().Dx()), float64(gridHeight) / float64(pic.Bounds().Dy()))
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+
+                if lookTime > 0 {
+                    options.ColorScale.SetR(1.0 + float32(lookTime) / float32(maxLookTime) / 2)
+                    options.ColorScale.SetG(1.0 + float32(lookTime) / float32(maxLookTime) / 2)
+                }
+
                 scale.DrawScaled(screen, pic, &options)
             },
         })
