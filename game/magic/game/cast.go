@@ -864,6 +864,7 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
                 cancel()
                 hero.SetStatus(herolib.StatusEmployed)
                 caster.AddHeroToSummoningCircle(hero)
+                game.ResolveStackAt(hero.GetX(), hero.GetY(), hero.GetPlane())
 
                 summoningCity := caster.FindSummoningCity()
                 if summoningCity != nil {
