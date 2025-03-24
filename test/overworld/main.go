@@ -5220,26 +5220,25 @@ func createScenario58(cache *lbx.LbxCache) *gamelib.Game {
     x, y, _ := game.FindValidCityLocation(game.Plane)
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
-    city.Population = 6190
+    city.Population = 16190
     city.Plane = data.PlaneArcanus
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.AddBuilding(buildinglib.BuildingFortress)
+    city.AddBuilding(buildinglib.BuildingSummoningCircle)
     city.AddBuilding(buildinglib.BuildingShrine)
     city.AddBuilding(buildinglib.BuildingMarketplace)
     city.AddBuilding(buildinglib.BuildingWizardsGuild)
     city.AddBuilding(buildinglib.BuildingBank)
     city.Race = wizard.Race
-    city.Farmers = 3
+    city.Farmers = 13
     city.Workers = 3
 
     city.ResetCitizens()
 
-    city.AddEnchantment(data.CityEnchantmentChaosRift, data.BannerGreen)
-
     player.AddCity(city)
 
-    player.Gold = 83
+    player.Gold = 1000
     player.Mana = 5000
 
     player.LiftFog(x, y, 4, data.PlaneArcanus)

@@ -424,12 +424,12 @@ func (player *Player) AddHeroToFortress(hero *herolib.Hero) bool {
 }
 
 func (player *Player) AddHeroToSummoningCircle(hero *herolib.Hero) bool {
-    fortressCity := player.FindSummoningCity()
-    if fortressCity == nil {
+    city := player.FindSummoningCity()
+    if city == nil {
         return false
     }
 
-    return player.AddHero(hero, fortressCity)
+    return player.AddHero(hero, city)
 }
 
 func (player *Player) AliveHeroes() []*herolib.Hero {
