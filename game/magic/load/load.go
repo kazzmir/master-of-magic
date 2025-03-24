@@ -1408,6 +1408,20 @@ func loadLairs(reader io.Reader) ([]LairData, error) {
 
 type ItemData struct {
     Name []byte
+    IconIndex uint16
+    Slot byte
+    Type byte
+    Cost uint16
+    Attack byte
+    ToHit byte
+    Defense byte
+    Movement byte
+    Resistance byte
+    SpellSkill byte
+    SpellSave byte
+    Spell byte
+    Charges uint16
+    Abilities uint32
 }
 
 func loadItems(reader io.Reader) ([]ItemData, error) {
@@ -1420,13 +1434,86 @@ func loadItems(reader io.Reader) ([]ItemData, error) {
         }
 
         itemReader := bytes.NewReader(itemData)
-        name := make([]byte, 30)
-        _, err = io.ReadFull(itemReader, name)
+
+        var data ItemData
+
+        data.Name = make([]byte, 30)
+        _, err = io.ReadFull(itemReader, data.Name)
         if err != nil {
             return nil, err
         }
 
-        out = append(out, ItemData{Name: name})
+        data.IconIndex, err = lbx.ReadN[uint16](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Slot, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Type, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Cost, err = lbx.ReadN[uint16](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Attack, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.ToHit, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Defense, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Movement, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Resistance, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.SpellSkill, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.SpellSave, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Spell, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Charges, err = lbx.ReadN[uint16](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Abilities, err = lbx.ReadN[uint32](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        out = append(out, data)
 
         // log.Printf("Item name=%v", string(name))
     }

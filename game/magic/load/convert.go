@@ -1,7 +1,9 @@
 package load
 
 import (
+    "bytes"
     "image"
+    "fmt"
     "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -14,6 +16,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
@@ -705,7 +708,7 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
     return cities
 }
 
-func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardCustom, game *gamelib.Game) *playerlib.Player {
+func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardCustom, artifacts []*artifact.Artifact, game *gamelib.Game) *playerlib.Player {
     playerData := saveGame.PlayerData[playerIndex]
     human := playerIndex == 0
 
@@ -789,10 +792,16 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         }
     }
 
+    var vaultEquipment [4]*artifact.Artifact
+    for spot, index := range playerData.VaultItems {
+        if index != -1 {
+            vaultEquipment[spot] = artifacts[index]
+        }
+    }
+
     // FIXME: Add remaining infos from playerData
     // Personality
     // Objective
-
     // MasteryResearch
     // PowerBase
     // Volcanoes
@@ -801,7 +810,6 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     // CombatSkillLeft
     // SkillLeft
     // NominalSkill
-    // VaultItems
     // Diplomacy
     // SpellCastingSkill
     // DefeatedWizards
@@ -850,7 +858,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         PlayerRelations: playerRelations,
         // FIXME: HeroPool createHeroes(herolib.ReadNamesPerWizard(game.Cache))
         // FIXME: Heroes
-        // FIXME: VaultEquipment
+        VaultEquipment: vaultEquipment,
         // FIXME: CreateArtifact
         // FIXME: Units
         // FIXME: Stacks
@@ -867,9 +875,86 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     return &player
 }
 
+func (saveGame *SaveGame) convertArtifacts(spells spellbook.Spells) []*artifact.Artifact {
+    _, typeMap, abilityMap := artifact.GetItemConversionMaps()
+
+    artifacts := []*artifact.Artifact{}
+    for _, item := range saveGame.Items {
+
+        if item.Cost == 0 {
+            continue
+        }
+
+        powers := []artifact.Power{}
+
+        if item.Attack != 0 {
+            powers = append(powers, artifact.Power{Type: artifact.PowerTypeAttack, Amount: int(item.Attack), Name: fmt.Sprintf("+%v Attack", item.Attack)})
+        }
+
+        if item.ToHit != 0 {
+            powers = append(powers, artifact.Power{Type: artifact.PowerTypeToHit, Amount: int(item.ToHit), Name: fmt.Sprintf("+%v To Hit", item.ToHit)})
+        }
+
+        if item.Defense != 0 {
+            powers = append(powers, artifact.Power{Type: artifact.PowerTypeDefense, Amount: int(item.Defense), Name: fmt.Sprintf("+%v Defense", item.Defense)})
+        }
+
+        if item.Movement != 0 {
+            powers = append(powers, artifact.Power{Type: artifact.PowerTypeMovement, Amount: int(item.Movement), Name: fmt.Sprintf("+%v Movement", item.Movement)})
+        }
+
+        if item.Resistance != 0 {
+            powers = append(powers, artifact.Power{Type: artifact.PowerTypeResistance, Amount: int(item.Resistance), Name: fmt.Sprintf("+%v Resistance", item.Resistance)})
+        }
+
+        if item.SpellSkill != 0 {
+            powers = append(powers, artifact.Power{Type: artifact.PowerTypeSpellSkill, Amount: int(item.SpellSkill), Name: fmt.Sprintf("+%v Spell Skill", item.SpellSkill)})
+        }
+
+        if item.SpellSave != 0 {
+            powers = append(powers, artifact.Power{Type: artifact.PowerTypeSpellSave, Amount: int(item.SpellSave), Name: fmt.Sprintf("+%v Spell Save", item.SpellSave)})
+        }
+
+        if item.Spell != 0 && item.Charges != 0 {
+            useSpell := spells.FindById(int(item.Spell))
+            powers = append(powers, artifact.Power{
+                Type: artifact.PowerTypeSpellCharges,
+                Amount: int(item.Charges),
+                Spell: useSpell,
+                SpellCharges: int(item.Charges),
+                Name: fmt.Sprintf("%v Charges of %v", item.Charges, useSpell.Name),
+            })
+        }
+
+        for mask, ability := range abilityMap {
+            if item.Abilities & mask != 0 {
+                powers = append(powers, artifact.Power{Type: artifact.PowerTypeAbility1, Amount: 0, Name: ability.Name(), Ability: ability})
+            }
+        }
+
+        artifacts = append(artifacts, &artifact.Artifact{
+            Name: string(bytes.Trim(item.Name, "\x00")),
+            Image: int(item.IconIndex),
+            Type: typeMap[item.Type],
+            Cost: int(item.Cost),
+            Powers: powers,
+        })
+    }
+
+    return artifacts
+}
+
 func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     game := gamelib.MakeGame(cache, saveGame.convertSettings())
     game.TurnNumber = uint64(saveGame.Turn)
+
+    artifacts := saveGame.convertArtifacts(game.AllSpells())
+    for _, artifact := range artifacts {
+        _, ok := game.ArtifactPool[artifact.Name]
+        if ok {
+            delete(game.ArtifactPool, artifact.Name)
+        }
+    }
 
     wizards := []setup.WizardCustom{}
     for playerIndex := range saveGame.NumPlayers {
@@ -877,7 +962,7 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     }
 
     for playerIndex := range saveGame.NumPlayers {
-        player := saveGame.convertPlayer(int(playerIndex), wizards, game)
+        player := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
         game.Players = append(game.Players, player)
     }
     // FIXME: add neutral player with brown banner and ai.MakeRaiderAI()
@@ -886,14 +971,11 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // saveGame.Unit
     // saveGame.HeroData
     // saveGame.GrandVizier
-    // saveGame.Items
     // saveGame.Units / saveGame.NumUnits
     // saveGame.Events
-    // saveGame.PremadeItems
 
     game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
     game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
-    // FIXME: game.ArtifactPool
     // FIXME: game.RandomEvents
     // FIXME: game.RoadWorkArcanus
     // FIXME: game.RoadWorkMyrror
