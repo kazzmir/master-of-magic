@@ -1576,6 +1576,10 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     _ = pageSideRight
 
     shutdown = func(spell Spell, picked bool){
+        // FIXME: for some spells a confirmation dialog box will ask if you really want to cast the spell
+        // since there may not be any valid targets for the spell. Disjunction/Disjunction True are like that
+        // when there are no global enchantments
+
         shutdownFinal := func(){
             getAlpha = ui.MakeFadeOut(7)
             ui.AddDelay(7, func(){
