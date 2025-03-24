@@ -809,6 +809,12 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
                 NotInside: func(element *uilib.UIElement) {
                     hover = false
                 },
+                RightClick: func(element *uilib.UIElement) {
+                    helpEntries := game.Help.GetEntriesByName(enchantment.String())
+                    if helpEntries != nil {
+                        group.AddElement(uilib.MakeHelpElementWithLayer(group, game.Cache, &game.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                    }
+                },
                 LeftClick: func(element *uilib.UIElement) {
                     if enchantmentIndex - minIndex >= 0 && enchantmentIndex - minIndex < 3 {
                         allSpells := game.AllSpells()
