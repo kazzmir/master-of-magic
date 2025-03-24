@@ -8,9 +8,11 @@ import (
     "slices"
     "cmp"
     "math/rand/v2"
+    "errors"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/font"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
@@ -23,6 +25,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+	"github.com/kazzmir/master-of-magic/game/magic/mirror"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -537,7 +540,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /*
             INSTANT SPELLS
                 TODO:
-                Disjunction
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
@@ -545,7 +547,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Earthquake
                 Ice Storm
                 Nature's Cures
-                Disjunction True
                 Great Unsummoning
                 Spell Binding
                 Stasis
@@ -554,6 +555,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Death Wish
                 Subversion
         */
+        case "Disjunction", "Disjunction True":
+            uiGroup, quit, err := game.MakeDisjunctionUI(player, spell)
+            if err != nil {
+                game.Events <- &GameEventNotice{Message: fmt.Sprintf("%v", err)}
+            } else {
+                game.Events <- &GameEventRunUI{Group: uiGroup, Quit: quit}
+            }
+
         case "Create Artifact", "Enchant Item":
             game.Events <- &GameEventSummonArtifact{Player: player}
             game.Events <- &GameEventVault{CreatedArtifact: player.CreateArtifact, Player: player}
@@ -705,6 +714,289 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         default:
             log.Printf("Warning: casting unhandled spell '%v'", spell.Name)
     }
+}
+
+func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context, error) {
+    group := uilib.MakeGroup()
+
+    dispelStrength := spell.Cost(true)
+    if spell.Name == "Disjunction True" {
+        dispelStrength *= 3
+    }
+
+    if caster.Wizard.RetortEnabled(data.RetortRunemaster) {
+        dispelStrength *= 2
+    }
+
+    quit, cancel := context.WithCancel(context.Background())
+
+    fadeSpeed := 7
+
+    fader := group.MakeFadeIn(uint64(fadeSpeed))
+
+    const uiX = 30
+
+    // A func for creating a sparks element when a target is selected
+    createSparksElement := func (faceRect image.Rectangle) *uilib.UIElement {
+        sparksCreationTick := group.Counter // Needed for sparks animation
+        return &uilib.UIElement{
+            Layer: 2,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                const ticksPerFrame = 5
+                frameToShow := int((group.Counter - sparksCreationTick) / ticksPerFrame) % 6
+                background, _ := game.ImageCache.GetImage("specfx.lbx", 40, frameToShow)
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(fader())
+                options.GeoM.Translate(float64(faceRect.Min.X - 5), float64(faceRect.Min.Y - 10))
+                scale.DrawScaled(screen, background, &options)
+            },
+        }
+    }
+
+    specialFonts := fontslib.MakeSpellSpecialUIFonts(game.Cache)
+
+    header := "Select a spell to disjunct."
+
+    group.AddElement(&uilib.UIElement{
+        Layer: 1,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            background, _ := game.ImageCache.GetImage("spellscr.lbx", 1, 0)
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(fader())
+            options.GeoM.Translate(uiX, 1)
+            scale.DrawScaled(screen, background, &options)
+
+            specialFonts.BigOrange.PrintOptions(screen, float64(uiX + background.Bounds().Dx() / 2), 5, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, header)
+        },
+        // a hack to get around go vet complaining that cancel is never called
+        Hack: func(element *uilib.UIElement) {
+            cancel()
+        },
+        // maybe click away raises a confirmation box that asks if you want to cancel the spell?
+        /*
+        NotLeftClicked: func(element *uilib.UIElement) {
+            // log.Printf("Cancel ui")
+            fader = group.MakeFadeOut(uint64(fadeSpeed))
+            group.AddDelay(uint64(fadeSpeed), cancel)
+        },
+        */
+    })
+
+    // count how many enchantments are available to disjunction
+    // if this remains 0 then there are no options, so this function will return an error
+    enchantmentOptions := 0
+
+    fonts := fontslib.MakeMagicViewFonts(game.Cache)
+
+    enabled := true
+
+    // FIXME: only show enchantments of known players?
+    for index, player := range caster.GetKnownPlayers() {
+        brokenCrystalPicture, _ := game.ImageCache.GetImage("magic.lbx", 51, 0)
+        portrait, _ := game.ImageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(player.Wizard.Base, player.GetBanner()), 0)
+
+        yBase := 15 + 46 * index
+
+        faceRect := util.ImageRect(uiX + 8, yBase, portrait)
+
+        group.AddElement(&uilib.UIElement{
+            Layer: 1,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(fader())
+                options.GeoM.Translate(uiX + 8, float64(yBase))
+                if player.Defeated {
+                    scale.DrawScaled(screen, brokenCrystalPicture, &options)
+                } else {
+                    scale.DrawScaled(screen, portrait, &options)
+                }
+            },
+        })
+
+        minIndex := 0
+
+        var enchantmentList []*uilib.UIElement
+
+        for enchantmentIndex, enchantment := range slices.SortedFunc(slices.Values(player.GlobalEnchantments.Values()), cmp.Compare) {
+            enchantmentOptions += 1
+
+            y := yBase + 5 + 13 * enchantmentIndex
+            var options ebiten.DrawImageOptions
+
+            shadow := font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Options: &options}
+
+            rect := image.Rect(uiX + 75, y, uiX + 75 + 100, y + 13)
+            hover := false
+            enchantmentList = append(enchantmentList, &uilib.UIElement{
+                Layer: 1,
+                Order: 1,
+                Rect: rect,
+                Inside: func(element *uilib.UIElement, x int, y int) {
+                    hover = true
+                },
+                NotInside: func(element *uilib.UIElement) {
+                    hover = false
+                },
+                RightClick: func(element *uilib.UIElement) {
+                    if !enabled {
+                        return
+                    }
+
+                    helpEntries := game.Help.GetEntriesByName(enchantment.String())
+                    if helpEntries != nil {
+                        group.AddElement(uilib.MakeHelpElementWithLayer(group, game.Cache, &game.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                    }
+                },
+                LeftClick: func(element *uilib.UIElement) {
+                    if enabled && enchantmentIndex - minIndex >= 0 && enchantmentIndex - minIndex < 3 {
+                        allSpells := game.AllSpells()
+                        targetSpell := allSpells.FindByName(enchantment.String())
+
+                        group.AddElement(createSparksElement(faceRect))
+                        // FIXME: verify this sound
+                        sound, err := audio.LoadSound(game.Cache, 29)
+                        if err == nil {
+                            sound.Play()
+                        }
+
+                        success := false
+
+                        if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &player.Wizard)) {
+                            // show an animation/play a sound?
+                            player.RemoveEnchantment(enchantment)
+                            success = true
+                        }
+
+                        group.AddDelay(60, func(){
+                            if success {
+                                header = fmt.Sprintf("%s has been disjuncted", enchantment.String())
+                            } else {
+                                header = "Disjunction failed"
+                            }
+                            group.AddDelay(113, func(){
+                                fader = group.MakeFadeOut(uint64(fadeSpeed))
+                                group.AddDelay(7, func(){
+                                    cancel()
+                                })
+                            })
+                        })
+                    }
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    if enchantmentIndex - minIndex >= 0 && enchantmentIndex - minIndex < 3 {
+                        options.ColorScale.Reset()
+                        options.ColorScale.ScaleAlpha(fader())
+                        options.ColorScale.SetR(1)
+                        options.ColorScale.SetG(1)
+                        options.ColorScale.SetB(1)
+
+                        if hover {
+                            options.ColorScale.SetR(2)
+                            options.ColorScale.SetG(2)
+                        }
+
+                        fonts.NormalFont.PrintOptions(screen, float64(element.Rect.Min.X + 2), float64(element.Rect.Min.Y), shadow, enchantment.String())
+                    }
+                },
+            })
+        }
+
+        group.AddElements(enchantmentList)
+
+        if len(enchantmentList) > 3 {
+            scroll := func (direction int) {
+                minIndex += direction
+                if minIndex < 0 {
+                    minIndex = 0
+                }
+                if minIndex > len(enchantmentList) - 3 {
+                    minIndex = len(enchantmentList) - 3
+                }
+
+                for i, element := range enchantmentList {
+                    element.Rect.Min.Y = yBase + 5 + 13 * (i - minIndex)
+                    element.Rect.Max.Y = element.Rect.Min.Y + 13
+                }
+            }
+
+            // up arrow
+            upClicked := false
+            upArrows, _ := game.ImageCache.GetImages("resource.lbx", 32)
+            rect := util.ImageRect(uiX + 61, yBase + 5, upArrows[0])
+            group.AddElement(&uilib.UIElement{
+                Rect: rect,
+                Layer: 1,
+                Order: 1,
+                LeftClick: func(element *uilib.UIElement) {
+                    upClicked = true
+                },
+                LeftClickRelease: func(element *uilib.UIElement) {
+                    upClicked = false
+                    scroll(-1)
+                },
+                PlaySoundLeftClick: true,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha(fader())
+                    options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                    if upClicked {
+                        scale.DrawScaled(screen, upArrows[1], &options)
+                    } else {
+                        scale.DrawScaled(screen, upArrows[0], &options)
+                    }
+                },
+            })
+
+            // down arrow
+            downClicked := false
+            downArrows, _ := game.ImageCache.GetImages("resource.lbx", 33)
+            downRect := util.ImageRect(uiX + 61, yBase + 29, downArrows[0])
+            group.AddElement(&uilib.UIElement{
+                Rect: downRect,
+                Layer: 1,
+                Order: 1,
+                LeftClick: func(element *uilib.UIElement) {
+                    downClicked = true
+                },
+                LeftClickRelease: func(element *uilib.UIElement) {
+                    downClicked = false
+                    scroll(1)
+                },
+                PlaySoundLeftClick: true,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha(fader())
+                    options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                    if downClicked {
+                        scale.DrawScaled(screen, downArrows[1], &options)
+                    } else {
+                        scale.DrawScaled(screen, downArrows[0], &options)
+                    }
+                },
+            })
+        }
+    }
+
+    for i := range 4 - len(caster.GetKnownPlayers()) {
+        crystalPicture, _ := game.ImageCache.GetImage("magic.lbx", 6, 0)
+        index := i + len(caster.GetKnownPlayers())
+        group.AddElement(&uilib.UIElement{
+            Layer: 1,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(fader())
+                options.GeoM.Translate(uiX + 8, float64(15 + 46 * index))
+                scale.DrawScaled(screen, crystalPicture, &options)
+            },
+        })
+    }
+
+    if enchantmentOptions == 0 {
+        cancel()
+        return nil, quit, errors.New("There are no global spells to disjunct")
+    }
+
+    return group, quit, nil
 }
 
 // Returns true if the spell is rolled to be instantly fizzled on cast (caused by spells like Life Force)

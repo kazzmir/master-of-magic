@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -1229,6 +1230,25 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         }
     }
 
+    updateUseSpells := func(filter *set.Set[data.MagicType]) {
+        useSpells = spells.Copy()
+        for spell, charge := range charges {
+            if charge > 0 {
+                useSpells.AddSpell(spell)
+            }
+        }
+
+        if filter.Size() > 0 {
+            var out Spells
+
+            for _, magic := range filter.Values() {
+                out.AddAllSpells(useSpells.GetSpellsByMagic(magic))
+            }
+
+            useSpells = out
+        }
+    }
+
     canCast := func (spell Spell) bool {
         // in combat a spell is castable if the caster (a hero) has charges available for that spell,
         // or if the caster has the spell in their spellbook and the casting skill is high enough
@@ -1556,6 +1576,10 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     _ = pageSideRight
 
     shutdown = func(spell Spell, picked bool){
+        // FIXME: for some spells a confirmation dialog box will ask if you really want to cast the spell
+        // since there may not be any valid targets for the spell. Disjunction/Disjunction True are like that
+        // when there are no global enchantments
+
         shutdownFinal := func(){
             getAlpha = ui.MakeFadeOut(7)
             ui.AddDelay(7, func(){
@@ -1709,6 +1733,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     pageTurnRightRect := image.Rect(0, 0, pageTurnRight.Bounds().Dx(), pageTurnRight.Bounds().Dy()).Add(image.Pt(268, 14))
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
+        Order: 1,
         Rect: pageTurnRightRect,
         LeftClick: func(this *uilib.UIElement){
             if currentPage + 2 < len(spellPages) && !flipping {
@@ -1743,6 +1768,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     elements = append(elements, &uilib.UIElement{
         Rect: pageTurnLeftRect,
         Layer: 1,
+        Order: 1,
         LeftClick: func(this *uilib.UIElement){
             if currentPage >= 2 && !flipping {
                 flipping = true
@@ -1771,6 +1797,87 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
         },
     })
+
+    filterMagic := set.NewSet[data.MagicType]()
+
+    type filter struct {
+        Magic data.MagicType
+        LbxIndex int
+    }
+
+    filters := []filter{
+        {Magic: data.NatureMagic, LbxIndex: 4},
+        {Magic: data.SorceryMagic, LbxIndex: 5},
+        {Magic: data.ChaosMagic, LbxIndex: 6},
+        {Magic: data.LifeMagic, LbxIndex: 7},
+        {Magic: data.DeathMagic, LbxIndex: 8},
+        {Magic: data.ArcaneMagic, LbxIndex: 9},
+    }
+
+    hasMagic := set.NewSet[data.MagicType]()
+    for _, spell := range useSpells.Spells {
+        hasMagic.Insert(spell.Magic)
+    }
+
+    var filterButtons []*uilib.UIElement
+    filterX := 130
+    for _, filter := range filters {
+        if !hasMagic.Contains(filter.Magic) {
+            continue
+        }
+        // filter spells by their realm
+        pic, _ := imageCache.GetImage("spells.lbx", filter.LbxIndex, 0)
+        rect := util.ImageRect(filterX, 10, pic)
+        filterX += pic.Bounds().Dx() + 3
+        selected := false
+        filterButtons = append(filterButtons, &uilib.UIElement{
+            Rect: rect,
+            Layer: 1,
+            Order: 1,
+            LeftClickRelease: func(this *uilib.UIElement){
+                selected = !selected
+
+                if selected {
+                    filterMagic.Insert(filter.Magic)
+                } else {
+                    filterMagic.Remove(filter.Magic)
+                }
+
+                updateUseSpells(filterMagic)
+                spellPages = computeHalfPages(useSpells, 6)
+                pageCache = make(map[int]*ebiten.Image)
+                if currentPage >= len(spellPages) {
+                    currentPage = max(0, len(spellPages) - 1)
+                    currentPage -= currentPage % 2
+                }
+
+                setupSpells(currentPage)
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(getAlpha())
+                if !selected {
+                    options.ColorScale.ScaleWithColor(color.RGBA{R: 164, G: 164, B: 164, A: 255})
+                } else {
+                    options.ColorScale.SetR(1.2)
+                    options.ColorScale.SetG(1.2)
+                    options.ColorScale.SetB(1.2)
+                }
+
+                vector.DrawFilledRect(screen, scale.Scale(float32(rect.Min.X-1)), scale.Scale(float32(rect.Min.Y-1)), scale.Scale(float32(rect.Dx()+2)), scale.Scale(float32(rect.Dy()+2)), color.RGBA{R: 32, G: 32, B: 32, A: 128}, true)
+                if selected {
+                    vector.StrokeRect(screen, scale.Scale(float32(rect.Min.X-1)), scale.Scale(float32(rect.Min.Y-1)), scale.Scale(float32(rect.Dx()+2)), scale.Scale(float32(rect.Dy()+2)), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
+                }
+
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                scale.DrawScaled(screen, pic, &options)
+            },
+        })
+    }
+
+    if len(filterButtons) > 1 {
+        elements = append(elements, filterButtons...)
+    }
 
     return elements
 }

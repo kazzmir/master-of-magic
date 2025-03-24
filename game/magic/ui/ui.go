@@ -28,6 +28,7 @@ type UIGainFocusFunc func(*UIElement)
 type UILoseFocusFunc func(*UIElement)
 type UITextEntry func(*UIElement, string) string
 type UIScrollFunc func(*UIElement, float64, float64)
+type UIHackFunc func(*UIElement)
 
 type UILayer int
 
@@ -69,6 +70,10 @@ type UIElement struct {
 
     // fires when the mouse wheel/pad is scrolled
     Scroll UIScrollFunc
+
+    // implement this when trying to avoid go vet issues, such as invoking a cancel context function
+    // this function is never called
+    Hack UIHackFunc
 
     Draw UIDrawFunc
     Layer UILayer

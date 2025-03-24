@@ -977,7 +977,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player := game.AddPlayer(wizard, true)
 
-    player.CastingSkillPower += 100000
+    player.CastingSkillPower += 500000
 
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
@@ -1048,6 +1048,8 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Spell Blast"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Recall Hero"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Word of Recall"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Disjunction"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Disjunction True"))
 
     // city spells
     player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
@@ -1210,6 +1212,10 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     city4.ResetCitizens()
     city4.AddEnchantment(data.CityEnchantmentConsecration, enemy2.GetBanner())
     enemy2.AddCity(city4)
+    enemy2.GlobalEnchantments.Insert(data.EnchantmentJustCause)
+    enemy2.GlobalEnchantments.Insert(data.EnchantmentHerbMastery)
+    enemy2.GlobalEnchantments.Insert(data.EnchantmentWindMastery)
+    enemy2.GlobalEnchantments.Insert(data.EnchantmentArmageddon)
 
     player.LiftFog(x2, y2, 4, city4.Plane)
     player.AwarePlayer(enemy)
