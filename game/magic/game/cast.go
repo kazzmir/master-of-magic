@@ -545,7 +545,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Spell of Return
                 Plane Shift
                 Resurrection
-                Earthquake
                 Nature's Cures
                 Great Unsummoning
                 Spell Binding
@@ -554,6 +553,18 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Death Wish
                 Subversion
         */
+        case "Earthquake":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                city, owner := game.FindCity(tileX, tileY, game.Plane)
+                if city != nil {
+                    game.doEarthquake(city, owner)
+                }
+
+                yield()
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyCity, SelectedFunc: selected}
+
         case "Ice Storm":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 enemyStack, enemy := game.FindStack(tileX, tileY, game.Plane)
