@@ -749,6 +749,7 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
 
             specialFonts.BigOrange.PrintOptions(screen, float64(uiX + background.Bounds().Dx() / 2), 5, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "Select a spell to disjunct.")
         },
+        // maybe click away raises a confirmation box that asks if you want to cancel the spell?
         /*
         NotLeftClicked: func(element *uilib.UIElement) {
             // log.Printf("Cancel ui")
@@ -820,8 +821,8 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
                         allSpells := game.AllSpells()
                         targetSpell := allSpells.FindByName(enchantment.String())
 
-                        log.Printf("Dispel %v cost %v with strength %v", enchantment, targetSpell.Cost(true), dispelStrength)
                         if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &player.Wizard)) {
+                            // show an animation/play a sound?
                             player.RemoveEnchantment(enchantment)
                         }
 
