@@ -1554,12 +1554,12 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroRakir, "Rakir"))
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroTorin, "Torin"))
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroWarrax, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroWarrax, "Warrax"))
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRavashack, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroRavashack, "Ravashack"))
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroSirHarold, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroSirHarold, "Sir Harold"))
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroAlorra, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroAlorra, "Alorra"))
+    player.AddHeroToFortress(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroRakir, "Rakir"))
+    player.AddHeroToFortress(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroTorin, "Torin"))
+    player.AddHeroToFortress(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroWarrax, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroWarrax, "Warrax"))
+    player.AddHeroToFortress(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRavashack, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroRavashack, "Ravashack"))
+    player.AddHeroToFortress(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroSirHarold, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroSirHarold, "Sir Harold"))
+    player.AddHeroToFortress(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroAlorra, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroAlorra, "Alorra"))
 
     player.VaultEquipment[0] = &artifact.Artifact{
         Name: "Baloney",
@@ -1716,11 +1716,11 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(20, 20, 100, data.PlaneMyrror)
 
     rakir := hero.MakeHero(units.MakeOverworldUnit(units.HeroRakir, x, y, data.PlaneArcanus), hero.HeroRakir, "bubba")
-    player.AddHero(rakir)
+    player.AddHeroToFortress(rakir)
     rakir.AddExperience(528)
 
     mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX, x, y+1, data.PlaneArcanus), hero.HeroMysticX, "fred")
-    player.AddHero(mysticX)
+    player.AddHeroToFortress(mysticX)
     mysticX.SetExtraAbilities()
     mysticX.AddAbility(data.AbilityArmsmaster)
     mysticX.AddExperience(528)
@@ -2388,7 +2388,7 @@ func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
     city.ResetCitizens()
     player.AddCity(city)
 
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther"))
+    player.AddHeroToFortress(hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther"))
 
     enemy := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",
@@ -2457,7 +2457,7 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
     reywind := hero.MakeHero(units.MakeOverworldUnit(units.HeroReywind, 0, 0, data.PlaneArcanus), hero.HeroReywind, "Reywind")
     mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX, 0, 0, data.PlaneArcanus), hero.HeroMysticX, "Mystic X")
     mysticX.SetExtraAbilities()
-    player.AddHero(mysticX)
+    player.AddHeroToFortress(mysticX)
     // player.AddHero(gunther)
     // player.AddHero(reywind)
     gunther.AddExperience(19)
@@ -2970,7 +2970,7 @@ func createScenario32(cache *lbx.LbxCache) *gamelib.Game {
         },
         Cost: 250,
     }
-    player.AddHero(gunther)
+    player.AddHeroToFortress(gunther)
 
     // player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
 
@@ -4689,9 +4689,9 @@ func createScenario51_52(cache *lbx.LbxCache, kill bool) *gamelib.Game {
     player.HeroPool[hero.HeroShinBo].Unit.Experience = 100
     player.HeroPool[hero.HeroAerie].Unit.Experience = 200
     player.HeroPool[hero.HeroBShan].Unit.Experience = 300
-    player.AddHero(player.HeroPool[hero.HeroRakir])
-    player.AddHero(player.HeroPool[hero.HeroAerie])
-    player.AddHero(player.HeroPool[hero.HeroBShan])
+    player.AddHeroToFortress(player.HeroPool[hero.HeroRakir])
+    player.AddHeroToFortress(player.HeroPool[hero.HeroAerie])
+    player.AddHeroToFortress(player.HeroPool[hero.HeroBShan])
 
     game.Events <- &gamelib.GameEventHireHero{
         Player: player,

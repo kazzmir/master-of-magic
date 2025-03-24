@@ -2340,7 +2340,7 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
 
     result := func(hired bool) {
         if hired {
-            if player.AddHero(hero) {
+            if player.AddHeroToFortress(hero) {
                 player.Gold -= cost
                 hero.SetStatus(herolib.StatusEmployed)
 

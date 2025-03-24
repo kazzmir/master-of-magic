@@ -255,6 +255,19 @@ func createHeroes(names map[herolib.HeroType]string) map[herolib.HeroType]*herol
     return heroes
 }
 
+// return a list of only the heroes that died (never includes torin)
+func (player *Player) GetDeadHeroes() []*herolib.Hero {
+    var dead []*herolib.Hero
+
+    for _, hero := range player.HeroPool {
+        if hero != nil && hero.Status == herolib.StatusDead {
+            dead = append(dead, hero)
+        }
+    }
+
+    return dead
+}
+
 func (player *Player) GetKnownPlayers() []*Player {
     var out []*Player
 
@@ -367,12 +380,7 @@ func (player *Player) MakeUnitEnchantmentProvider() units.GlobalEnchantmentProvi
 
 /* returns true if the hero was actually added to the player
  */
-func (player *Player) AddHero(hero *herolib.Hero) bool {
-    fortressCity := player.FindFortressCity()
-    if fortressCity == nil {
-        return false
-    }
-
+func (player *Player) AddHero(hero *herolib.Hero, city *citylib.City) bool {
     for i := 0; i < len(player.Heroes); i++ {
         if player.Heroes[i] == nil {
             player.Heroes[i] = hero
@@ -381,7 +389,7 @@ func (player *Player) AddHero(hero *herolib.Hero) bool {
             level := hero.GetHeroExperienceLevel()
             experienceInfo := player.MakeExperienceInfo()
 
-            hero.Unit = units.MakeOverworldUnitFromUnit(hero.GetRawUnit(), fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, experienceInfo, player.MakeUnitEnchantmentProvider())
+            hero.Unit = units.MakeOverworldUnitFromUnit(hero.GetRawUnit(), city.X, city.Y, city.Plane, player.Wizard.Banner, experienceInfo, player.MakeUnitEnchantmentProvider())
             hero.AdjustHealth(hero.GetMaxHealth())
             hero.AddExperience(level.ExperienceRequired(experienceInfo.HasWarlord(), experienceInfo.Crusade()))
 
@@ -391,6 +399,24 @@ func (player *Player) AddHero(hero *herolib.Hero) bool {
     }
 
     return false
+}
+
+func (player *Player) AddHeroToFortress(hero *herolib.Hero) bool {
+    fortressCity := player.FindFortressCity()
+    if fortressCity == nil {
+        return false
+    }
+
+    return player.AddHero(hero, fortressCity)
+}
+
+func (player *Player) AddHeroToSummoningCircle(hero *herolib.Hero) bool {
+    fortressCity := player.FindSummoningCity()
+    if fortressCity == nil {
+        return false
+    }
+
+    return player.AddHero(hero, fortressCity)
 }
 
 func (player *Player) AliveHeroes() []*herolib.Hero {

@@ -544,7 +544,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
-                Resurrection
                 Nature's Cures
                 Great Unsummoning
                 Spell Binding
@@ -553,6 +552,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Death Wish
                 Subversion
         */
+        case "Resurrection":
+            heroes := player.GetDeadHeroes()
+            if len(heroes) == 0 {
+                game.Events <- &GameEventNotice{Message: "No dead heroes to resurrect"}
+            } else {
+                // show selection box for all dead heroes
+            }
+
         case "Earthquake":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 city, owner := game.FindCity(tileX, tileY, game.Plane)
