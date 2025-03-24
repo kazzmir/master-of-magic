@@ -812,6 +812,9 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
                 specialFonts.BigOrange.PrintOptions(screen, float64(uiX + background.Bounds().Dx() / 2), float64(uiY + background.Bounds().Dy() - 20), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, selectedHero.GetFullName())
             }
         },
+        Hack: func(element *uilib.UIElement) {
+            cancel()
+        },
         /*
         NotLeftClicked: func(element *uilib.UIElement) {
             cancel()
