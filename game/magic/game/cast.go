@@ -736,6 +736,8 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
 
     const uiX = 30
 
+    specialFonts := fontslib.MakeSpellSpecialUIFonts(game.Cache)
+
     group.AddElement(&uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -744,6 +746,8 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
             options.ColorScale.ScaleAlpha(fader())
             options.GeoM.Translate(uiX, 1)
             scale.DrawScaled(screen, background, &options)
+
+            specialFonts.BigOrange.PrintOptions(screen, float64(uiX + background.Bounds().Dx() / 2), 5, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "Select a spell to disjunct.")
         },
         /*
         NotLeftClicked: func(element *uilib.UIElement) {
@@ -793,11 +797,18 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
 
             shadow := font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Options: &options}
 
-            rect := image.Rect(uiX + 75, y, uiX + 75 + 100, y + 14)
+            rect := image.Rect(uiX + 75, y, uiX + 75 + 100, y + 13)
+            hover := false
             enchantmentList = append(enchantmentList, &uilib.UIElement{
                 Layer: 1,
                 Order: 1,
                 Rect: rect,
+                Inside: func(element *uilib.UIElement, x int, y int) {
+                    hover = true
+                },
+                NotInside: func(element *uilib.UIElement) {
+                    hover = false
+                },
                 LeftClick: func(element *uilib.UIElement) {
                     if enchantmentIndex - minIndex >= 0 && enchantmentIndex - minIndex < 3 {
                         allSpells := game.AllSpells()
@@ -816,8 +827,13 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
                         options.ColorScale.Reset()
                         options.ColorScale.ScaleAlpha(fader())
                         options.ColorScale.SetR(1)
-                        options.ColorScale.SetG(0)
-                        options.ColorScale.SetB(0)
+                        options.ColorScale.SetG(1)
+                        options.ColorScale.SetB(1)
+
+                        if hover {
+                            options.ColorScale.SetR(2)
+                            options.ColorScale.SetG(2)
+                        }
 
                         fonts.NormalFont.PrintOptions(screen, float64(element.Rect.Min.X + 2), float64(element.Rect.Min.Y), shadow, enchantment.String())
                     }
@@ -839,7 +855,7 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
 
                 for i, element := range enchantmentList {
                     element.Rect.Min.Y = yBase + 5 + 13 * (i - minIndex)
-                    element.Rect.Max.Y = element.Rect.Min.Y + 14
+                    element.Rect.Max.Y = element.Rect.Min.Y + 13
                 }
             }
 
@@ -858,6 +874,7 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
                     upClicked = false
                     scroll(-1)
                 },
+                PlaySoundLeftClick: true,
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     var options ebiten.DrawImageOptions
                     options.ColorScale.ScaleAlpha(fader())
@@ -885,6 +902,7 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
                     downClicked = false
                     scroll(1)
                 },
+                PlaySoundLeftClick: true,
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     var options ebiten.DrawImageOptions
                     options.ColorScale.ScaleAlpha(fader())
