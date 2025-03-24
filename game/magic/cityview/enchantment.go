@@ -91,7 +91,7 @@ func MakeEnchantmentView(cache *lbx.LbxCache, city *citylib.City, player *player
     return MakeNewBuildingView(cache, city, player, enchantmentBuilding, enchantment.Name())
 }
 
-// FIXME: take in the buildings that were destroyed
+// returns a UI, context, and a function to invoke to cause some buildings to be destroyed, as well as stopping the quake animation
 func MakeEarthquakeView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player) (*uilib.UI, context.Context, func (*set.Set[buildinglib.Building]), error) {
     imageCache := util.MakeImageCache(cache)
 
