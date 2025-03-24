@@ -745,11 +745,13 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
             options.GeoM.Translate(uiX, 1)
             scale.DrawScaled(screen, background, &options)
         },
+        /*
         NotLeftClicked: func(element *uilib.UIElement) {
             // log.Printf("Cancel ui")
             fader = group.MakeFadeOut(uint64(fadeSpeed))
             group.AddDelay(uint64(fadeSpeed), cancel)
         },
+        */
     })
 
     // count how many enchantments are available to disjunction
@@ -779,37 +781,119 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
             },
         })
 
+        minIndex := 0
+
+        var enchantmentList []*uilib.UIElement
+
         for enchantmentIndex, enchantment := range player.GlobalEnchantments.Values() {
             enchantmentOptions += 1
 
-            y := yBase + 4 + 14 * enchantmentIndex
+            y := yBase + 5 + 13 * enchantmentIndex
             var options ebiten.DrawImageOptions
 
             shadow := font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Options: &options}
 
             rect := image.Rect(uiX + 75, y, uiX + 75 + 100, y + 14)
-            group.AddElement(&uilib.UIElement{
+            enchantmentList = append(enchantmentList, &uilib.UIElement{
                 Layer: 1,
                 Order: 1,
                 Rect: rect,
                 LeftClick: func(element *uilib.UIElement) {
-                    allSpells := game.AllSpells()
-                    targetSpell := allSpells.FindByName(enchantment.String())
+                    if enchantmentIndex - minIndex >= 0 && enchantmentIndex - minIndex < 3 {
+                        allSpells := game.AllSpells()
+                        targetSpell := allSpells.FindByName(enchantment.String())
 
-                    log.Printf("Dispel %v cost %v with strength %v", enchantment, targetSpell.Cost(true), dispelStrength)
-                    if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &player.Wizard)) {
-                        player.RemoveEnchantment(enchantment)
+                        log.Printf("Dispel %v cost %v with strength %v", enchantment, targetSpell.Cost(true), dispelStrength)
+                        if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &player.Wizard)) {
+                            player.RemoveEnchantment(enchantment)
+                        }
+
+                        cancel()
                     }
-
-                    cancel()
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    options.ColorScale.ScaleAlpha(fader())
-                    options.ColorScale.SetR(1)
-                    options.ColorScale.SetG(0)
-                    options.ColorScale.SetB(0)
+                    if enchantmentIndex - minIndex >= 0 && enchantmentIndex - minIndex < 3 {
+                        options.ColorScale.Reset()
+                        options.ColorScale.ScaleAlpha(fader())
+                        options.ColorScale.SetR(1)
+                        options.ColorScale.SetG(0)
+                        options.ColorScale.SetB(0)
 
-                    fonts.NormalFont.PrintOptions(screen, float64(uiX + 77), float64(y), shadow, enchantment.String())
+                        fonts.NormalFont.PrintOptions(screen, float64(element.Rect.Min.X + 2), float64(element.Rect.Min.Y), shadow, enchantment.String())
+                    }
+                },
+            })
+        }
+
+        group.AddElements(enchantmentList)
+
+        if len(enchantmentList) > 3 {
+            scroll := func (direction int) {
+                minIndex += direction
+                if minIndex < 0 {
+                    minIndex = 0
+                }
+                if minIndex > len(enchantmentList) - 3 {
+                    minIndex = len(enchantmentList) - 3
+                }
+
+                for i, element := range enchantmentList {
+                    element.Rect.Min.Y = yBase + 5 + 13 * (i - minIndex)
+                    element.Rect.Max.Y = element.Rect.Min.Y + 14
+                }
+            }
+
+            // up arrow
+            upClicked := false
+            upArrows, _ := game.ImageCache.GetImages("resource.lbx", 32)
+            rect := util.ImageRect(uiX + 61, yBase + 5, upArrows[0])
+            group.AddElement(&uilib.UIElement{
+                Rect: rect,
+                Layer: 1,
+                Order: 1,
+                LeftClick: func(element *uilib.UIElement) {
+                    upClicked = true
+                },
+                LeftClickRelease: func(element *uilib.UIElement) {
+                    upClicked = false
+                    scroll(-1)
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha(fader())
+                    options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                    if upClicked {
+                        scale.DrawScaled(screen, upArrows[1], &options)
+                    } else {
+                        scale.DrawScaled(screen, upArrows[0], &options)
+                    }
+                },
+            })
+
+            // down arrow
+            downClicked := false
+            downArrows, _ := game.ImageCache.GetImages("resource.lbx", 33)
+            downRect := util.ImageRect(uiX + 61, yBase + 29, downArrows[0])
+            group.AddElement(&uilib.UIElement{
+                Rect: downRect,
+                Layer: 1,
+                Order: 1,
+                LeftClick: func(element *uilib.UIElement) {
+                    downClicked = true
+                },
+                LeftClickRelease: func(element *uilib.UIElement) {
+                    downClicked = false
+                    scroll(1)
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha(fader())
+                    options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                    if downClicked {
+                        scale.DrawScaled(screen, downArrows[1], &options)
+                    } else {
+                        scale.DrawScaled(screen, downArrows[0], &options)
+                    }
                 },
             })
         }
@@ -831,7 +915,7 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
 
     if enchantmentOptions == 0 {
         cancel()
-        return nil, quit, errors.New("No enchantments to disjunction")
+        return nil, quit, errors.New("There are no global spells to disjunct")
     }
 
     return group, quit, nil
