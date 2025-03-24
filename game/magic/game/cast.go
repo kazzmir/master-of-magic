@@ -557,6 +557,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 city, owner := game.FindCity(tileX, tileY, game.Plane)
                 if city != nil {
+                    game.showCityEarthquake(yield, city, owner)
+
                     game.doEarthquake(city, owner)
                 }
 
@@ -1381,6 +1383,40 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
         game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
         game.RefreshUI()
     }
+}
+
+func (game *Game) showCityEarthquake(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player) {
+    ui, quit, err := cityview.MakeEarthquakeView(game.Cache, city, player)
+    if err != nil {
+        log.Printf("Error making new building view: %v", err)
+        return
+    }
+
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        oldDrawer(screen, game)
+        ui.Draw(ui, screen)
+    }
+
+    counter := game.Counter
+
+    yield()
+
+    for quit.Err() == nil && game.Counter < counter + 60 {
+        game.Counter += 1
+        ui.StandardUpdate()
+        if yield() != nil {
+            return
+        }
+    }
+
+    // absorb left click
+    yield()
+
 }
 
 func (game *Game) showCastNewBuilding(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, newBuilding building.Building, name string) {
