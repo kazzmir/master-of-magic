@@ -544,7 +544,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
-                Resurrection
                 Nature's Cures
                 Great Unsummoning
                 Spell Binding
@@ -553,6 +552,23 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Death Wish
                 Subversion
         */
+        case "Resurrection":
+            heroes := player.GetDeadHeroes()
+            if len(heroes) == 0 {
+                game.Events <- &GameEventNotice{Message: "No dead heroes to resurrect"}
+            } else if player.FreeHeroSlots() == 0 {
+                game.Events <- &GameEventNotice{Message: "No free hero slots to resurrect hero"}
+            } else {
+                // show selection box for all dead heroes
+
+                group, quit := game.MakeResurrectionUI(player, heroes)
+
+                game.Events <- &GameEventRunUI{
+                    Group: group,
+                    Quit: quit,
+                }
+            }
+
         case "Earthquake":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 city, owner := game.FindCity(tileX, tileY, game.Plane)
@@ -764,6 +780,131 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         default:
             log.Printf("Warning: casting unhandled spell '%v'", spell.Name)
     }
+}
+
+func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib.Hero) (*uilib.UIElementGroup, context.Context) {
+    group := uilib.MakeGroup()
+
+    quit, cancel := context.WithCancel(context.Background())
+
+    var layer uilib.UILayer = 1
+
+    uiX := 40
+    uiY := 1
+
+    specialFonts := fontslib.MakeSpellSpecialUIFonts(game.Cache)
+
+    var selectedHero *herolib.Hero
+    selectedHero = heroes[0]
+
+    // background
+    group.AddElement(&uilib.UIElement{
+        Layer: layer,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            background, _ := game.ImageCache.GetImage("spellscr.lbx", 45, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(uiX), float64(uiY))
+            scale.DrawScaled(screen, background, &options)
+
+            specialFonts.BigOrange.PrintOptions(screen, float64(uiX + background.Bounds().Dx() / 2), float64(uiY + 10), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "Select hero to resurrect")
+
+            if selectedHero != nil {
+                specialFonts.BigOrange.PrintOptions(screen, float64(uiX + background.Bounds().Dx() / 2), float64(uiY + background.Bounds().Dy() - 20), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, selectedHero.GetFullName())
+            }
+        },
+        Hack: func(element *uilib.UIElement) {
+            cancel()
+        },
+        /*
+        NotLeftClicked: func(element *uilib.UIElement) {
+            cancel()
+        },
+        */
+    })
+
+    gridX := 0
+    gridY := 0
+    for _, hero := range slices.SortedFunc(slices.Values(heroes), func (hero1 *herolib.Hero, hero2 *herolib.Hero) int {
+        return cmp.Compare(hero1.Name, hero2.Name)
+    }) {
+        lbxFile, lbxIndex := hero.GetPortraitLbxInfo()
+        pic, _ := game.ImageCache.GetImage(lbxFile, lbxIndex, 0)
+        if pic == nil {
+            log.Printf("Error with hero picture: %v", hero.Name)
+            continue
+        }
+
+        gridWidth := 18
+        gridHeight := 18
+        gapX := 7
+        gapY := 6
+
+        xPos := uiX + 13 + gridX * (gridWidth + gapX)
+        yPos := uiY + 26 + gridY * (gridHeight + gapY)
+
+        rect := image.Rect(xPos, yPos, xPos + gridWidth, yPos + gridHeight)
+        lookTime := 0
+        maxLookTime := 20
+        group.AddElement(&uilib.UIElement{
+            Layer: layer,
+            Order: 1,
+            Rect: rect,
+            Inside: func(element *uilib.UIElement, x int, y int) {
+                selectedHero = hero
+                lookTime = min(lookTime + 1, maxLookTime)
+            },
+            NotInside: func(element *uilib.UIElement) {
+                if selectedHero == hero {
+                    selectedHero = nil
+                }
+
+                lookTime = max(lookTime - 1, 0)
+            },
+            LeftClick: func(element *uilib.UIElement) {
+                cancel()
+                hero.SetStatus(herolib.StatusEmployed)
+                caster.AddHeroToSummoningCircle(hero)
+                game.ResolveStackAt(hero.GetX(), hero.GetY(), hero.GetPlane())
+
+                summoningCity := caster.FindSummoningCity()
+                if summoningCity != nil {
+                    game.Plane = summoningCity.Plane
+                    allSpells := game.AllSpells()
+                    spell := allSpells.FindByName("Healing")
+                    healingSound := -1
+                    if spell.Valid() {
+                        healingSound = spell.Sound
+                    }
+                    game.Events <- &GameEventInvokeRoutine{
+                        Routine: func (yield coroutine.YieldFunc) {
+                            game.doCastOnMap(yield, summoningCity.X, summoningCity.Y, 3, false, healingSound, func (x int, y int, animationFrame int) {})
+                            game.RefreshUI()
+                        },
+                    }
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Scale(float64(gridWidth) / float64(pic.Bounds().Dx()), float64(gridHeight) / float64(pic.Bounds().Dy()))
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+
+                if lookTime > 0 {
+                    options.ColorScale.SetR(1.0 + float32(lookTime) / float32(maxLookTime) / 2)
+                    options.ColorScale.SetG(1.0 + float32(lookTime) / float32(maxLookTime) / 2)
+                }
+
+                scale.DrawScaled(screen, pic, &options)
+            },
+        })
+
+        gridX += 1
+        if gridX == 6 {
+            gridX = 0
+            gridY += 1
+        }
+    }
+
+    return group, quit
 }
 
 func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context, error) {

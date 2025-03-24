@@ -125,6 +125,11 @@ type GameEventVault struct {
     Player *playerlib.Player
 }
 
+// invoke an arbitrary routine
+type GameEventInvokeRoutine struct {
+    Routine func (yield coroutine.YieldFunc)
+}
+
 type GameEventNewOutpost struct {
     City *citylib.City
     Stack *playerlib.UnitStack
@@ -2340,7 +2345,7 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
 
     result := func(hired bool) {
         if hired {
-            if player.AddHero(hero) {
+            if player.AddHeroToFortress(hero) {
                 player.Gold -= cost
                 hero.SetStatus(herolib.StatusEmployed)
 
@@ -2895,6 +2900,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventResearchSpell:
                         researchSpell := event.(*GameEventResearchSpell)
                         game.ResearchNewSpell(yield, researchSpell.Player)
+                    case *GameEventInvokeRoutine:
+                        invokeRoutine := event.(*GameEventInvokeRoutine)
+                        invokeRoutine.Routine(yield)
                     case *GameEventCastGlobalEnchantment:
                         castGlobal := event.(*GameEventCastGlobalEnchantment)
                         player := castGlobal.Player
