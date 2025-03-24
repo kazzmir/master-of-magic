@@ -25,7 +25,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
-	"github.com/kazzmir/master-of-magic/game/magic/mirror"
+    "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/game/magic/mirror"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -557,6 +558,17 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         case "Ice Storm":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 log.Printf("ice storm on %v, %v", tileX, tileY)
+
+                enemyStack, enemy := game.FindStack(tileX, tileY, game.Plane)
+
+                game.doCastOnMap(yield, tileX, tileY, 10, false, spell.Sound, func (x int, y int, animationFrame int) {})
+
+                for _, unit := range enemyStack.Units() {
+                    combat.ApplyAreaDamage(&UnitDamageWrapper{Unit: unit}, 6, units.DamageCold, 0)
+                    if unit.GetHealth() <= 0 {
+                        enemy.RemoveUnit(unit)
+                    }
+                }
 
                 yield()
             }
