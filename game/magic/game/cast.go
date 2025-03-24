@@ -736,7 +736,26 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
 
     const uiX = 30
 
+    // A func for creating a sparks element when a target is selected
+    createSparksElement := func (faceRect image.Rectangle) *uilib.UIElement {
+        sparksCreationTick := group.Counter // Needed for sparks animation
+        return &uilib.UIElement{
+            Layer: 2,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                const ticksPerFrame = 5
+                frameToShow := int((group.Counter - sparksCreationTick) / ticksPerFrame) % 6
+                background, _ := game.ImageCache.GetImage("specfx.lbx", 40, frameToShow)
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(fader())
+                options.GeoM.Translate(float64(faceRect.Min.X - 5), float64(faceRect.Min.Y - 10))
+                scale.DrawScaled(screen, background, &options)
+            },
+        }
+    }
+
     specialFonts := fontslib.MakeSpellSpecialUIFonts(game.Cache)
+
+    header := "Select a spell to disjunct."
 
     group.AddElement(&uilib.UIElement{
         Layer: 1,
@@ -747,7 +766,7 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
             options.GeoM.Translate(uiX, 1)
             scale.DrawScaled(screen, background, &options)
 
-            specialFonts.BigOrange.PrintOptions(screen, float64(uiX + background.Bounds().Dx() / 2), 5, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "Select a spell to disjunct.")
+            specialFonts.BigOrange.PrintOptions(screen, float64(uiX + background.Bounds().Dx() / 2), 5, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, header)
         },
         // a hack to get around go vet complaining that cancel is never called
         Hack: func(element *uilib.UIElement) {
@@ -769,12 +788,16 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
 
     fonts := fontslib.MakeMagicViewFonts(game.Cache)
 
+    enabled := true
+
     // FIXME: only show enchantments of known players?
     for index, player := range caster.GetKnownPlayers() {
         brokenCrystalPicture, _ := game.ImageCache.GetImage("magic.lbx", 51, 0)
         portrait, _ := game.ImageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(player.Wizard.Base, player.GetBanner()), 0)
 
         yBase := 15 + 46 * index
+
+        faceRect := util.ImageRect(uiX + 8, yBase, portrait)
 
         group.AddElement(&uilib.UIElement{
             Layer: 1,
@@ -815,22 +838,48 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
                     hover = false
                 },
                 RightClick: func(element *uilib.UIElement) {
+                    if !enabled {
+                        return
+                    }
+
                     helpEntries := game.Help.GetEntriesByName(enchantment.String())
                     if helpEntries != nil {
                         group.AddElement(uilib.MakeHelpElementWithLayer(group, game.Cache, &game.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
                     }
                 },
                 LeftClick: func(element *uilib.UIElement) {
-                    if enchantmentIndex - minIndex >= 0 && enchantmentIndex - minIndex < 3 {
+                    if enabled && enchantmentIndex - minIndex >= 0 && enchantmentIndex - minIndex < 3 {
                         allSpells := game.AllSpells()
                         targetSpell := allSpells.FindByName(enchantment.String())
+
+                        group.AddElement(createSparksElement(faceRect))
+                        // FIXME: verify this sound
+                        sound, err := audio.LoadSound(game.Cache, 29)
+                        if err == nil {
+                            sound.Play()
+                        }
+
+                        success := false
 
                         if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &player.Wizard)) {
                             // show an animation/play a sound?
                             player.RemoveEnchantment(enchantment)
+                            success = true
                         }
 
-                        cancel()
+                        group.AddDelay(60, func(){
+                            if success {
+                                header = fmt.Sprintf("%s has been disjuncted", enchantment.String())
+                            } else {
+                                header = "Disjunction failed"
+                            }
+                            group.AddDelay(113, func(){
+                                fader = group.MakeFadeOut(uint64(fadeSpeed))
+                                group.AddDelay(7, func(){
+                                    cancel()
+                                })
+                            })
+                        })
                     }
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
