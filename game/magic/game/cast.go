@@ -545,7 +545,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Spell of Return
                 Plane Shift
                 Resurrection
-                Earthquake
                 Nature's Cures
                 Great Unsummoning
                 Spell Binding
@@ -554,6 +553,23 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Death Wish
                 Subversion
         */
+        case "Earthquake":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                city, owner := game.FindCity(tileX, tileY, game.Plane)
+                if city != nil {
+                    sound, err := audio.LoadSound(game.Cache, spell.Sound)
+                    if err == nil {
+                        sound.Play()
+                    }
+
+                    game.showCityEarthquake(yield, city, owner)
+                }
+
+                yield()
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyCity, SelectedFunc: selected}
+
         case "Ice Storm":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 enemyStack, enemy := game.FindStack(tileX, tileY, game.Plane)
@@ -1370,6 +1386,55 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
         game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
         game.RefreshUI()
     }
+}
+
+func (game *Game) showCityEarthquake(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player) {
+    ui, quit, updateDestroyed, err := cityview.MakeEarthquakeView(game.Cache, city, player)
+    if err != nil {
+        log.Printf("Error making new building view: %v", err)
+        return
+    }
+
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        oldDrawer(screen, game)
+        ui.Draw(ui, screen)
+    }
+
+    counter := game.Counter
+
+    yield()
+
+    for quit.Err() == nil && game.Counter < counter + 120 {
+        game.Counter += 1
+        ui.StandardUpdate()
+        if yield() != nil {
+            return
+        }
+    }
+
+    _, _, buildings := game.doEarthquake(city, player)
+    destroyed := set.NewSet(buildings...)
+
+    updateDestroyed(destroyed)
+
+    counter = game.Counter
+
+    for quit.Err() == nil && game.Counter < counter + 180 {
+        game.Counter += 1
+        ui.StandardUpdate()
+        if yield() != nil {
+            return
+        }
+    }
+
+    // absorb left click
+    yield()
+
 }
 
 func (game *Game) showCastNewBuilding(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, newBuilding building.Building, name string) {
