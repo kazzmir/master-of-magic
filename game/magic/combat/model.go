@@ -964,6 +964,10 @@ func (unit *ArmyUnit) GetToHitMelee(defender *ArmyUnit) int {
         modifier -= 20
     }
 
+    if defender.HasAbility(data.AbilityLucky) {
+        modifier -= 10
+    }
+
     if defender.IsInvisible() && !unit.HasAbility(data.AbilityIllusionsImmunity) {
         modifier -= 10
     }
@@ -1837,7 +1841,7 @@ func (unit *ArmyUnit) ToDefend(modifiers DamageModifiers) int {
         modifier -= 10
     }
 
-    return 30 + modifier
+    return unit.Unit.GetToDefend() + modifier
 }
 
 // number of alive figures in this unit

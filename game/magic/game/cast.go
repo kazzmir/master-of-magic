@@ -1863,6 +1863,8 @@ func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, a
         sound, err := audio.LoadSound(game.Cache, soundIndex)
         if err == nil {
             sound.Play()
+        } else {
+            log.Printf("No such sound %v for spell", soundIndex)
         }
     }
 
