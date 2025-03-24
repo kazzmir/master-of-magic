@@ -23,6 +23,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+	"github.com/kazzmir/master-of-magic/game/magic/mirror"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -537,7 +538,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         /*
             INSTANT SPELLS
                 TODO:
-                Disjunction
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
@@ -545,7 +545,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Earthquake
                 Ice Storm
                 Nature's Cures
-                Disjunction True
                 Great Unsummoning
                 Spell Binding
                 Stasis
@@ -554,6 +553,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Death Wish
                 Subversion
         */
+        case "Disjunction", "Disjunction True":
+            uiGroup, quit := game.MakeDisjunctionUI(player, spell)
+            game.Events <- &GameEventRunUI{Group: uiGroup, Quit: quit}
+
         case "Create Artifact", "Enchant Item":
             game.Events <- &GameEventSummonArtifact{Player: player}
             game.Events <- &GameEventVault{CreatedArtifact: player.CreateArtifact, Player: player}
@@ -705,6 +708,71 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         default:
             log.Printf("Warning: casting unhandled spell '%v'", spell.Name)
     }
+}
+
+func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context) {
+    group := uilib.MakeGroup()
+
+    quit, cancel := context.WithCancel(context.Background())
+
+    fadeSpeed := 7
+
+    fader := group.MakeFadeIn(uint64(fadeSpeed))
+
+    const uiX = 30
+
+    group.AddElement(&uilib.UIElement{
+        Layer: 1,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            background, _ := game.ImageCache.GetImage("spellscr.lbx", 1, 0)
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(fader())
+            options.GeoM.Translate(uiX, 1)
+            scale.DrawScaled(screen, background, &options)
+        },
+        NotLeftClicked: func(element *uilib.UIElement) {
+            // log.Printf("Cancel ui")
+            fader = group.MakeFadeOut(uint64(fadeSpeed))
+            group.AddDelay(uint64(fadeSpeed), cancel)
+        },
+    })
+
+    // FIXME: only show enchantments of known players?
+    for index, player := range caster.GetKnownPlayers() {
+        brokenCrystalPicture, _ := game.ImageCache.GetImage("magic.lbx", 51, 0)
+        portrait, _ := game.ImageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(player.Wizard.Base, player.GetBanner()), 0)
+
+        group.AddElement(&uilib.UIElement{
+            Layer: 1,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(fader())
+                options.GeoM.Translate(uiX + 8, float64(15 + 46 * index))
+                if player.Defeated {
+                    scale.DrawScaled(screen, brokenCrystalPicture, &options)
+                } else {
+                    scale.DrawScaled(screen, portrait, &options)
+                }
+            },
+        })
+
+    }
+
+    for i := range 4 - len(caster.GetKnownPlayers()) {
+        crystalPicture, _ := game.ImageCache.GetImage("magic.lbx", 6, 0)
+        index := i + len(caster.GetKnownPlayers())
+        group.AddElement(&uilib.UIElement{
+            Layer: 1,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(fader())
+                options.GeoM.Translate(uiX + 8, float64(15 + 46 * index))
+                scale.DrawScaled(screen, crystalPicture, &options)
+            },
+        })
+    }
+
+    return group, quit
 }
 
 // Returns true if the spell is rolled to be instantly fizzled on cast (caused by spells like Life Force)
