@@ -3495,6 +3495,8 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         if attacker.IsHuman() || defender.IsHuman() {
             game.Events <- &GameEventShowBanish{Attacker: attacker, Defender: defender}
         }
+
+        // FIXME: automatically start casting spell of return if possible
     }
 
     return raze, gold
