@@ -544,13 +544,15 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
-                Great Unsummoning
                 Spell Binding
                 Stasis
                 Black Wind
                 Death Wish
                 Subversion
         */
+        case "Great Unsummoning":
+            game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.GreatUnsummoning}
+
         case "Nature's Cures":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 stack := player.FindStack(tileX, tileY, game.Plane)
@@ -2320,6 +2322,7 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
         case data.EnchantmentEternalNight: song = music.SongEternalNight
         case data.EnchantmentEvilOmens: song = music.SongEvilOmens
         case data.EnchantmentZombieMastery: song = music.SongZombieMastery
+        case data.GreatUnsummoning: song = music.SongGreatUnsummoning
     }
 
     if song != music.SongNone {

@@ -26,6 +26,7 @@ const (
 
     // summoning circle, spell of return
     SongSummoningCircle Song = 0
+    SongGreatUnsummoning Song = SongSummoningCircle
     SongWallOfFire Song = 1
     // dark rituals, wall of darkness, cloud of shadow
     SongDarkRituals Song = 2
@@ -74,7 +75,7 @@ const (
     SongJustCause Song = 37
     SongHolyArms Song = 38
 
-    // researched a spell, detect magic, awareness, great unsummoning, charm of life
+    // researched a spell, detect magic, awareness, charm of life
     SongLearnSpell Song = 40
     SongMerlin Song = 41
     SongMerlinMad Song = 42

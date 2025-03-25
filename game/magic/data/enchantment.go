@@ -33,6 +33,9 @@ const (
     EnchantmentEternalNight
     EnchantmentEvilOmens
     EnchantmentZombieMastery
+
+    // not a real global enchantment, but it has the same animation as a global enchantment
+    GreatUnsummoning
 )
 
 func (enchantment Enchantment) String() string {
@@ -61,6 +64,8 @@ func (enchantment Enchantment) String() string {
         case EnchantmentEternalNight: return "Eternal Night"
         case EnchantmentEvilOmens: return "Evil Omens"
         case EnchantmentZombieMastery: return "Zombie Mastery"
+
+        case GreatUnsummoning: return "Great Unsummoning"
     }
 
     return ""
@@ -125,6 +130,8 @@ func (enchantment Enchantment) LbxIndex() int {
         case EnchantmentEternalNight: return 15
         case EnchantmentEvilOmens: return 16
         case EnchantmentZombieMastery: return 17
+
+        case GreatUnsummoning: return 39
     }
 
     return 0
