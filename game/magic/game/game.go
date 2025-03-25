@@ -161,6 +161,8 @@ type GameEventResearchSpell struct {
 type GameEventCastGlobalEnchantment struct {
     Player *playerlib.Player
     Enchantment data.Enchantment
+    // if non-nil, then invoke this function after the enchantment animation
+    After func()
 }
 
 type GameEventGameMenu struct {
@@ -2908,7 +2910,11 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         player := castGlobal.Player
 
                         if player.IsHuman() || game.CastingDetectableByHuman(player) {
-                            game.doCastGlobalEnchantment(yield, player, castGlobal.Enchantment)
+                            after := castGlobal.After
+                            if after == nil {
+                                after = func(){}
+                            }
+                            game.doCastGlobalEnchantment(yield, player, castGlobal.Enchantment, after)
                         }
                     case *GameEventSelectLocationForSpell:
                         selectLocation := event.(*GameEventSelectLocationForSpell)
