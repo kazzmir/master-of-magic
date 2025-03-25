@@ -2211,20 +2211,11 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
             combat.MouseState = CombatCast
 
             if inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
-                if spell.Sound >= 230 {
-                    sound, err := combat.AudioCache.GetNewSound(spell.Sound - 230)
-                    if err == nil {
-                        sound.Play()
-                    } else {
-                        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-                    }
+                sound, err := combat.AudioCache.GetSound(spell.Sound)
+                if err == nil {
+                    sound.Play()
                 } else {
-                    sound, err := combat.AudioCache.GetSound(spell.Sound)
-                    if err == nil {
-                        sound.Play()
-                    } else {
-                        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-                    }
+                    log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
                 }
 
                 selectTile(combat.MouseTileX, combat.MouseTileY)
@@ -2332,21 +2323,11 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
                 if selectTeam == TeamEither || unit.Team == selectTeam {
 
-                    // creature binding sound 243, which correlates to new sound 13
-                    if spell.Sound >= 230 {
-                        sound, err := combat.AudioCache.GetNewSound(spell.Sound - 230)
-                        if err == nil {
-                            sound.Play()
-                        } else {
-                            log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-                        }
+                    sound, err := combat.AudioCache.GetSound(spell.Sound)
+                    if err == nil {
+                        sound.Play()
                     } else {
-                        sound, err := combat.AudioCache.GetSound(spell.Sound)
-                        if err == nil {
-                            sound.Play()
-                        } else {
-                            log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-                        }
+                        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
                     }
 
                     selectTarget(unit)

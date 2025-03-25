@@ -556,7 +556,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 stack := player.FindStack(tileX, tileY, game.Plane)
                 if stack != nil {
                     // heal all units that aren't undead or death fantastic
-                    game.doCastOnMap(yield, tileX, tileY, 10, false, spell.Sound, func (x int, y int, animationFrame int) {})
+                    game.doCastOnMap(yield, tileX, tileY, 10, spell.Sound, func (x int, y int, animationFrame int) {})
                 }
             }
 
@@ -600,7 +600,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 enemyStack, enemy := game.FindStack(tileX, tileY, game.Plane)
 
-                game.doCastOnMap(yield, tileX, tileY, 10, false, spell.Sound, func (x int, y int, animationFrame int) {})
+                game.doCastOnMap(yield, tileX, tileY, 10, spell.Sound, func (x int, y int, animationFrame int) {})
 
                 for _, unit := range enemyStack.Units() {
                     combat.ApplyAreaDamage(&UnitDamageWrapper{Unit: unit}, 6, units.DamageCold, 0)
@@ -617,7 +617,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 enemyStack, enemy := game.FindStack(tileX, tileY, game.Plane)
 
-                game.doCastOnMap(yield, tileX, tileY, 6, false, spell.Sound, func (x int, y int, animationFrame int) {})
+                game.doCastOnMap(yield, tileX, tileY, 6, spell.Sound, func (x int, y int, animationFrame int) {})
 
                 for _, unit := range enemyStack.Units() {
                     combat.ApplyAreaDamage(&UnitDamageWrapper{Unit: unit}, 8, units.DamageImmolation, 0)
@@ -645,7 +645,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             player.CreateArtifact = nil
         case "Earth Lore":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                game.doCastEarthLore(yield, tileX, tileY, player)
+                game.doCastEarthLore(yield, tileX, tileY, player, spell.Sound)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: selected}
@@ -658,8 +658,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                     return
                 }
 
-                // FIXME: verify the animation and sound
-                game.doCastOnMap(yield, tileX, tileY, 12, false, 72, func (x int, y int, animationFrame int) {})
+                // FIXME: verify the animation and sound. The spell index is 102
+                game.doCastOnMap(yield, tileX, tileY, 12, 72, func (x int, y int, animationFrame int) {})
                 game.doCallTheVoid(chosenCity, owner)
             }
 
@@ -704,7 +704,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeLand, SelectedFunc: selected}
         case "Warp Node":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                game.doCastWarpNode(yield, tileX, tileY, player)
+                game.doCastWarpNode(yield, tileX, tileY, player, spell.Sound)
             }
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyMeldedNode, SelectedFunc: selected}
         case "Disenchant Area":
@@ -879,16 +879,18 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
                 summoningCity := caster.FindSummoningCity()
                 if summoningCity != nil {
                     game.Plane = summoningCity.Plane
-                    // FIXME: resurrectionSound is 237, which is invalid. but it must point at some sound
+                    // FIXME: resurrectionSound is 237, which is invalid. but it must point at some sound. it should be newsound 19
+                    /*
                     allSpells := game.AllSpells()
                     spell := allSpells.FindByName("Healing")
                     healingSound := -1
                     if spell.Valid() {
                         healingSound = spell.Sound
                     }
+                    */
                     game.Events <- &GameEventInvokeRoutine{
                         Routine: func (yield coroutine.YieldFunc) {
-                            game.doCastOnMap(yield, summoningCity.X, summoningCity.Y, 3, false, healingSound, func (x int, y int, animationFrame int) {})
+                            game.doCastOnMap(yield, summoningCity.X, summoningCity.Y, 3, resurrectionSound, func (x int, y int, animationFrame int) {})
                             game.RefreshUI()
                         },
                     }
@@ -1299,7 +1301,7 @@ func (game *Game) doCastSpellWard(player *playerlib.Player, spell spellbook.Spel
 }
 
 func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, disenchantTrue bool, tileX int, tileY int) {
-    game.doCastOnMap(yield, tileX, tileY, 9, false, spell.Sound, func (x int, y int, animationFrame int){})
+    game.doCastOnMap(yield, tileX, tileY, 9, spell.Sound, func (x int, y int, animationFrame int){})
 
     disenchantStrength := spell.Cost(true)
     if disenchantTrue {
@@ -1377,7 +1379,7 @@ func (game *Game) doCastOnUnit(player *playerlib.Player, spell spellbook.Spell, 
             return
         }
 
-        game.doCastOnMap(yield, tileX, tileY, animationIndex, false, spell.Sound, func (x int, y int, animationFrame int) {})
+        game.doCastOnMap(yield, tileX, tileY, animationIndex, spell.Sound, func (x int, y int, animationFrame int) {})
 
         after(unit)
 
@@ -2065,7 +2067,7 @@ func (game *Game) doCastCityEnchantment(spell spellbook.Spell, player *playerlib
 
 type UpdateMapFunction func (tileX int, tileY int, animationFrame int)
 
-func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, animationIndex int, newSound bool, soundIndex int, update UpdateMapFunction) {
+func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, animationIndex int, soundIndex int, update UpdateMapFunction) {
     game.Camera.Zoom = camera.ZoomDefault
     game.doMoveCamera(yield, tileX, tileY)
 
@@ -2088,18 +2090,11 @@ func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, a
         scale.DrawScaled(screen, animation.Frame(), &options)
     }
 
-    if newSound {
-        sound, err := audio.LoadNewSound(game.Cache, soundIndex)
-        if err == nil {
-            sound.Play()
-        }
+    sound, err := audio.LoadSound(game.Cache, soundIndex)
+    if err == nil {
+        sound.Play()
     } else {
-        sound, err := audio.LoadSound(game.Cache, soundIndex)
-        if err == nil {
-            sound.Play()
-        } else {
-            log.Printf("No such sound %v for spell", soundIndex)
-        }
+        log.Printf("No such sound %v for spell", soundIndex)
     }
 
     quit := false
@@ -2121,7 +2116,7 @@ func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, a
 func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY int) {
     update := func (x int, y int, frame int) {}
 
-    game.doCastOnMap(yield, tileX, tileY, 46, false, 86, update)
+    game.doCastOnMap(yield, tileX, tileY, 46, 86, update)
 
     useMap := game.CurrentMap()
 
@@ -2141,10 +2136,10 @@ func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY 
     }
 }
 
-func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player) {
+func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player, soundIndex int) {
     update := func (x int, y int, frame int) {}
 
-    game.doCastOnMap(yield, tileX, tileY, 45, true, 18, update)
+    game.doCastOnMap(yield, tileX, tileY, 45, soundIndex, update)
 
     player.LiftFogSquare(tileX, tileY, 5, game.Plane)
 }
@@ -2166,7 +2161,7 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
         }
     }
 
-    game.doCastOnMap(yield, tileX, tileY, 8, false, 28, update)
+    game.doCastOnMap(yield, tileX, tileY, 8, 28, update)
     game.RefreshUI()
 }
 
@@ -2185,7 +2180,7 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
         }
     }
 
-    game.doCastOnMap(yield, tileX, tileY, 0, false, 28, update)
+    game.doCastOnMap(yield, tileX, tileY, 0, 28, update)
     game.RefreshUI()
 }
 
@@ -2198,7 +2193,7 @@ func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY
         }
     }
 
-    game.doCastOnMap(yield, tileX, tileY, 11, false, 98, update)
+    game.doCastOnMap(yield, tileX, tileY, 11, 98, update)
 
     mapObject := game.CurrentMap()
     mapObject.SetVolcano(tileX, tileY, player)
@@ -2229,7 +2224,7 @@ func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY i
         }
     }
 
-    game.doCastOnMap(yield, tileX, tileY, 7, false, 103, update)
+    game.doCastOnMap(yield, tileX, tileY, 7, 103, update)
     game.RefreshUI()
 }
 
@@ -2292,10 +2287,10 @@ func (game *Game) doCastDrainPower(player *playerlib.Player) {
     }
 }
 
-func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int, caster *playerlib.Player) {
+func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int, caster *playerlib.Player, soundIndex int) {
     update := func (x int, y int, frame int) {}
 
-    game.doCastOnMap(yield, tileX, tileY, 13, true, 5, update)
+    game.doCastOnMap(yield, tileX, tileY, 13, soundIndex, update)
 
     node := game.CurrentMap().GetMagicNode(tileX, tileY)
     if node != nil {
@@ -2497,5 +2492,5 @@ func (game *Game) doCastFloatingIsland(yield coroutine.YieldFunc, player *player
         }
     }
 
-    game.doCastOnMap(yield, tileX, tileY, 1, false, 29, update)
+    game.doCastOnMap(yield, tileX, tileY, 1, 29, update)
 }
