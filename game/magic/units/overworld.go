@@ -20,6 +20,7 @@ const (
     BusyStatusBuildRoad // for engineers
     BusyStatusPurify // for priests
     BusyStatusPatrol // any unit can patrol
+    BusyStatusStasis // for units under the effect of stasis
 )
 
 type EnchantmentProvider interface {

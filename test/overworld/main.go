@@ -1135,7 +1135,8 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 4, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    spirit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    spirit.SetBusy(units.BusyStatusStasis)
 
     game.CurrentMap().SetRoad(x, y+1, false)
     game.CurrentMap().SetRoad(x, y+2, false)

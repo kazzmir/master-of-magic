@@ -3951,6 +3951,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
 func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Player, move *playerlib.AIMoveStackDecision) {
     stack := move.Stack
+    // FIXME: split the stack into just the active units in case some are busy or out of moves
     to := move.Location
     log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
     getStack := func(x int, y int) *playerlib.UnitStack {
@@ -4697,7 +4698,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     oldDrawer := game.Drawer
     var combatScreen *combat.CombatScreen
 
-    if attacker.StrategicCombat && defender.StrategicCombat {
+    strategicCombat := attacker.StrategicCombat && defender.StrategicCombat
+
+    if strategicCombat {
         state, defeatedAttackers, defeatedDefenders = combat.DoStrategicCombat(attackingArmy, defendingArmy)
         log.Printf("Strategic combat result state=%v", state)
     } else {
@@ -4828,7 +4831,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     cityPopulationLoss := 0
     var cityBuildingLoss []buildinglib.Building
 
-    if zone.City != nil && state == combat.CombatStateAttackerWin {
+    if zone.City != nil && state == combat.CombatStateAttackerWin && !strategicCombat {
         // maximum chance is 50%, minimum is 10%
         chance := min(50, 10 + combatScreen.Model.CollateralDamage * 2)
         for range zone.City.Citizens() - 1 {
@@ -4861,7 +4864,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     }
 
     // Show end screen
-    if !attacker.StrategicCombat || !defender.StrategicCombat {
+    if !strategicCombat {
         result := combat.CombatEndScreenResultLoose
         humanAttacker := attacker.IsHuman()
         fame := defenderFame
@@ -4959,39 +4962,40 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     killUnits(attacker, attackerStack, landscape)
     killUnits(defender, defenderStack, landscape)
 
-    switch state {
-        case combat.CombatStateAttackerWin, combat.CombatStateDefenderFlee:
-            for _, unit := range combatScreen.Model.UndeadUnits {
-                defender.RemoveUnit(unit.Unit)
-                if len(attackerStack.Units()) < data.MaxUnitsInStack {
-                    attacker.AddUnit(attacker.UpdateUnit(unit.Unit))
-                }
-            }
-
-            if attacker.HasEnchantment(data.EnchantmentZombieMastery) {
-                for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
-                    if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(attackerStack.Units()) < data.MaxUnitsInStack {
-                        attacker.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, attackerStack.X(), attackerStack.Y(), attackerStack.Plane(), attacker.GetBanner(), attacker.MakeExperienceInfo(), attacker.MakeUnitEnchantmentProvider()))
+    if !strategicCombat {
+        switch state {
+            case combat.CombatStateAttackerWin, combat.CombatStateDefenderFlee:
+                for _, unit := range combatScreen.Model.UndeadUnits {
+                    defender.RemoveUnit(unit.Unit)
+                    if len(attackerStack.Units()) < data.MaxUnitsInStack {
+                        attacker.AddUnit(attacker.UpdateUnit(unit.Unit))
                     }
                 }
-            }
 
-        case combat.CombatStateDefenderWin, combat.CombatStateAttackerFlee:
-            for _, unit := range combatScreen.Model.UndeadUnits {
-                attacker.RemoveUnit(unit.Unit)
-                if len(defenderStack.Units()) < data.MaxUnitsInStack {
-                    defender.AddUnit(defender.UpdateUnit(unit.Unit))
-                }
-            }
-
-            if defender.HasEnchantment(data.EnchantmentZombieMastery) {
-                for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
-                    if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(defenderStack.Units()) < data.MaxUnitsInStack {
-                        defender.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, defenderStack.X(), defenderStack.Y(), defenderStack.Plane(), defender.GetBanner(), defender.MakeExperienceInfo(), defender.MakeUnitEnchantmentProvider()))
+                if attacker.HasEnchantment(data.EnchantmentZombieMastery) {
+                    for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
+                        if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(attackerStack.Units()) < data.MaxUnitsInStack {
+                            attacker.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, attackerStack.X(), attackerStack.Y(), attackerStack.Plane(), attacker.GetBanner(), attacker.MakeExperienceInfo(), attacker.MakeUnitEnchantmentProvider()))
+                        }
                     }
                 }
-            }
 
+            case combat.CombatStateDefenderWin, combat.CombatStateAttackerFlee:
+                for _, unit := range combatScreen.Model.UndeadUnits {
+                    attacker.RemoveUnit(unit.Unit)
+                    if len(defenderStack.Units()) < data.MaxUnitsInStack {
+                        defender.AddUnit(defender.UpdateUnit(unit.Unit))
+                    }
+                }
+
+                if defender.HasEnchantment(data.EnchantmentZombieMastery) {
+                    for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
+                        if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(defenderStack.Units()) < data.MaxUnitsInStack {
+                            defender.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, defenderStack.X(), defenderStack.Y(), defenderStack.Plane(), defender.GetBanner(), defender.MakeExperienceInfo(), defender.MakeUnitEnchantmentProvider()))
+                        }
+                    }
+                }
+        }
     }
 
     // experience
@@ -6003,6 +6007,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     Rect: unitRect,
                     PlaySoundLeftClick: true,
                     LeftClick: func(this *uilib.UIElement){
+                        // cannot toggle stasis units
+                        if unit.GetBusy() == units.BusyStatusStasis {
+                            return
+                        }
+
                         stack.ToggleActive(unit)
                         select {
                             case game.Events<- &GameEventMoveUnit{Player: player}:
@@ -6848,6 +6857,17 @@ func (game *Game) applyChaosChannels(unit *units.OverworldUnit) {
     unit.AddEnchantment(choice)
 }
 
+func handleStasis(stack *playerlib.UnitStack) {
+    // this seems like a reasonable place to handle stasis, but it could be moved elsewhere
+    for _, unit := range stack.Units() {
+        if unit.GetBusy() == units.BusyStatusStasis {
+            if rand.N(10) + 1 < combat.GetResistanceFor(unit, data.SorceryMagic) - 5 {
+                unit.SetBusy(units.BusyStatusNone)
+            }
+        }
+    }
+}
+
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     disbandedMessages := game.DisbandUnits(player)
 
@@ -7069,6 +7089,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         if player.HasEnchantment(data.EnchantmentHerbMastery) {
             rate = 1
         }
+
+        handleStasis(stack)
 
         stack.NaturalHeal(rate)
         stack.ResetMoves()
@@ -7918,6 +7940,7 @@ func (game *Game) DoNextTurn(){
         } else {
             // neutral enemies should reset their moves each turn
             for _, stack := range player.Stacks {
+                handleStasis(stack)
                 stack.ResetMoves()
                 stack.EnableMovers()
             }

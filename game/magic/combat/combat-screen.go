@@ -634,7 +634,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
             modifier = 9
         }
 
-        defenderResistance := unit.GetResistanceFor(data.LifeMagic) - modifier
+        defenderResistance := GetResistanceFor(unit, data.LifeMagic) - modifier
         damage := 0
         for range unit.Figures() {
             if rand.N(10) + 1 > defenderResistance {
@@ -759,7 +759,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        resistance := unit.GetResistanceFor(data.LifeMagic) - reduceResistance
+        resistance := GetResistanceFor(unit, data.LifeMagic) - reduceResistance
         damage := rand.N(10) + 1 - resistance
         if damage > 0 {
             unit.TakeDamage(damage, DamageUndead)
@@ -1181,7 +1181,7 @@ func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) *Projecti
     explodeImages := images
 
     weakness := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > unit.GetResistanceFor(data.DeathMagic) - 2 {
+        if rand.N(10) + 1 > GetResistanceFor(unit, data.DeathMagic) - 2 {
             unit.AddCurse(data.UnitCurseWeakness)
         }
     }
@@ -1194,7 +1194,7 @@ func (combat *CombatScreen) CreateCreatureBindingProjectile(target *ArmyUnit) *P
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > target.GetResistanceFor(data.SorceryMagic) - 2 {
+        if rand.N(10) + 1 > GetResistanceFor(target, data.SorceryMagic) - 2 {
             combat.Model.ApplyCreatureBinding(target)
         }
     }
@@ -1209,7 +1209,7 @@ func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit) *Projectil
     effect := func (unit *ArmyUnit){
         damage := 0
         for range unit.Figures() {
-            if rand.N(10) + 1 > target.GetResistanceFor(data.NatureMagic) {
+            if rand.N(10) + 1 > GetResistanceFor(target, data.NatureMagic) {
                 damage += unit.Unit.GetHitPoints()
             }
         }
@@ -1230,7 +1230,7 @@ func (combat *CombatScreen) CreatePossessionProjectile(target *ArmyUnit) *Projec
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > unit.GetResistanceFor(data.DeathMagic) - 1 {
+        if rand.N(10) + 1 > GetResistanceFor(unit, data.DeathMagic) - 1 {
             combat.Model.ApplyPossession(unit)
         }
     }
@@ -1243,7 +1243,7 @@ func (combat *CombatScreen) CreateConfusionProjectile(target *ArmyUnit) *Project
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > unit.GetResistanceFor(data.SorceryMagic) - 4 {
+        if rand.N(10) + 1 > GetResistanceFor(unit, data.SorceryMagic) - 4 {
             unit.AddCurse(data.UnitCurseConfusion)
         }
     }
@@ -1257,7 +1257,7 @@ func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) *Projec
     explodeImages := images
 
     sleep := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > unit.GetResistanceFor(data.DeathMagic) - 2 {
+        if rand.N(10) + 1 > GetResistanceFor(unit, data.DeathMagic) - 2 {
             unit.AddCurse(data.UnitCurseBlackSleep)
         }
     }
@@ -1271,7 +1271,7 @@ func (combat *CombatScreen) CreateVertigoProjectile(target *ArmyUnit) *Projectil
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > unit.GetResistanceFor(data.SorceryMagic) {
+        if rand.N(10) + 1 > GetResistanceFor(unit, data.SorceryMagic) {
             unit.AddCurse(data.UnitCurseVertigo)
         }
     }
@@ -1285,7 +1285,7 @@ func (combat *CombatScreen) CreateShatterProjectile(target *ArmyUnit) *Projectil
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > unit.GetResistanceFor(data.ChaosMagic) {
+        if rand.N(10) + 1 > GetResistanceFor(unit, data.ChaosMagic) {
             unit.AddCurse(data.UnitCurseShatter)
         }
     }
@@ -1299,7 +1299,7 @@ func (combat *CombatScreen) CreateWarpCreatureProjectile(target *ArmyUnit) *Proj
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > unit.GetResistanceFor(data.ChaosMagic) - 1 {
+        if rand.N(10) + 1 > GetResistanceFor(unit, data.ChaosMagic) - 1 {
             choices := set.NewSet(data.UnitCurseWarpCreatureMelee, data.UnitCurseWarpCreatureDefense, data.UnitCurseWarpCreatureResistance)
             choices.RemoveMany(unit.GetCurses()...)
 
@@ -1329,7 +1329,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
             modifier = 7
         }
 
-        resistance := unit.GetResistanceFor(data.LifeMagic) - modifier
+        resistance := GetResistanceFor(unit, data.LifeMagic) - modifier
 
         damage := 0
         for range unit.Figures() {
@@ -1364,7 +1364,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projec
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
-        resistance := unit.GetResistanceFor(data.DeathMagic) - 2
+        resistance := GetResistanceFor(unit, data.DeathMagic) - 2
         damage := 0
 
         for range unit.Figures() {
@@ -1387,7 +1387,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Proje
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
-        resistance := unit.GetResistanceFor(data.DeathMagic) - 5
+        resistance := GetResistanceFor(unit, data.DeathMagic) - 5
         damage := 0
 
         for range unit.Figures() {
@@ -1421,7 +1421,7 @@ func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) *Proj
     explodeImages := images
 
     effect := func (unit *ArmyUnit){
-        if unit.GetResistanceFor(data.ChaosMagic) <= 9 {
+        if GetResistanceFor(unit, data.ChaosMagic) <= 9 {
             // FIXME: does irreversable damage
             combat.Model.RemoveUnit(unit)
         }
@@ -1485,7 +1485,7 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
             return
         }
 
-        resistance := unit.GetResistanceFor(data.SorceryMagic) - reduceResistance - 3
+        resistance := GetResistanceFor(unit, data.SorceryMagic) - reduceResistance - 3
         damage := 0
 
         for range unit.Figures() {

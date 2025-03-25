@@ -278,7 +278,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                                 vector.DrawFilledRect(screen, float32(x), float32(y+1), float32(x2-x), float32(y2-y)-1, highlightColor, false)
                             }
 
-                            if unit.GetBusy() == units.BusyStatusPatrol {
+                            if unit.GetBusy() == units.BusyStatusPatrol || unit.GetBusy() == units.BusyStatusStasis {
                                 matrix.ChangeHSV(0, 0, 1)
                             }
 

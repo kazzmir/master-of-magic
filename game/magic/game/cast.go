@@ -395,11 +395,32 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
-                Stasis
                 Black Wind
                 Death Wish
                 Subversion
         */
+        case "Stasis":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                stack, _ := game.FindStack(tileX, tileY, game.Plane)
+                if stack != nil {
+
+                    city, _ := game.FindCity(tileX, tileY, game.Plane)
+                    if city != nil && !city.CanTarget(spell) {
+                        game.ShowFizzleSpell(spell, player)
+                        return
+                    }
+
+                    game.doCastOnMap(yield, tileX, tileY, 53, spell.Sound, func (x int, y int, animationFrame int) {})
+
+                    // FIXME: maybe apply a Stasis unit enchantment so the user can see the unit is under the stasis effect?
+                    for _, unit := range stack.Units() {
+                        unit.SetBusy(units.BusyStatusStasis)
+                    }
+
+                }
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyUnit, SelectedFunc: selected}
         case "Spell Binding":
             uiGroup, quit, err := game.MakeSpellBindingUI(player, spell)
             if err != nil {
@@ -431,9 +452,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                                     continue
                                 }
 
-                                // it would be reasonable to use combat.GetResistanceFor(SorceryMagic) but there are no
-                                // enchantments that provide extra resistance to sorcery, so we can just use the base resistance
-                                resistance := unit.GetResistance()
+                                resistance := combat.GetResistanceFor(unit, data.SorceryMagic)
                                 if rand.N(10) + 1 > resistance - 3 {
                                     player.RemoveUnit(unit)
                                 }
