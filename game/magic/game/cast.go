@@ -2426,6 +2426,7 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
         case data.EnchantmentEvilOmens: song = music.SongEvilOmens
         case data.EnchantmentZombieMastery: song = music.SongZombieMastery
         case data.GreatUnsummoning: song = music.SongGreatUnsummoning
+        case data.DeathWish: song = music.SongDeathWish
     }
 
     if song != music.SongNone {
