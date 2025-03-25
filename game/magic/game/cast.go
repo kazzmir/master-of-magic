@@ -145,6 +145,11 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             choice := choices[rand.N(len(choices))]
 
             before := func (unit units.StackUnit) bool {
+                if unit.GetRace() == data.RaceFantastic {
+                    game.Events <- &GameEventNotice{Message: "That unit cannot be targeted"}
+                    return false
+                }
+
                 for _, enchantment := range choices {
                     if unit.HasEnchantment(enchantment) {
                         game.Events <- &GameEventNotice{Message: "That unit cannot be targeted"}
@@ -544,13 +549,51 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
-                Great Unsummoning
                 Spell Binding
                 Stasis
                 Black Wind
                 Death Wish
                 Subversion
         */
+        case "Great Unsummoning":
+            after := func(){
+                cityStackInfo := game.ComputeCityStackInfo()
+
+                for _, player := range game.Players {
+                    for _, stack := range player.Stacks {
+
+                        city := cityStackInfo.FindCity(stack.X(), stack.Y(), stack.Plane())
+                        if city != nil && !city.CanTarget(spell) {
+                            continue
+                        }
+
+                        for _, unit := range stack.Units() {
+                            if unit.GetRace() == data.RaceFantastic {
+
+                                if unit.HasEnchantment(data.UnitEnchantmentSpellLock) ||
+                                unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings) ||
+                                unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonSkin) ||
+                                unit.HasEnchantment(data.UnitEnchantmentChaosChannelsFireBreath) ||
+                                unit.HasAbility(data.AbilityMagicImmunity) {
+                                    continue
+                                }
+
+                                // it would be reasonable to use combat.GetResistanceFor(SorceryMagic) but there are no
+                                // enchantments that provide extra resistance to sorcery, so we can just use the base resistance
+                                resistance := unit.GetResistance()
+                                if rand.N(10) + 1 > resistance - 3 {
+                                    player.RemoveUnit(unit)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                game.RefreshUI()
+            }
+
+            game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.GreatUnsummoning, After: after}
+
         case "Nature's Cures":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 stack := player.FindStack(tileX, tileY, game.Plane)
@@ -2291,7 +2334,7 @@ func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int
     }
 }
 
-func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *playerlib.Player, enchantment data.Enchantment) {
+func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *playerlib.Player, enchantment data.Enchantment, after func()) {
 
     song := music.SongNone
 
@@ -2320,6 +2363,7 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
         case data.EnchantmentEternalNight: song = music.SongEternalNight
         case data.EnchantmentEvilOmens: song = music.SongEvilOmens
         case data.EnchantmentZombieMastery: song = music.SongZombieMastery
+        case data.GreatUnsummoning: song = music.SongGreatUnsummoning
     }
 
     if song != music.SongNone {
@@ -2473,6 +2517,7 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 
     yield()
 
+    after()
 }
 
 func (game *Game) doCastFloatingIsland(yield coroutine.YieldFunc, player *playerlib.Player, tileX int, tileY int) {
