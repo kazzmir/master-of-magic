@@ -393,8 +393,27 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             INSTANT SPELLS
                 TODO:
                 Spell of Mastery
-                Spell of Return
         */
+        case "Spell of Return":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                city := player.FindCity(tileX, tileY, game.Plane)
+                if city != nil {
+                    // FIXME: verify animation
+                    game.doCastOnMap(yield, tileX, tileY, 44, spell.Sound, func (x int, y int, animationFrame int) {})
+
+                    for _, check := range player.Cities {
+                        check.RemoveBuilding(building.BuildingSummoningCircle)
+                        check.RemoveBuilding(building.BuildingFortress)
+                    }
+
+                    city.Buildings.Insert(buildinglib.BuildingFortress)
+                    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+                    player.Wizard.Race = city.Race
+                }
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyCity, SelectedFunc: selected}
+
         case "Plane Shift":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 game.doCastOnMap(yield, tileX, tileY, 3, spell.Sound, func (x int, y int, animationFrame int) {})
