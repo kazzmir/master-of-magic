@@ -1834,7 +1834,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
             Rect: rect,
             Layer: 1,
             Order: 1,
-            LeftClickRelease: func(this *uilib.UIElement){
+            LeftClick: func(this *uilib.UIElement){
                 selected = !selected
 
                 if selected {

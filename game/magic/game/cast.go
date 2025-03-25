@@ -394,8 +394,24 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 TODO:
                 Spell of Mastery
                 Spell of Return
-                Plane Shift
         */
+        case "Plane Shift":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                game.doCastOnMap(yield, tileX, tileY, 3, spell.Sound, func (x int, y int, animationFrame int) {})
+
+                stack := player.FindStack(tileX, tileY, game.Plane)
+                if stack != nil {
+                    err := game.PlaneShift(stack, player)
+                    if err != nil {
+                        game.Events <- &GameEventNotice{Message: fmt.Sprintf("%v", err)}
+                    } else {
+                        game.Plane = stack.Plane()
+                    }
+                }
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+
         case "Subversion":
             uiGroup, quit, err := game.MakeSubversionUI(player, spell)
             if err != nil {

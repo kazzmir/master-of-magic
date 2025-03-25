@@ -3765,7 +3765,7 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
 
 // astral gate
 func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
-    log.Printf("Running scenario 44")
+    log.Printf("Running scenario 44: astral gate/plane shift")
     wizard := setup.WizardCustom{
         Name: "bob",
         Banner: data.BannerRed,
@@ -3826,8 +3826,11 @@ func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 200, data.PlaneArcanus)
 
+    /*
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighElfSwordsmen, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    */
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.Angel, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.ShadowDemons, x-1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
@@ -3841,7 +3844,7 @@ func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
     enemy1.AIBehavior = nil
 
     // add an enemy at the same spot but on the opposite plane
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneMyrror, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
+    // enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneMyrror, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
 
     game.Camera.Center(x, y)
 
