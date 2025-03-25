@@ -56,5 +56,9 @@ func (cache *AudioCache) GetNewSound(index int) (*audiolib.Player, error) {
 }
 
 func (cache *AudioCache) GetSound(index int) (*audiolib.Player, error) {
+    if index > 230 {
+        return cache.GetNewSound(256 - index)
+    }
+
     return cache.getSound(SoundLbxPath, index)
 }

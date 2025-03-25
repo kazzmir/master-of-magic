@@ -187,6 +187,11 @@ func LoadSoundMaker(cache *lbx.LbxCache, index int) (MakePlayerFunc, error){
 }
 
 func LoadSound(cache *lbx.LbxCache, index int) (*audiolib.Player, error){
+    // FIXME: what is the lowest index here? There are 21 new sounds, so probably 256 - 21
+    if index > 230 {
+        return LoadNewSound(cache, 256 - index)
+    }
+
     maker, err := LoadSoundMaker(cache, index)
     if err != nil {
         return nil, err
