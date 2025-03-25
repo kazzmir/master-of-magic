@@ -571,7 +571,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             } else {
                 // show selection box for all dead heroes
 
-                group, quit := game.MakeResurrectionUI(player, heroes)
+                group, quit := game.MakeResurrectionUI(player, heroes, spell.Sound)
 
                 game.Events <- &GameEventRunUI{
                     Group: group,
@@ -792,7 +792,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
     }
 }
 
-func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib.Hero) (*uilib.UIElementGroup, context.Context) {
+func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib.Hero, resurrectionSound int) (*uilib.UIElementGroup, context.Context) {
     group := uilib.MakeGroup()
 
     quit, cancel := context.WithCancel(context.Background())
@@ -879,6 +879,7 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
                 summoningCity := caster.FindSummoningCity()
                 if summoningCity != nil {
                     game.Plane = summoningCity.Plane
+                    // FIXME: resurrectionSound is 237, which is invalid. but it must point at some sound
                     allSpells := game.AllSpells()
                     spell := allSpells.FindByName("Healing")
                     healingSound := -1
