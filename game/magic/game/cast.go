@@ -452,9 +452,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                                     continue
                                 }
 
-                                // it would be reasonable to use combat.GetResistanceFor(SorceryMagic) but there are no
-                                // enchantments that provide extra resistance to sorcery, so we can just use the base resistance
-                                resistance := unit.GetResistance()
+                                resistance := combat.GetResistanceFor(unit, data.SorceryMagic)
                                 if rand.N(10) + 1 > resistance - 3 {
                                     player.RemoveUnit(unit)
                                 }

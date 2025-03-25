@@ -6857,6 +6857,17 @@ func (game *Game) applyChaosChannels(unit *units.OverworldUnit) {
     unit.AddEnchantment(choice)
 }
 
+func handleStasis(stack *playerlib.UnitStack) {
+    // this seems like a reasonable place to handle stasis, but it could be moved elsewhere
+    for _, unit := range stack.Units() {
+        if unit.GetBusy() == units.BusyStatusStasis {
+            if rand.N(10) + 1 < combat.GetResistanceFor(unit, data.SorceryMagic) - 5 {
+                unit.SetBusy(units.BusyStatusNone)
+            }
+        }
+    }
+}
+
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     disbandedMessages := game.DisbandUnits(player)
 
@@ -7078,6 +7089,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         if player.HasEnchantment(data.EnchantmentHerbMastery) {
             rate = 1
         }
+
+        handleStasis(stack)
 
         stack.NaturalHeal(rate)
         stack.ResetMoves()
@@ -7927,6 +7940,7 @@ func (game *Game) DoNextTurn(){
         } else {
             // neutral enemies should reset their moves each turn
             for _, stack := range player.Stacks {
+                handleStasis(stack)
                 stack.ResetMoves()
                 stack.EnableMovers()
             }

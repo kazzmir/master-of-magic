@@ -2,7 +2,6 @@ package player
 
 import (
     "slices"
-    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
@@ -42,13 +41,6 @@ func MakeUnitStackFromUnits(units []units.StackUnit) *UnitStack {
 
 func (stack *UnitStack) ResetMoves(){
     for _, unit := range stack.units {
-        // this seems like a reasonable place to handle stasis, but it could be moved elsewhere
-        if unit.GetBusy() == units.BusyStatusStasis {
-            if rand.N(10) + 1 < unit.GetResistance() - 5 {
-                unit.SetBusy(units.BusyStatusNone)
-            }
-        }
-
         unit.ResetMoves()
     }
 }
