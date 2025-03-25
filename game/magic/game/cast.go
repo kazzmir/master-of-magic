@@ -859,23 +859,59 @@ func (game *Game) MakeSpellBindingUI(caster *playerlib.Player, spell spellbook.S
     // ugly to need this here
     fadeSpeed := 7
 
+    // A func for creating a sparks element when a target is selected
+    createSparksElement := func (faceRect image.Rectangle, fader *util.AlphaFadeFunc) *uilib.UIElement {
+        sparksCreationTick := group.Counter // Needed for sparks animation
+        return &uilib.UIElement{
+            Layer: 2,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                const ticksPerFrame = 5
+                frameToShow := int((group.Counter - sparksCreationTick) / ticksPerFrame) % 6
+                background, _ := game.ImageCache.GetImage("specfx.lbx", 40, frameToShow)
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha((*fader)())
+                options.GeoM.Translate(float64(faceRect.Min.X - 5), float64(faceRect.Min.Y - 10))
+                scale.DrawScaled(screen, background, &options)
+            },
+        }
+    }
+
     selectedEnchantment := func (enchantment data.Enchantment, owner *playerlib.Player, uiTitle *string, faceRect image.Rectangle, fader *util.AlphaFadeFunc) {
         dispelStrength := 20000
 
         allSpells := game.AllSpells()
         targetSpell := allSpells.FindByName(enchantment.String())
 
+        sound, err := audio.LoadSound(game.Cache, spell.Sound)
+        if err == nil {
+            sound.Play()
+        }
+
+        group.AddElement(createSparksElement(faceRect, fader))
+        success := false
+
         if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &owner.Wizard)) {
+            success = true
             owner.RemoveEnchantment(enchantment)
             caster.AddEnchantment(enchantment)
 
             game.ApplyGlobalEnchantment(enchantment, caster)
         }
 
-        *fader = group.MakeFadeOut(uint64(fadeSpeed))
-        group.AddDelay(7, func(){
-            cancel()
+        group.AddDelay(60, func(){
+            if success {
+                *uiTitle = fmt.Sprintf("%s has been stolen", enchantment.String())
+            } else {
+                *uiTitle = "Spell binding failed"
+            }
+            group.AddDelay(113, func(){
+                *fader = group.MakeFadeOut(uint64(fadeSpeed))
+                group.AddDelay(7, func(){
+                    cancel()
+                })
+            })
         })
+
     }
 
     var err error
