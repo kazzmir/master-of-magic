@@ -395,8 +395,15 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
-                Subversion
         */
+        case "Subversion":
+            uiGroup, quit, err := game.MakeSubversionUI(player, spell)
+            if err != nil {
+                game.Events <- &GameEventNotice{Message: fmt.Sprintf("%v", err)}
+            } else {
+                game.Events <- &GameEventRunUI{Group: uiGroup, Quit: quit}
+            }
+
         case "Death Wish":
             after := func() {
                 cityStackInfo := game.ComputeCityStackInfo()
@@ -646,9 +653,9 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         case "Change Terrain":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeChangeTerrain, SelectedFunc: game.doCastChangeTerrain}
         case "Cruel Unminding":
-            game.doCastCruelUnminding(player)
+            game.doCastCruelUnminding(player, spell)
         case "Drain Power":
-            game.doCastDrainPower(player)
+            game.doCastDrainPower(player, spell)
         case "Transmute":
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeTransmute, SelectedFunc: game.doCastTransmute}
         case "Raise Volcano":
@@ -1298,6 +1305,60 @@ func (game *Game) makeGlobalEnchantmentSelectionUI(caster *playerlib.Player, spe
     }
 
     return group, quit, cancel, nil
+}
+
+func (game *Game) MakeSubversionUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context, error) {
+    onTargetSelectCallback := func(targetPlayer *playerlib.Player) (bool, string) {
+        if targetPlayer.Defeated || targetPlayer.Banished {
+            return false, ""
+        }
+
+        for _, player := range game.Players {
+            // ignore the wizard that cast subversion
+            if player == caster {
+                continue
+            }
+
+            player.AdjustDiplomaticRelation(targetPlayer, -25)
+        }
+
+        return true, fmt.Sprintf("%s has been subverted", targetPlayer.Wizard.Name)
+    }
+
+    playersInGame := len(game.Players)
+    quit, cancel := context.WithCancel(context.Background())
+    wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, "Choose target for a Subversion spell", 43, spell.Sound, caster, playersInGame, onTargetSelectCallback)
+    return wizSelectionUiGroup, quit, nil
+
+    /*
+    knownPlayers := len(caster.GetKnownPlayers())
+    alive := 0
+    for _, player := range knownPlayers {
+        if !player.Defeated {
+            alive += 1
+        }
+    }
+
+    if alive == 0 {
+        return nil, nil, errors.New("No known players to subvert")
+    }
+
+    group := uilib.MakeGroup()
+
+    quit, cancel := context.WithCancel(context.Background())
+
+    const uiX = 30
+    const uiY = 10
+
+    group.AddElement(&uilib.UIElement{
+        Layer: 1,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            background, _ := game.ImageCache.GetImage("spellscr.lbx", 0, 0)
+        },
+    })
+
+    return group, quit, nil
+    */
 }
 
 // Returns true if the spell is rolled to be instantly fizzled on cast (caused by spells like Life Force)
@@ -2344,7 +2405,7 @@ func (game *Game) doCastSpellBlast(player *playerlib.Player) {
     }
 }
 
-func (game *Game) doCastCruelUnminding(player *playerlib.Player) {
+func (game *Game) doCastCruelUnminding(player *playerlib.Player, spell spellbook.Spell) {
     onTargetSelectCallback := func(targetPlayer *playerlib.Player) (bool, string) {
         if targetPlayer.Defeated || targetPlayer.Banished {
             return false, ""
@@ -2359,14 +2420,14 @@ func (game *Game) doCastCruelUnminding(player *playerlib.Player) {
     }
     playersInGame := len(game.Players)
     quit, cancel := context.WithCancel(context.Background())
-    wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, "Select target for Cruel Unminding spell", 41, 58, player, playersInGame, onTargetSelectCallback)
+    wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, "Select target for Cruel Unminding spell", 41, spell.Sound, player, playersInGame, onTargetSelectCallback)
     game.Events <- &GameEventRunUI{
         Group: wizSelectionUiGroup,
         Quit: quit,
     }
 }
 
-func (game *Game) doCastDrainPower(player *playerlib.Player) {
+func (game *Game) doCastDrainPower(player *playerlib.Player, spell spellbook.Spell) {
     onTargetSelectCallback := func(targetPlayer *playerlib.Player) (bool, string) {
         if targetPlayer.Defeated || targetPlayer.Banished {
             return false, ""
@@ -2377,7 +2438,7 @@ func (game *Game) doCastDrainPower(player *playerlib.Player) {
     }
     playersInGame := len(game.Players)
     quit, cancel := context.WithCancel(context.Background())
-    wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, "Select target for Drain Power spell", 42, 56, player, playersInGame, onTargetSelectCallback)
+    wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, "Select target for Drain Power spell", 42, spell.Sound, player, playersInGame, onTargetSelectCallback)
     game.Events <- &GameEventRunUI{
         Group: wizSelectionUiGroup,
         Quit: quit,
