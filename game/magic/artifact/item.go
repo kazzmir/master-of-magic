@@ -447,38 +447,7 @@ func MakeRandomArtifact(cache *lbx.LbxCache) Artifact {
     return artifact
 }
 
-func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
-    itemData, err := cache.GetLbxFile("itemdata.lbx")
-    if err != nil {
-        return nil, fmt.Errorf("unable to read itemdata.lbx: %v", err)
-    }
-
-    spells, err := spellbook.ReadSpellsFromCache(cache)
-    if err != nil {
-        // return nil, fmt.Errorf("unable to read spells: %v", err)
-        log.Printf("Warning: could not load spells: %v", err)
-    }
-
-    reader, err := itemData.GetReader(0)
-    if err != nil {
-        return nil, fmt.Errorf("unable to read entry 0 in itemdata.lbx: %v", err)
-    }
-
-    numEntries, err := lbx.ReadUint16(reader)
-    if err != nil {
-        return nil, fmt.Errorf("read error: %v", err)
-    }
-
-    entrySize, err := lbx.ReadUint16(reader)
-    if err != nil {
-        return nil, fmt.Errorf("read error: %v", err)
-    }
-    if entrySize != 56 {
-        return nil, fmt.Errorf("unsupported itemdata.lbx")
-    }
-
-    var out []Artifact
-
+func GetItemConversionMaps() (map[byte]ArtifactSlot, map[byte]ArtifactType, map[uint32]data.ItemAbility) {
     slotMap := map[byte]ArtifactSlot{
         1: ArtifactSlotMeleeWeapon,
         2: ArtifactSlotRangedWeapon,
@@ -535,7 +504,44 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
         1 << 31: data.ItemAbilityInvulnerability,
     }
 
-    for i := 0; i < int(numEntries); i++ {
+    return slotMap, typeMap, abilityMap
+}
+
+func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
+    itemData, err := cache.GetLbxFile("itemdata.lbx")
+    if err != nil {
+        return nil, fmt.Errorf("unable to read itemdata.lbx: %v", err)
+    }
+
+    spells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        // return nil, fmt.Errorf("unable to read spells: %v", err)
+        log.Printf("Warning: could not load spells: %v", err)
+    }
+
+    reader, err := itemData.GetReader(0)
+    if err != nil {
+        return nil, fmt.Errorf("unable to read entry 0 in itemdata.lbx: %v", err)
+    }
+
+    numEntries, err := lbx.ReadUint16(reader)
+    if err != nil {
+        return nil, fmt.Errorf("read error: %v", err)
+    }
+
+    entrySize, err := lbx.ReadUint16(reader)
+    if err != nil {
+        return nil, fmt.Errorf("read error: %v", err)
+    }
+    if entrySize != 56 {
+        return nil, fmt.Errorf("unsupported itemdata.lbx")
+    }
+
+    var out []Artifact
+
+    slotMap, typeMap, abilityMap := GetItemConversionMaps()
+
+    for i := range numEntries {
         // Name
         name := make([]byte, 30)
         n, err := reader.Read(name)

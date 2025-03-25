@@ -15,7 +15,9 @@ import (
 const NumHeroes = 35
 const NumPlayers = 6
 const NumPlayerHeroes = 6
-const NumSpells = 240
+const NumSpellsPerMagicRealm = 40
+const NumMagicRealms = 6
+const NumSpells = NumMagicRealms * NumSpellsPerMagicRealm
 
 // hero indexes as dos mom defines them
 type HeroIndex int
@@ -832,12 +834,12 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    out.RetortNodeMastery, err = lbx.ReadN[int8](playerReader)
+    out.RetortManaFocusing, err = lbx.ReadN[int8](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
 
-    out.RetortManaFocusing, err = lbx.ReadN[int8](playerReader)
+    out.RetortNodeMastery, err = lbx.ReadN[int8](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
@@ -1111,7 +1113,7 @@ type NodeData struct {
     AuraX []byte
     AuraY []byte
     NodeType int8
-    Meld int8
+    Flags int8
 }
 
 func loadNodes(reader io.Reader) ([]NodeData, error) {
@@ -1167,7 +1169,7 @@ func loadNodes(reader io.Reader) ([]NodeData, error) {
             return nil, err
         }
 
-        data.Meld, err = lbx.ReadN[int8](nodeReader)
+        data.Flags, err = lbx.ReadN[int8](nodeReader)
         if err != nil {
             return nil, err
         }
@@ -1406,6 +1408,20 @@ func loadLairs(reader io.Reader) ([]LairData, error) {
 
 type ItemData struct {
     Name []byte
+    IconIndex uint16
+    Slot byte
+    Type byte
+    Cost uint16
+    Attack byte
+    ToHit byte
+    Defense byte
+    Movement byte
+    Resistance byte
+    SpellSkill byte
+    SpellSave byte
+    Spell byte
+    Charges uint16
+    Abilities uint32
 }
 
 func loadItems(reader io.Reader) ([]ItemData, error) {
@@ -1418,13 +1434,86 @@ func loadItems(reader io.Reader) ([]ItemData, error) {
         }
 
         itemReader := bytes.NewReader(itemData)
-        name := make([]byte, 30)
-        _, err = io.ReadFull(itemReader, name)
+
+        var data ItemData
+
+        data.Name = make([]byte, 30)
+        _, err = io.ReadFull(itemReader, data.Name)
         if err != nil {
             return nil, err
         }
 
-        out = append(out, ItemData{Name: name})
+        data.IconIndex, err = lbx.ReadN[uint16](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Slot, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Type, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Cost, err = lbx.ReadN[uint16](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Attack, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.ToHit, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Defense, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Movement, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Resistance, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.SpellSkill, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.SpellSave, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Spell, err = lbx.ReadN[byte](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Charges, err = lbx.ReadN[uint16](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Abilities, err = lbx.ReadN[uint32](itemReader)
+        if err != nil {
+            return nil, err
+        }
+
+        out = append(out, data)
 
         // log.Printf("Item name=%v", string(name))
     }

@@ -400,8 +400,8 @@ func (editor *Editor) loadFromSavegame(filename string) {
         os.Exit(0)
     }
 
-    editor.ArcanusMap = saveGame.ToMap(editor.Data, data.PlaneArcanus, nil)
-    editor.MyrrorMap = saveGame.ToMap(editor.Data, data.PlaneMyrror, nil)
+    editor.ArcanusMap = saveGame.ConvertMap(editor.Data, data.PlaneArcanus, nil, nil)
+    editor.MyrrorMap = saveGame.ConvertMap(editor.Data, data.PlaneMyrror, nil, nil)
 }
 
 func main() {

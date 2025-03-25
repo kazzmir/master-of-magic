@@ -612,8 +612,8 @@ var NomadPriest Unit = Unit{
     Race: data.RaceNomad,
 }
 
-// what is units2.lbx index 11?
-// its some nomad unit holding a sword or something
+// units2.lbx index 11 is probably nomad magicians (which cannot be built)
+// https://masterofmagic.fandom.com/wiki/Nomad_Magicians
 
 var NomadSettlers Unit = Unit{
     LbxFile: "units2.lbx",
