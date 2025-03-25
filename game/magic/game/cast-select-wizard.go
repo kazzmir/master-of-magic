@@ -182,6 +182,8 @@ func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache
     return group
 }
 
+// FIXME: if there are no selectable wizards (because they are all defeated, or the player just doesn't have relations with any others)
+// then return an error instead of showing the UI
 func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, imageCache *util.ImageCache, 
     initialHeader string, sparksGraphicIndex int, sparksSoundIndex int, castingPlayer *playerlib.Player, playersInGame int,
     // This callback receives a spell target and returns if the selection was valid (bool) and the new menu header change (string)
@@ -242,7 +244,7 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
     drawnWizardFaces := 0
     var currentMouseoverPlayer *playerlib.Player
     for index, target := range castingPlayer.GetKnownPlayers() {
-        if target.Defeated || target.Banished {
+        if target.Banished {
             continue
         }
         portrait, _ := imageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(target.Wizard.Base, target.Wizard.Banner), 0)
@@ -253,6 +255,10 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
             Rect: faceRect,
             // Try casting the spell on click.
             LeftClickRelease: func(element *uilib.UIElement){
+                if target.Defeated {
+                    return
+                }
+
                 castSuccessful, newHeader := onPlayerSelectedCallback(target)
                 if castSuccessful {
                     // Spell cast successfully. Change header, create sound, add delay, draw the sparks and remove this uigroup.
@@ -298,7 +304,7 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
                 }
             },
         })
-        drawnWizardFaces++
+        drawnWizardFaces += 1
     }
     // Empty crystals
     for emptyPlaceIndex := drawnWizardFaces; emptyPlaceIndex < 4; emptyPlaceIndex++ {
