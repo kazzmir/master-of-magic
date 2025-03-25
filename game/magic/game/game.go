@@ -3951,6 +3951,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
 func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Player, move *playerlib.AIMoveStackDecision) {
     stack := move.Stack
+    // FIXME: split the stack into just the active units in case some are busy or out of moves
     to := move.Location
     log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
     getStack := func(x int, y int) *playerlib.UnitStack {

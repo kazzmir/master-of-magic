@@ -412,6 +412,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                     game.doCastOnMap(yield, tileX, tileY, 53, spell.Sound, func (x int, y int, animationFrame int) {})
 
+                    // FIXME: maybe apply a Stasis unit enchantment so the user can see the unit is under the stasis effect?
                     for _, unit := range stack.Units() {
                         unit.SetBusy(units.BusyStatusStasis)
                     }
