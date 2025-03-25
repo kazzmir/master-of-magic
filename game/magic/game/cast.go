@@ -399,6 +399,29 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Subversion
         */
         case "Black Wind":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                stack, owner := game.FindStack(tileX, tileY, game.Plane)
+                if stack != nil {
+
+                    city, _ := game.FindCity(tileX, tileY, game.Plane)
+                    if city != nil && !city.CanTarget(spell) {
+                        game.ShowFizzleSpell(spell, player)
+                        return
+                    }
+
+                    game.doCastOnMap(yield, tileX, tileY, 14, spell.Sound, func (x int, y int, animationFrame int) {})
+
+                    for _, unit := range stack.Units() {
+                        if rand.N(10) + 1 > combat.GetResistanceFor(unit, data.DeathMagic) - 1 {
+                            owner.RemoveUnit(unit)
+                        }
+                    }
+
+                }
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyUnit, SelectedFunc: selected}
+
 
         case "Stasis":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
