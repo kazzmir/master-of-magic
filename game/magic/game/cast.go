@@ -549,12 +549,19 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
-                Spell Binding
                 Stasis
                 Black Wind
                 Death Wish
                 Subversion
         */
+        case "Spell Binding":
+            uiGroup, quit, err := game.MakeSpellBindingUI(player, spell)
+            if err != nil {
+                game.Events <- &GameEventNotice{Message: fmt.Sprintf("%v", err)}
+            } else {
+                game.Events <- &GameEventRunUI{Group: uiGroup, Quit: quit}
+            }
+
         case "Great Unsummoning":
             after := func(){
                 cityStackInfo := game.ComputeCityStackInfo()
@@ -955,9 +962,39 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
     return group, quit
 }
 
-func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context, error) {
-    group := uilib.MakeGroup()
+type SelectedEnchantmentFunc func(data.Enchantment, *playerlib.Player, *string, image.Rectangle, *util.AlphaFadeFunc)
 
+func (game *Game) MakeSpellBindingUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context, error) {
+    var group *uilib.UIElementGroup
+    var quit context.Context
+    var cancel context.CancelFunc
+
+    // ugly to need this here
+    fadeSpeed := 7
+
+    selectedEnchantment := func (enchantment data.Enchantment, owner *playerlib.Player, uiTitle *string, faceRect image.Rectangle, fader *util.AlphaFadeFunc) {
+        dispelStrength := spell.Cost(true)
+
+        allSpells := game.AllSpells()
+        targetSpell := allSpells.FindByName(enchantment.String())
+
+        if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &owner.Wizard)) {
+            owner.RemoveEnchantment(enchantment)
+            caster.AddEnchantment(enchantment)
+        }
+
+        *fader = group.MakeFadeOut(uint64(fadeSpeed))
+        group.AddDelay(7, func(){
+            cancel()
+        })
+    }
+
+    var err error
+    group, quit, cancel, err = game.makeGlobalEnchantmentSelectionUI(caster, spell, selectedEnchantment)
+    return group, quit, err
+}
+
+func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context, error) {
     dispelStrength := spell.Cost(true)
     if spell.Name == "Disjunction True" {
         dispelStrength *= 3
@@ -967,16 +1004,15 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
         dispelStrength *= 2
     }
 
-    quit, cancel := context.WithCancel(context.Background())
+    var quit context.Context
+    var cancel context.CancelFunc
+    var group *uilib.UIElementGroup
 
+    // ugly to need this here
     fadeSpeed := 7
 
-    fader := group.MakeFadeIn(uint64(fadeSpeed))
-
-    const uiX = 30
-
     // A func for creating a sparks element when a target is selected
-    createSparksElement := func (faceRect image.Rectangle) *uilib.UIElement {
+    createSparksElement := func (faceRect image.Rectangle, fader *util.AlphaFadeFunc) *uilib.UIElement {
         sparksCreationTick := group.Counter // Needed for sparks animation
         return &uilib.UIElement{
             Layer: 2,
@@ -985,12 +1021,61 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
                 frameToShow := int((group.Counter - sparksCreationTick) / ticksPerFrame) % 6
                 background, _ := game.ImageCache.GetImage("specfx.lbx", 40, frameToShow)
                 var options ebiten.DrawImageOptions
-                options.ColorScale.ScaleAlpha(fader())
+                options.ColorScale.ScaleAlpha((*fader)())
                 options.GeoM.Translate(float64(faceRect.Min.X - 5), float64(faceRect.Min.Y - 10))
                 scale.DrawScaled(screen, background, &options)
             },
         }
     }
+
+    selectedEnchantment := func (enchantment data.Enchantment, owner *playerlib.Player, uiTitle *string, faceRect image.Rectangle, fader *util.AlphaFadeFunc) {
+        allSpells := game.AllSpells()
+        targetSpell := allSpells.FindByName(enchantment.String())
+
+        group.AddElement(createSparksElement(faceRect, fader))
+        // FIXME: verify this sound
+        sound, err := audio.LoadSound(game.Cache, 29)
+        if err == nil {
+            sound.Play()
+        }
+
+        success := false
+
+        if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &owner.Wizard)) {
+            // show an animation/play a sound?
+            owner.RemoveEnchantment(enchantment)
+            success = true
+        }
+
+        group.AddDelay(60, func(){
+            if success {
+                *uiTitle = fmt.Sprintf("%s has been disjuncted", enchantment.String())
+            } else {
+                *uiTitle = "Disjunction failed"
+            }
+            group.AddDelay(113, func(){
+                *fader = group.MakeFadeOut(uint64(fadeSpeed))
+                group.AddDelay(7, func(){
+                    cancel()
+                })
+            })
+        })
+    }
+
+    var err error
+    group, quit, cancel, err = game.makeGlobalEnchantmentSelectionUI(caster, spell, selectedEnchantment)
+    return group, quit, err
+}
+
+func (game *Game) makeGlobalEnchantmentSelectionUI(caster *playerlib.Player, spell spellbook.Spell, selectedEnchantment SelectedEnchantmentFunc) (*uilib.UIElementGroup, context.Context, context.CancelFunc, error) {
+    group := uilib.MakeGroup()
+    quit, cancel := context.WithCancel(context.Background())
+
+    fadeSpeed := 7
+
+    fader := group.MakeFadeIn(uint64(fadeSpeed))
+
+    const uiX = 30
 
     specialFonts := fontslib.MakeSpellSpecialUIFonts(game.Cache)
 
@@ -1088,37 +1173,7 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
                 },
                 LeftClick: func(element *uilib.UIElement) {
                     if enabled && enchantmentIndex - minIndex >= 0 && enchantmentIndex - minIndex < 3 {
-                        allSpells := game.AllSpells()
-                        targetSpell := allSpells.FindByName(enchantment.String())
-
-                        group.AddElement(createSparksElement(faceRect))
-                        // FIXME: verify this sound
-                        sound, err := audio.LoadSound(game.Cache, 29)
-                        if err == nil {
-                            sound.Play()
-                        }
-
-                        success := false
-
-                        if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &player.Wizard)) {
-                            // show an animation/play a sound?
-                            player.RemoveEnchantment(enchantment)
-                            success = true
-                        }
-
-                        group.AddDelay(60, func(){
-                            if success {
-                                header = fmt.Sprintf("%s has been disjuncted", enchantment.String())
-                            } else {
-                                header = "Disjunction failed"
-                            }
-                            group.AddDelay(113, func(){
-                                fader = group.MakeFadeOut(uint64(fadeSpeed))
-                                group.AddDelay(7, func(){
-                                    cancel()
-                                })
-                            })
-                        })
+                        selectedEnchantment(enchantment, player, &header, faceRect, &fader)
                     }
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -1232,10 +1287,10 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
 
     if enchantmentOptions == 0 {
         cancel()
-        return nil, quit, errors.New("There are no global spells to disjunct")
+        return nil, quit, cancel, errors.New("There are no global spells to disjunct")
     }
 
-    return group, quit, nil
+    return group, quit, cancel, nil
 }
 
 // Returns true if the spell is rolled to be instantly fizzled on cast (caused by spells like Life Force)

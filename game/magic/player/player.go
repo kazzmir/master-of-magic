@@ -345,6 +345,10 @@ func (player *Player) HasEnchantment(enchantment data.Enchantment) bool {
     return player.GlobalEnchantments.Contains(enchantment)
 }
 
+func (player *Player) AddEnchantment(enchantment data.Enchantment) {
+    player.GlobalEnchantments.Insert(enchantment)
+}
+
 func (player *Player) RemoveEnchantment(enchantment data.Enchantment) {
     player.GlobalEnchantments.Remove(enchantment)
 }
