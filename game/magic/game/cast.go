@@ -341,208 +341,54 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             GLOBAL ENCHANTMENTS
         */
         case "Aura of Majesty":
-            enchantment := data.EnchantmentAuraOfMajesty
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-
-                for _, other := range player.GetKnownPlayers() {
-                    other.AdjustDiplomaticRelation(player, 10)
-                    player.AdjustDiplomaticRelation(other, 10)
-                }
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentAuraOfMajesty, player)
         case "Time Stop":
-            enchantment := data.EnchantmentTimeStop
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentTimeStop, player)
         case "Zombie Mastery":
-            enchantment := data.EnchantmentZombieMastery
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentZombieMastery, player)
         case "Evil Omens":
-            enchantment := data.EnchantmentEvilOmens
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentEvilOmens, player)
         case "Meteor Storm":
-            enchantment := data.EnchantmentMeteorStorm
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentMeteorStorm, player)
         case "Doom Mastery":
-            enchantment := data.EnchantmentDoomMastery
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentDoomMastery, player)
         case "Chaos Surge":
-            enchantment := data.EnchantmentChaosSurge
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentChaosSurge, player)
         case "Wind Mastery":
-            enchantment := data.EnchantmentWindMastery
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentWindMastery, player)
         case "Suppress Magic":
-            enchantment := data.EnchantmentSuppressMagic
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentSuppressMagic, player)
         case "Nature's Wrath":
-            enchantment := data.EnchantmentNaturesWrath
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
-
+            game.castGlobalEnchantment(data.EnchantmentNaturesWrath, player)
         case "Charm of Life":
-            enchantment := data.EnchantmentCharmOfLife
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
-
+            game.castGlobalEnchantment(data.EnchantmentCharmOfLife, player)
         case "Holy Arms":
-            enchantment := data.EnchantmentHolyArms
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-
-                // all units implicitly have holy weapon, so the actual enchantment is removed from all units
-                for _, unit := range player.Units {
-                    unit.RemoveEnchantment(data.UnitEnchantmentHolyWeapon)
-                }
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentHolyArms, player)
         case "Planar Seal":
-            enchantment := data.EnchantmentPlanarSeal
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
-
+            game.castGlobalEnchantment(data.EnchantmentPlanarSeal, player)
         case "Herb Mastery":
-            enchantment := data.EnchantmentHerbMastery
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
-
+            game.castGlobalEnchantment(data.EnchantmentHerbMastery, player)
         case "Awareness":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentAwareness) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentAwareness}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentAwareness)
-                game.doExploreFogForAwareness(player)
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentAwareness, player)
         case "Nature Awareness":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentNatureAwareness) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentNatureAwareness}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
-                player.LiftFogAll(data.PlaneArcanus)
-                player.LiftFogAll(data.PlaneMyrror)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentNatureAwareness, player)
         case "Crusade":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentCrusade) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentCrusade}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentCrusade)
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentCrusade, player)
         case "Just Cause":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentJustCause) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentJustCause}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentJustCause)
-                player.UpdateUnrest()
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentJustCause, player)
         case "Life Force":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentLifeForce) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentLifeForce}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentLifeForce)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentLifeForce, player)
         case "Tranquility":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentTranquility) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentTranquility}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentTranquility)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentTranquility, player)
         case "Armageddon":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentArmageddon) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentArmageddon}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentArmageddon)
-
-                for _, player := range game.Players {
-                    player.UpdateUnrest()
-                }
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentArmageddon, player)
         case "Great Wasting":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentGreatWasting) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentGreatWasting}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentGreatWasting)
-
-                for _, player := range game.Players {
-                    player.UpdateUnrest()
-                }
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentGreatWasting, player)
         case "Detect Magic":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentDetectMagic}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentDetectMagic)
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentDetectMagic, player)
         case "Eternal Night":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentEternalNight) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentEternalNight}
+            game.castGlobalEnchantment(data.EnchantmentEternalNight, player)
 
-                player.GlobalEnchantments.Insert(data.EnchantmentEternalNight)
-
-                game.RefreshUI()
-            }
         /*
             INSTANT SPELLS
                 TODO:
@@ -843,6 +689,47 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
     }
 }
 
+func (game *Game) castGlobalEnchantment(enchantment data.Enchantment, player *playerlib.Player) {
+    if !player.GlobalEnchantments.Contains(enchantment) {
+        game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment, After: func(){
+            game.ApplyGlobalEnchantment(enchantment, player)
+        }}
+        player.GlobalEnchantments.Insert(enchantment)
+        game.RefreshUI()
+    }
+}
+
+// apply effects for a global enchantment
+func (game *Game) ApplyGlobalEnchantment(enchantment data.Enchantment, player *playerlib.Player) {
+    switch enchantment {
+        case data.EnchantmentAwareness: game.doExploreFogForAwareness(player)
+        case data.EnchantmentNatureAwareness:
+            player.LiftFogAll(data.PlaneArcanus)
+            player.LiftFogAll(data.PlaneMyrror)
+        case data.EnchantmentGreatWasting:
+            for _, player := range game.Players {
+                player.UpdateUnrest()
+            }
+        case data.EnchantmentArmageddon:
+            for _, player := range game.Players {
+                player.UpdateUnrest()
+            }
+        case data.EnchantmentJustCause:
+            player.UpdateUnrest()
+        case data.EnchantmentHolyArms:
+            // all units implicitly have holy weapon, so the actual enchantment is removed from all units
+            for _, unit := range player.Units {
+                unit.RemoveEnchantment(data.UnitEnchantmentHolyWeapon)
+            }
+        case data.EnchantmentAuraOfMajesty:
+            for _, other := range player.GetKnownPlayers() {
+                other.AdjustDiplomaticRelation(player, 10)
+                player.AdjustDiplomaticRelation(other, 10)
+            }
+
+    }
+}
+
 func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib.Hero, resurrectionSound int) (*uilib.UIElementGroup, context.Context) {
     group := uilib.MakeGroup()
 
@@ -973,7 +860,7 @@ func (game *Game) MakeSpellBindingUI(caster *playerlib.Player, spell spellbook.S
     fadeSpeed := 7
 
     selectedEnchantment := func (enchantment data.Enchantment, owner *playerlib.Player, uiTitle *string, faceRect image.Rectangle, fader *util.AlphaFadeFunc) {
-        dispelStrength := spell.Cost(true)
+        dispelStrength := 20000
 
         allSpells := game.AllSpells()
         targetSpell := allSpells.FindByName(enchantment.String())
@@ -981,6 +868,8 @@ func (game *Game) MakeSpellBindingUI(caster *playerlib.Player, spell spellbook.S
         if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &owner.Wizard)) {
             owner.RemoveEnchantment(enchantment)
             caster.AddEnchantment(enchantment)
+
+            game.ApplyGlobalEnchantment(enchantment, caster)
         }
 
         *fader = group.MakeFadeOut(uint64(fadeSpeed))
