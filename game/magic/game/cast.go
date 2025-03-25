@@ -395,11 +395,31 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
-                Stasis
                 Black Wind
                 Death Wish
                 Subversion
         */
+        case "Stasis":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                stack, _ := game.FindStack(tileX, tileY, game.Plane)
+                if stack != nil {
+
+                    city, _ := game.FindCity(tileX, tileY, game.Plane)
+                    if city != nil && !city.CanTarget(spell) {
+                        game.ShowFizzleSpell(spell, player)
+                        return
+                    }
+
+                    game.doCastOnMap(yield, tileX, tileY, 53, spell.Sound, func (x int, y int, animationFrame int) {})
+
+                    for _, unit := range stack.Units() {
+                        unit.SetBusy(units.BusyStatusStasis)
+                    }
+
+                }
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyUnit, SelectedFunc: selected}
         case "Spell Binding":
             uiGroup, quit, err := game.MakeSpellBindingUI(player, spell)
             if err != nil {
