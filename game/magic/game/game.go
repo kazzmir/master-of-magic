@@ -10,6 +10,7 @@ import (
     "context"
     "strings"
     "slices"
+    "errors"
 
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
@@ -5726,6 +5727,62 @@ func (game *Game) ComputeCityStackInfo() CityStackInfo {
     return out
 }
 
+func (game *Game) PlaneShift(stack *playerlib.UnitStack, player *playerlib.Player) error {
+    if game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
+        return errors.New("Cannot plane shift while the Planar Seal is in effect")
+    }
+
+    canMove := false
+
+    cityOppositePlane := player.FindCity(stack.X(), stack.Y(), stack.Plane().Opposite())
+
+    mapPlane := game.GetMap(stack.Plane().Opposite())
+
+    tile := mapPlane.GetTile(stack.X(), stack.Y())
+    canMove = cityOppositePlane != nil || stack.AllFlyers() || tile.Tile.IsLand()
+
+    if cityOppositePlane != nil {
+        for _, unit := range stack.ActiveUnits() {
+            if !cityOppositePlane.CanEnter(unit) {
+                canMove = false
+                break
+            }
+        }
+    }
+
+    // cannot planar travel if there is an encounter node
+    if canMove && mapPlane.GetEncounter(stack.X(), stack.Y()) != nil {
+        canMove = false
+    }
+
+    if canMove && tile.Tile.IsWater() && stack.AllLandWalkers() {
+        canMove = false
+    }
+
+    cityStackInfo := game.ComputeCityStackInfo()
+
+    if cityStackInfo.ContainsEnemy(stack.X(), stack.Y(), stack.Plane().Opposite(), player) {
+        canMove = false
+    }
+
+    // no matter what the reason, just emit a message that planar travel is not possible
+    if !canMove {
+        return errors.New("The selected units cannot planar travel at this location.")
+    }
+
+    if canMove {
+        // if there is a friendly stack at the new location then merge the stacks
+        mergeStack := cityStackInfo.FindFriendlyStack(stack.X(), stack.Y(), stack.Plane().Opposite(), player)
+        stack.SetPlane(stack.Plane().Opposite())
+        if mergeStack != nil {
+            player.MergeStacks(stack, mergeStack)
+        }
+        player.UpdateFogVisibility()
+    }
+
+    return nil
+}
+
 func (game *Game) doPlanarTraval() {
     // no switching planes if the global enchantment planar seal is in effect
     if !game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
@@ -5740,14 +5797,10 @@ func (game *Game) doPlanarTraval() {
                 return
             }
 
-            cityStackInfo := game.ComputeCityStackInfo()
-
-            canMove := false
             travelEnabled := false
 
             if game.CurrentMap().HasOpenTower(activeStack.X(), activeStack.Y()) {
                 travelEnabled = true
-                canMove = true
             } else {
                 cityThisPlane := player.FindCity(activeStack.X(), activeStack.Y(), activeStack.Plane())
                 cityOppositePlane := player.FindCity(activeStack.X(), activeStack.Y(), activeStack.Plane().Opposite())
@@ -5758,60 +5811,29 @@ func (game *Game) doPlanarTraval() {
 
                 if hasAstralGate || hasPlanarTravel {
                     travelEnabled = true
-                    mapPlane := game.GetMap(activeStack.Plane().Opposite())
-
-                    tile := mapPlane.GetTile(activeStack.X(), activeStack.Y())
-                    canMove = cityOppositePlane != nil || activeStack.AllFlyers() || tile.Tile.IsLand()
-
-                    if cityOppositePlane != nil {
-                        for _, unit := range activeStack.ActiveUnits() {
-                            if !cityOppositePlane.CanEnter(unit) {
-                                canMove = false
-                                break
-                            }
-                        }
-                    }
-
-                    // cannot planar travel if there is an encounter node
-                    if canMove && mapPlane.GetEncounter(activeStack.X(), activeStack.Y()) != nil {
-                        canMove = false
-                    }
-
-                    if canMove && tile.Tile.IsWater() && activeStack.AllLandWalkers() {
-                        canMove = false
-                    }
                 }
             }
 
+            moved := false
             if travelEnabled {
-                if cityStackInfo.ContainsEnemy(activeStack.X(), activeStack.Y(), activeStack.Plane().Opposite(), player) {
-                    canMove = false
-                }
-
-                // no matter what the reason, just emit a message that planar travel is not possible
-                if !canMove {
+                err := game.PlaneShift(activeStack, player)
+                if err != nil {
                     select {
                         case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The selected units cannot planar travel at this location.")}:
                         default:
                     }
+                } else {
+                    moved = true
+                    player.SelectedStack = stack
+                    player.UpdateFogVisibility()
                 }
             }
 
-            if canMove {
-                player.SelectedStack = activeStack
-                // if there is a friendly stack at the new location then merge the stacks
-                mergeStack := cityStackInfo.FindFriendlyStack(activeStack.X(), activeStack.Y(), activeStack.Plane().Opposite(), player)
-                activeStack.SetPlane(game.Plane)
-                if mergeStack != nil {
-                    player.MergeStacks(activeStack, mergeStack)
-                }
-                player.UpdateFogVisibility()
-            } else {
+            if !moved {
                 if activeStack != stack {
                     player.MergeStacks(stack, activeStack)
                 }
             }
-
         }
     }
 }

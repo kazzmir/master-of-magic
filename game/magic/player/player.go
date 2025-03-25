@@ -1028,6 +1028,7 @@ func (player *Player) SplitActiveStack(stack *UnitStack) *UnitStack {
     return newStack
 }
 
+// stack2 gets absorbed into stack1
 func (player *Player) MergeStacks(stack1 *UnitStack, stack2 *UnitStack) *UnitStack {
     stack1.units = append(stack1.units, stack2.units...)
 
