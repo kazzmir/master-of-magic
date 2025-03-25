@@ -25,7 +25,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
-	"github.com/kazzmir/master-of-magic/game/magic/mirror"
+    "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/game/magic/mirror"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -144,6 +145,11 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             choice := choices[rand.N(len(choices))]
 
             before := func (unit units.StackUnit) bool {
+                if unit.GetRace() == data.RaceFantastic {
+                    game.Events <- &GameEventNotice{Message: "That unit cannot be targeted"}
+                    return false
+                }
+
                 for _, enchantment := range choices {
                     if unit.HasEnchantment(enchantment) {
                         game.Events <- &GameEventNotice{Message: "That unit cannot be targeted"}
@@ -335,226 +341,275 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             GLOBAL ENCHANTMENTS
         */
         case "Aura of Majesty":
-            enchantment := data.EnchantmentAuraOfMajesty
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-
-                for _, other := range player.GetKnownPlayers() {
-                    other.AdjustDiplomaticRelation(player, 10)
-                    player.AdjustDiplomaticRelation(other, 10)
-                }
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentAuraOfMajesty, player)
         case "Time Stop":
-            enchantment := data.EnchantmentTimeStop
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentTimeStop, player)
         case "Zombie Mastery":
-            enchantment := data.EnchantmentZombieMastery
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentZombieMastery, player)
         case "Evil Omens":
-            enchantment := data.EnchantmentEvilOmens
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentEvilOmens, player)
         case "Meteor Storm":
-            enchantment := data.EnchantmentMeteorStorm
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentMeteorStorm, player)
         case "Doom Mastery":
-            enchantment := data.EnchantmentDoomMastery
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentDoomMastery, player)
         case "Chaos Surge":
-            enchantment := data.EnchantmentChaosSurge
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentChaosSurge, player)
         case "Wind Mastery":
-            enchantment := data.EnchantmentWindMastery
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentWindMastery, player)
         case "Suppress Magic":
-            enchantment := data.EnchantmentSuppressMagic
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentSuppressMagic, player)
         case "Nature's Wrath":
-            enchantment := data.EnchantmentNaturesWrath
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
-
+            game.castGlobalEnchantment(data.EnchantmentNaturesWrath, player)
         case "Charm of Life":
-            enchantment := data.EnchantmentCharmOfLife
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
-
+            game.castGlobalEnchantment(data.EnchantmentCharmOfLife, player)
         case "Holy Arms":
-            enchantment := data.EnchantmentHolyArms
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-
-                // all units implicitly have holy weapon, so the actual enchantment is removed from all units
-                for _, unit := range player.Units {
-                    unit.RemoveEnchantment(data.UnitEnchantmentHolyWeapon)
-                }
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentHolyArms, player)
         case "Planar Seal":
-            enchantment := data.EnchantmentPlanarSeal
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
-
+            game.castGlobalEnchantment(data.EnchantmentPlanarSeal, player)
         case "Herb Mastery":
-            enchantment := data.EnchantmentHerbMastery
-            if !player.GlobalEnchantments.Contains(enchantment) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment}
-                player.GlobalEnchantments.Insert(enchantment)
-                game.RefreshUI()
-            }
-
+            game.castGlobalEnchantment(data.EnchantmentHerbMastery, player)
         case "Awareness":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentAwareness) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentAwareness}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentAwareness)
-                game.doExploreFogForAwareness(player)
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentAwareness, player)
         case "Nature Awareness":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentNatureAwareness) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentNatureAwareness}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
-                player.LiftFogAll(data.PlaneArcanus)
-                player.LiftFogAll(data.PlaneMyrror)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentNatureAwareness, player)
         case "Crusade":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentCrusade) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentCrusade}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentCrusade)
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentCrusade, player)
         case "Just Cause":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentJustCause) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentJustCause}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentJustCause)
-                player.UpdateUnrest()
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentJustCause, player)
         case "Life Force":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentLifeForce) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentLifeForce}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentLifeForce)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentLifeForce, player)
         case "Tranquility":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentTranquility) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentTranquility}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentTranquility)
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentTranquility, player)
         case "Armageddon":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentArmageddon) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentArmageddon}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentArmageddon)
-
-                for _, player := range game.Players {
-                    player.UpdateUnrest()
-                }
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentArmageddon, player)
         case "Great Wasting":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentGreatWasting) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentGreatWasting}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentGreatWasting)
-
-                for _, player := range game.Players {
-                    player.UpdateUnrest()
-                }
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentGreatWasting, player)
         case "Detect Magic":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentDetectMagic}
-
-                player.GlobalEnchantments.Insert(data.EnchantmentDetectMagic)
-
-                game.RefreshUI()
-            }
+            game.castGlobalEnchantment(data.EnchantmentDetectMagic, player)
         case "Eternal Night":
-            if !player.GlobalEnchantments.Contains(data.EnchantmentEternalNight) {
-                game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.EnchantmentEternalNight}
+            game.castGlobalEnchantment(data.EnchantmentEternalNight, player)
 
-                player.GlobalEnchantments.Insert(data.EnchantmentEternalNight)
-
-                game.RefreshUI()
-            }
         /*
             INSTANT SPELLS
                 TODO:
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
-                Resurrection
-                Earthquake
-                Ice Storm
-                Nature's Cures
-                Great Unsummoning
-                Spell Binding
-                Stasis
-                Fire Storm
-                Black Wind
-                Death Wish
                 Subversion
         */
+        case "Death Wish":
+            after := func() {
+                cityStackInfo := game.ComputeCityStackInfo()
+
+                for _, owner := range game.Players {
+                    if owner == player {
+                        continue
+                    }
+
+                    for _, stack := range owner.Stacks {
+
+                        city := cityStackInfo.FindCity(stack.X(), stack.Y(), stack.Plane())
+                        if city != nil && !city.CanTarget(spell) {
+                            continue
+                        }
+
+                        for _, unit := range stack.Units() {
+                            ignore := unit.GetRace() == data.RaceFantastic
+
+                            if unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings) ||
+                               unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonSkin) ||
+                               unit.HasEnchantment(data.UnitEnchantmentChaosChannelsFireBreath) {
+                                   ignore = false
+                            }
+
+                            if ignore {
+                                continue
+                            }
+
+                            resistance := combat.GetResistanceFor(unit, data.SorceryMagic)
+                            if rand.N(10) + 1 > resistance {
+                                owner.RemoveUnit(unit)
+                            }
+                        }
+                    }
+                }
+            }
+
+            game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.DeathWish, After: after}
+
+        case "Black Wind":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                stack, owner := game.FindStack(tileX, tileY, game.Plane)
+                if stack != nil {
+
+                    city, _ := game.FindCity(tileX, tileY, game.Plane)
+                    if city != nil && !city.CanTarget(spell) {
+                        game.ShowFizzleSpell(spell, player)
+                        return
+                    }
+
+                    game.doCastOnMap(yield, tileX, tileY, 14, spell.Sound, func (x int, y int, animationFrame int) {})
+
+                    for _, unit := range stack.Units() {
+                        if rand.N(10) + 1 > combat.GetResistanceFor(unit, data.DeathMagic) - 1 {
+                            owner.RemoveUnit(unit)
+                        }
+                    }
+
+                }
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyUnit, SelectedFunc: selected}
+
+
+        case "Stasis":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                stack, _ := game.FindStack(tileX, tileY, game.Plane)
+                if stack != nil {
+
+                    city, _ := game.FindCity(tileX, tileY, game.Plane)
+                    if city != nil && !city.CanTarget(spell) {
+                        game.ShowFizzleSpell(spell, player)
+                        return
+                    }
+
+                    game.doCastOnMap(yield, tileX, tileY, 53, spell.Sound, func (x int, y int, animationFrame int) {})
+
+                    // FIXME: maybe apply a Stasis unit enchantment so the user can see the unit is under the stasis effect?
+                    for _, unit := range stack.Units() {
+                        unit.SetBusy(units.BusyStatusStasis)
+                    }
+
+                }
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyUnit, SelectedFunc: selected}
+        case "Spell Binding":
+            uiGroup, quit, err := game.MakeSpellBindingUI(player, spell)
+            if err != nil {
+                game.Events <- &GameEventNotice{Message: fmt.Sprintf("%v", err)}
+            } else {
+                game.Events <- &GameEventRunUI{Group: uiGroup, Quit: quit}
+            }
+
+        case "Great Unsummoning":
+            after := func(){
+                cityStackInfo := game.ComputeCityStackInfo()
+
+                for _, player := range game.Players {
+                    for _, stack := range player.Stacks {
+
+                        city := cityStackInfo.FindCity(stack.X(), stack.Y(), stack.Plane())
+                        if city != nil && !city.CanTarget(spell) {
+                            continue
+                        }
+
+                        for _, unit := range stack.Units() {
+                            if unit.GetRace() == data.RaceFantastic {
+
+                                if unit.HasEnchantment(data.UnitEnchantmentSpellLock) ||
+                                unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings) ||
+                                unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonSkin) ||
+                                unit.HasEnchantment(data.UnitEnchantmentChaosChannelsFireBreath) ||
+                                unit.HasAbility(data.AbilityMagicImmunity) {
+                                    continue
+                                }
+
+                                resistance := combat.GetResistanceFor(unit, data.SorceryMagic)
+                                if rand.N(10) + 1 > resistance - 3 {
+                                    player.RemoveUnit(unit)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                game.RefreshUI()
+            }
+
+            game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.GreatUnsummoning, After: after}
+
+        case "Nature's Cures":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                stack := player.FindStack(tileX, tileY, game.Plane)
+                if stack != nil {
+                    // heal all units that aren't undead or death fantastic
+                    stack.NaturalHeal(1)
+                    game.doCastOnMap(yield, tileX, tileY, 0, spell.Sound, func (x int, y int, animationFrame int) {})
+                }
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeFriendlyUnit, SelectedFunc: selected}
+
+        case "Resurrection":
+            heroes := player.GetDeadHeroes()
+            if len(heroes) == 0 {
+                game.Events <- &GameEventNotice{Message: "No dead heroes to resurrect"}
+            } else if player.FreeHeroSlots() == 0 {
+                game.Events <- &GameEventNotice{Message: "No free hero slots to resurrect hero"}
+            } else {
+                // show selection box for all dead heroes
+
+                group, quit := game.MakeResurrectionUI(player, heroes, spell.Sound)
+
+                game.Events <- &GameEventRunUI{
+                    Group: group,
+                    Quit: quit,
+                }
+            }
+
+        case "Earthquake":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                city, owner := game.FindCity(tileX, tileY, game.Plane)
+                if city != nil {
+                    sound, err := audio.LoadSound(game.Cache, spell.Sound)
+                    if err == nil {
+                        sound.Play()
+                    }
+
+                    game.showCityEarthquake(yield, city, owner)
+                }
+
+                yield()
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyCity, SelectedFunc: selected}
+
+        case "Ice Storm":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                enemyStack, enemy := game.FindStack(tileX, tileY, game.Plane)
+
+                game.doCastOnMap(yield, tileX, tileY, 10, spell.Sound, func (x int, y int, animationFrame int) {})
+
+                for _, unit := range enemyStack.Units() {
+                    combat.ApplyAreaDamage(&UnitDamageWrapper{Unit: unit}, 6, units.DamageCold, 0)
+                    if unit.GetHealth() <= 0 {
+                        enemy.RemoveUnit(unit)
+                    }
+                }
+
+                yield()
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyUnit, SelectedFunc: selected}
+        case "Fire Storm":
+            selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                enemyStack, enemy := game.FindStack(tileX, tileY, game.Plane)
+
+                game.doCastOnMap(yield, tileX, tileY, 6, spell.Sound, func (x int, y int, animationFrame int) {})
+
+                for _, unit := range enemyStack.Units() {
+                    combat.ApplyAreaDamage(&UnitDamageWrapper{Unit: unit}, 8, units.DamageImmolation, 0)
+                    if unit.GetHealth() <= 0 {
+                        enemy.RemoveUnit(unit)
+                    }
+                }
+
+                yield()
+            }
+
+            game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyUnit, SelectedFunc: selected}
+
         case "Disjunction", "Disjunction True":
             uiGroup, quit, err := game.MakeDisjunctionUI(player, spell)
             if err != nil {
@@ -569,7 +624,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             player.CreateArtifact = nil
         case "Earth Lore":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                game.doCastEarthLore(yield, tileX, tileY, player)
+                game.doCastEarthLore(yield, tileX, tileY, player, spell.Sound)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: selected}
@@ -582,8 +637,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                     return
                 }
 
-                // FIXME: verify the animation and sound
-                game.doCastOnMap(yield, tileX, tileY, 12, false, 72, func (x int, y int, animationFrame int) {})
+                // FIXME: verify the animation and sound. The spell index is 102
+                game.doCastOnMap(yield, tileX, tileY, 12, 72, func (x int, y int, animationFrame int) {})
                 game.doCallTheVoid(chosenCity, owner)
             }
 
@@ -628,7 +683,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeLand, SelectedFunc: selected}
         case "Warp Node":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                game.doCastWarpNode(yield, tileX, tileY, player)
+                game.doCastWarpNode(yield, tileX, tileY, player, spell.Sound)
             }
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyMeldedNode, SelectedFunc: selected}
         case "Disenchant Area":
@@ -716,9 +771,237 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
     }
 }
 
-func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context, error) {
+func (game *Game) castGlobalEnchantment(enchantment data.Enchantment, player *playerlib.Player) {
+    if !player.GlobalEnchantments.Contains(enchantment) {
+        game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: enchantment, After: func(){
+            game.ApplyGlobalEnchantment(enchantment, player)
+        }}
+        player.GlobalEnchantments.Insert(enchantment)
+        game.RefreshUI()
+    }
+}
+
+// apply effects for a global enchantment
+func (game *Game) ApplyGlobalEnchantment(enchantment data.Enchantment, player *playerlib.Player) {
+    switch enchantment {
+        case data.EnchantmentAwareness: game.doExploreFogForAwareness(player)
+        case data.EnchantmentNatureAwareness:
+            player.LiftFogAll(data.PlaneArcanus)
+            player.LiftFogAll(data.PlaneMyrror)
+        case data.EnchantmentGreatWasting:
+            for _, player := range game.Players {
+                player.UpdateUnrest()
+            }
+        case data.EnchantmentArmageddon:
+            for _, player := range game.Players {
+                player.UpdateUnrest()
+            }
+        case data.EnchantmentJustCause:
+            player.UpdateUnrest()
+        case data.EnchantmentHolyArms:
+            // all units implicitly have holy weapon, so the actual enchantment is removed from all units
+            for _, unit := range player.Units {
+                unit.RemoveEnchantment(data.UnitEnchantmentHolyWeapon)
+            }
+        case data.EnchantmentAuraOfMajesty:
+            for _, other := range player.GetKnownPlayers() {
+                other.AdjustDiplomaticRelation(player, 10)
+                player.AdjustDiplomaticRelation(other, 10)
+            }
+
+    }
+}
+
+func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib.Hero, resurrectionSound int) (*uilib.UIElementGroup, context.Context) {
     group := uilib.MakeGroup()
 
+    quit, cancel := context.WithCancel(context.Background())
+
+    var layer uilib.UILayer = 1
+
+    uiX := 40
+    uiY := 1
+
+    specialFonts := fontslib.MakeSpellSpecialUIFonts(game.Cache)
+
+    var selectedHero *herolib.Hero
+    selectedHero = heroes[0]
+
+    // background
+    group.AddElement(&uilib.UIElement{
+        Layer: layer,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            background, _ := game.ImageCache.GetImage("spellscr.lbx", 45, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(uiX), float64(uiY))
+            scale.DrawScaled(screen, background, &options)
+
+            specialFonts.BigOrange.PrintOptions(screen, float64(uiX + background.Bounds().Dx() / 2), float64(uiY + 10), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "Select hero to resurrect")
+
+            if selectedHero != nil {
+                specialFonts.BigOrange.PrintOptions(screen, float64(uiX + background.Bounds().Dx() / 2), float64(uiY + background.Bounds().Dy() - 20), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, selectedHero.GetFullName())
+            }
+        },
+        Hack: func(element *uilib.UIElement) {
+            cancel()
+        },
+        /*
+        NotLeftClicked: func(element *uilib.UIElement) {
+            cancel()
+        },
+        */
+    })
+
+    gridX := 0
+    gridY := 0
+    for _, hero := range slices.SortedFunc(slices.Values(heroes), func (hero1 *herolib.Hero, hero2 *herolib.Hero) int {
+        return cmp.Compare(hero1.Name, hero2.Name)
+    }) {
+        lbxFile, lbxIndex := hero.GetPortraitLbxInfo()
+        pic, _ := game.ImageCache.GetImage(lbxFile, lbxIndex, 0)
+        if pic == nil {
+            log.Printf("Error with hero picture: %v", hero.Name)
+            continue
+        }
+
+        gridWidth := 18
+        gridHeight := 18
+        gapX := 7
+        gapY := 6
+
+        xPos := uiX + 13 + gridX * (gridWidth + gapX)
+        yPos := uiY + 26 + gridY * (gridHeight + gapY)
+
+        rect := image.Rect(xPos, yPos, xPos + gridWidth, yPos + gridHeight)
+        lookTime := 0
+        maxLookTime := 20
+        group.AddElement(&uilib.UIElement{
+            Layer: layer,
+            Order: 1,
+            Rect: rect,
+            Inside: func(element *uilib.UIElement, x int, y int) {
+                selectedHero = hero
+                lookTime = min(lookTime + 1, maxLookTime)
+            },
+            NotInside: func(element *uilib.UIElement) {
+                if selectedHero == hero {
+                    selectedHero = nil
+                }
+
+                lookTime = max(lookTime - 1, 0)
+            },
+            LeftClick: func(element *uilib.UIElement) {
+                cancel()
+                hero.SetStatus(herolib.StatusEmployed)
+                caster.AddHeroToSummoningCircle(hero)
+                game.ResolveStackAt(hero.GetX(), hero.GetY(), hero.GetPlane())
+
+                summoningCity := caster.FindSummoningCity()
+                if summoningCity != nil {
+                    game.Plane = summoningCity.Plane
+                    game.Events <- &GameEventInvokeRoutine{
+                        Routine: func (yield coroutine.YieldFunc) {
+                            game.doCastOnMap(yield, summoningCity.X, summoningCity.Y, 3, resurrectionSound, func (x int, y int, animationFrame int) {})
+                            game.RefreshUI()
+                        },
+                    }
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Scale(float64(gridWidth) / float64(pic.Bounds().Dx()), float64(gridHeight) / float64(pic.Bounds().Dy()))
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+
+                if lookTime > 0 {
+                    options.ColorScale.SetR(1.0 + float32(lookTime) / float32(maxLookTime) / 2)
+                    options.ColorScale.SetG(1.0 + float32(lookTime) / float32(maxLookTime) / 2)
+                }
+
+                scale.DrawScaled(screen, pic, &options)
+            },
+        })
+
+        gridX += 1
+        if gridX == 6 {
+            gridX = 0
+            gridY += 1
+        }
+    }
+
+    return group, quit
+}
+
+type SelectedEnchantmentFunc func(data.Enchantment, *playerlib.Player, *string, image.Rectangle, *util.AlphaFadeFunc)
+
+func (game *Game) MakeSpellBindingUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context, error) {
+    var group *uilib.UIElementGroup
+    var quit context.Context
+    var cancel context.CancelFunc
+
+    // ugly to need this here
+    fadeSpeed := 7
+
+    // A func for creating a sparks element when a target is selected
+    createSparksElement := func (faceRect image.Rectangle, fader *util.AlphaFadeFunc) *uilib.UIElement {
+        sparksCreationTick := group.Counter // Needed for sparks animation
+        return &uilib.UIElement{
+            Layer: 2,
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                const ticksPerFrame = 5
+                frameToShow := int((group.Counter - sparksCreationTick) / ticksPerFrame) % 6
+                background, _ := game.ImageCache.GetImage("specfx.lbx", 40, frameToShow)
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha((*fader)())
+                options.GeoM.Translate(float64(faceRect.Min.X - 5), float64(faceRect.Min.Y - 10))
+                scale.DrawScaled(screen, background, &options)
+            },
+        }
+    }
+
+    selectedEnchantment := func (enchantment data.Enchantment, owner *playerlib.Player, uiTitle *string, faceRect image.Rectangle, fader *util.AlphaFadeFunc) {
+        dispelStrength := 20000
+
+        allSpells := game.AllSpells()
+        targetSpell := allSpells.FindByName(enchantment.String())
+
+        sound, err := audio.LoadSound(game.Cache, spell.Sound)
+        if err == nil {
+            sound.Play()
+        }
+
+        group.AddElement(createSparksElement(faceRect, fader))
+        success := false
+
+        if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &owner.Wizard)) {
+            success = true
+            owner.RemoveEnchantment(enchantment)
+            caster.AddEnchantment(enchantment)
+
+            game.ApplyGlobalEnchantment(enchantment, caster)
+        }
+
+        group.AddDelay(60, func(){
+            if success {
+                *uiTitle = fmt.Sprintf("%s has been stolen", enchantment.String())
+            } else {
+                *uiTitle = "Spell binding failed"
+            }
+            group.AddDelay(113, func(){
+                *fader = group.MakeFadeOut(uint64(fadeSpeed))
+                group.AddDelay(7, func(){
+                    cancel()
+                })
+            })
+        })
+
+    }
+
+    var err error
+    group, quit, cancel, err = game.makeGlobalEnchantmentSelectionUI(caster, spell, selectedEnchantment)
+    return group, quit, err
+}
+
+func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context, error) {
     dispelStrength := spell.Cost(true)
     if spell.Name == "Disjunction True" {
         dispelStrength *= 3
@@ -728,16 +1011,15 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
         dispelStrength *= 2
     }
 
-    quit, cancel := context.WithCancel(context.Background())
+    var quit context.Context
+    var cancel context.CancelFunc
+    var group *uilib.UIElementGroup
 
+    // ugly to need this here
     fadeSpeed := 7
 
-    fader := group.MakeFadeIn(uint64(fadeSpeed))
-
-    const uiX = 30
-
     // A func for creating a sparks element when a target is selected
-    createSparksElement := func (faceRect image.Rectangle) *uilib.UIElement {
+    createSparksElement := func (faceRect image.Rectangle, fader *util.AlphaFadeFunc) *uilib.UIElement {
         sparksCreationTick := group.Counter // Needed for sparks animation
         return &uilib.UIElement{
             Layer: 2,
@@ -746,12 +1028,61 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
                 frameToShow := int((group.Counter - sparksCreationTick) / ticksPerFrame) % 6
                 background, _ := game.ImageCache.GetImage("specfx.lbx", 40, frameToShow)
                 var options ebiten.DrawImageOptions
-                options.ColorScale.ScaleAlpha(fader())
+                options.ColorScale.ScaleAlpha((*fader)())
                 options.GeoM.Translate(float64(faceRect.Min.X - 5), float64(faceRect.Min.Y - 10))
                 scale.DrawScaled(screen, background, &options)
             },
         }
     }
+
+    selectedEnchantment := func (enchantment data.Enchantment, owner *playerlib.Player, uiTitle *string, faceRect image.Rectangle, fader *util.AlphaFadeFunc) {
+        allSpells := game.AllSpells()
+        targetSpell := allSpells.FindByName(enchantment.String())
+
+        group.AddElement(createSparksElement(faceRect, fader))
+        // FIXME: verify this sound
+        sound, err := audio.LoadSound(game.Cache, 29)
+        if err == nil {
+            sound.Play()
+        }
+
+        success := false
+
+        if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &owner.Wizard)) {
+            // show an animation/play a sound?
+            owner.RemoveEnchantment(enchantment)
+            success = true
+        }
+
+        group.AddDelay(60, func(){
+            if success {
+                *uiTitle = fmt.Sprintf("%s has been disjuncted", enchantment.String())
+            } else {
+                *uiTitle = "Disjunction failed"
+            }
+            group.AddDelay(113, func(){
+                *fader = group.MakeFadeOut(uint64(fadeSpeed))
+                group.AddDelay(7, func(){
+                    cancel()
+                })
+            })
+        })
+    }
+
+    var err error
+    group, quit, cancel, err = game.makeGlobalEnchantmentSelectionUI(caster, spell, selectedEnchantment)
+    return group, quit, err
+}
+
+func (game *Game) makeGlobalEnchantmentSelectionUI(caster *playerlib.Player, spell spellbook.Spell, selectedEnchantment SelectedEnchantmentFunc) (*uilib.UIElementGroup, context.Context, context.CancelFunc, error) {
+    group := uilib.MakeGroup()
+    quit, cancel := context.WithCancel(context.Background())
+
+    fadeSpeed := 7
+
+    fader := group.MakeFadeIn(uint64(fadeSpeed))
+
+    const uiX = 30
 
     specialFonts := fontslib.MakeSpellSpecialUIFonts(game.Cache)
 
@@ -849,37 +1180,7 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
                 },
                 LeftClick: func(element *uilib.UIElement) {
                     if enabled && enchantmentIndex - minIndex >= 0 && enchantmentIndex - minIndex < 3 {
-                        allSpells := game.AllSpells()
-                        targetSpell := allSpells.FindByName(enchantment.String())
-
-                        group.AddElement(createSparksElement(faceRect))
-                        // FIXME: verify this sound
-                        sound, err := audio.LoadSound(game.Cache, 29)
-                        if err == nil {
-                            sound.Play()
-                        }
-
-                        success := false
-
-                        if spellbook.RollDispelChance(spellbook.ComputeDispelChance(dispelStrength, targetSpell.Cost(true), targetSpell.Magic, &player.Wizard)) {
-                            // show an animation/play a sound?
-                            player.RemoveEnchantment(enchantment)
-                            success = true
-                        }
-
-                        group.AddDelay(60, func(){
-                            if success {
-                                header = fmt.Sprintf("%s has been disjuncted", enchantment.String())
-                            } else {
-                                header = "Disjunction failed"
-                            }
-                            group.AddDelay(113, func(){
-                                fader = group.MakeFadeOut(uint64(fadeSpeed))
-                                group.AddDelay(7, func(){
-                                    cancel()
-                                })
-                            })
-                        })
+                        selectedEnchantment(enchantment, player, &header, faceRect, &fader)
                     }
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -993,10 +1294,10 @@ func (game *Game) MakeDisjunctionUI(caster *playerlib.Player, spell spellbook.Sp
 
     if enchantmentOptions == 0 {
         cancel()
-        return nil, quit, errors.New("There are no global spells to disjunct")
+        return nil, quit, cancel, errors.New("There are no global spells to disjunct")
     }
 
-    return group, quit, nil
+    return group, quit, cancel, nil
 }
 
 // Returns true if the spell is rolled to be instantly fizzled on cast (caused by spells like Life Force)
@@ -1097,7 +1398,7 @@ func (game *Game) doCastSpellWard(player *playerlib.Player, spell spellbook.Spel
 }
 
 func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.Player, spell spellbook.Spell, disenchantTrue bool, tileX int, tileY int) {
-    game.doCastOnMap(yield, tileX, tileY, 9, false, spell.Sound, func (x int, y int, animationFrame int){})
+    game.doCastOnMap(yield, tileX, tileY, 9, spell.Sound, func (x int, y int, animationFrame int){})
 
     disenchantStrength := spell.Cost(true)
     if disenchantTrue {
@@ -1175,7 +1476,7 @@ func (game *Game) doCastOnUnit(player *playerlib.Player, spell spellbook.Spell, 
             return
         }
 
-        game.doCastOnMap(yield, tileX, tileY, animationIndex, false, spell.Sound, func (x int, y int, animationFrame int) {})
+        game.doCastOnMap(yield, tileX, tileY, animationIndex, spell.Sound, func (x int, y int, animationFrame int) {})
 
         after(unit)
 
@@ -1338,6 +1639,55 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
     }
 }
 
+func (game *Game) showCityEarthquake(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player) {
+    ui, quit, updateDestroyed, err := cityview.MakeEarthquakeView(game.Cache, city, player)
+    if err != nil {
+        log.Printf("Error making new building view: %v", err)
+        return
+    }
+
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    game.Drawer = func(screen *ebiten.Image, game *Game){
+        oldDrawer(screen, game)
+        ui.Draw(ui, screen)
+    }
+
+    counter := game.Counter
+
+    yield()
+
+    for quit.Err() == nil && game.Counter < counter + 120 {
+        game.Counter += 1
+        ui.StandardUpdate()
+        if yield() != nil {
+            return
+        }
+    }
+
+    _, _, buildings := game.doEarthquake(city, player)
+    destroyed := set.NewSet(buildings...)
+
+    updateDestroyed(destroyed)
+
+    counter = game.Counter
+
+    for quit.Err() == nil && game.Counter < counter + 180 {
+        game.Counter += 1
+        ui.StandardUpdate()
+        if yield() != nil {
+            return
+        }
+    }
+
+    // absorb left click
+    yield()
+
+}
+
 func (game *Game) showCastNewBuilding(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, newBuilding building.Building, name string) {
     ui, quit, err := cityview.MakeNewBuildingView(game.Cache, city, player, newBuilding, name)
     if err != nil {
@@ -1437,6 +1787,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             selectMessage = fmt.Sprintf("Select an enemy city as the target for a %v spell.", spell.Name)
         case LocationTypeFriendlyUnit:
             selectMessage = fmt.Sprintf("Select a friendly unit as the target for a %v spell.", spell.Name)
+        case LocationTypeEnemyUnit:
+            selectMessage = fmt.Sprintf("Select an enemy unit as the target for a %v spell.", spell.Name)
         default:
             selectMessage = fmt.Sprintf("unhandled location type %v", locationType)
     }
@@ -1697,9 +2049,20 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         }
 
                     case LocationTypeEnemyUnit:
-                        // TODO
-                        // FIXME: This should consider only tiles with FogTypeVisible
                         // also consider if the unit is in a city with a spell ward that prevents this unit from being targeted
+                        if player.IsVisible(tileX, tileY, game.Plane) {
+                            stack := entityInfo.FindStack(tileX, tileY, game.Plane)
+                            if stack != nil && entityInfo.ContainsEnemy(tileX, tileY, game.Plane, player) {
+                                city := entityInfo.FindCity(tileX, tileY, game.Plane)
+
+                                if city != nil && !city.CanTarget(spell) {
+                                    game.doNotice(yield, ui, fmt.Sprintf("You cannot cast %v on this unit", spell.Name))
+                                    break
+                                } else {
+                                    return tileX, tileY, false
+                                }
+                            }
+                        }
                 }
             }
         }
@@ -1801,7 +2164,7 @@ func (game *Game) doCastCityEnchantment(spell spellbook.Spell, player *playerlib
 
 type UpdateMapFunction func (tileX int, tileY int, animationFrame int)
 
-func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, animationIndex int, newSound bool, soundIndex int, update UpdateMapFunction) {
+func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, animationIndex int, soundIndex int, update UpdateMapFunction) {
     game.Camera.Zoom = camera.ZoomDefault
     game.doMoveCamera(yield, tileX, tileY)
 
@@ -1824,16 +2187,11 @@ func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, a
         scale.DrawScaled(screen, animation.Frame(), &options)
     }
 
-    if newSound {
-        sound, err := audio.LoadNewSound(game.Cache, soundIndex)
-        if err == nil {
-            sound.Play()
-        }
+    sound, err := audio.LoadSound(game.Cache, soundIndex)
+    if err == nil {
+        sound.Play()
     } else {
-        sound, err := audio.LoadSound(game.Cache, soundIndex)
-        if err == nil {
-            sound.Play()
-        }
+        log.Printf("No such sound %v for spell", soundIndex)
     }
 
     quit := false
@@ -1855,7 +2213,7 @@ func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, a
 func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY int) {
     update := func (x int, y int, frame int) {}
 
-    game.doCastOnMap(yield, tileX, tileY, 46, false, 86, update)
+    game.doCastOnMap(yield, tileX, tileY, 46, 86, update)
 
     useMap := game.CurrentMap()
 
@@ -1875,10 +2233,10 @@ func (game *Game) doCastEnchantRoad(yield coroutine.YieldFunc, tileX int, tileY 
     }
 }
 
-func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player) {
+func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, tileX int, tileY int, player *playerlib.Player, soundIndex int) {
     update := func (x int, y int, frame int) {}
 
-    game.doCastOnMap(yield, tileX, tileY, 45, true, 18, update)
+    game.doCastOnMap(yield, tileX, tileY, 45, soundIndex, update)
 
     player.LiftFogSquare(tileX, tileY, 5, game.Plane)
 }
@@ -1900,7 +2258,7 @@ func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tile
         }
     }
 
-    game.doCastOnMap(yield, tileX, tileY, 8, false, 28, update)
+    game.doCastOnMap(yield, tileX, tileY, 8, 28, update)
     game.RefreshUI()
 }
 
@@ -1919,7 +2277,7 @@ func (game *Game) doCastTransmute(yield coroutine.YieldFunc, tileX int, tileY in
         }
     }
 
-    game.doCastOnMap(yield, tileX, tileY, 0, false, 28, update)
+    game.doCastOnMap(yield, tileX, tileY, 0, 28, update)
     game.RefreshUI()
 }
 
@@ -1932,7 +2290,7 @@ func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY
         }
     }
 
-    game.doCastOnMap(yield, tileX, tileY, 11, false, 98, update)
+    game.doCastOnMap(yield, tileX, tileY, 11, 98, update)
 
     mapObject := game.CurrentMap()
     mapObject.SetVolcano(tileX, tileY, player)
@@ -1963,7 +2321,7 @@ func (game *Game) doCastCorruption(yield coroutine.YieldFunc, tileX int, tileY i
         }
     }
 
-    game.doCastOnMap(yield, tileX, tileY, 7, false, 103, update)
+    game.doCastOnMap(yield, tileX, tileY, 7, 103, update)
     game.RefreshUI()
 }
 
@@ -2026,10 +2384,10 @@ func (game *Game) doCastDrainPower(player *playerlib.Player) {
     }
 }
 
-func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int, caster *playerlib.Player) {
+func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int, caster *playerlib.Player, soundIndex int) {
     update := func (x int, y int, frame int) {}
 
-    game.doCastOnMap(yield, tileX, tileY, 13, true, 5, update)
+    game.doCastOnMap(yield, tileX, tileY, 13, soundIndex, update)
 
     node := game.CurrentMap().GetMagicNode(tileX, tileY)
     if node != nil {
@@ -2038,7 +2396,7 @@ func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int
     }
 }
 
-func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *playerlib.Player, enchantment data.Enchantment) {
+func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *playerlib.Player, enchantment data.Enchantment, after func()) {
 
     song := music.SongNone
 
@@ -2067,6 +2425,8 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
         case data.EnchantmentEternalNight: song = music.SongEternalNight
         case data.EnchantmentEvilOmens: song = music.SongEvilOmens
         case data.EnchantmentZombieMastery: song = music.SongZombieMastery
+        case data.GreatUnsummoning: song = music.SongGreatUnsummoning
+        case data.DeathWish: song = music.SongDeathWish
     }
 
     if song != music.SongNone {
@@ -2220,6 +2580,7 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 
     yield()
 
+    after()
 }
 
 func (game *Game) doCastFloatingIsland(yield coroutine.YieldFunc, player *playerlib.Player, tileX int, tileY int) {
@@ -2231,5 +2592,5 @@ func (game *Game) doCastFloatingIsland(yield coroutine.YieldFunc, player *player
         }
     }
 
-    game.doCastOnMap(yield, tileX, tileY, 1, false, 29, update)
+    game.doCastOnMap(yield, tileX, tileY, 1, 29, update)
 }

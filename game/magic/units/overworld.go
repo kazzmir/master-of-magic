@@ -20,6 +20,7 @@ const (
     BusyStatusBuildRoad // for engineers
     BusyStatusPurify // for priests
     BusyStatusPatrol // any unit can patrol
+    BusyStatusStasis // for units under the effect of stasis
 )
 
 type EnchantmentProvider interface {
@@ -413,11 +414,26 @@ func (unit *OverworldUnit) GetToHitMelee() int {
         case data.WeaponAdamantium: base += 10
     }
 
+    if unit.HasAbility(data.AbilityLucky) {
+        base += 10
+    }
+
     if unit.HasEnchantment(data.UnitEnchantmentHolyWeapon) {
         base += 10
     }
 
     return base
+}
+
+func (unit *OverworldUnit) GetToDefend() int {
+    base := 30
+    modifier := 0
+
+    if unit.HasAbility(data.AbilityLucky) {
+        modifier += 10
+    }
+
+    return base + modifier
 }
 
 func (unit *OverworldUnit) GetRangedAttackDamageType() Damage {
@@ -790,6 +806,10 @@ func (unit *OverworldUnit) GetBaseResistance() int {
         case ExperienceElite: base += 3
         case ExperienceUltraElite: base += 4
         case ExperienceChampionNormal: base += 5
+    }
+
+    if unit.HasAbility(data.AbilityLucky) {
+        base += 1
     }
 
     return base

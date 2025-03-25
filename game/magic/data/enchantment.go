@@ -33,6 +33,10 @@ const (
     EnchantmentEternalNight
     EnchantmentEvilOmens
     EnchantmentZombieMastery
+
+    // not a real global enchantment, but it has the same animation as a global enchantment
+    GreatUnsummoning
+    DeathWish
 )
 
 func (enchantment Enchantment) String() string {
@@ -61,6 +65,9 @@ func (enchantment Enchantment) String() string {
         case EnchantmentEternalNight: return "Eternal Night"
         case EnchantmentEvilOmens: return "Evil Omens"
         case EnchantmentZombieMastery: return "Zombie Mastery"
+
+        case GreatUnsummoning: return "Great Unsummoning"
+        case DeathWish: return "Death Wish"
     }
 
     return ""
@@ -125,6 +132,9 @@ func (enchantment Enchantment) LbxIndex() int {
         case EnchantmentEternalNight: return 15
         case EnchantmentEvilOmens: return 16
         case EnchantmentZombieMastery: return 17
+
+        case GreatUnsummoning: return 39
+        case DeathWish: return 38
     }
 
     return 0
@@ -185,7 +195,6 @@ const (
     UnitCursePossession
     UnitCurseWeakness
     UnitCurseWeb
-
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}

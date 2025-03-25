@@ -964,6 +964,10 @@ func (unit *ArmyUnit) GetToHitMelee(defender *ArmyUnit) int {
         modifier -= 20
     }
 
+    if defender.HasAbility(data.AbilityLucky) {
+        modifier -= 10
+    }
+
     if defender.IsInvisible() && !unit.HasAbility(data.AbilityIllusionsImmunity) {
         modifier -= 10
     }
@@ -984,8 +988,14 @@ func (unit *ArmyUnit) GetToHitMelee(defender *ArmyUnit) int {
     return max(0, unit.Unit.GetToHitMelee() + modifier)
 }
 
+type UnitResistance interface {
+    GetResistance() int
+    HasEnchantment(data.UnitEnchantment) bool
+    HasAbility(data.AbilityType) bool
+}
+
 // get the resistance of the unit, taking into account enchantments and curses that apply to the specific magic type
-func (unit *ArmyUnit) GetResistanceFor(magic data.MagicType) int {
+func GetResistanceFor(unit UnitResistance, magic data.MagicType) int {
     base := unit.GetResistance()
     modifier := 0
 
@@ -1551,7 +1561,7 @@ func ComputeDefense(unit UnitDamage, damage units.Damage, source DamageSource, m
                 hasImmunity = true
             }
         case units.DamageCold:
-            defenseRolls = GetDefenseFor(unit, modifiers.Magic)
+            defenseRolls = GetDefenseFor(unit, data.NatureMagic)
             if unit.HasAbility(data.AbilityLargeShield) {
                 defenseRolls += 2
             }
@@ -1645,11 +1655,13 @@ func ApplyAreaDamage(unit UnitDamage, attackStrength int, damageType units.Damag
     totalDamage := 0
     health_per_figure := unit.GetMaxHealth() / unit.GetCount()
 
+    modifiers := DamageModifiers{WallDefense: wallDefense}
+
     for range unit.Figures() {
         // FIXME: should this toHit=30 be based on the unit's toHitMelee?
         damage := ComputeRoll(attackStrength, 30)
 
-        defense := ComputeDefense(unit, damageType, DamageSourceSpell, DamageModifiers{WallDefense: wallDefense})
+        defense := ComputeDefense(unit, damageType, DamageSourceSpell, modifiers)
 
         // can't do more damage than a single figure has HP
         figureDamage := unit.ReduceInvulnerability(min(damage - defense, health_per_figure))
@@ -1812,7 +1824,7 @@ func (unit *ArmyUnit) CauseFear() int {
         return 0
     }
 
-    resistance := unit.GetResistanceFor(data.DeathMagic)
+    resistance := GetResistanceFor(unit, data.DeathMagic)
 
     for range unit.Figures() {
         if rand.N(10) + 1 > resistance {
@@ -1835,7 +1847,7 @@ func (unit *ArmyUnit) ToDefend(modifiers DamageModifiers) int {
         modifier -= 10
     }
 
-    return 30 + modifier
+    return unit.Unit.GetToDefend() + modifier
 }
 
 // number of alive figures in this unit
@@ -3042,7 +3054,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
             stoneDamage := 0
 
             for range defender.Figures() {
-                if rand.N(10) + 1 > defender.GetResistanceFor(data.NatureMagic) - resistance {
+                if rand.N(10) + 1 > GetResistanceFor(defender, data.NatureMagic) - resistance {
                     stoneDamage += defender.GetHitPoints()
                 }
             }
@@ -3063,7 +3075,7 @@ func (model *CombatModel) doGazeAttack(attacker *ArmyUnit, defender *ArmyUnit) (
             deathDamage := 0
 
             for range defender.Figures() {
-                if rand.N(10) + 1 > defender.GetResistanceFor(data.DeathMagic) - resistance {
+                if rand.N(10) + 1 > GetResistanceFor(defender, data.DeathMagic) - resistance {
                     deathDamage += defender.GetHitPoints()
                 }
             }
@@ -3143,7 +3155,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             modifier := int(attacker.GetAbilityValue(data.AbilityLifeSteal))
             // if vampiric, modifier will just be 0
             damage := 0
-            defenderResistance := defender.GetResistanceFor(data.DeathMagic)
+            defenderResistance := GetResistanceFor(defender, data.DeathMagic)
 
             for range attacker.Figures() - fearFigure {
                 more := rand.N(10) + 1 - (defenderResistance + modifier)
@@ -3171,7 +3183,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
         if !defender.HasAbility(data.AbilityStoningImmunity) && !defender.HasAbility(data.AbilityMagicImmunity) {
             damage := 0
 
-            defenderResistance := defender.GetResistanceFor(data.NatureMagic)
+            defenderResistance := GetResistanceFor(defender, data.NatureMagic)
 
             modifier := int(attacker.GetAbilityValue(data.AbilityStoningTouch))
 
@@ -3208,7 +3220,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
         if !immune {
             damage := 0
 
-            defenderResistance := defender.GetResistanceFor(data.LifeMagic)
+            defenderResistance := GetResistanceFor(defender, data.LifeMagic)
             if defender.Unit.IsUndead() {
                 defenderResistance -= 9
             } else {
@@ -3233,7 +3245,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
     if attacker.HasAbility(data.AbilityDeathTouch) {
         if !defender.HasAbility(data.AbilityDeathImmunity) && !defender.HasAbility(data.AbilityMagicImmunity) {
             damage := 0
-            defenderResistance := defender.GetResistanceFor(data.DeathMagic)
+            defenderResistance := GetResistanceFor(defender, data.DeathMagic)
             modifier := 3
 
             for range attacker.Figures() - fearFigure {
@@ -3254,7 +3266,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
     if attacker.Unit.HasItemAbility(data.ItemAbilityDestruction) {
         if !defender.HasAbility(data.AbilityMagicImmunity) {
-            defenderResistance := defender.GetResistanceFor(data.ChaosMagic)
+            defenderResistance := GetResistanceFor(defender, data.ChaosMagic)
 
             damage := 0
             for range attacker.Figures() - fearFigure {

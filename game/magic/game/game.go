@@ -125,6 +125,11 @@ type GameEventVault struct {
     Player *playerlib.Player
 }
 
+// invoke an arbitrary routine
+type GameEventInvokeRoutine struct {
+    Routine func (yield coroutine.YieldFunc)
+}
+
 type GameEventNewOutpost struct {
     City *citylib.City
     Stack *playerlib.UnitStack
@@ -156,6 +161,8 @@ type GameEventResearchSpell struct {
 type GameEventCastGlobalEnchantment struct {
     Player *playerlib.Player
     Enchantment data.Enchantment
+    // if non-nil, then invoke this function after the enchantment animation
+    After func()
 }
 
 type GameEventGameMenu struct {
@@ -2340,7 +2347,7 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
 
     result := func(hired bool) {
         if hired {
-            if player.AddHero(hero) {
+            if player.AddHeroToFortress(hero) {
                 player.Gold -= cost
                 hero.SetStatus(herolib.StatusEmployed)
 
@@ -2895,12 +2902,19 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventResearchSpell:
                         researchSpell := event.(*GameEventResearchSpell)
                         game.ResearchNewSpell(yield, researchSpell.Player)
+                    case *GameEventInvokeRoutine:
+                        invokeRoutine := event.(*GameEventInvokeRoutine)
+                        invokeRoutine.Routine(yield)
                     case *GameEventCastGlobalEnchantment:
                         castGlobal := event.(*GameEventCastGlobalEnchantment)
                         player := castGlobal.Player
 
                         if player.IsHuman() || game.CastingDetectableByHuman(player) {
-                            game.doCastGlobalEnchantment(yield, player, castGlobal.Enchantment)
+                            after := castGlobal.After
+                            if after == nil {
+                                after = func(){}
+                            }
+                            game.doCastGlobalEnchantment(yield, player, castGlobal.Enchantment, after)
                         }
                     case *GameEventSelectLocationForSpell:
                         selectLocation := event.(*GameEventSelectLocationForSpell)
@@ -3937,6 +3951,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
 func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Player, move *playerlib.AIMoveStackDecision) {
     stack := move.Stack
+    // FIXME: split the stack into just the active units in case some are busy or out of moves
     to := move.Location
     log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
     getStack := func(x int, y int) *playerlib.UnitStack {
@@ -4683,7 +4698,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     oldDrawer := game.Drawer
     var combatScreen *combat.CombatScreen
 
-    if attacker.StrategicCombat && defender.StrategicCombat {
+    strategicCombat := attacker.StrategicCombat && defender.StrategicCombat
+
+    if strategicCombat {
         state, defeatedAttackers, defeatedDefenders = combat.DoStrategicCombat(attackingArmy, defendingArmy)
         log.Printf("Strategic combat result state=%v", state)
     } else {
@@ -4814,7 +4831,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     cityPopulationLoss := 0
     var cityBuildingLoss []buildinglib.Building
 
-    if zone.City != nil && state == combat.CombatStateAttackerWin {
+    if zone.City != nil && state == combat.CombatStateAttackerWin && !strategicCombat {
         // maximum chance is 50%, minimum is 10%
         chance := min(50, 10 + combatScreen.Model.CollateralDamage * 2)
         for range zone.City.Citizens() - 1 {
@@ -4847,7 +4864,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     }
 
     // Show end screen
-    if !attacker.StrategicCombat || !defender.StrategicCombat {
+    if !strategicCombat {
         result := combat.CombatEndScreenResultLoose
         humanAttacker := attacker.IsHuman()
         fame := defenderFame
@@ -4945,39 +4962,40 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     killUnits(attacker, attackerStack, landscape)
     killUnits(defender, defenderStack, landscape)
 
-    switch state {
-        case combat.CombatStateAttackerWin, combat.CombatStateDefenderFlee:
-            for _, unit := range combatScreen.Model.UndeadUnits {
-                defender.RemoveUnit(unit.Unit)
-                if len(attackerStack.Units()) < data.MaxUnitsInStack {
-                    attacker.AddUnit(attacker.UpdateUnit(unit.Unit))
-                }
-            }
-
-            if attacker.HasEnchantment(data.EnchantmentZombieMastery) {
-                for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
-                    if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(attackerStack.Units()) < data.MaxUnitsInStack {
-                        attacker.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, attackerStack.X(), attackerStack.Y(), attackerStack.Plane(), attacker.GetBanner(), attacker.MakeExperienceInfo(), attacker.MakeUnitEnchantmentProvider()))
+    if !strategicCombat {
+        switch state {
+            case combat.CombatStateAttackerWin, combat.CombatStateDefenderFlee:
+                for _, unit := range combatScreen.Model.UndeadUnits {
+                    defender.RemoveUnit(unit.Unit)
+                    if len(attackerStack.Units()) < data.MaxUnitsInStack {
+                        attacker.AddUnit(attacker.UpdateUnit(unit.Unit))
                     }
                 }
-            }
 
-        case combat.CombatStateDefenderWin, combat.CombatStateAttackerFlee:
-            for _, unit := range combatScreen.Model.UndeadUnits {
-                attacker.RemoveUnit(unit.Unit)
-                if len(defenderStack.Units()) < data.MaxUnitsInStack {
-                    defender.AddUnit(defender.UpdateUnit(unit.Unit))
-                }
-            }
-
-            if defender.HasEnchantment(data.EnchantmentZombieMastery) {
-                for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
-                    if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(defenderStack.Units()) < data.MaxUnitsInStack {
-                        defender.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, defenderStack.X(), defenderStack.Y(), defenderStack.Plane(), defender.GetBanner(), defender.MakeExperienceInfo(), defender.MakeUnitEnchantmentProvider()))
+                if attacker.HasEnchantment(data.EnchantmentZombieMastery) {
+                    for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
+                        if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(attackerStack.Units()) < data.MaxUnitsInStack {
+                            attacker.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, attackerStack.X(), attackerStack.Y(), attackerStack.Plane(), attacker.GetBanner(), attacker.MakeExperienceInfo(), attacker.MakeUnitEnchantmentProvider()))
+                        }
                     }
                 }
-            }
 
+            case combat.CombatStateDefenderWin, combat.CombatStateAttackerFlee:
+                for _, unit := range combatScreen.Model.UndeadUnits {
+                    attacker.RemoveUnit(unit.Unit)
+                    if len(defenderStack.Units()) < data.MaxUnitsInStack {
+                        defender.AddUnit(defender.UpdateUnit(unit.Unit))
+                    }
+                }
+
+                if defender.HasEnchantment(data.EnchantmentZombieMastery) {
+                    for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
+                        if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(defenderStack.Units()) < data.MaxUnitsInStack {
+                            defender.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, defenderStack.X(), defenderStack.Y(), defenderStack.Plane(), defender.GetBanner(), defender.MakeExperienceInfo(), defender.MakeUnitEnchantmentProvider()))
+                        }
+                    }
+                }
+        }
     }
 
     // experience
@@ -5989,6 +6007,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     Rect: unitRect,
                     PlaySoundLeftClick: true,
                     LeftClick: func(this *uilib.UIElement){
+                        // cannot toggle stasis units
+                        if unit.GetBusy() == units.BusyStatusStasis {
+                            return
+                        }
+
                         stack.ToggleActive(unit)
                         select {
                             case game.Events<- &GameEventMoveUnit{Player: player}:
@@ -6834,6 +6857,17 @@ func (game *Game) applyChaosChannels(unit *units.OverworldUnit) {
     unit.AddEnchantment(choice)
 }
 
+func handleStasis(stack *playerlib.UnitStack) {
+    // this seems like a reasonable place to handle stasis, but it could be moved elsewhere
+    for _, unit := range stack.Units() {
+        if unit.GetBusy() == units.BusyStatusStasis {
+            if rand.N(10) + 1 < combat.GetResistanceFor(unit, data.SorceryMagic) - 5 {
+                unit.SetBusy(units.BusyStatusNone)
+            }
+        }
+    }
+}
+
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     disbandedMessages := game.DisbandUnits(player)
 
@@ -7056,6 +7090,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
             rate = 1
         }
 
+        handleStasis(stack)
+
         stack.NaturalHeal(rate)
         stack.ResetMoves()
         stack.EnableMovers()
@@ -7096,7 +7132,7 @@ func (game *Game) revertVolcanos() {
 }
 
 // returns the number of people, units, buildings that were lost
-func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (int, int, int) {
+func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (int, int, []buildinglib.Building) {
     // FIXME: destroy buildings with 15% chance and non-flying units with 25% chance
     // https://masterofmagic.fandom.com/wiki/Earthquake
 
@@ -7132,7 +7168,7 @@ func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (in
         }
     }
 
-    return people, len(killedUnits), len(destroyedBuildings)
+    return people, len(killedUnits), destroyedBuildings
 }
 
 // At the beginning of each turn, Awareness clears the fog from all cities for enchantment's owner (newly built included)
@@ -7561,7 +7597,7 @@ func (game *Game) DoRandomEvents() {
 
                         people, units, buildings := game.doEarthquake(city, target)
 
-                        return MakeEarthquakeEvent(game.TurnNumber, city.Name, people, units, buildings), nil
+                        return MakeEarthquakeEvent(game.TurnNumber, city.Name, people, units, len(buildings)), nil
 
                     case RandomEventGreatMeteor:
                         choices := game.AllCities()
@@ -7904,6 +7940,7 @@ func (game *Game) DoNextTurn(){
         } else {
             // neutral enemies should reset their moves each turn
             for _, stack := range player.Stacks {
+                handleStasis(stack)
                 stack.ResetMoves()
                 stack.EnableMovers()
             }
