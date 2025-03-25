@@ -400,6 +400,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 if city != nil {
                     // FIXME: verify animation
                     game.doCastOnMap(yield, tileX, tileY, 44, spell.Sound, func (x int, y int, animationFrame int) {})
+                    player.Banished = false
 
                     for _, check := range player.Cities {
                         check.RemoveBuilding(building.BuildingSummoningCircle)
