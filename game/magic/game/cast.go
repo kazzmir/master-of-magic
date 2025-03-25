@@ -395,10 +395,11 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
-                Black Wind
                 Death Wish
                 Subversion
         */
+        case "Black Wind":
+
         case "Stasis":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 stack, _ := game.FindStack(tileX, tileY, game.Plane)
