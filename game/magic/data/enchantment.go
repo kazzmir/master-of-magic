@@ -192,7 +192,6 @@ const (
     UnitCursePossession
     UnitCurseWeakness
     UnitCurseWeb
-
 )
 
 var natureColor = color.RGBA{R: 0, G: 180, B: 0, A: 255}
