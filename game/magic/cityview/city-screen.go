@@ -1198,7 +1198,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                         options.GeoM.Translate(1, 1)
 
                         // draw in grey scale if the unit is on patrol
-                        if useUnit.GetBusy() == units.BusyStatusPatrol {
+                        if useUnit.GetBusy() == units.BusyStatusPatrol || useUnit.GetBusy() == units.BusyStatusStasis {
                             matrix.ChangeHSV(0, 0, 1)
                         }
 
