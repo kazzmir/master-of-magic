@@ -556,7 +556,8 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 stack := player.FindStack(tileX, tileY, game.Plane)
                 if stack != nil {
                     // heal all units that aren't undead or death fantastic
-                    game.doCastOnMap(yield, tileX, tileY, 10, spell.Sound, func (x int, y int, animationFrame int) {})
+                    stack.NaturalHeal(1)
+                    game.doCastOnMap(yield, tileX, tileY, 0, spell.Sound, func (x int, y int, animationFrame int) {})
                 }
             }
 
@@ -879,15 +880,6 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
                 summoningCity := caster.FindSummoningCity()
                 if summoningCity != nil {
                     game.Plane = summoningCity.Plane
-                    // FIXME: resurrectionSound is 237, which is invalid. but it must point at some sound. it should be newsound 19
-                    /*
-                    allSpells := game.AllSpells()
-                    spell := allSpells.FindByName("Healing")
-                    healingSound := -1
-                    if spell.Valid() {
-                        healingSound = spell.Sound
-                    }
-                    */
                     game.Events <- &GameEventInvokeRoutine{
                         Routine: func (yield coroutine.YieldFunc) {
                             game.doCastOnMap(yield, summoningCity.X, summoningCity.Y, 3, resurrectionSound, func (x int, y int, animationFrame int) {})
