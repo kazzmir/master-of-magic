@@ -27,6 +27,7 @@ const (
     // summoning circle, spell of return
     SongSummoningCircle Song = 0
     SongGreatUnsummoning Song = SongSummoningCircle
+    SongDeathWish Song = SongSummoningCircle
     SongWallOfFire Song = 1
     // dark rituals, wall of darkness, cloud of shadow
     SongDarkRituals Song = 2

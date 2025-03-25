@@ -395,9 +395,48 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 Spell of Mastery
                 Spell of Return
                 Plane Shift
-                Death Wish
                 Subversion
         */
+        case "Death Wish":
+            after := func() {
+                cityStackInfo := game.ComputeCityStackInfo()
+
+                for _, owner := range game.Players {
+                    if owner == player {
+                        continue
+                    }
+
+                    for _, stack := range owner.Stacks {
+
+                        city := cityStackInfo.FindCity(stack.X(), stack.Y(), stack.Plane())
+                        if city != nil && !city.CanTarget(spell) {
+                            continue
+                        }
+
+                        for _, unit := range stack.Units() {
+                            ignore := unit.GetRace() == data.RaceFantastic
+
+                            if unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings) ||
+                               unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonSkin) ||
+                               unit.HasEnchantment(data.UnitEnchantmentChaosChannelsFireBreath) {
+                                   ignore = false
+                            }
+
+                            if ignore {
+                                continue
+                            }
+
+                            resistance := combat.GetResistanceFor(unit, data.SorceryMagic)
+                            if rand.N(10) + 1 > resistance {
+                                owner.RemoveUnit(unit)
+                            }
+                        }
+                    }
+                }
+            }
+
+            game.Events <- &GameEventCastGlobalEnchantment{Player: player, Enchantment: data.DeathWish, After: after}
+
         case "Black Wind":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 stack, owner := game.FindStack(tileX, tileY, game.Plane)
@@ -2387,6 +2426,7 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
         case data.EnchantmentEvilOmens: song = music.SongEvilOmens
         case data.EnchantmentZombieMastery: song = music.SongZombieMastery
         case data.GreatUnsummoning: song = music.SongGreatUnsummoning
+        case data.DeathWish: song = music.SongDeathWish
     }
 
     if song != music.SongNone {
