@@ -79,11 +79,17 @@ func CastSpellOfMastery(cache *lbx.LbxCache, wizard setup.WizardCustom) (corouti
     talkingImages, _ := imageCache.GetImages("win.lbx", int(wizard.Base) + 3)
     talkingHead := util.MakeAnimation(talkingImages, true)
 
+    // FIXME: hand image is dependent on the wizard
+    hands, _ := imageCache.GetImage("win.lbx", 17, 0)
+
+    worldImages, _ := imageCache.GetImages("win.lbx", 2)
+    worldAnimation := util.MakeAnimation(worldImages, false)
+
     var counter uint64 = 0
 
     logic := func (yield coroutine.YieldFunc) error {
         yield()
-        for !inputmanager.LeftClick() {
+        for !inputmanager.LeftClick() && !worldAnimation.Done() {
             counter += 1
             if yield() != nil {
                 return nil
@@ -91,6 +97,7 @@ func CastSpellOfMastery(cache *lbx.LbxCache, wizard setup.WizardCustom) (corouti
 
             if counter % 9 == 0 {
                 talkingHead.Next()
+                worldAnimation.Next()
             }
         }
         return nil
@@ -102,8 +109,16 @@ func CastSpellOfMastery(cache *lbx.LbxCache, wizard setup.WizardCustom) (corouti
         var options ebiten.DrawImageOptions
         scale.DrawScaled(screen, background, &options)
 
-        options.GeoM.Translate(20, 20)
+        options.GeoM.Translate(95, 5)
         scale.DrawScaled(screen, talkingHead.Frame(), &options)
+
+        options.GeoM.Reset()
+        options.GeoM.Translate(20, 140)
+        scale.DrawScaled(screen, hands, &options)
+
+        options.GeoM.Reset()
+        options.GeoM.Translate(5, 5)
+        scale.DrawScaled(screen, worldAnimation.Frame(), &options)
     }
 
     return logic, draw
