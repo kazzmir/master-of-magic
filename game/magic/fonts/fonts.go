@@ -1186,6 +1186,7 @@ func MakeNewWizardFonts(cache *lbx.LbxCache) *NewWizardFonts {
 
 type SpellOfMasteryFonts struct {
     Font *font.Font
+    RedFont *font.Font
 }
 
 func MakeSpellOfMasteryFonts(cache *lbx.LbxCache) *SpellOfMasteryFonts {
@@ -1217,9 +1218,29 @@ func MakeSpellOfMasteryFonts(cache *lbx.LbxCache) *SpellOfMasteryFonts {
         color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
     }
 
-    font := font.MakeOptimizedFontWithPalette(fonts[5], orangePalette)
+    orangeFont := font.MakeOptimizedFontWithPalette(fonts[5], orangePalette)
+
+    redPalette := color.Palette{
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xcf, G: 0x29, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xe0, G: 0x2d, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xd4, G: 0x2a, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xba, G: 0x25, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+    }
+
+    redFont := font.MakeOptimizedFontWithPalette(fonts[5], redPalette)
 
     return &SpellOfMasteryFonts{
-        Font: font,
+        Font: orangeFont,
+        RedFont: redFont,
     }
 }

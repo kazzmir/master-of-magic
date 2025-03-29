@@ -76,6 +76,8 @@ func CastSpellOfMastery(cache *lbx.LbxCache, wizard setup.WizardCustom) (corouti
 
     imageCache := util.MakeImageCache(cache)
 
+    font := fonts.MakeSpellOfMasteryFonts(cache)
+
     talkingImages, _ := imageCache.GetImages("win.lbx", int(wizard.Base) + 3)
     talkingHead := util.MakeAnimation(talkingImages, true)
 
@@ -87,12 +89,31 @@ func CastSpellOfMastery(cache *lbx.LbxCache, wizard setup.WizardCustom) (corouti
 
     var counter uint64 = 0
 
+    text := []string{
+        "Having conquered both the",
+        "world of Arcanus and Myrror",
+        "I and only I remain the one",
+        "and true Master of Magic.",
+    }
+
+    textIndex := 0
+    textCounter := 0
+    maxTextCounter := int(60 * 2.1)
+
     logic := func (yield coroutine.YieldFunc) error {
         yield()
         for !inputmanager.LeftClick() && !worldAnimation.Done() {
             counter += 1
             if yield() != nil {
                 return nil
+            }
+
+            textCounter += 1
+            if textCounter >= maxTextCounter {
+                if textIndex < len(text) - 1 {
+                    textIndex += 1
+                    textCounter = 0
+                }
             }
 
             if counter % 9 == 0 {
@@ -102,7 +123,6 @@ func CastSpellOfMastery(cache *lbx.LbxCache, wizard setup.WizardCustom) (corouti
         }
         return nil
     }
-
 
     draw := func (screen *ebiten.Image) {
         background, _ := imageCache.GetImage("win.lbx", 0, 0)
@@ -119,6 +139,15 @@ func CastSpellOfMastery(cache *lbx.LbxCache, wizard setup.WizardCustom) (corouti
         options.GeoM.Reset()
         options.GeoM.Translate(5, 5)
         scale.DrawScaled(screen, worldAnimation.Frame(), &options)
+
+        if textIndex < len(text) {
+            if textCounter < 10 {
+                options.ColorScale.ScaleAlpha(float32(textCounter) / 10)
+            } else if textCounter > int(maxTextCounter - 10) && textIndex < len(text) - 1 {
+                options.ColorScale.ScaleAlpha(float32(maxTextCounter - textCounter) / 10)
+            }
+            font.RedFont.PrintOptions(screen, 160, 170, fontlib.FontOptions{Justify: fontlib.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount, Options: &options}, text[textIndex])
+        }
     }
 
     return logic, draw
