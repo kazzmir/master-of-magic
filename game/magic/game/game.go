@@ -5280,7 +5280,16 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
             } else if spell.Name == "Spell of Mastery" {
                 // show an animation that the spell of mastery is being cast first
                 game.Music.PushSong(music.SongSpellOfMastery)
-                mastery.ShowSpellOfMasteryScreen(yield, game.Cache, player.Wizard.Name)
+                logic, draw := mastery.ShowSpellOfMasteryScreen(game.Cache, player.Wizard.Name)
+
+                oldDrawer := game.Drawer
+                game.Drawer = func(screen *ebiten.Image, game *Game){
+                    draw(screen)
+                }
+
+                logic(yield)
+
+                game.Drawer = oldDrawer
                 game.Music.PopSong()
             }
 
