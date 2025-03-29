@@ -67,7 +67,7 @@ func NewEngine(scenario int) (*Engine, error) {
                 Coroutine: coroutine.MakeCoroutine(logic),
             }, nil
         case 2:
-            logic, draw := mastery.LabVortexScreen(cache, player1.Wizard.Base, []data.WizardBase{data.WizardMerlin, data.WizardRaven, data.WizardSharee})
+            logic, draw := mastery.LabVortexScreen(cache, player1.Wizard.Base, []data.WizardBase{data.WizardMerlin /*, data.WizardRaven, data.WizardSharee*/})
 
             return &Engine{
                 LbxCache: cache,

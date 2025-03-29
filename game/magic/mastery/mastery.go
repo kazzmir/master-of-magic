@@ -87,6 +87,9 @@ func LabVortexScreen(cache *lbx.LbxCache, caster data.WizardBase, losers []data.
     vortexImages, _ := imageCache.GetImages("splmastr.lbx", 30)
     vortexAnimation := util.MakeAnimation(vortexImages, true)
 
+    vortexCloseImages, _ := imageCache.GetImages("splmastr.lbx", 31)
+    vortexCloseAnimation := util.MakeAnimation(vortexCloseImages, false)
+
     loserIndex := -1
     loserAnimation := util.MakeAnimation(nil, false)
 
@@ -142,6 +145,25 @@ func LabVortexScreen(cache *lbx.LbxCache, caster data.WizardBase, losers []data.
             }
         }
 
+        vortexMode = 2
+
+        // close animation
+        for !vortexCloseAnimation.Done() {
+            if inputmanager.LeftClick() {
+                return nil
+            }
+
+            counter += 1
+            if yield() != nil {
+                return nil
+            }
+
+            if counter % 9 == 0 {
+                casterAnimation.Next()
+                vortexCloseAnimation.Next()
+            }
+        }
+
         return nil
     }
 
@@ -166,6 +188,10 @@ func LabVortexScreen(cache *lbx.LbxCache, caster data.WizardBase, losers []data.
                     options.GeoM.Translate(-85, 0)
                     scale.DrawScaled(screen, loserAnimation.Frame(), &options)
                 }
+            case 2:
+                options.GeoM.Reset()
+                options.GeoM.Translate(84, 5)
+                scale.DrawScaled(screen, vortexCloseAnimation.Frame(), &options)
         }
     }
 
