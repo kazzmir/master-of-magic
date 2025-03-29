@@ -65,7 +65,7 @@ func ShowSpellOfMasteryScreen(cache *lbx.LbxCache, wizard string) (coroutine.Acc
 
     logic = func (yield coroutine.YieldFunc) error {
         yield()
-        for !inputmanager.LeftClick() {
+        for !inputmanager.LeftClick() && counter < 60 * 10 {
             counter += 1
             if yield() != nil {
                 return nil
