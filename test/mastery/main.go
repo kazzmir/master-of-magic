@@ -57,13 +57,32 @@ func NewEngine(scenario int) (*Engine, error) {
     }
     */
 
-    logic, draw := mastery.ShowSpellOfMasteryScreen(cache, player1.Wizard.Name)
+    switch scenario {
+        case 1:
+            logic, draw := mastery.ShowSpellOfMasteryScreen(cache, player1.Wizard.Name)
 
-    return &Engine{
-        LbxCache: cache,
-        DrawScene: draw,
-        Coroutine: coroutine.MakeCoroutine(logic),
-    }, nil
+            return &Engine{
+                LbxCache: cache,
+                DrawScene: draw,
+                Coroutine: coroutine.MakeCoroutine(logic),
+            }, nil
+        case 2:
+            logic, draw := mastery.CastSpellOfMastery(cache, player1.Wizard)
+
+            return &Engine{
+                LbxCache: cache,
+                DrawScene: draw,
+                Coroutine: coroutine.MakeCoroutine(logic),
+            }, nil
+        default:
+            logic, draw := mastery.ShowSpellOfMasteryScreen(cache, player1.Wizard.Name)
+
+            return &Engine{
+                LbxCache: cache,
+                DrawScene: draw,
+                Coroutine: coroutine.MakeCoroutine(logic),
+            }, nil
+    }
 }
 
 func (engine *Engine) Update() error {
