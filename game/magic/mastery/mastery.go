@@ -2,6 +2,7 @@ package mastery
 
 import (
     "fmt"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
@@ -73,11 +74,81 @@ func ShowSpellOfMasteryScreen(cache *lbx.LbxCache, wizard string) (coroutine.Acc
 // break up, and get absorbed into the vortex
 func LabVortexScreen(cache *lbx.LbxCache, caster data.WizardBase, losers []data.WizardBase) (coroutine.AcceptYieldFunc, func (*ebiten.Image)) {
 
+    imageCache := util.MakeImageCache(cache)
+
+    casterImages, _ := imageCache.GetImages("splmastr.lbx", 14 + int(caster))
+    reversedImages := slices.Clone(casterImages)
+    slices.Reverse(reversedImages)
+    casterAnimation := util.MakeAnimation(append(casterImages, reversedImages...), true)
+
+    vortexOpenImages, _ := imageCache.GetImages("splmastr.lbx", 29)
+    vortexOpenAnimation := util.MakeAnimation(vortexOpenImages, false)
+
+    vortexImages, _ := imageCache.GetImages("splmastr.lbx", 30)
+    vortexAnimation := util.MakeAnimation(vortexImages, true)
+
+    var counter uint64 = 0
+
+    vortexMode := 0
+
     logic := func (yield coroutine.YieldFunc) error {
+        // open animation
+        for !vortexOpenAnimation.Done() {
+            if inputmanager.LeftClick() {
+                return nil
+            }
+
+            counter += 1
+            if yield() != nil {
+                return nil
+            }
+
+            if counter % 9 == 0 {
+                casterAnimation.Next()
+                vortexOpenAnimation.Next()
+            }
+        }
+
+        vortexMode = 1
+
+        // vortex animation + wizard orbs
+        for {
+            if inputmanager.LeftClick() {
+                return nil
+            }
+
+            counter += 1
+            if yield() != nil {
+                return nil
+            }
+
+            if counter % 9 == 0 {
+                casterAnimation.Next()
+                vortexAnimation.Next()
+            }
+        }
+
         return nil
     }
 
     draw := func (screen *ebiten.Image) {
+        wizlab, _ := imageCache.GetImage("wizlab.lbx", 19, 0)
+        var options ebiten.DrawImageOptions
+        scale.DrawScaled(screen, wizlab, &options)
+
+        options.GeoM.Translate(68, 82)
+        scale.DrawScaled(screen, casterAnimation.Frame(), &options)
+
+        switch vortexMode {
+            case 0:
+                options.GeoM.Reset()
+                options.GeoM.Translate(84, 5)
+                scale.DrawScaled(screen, vortexOpenAnimation.Frame(), &options)
+            case 1:
+                options.GeoM.Reset()
+                options.GeoM.Translate(90, 8)
+                scale.DrawScaled(screen, vortexAnimation.Frame(), &options)
+        }
     }
 
     return logic, draw
@@ -168,10 +239,10 @@ func SpellOfMasteryEndScreen(cache *lbx.LbxCache, wizard data.WizardBase) (corou
     }
 
     draw := func (screen *ebiten.Image) {
-        background, _ := imageCache.GetImage("win.lbx", 0, 0)
+        backgrounds, _ := imageCache.GetImages("win.lbx", 0)
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(fadeScale)
-        scale.DrawScaled(screen, background, &options)
+        scale.DrawScaled(screen, backgrounds[(counter / 8) % uint64(len(backgrounds))], &options)
 
         options.GeoM.Translate(95, 5)
         scale.DrawScaled(screen, talkingHead.Frame(), &options)
