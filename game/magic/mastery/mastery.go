@@ -7,7 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/fonts"
-    "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     fontlib "github.com/kazzmir/master-of-magic/lib/font"
@@ -69,7 +69,7 @@ func ShowSpellOfMasteryScreen(cache *lbx.LbxCache, wizard string) (coroutine.Acc
     return logic, draw
 }
 
-func CastSpellOfMastery(cache *lbx.LbxCache, wizard setup.WizardCustom) (coroutine.AcceptYieldFunc, func (*ebiten.Image)) {
+func SpellOfMasteryEndScreen(cache *lbx.LbxCache, wizard data.WizardBase) (coroutine.AcceptYieldFunc, func (*ebiten.Image)) {
     // show wizlab with wizard standing there, vortex animation (splmastr.lbx 29-31) with wizard faces flying around (spelllose.lbx 0-13)
 
     // then show wizard from win.lbx 3-16, background win.lbx 0, hands 17-22, world animation 2, and some text about being the master of magic. then show score screen
@@ -78,11 +78,31 @@ func CastSpellOfMastery(cache *lbx.LbxCache, wizard setup.WizardCustom) (corouti
 
     font := fonts.MakeSpellOfMasteryFonts(cache)
 
-    talkingImages, _ := imageCache.GetImages("win.lbx", int(wizard.Base) + 3)
+    talkingImages, _ := imageCache.GetImages("win.lbx", int(wizard) + 3)
     talkingHead := util.MakeAnimation(talkingImages, true)
 
-    // FIXME: hand image is dependent on the wizard
-    hands, _ := imageCache.GetImage("win.lbx", 17, 0)
+    handIndex := 17
+
+    // these are mostly just guesses
+    switch wizard {
+        case data.WizardMerlin: handIndex = 17
+        case data.WizardRaven: handIndex = 20
+        case data.WizardSharee: handIndex = 19
+        case data.WizardLoPan: handIndex = 17
+        case data.WizardJafar: handIndex = 21
+        case data.WizardOberic: handIndex = 21
+        case data.WizardRjak: handIndex = 22
+        case data.WizardSssra: handIndex = 22
+        case data.WizardTauron: handIndex = 17
+        case data.WizardFreya: handIndex = 18
+        case data.WizardHorus: handIndex = 21
+        // ariel is verified
+        case data.WizardAriel: handIndex = 18
+        case data.WizardTlaloc: handIndex = 20
+        case data.WizardKali: handIndex = 19
+    }
+
+    hands, _ := imageCache.GetImage("win.lbx", handIndex, 0)
 
     worldImages, _ := imageCache.GetImages("win.lbx", 2)
     worldAnimation := util.MakeAnimation(worldImages, false)

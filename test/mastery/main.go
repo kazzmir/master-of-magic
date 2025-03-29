@@ -67,7 +67,7 @@ func NewEngine(scenario int) (*Engine, error) {
                 Coroutine: coroutine.MakeCoroutine(logic),
             }, nil
         case 2:
-            logic, draw := mastery.CastSpellOfMastery(cache, player1.Wizard)
+            logic, draw := mastery.SpellOfMasteryEndScreen(cache, player1.Wizard.Base)
 
             return &Engine{
                 LbxCache: cache,
