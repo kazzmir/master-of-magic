@@ -1,13 +1,12 @@
 package mastery
 
 import (
-    "log"
-    "image/color"
     "fmt"
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
+    "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     fontlib "github.com/kazzmir/master-of-magic/lib/font"
@@ -31,37 +30,9 @@ func ShowSpellOfMasteryScreen(cache *lbx.LbxCache, wizard string) (coroutine.Acc
 
     var counter uint64 = 0
 
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil, nil
-    }
+    font := fonts.MakeSpellOfMasteryFonts(cache)
 
-    fonts, err := fontlib.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil, nil
-    }
-
-    orangePalette := color.Palette{
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xc6, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xc6, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-        color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe3, G: 0xb0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe3, G: 0xb0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-    }
-
-    font := fontlib.MakeOptimizedFontWithPalette(fonts[5], orangePalette)
-
-    wrapped := font.CreateWrappedText(200, 1, fmt.Sprintf("%v has started casting the Spell of Mastery", wizard))
+    wrapped := font.Font.CreateWrappedText(200, 1, fmt.Sprintf("%v has started casting the Spell of Mastery", wizard))
 
     logic = func (yield coroutine.YieldFunc) error {
         yield()
@@ -91,7 +62,7 @@ func ShowSpellOfMasteryScreen(cache *lbx.LbxCache, wizard string) (coroutine.Acc
         var options ebiten.DrawImageOptions
         scale.DrawScaled(screen, animation.Frame(), &options)
 
-        font.RenderWrapped(screen, 160, 160, wrapped, fontlib.FontOptions{Justify: fontlib.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount})
+        font.Font.RenderWrapped(screen, 160, 160, wrapped, fontlib.FontOptions{Justify: fontlib.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount})
     }
 
     return logic, draw
