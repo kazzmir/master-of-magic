@@ -3,6 +3,7 @@ package mastery
 import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 
@@ -18,7 +19,7 @@ func ShowSpellOfMasteryScreen(cache *lbx.LbxCache, wizard string) (coroutine.Acc
     order := []int{67, 68, 69, 70}
     index := 0
 
-    images1, _ := imageCache.GetImages("spellscr.lbx", 67)
+    images1, _ := imageCache.GetImages("spellscr.lbx", order[0])
     animation := util.MakeAnimation(images1, false)
 
     var logic coroutine.AcceptYieldFunc
@@ -26,22 +27,25 @@ func ShowSpellOfMasteryScreen(cache *lbx.LbxCache, wizard string) (coroutine.Acc
     var counter uint64 = 0
 
     logic = func (yield coroutine.YieldFunc) error {
-        for !animation.Done() {
+        yield()
+        for !inputmanager.LeftClick() {
             counter += 1
             if yield() != nil {
                 return nil
             }
 
-            if counter % 10 == 0 {
+            if counter % 9 == 0 {
                 if !animation.Next() {
                     index += 1
                     if index < len(order) {
                         images, _ := imageCache.GetImages("spellscr.lbx", order[index])
-                        animation = util.MakeAnimation(images, false)
+                        animation = util.MakeAnimation(images, index == len(order) - 1)
                     }
                 }
             }
         }
+
+        yield()
 
         return nil
     }

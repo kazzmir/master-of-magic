@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mastery"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
 
@@ -66,6 +67,8 @@ func NewEngine(scenario int) (*Engine, error) {
 }
 
 func (engine *Engine) Update() error {
+
+    inputmanager.Update()
 
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
