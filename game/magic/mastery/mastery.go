@@ -99,6 +99,7 @@ func CastSpellOfMastery(cache *lbx.LbxCache, wizard setup.WizardCustom) (corouti
     textIndex := 0
     textCounter := 0
     maxTextCounter := int(60 * 2.1)
+    fadeScale := float32(1)
 
     logic := func (yield coroutine.YieldFunc) error {
         yield()
@@ -121,12 +122,21 @@ func CastSpellOfMastery(cache *lbx.LbxCache, wizard setup.WizardCustom) (corouti
                 worldAnimation.Next()
             }
         }
+
+        for range 10 {
+            fadeScale -= 0.1
+            if yield() != nil {
+                break
+            }
+        }
+
         return nil
     }
 
     draw := func (screen *ebiten.Image) {
         background, _ := imageCache.GetImage("win.lbx", 0, 0)
         var options ebiten.DrawImageOptions
+        options.ColorScale.ScaleAlpha(fadeScale)
         scale.DrawScaled(screen, background, &options)
 
         options.GeoM.Translate(95, 5)
