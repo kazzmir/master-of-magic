@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/mastery"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
@@ -5276,6 +5277,20 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                 spell.OverrideCost = created.Cost
 
                 player.CreateArtifact = created
+            } else if spell.Name == "Spell of Mastery" {
+                // show an animation that the spell of mastery is being cast first
+                game.Music.PushSong(music.SongSpellOfMastery)
+                logic, draw := mastery.ShowSpellOfMasteryScreen(game.Cache, player.Wizard.Name)
+
+                oldDrawer := game.Drawer
+                game.Drawer = func(screen *ebiten.Image, game *Game){
+                    draw(screen)
+                }
+
+                logic(yield)
+
+                game.Drawer = oldDrawer
+                game.Music.PopSong()
             }
 
             castingCost := player.ComputeEffectiveSpellCost(spell, true)

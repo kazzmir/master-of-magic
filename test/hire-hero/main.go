@@ -41,6 +41,7 @@ func NewEngine(scenario int) (*Engine, error) {
 
     rakir := hero.MakeHero(&units.OverworldUnit{
                 Unit: units.HeroRakir,
+                GlobalEnchantments: &units.NoEnchantments{},
             }, hero.HeroRakir, "Rakir")
 
     ui.AddGroup(gamelib.MakeHireHeroScreenUI(cache, ui, rakir, 100, func (hired bool){
