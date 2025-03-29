@@ -1221,6 +1221,17 @@ func GetPaletteOverrideMap(cache *LbxCache, lbxFile *LbxFile, filename string) (
             out[-1] = palette
         case "lose.lbx":
         case "splmastr.lbx":
+            wizlab, err := cache.GetLbxFile("wizlab.lbx")
+            if err == nil {
+                palette, err := wizlab.GetPalette(19)
+                if err != nil {
+                    return nil, err
+                }
+                paletteTransparent := clonePalette(palette)
+                paletteTransparent[0] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
+
+                out[-1] = paletteTransparent
+            }
         case "wizlab.lbx":
             palette, err := lbxFile.GetPalette(19)
             if err != nil {
