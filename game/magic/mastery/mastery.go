@@ -69,6 +69,20 @@ func ShowSpellOfMasteryScreen(cache *lbx.LbxCache, wizard string) (coroutine.Acc
     return logic, draw
 }
 
+// shows a vortex in the wizard lab with the main caster raising and lowering their arms, while orbs of the other wizards fly around the vortex,
+// break up, and get absorbed into the vortex
+func LabVortexScreen(cache *lbx.LbxCache, caster data.WizardBase, losers []data.WizardBase) (coroutine.AcceptYieldFunc, func (*ebiten.Image)) {
+
+    logic := func (yield coroutine.YieldFunc) error {
+        return nil
+    }
+
+    draw := func (screen *ebiten.Image) {
+    }
+
+    return logic, draw
+}
+
 func SpellOfMasteryEndScreen(cache *lbx.LbxCache, wizard data.WizardBase) (coroutine.AcceptYieldFunc, func (*ebiten.Image)) {
     // show wizlab with wizard standing there, vortex animation (splmastr.lbx 29-31) with wizard faces flying around (spelllose.lbx 0-13)
 
