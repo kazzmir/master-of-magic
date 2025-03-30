@@ -478,6 +478,9 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Call Lightning"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Flame Strike"))
 
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Shadow"))
+
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createHeroArmy(attackingPlayer, cache)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
@@ -490,12 +493,15 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, 0, 0, nil, &noGlobalEnchantments{})
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(defendingPlayer)
     // defendingArmy := createSettlerArmy(defendingPlayer, 3)
     defendingArmy := createLizardmenArmy(defendingPlayer, 1)
     defendingArmy.LayoutUnits(combat.TeamDefender)
+
+    defendingPlayer.CastingSkillPower = 10000
+    defendingPlayer.Mana = 10000
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
     if err != nil {
@@ -507,7 +513,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, 0, 0, nil, &noGlobalEnchantments{})
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     attackingPlayer.CastingSkillPower = 10000
     attackingPlayer.Mana = 1000
@@ -515,6 +521,9 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
 
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disrupt"))
+
+    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
+    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Darkness"))
 
     attackingArmy := createGreatDrakeArmy(attackingPlayer, 1)
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcCavalry, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()))
@@ -527,11 +536,11 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     city.Buildings.Insert(buildinglib.BuildingFortress)
     // city.Buildings.Insert(buildinglib.BuildingCityWalls)
 
-    // city.AddEnchantment(data.CityEnchantmentWallOfFire, defendingPlayer.Wizard.Banner)
-    city.AddEnchantment(data.CityEnchantmentFlyingFortress, defendingPlayer.GetBanner())
+    city.AddEnchantment(data.CityEnchantmentWallOfFire, defendingPlayer.Wizard.Banner)
+    // city.AddEnchantment(data.CityEnchantmentFlyingFortress, defendingPlayer.GetBanner())
     // city.AddEnchantment(data.CityEnchantmentWallOfDarkness, defendingPlayer.Wizard.Banner)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, data.MagicNone, 0, 0)
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, defendingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, data.MagicNone, 0, 0)
 }
 
 // fight in a tower of wizardy

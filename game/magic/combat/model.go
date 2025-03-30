@@ -176,8 +176,11 @@ type Tile struct {
     Mud bool
     // whether to show fire on this tile
     Fire *set.Set[FireSide]
+    // the counter when the fire was last activated
+    FireActive uint64
     // whether to show wall of darkness on this tile
     Darkness *set.Set[DarknessSide]
+    DarknessActive uint64
 
     Wall *set.Set[WallKind]
 
@@ -321,11 +324,11 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         }
 
         if zone.City.HasWallOfFire() {
-            createWallOfFire(tiles, TownCenterX, TownCenterY, 4)
+            createWallOfFire(tiles, TownCenterX, TownCenterY, 4, 0)
         }
 
         if zone.City.HasWallOfDarkness() {
-            createWallOfDarkness(tiles, TownCenterX, TownCenterY, 4)
+            createWallOfDarkness(tiles, TownCenterX, TownCenterY, 4, 0)
         }
 
         if zone.City.HasWall() {
@@ -435,12 +438,14 @@ func createWallArea(centerX int, centerY int, sideLength int, set func(int, int,
 }
 
 // update the Fire set on the tiles centered around x/y with a length of sideLength
-func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int) {
+func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int, activateCounter uint64) {
     set := func(x int, y int, direction CardinalDirection) {
         tile := &tiles[y][x]
         if tile.Fire == nil {
             tile.Fire = set.MakeSet[FireSide]()
         }
+
+        tile.FireActive = activateCounter
 
         switch direction {
             case DirectionNorth: tile.Fire.Insert(FireSideNorth)
@@ -488,12 +493,14 @@ func createCityWall(tiles [][]Tile, centerX int, centerY int, sideLength int) {
     tiles[maxY][centerX-1].Wall.Insert(WallKindGate)
 }
 
-func createWallOfDarkness(tiles [][]Tile, centerX int, centerY int, sideLength int) {
+func createWallOfDarkness(tiles [][]Tile, centerX int, centerY int, sideLength int, activateCounter uint64) {
     set := func(x int, y int, direction CardinalDirection) {
         tile := &tiles[y][x]
         if tile.Darkness == nil {
             tile.Darkness = set.MakeSet[DarknessSide]()
         }
+
+        tile.DarknessActive = activateCounter
 
         switch direction {
             case DirectionNorth: tile.Darkness.Insert(DarknessSideNorth)
@@ -5255,6 +5262,16 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
 
                 return true
             })
+
+        case "Wall of Fire":
+            model.Events <- &CombatCreateWallOfFire{
+                Sound: spell.Sound,
+            }
+        case "Wall of Darkness":
+            model.Events <- &CombatCreateWallOfDarkness{
+                Sound: spell.Sound,
+            }
+
 
         default:
             log.Printf("Unhandled spell %v", spell.Name)

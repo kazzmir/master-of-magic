@@ -72,7 +72,7 @@ func (spell Spell) BaseCost(overland bool) int {
         switch spell.Eligibility {
             case EligibilityBoth, EligibilityBoth2: return spell.CastCost * 5
             case EligibilityOverlandOnly: return spell.CastCost
-            case EligibilityOverlandOnlyFriendlyCity: return spell.CastCost * 5
+            case EligibilityBothFriendlyCity: return spell.CastCost * 5
             case EligibilityBothSameCost: return spell.CastCost
             case EligibilityOverlandWhileBanished: return spell.CastCost
         }
@@ -96,15 +96,17 @@ const (
     EligibilityBoth EligibilityType = 0x0
     EligibilityOverlandOnly EligibilityType = 0x1
     EligibilityBoth2 EligibilityType = 0x2
-    EligibilityOverlandOnlyFriendlyCity EligibilityType = 0x3
+    EligibilityBothFriendlyCity EligibilityType = 0x3
     EligibilityBothSameCost = 0x4
     EligibilityOverlandWhileBanished = 0x5
 )
 
-func (eligibility EligibilityType) CanCastInCombat() bool {
+func (eligibility EligibilityType) CanCastInCombat(defendingCity bool) bool {
     switch eligibility {
         case EligibilityCombatOnly, EligibilityCombatOnly2, EligibilityBoth, EligibilityBoth2, EligibilityBothSameCost:
             return true
+        case EligibilityBothFriendlyCity:
+            return defendingCity
         default:
             return false
     }
@@ -113,7 +115,7 @@ func (eligibility EligibilityType) CanCastInCombat() bool {
 func (eligibility EligibilityType) CanCastInOverland() bool {
     switch eligibility {
         case EligibilityBoth, EligibilityOverlandOnly, EligibilityBoth2,
-             EligibilityOverlandOnlyFriendlyCity, EligibilityBothSameCost,
+             EligibilityBothFriendlyCity, EligibilityBothSameCost,
              EligibilityOverlandWhileBanished:
             return true
         default:
@@ -336,12 +338,14 @@ func (spells Spells) OverlandSpells() Spells {
     return SpellsFromArray(out)
 }
 
-/* the subset of spells that can be cast in combat */
-func (spells Spells) CombatSpells() Spells {
+/* the subset of spells that can be cast in combat
+ * pass defendingCity=true if the spell is being cast in a city that the caster is defending
+ */
+func (spells Spells) CombatSpells(defendingCity bool) Spells {
     var out []Spell
 
     for _, spell := range spells.Spells {
-        if spell.Name != "None" && spell.Eligibility.CanCastInCombat() {
+        if spell.Name != "None" && spell.Eligibility.CanCastInCombat(defendingCity) {
             out = append(out, spell)
         }
     }
