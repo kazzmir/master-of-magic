@@ -93,6 +93,9 @@ func LabVortexScreen(cache *lbx.LbxCache, caster data.WizardBase, losers []data.
     loserIndex := -1
     loserAnimation := util.MakeAnimation(nil, false)
 
+    sparkleImages, _ := imageCache.GetImages("splmastr.lbx", 28)
+    sparkleAnimation := util.MakeAnimation(sparkleImages, false)
+
     var counter uint64 = 0
 
     vortexMode := 0
@@ -123,13 +126,16 @@ func LabVortexScreen(cache *lbx.LbxCache, caster data.WizardBase, losers []data.
                 return nil
             }
 
-            if loserAnimation.Done() {
-                if loserIndex < len(losers) - 1 {
-                    loserIndex += 1
-                    images, _ := imageCache.GetImages("splmastr.lbx", int(losers[loserIndex]))
-                    loserAnimation = util.MakeAnimation(images, false)
-                } else {
-                    break
+            if sparkleAnimation.Done() {
+                if loserAnimation.Done() {
+                    if loserIndex < len(losers) - 1 {
+                        loserIndex += 1
+                        images, _ := imageCache.GetImages("splmastr.lbx", int(losers[loserIndex]))
+                        loserAnimation = util.MakeAnimation(images, false)
+                        sparkleAnimation = util.MakeAnimation(sparkleImages, false)
+                    } else {
+                        break
+                    }
                 }
             }
 
@@ -142,6 +148,7 @@ func LabVortexScreen(cache *lbx.LbxCache, caster data.WizardBase, losers []data.
                 casterAnimation.Next()
                 vortexAnimation.Next()
                 loserAnimation.Next()
+                sparkleAnimation.Next()
             }
         }
 
@@ -184,8 +191,11 @@ func LabVortexScreen(cache *lbx.LbxCache, caster data.WizardBase, losers []data.
                 options.GeoM.Reset()
                 options.GeoM.Translate(90, 8)
                 scale.DrawScaled(screen, vortexAnimation.Frame(), &options)
-                if loserAnimation.Frame() != nil {
-                    options.GeoM.Translate(-85, 0)
+                if !sparkleAnimation.Done() {
+                    options.GeoM.Translate(4, 55)
+                    scale.DrawScaled(screen, sparkleAnimation.Frame(), &options)
+                } else if loserAnimation.Frame() != nil {
+                    options.GeoM.Translate(-90, 0)
                     scale.DrawScaled(screen, loserAnimation.Frame(), &options)
                 }
             case 2:
