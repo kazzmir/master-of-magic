@@ -58,6 +58,37 @@ func NewEngine(scenario int) (*Engine, error) {
     */
 
     switch scenario {
+        case 0:
+            var currentDraw func (*ebiten.Image)
+
+            draw := func (screen *ebiten.Image) {
+                currentDraw(screen)
+            }
+
+            logic := func (yield coroutine.YieldFunc) error {
+                logic1, draw1 := mastery.ShowSpellOfMasteryScreen(cache, player1.Wizard.Name)
+                currentDraw = draw1
+
+                logic1(yield)
+
+                logic2, draw2 := mastery.LabVortexScreen(cache, player1.Wizard.Base, []data.WizardBase{data.WizardMerlin, data.WizardRaven /*,data.WizardSharee */})
+                currentDraw = draw2
+                logic2(yield)
+
+                logic3, draw3 := mastery.SpellOfMasteryEndScreen(cache, player1.Wizard.Base)
+                currentDraw = draw3
+                logic3(yield)
+
+                return nil
+            }
+
+            return &Engine{
+                LbxCache: cache,
+                DrawScene: draw,
+                Coroutine: coroutine.MakeCoroutine(logic),
+            }, nil
+
+
         case 1:
             logic, draw := mastery.ShowSpellOfMasteryScreen(cache, player1.Wizard.Name)
 
@@ -67,7 +98,7 @@ func NewEngine(scenario int) (*Engine, error) {
                 Coroutine: coroutine.MakeCoroutine(logic),
             }, nil
         case 2:
-            logic, draw := mastery.LabVortexScreen(cache, player1.Wizard.Base, []data.WizardBase{data.WizardMerlin, data.WizardRaven, data.WizardSharee})
+            logic, draw := mastery.LabVortexScreen(cache, player1.Wizard.Base, []data.WizardBase{data.WizardMerlin, data.WizardRaven /*,data.WizardSharee */})
 
             return &Engine{
                 LbxCache: cache,
