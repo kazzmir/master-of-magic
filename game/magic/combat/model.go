@@ -5256,6 +5256,9 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 return true
             })
 
+        case "Wall of Fire":
+            createWallOfFire(model.Tiles, TownCenterX, TownCenterY, 4)
+
         default:
             log.Printf("Unhandled spell %v", spell.Name)
     }

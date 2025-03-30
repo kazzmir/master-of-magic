@@ -500,6 +500,9 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingArmy := createLizardmenArmy(defendingPlayer, 1)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
+    defendingPlayer.CastingSkillPower = 10000
+    defendingPlayer.Mana = 10000
+
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
     if err != nil {
         log.Printf("Unable to read spells: %v", err)
@@ -534,7 +537,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     // city.Buildings.Insert(buildinglib.BuildingCityWalls)
 
     // city.AddEnchantment(data.CityEnchantmentWallOfFire, defendingPlayer.Wizard.Banner)
-    city.AddEnchantment(data.CityEnchantmentFlyingFortress, defendingPlayer.GetBanner())
+    // city.AddEnchantment(data.CityEnchantmentFlyingFortress, defendingPlayer.GetBanner())
     // city.AddEnchantment(data.CityEnchantmentWallOfDarkness, defendingPlayer.Wizard.Banner)
 
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, defendingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, data.MagicNone, 0, 0)
