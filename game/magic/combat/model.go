@@ -328,7 +328,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         }
 
         if zone.City.HasWallOfDarkness() {
-            createWallOfDarkness(tiles, TownCenterX, TownCenterY, 4)
+            createWallOfDarkness(tiles, TownCenterX, TownCenterY, 4, 0)
         }
 
         if zone.City.HasWall() {
@@ -493,12 +493,14 @@ func createCityWall(tiles [][]Tile, centerX int, centerY int, sideLength int) {
     tiles[maxY][centerX-1].Wall.Insert(WallKindGate)
 }
 
-func createWallOfDarkness(tiles [][]Tile, centerX int, centerY int, sideLength int) {
+func createWallOfDarkness(tiles [][]Tile, centerX int, centerY int, sideLength int, activateCounter uint64) {
     set := func(x int, y int, direction CardinalDirection) {
         tile := &tiles[y][x]
         if tile.Darkness == nil {
             tile.Darkness = set.MakeSet[DarknessSide]()
         }
+
+        tile.DarknessActive = activateCounter
 
         switch direction {
             case DirectionNorth: tile.Darkness.Insert(DarknessSideNorth)
@@ -5265,6 +5267,11 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             model.Events <- &CombatCreateWallOfFire{
                 Sound: spell.Sound,
             }
+        case "Wall of Darkness":
+            model.Events <- &CombatCreateWallOfDarkness{
+                Sound: spell.Sound,
+            }
+
 
         default:
             log.Printf("Unhandled spell %v", spell.Name)

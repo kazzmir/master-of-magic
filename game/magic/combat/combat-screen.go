@@ -116,6 +116,10 @@ type CombatCreateWallOfFire struct {
     Sound int
 }
 
+type CombatCreateWallOfDarkness struct {
+    Sound int
+}
+
 // FIXME: kind of ugly to need a specific event like this for one projectile type
 type CombatEventCreateLightningBolt struct {
     Target *ArmyUnit
@@ -339,6 +343,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     combat := &CombatScreen{
         Events: events,
         Cache: cache,
+        Counter: 1000, // start at a high number so that existing wall of fire/darkness does not show as being newly cast
         AudioCache: audio.MakeAudioCache(cache),
         ImageCache: imageCache,
         AllSpells: allSpells,
@@ -2449,6 +2454,11 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         sounds.Insert(use.Sound)
                         createWallOfFire(combat.Model.Tiles, TownCenterX, TownCenterY, 4, combat.Counter)
 
+                    case *CombatCreateWallOfDarkness:
+                        use := event.(*CombatCreateWallOfDarkness)
+                        sounds.Insert(use.Sound)
+                        createWallOfDarkness(combat.Model.Tiles, TownCenterX, TownCenterY, 4, combat.Counter)
+
                     case *CombatPlaySound:
                         use := event.(*CombatPlaySound)
                         sounds.Insert(use.Sound)
@@ -3269,6 +3279,8 @@ func (combat *CombatScreen) DrawWall(screen *ebiten.Image, x int, y int, tilePos
         var drawImage *ebiten.Image
 
         activeImages, _ := combat.ImageCache.GetImages("wallrise.lbx", index)
+
+        // FIXME: this /8 should be a parameter to DrawWall or something
         if (combat.Counter - activeCounter) / 8 < uint64(len(activeImages)) {
             index := (combat.Counter - activeCounter) / 8
             drawImage = activeImages[index]
