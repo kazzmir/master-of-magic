@@ -523,7 +523,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disrupt"))
 
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
-    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Shadow"))
+    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Darkness"))
 
     attackingArmy := createGreatDrakeArmy(attackingPlayer, 1)
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcCavalry, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()))

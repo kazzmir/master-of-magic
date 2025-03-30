@@ -3260,15 +3260,24 @@ func (combat *CombatScreen) DrawWall(screen *ebiten.Image, x int, y int, tilePos
     tx, ty := tilePosition(float64(x), float64(y))
     geom.Translate(tx, ty)
 
-    drawAnimatedWall := func(index int, dx float64, dy float64){
+    drawAnimatedWall := func (index int, activeCounter uint64, dx float64, dy float64){
         options.GeoM.Reset()
         // options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
         // options.GeoM.Translate(tx, ty)
         options.GeoM.Translate(dx, dy)
 
-        images, _ := combat.ImageCache.GetImages("citywall.lbx", index)
-        use := animationIndex % uint64(len(images))
-        drawImage := images[use]
+        var drawImage *ebiten.Image
+
+        activeImages, _ := combat.ImageCache.GetImages("wallrise.lbx", index)
+        if (combat.Counter - activeCounter) / 8 < uint64(len(activeImages)) {
+            index := (combat.Counter - activeCounter) / 8
+            drawImage = activeImages[index]
+        } else {
+            images, _ := combat.ImageCache.GetImages("citywall.lbx", index)
+            use := animationIndex % uint64(len(images))
+            drawImage = images[use]
+        }
+
         options.GeoM.Translate(-float64(drawImage.Bounds().Dy())/2, -float64(drawImage.Bounds().Dy()/2))
 
         options.GeoM.Concat(geom)
@@ -3276,9 +3285,9 @@ func (combat *CombatScreen) DrawWall(screen *ebiten.Image, x int, y int, tilePos
         scale.DrawScaled(screen, drawImage, &options)
     }
 
-    makeDrawAnimatedWall := func(index int, dx float64, dy float64) func() {
+    makeDrawAnimatedWall := func(index int, activeCounter uint64, dx float64, dy float64) func() {
         return func() {
-            drawAnimatedWall(index, dx, dy)
+            drawAnimatedWall(index, activeCounter, dx, dy)
         }
     }
 
@@ -3302,31 +3311,31 @@ func (combat *CombatScreen) DrawWall(screen *ebiten.Image, x int, y int, tilePos
         // combat screen is a counter-clockwise 45-degree rotation.
         // it doesn't matter, as long as the fire animations are consistent
         if fire.Contains(FireSideNorth) && fire.Contains(FireSideWest) {
-            addDrawWall(Order0, makeDrawAnimatedWall(36, -1, -8))
+            addDrawWall(Order0, makeDrawAnimatedWall(36, tile.FireActive, -1, -8))
             drewNorth = true
             drewWest = true
         }
 
         if fire.Contains(FireSideSouth) && fire.Contains(FireSideEast) {
-            addDrawWall(Order2, makeDrawAnimatedWall(45, -2, -3))
+            addDrawWall(Order2, makeDrawAnimatedWall(45, tile.FireActive, -2, -3))
             drewSouth = true
             drewEast = true
         }
 
         if !drewSouth && fire.Contains(FireSideSouth) {
-            addDrawWall(Order2, makeDrawAnimatedWall(choose(fireSouth), -4, -4))
+            addDrawWall(Order2, makeDrawAnimatedWall(choose(fireSouth), tile.FireActive, -4, -4))
         }
 
         if !drewWest && fire.Contains(FireSideWest) {
-            addDrawWall(Order0, makeDrawAnimatedWall(choose(fireWest), -3, -6))
+            addDrawWall(Order0, makeDrawAnimatedWall(choose(fireWest), tile.FireActive, -3, -6))
         }
 
         if !drewNorth && fire.Contains(FireSideNorth) {
-            addDrawWall(Order0, makeDrawAnimatedWall(choose(fireNorth), 2, -6))
+            addDrawWall(Order0, makeDrawAnimatedWall(choose(fireNorth), tile.FireActive, 2, -6))
         }
 
         if !drewEast && fire.Contains(FireSideEast) {
-            addDrawWall(Order2, makeDrawAnimatedWall(choose(fireEast), 2, -4))
+            addDrawWall(Order2, makeDrawAnimatedWall(choose(fireEast), tile.FireActive, 2, -4))
         }
     }
 
@@ -3351,31 +3360,31 @@ func (combat *CombatScreen) DrawWall(screen *ebiten.Image, x int, y int, tilePos
         // combat screen is a counter-clockwise 45-degree rotation.
         // it doesn't matter, as long as the fire animations are consistent
         if darkness.Contains(DarknessSideNorth) && darkness.Contains(DarknessSideWest) {
-            addDrawWall(Order1, makeDrawAnimatedWall(50, -1, -8))
+            addDrawWall(Order1, makeDrawAnimatedWall(50, tile.DarknessActive, -1, -8))
             drewNorth = true
             drewWest = true
         }
 
         if darkness.Contains(DarknessSideSouth) && darkness.Contains(DarknessSideEast) {
-            addDrawWall(Order1, makeDrawAnimatedWall(59, -2, -3))
+            addDrawWall(Order1, makeDrawAnimatedWall(59, tile.DarknessActive, -2, -3))
             drewSouth = true
             drewEast = true
         }
 
         if !drewSouth && darkness.Contains(DarknessSideSouth) {
-            addDrawWall(Order1, makeDrawAnimatedWall(choose(darknessSouth), -4, -4))
+            addDrawWall(Order1, makeDrawAnimatedWall(choose(darknessSouth), tile.DarknessActive, -4, -4))
         }
 
         if !drewWest && darkness.Contains(DarknessSideWest) {
-            addDrawWall(Order1, makeDrawAnimatedWall(choose(darknessWest), -3, -6))
+            addDrawWall(Order1, makeDrawAnimatedWall(choose(darknessWest), tile.DarknessActive, -3, -6))
         }
 
         if !drewNorth && darkness.Contains(DarknessSideNorth) {
-            addDrawWall(Order1, makeDrawAnimatedWall(choose(darknessNorth), 2, -6))
+            addDrawWall(Order1, makeDrawAnimatedWall(choose(darknessNorth), tile.DarknessActive, 2, -6))
         }
 
         if !drewEast && darkness.Contains(DarknessSideEast) {
-            addDrawWall(Order1, makeDrawAnimatedWall(choose(darknessEast), 2, -4))
+            addDrawWall(Order1, makeDrawAnimatedWall(choose(darknessEast), tile.DarknessActive, 2, -4))
         }
     }
 
@@ -3448,11 +3457,11 @@ func (combat *CombatScreen) DrawWall(screen *ebiten.Image, x int, y int, tilePos
             drewWest = true
 
             if tile.Darkness != nil && tile.Darkness.Contains(DarknessSideSouth) {
-                addDrawWall(Order3, makeDrawAnimatedWall(choose(darknessSouth), -4, -4))
+                addDrawWall(Order3, makeDrawAnimatedWall(choose(darknessSouth), tile.DarknessActive, -4, -4))
             }
 
             if tile.Fire != nil && tile.Fire.Contains(FireSideSouth) {
-                addDrawWall(Order4, makeDrawAnimatedWall(choose(fireSouth), -4, -4))
+                addDrawWall(Order4, makeDrawAnimatedWall(choose(fireSouth), tile.FireActive, -4, -4))
             }
         }
 
@@ -3462,11 +3471,11 @@ func (combat *CombatScreen) DrawWall(screen *ebiten.Image, x int, y int, tilePos
             drewEast = true
 
             if tile.Darkness != nil && tile.Darkness.Contains(DarknessSideEast) {
-                addDrawWall(Order3, makeDrawAnimatedWall(choose(darknessEast), 2, -4))
+                addDrawWall(Order3, makeDrawAnimatedWall(choose(darknessEast), tile.DarknessActive, 2, -4))
             }
 
             if tile.Fire != nil && tile.Fire.Contains(FireSideEast) {
-                addDrawWall(Order4, makeDrawAnimatedWall(choose(fireEast), 2, -4))
+                addDrawWall(Order4, makeDrawAnimatedWall(choose(fireEast), tile.FireActive, 2, -4))
             }
         }
 

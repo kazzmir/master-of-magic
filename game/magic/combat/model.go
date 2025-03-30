@@ -180,6 +180,7 @@ type Tile struct {
     FireActive uint64
     // whether to show wall of darkness on this tile
     Darkness *set.Set[DarknessSide]
+    DarknessActive uint64
 
     Wall *set.Set[WallKind]
 
