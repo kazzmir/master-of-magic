@@ -74,7 +74,7 @@ func (engine *Engine) ArtifactRoutine() func (coroutine.YieldFunc) error {
     }
 
     return func(yield coroutine.YieldFunc) error {
-        create, cancel := artifact.ShowCreateArtifactScreen(yield, engine.Cache, artifact.CreationCreateArtifact, &engine.Books, spells.CombatSpells(), &engine.Drawer)
+        create, cancel := artifact.ShowCreateArtifactScreen(yield, engine.Cache, artifact.CreationCreateArtifact, &engine.Books, spells.CombatSpells(false), &engine.Drawer)
         if !cancel {
             log.Printf("Create artifact: %+v", create)
         } else {
