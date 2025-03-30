@@ -176,6 +176,8 @@ type Tile struct {
     Mud bool
     // whether to show fire on this tile
     Fire *set.Set[FireSide]
+    // the counter when the fire was last activated
+    FireActive uint64
     // whether to show wall of darkness on this tile
     Darkness *set.Set[DarknessSide]
 
@@ -321,7 +323,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         }
 
         if zone.City.HasWallOfFire() {
-            createWallOfFire(tiles, TownCenterX, TownCenterY, 4)
+            createWallOfFire(tiles, TownCenterX, TownCenterY, 4, 0)
         }
 
         if zone.City.HasWallOfDarkness() {
@@ -435,12 +437,14 @@ func createWallArea(centerX int, centerY int, sideLength int, set func(int, int,
 }
 
 // update the Fire set on the tiles centered around x/y with a length of sideLength
-func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int) {
+func createWallOfFire(tiles [][]Tile, centerX int, centerY int, sideLength int, activateCounter uint64) {
     set := func(x int, y int, direction CardinalDirection) {
         tile := &tiles[y][x]
         if tile.Fire == nil {
             tile.Fire = set.MakeSet[FireSide]()
         }
+
+        tile.FireActive = activateCounter
 
         switch direction {
             case DirectionNorth: tile.Fire.Insert(FireSideNorth)
@@ -5257,7 +5261,9 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             })
 
         case "Wall of Fire":
-            createWallOfFire(model.Tiles, TownCenterX, TownCenterY, 4)
+            model.Events <- &CombatCreateWallOfFire{
+                Sound: spell.Sound,
+            }
 
         default:
             log.Printf("Unhandled spell %v", spell.Name)
