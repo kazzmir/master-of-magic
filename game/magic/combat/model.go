@@ -584,6 +584,10 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+func (unit *ArmyUnit) CanTeleport() bool {
+    return unit.HasAbility(data.AbilityTeleporting) || unit.HasAbility(data.AbilityMerging)
+}
+
 func (unit *ArmyUnit) IsUndead() bool {
     return unit.Unit.IsUndead()
 }
@@ -2552,6 +2556,11 @@ func (model *CombatModel) GetUnit(x int, y int) *ArmyUnit {
 }
 
 func (model *CombatModel) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
+
+    if unit.CanTeleport() {
+        return distance(float64(unit.X), float64(unit.Y), float64(x), float64(y)) <= 10
+    }
+
     _, ok := model.FindPath(unit, x, y)
     return ok
 }
@@ -4374,7 +4383,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 if target.IsFlying() {
                     return false
                 }
+
                 if target.HasAbility(data.AbilityNonCorporeal) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityMerging) {
                     return false
                 }
 

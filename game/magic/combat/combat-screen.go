@@ -2477,6 +2477,21 @@ func (combat *CombatScreen) UpdateAnimations(){
     }
 }
 
+func (combat *CombatScreen) doTeleport(mover *ArmyUnit, x int, y int) {
+    combat.Model.Tiles[mover.Y][mover.X].Unit = nil
+    mover.X = x
+    mover.Y = y
+    mover.MovesLeft = mover.MovesLeft.Subtract(fraction.FromInt(1))
+    combat.Model.Tiles[mover.Y][mover.X].Unit = mover
+
+    /*
+    sound, err := combat.AudioCache.GetSound(mover.Unit.GetMovementSound().LbxIndex())
+    if err == nil && combat.IsUnitVisible(mover) {
+        sound.Play()
+    }
+    */
+}
+
 func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUnit, path pathfinding.Path){
     if len(path) == 0 {
         return
@@ -3014,9 +3029,13 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
        mouseY < scale.Scale(hudY) {
 
         if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
-            path, _ := combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
-            path = path[1:]
-            combat.doMoveUnit(yield, combat.Model.SelectedUnit, path)
+            if combat.Model.SelectedUnit.CanTeleport() {
+                combat.doTeleport(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+            } else {
+                path, _ := combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+                path = path[1:]
+                combat.doMoveUnit(yield, combat.Model.SelectedUnit, path)
+            }
         } else {
 
            defender := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
