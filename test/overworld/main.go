@@ -1050,6 +1050,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
     player.KnownSpells.AddSpell(allSpells.FindByName("Word of Recall"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Disjunction"))
     player.KnownSpells.AddSpell(allSpells.FindByName("Disjunction True"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Spell of Mastery"))
 
     // city spells
     player.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))

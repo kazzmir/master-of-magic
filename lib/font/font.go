@@ -389,7 +389,6 @@ func (text *WrappedText) Clear() {
     text.Lines = nil
 }
 
-// FIXME: remove colorScale argument
 func (font *Font) RenderWrapped(image *ebiten.Image, x float64, y float64, wrapped WrappedText, options FontOptions) {
     yPos := y
     for _, line := range wrapped.Lines {
