@@ -1620,6 +1620,7 @@ func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
             scale.DrawScaled(screen, boxBottom, &options)
 
             row := 0
+            rowSize := 20
 
             if combat.Model.InsideMagicNode() {
                 dispelIndex := -1
@@ -1636,7 +1637,7 @@ func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
                         auraIndex = 48
                 }
 
-                y := rect.Min.Y + 10 + row * 15
+                y := rect.Min.Y + 10 + row * rowSize
                 x := rect.Min.X + 10
 
                 dispelImage, err := combat.ImageCache.GetImage("compix.lbx", dispelIndex, 0)
@@ -1647,7 +1648,7 @@ func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
                     x += dispelImage.Bounds().Dx() + 2
                 }
 
-                combat.InfoUIFont.PrintOptions(screen, float64(x), float64(y + 2), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("Dispells Non-%v", combat.Model.Zone.GetMagic()))
+                combat.InfoUIFont.PrintOptions(screen, float64(x), float64(y + 3), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("Dispells Non-%v", combat.Model.Zone.GetMagic()))
 
                 x = rect.Min.X + 120
                 auraImage, err := combat.ImageCache.GetImage("compix.lbx", auraIndex, 0)
@@ -1658,7 +1659,32 @@ func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
                     x += auraImage.Bounds().Dx() + 2
                 }
 
-                combat.InfoUIFont.PrintOptions(screen, float64(x), float64(y + 2), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("%v Node Aura", combat.Model.Zone.GetMagic()))
+                combat.InfoUIFont.PrintOptions(screen, float64(x), float64(y + 3), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("%v Node Aura", combat.Model.Zone.GetMagic()))
+
+                row += 1
+            }
+
+            // crusade 42
+            // holy arms 43
+            // heavenly light 44
+            // charm of life 45
+            // chaos surge 46
+            // eternal night 49
+            // cloud of shadow 50
+            // zombie mastery 51
+
+            if combat.Model.AttackingArmy.Player.HasEnchantment(data.EnchantmentCrusade) || combat.Model.DefendingArmy.Player.HasEnchantment(data.EnchantmentCrusade) {
+                y := rect.Min.Y + 10 + row * rowSize
+                x := rect.Min.X + 10
+
+                crusadePic, _ := combat.ImageCache.GetImage("compix.lbx", 42, 0)
+                options.GeoM.Reset()
+                options.GeoM.Translate(float64(x), float64(y))
+                scale.DrawScaled(screen, crusadePic, &options)
+
+                x += crusadePic.Bounds().Dx() + 3
+
+                combat.InfoUIFont.PrintOptions(screen, float64(x), float64(y + 2), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true}, "Crusade")
             }
 
         },
