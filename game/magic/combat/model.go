@@ -1768,6 +1768,8 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playe
     if unit.Unit.IsHero() {
         unit.Spells.AddAllSpells(player.KnownSpells)
         unit.SpellCharges = unit.Unit.GetSpellChargeSpells()
+    } else {
+        unit.Spells.AddAllSpells(allSpells.GetSpellsByMagic(unit.GetRealm()))
     }
 }
 

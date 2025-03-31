@@ -210,7 +210,7 @@ func (unit *OverworldUnit) GetLbxIndex() int {
 }
 
 func (unit *OverworldUnit) GetKnownSpells() []string {
-    return unit.Unit.KnownSpells
+    return nil
 }
 
 func (unit *OverworldUnit) CanTouchAttack(damage Damage) bool {

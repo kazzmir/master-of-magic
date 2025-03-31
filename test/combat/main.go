@@ -613,6 +613,7 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
 
     attackingArmy := &combat.Army{Player: attackingPlayer}
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Unicorn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.ArchAngel, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Djinn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatWyrm, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     attackingArmy.LayoutUnits(combat.TeamAttacker)
