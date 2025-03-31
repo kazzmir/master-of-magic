@@ -624,7 +624,7 @@ func (unit *ArmyUnit) IsWebbed() bool {
 }
 
 func (unit *ArmyUnit) UseRangeAttack() {
-    if unit.GetRangedAttackDamageType() == units.DamageRangedMagical && unit.CastingSkill > 0 {
+    if unit.GetRangedAttackDamageType() == units.DamageRangedMagical && unit.CastingSkill >= 3 {
         unit.CastingSkill = max(0, unit.CastingSkill - 3)
     } else if unit.RangedAttacks > 0 {
         unit.RangedAttacks -= 1

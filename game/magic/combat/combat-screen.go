@@ -2682,7 +2682,7 @@ func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *A
     // haste does two ranged attacks
     if attacker.HasEnchantment(data.UnitEnchantmentHaste) {
         // caster's don't get to attack twice
-        if attacker.GetRangedAttackDamageType() == units.DamageRangedMagical && attacker.CastingSkill > 0 {
+        if attacker.GetRangedAttackDamageType() == units.DamageRangedMagical {
         } else {
             attacks = min(2, attacker.RangedAttacks)
         }
