@@ -555,6 +555,8 @@ type ArmyUnit struct {
 
     // height above the ground, negative for partially below ground
     Height int
+    // how much alpha to apply to the unit, 1 is invisible, 0 is fully visible
+    Fade float32
 
     // true if this unit was summoned via a spell
     Summoned bool
@@ -593,6 +595,10 @@ func (unit *ArmyUnit) CanTeleport() bool {
 
 func (unit *ArmyUnit) IsUndead() bool {
     return unit.Unit.IsUndead()
+}
+
+func (unit *ArmyUnit) SetFade(fade float32) {
+    unit.Fade = fade
 }
 
 func (unit *ArmyUnit) SetHeight(height int) {

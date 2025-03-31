@@ -2516,6 +2516,12 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             mover.SetHeight(-i/mergeSpeed)
             yield()
         }
+    } else {
+        for i := range mergeCount {
+            combat.Counter += 1
+            mover.SetFade(float32(i)/float32(mergeCount))
+            yield()
+        }
     }
 
     combat.Model.Tiles[mover.Y][mover.X].Unit = nil
@@ -2530,9 +2536,15 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             mover.SetHeight(-(mergeCount/mergeSpeed - i/mergeSpeed))
             yield()
         }
+        mover.SetHeight(0)
+    } else {
+        for i := range mergeCount {
+            combat.Counter += 1
+            mover.SetFade(float32(mergeCount - i)/float32(mergeCount))
+            yield()
+        }
+        mover.SetFade(0)
     }
-
-    mover.SetHeight(0)
 }
 
 func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUnit, path pathfinding.Path){
@@ -3829,6 +3841,8 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 // unitImage = unitImage.SubImage(image.Rect(0, 0, unitImage.Bounds().Dx(), unitImage.Bounds().Dy() + unit.Height)).(*ebiten.Image)
                 unitImage = unitImage.SubImage(image.Rect(0, 0, unitImage.Bounds().Dx(), unitImage.Bounds().Dy() + unit.Height)).(*ebiten.Image)
             }
+
+            unitOptions.ColorScale.ScaleAlpha(1 - unit.Fade)
 
             /*
             x, y := unitOptions.GeoM.Apply(0, 0)
