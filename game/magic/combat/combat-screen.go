@@ -1590,6 +1590,12 @@ func (caster *UnitCaster) ComputeEffectiveSpellCost(spell spellbook.Spell, overl
     return spell.Cost(overland)
 }
 
+func (combat *CombatScreen) MakeInfoUI() *uilib.UIElementGroup {
+    group := uilib.MakeGroup()
+
+    return group
+}
+
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     var elements []*uilib.UIElement
 
@@ -1842,7 +1848,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // info
     elements = append(elements, makeButton(20, 0, 1, func(){
-        // FIXME: show enchantments such as "Eternal Night", "Cloud of Shadow", "Heavenly Light" etc.
+        ui.AddGroup(combat.MakeInfoUI())
     }))
 
     // auto
