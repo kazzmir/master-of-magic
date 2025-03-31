@@ -37,6 +37,9 @@ type ArmyScreen struct {
     FirstRow int
     UI *uilib.UI
     DrawMinimap func(*ebiten.Image, int, int, data.FogMap, data.Plane, uint64)
+
+    ShowArcanus bool
+    ShowMyrror bool
 }
 
 func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, data.FogMap, data.Plane, uint64), showVault func()) *ArmyScreen {
@@ -48,6 +51,8 @@ func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap f
         ShowVault: showVault,
         DrawMinimap: drawMinimap,
         FirstRow: 0,
+        ShowArcanus: true,
+        ShowMyrror: true,
     }
 
     view.UI = view.MakeUI()
@@ -73,7 +78,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             var options ebiten.DrawImageOptions
             scale.DrawScaled(screen, background, &options)
 
-            fonts.BigFont.PrintOptions(screen, float64(160), float64(10), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
+            fonts.BigFont.PrintOptions(screen, float64(160), float64(8), font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("The Armies Of %v", view.Player.Wizard.Name))
 
             if highlightedUnit != nil {
                 raceName := highlightedUnit.GetRace().String()
@@ -108,6 +113,60 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
     }
 
     ui.SetElementsFromArray(nil)
+
+    // arcanus filter
+    arcanusRect := image.Rect(0, 0, int(fonts.SmallerFont.MeasureTextWidth("Arcanus", 1)), fonts.SmallerFont.Height()).Add(image.Pt(77, 18))
+    var arcanusCounter float32 = 0.0
+    ui.AddElement(&uilib.UIElement{
+        Rect: arcanusRect,
+        LeftClick: func (this *uilib.UIElement){
+            view.ShowArcanus = !view.ShowArcanus
+            view.UI = view.MakeUI()
+        },
+        Inside: func (this *uilib.UIElement, x, y int){
+            arcanusCounter = min(arcanusCounter + 0.03, 0.5)
+        },
+        NotInside: func (this *uilib.UIElement) {
+            arcanusCounter = max(arcanusCounter - 0.03, 0)
+        },
+        Draw: func(this *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            if !view.ShowArcanus {
+                options.ColorScale.Scale(0.5 + arcanusCounter, 0.5 + arcanusCounter, 0.5, 1)
+            } else {
+                options.ColorScale.SetR(1 + arcanusCounter)
+                options.ColorScale.SetG(1 + arcanusCounter)
+            }
+            fonts.SmallerFont.PrintOptions(screen, float64(arcanusRect.Min.X), float64(arcanusRect.Min.Y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Options: &options}, "Arcanus")
+        },
+    })
+
+    // myrror filter
+    myrrorRect := image.Rect(0, 0, int(fonts.SmallerFont.MeasureTextWidth("Myrror", 1)), fonts.SmallerFont.Height()).Add(image.Pt(arcanusRect.Max.X + 10, arcanusRect.Min.Y))
+    var myrrorCounter float32 = 0.0
+    ui.AddElement(&uilib.UIElement{
+        Rect: myrrorRect,
+        LeftClick: func (this *uilib.UIElement){
+            view.ShowMyrror = !view.ShowMyrror
+            view.UI = view.MakeUI()
+        },
+        Inside: func (this *uilib.UIElement, x, y int){
+            myrrorCounter = min(myrrorCounter + 0.03, 0.5)
+        },
+        NotInside: func (this *uilib.UIElement) {
+            myrrorCounter = max(myrrorCounter - 0.03, 0)
+        },
+        Draw: func(this *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            if !view.ShowMyrror {
+                options.ColorScale.Scale(0.5 + myrrorCounter, 0.5 + myrrorCounter, 0.5, 1)
+            } else {
+                options.ColorScale.SetR(1 + myrrorCounter)
+                options.ColorScale.SetG(1 + myrrorCounter)
+            }
+            fonts.SmallerFont.PrintOptions(screen, float64(myrrorRect.Min.X), float64(myrrorRect.Min.Y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Options: &options}, "Myrror")
+        },
+    })
 
     makeButton := func (x int, y int, normal *ebiten.Image, clickImage *ebiten.Image, action func()) *uilib.UIElement {
 
@@ -236,6 +295,14 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
         for i, stack := range view.Player.Stacks {
             if i < view.FirstRow {
+                continue
+            }
+
+            if stack.Plane() == data.PlaneArcanus && !view.ShowArcanus {
+                continue
+            }
+
+            if stack.Plane() == data.PlaneMyrror && !view.ShowMyrror {
                 continue
             }
 
