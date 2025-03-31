@@ -202,6 +202,7 @@ type CombatScreen struct {
     DebugFont *font.Font
     HudFont *font.Font
     InfoFont *font.Font
+    InfoUIFont *font.Font
     WhiteFont *font.Font
     DrawRoad bool
     DrawClouds bool
@@ -313,6 +314,12 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     defendingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(defendingArmy.Player.Wizard.Banner))
     attackingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(attackingArmy.Player.Wizard.Banner))
 
+    infoUIFont := font.MakeOptimizedFontWithPalette(fonts[2], color.Palette{
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+        color.RGBA{R: 0xff, G: 0xb0, B: 0x0, A: 0xff},
+    })
+
     imageCache := util.MakeImageCache(cache)
 
     whitePixel := ebiten.NewImage(1, 1)
@@ -358,6 +365,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         DebugFont: debugFont,
         HudFont: hudFont,
         InfoFont: infoFont,
+        InfoUIFont: infoUIFont,
         WhiteFont: whiteFont,
         EnchantmentFont: enchantmentFont,
         Coordinates: coordinates,
@@ -1598,7 +1606,7 @@ func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
 
     fader := group.MakeFadeIn(7)
 
-    rect := image.Rect(30, 40, 30 + boxTop.Bounds().Dx(), 40 + boxTop.Bounds().Dy() + boxBottom.Bounds().Dy())
+    rect := image.Rect(0, 0, boxTop.Bounds().Dx(), boxTop.Bounds().Dy() + boxBottom.Bounds().Dy()).Add(image.Pt(30, 40))
     clicked := false
     group.AddElement(&uilib.UIElement{
         Layer: 1,
@@ -1606,10 +1614,53 @@ func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(fader())
-            options.GeoM.Translate(30, 40)
+            options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
             scale.DrawScaled(screen, boxTop, &options)
             options.GeoM.Translate(0, float64(boxTop.Bounds().Dy()))
             scale.DrawScaled(screen, boxBottom, &options)
+
+            row := 0
+
+            if combat.Model.InsideMagicNode() {
+                dispelIndex := -1
+                auraIndex := -1
+                switch combat.Model.Zone.GetMagic() {
+                    case data.SorceryMagic:
+                        dispelIndex = 54
+                        auraIndex = 55
+                    case data.NatureMagic:
+                        dispelIndex = 52
+                        auraIndex = 53
+                    case data.ChaosMagic:
+                        dispelIndex = 47
+                        auraIndex = 48
+                }
+
+                y := rect.Min.Y + 10 + row * 15
+                x := rect.Min.X + 10
+
+                dispelImage, err := combat.ImageCache.GetImage("compix.lbx", dispelIndex, 0)
+                if err == nil {
+                    options.GeoM.Reset()
+                    options.GeoM.Translate(float64(x), float64(y))
+                    scale.DrawScaled(screen, dispelImage, &options)
+                    x += dispelImage.Bounds().Dx() + 2
+                }
+
+                combat.InfoUIFont.PrintOptions(screen, float64(x), float64(y + 2), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("Dispells Non-%v", combat.Model.Zone.GetMagic()))
+
+                x = rect.Min.X + 120
+                auraImage, err := combat.ImageCache.GetImage("compix.lbx", auraIndex, 0)
+                if err == nil {
+                    options.GeoM.Reset()
+                    options.GeoM.Translate(float64(x), float64(y))
+                    scale.DrawScaled(screen, auraImage, &options)
+                    x += auraImage.Bounds().Dx() + 2
+                }
+
+                combat.InfoUIFont.PrintOptions(screen, float64(x), float64(y + 2), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("%v Node Aura", combat.Model.Zone.GetMagic()))
+            }
+
         },
         LeftClick: func(element *uilib.UIElement) {
             if !clicked {

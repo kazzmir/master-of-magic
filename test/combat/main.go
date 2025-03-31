@@ -578,7 +578,7 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{ChaosNode: true}, data.ChaosMagic, 0, 0)
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{NatureNode: true}, data.ChaosMagic, 0, 0)
 }
 
 func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
