@@ -609,7 +609,12 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.TaxRate = fraction.Zero()
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
-    attackingArmy := createArchAngelArmy(attackingPlayer)
+    // attackingArmy := createArchAngelArmy(attackingPlayer)
+
+    attackingArmy := &combat.Army{Player: attackingPlayer}
+    // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Unicorn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Djinn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+    // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatWyrm, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)

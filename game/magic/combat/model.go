@@ -553,6 +553,11 @@ type ArmyUnit struct {
 
     Team Team
 
+    // height above the ground, negative for partially below ground
+    Height int
+    // how much alpha to apply to the unit, 1 is invisible, 0 is fully visible
+    Fade float32
+
     // true if this unit was summoned via a spell
     Summoned bool
 
@@ -584,8 +589,20 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+func (unit *ArmyUnit) CanTeleport() bool {
+    return unit.HasAbility(data.AbilityTeleporting) || unit.HasAbility(data.AbilityMerging)
+}
+
 func (unit *ArmyUnit) IsUndead() bool {
     return unit.Unit.IsUndead()
+}
+
+func (unit *ArmyUnit) SetFade(fade float32) {
+    unit.Fade = fade
+}
+
+func (unit *ArmyUnit) SetHeight(height int) {
+    unit.Height = height
 }
 
 func (unit *ArmyUnit) RaiseFromDead() {
@@ -2552,6 +2569,11 @@ func (model *CombatModel) GetUnit(x int, y int) *ArmyUnit {
 }
 
 func (model *CombatModel) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
+
+    if unit.CanTeleport() {
+        return distance(float64(unit.X), float64(unit.Y), float64(x), float64(y)) <= 10
+    }
+
     _, ok := model.FindPath(unit, x, y)
     return ok
 }
@@ -2707,7 +2729,17 @@ func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment d
     }
 }
 
-func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing, summoned bool) {
+func (model *CombatModel) summonUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing, summoned bool) *ArmyUnit {
+    newUnit := model.addNewUnit(player, x, y, unit, facing, summoned)
+    // this offset is chosen somewhat arbitrarily. maybe there is a better way to compute it, possibly based on the unit's image size?
+    newUnit.SetHeight(-18)
+    model.Events <- &CombatEventSummonUnit{
+        Unit: newUnit,
+    }
+    return newUnit
+}
+
+func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing, summoned bool) *ArmyUnit {
     newUnit := ArmyUnit{
         Unit: &units.OverworldUnit{
             Unit: unit,
@@ -2736,6 +2768,8 @@ func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, uni
         newUnit.Team = TeamAttacker
         model.AttackingArmy.units = append(model.AttackingArmy.units, &newUnit)
     }
+
+    return &newUnit
 }
 
 /* makes a 5x5 square of tiles have mud on them
@@ -4374,7 +4408,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 if target.IsFlying() {
                     return false
                 }
+
                 if target.HasAbility(data.AbilityNonCorporeal) {
+                    return false
+                }
+
+                if target.HasAbility(data.AbilityMerging) {
                     return false
                 }
 
@@ -4478,34 +4517,34 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             }, targetNotImmune)
         case "Phantom Warriors":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.PhantomWarrior, units.FacingDown, true)
+                model.summonUnit(player, x, y, units.PhantomWarrior, units.FacingDown, true)
                 castedCallback()
             })
         case "Phantom Beast":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.PhantomBeast, units.FacingDown, true)
+                model.summonUnit(player, x, y, units.PhantomBeast, units.FacingDown, true)
                 castedCallback()
             })
         case "Earth Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.EarthElemental, units.FacingDown, true)
+                model.summonUnit(player, x, y, units.EarthElemental, units.FacingDown, true)
                 castedCallback()
             })
         case "Air Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.AirElemental, units.FacingDown, true)
+                model.summonUnit(player, x, y, units.AirElemental, units.FacingDown, true)
                 castedCallback()
             })
         case "Fire Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.FireElemental, units.FacingDown, true)
+                model.summonUnit(player, x, y, units.FireElemental, units.FacingDown, true)
                 castedCallback()
             })
         case "Summon Demon":
             x, y, err := model.FindEmptyTile(MapSideMiddle)
             if err == nil {
                 spellSystem.CreateSummoningCircle(x, y)
-                model.addNewUnit(player, x, y, units.Demon, units.FacingDown, true)
+                model.summonUnit(player, x, y, units.Demon, units.FacingDown, true)
                 castedCallback()
             }
         case "Disenchant Area", "Disenchant True":

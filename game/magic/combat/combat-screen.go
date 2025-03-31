@@ -108,6 +108,10 @@ type CombatSelectTargets struct {
     Select func (*ArmyUnit)
 }
 
+type CombatEventSummonUnit struct {
+    Unit *ArmyUnit
+}
+
 type CombatEventMessage struct {
     Message string
 }
@@ -2409,6 +2413,22 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
     }
 }
 
+func (combat *CombatScreen) ShowSummon(yield coroutine.YieldFunc, unit *ArmyUnit) {
+    for unit.Height < 0 {
+        // so that the summoning circle displays
+        combat.Model.UpdateProjectiles(combat.Counter)
+        combat.Counter += 1
+
+        if combat.Counter % 3 == 0 {
+            unit.SetHeight(unit.Height + 1)
+        }
+
+        if yield() != nil {
+            return
+        }
+    }
+}
+
 func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
 
     sounds := set.MakeSet[int]()
@@ -2448,6 +2468,9 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         bolt := event.(*CombatEventCreateLightningBolt)
                         combat.CreateLightningBoltProjectile(bolt.Target, bolt.Strength)
                         sounds.Insert(LightningBoltSound)
+                    case *CombatEventSummonUnit:
+                        summon := event.(*CombatEventSummonUnit)
+                        combat.ShowSummon(yield, summon.Unit)
 
                     case *CombatCreateWallOfFire:
                         use := event.(*CombatCreateWallOfFire)
@@ -2474,6 +2497,53 @@ func (combat *CombatScreen) UpdateAnimations(){
         if combat.Counter % 6 == 0 {
             unit.Animation.Next()
         }
+    }
+}
+
+func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUnit, x int, y int, merge bool) {
+
+    sound, err := combat.AudioCache.GetSound(mover.Unit.GetMovementSound().LbxIndex())
+    if err == nil && combat.IsUnitVisible(mover) {
+        sound.Play()
+    }
+
+    mergeCount := 30
+    mergeSpeed := 2
+
+    if merge {
+        for i := range mergeCount {
+            combat.Counter += 1
+            mover.SetHeight(-i/mergeSpeed)
+            yield()
+        }
+    } else {
+        for i := range mergeCount {
+            combat.Counter += 1
+            mover.SetFade(float32(i)/float32(mergeCount))
+            yield()
+        }
+    }
+
+    combat.Model.Tiles[mover.Y][mover.X].Unit = nil
+    mover.X = x
+    mover.Y = y
+    mover.MovesLeft = mover.MovesLeft.Subtract(fraction.FromInt(1))
+    combat.Model.Tiles[mover.Y][mover.X].Unit = mover
+
+    if merge {
+        for i := range mergeCount {
+            combat.Counter += 1
+            mover.SetHeight(-(mergeCount/mergeSpeed - i/mergeSpeed))
+            yield()
+        }
+        mover.SetHeight(0)
+    } else {
+        for i := range mergeCount {
+            combat.Counter += 1
+            mover.SetFade(float32(mergeCount - i)/float32(mergeCount))
+            yield()
+        }
+        mover.SetFade(0)
     }
 }
 
@@ -3014,9 +3084,13 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
        mouseY < scale.Scale(hudY) {
 
         if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
-            path, _ := combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
-            path = path[1:]
-            combat.doMoveUnit(yield, combat.Model.SelectedUnit, path)
+            if combat.Model.SelectedUnit.CanTeleport() {
+                combat.doTeleport(yield, combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.Model.SelectedUnit.HasAbility(data.AbilityMerging))
+            } else {
+                path, _ := combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+                path = path[1:]
+                combat.doMoveUnit(yield, combat.Model.SelectedUnit, path)
+            }
         } else {
 
            defender := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
@@ -3738,6 +3812,8 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             // unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
             // unitOptions.GeoM.Translate(0, float64(tile0.Bounds().Dy()/2))
 
+            // unitOptions.GeoM.Translate(0, float64(-unit.Height))
+
             index := uint64(0)
             // sort of a hack here, but we use unit.Unit.IsFlying() to bypass a webbed unit so that the unit
             // still animates if it was originally flying
@@ -3759,6 +3835,15 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 unitOptions.ColorScale.Scale(float32(scaleValue), 1, 1, 1)
             }
 
+            unitImage := combatImages[index]
+            if unit.Height < 100 {
+                // log.Printf("unit %v has height %v", unit.Unit.GetName(), unit.Height)
+                // unitImage = unitImage.SubImage(image.Rect(0, 0, unitImage.Bounds().Dx(), unitImage.Bounds().Dy() + unit.Height)).(*ebiten.Image)
+                unitImage = unitImage.SubImage(image.Rect(0, 0, unitImage.Bounds().Dx(), unitImage.Bounds().Dy() + unit.Height)).(*ebiten.Image)
+            }
+
+            unitOptions.ColorScale.ScaleAlpha(1 - unit.Fade)
+
             /*
             x, y := unitOptions.GeoM.Apply(0, 0)
             vector.DrawFilledCircle(screen, float32(x), float32(y), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
@@ -3773,13 +3858,13 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 // any units with illusions immunity
                 canBeSeen := isVisible(unit)
                 if canBeSeen {
-                    unitview.RenderCombatSemiInvisible(screen, combatImages[index], unitOptions, unit.VisibleFigures(), combat.Counter, &combat.ImageCache)
+                    unitview.RenderCombatSemiInvisible(screen, unitImage, unitOptions, unit.VisibleFigures(), combat.Counter, &combat.ImageCache)
                 } else {
                     // if can't be seen then don't render anything at all
                 }
 
             } else if unit.IsAsleep() {
-                unitview.RenderCombatUnitGrey(screen, combatImages[index], unitOptions, unit.VisibleFigures(), use, combat.Counter, &combat.ImageCache)
+                unitview.RenderCombatUnitGrey(screen, unitImage, unitOptions, unit.VisibleFigures(), use, combat.Counter, &combat.ImageCache)
             } else {
                 warpCreature := false
                 for _, curse := range unit.GetCurses() {
@@ -3799,7 +3884,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                     unitOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xb5, G: 0x5e, B: 0xf3, A: 0xff})
                 }
 
-                unitview.RenderCombatUnit(screen, combatImages[index], unitOptions, unit.VisibleFigures(), use, combat.Counter, &combat.ImageCache)
+                unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), use, combat.Counter, &combat.ImageCache)
 
                 if warpCreature {
                     unitOptions.ColorScale = savedColor
@@ -3808,7 +3893,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
             var curseOptions ebiten.DrawImageOptions
 
-            curseOptions.GeoM.Translate(float64(-combatImages[index].Bounds().Dx()/2), float64(-combatImages[0].Bounds().Dy()*3/4))
+            curseOptions.GeoM.Translate(float64(-unitImage.Bounds().Dx()/2), float64(-unitImage.Bounds().Dy()*3/4))
             curseOptions.GeoM.Concat(unitOptions.GeoM)
             for _, curse := range unit.GetCurses() {
                 switch curse {
