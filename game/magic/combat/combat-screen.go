@@ -108,6 +108,10 @@ type CombatSelectTargets struct {
     Select func (*ArmyUnit)
 }
 
+type CombatEventSummonUnit struct {
+    Unit *ArmyUnit
+}
+
 type CombatEventMessage struct {
     Message string
 }
@@ -2409,6 +2413,22 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
     }
 }
 
+func (combat *CombatScreen) ShowSummon(yield coroutine.YieldFunc, unit *ArmyUnit) {
+    for unit.Height < 0 {
+        // so that the summoning circle displays
+        combat.Model.UpdateProjectiles(combat.Counter)
+        combat.Counter += 1
+
+        if combat.Counter % 3 == 0 {
+            unit.SetHeight(unit.Height + 1)
+        }
+
+        if yield() != nil {
+            return
+        }
+    }
+}
+
 func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
 
     sounds := set.MakeSet[int]()
@@ -2448,6 +2468,9 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         bolt := event.(*CombatEventCreateLightningBolt)
                         combat.CreateLightningBoltProjectile(bolt.Target, bolt.Strength)
                         sounds.Insert(LightningBoltSound)
+                    case *CombatEventSummonUnit:
+                        summon := event.(*CombatEventSummonUnit)
+                        combat.ShowSummon(yield, summon.Unit)
 
                     case *CombatCreateWallOfFire:
                         use := event.(*CombatCreateWallOfFire)

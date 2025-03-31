@@ -2723,7 +2723,17 @@ func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment d
     }
 }
 
-func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing, summoned bool) {
+func (model *CombatModel) summonUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing, summoned bool) *ArmyUnit {
+    newUnit := model.addNewUnit(player, x, y, unit, facing, summoned)
+    // this offset is chosen somewhat arbitrarily. maybe there is a better way to compute it, possibly based on the unit's image size?
+    newUnit.SetHeight(-18)
+    model.Events <- &CombatEventSummonUnit{
+        Unit: newUnit,
+    }
+    return newUnit
+}
+
+func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing, summoned bool) *ArmyUnit {
     newUnit := ArmyUnit{
         Unit: &units.OverworldUnit{
             Unit: unit,
@@ -2752,6 +2762,8 @@ func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, uni
         newUnit.Team = TeamAttacker
         model.AttackingArmy.units = append(model.AttackingArmy.units, &newUnit)
     }
+
+    return &newUnit
 }
 
 /* makes a 5x5 square of tiles have mud on them
@@ -4499,34 +4511,34 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             }, targetNotImmune)
         case "Phantom Warriors":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.PhantomWarrior, units.FacingDown, true)
+                model.summonUnit(player, x, y, units.PhantomWarrior, units.FacingDown, true)
                 castedCallback()
             })
         case "Phantom Beast":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.PhantomBeast, units.FacingDown, true)
+                model.summonUnit(player, x, y, units.PhantomBeast, units.FacingDown, true)
                 castedCallback()
             })
         case "Earth Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.EarthElemental, units.FacingDown, true)
+                model.summonUnit(player, x, y, units.EarthElemental, units.FacingDown, true)
                 castedCallback()
             })
         case "Air Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.AirElemental, units.FacingDown, true)
+                model.summonUnit(player, x, y, units.AirElemental, units.FacingDown, true)
                 castedCallback()
             })
         case "Fire Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
-                model.addNewUnit(player, x, y, units.FireElemental, units.FacingDown, true)
+                model.summonUnit(player, x, y, units.FireElemental, units.FacingDown, true)
                 castedCallback()
             })
         case "Summon Demon":
             x, y, err := model.FindEmptyTile(MapSideMiddle)
             if err == nil {
                 spellSystem.CreateSummoningCircle(x, y)
-                model.addNewUnit(player, x, y, units.Demon, units.FacingDown, true)
+                model.summonUnit(player, x, y, units.Demon, units.FacingDown, true)
                 castedCallback()
             }
         case "Disenchant Area", "Disenchant True":
