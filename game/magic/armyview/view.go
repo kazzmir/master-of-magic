@@ -36,10 +36,10 @@ type ArmyScreen struct {
     ShowVault func()
     FirstRow int
     UI *uilib.UI
-    DrawMinimap func(*ebiten.Image, int, int, data.FogMap, uint64)
+    DrawMinimap func(*ebiten.Image, int, int, data.FogMap, data.Plane, uint64)
 }
 
-func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, data.FogMap, uint64), showVault func()) *ArmyScreen {
+func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap func(*ebiten.Image, int, int, data.FogMap, data.Plane, uint64), showVault func()) *ArmyScreen {
     view := &ArmyScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
@@ -91,10 +91,10 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
             minimapArea := screen.SubImage(scale.ScaleRect(minimapRect)).(*ebiten.Image)
 
             if highlightedUnit != nil {
-                view.DrawMinimap(minimapArea, highlightedUnit.GetX(), highlightedUnit.GetY(), view.Player.GetFog(highlightedUnit.GetPlane()), this.Counter)
+                view.DrawMinimap(minimapArea, highlightedUnit.GetX(), highlightedUnit.GetY(), view.Player.GetFog(highlightedUnit.GetPlane()), highlightedUnit.GetPlane(), this.Counter)
             } else {
                 // just choose random point
-                view.DrawMinimap(minimapArea, 10, 10, view.Player.GetFog(data.PlaneArcanus), this.Counter)
+                view.DrawMinimap(minimapArea, 10, 10, view.Player.GetFog(data.PlaneArcanus), data.PlaneArcanus, this.Counter)
             }
 
             this.IterateElementsByLayer(func (element *uilib.UIElement){
