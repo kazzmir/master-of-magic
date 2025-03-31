@@ -156,13 +156,15 @@ type Music struct {
     cancel context.CancelFunc
     wait sync.WaitGroup
 
+    XmiCache map[Song]*smf.SMF
+
     // queue of songs being played. a new song can be pushed on top, or popped off
     songQueue []Song
 }
 
 func MakeMusic(cache *lbx.LbxCache) *Music {
     ctx, cancel := context.WithCancel(context.Background())
-    return &Music{done: ctx, cancel: cancel, Cache: cache}
+    return &Music{done: ctx, cancel: cancel, Cache: cache, XmiCache: make(map[Song]*smf.SMF)}
 }
 
 func (music *Music) PushSong(index Song){
@@ -181,15 +183,29 @@ func (music *Music) PopSong(){
     }
 }
 
+func (music *Music) LoadSong(index Song) (*smf.SMF, error) {
+    if song, ok := music.XmiCache[index]; ok {
+        return song, nil
+    }
+
+    song, err := xmi.ReadMidiFromCache(music.Cache, "music.lbx", int(index))
+    if err != nil {
+        return nil, err
+    }
+    music.XmiCache[index] = song
+    return song, nil
+}
+
 func (music *Music) PlaySong(index Song){
     log.Printf("Playing song %v", index)
     music.Stop()
 
     music.done, music.cancel = context.WithCancel(context.Background())
 
-    song, err := xmi.ReadMidiFromCache(music.Cache, "music.lbx", int(index))
+    song, err := music.LoadSong(index)
+
     if err != nil {
-        log.Printf("Error: could not read midi from cache: %v", err)
+        log.Printf("Error: could not read midi %v: %v", index, err)
         return
     }
 
