@@ -553,6 +553,9 @@ type ArmyUnit struct {
 
     Team Team
 
+    // height above the ground, negative for partially below ground
+    Height int
+
     // true if this unit was summoned via a spell
     Summoned bool
 
@@ -590,6 +593,10 @@ func (unit *ArmyUnit) CanTeleport() bool {
 
 func (unit *ArmyUnit) IsUndead() bool {
     return unit.Unit.IsUndead()
+}
+
+func (unit *ArmyUnit) SetHeight(height int) {
+    unit.Height = height
 }
 
 func (unit *ArmyUnit) RaiseFromDead() {

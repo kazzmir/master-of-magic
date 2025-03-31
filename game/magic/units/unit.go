@@ -86,6 +86,7 @@ const (
     MovementSoundBigSteps
     MovementSoundBigSteps2
     MovementSoundMerge
+    MovementSoundTeleport
     MovementSoundShuffle
     MovementSoundBoat
     MovementSoundSilent
@@ -101,6 +102,7 @@ func (sound MovementSound) LbxIndex() int {
         case MovementSoundBigSteps: return 10
         case MovementSoundBigSteps2: return 13
         case MovementSoundMerge: return 12
+        case MovementSoundTeleport: return 11
         case MovementSoundShuffle: return 9
     }
 
@@ -1726,7 +1728,7 @@ var Unicorn Unit = Unit{
     Count: 4,
     MovementSpeed: 2,
     MeleeAttackPower: 5,
-    MovementSound: MovementSoundHorse,
+    MovementSound: MovementSoundTeleport,
     AttackSound: AttackSoundNormal,
     Defense: 3,
     Resistance: 7,
@@ -2256,7 +2258,7 @@ var Djinn Unit = Unit{
     Count: 1,
     Realm: data.SorceryMagic,
     MovementSpeed: 3,
-    MovementSound: MovementSoundFly2,
+    MovementSound: MovementSoundTeleport,
     AttackSound: AttackSoundNormal,
     RangeAttackSound: RangeAttackSoundMagic,
     RangeAttackIndex: 88,
