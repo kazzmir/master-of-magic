@@ -954,8 +954,8 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
         citiesMiniMap = append(citiesMiniMap, city)
     }
 
-    drawMinimap := func (screen *ebiten.Image, x int, y int, fog data.FogMap, counter uint64){
-        game.CurrentMap().DrawMinimap(screen, citiesMiniMap, x, y, 1, fog, counter, false)
+    drawMinimap := func (screen *ebiten.Image, x int, y int, fog data.FogMap, plane data.Plane, counter uint64){
+        game.GetMap(plane).DrawMinimap(screen, citiesMiniMap, x, y, 1, fog, counter, false)
     }
 
     showVault := func(){
