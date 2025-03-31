@@ -1590,8 +1590,35 @@ func (caster *UnitCaster) ComputeEffectiveSpellCost(spell spellbook.Spell, overl
     return spell.Cost(overland)
 }
 
-func (combat *CombatScreen) MakeInfoUI() *uilib.UIElementGroup {
+func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
     group := uilib.MakeGroup()
+
+    boxTop, _ := combat.ImageCache.GetImage("compix.lbx", 58, 0)
+    boxBottom, _ := combat.ImageCache.GetImage("compix.lbx", 56, 0)
+
+    fader := group.MakeFadeIn(7)
+
+    rect := image.Rect(30, 40, 30 + boxTop.Bounds().Dx(), 40 + boxTop.Bounds().Dy() + boxBottom.Bounds().Dy())
+    clicked := false
+    group.AddElement(&uilib.UIElement{
+        Layer: 1,
+        Rect: rect,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(fader())
+            options.GeoM.Translate(30, 40)
+            scale.DrawScaled(screen, boxTop, &options)
+            options.GeoM.Translate(0, float64(boxTop.Bounds().Dy()))
+            scale.DrawScaled(screen, boxBottom, &options)
+        },
+        LeftClick: func(element *uilib.UIElement) {
+            if !clicked {
+                clicked = true
+                fader = group.MakeFadeOut(7)
+                group.AddDelay(7, remove)
+            }
+        },
+    })
 
     return group
 }
@@ -1848,7 +1875,12 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // info
     elements = append(elements, makeButton(20, 0, 1, func(){
-        ui.AddGroup(combat.MakeInfoUI())
+        var group *uilib.UIElementGroup
+        remove := func(){
+            ui.RemoveGroup(group)
+        }
+        group = combat.MakeInfoUI(remove)
+        ui.AddGroup(group)
     }))
 
     // auto
