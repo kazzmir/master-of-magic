@@ -574,11 +574,17 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createHeroArmy(attackingPlayer, cache)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
+    attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentCrusade)
+    attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentHolyArms)
+    attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentChaosSurge)
+    attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentCharmOfLife)
+    attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentEternalNight)
+    attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentZombieMastery)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{ChaosNode: true}, data.ChaosMagic, 0, 0)
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{NatureNode: true}, data.ChaosMagic, 0, 0)
 }
 
 func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {

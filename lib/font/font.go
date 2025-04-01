@@ -325,7 +325,7 @@ func (font *Font) PrintOptions(image *ebiten.Image, x float64, y float64, option
         scale = 1
     }
 
-    useX, useY := x * options.Scale, y * options.Scale
+    useX, useY := x * scale, y * scale
 
     switch options.Justify {
         case FontJustifyLeft:

@@ -469,7 +469,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                                 continue
                             }
 
-                            resistance := combat.GetResistanceFor(unit, data.SorceryMagic)
+                            resistance := combat.GetResistanceFor(unit, data.DeathMagic)
                             if rand.N(10) + 1 > resistance {
                                 owner.RemoveUnit(unit)
                             }

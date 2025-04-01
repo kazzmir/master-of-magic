@@ -202,6 +202,7 @@ type CombatScreen struct {
     DebugFont *font.Font
     HudFont *font.Font
     InfoFont *font.Font
+    InfoUIFont *font.Font
     WhiteFont *font.Font
     DrawRoad bool
     DrawClouds bool
@@ -313,6 +314,12 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     defendingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(defendingArmy.Player.Wizard.Banner))
     attackingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(attackingArmy.Player.Wizard.Banner))
 
+    infoUIFont := font.MakeOptimizedFontWithPalette(fonts[2], color.Palette{
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+        color.RGBA{R: 0xff, G: 0xb0, B: 0x0, A: 0xff},
+    })
+
     imageCache := util.MakeImageCache(cache)
 
     whitePixel := ebiten.NewImage(1, 1)
@@ -358,6 +365,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         DebugFont: debugFont,
         HudFont: hudFont,
         InfoFont: infoFont,
+        InfoUIFont: infoUIFont,
         WhiteFont: whiteFont,
         EnchantmentFont: enchantmentFont,
         Coordinates: coordinates,
@@ -1590,6 +1598,206 @@ func (caster *UnitCaster) ComputeEffectiveSpellCost(spell spellbook.Spell, overl
     return spell.Cost(overland)
 }
 
+func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
+    group := uilib.MakeGroup()
+
+    boxTop, _ := combat.ImageCache.GetImage("compix.lbx", 58, 0)
+    // chop off the bottom few pixels because there is a border there that we don't need
+    boxTop = boxTop.SubImage(image.Rect(0, 0, boxTop.Bounds().Dx(), boxTop.Bounds().Dy() - 5)).(*ebiten.Image)
+    // a part of the top box that we can replicate as many times as needed
+    boxPiece := boxTop.SubImage(image.Rect(0, 10, boxTop.Bounds().Dx(), 30)).(*ebiten.Image)
+    boxBottom, _ := combat.ImageCache.GetImage("compix.lbx", 56, 0)
+
+    fader := group.MakeFadeIn(7)
+
+    type Check struct {
+        Exists func() bool
+        ImageIndex int
+        Text string
+    }
+
+    hasGlobalEnchantment := func (enchantment data.Enchantment) bool {
+        return combat.Model.AttackingArmy.Player.HasEnchantment(enchantment) || combat.Model.DefendingArmy.Player.HasEnchantment(enchantment)
+    }
+
+    makeGlobalCheck := func (enchantment data.Enchantment) func() bool {
+        return func() bool {
+            return hasGlobalEnchantment(enchantment)
+        }
+    }
+
+    makeTownCheck := func (enchantment data.CityEnchantment) func() bool {
+        return func() bool {
+            city := combat.Model.Zone.City
+            return city != nil && city.HasEnchantment(enchantment)
+        }
+    }
+
+    checks := []Check{
+        Check{
+            Exists: makeGlobalCheck(data.EnchantmentCrusade),
+            ImageIndex: 42,
+            Text: "Crusade",
+        },
+        Check{
+            Exists: makeGlobalCheck(data.EnchantmentHolyArms),
+            ImageIndex: 43,
+            Text: "Holy Arms",
+        },
+        Check{
+            Exists: makeTownCheck(data.CityEnchantmentHeavenlyLight),
+            ImageIndex: 44,
+            Text: "Heavenly Light",
+        },
+        Check{
+            Exists: makeGlobalCheck(data.EnchantmentCharmOfLife),
+            ImageIndex: 45,
+            Text: "Charm of Life",
+        },
+        Check{
+            Exists: makeGlobalCheck(data.EnchantmentChaosSurge),
+            ImageIndex: 46,
+            Text: "Chaos Surge",
+        },
+        Check{
+            Exists: makeGlobalCheck(data.EnchantmentEternalNight),
+            ImageIndex: 49,
+            Text: "Eternal Night",
+        },
+        Check{
+            Exists: makeTownCheck(data.CityEnchantmentCloudOfShadow),
+            ImageIndex: 50,
+            Text: "Cloud of Shadow",
+        },
+        Check{
+            Exists: makeGlobalCheck(data.EnchantmentZombieMastery),
+            ImageIndex: 51,
+            Text: "Zombie Mastery",
+        },
+    }
+
+    totalRows := 0
+    if combat.Model.InsideMagicNode() {
+        totalRows += 1
+    }
+
+    countChecks := 0
+    for _, check := range checks {
+        if check.Exists() {
+            countChecks += 1
+        }
+    }
+
+    totalRows += (countChecks + 1) / 2
+    rowSize := 20
+
+    totalHeightNeeded := 10 + totalRows * rowSize + 10
+
+    extraPieces := int(math.Ceil(float64(totalHeightNeeded - boxTop.Bounds().Dy() - boxBottom.Bounds().Dy()) / float64(boxPiece.Bounds().Dy())))
+
+    // prerender the entire ui since it never changes
+    background := ebiten.NewImage(boxTop.Bounds().Dx(), boxTop.Bounds().Dy() + boxPiece.Bounds().Dy() * extraPieces + boxBottom.Bounds().Dy())
+    var backgroundOptions ebiten.DrawImageOptions
+    background.DrawImage(boxTop, &backgroundOptions)
+    backgroundOptions.GeoM.Translate(0, float64(boxTop.Bounds().Dy()))
+    for range extraPieces {
+        background.DrawImage(boxPiece, &backgroundOptions)
+        backgroundOptions.GeoM.Translate(0, float64(boxPiece.Bounds().Dy()))
+    }
+    background.DrawImage(boxBottom, &backgroundOptions)
+
+    rect := util.ImageRect(30, 40, background)
+
+    row := 0
+
+    if combat.Model.InsideMagicNode() {
+        dispelIndex := -1
+        auraIndex := -1
+        switch combat.Model.Zone.GetMagic() {
+            case data.SorceryMagic:
+                dispelIndex = 54
+                auraIndex = 55
+            case data.NatureMagic:
+                dispelIndex = 52
+                auraIndex = 53
+            case data.ChaosMagic:
+                dispelIndex = 47
+                auraIndex = 48
+        }
+
+        y := 10 + row * rowSize
+        x := 10
+
+        dispelImage, err := combat.ImageCache.GetImage("compix.lbx", dispelIndex, 0)
+        if err == nil {
+            backgroundOptions.GeoM.Reset()
+            backgroundOptions.GeoM.Translate(float64(x), float64(y))
+            background.DrawImage(dispelImage, &backgroundOptions)
+            x += dispelImage.Bounds().Dx() + 2
+        }
+
+        combat.InfoUIFont.PrintOptions(background, float64(x), float64(y + 3), font.FontOptions{DropShadow: true}, fmt.Sprintf("Dispells Non-%v", combat.Model.Zone.GetMagic()))
+
+        x = 120
+        auraImage, err := combat.ImageCache.GetImage("compix.lbx", auraIndex, 0)
+        if err == nil {
+            backgroundOptions.GeoM.Reset()
+            backgroundOptions.GeoM.Translate(float64(x), float64(y))
+            background.DrawImage(auraImage, &backgroundOptions)
+            x += auraImage.Bounds().Dx() + 2
+        }
+
+        combat.InfoUIFont.PrintOptions(background, float64(x), float64(y + 3), font.FontOptions{DropShadow: true}, fmt.Sprintf("%v Node Aura", combat.Model.Zone.GetMagic()))
+
+        row += 1
+    }
+
+    column := 0
+    columnSize := 100
+
+    for _, check := range checks {
+        if check.Exists() {
+            y := 10 + row * rowSize
+            x := 10 + column * columnSize
+            pic, _ := combat.ImageCache.GetImage("compix.lbx", check.ImageIndex, 0)
+            backgroundOptions.GeoM.Reset()
+            backgroundOptions.GeoM.Translate(float64(x), float64(y))
+            background.DrawImage(pic, &backgroundOptions)
+
+            x += pic.Bounds().Dx() + 3
+
+            combat.InfoUIFont.PrintOptions(background, float64(x), float64(y + 2), font.FontOptions{DropShadow: true}, check.Text)
+
+            column += 1
+            if column >= 2 {
+                row += 1
+                column = 0
+            }
+        }
+    }
+
+    clicked := false
+    group.AddElement(&uilib.UIElement{
+        Layer: 1,
+        Rect: rect,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(fader())
+            options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+            scale.DrawScaled(screen, background, &options)
+        },
+        LeftClick: func(element *uilib.UIElement) {
+            if !clicked {
+                clicked = true
+                fader = group.MakeFadeOut(7)
+                group.AddDelay(7, remove)
+            }
+        },
+    })
+
+    return group
+}
+
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     var elements []*uilib.UIElement
 
@@ -1842,7 +2050,12 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
     // info
     elements = append(elements, makeButton(20, 0, 1, func(){
-        // FIXME: show enchantments such as "Eternal Night", "Cloud of Shadow", "Heavenly Light" etc.
+        var group *uilib.UIElementGroup
+        remove := func(){
+            ui.RemoveGroup(group)
+        }
+        group = combat.MakeInfoUI(remove)
+        ui.AddGroup(group)
     }))
 
     // auto
@@ -2676,7 +2889,7 @@ func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *A
     // haste does two ranged attacks
     if attacker.HasEnchantment(data.UnitEnchantmentHaste) {
         // caster's don't get to attack twice
-        if attacker.GetRangedAttackDamageType() == units.DamageRangedMagical && attacker.CastingSkill > 0 {
+        if attacker.GetRangedAttackDamageType() == units.DamageRangedMagical {
         } else {
             attacks = min(2, attacker.RangedAttacks)
         }
