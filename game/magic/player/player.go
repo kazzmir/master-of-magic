@@ -90,6 +90,7 @@ type Relationship struct {
     Treaty data.TreatyType
     // from -100 to +100, where -100 means this player hates the other, and +100 means this player loves the other
     Relation int
+    StartingRelation int
 }
 
 type CityEnchantment struct {
@@ -309,6 +310,7 @@ func (player *Player) AwarePlayer(other *Player) {
     _, ok := player.PlayerRelations[other]
     if !ok {
         player.PlayerRelations[other] = &Relationship{
+            StartingRelation: computeStartingRelation(player.Wizard, other.Wizard),
         }
     }
 }
