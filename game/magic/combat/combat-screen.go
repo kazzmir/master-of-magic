@@ -1664,16 +1664,98 @@ func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
                 row += 1
             }
 
-            // crusade 42
-            // holy arms 43
-            // heavenly light 44
-            // charm of life 45
-            // chaos surge 46
-            // eternal night 49
-            // cloud of shadow 50
-            // zombie mastery 51
+            type Check struct {
+                Exists func() bool
+                ImageIndex int
+                Text string
+            }
 
-            if combat.Model.AttackingArmy.Player.HasEnchantment(data.EnchantmentCrusade) || combat.Model.DefendingArmy.Player.HasEnchantment(data.EnchantmentCrusade) {
+            hasGlobalEnchantment := func (enchantment data.Enchantment) bool {
+                return combat.Model.AttackingArmy.Player.HasEnchantment(enchantment) || combat.Model.DefendingArmy.Player.HasEnchantment(enchantment)
+            }
+
+            makeGlobalCheck := func (enchantment data.Enchantment) func() bool {
+                return func() bool {
+                    return hasGlobalEnchantment(enchantment)
+                }
+            }
+
+            makeTownCheck := func (enchantment data.CityEnchantment) func() bool {
+                return func() bool {
+                    city := combat.Model.Zone.City
+                    return city != nil && city.HasEnchantment(enchantment)
+                }
+            }
+
+            checks := []Check{
+                Check{
+                    Exists: makeGlobalCheck(data.EnchantmentCrusade),
+                    ImageIndex: 42,
+                    Text: "Crusade",
+                },
+                Check{
+                    Exists: makeGlobalCheck(data.EnchantmentHolyArms),
+                    ImageIndex: 43,
+                    Text: "Holy Arms",
+                },
+                Check{
+                    Exists: makeTownCheck(data.CityEnchantmentHeavenlyLight),
+                    ImageIndex: 44,
+                    Text: "Heavenly Light",
+                },
+                Check{
+                    Exists: makeGlobalCheck(data.EnchantmentCharmOfLife),
+                    ImageIndex: 45,
+                    Text: "Charm of Life",
+                },
+                Check{
+                    Exists: makeGlobalCheck(data.EnchantmentChaosSurge),
+                    ImageIndex: 46,
+                    Text: "Chaos Surge",
+                },
+                Check{
+                    Exists: makeGlobalCheck(data.EnchantmentEternalNight),
+                    ImageIndex: 49,
+                    Text: "Eternal Night",
+                },
+                Check{
+                    Exists: makeTownCheck(data.CityEnchantmentCloudOfShadow),
+                    ImageIndex: 50,
+                    Text: "Cloud of Shadow",
+                },
+                Check{
+                    Exists: makeGlobalCheck(data.EnchantmentZombieMastery),
+                    ImageIndex: 51,
+                    Text: "Zombie Mastery",
+                },
+            }
+
+            column := 0
+            columnSize := 100
+
+            for _, check := range checks {
+                if check.Exists() {
+                    y := rect.Min.Y + 10 + row * rowSize
+                    x := rect.Min.X + 10 + column * columnSize
+                    pic, _ := combat.ImageCache.GetImage("compix.lbx", check.ImageIndex, 0)
+                    options.GeoM.Reset()
+                    options.GeoM.Translate(float64(x), float64(y))
+                    scale.DrawScaled(screen, pic, &options)
+
+                    x += pic.Bounds().Dx() + 3
+
+                    combat.InfoUIFont.PrintOptions(screen, float64(x), float64(y + 2), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true}, check.Text)
+
+                    column += 1
+                    if column >= 2 {
+                        row += 1
+                        column = 0
+                    }
+                }
+            }
+
+            /*
+            if hasGlobalEnchantment(data.EnchantmentCrusade) {
                 y := rect.Min.Y + 10 + row * rowSize
                 x := rect.Min.X + 10
 
@@ -1686,6 +1768,7 @@ func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
 
                 combat.InfoUIFont.PrintOptions(screen, float64(x), float64(y + 2), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true}, "Crusade")
             }
+            */
 
         },
         LeftClick: func(element *uilib.UIElement) {

@@ -575,6 +575,11 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createHeroArmy(attackingPlayer, cache)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
     attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentCrusade)
+    attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentHolyArms)
+    attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentChaosSurge)
+    attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentCharmOfLife)
+    attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentEternalNight)
+    attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentZombieMastery)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
