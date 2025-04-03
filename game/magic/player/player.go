@@ -86,10 +86,89 @@ type AIBehavior interface {
     ConfirmRazeTown(*citylib.City) bool
 }
 
+type Hostility int
+const (
+    HostilityNone Hostility = iota
+    HostilityAnnoyed
+    HostilityWarlike
+    HostilityJihad
+)
+
 type Relationship struct {
     Treaty data.TreatyType
     // from -100 to +100, where -100 means this player hates the other, and +100 means this player loves the other
-    Relation int
+    StartingRelation int
+    VisibleRelation int
+
+    // these values indicate how likely the player will be to accept a treaty or trade
+    TreatyInterest int
+    TradeInterest int
+    PeaceInterest int
+
+    // how many turns since a peace treaty has been made with this player. While this value is above 0
+    // the owner will not perform any hostile actions
+    PeaceCounter int
+
+    // how hostile this player is to the other
+    Hostility Hostility
+
+    // how many times this player has been warned about their actions
+    WarningCounter int
+}
+
+// relationship values go up by a bit each turn
+func (relationship *Relationship) Increment(starting int) int {
+    if starting < 100 {
+        starting += 5
+    }
+
+    if starting < 50 {
+        starting += rand.N(5) + 1
+    }
+
+    if starting < 0 {
+        starting += rand.N(5) + 1
+    }
+
+    return starting
+}
+
+func (relationship *Relationship) UpdateTurn() {
+    relationship.TreatyInterest = relationship.Increment(relationship.TreatyInterest)
+    relationship.TradeInterest = relationship.Increment(relationship.TradeInterest)
+    relationship.PeaceInterest = relationship.Increment(relationship.PeaceInterest)
+
+    abs := func (x int) int {
+        return max(x, -x)
+    }
+
+    // visible relation should gravitate towards starting relation
+    if rand.N(140) > abs(relationship.VisibleRelation) {
+        if relationship.VisibleRelation < relationship.StartingRelation {
+            relationship.VisibleRelation += rand.N(2) + 1
+        // FIXME: the wiki says downward gravitation happens every 3 turns. here we do it every turn
+        } else if relationship.VisibleRelation > relationship.StartingRelation {
+            relationship.VisibleRelation -= rand.N(2) + 1
+        }
+    }
+}
+
+func (relationship *Relationship) Description() string {
+    switch {
+        case relationship.VisibleRelation >= 100: return "Harmony"
+        case relationship.VisibleRelation >= 80: return "Friendly"
+        case relationship.VisibleRelation >= 60: return "Peaceful"
+        case relationship.VisibleRelation >= 40: return "Calm"
+        case relationship.VisibleRelation >= 20: return "Relaxed"
+        case relationship.VisibleRelation >= 0: return "Neutral"
+        case relationship.VisibleRelation >= -20: return "Unease"
+        case relationship.VisibleRelation >= -40: return "Restless"
+        case relationship.VisibleRelation >= -60: return "Tense"
+        case relationship.VisibleRelation >= -80: return "Troubled"
+        case relationship.VisibleRelation < -80: return "Hate"
+    }
+
+    return "Unknown"
 }
 
 type CityEnchantment struct {
@@ -294,13 +373,17 @@ func (player *Player) GetKnownPlayers() []*Player {
 func (player *Player) UpdateDiplomaticRelations() {
     // FIXME: relation value should be adjusted each turn
     // if aura of majesty is in effect by some rival wizard, then the relation value should go up by 1 for that wizard
+
+    for _, relation := range player.PlayerRelations {
+        relation.UpdateTurn()
+    }
 }
 
 // adjust the diplomacy value between this player and the other player
 func (player *Player) AdjustDiplomaticRelation(other *Player, amount int) {
     relation, ok := player.PlayerRelations[other]
     if ok {
-        relation.Relation = max(min(relation.Relation + amount, 100), -100)
+        relation.StartingRelation = max(min(relation.StartingRelation + amount, 100), -100)
     }
 }
 
@@ -309,6 +392,11 @@ func (player *Player) AwarePlayer(other *Player) {
     _, ok := player.PlayerRelations[other]
     if !ok {
         player.PlayerRelations[other] = &Relationship{
+            StartingRelation: computeStartingRelation(player.Wizard, other.Wizard),
+            VisibleRelation: computeStartingRelation(player.Wizard, other.Wizard),
+            TreatyInterest: 100,
+            TradeInterest: 100,
+            PeaceInterest: 100,
         }
     }
 }
@@ -326,6 +414,11 @@ func (player *Player) PactWithPlayer(other *Player) {
 func (player *Player) AllianceWithPlayer(other *Player) {
     player.AwarePlayer(other)
     player.PlayerRelations[other].Treaty = data.TreatyAlliance
+}
+
+func (player *Player) GetDiplomaticRelation(other *Player) (*Relationship, bool) {
+    relation, ok := player.PlayerRelations[other]
+    return relation, ok
 }
 
 func (player *Player) IsAI() bool {

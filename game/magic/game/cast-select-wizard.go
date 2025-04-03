@@ -294,13 +294,14 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
                     scale.DrawScaled(screen, brokenCrystalPicture, &options)
                 } else {
                     scale.DrawScaled(screen, portrait, &options)
-                    // FIXME: draw actual relation (restless/peaceful/alliance etc) when the relations code will be done
-                    diplomaticRelation := target.Wizard.Name // Temporary solution
-                    fonts.InfoOrange.PrintWrapCenter(
-                        screen, 
-                        float64(faceRect.Min.X + faceRect.Dx()/2), float64(faceRect.Max.Y + 6),
-                        120, scale.ScaleAmount, options.ColorScale, diplomaticRelation,
-                    )
+                    diplomaticRelation, has := target.GetDiplomaticRelation(castingPlayer)
+                    if has {
+                        fonts.InfoOrange.PrintWrapCenter(
+                            screen,
+                            float64(faceRect.Min.X + faceRect.Dx()/2), float64(faceRect.Max.Y + 6),
+                            120, scale.ScaleAmount, options.ColorScale, diplomaticRelation.Description(),
+                        )
+                    }
                 }
             },
         })

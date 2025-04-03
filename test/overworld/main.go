@@ -4626,6 +4626,10 @@ func createScenario50(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x2, y2, 4, city3.Plane)
     player.AwarePlayer(enemy)
     player.AwarePlayer(enemy2)
+    enemy.AwarePlayer(player)
+
+    relation, _ := enemy.GetDiplomaticRelation(player)
+    relation.VisibleRelation = -40
 
     return game
 }

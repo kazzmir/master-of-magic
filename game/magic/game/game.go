@@ -7960,6 +7960,15 @@ func (game *Game) EndOfTurn() {
     game.TurnNumber += 1
 
     game.DoRandomEvents()
+
+    for _, player := range game.Players {
+        if player.Defeated || player.Banished {
+            continue
+        }
+
+        player.UpdateDiplomaticRelations()
+    }
+
 }
 
 func (game *Game) DoNextTurn(){
