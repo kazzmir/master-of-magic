@@ -416,6 +416,11 @@ func (player *Player) AllianceWithPlayer(other *Player) {
     player.PlayerRelations[other].Treaty = data.TreatyAlliance
 }
 
+func (player *Player) GetDiplomaticRelation(other *Player) (*Relationship, bool) {
+    relation, ok := player.PlayerRelations[other]
+    return relation, ok
+}
+
 func (player *Player) IsAI() bool {
     return !player.Human
 }
