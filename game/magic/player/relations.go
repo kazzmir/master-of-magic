@@ -25,7 +25,7 @@ func computeStartingRelation(wizard1 setup.WizardCustom, wizard2 setup.WizardCus
 
     allMagic := []data.MagicType{data.LifeMagic, data.SorceryMagic, data.NatureMagic, data.DeathMagic, data.ChaosMagic}
     wizard1Alignment := 0
-    wizard2Alignemnt := 0
+    wizard2Alignment := 0
 
     for _, magic := range allMagic {
         if wizard1Books[magic] > 0 && wizard2Books[magic] > 0 {
@@ -35,10 +35,10 @@ func computeStartingRelation(wizard1 setup.WizardCustom, wizard2 setup.WizardCus
         switch magic {
             case data.LifeMagic, data.NatureMagic:
                 wizard1Alignment += wizard1Books[magic]
-                wizard2Alignemnt += wizard2Books[magic]
+                wizard2Alignment += wizard2Books[magic]
             case data.ChaosMagic, data.DeathMagic:
                 wizard1Alignment -= wizard1Books[magic]
-                wizard2Alignemnt -= wizard2Books[magic]
+                wizard2Alignment -= wizard2Books[magic]
         }
     }
 
@@ -50,5 +50,5 @@ func computeStartingRelation(wizard1 setup.WizardCustom, wizard2 setup.WizardCus
         return x
     }
 
-    return 2 * sharedBooks - 3 * (abs(wizard1Alignment - wizard2Alignemnt) - 4)
+    return 2 * sharedBooks - 3 * (abs(wizard1Alignment - wizard2Alignment) - 4)
 }
