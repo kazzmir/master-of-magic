@@ -137,6 +137,38 @@ func (relationship *Relationship) UpdateTurn() {
     relationship.TreatyInterest = relationship.Increment(relationship.TreatyInterest)
     relationship.TradeInterest = relationship.Increment(relationship.TradeInterest)
     relationship.PeaceInterest = relationship.Increment(relationship.PeaceInterest)
+
+    abs := func (x int) int {
+        return max(x, -x)
+    }
+
+    // visible relation should gravitate towards starting relation
+    if rand.N(140) > abs(relationship.VisibleRelation) {
+        if relationship.VisibleRelation < relationship.StartingRelation {
+            relationship.VisibleRelation += rand.N(2) + 1
+        // FIXME: the wiki says downward gravitation happens every 3 turns. here we do it every turn
+        } else if relationship.VisibleRelation > relationship.StartingRelation {
+            relationship.VisibleRelation -= rand.N(2) + 1
+        }
+    }
+}
+
+func (relationship *Relationship) Description() string {
+    switch {
+        case relationship.VisibleRelation >= 100: return "Harmony"
+        case relationship.VisibleRelation >= 80: return "Friendly"
+        case relationship.VisibleRelation >= 60: return "Peaceful"
+        case relationship.VisibleRelation >= 40: return "Calm"
+        case relationship.VisibleRelation >= 20: return "Relaxed"
+        case relationship.VisibleRelation >= 0: return "Neutral"
+        case relationship.VisibleRelation >= -20: return "Unease"
+        case relationship.VisibleRelation >= -40: return "Restless"
+        case relationship.VisibleRelation >= -60: return "Tense"
+        case relationship.VisibleRelation >= -80: return "Troubled"
+        case relationship.VisibleRelation < -80: return "Hate"
+    }
+
+    return "Unknown"
 }
 
 type CityEnchantment struct {
