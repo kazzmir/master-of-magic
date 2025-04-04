@@ -5024,13 +5024,22 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     return state
 }
 
+func (game *Game) ShowTranquilityFizzle(spell spellbook.Spell) {
+    group, quit := game.makeTranquilityFizzleUI(spell)
+
+    game.Events <- &GameEventRunUI{
+        Group: group,
+        Quit: quit,
+    }
+}
+
 // the spell was fizzled by the tranquility spell. show the fizzle picture of a broken wand
 func (game *Game) makeTranquilityFizzleUI(spell spellbook.Spell) (*uilib.UIElementGroup, context.Context) {
     quit, cancel := context.WithCancel(context.Background())
 
     group := uilib.MakeGroup()
 
-    rotateIndexLow := 247
+    rotateIndexLow := 244
     rotateIndexHigh := 254
     specfxLbx, _ := game.Cache.GetLbxFile("specfx.lbx")
     wandAnimation := util.MakePaletteRotateAnimation(specfxLbx, 50, rotateIndexLow, rotateIndexHigh)
@@ -5048,11 +5057,11 @@ func (game *Game) makeTranquilityFizzleUI(spell spellbook.Spell) (*uilib.UIEleme
         }
     }
 
-    uiX := 20
-    uiY := 30
+    uiX := 10
+    uiY := 70
 
     group.Update = func() {
-        if group.Counter % 8 == 0 {
+        if group.Counter % 3 == 0 {
             wandAnimation.Next()
         }
     }
@@ -5071,6 +5080,8 @@ func (game *Game) makeTranquilityFizzleUI(spell spellbook.Spell) (*uilib.UIEleme
             scale.DrawScaled(screen, left, &options)
             options.GeoM.Translate(float64(left.Bounds().Dx()), 0)
             scale.DrawScaled(screen, right, &options)
+
+            options.GeoM.Translate(5, 7)
 
             scale.DrawScaled(screen, wandAnimation.Frame(), &options)
         },
