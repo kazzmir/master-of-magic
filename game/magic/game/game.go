@@ -1213,20 +1213,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
 
-    // devil: 51
-    // cat: 52
-    // bird: 53
-    // snake: 54
-    // beetle: 55
-    animalIndex := 51
-    switch player.Wizard.MostBooks() {
-        case data.NatureMagic: animalIndex = 54
-        case data.SorceryMagic: animalIndex = 55
-        case data.ChaosMagic: animalIndex = 51
-        case data.LifeMagic: animalIndex = 53
-        case data.DeathMagic: animalIndex = 52
-    }
-    animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
+    animal := game.GetWizardAnimal(player.Wizard)
 
     wrappedText := fonts.BigFont.CreateWrappedText(float64(175), 1, fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
 
@@ -2736,20 +2723,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
 
-    // devil: 51
-    // cat: 52
-    // bird: 53
-    // snake: 54
-    // beetle: 55
-    animalIndex := 51
-    switch wizard.MostBooks() {
-        case data.NatureMagic: animalIndex = 54
-        case data.SorceryMagic: animalIndex = 55
-        case data.ChaosMagic: animalIndex = 51
-        case data.LifeMagic: animalIndex = 53
-        case data.DeathMagic: animalIndex = 52
-    }
-    animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
+    animal := game.GetWizardAnimal(wizard)
 
     message := event.Message
     if !start {
@@ -5033,6 +5007,24 @@ func (game *Game) ShowTranquilityFizzle(tranquilityOwner *playerlib.Player, cast
     }
 }
 
+func (game *Game) GetWizardAnimal(wizard setup.WizardCustom) *ebiten.Image {
+    // devil: 51
+    // cat: 52
+    // bird: 53
+    // snake: 54
+    // beetle: 55
+    animalIndex := 51
+    switch wizard.MostBooks() {
+        case data.NatureMagic: animalIndex = 54
+        case data.SorceryMagic: animalIndex = 55
+        case data.ChaosMagic: animalIndex = 51
+        case data.LifeMagic: animalIndex = 53
+        case data.DeathMagic: animalIndex = 52
+    }
+    animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
+    return animal
+}
+
 // the spell was fizzled by the tranquility spell. show the fizzle picture of a broken wand
 func (game *Game) makeTranquilityFizzleUI(tranquilityOwner *playerlib.Player, caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context) {
     quit, cancel := context.WithCancel(context.Background())
@@ -5068,6 +5060,8 @@ func (game *Game) makeTranquilityFizzleUI(tranquilityOwner *playerlib.Player, ca
         }
     }
 
+    animal := game.GetWizardAnimal(tranquilityOwner.Wizard)
+
     left, _ := game.ImageCache.GetImage("resource.lbx", 43, 0)
     right, _ := game.ImageCache.GetImage("resource.lbx", 44, 0)
 
@@ -5078,7 +5072,7 @@ func (game *Game) makeTranquilityFizzleUI(tranquilityOwner *playerlib.Player, ca
         owner = tranquilityOwner.Wizard.Name + "'s"
     }
 
-    textOffset := 60
+    textOffset := 70
 
     wrappedText := fonts.Font.CreateWrappedText(float64(left.Bounds().Dx() - textOffset), 1, fmt.Sprintf("%v Tranquility spell has caused %v's %v spell to fizzle.", owner, caster.Wizard.Name, spell.Name))
 
@@ -5089,8 +5083,15 @@ func (game *Game) makeTranquilityFizzleUI(tranquilityOwner *playerlib.Player, ca
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(fader())
             options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
-
             scale.DrawScaled(screen, left, &options)
+
+            saveGeom := options.GeoM
+            options.GeoM.Translate(35, 30)
+            options.GeoM.Translate(float64(-animal.Bounds().Dx()/2), float64(-animal.Bounds().Dy()/2))
+            scale.DrawScaled(screen, animal, &options)
+
+            options.GeoM = saveGeom
+
             options.GeoM.Translate(float64(left.Bounds().Dx()), 0)
             scale.DrawScaled(screen, right, &options)
 

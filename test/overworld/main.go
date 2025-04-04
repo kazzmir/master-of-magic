@@ -5369,11 +5369,11 @@ func createScenario60(cache *lbx.LbxCache) *gamelib.Game {
         },
         Books: []data.WizardBook{
             data.WizardBook{
-                Magic: data.LifeMagic,
+                Magic: data.DeathMagic,
                 Count: 3,
             },
             data.WizardBook{
-                Magic: data.SorceryMagic,
+                Magic: data.NatureMagic,
                 Count: 8,
             },
         },
