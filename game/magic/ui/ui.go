@@ -92,11 +92,15 @@ type UIElementGroup struct {
     maxLayer UILayer
     Counter uint64
     Delays []UIDelay
+    // a function that is called on each tick. this can be set to any function that is useful
+    // for the ui (such as updating animations)
+    Update func()
 }
 
 func MakeGroup() *UIElementGroup {
     return &UIElementGroup{
         Elements: make(map[UILayer][]*UIElement),
+        Update: func(){}, // no-op by default
     }
 }
 
@@ -449,6 +453,7 @@ func (ui *UI) StandardUpdate() {
     }
 
     for _, group := range ui.Groups {
+        group.Update()
         group.Counter += 1
 
         var keepDelays []UIDelay

@@ -67,12 +67,26 @@ func noCityCallback(city *citylib.City) bool {
     return true
 }
 
+// the reason a spell was fizzled due to some global enchantment
+type FizzleReason struct {
+    // the owner of the enchantment
+    Owner *playerlib.Player
+    // the enchantment that caused the spell to fizzle
+    Enchantment data.Enchantment
+}
+
 func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
     // FIXME: if the player is AI then invoke some callback that the AI will use to select targets instead of using the GameEventSelectLocationForSpell
 
-    if game.checkInstantFizzleForCastSpell(player, spell) {
+    fizzled, reason := game.checkInstantFizzleForCastSpell(player, spell)
+    if fizzled {
         // Fizzle the spell and return
         game.ShowFizzleSpell(spell, player)
+
+        if reason.Owner == game.GetHumanPlayer() || player == game.GetHumanPlayer() {
+            game.ShowTranquilityFizzle(reason.Owner, player, spell)
+        }
+
         return
     }
 
@@ -1398,8 +1412,9 @@ func (game *Game) MakeSubversionUI(caster *playerlib.Player, spell spellbook.Spe
 }
 
 // Returns true if the spell is rolled to be instantly fizzled on cast (caused by spells like Life Force)
-func (game *Game) checkInstantFizzleForCastSpell(player *playerlib.Player, spell spellbook.Spell) bool {
-    dispelChances := 0
+// also returns the reason why the fizzle occurred (due to tranquility, supress magic, etc
+func (game *Game) checkInstantFizzleForCastSpell(player *playerlib.Player, spell spellbook.Spell) (bool, FizzleReason) {
+    var dispelChances []FizzleReason
 
     for _, checkingPlayer := range game.Players {
 
@@ -1407,28 +1422,28 @@ func (game *Game) checkInstantFizzleForCastSpell(player *playerlib.Player, spell
         if spell.IsOfRealm(data.ChaosMagic) {
             // FIXME: Not sure if multiple instances of Tranquility stack or are checked separately.
             if checkingPlayer != player && checkingPlayer.HasEnchantment(data.EnchantmentTranquility) {
-                dispelChances += 1
+                dispelChances = append(dispelChances, FizzleReason{Owner: checkingPlayer, Enchantment: data.EnchantmentTranquility})
             }
         }
         // Life Force effect: if it's a death spell, it should either resist a strength 500 dispel check or fizzle right away.
         if spell.IsOfRealm(data.DeathMagic) {
             // FIXME: Not sure if multiple instances of Life Force stack or are checked separately.
             if checkingPlayer != player && checkingPlayer.HasEnchantment(data.EnchantmentLifeForce) {
-                dispelChances += 1
+                dispelChances = append(dispelChances, FizzleReason{Owner: checkingPlayer, Enchantment: data.EnchantmentLifeForce})
             }
         }
 
         if checkingPlayer != player && checkingPlayer.HasEnchantment(data.EnchantmentSuppressMagic) {
-            dispelChances += 1
+            dispelChances = append(dispelChances, FizzleReason{Owner: checkingPlayer, Enchantment: data.EnchantmentSuppressMagic})
         }
     }
 
-    for range dispelChances {
+    for _, reason := range dispelChances {
         if spellbook.RollDispelChance(spellbook.ComputeDispelChance(500, spell.Cost(true), spell.Magic, &player.Wizard)) {
-            return true
+            return true, reason
         }
     }
-    return false
+    return false, FizzleReason{}
 }
 
 func (game *Game) doCastSpellWard(player *playerlib.Player, spell spellbook.Spell) {

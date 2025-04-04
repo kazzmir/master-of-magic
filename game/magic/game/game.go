@@ -142,6 +142,7 @@ type GameEventNewOutpost struct {
 type GameEventRunUI struct {
     Group *uilib.UIElementGroup
     Quit context.Context
+    Song music.Song
 }
 
 type GameEventSelectLocationForSpell struct {
@@ -627,7 +628,8 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         game.DrawGame(screen)
     }
 
-    game.Music.PushSong(music.SongBackground1)
+    // FIXME: the background song should change every once in a while
+    game.Music.PushSong(randomChoose(music.SongBackground1, music.SongBackground2, music.SongBackground3))
 
     return game
 }
@@ -1213,20 +1215,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
 
-    // devil: 51
-    // cat: 52
-    // bird: 53
-    // snake: 54
-    // beetle: 55
-    animalIndex := 51
-    switch player.Wizard.MostBooks() {
-        case data.NatureMagic: animalIndex = 54
-        case data.SorceryMagic: animalIndex = 55
-        case data.ChaosMagic: animalIndex = 51
-        case data.LifeMagic: animalIndex = 53
-        case data.DeathMagic: animalIndex = 52
-    }
-    animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
+    animal := game.GetWizardAnimal(player.Wizard)
 
     wrappedText := fonts.BigFont.CreateWrappedText(float64(175), 1, fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
 
@@ -2736,20 +2725,7 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
 
-    // devil: 51
-    // cat: 52
-    // bird: 53
-    // snake: 54
-    // beetle: 55
-    animalIndex := 51
-    switch wizard.MostBooks() {
-        case data.NatureMagic: animalIndex = 54
-        case data.SorceryMagic: animalIndex = 55
-        case data.ChaosMagic: animalIndex = 51
-        case data.LifeMagic: animalIndex = 53
-        case data.DeathMagic: animalIndex = 52
-    }
-    animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
+    animal := game.GetWizardAnimal(wizard)
 
     message := event.Message
     if !start {
@@ -2861,7 +2837,15 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         }
                     case *GameEventRunUI:
                         runUI := event.(*GameEventRunUI)
+                        if runUI.Song != music.SongNone {
+                            game.Music.PushSong(runUI.Song)
+                        }
+
                         game.doRunUI(yield, runUI.Group, runUI.Quit)
+
+                        if runUI.Song != music.SongNone {
+                            game.Music.PopSong()
+                        }
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)
                     case *GameEventSurveyor:
@@ -5024,6 +5008,119 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     return state
 }
 
+// FIXME: maybe this should be generalized so it can handle any enchantment that cuases a spell to fizzle?
+func (game *Game) ShowTranquilityFizzle(tranquilityOwner *playerlib.Player, caster *playerlib.Player, spell spellbook.Spell) {
+    group, quit := game.makeTranquilityFizzleUI(tranquilityOwner, caster, spell)
+
+    game.Events <- &GameEventRunUI{
+        Group: group,
+        Quit: quit,
+        Song: music.SongSupressMagicActivating,
+    }
+}
+
+func (game *Game) GetWizardAnimal(wizard setup.WizardCustom) *ebiten.Image {
+    // devil: 51
+    // cat: 52
+    // bird: 53
+    // snake: 54
+    // beetle: 55
+    animalIndex := 51
+    switch wizard.MostBooks() {
+        case data.NatureMagic: animalIndex = 54
+        case data.SorceryMagic: animalIndex = 55
+        case data.ChaosMagic: animalIndex = 51
+        case data.LifeMagic: animalIndex = 53
+        case data.DeathMagic: animalIndex = 52
+    }
+    animal, _ := game.ImageCache.GetImageTransform("resource.lbx", animalIndex, 0, "crop", util.AutoCrop)
+    return animal
+}
+
+// the spell was fizzled by the tranquility spell. show the fizzle picture of a broken wand
+func (game *Game) makeTranquilityFizzleUI(tranquilityOwner *playerlib.Player, caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context) {
+    quit, cancel := context.WithCancel(context.Background())
+
+    group := uilib.MakeGroup()
+
+    rotateIndexLow := 244
+    rotateIndexHigh := 254
+    specfxLbx, _ := game.Cache.GetLbxFile("specfx.lbx")
+    wandAnimation := util.MakePaletteRotateAnimation(specfxLbx, 50, rotateIndexLow, rotateIndexHigh)
+
+    fader := group.MakeFadeIn(7)
+
+    fonts := fontslib.MakeFizzleFonts(game.Cache)
+
+    clicked := false
+    shutdown := func(){
+        if !clicked {
+            clicked = true
+            fader = group.MakeFadeOut(7)
+            group.AddDelay(7, func() {
+                cancel()
+            })
+        }
+    }
+
+    uiX := 10
+    uiY := 70
+
+    group.Update = func() {
+        if group.Counter % 3 == 0 {
+            wandAnimation.Next()
+        }
+    }
+
+    animal := game.GetWizardAnimal(tranquilityOwner.Wizard)
+
+    left, _ := game.ImageCache.GetImage("resource.lbx", 43, 0)
+    right, _ := game.ImageCache.GetImage("resource.lbx", 44, 0)
+
+    owner := ""
+    if tranquilityOwner == game.Players[0] {
+        owner = "Your"
+    } else {
+        owner = tranquilityOwner.Wizard.Name + "'s"
+    }
+
+    textOffset := 70
+
+    wrappedText := fonts.Font.CreateWrappedText(float64(left.Bounds().Dx() - textOffset), 1, fmt.Sprintf("%v Tranquility spell has caused %v's %v spell to fizzle.", owner, caster.Wizard.Name, spell.Name))
+
+    rect := image.Rect(0, 0, left.Bounds().Dx() + right.Bounds().Dx(), left.Bounds().Dy()).Add(image.Pt(uiX, uiY))
+    group.AddElement(&uilib.UIElement{
+        Rect: rect,
+        Draw: func (element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(fader())
+            options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+            scale.DrawScaled(screen, left, &options)
+
+            saveGeom := options.GeoM
+            options.GeoM.Translate(35, 30)
+            options.GeoM.Translate(float64(-animal.Bounds().Dx()/2), float64(-animal.Bounds().Dy()/2))
+            scale.DrawScaled(screen, animal, &options)
+
+            options.GeoM = saveGeom
+
+            options.GeoM.Translate(float64(left.Bounds().Dx()), 0)
+            scale.DrawScaled(screen, right, &options)
+
+            options.GeoM.Translate(5, 7)
+
+            scale.DrawScaled(screen, wandAnimation.Frame(), &options)
+
+            fonts.Font.RenderWrapped(screen, float64(rect.Min.X + textOffset), float64(rect.Min.Y + 12), wrappedText, font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options})
+        },
+        LeftClick: func (element *uilib.UIElement){
+            shutdown()
+        },
+    })
+
+    return group, quit
+}
+
 func GetUnitImage(unit units.StackUnit, imageCache *util.ImageCache, banner data.BannerType) (*ebiten.Image, error) {
     image, err := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
 
@@ -5742,6 +5839,10 @@ func (game *Game) ComputeCityStackInfo() CityStackInfo {
     }
 
     return out
+}
+
+func (game *Game) GetHumanPlayer() *playerlib.Player {
+    return game.Players[0]
 }
 
 func (game *Game) PlaneShift(stack *playerlib.UnitStack, player *playerlib.Player) error {
