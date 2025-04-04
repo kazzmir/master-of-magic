@@ -5443,7 +5443,12 @@ func createScenario60(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Camera.Center(stack.X(), stack.Y())
 
-    game.ShowTranquilityFizzle(allSpells.FindByName("Healing"))
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "Tauron",
+        Banner: data.BannerRed,
+    }, false)
+
+    game.ShowTranquilityFizzle(player, enemy1, allSpells.FindByName("Healing"))
 
     return game
 }

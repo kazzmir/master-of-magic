@@ -607,6 +607,17 @@ func MakeMercenariesFonts(cache *lbx.LbxCache) *MercenariesFonts {
     }
 }
 
+type FizzleFonts struct {
+    Font *font.Font
+}
+
+func MakeFizzleFonts(cache *lbx.LbxCache) *FizzleFonts {
+    fonts := MakeMercenariesFonts(cache)
+    return &FizzleFonts{
+        Font: fonts.OkDismissFont,
+    }
+}
+
 type GlobalEnchantmentFonts struct {
     InfoFont *font.Font
 }

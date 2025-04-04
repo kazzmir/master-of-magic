@@ -5024,8 +5024,8 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     return state
 }
 
-func (game *Game) ShowTranquilityFizzle(spell spellbook.Spell) {
-    group, quit := game.makeTranquilityFizzleUI(spell)
+func (game *Game) ShowTranquilityFizzle(tranquilityOwner *playerlib.Player, caster *playerlib.Player, spell spellbook.Spell) {
+    group, quit := game.makeTranquilityFizzleUI(tranquilityOwner, caster, spell)
 
     game.Events <- &GameEventRunUI{
         Group: group,
@@ -5034,7 +5034,7 @@ func (game *Game) ShowTranquilityFizzle(spell spellbook.Spell) {
 }
 
 // the spell was fizzled by the tranquility spell. show the fizzle picture of a broken wand
-func (game *Game) makeTranquilityFizzleUI(spell spellbook.Spell) (*uilib.UIElementGroup, context.Context) {
+func (game *Game) makeTranquilityFizzleUI(tranquilityOwner *playerlib.Player, caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context) {
     quit, cancel := context.WithCancel(context.Background())
 
     group := uilib.MakeGroup()
@@ -5045,6 +5045,8 @@ func (game *Game) makeTranquilityFizzleUI(spell spellbook.Spell) (*uilib.UIEleme
     wandAnimation := util.MakePaletteRotateAnimation(specfxLbx, 50, rotateIndexLow, rotateIndexHigh)
 
     fader := group.MakeFadeIn(7)
+
+    fonts := fontslib.MakeFizzleFonts(game.Cache)
 
     clicked := false
     shutdown := func(){
@@ -5069,6 +5071,17 @@ func (game *Game) makeTranquilityFizzleUI(spell spellbook.Spell) (*uilib.UIEleme
     left, _ := game.ImageCache.GetImage("resource.lbx", 43, 0)
     right, _ := game.ImageCache.GetImage("resource.lbx", 44, 0)
 
+    owner := ""
+    if tranquilityOwner == game.Players[0] {
+        owner = "Your"
+    } else {
+        owner = tranquilityOwner.Wizard.Name + "'s"
+    }
+
+    textOffset := 60
+
+    wrappedText := fonts.Font.CreateWrappedText(float64(left.Bounds().Dx() - textOffset), 1, fmt.Sprintf("%v Tranquility spell has caused %v's %v spell to fizzle.", owner, caster.Wizard.Name, spell.Name))
+
     rect := image.Rect(0, 0, left.Bounds().Dx() + right.Bounds().Dx(), left.Bounds().Dy()).Add(image.Pt(uiX, uiY))
     group.AddElement(&uilib.UIElement{
         Rect: rect,
@@ -5084,6 +5097,8 @@ func (game *Game) makeTranquilityFizzleUI(spell spellbook.Spell) (*uilib.UIEleme
             options.GeoM.Translate(5, 7)
 
             scale.DrawScaled(screen, wandAnimation.Frame(), &options)
+
+            fonts.Font.RenderWrapped(screen, float64(rect.Min.X + textOffset), float64(rect.Min.Y + 12), wrappedText, font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options})
         },
         LeftClick: func (element *uilib.UIElement){
             shutdown()
