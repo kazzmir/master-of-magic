@@ -8,15 +8,17 @@ import (
 )
 
 type GlobalMouse struct {
-    CurrentMouse *ebiten.Image
+    DrawFunc func (*ebiten.Image, *ebiten.DrawImageOptions)
     Enabled bool
+    Options ebiten.DrawImageOptions
 }
 
 var Mouse *GlobalMouse
 
 func Initialize(){
     Mouse = &GlobalMouse{
-        CurrentMouse: nil,
+        DrawFunc: func(screen *ebiten.Image, options *ebiten.DrawImageOptions) {
+        },
         Enabled: true,
     }
 }
@@ -30,14 +32,22 @@ func (mouse *GlobalMouse) Disable() {
 }
 
 func (mouse *GlobalMouse) SetImage(image *ebiten.Image) {
-    mouse.CurrentMouse = image
+    mouse.DrawFunc = func(screen *ebiten.Image, options *ebiten.DrawImageOptions) {
+        scale.DrawScaled(screen, image, options)
+    }
+    // mouse.CurrentMouse = image
+}
+
+func (mouse *GlobalMouse) SetImageFunc(imageFunc func (*ebiten.Image, *ebiten.DrawImageOptions)) {
+    mouse.DrawFunc = imageFunc
 }
 
 func (mouse *GlobalMouse) Draw(screen *ebiten.Image) {
-    if mouse != nil && mouse.Enabled && mouse.CurrentMouse != nil {
+    if mouse != nil && mouse.Enabled {
         x, y := inputmanager.MousePosition()
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(scale.Unscale(float64(x)), scale.Unscale(float64(y)))
-        scale.DrawScaled(screen, mouse.CurrentMouse, &options)
+        mouse.Options.GeoM.Reset()
+        mouse.Options.GeoM.Translate(scale.Unscale(float64(x)), scale.Unscale(float64(y)))
+        // scale.DrawScaled(screen, mouse.CurrentMouse, &options)
+        mouse.DrawFunc(screen, &mouse.Options)
     }
 }
