@@ -89,8 +89,6 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
     selectedItem := createdArtifact
 
-    // var artifactImage *ebiten.Image
-
     ui := &uilib.UI{
         Cache: game.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
@@ -115,9 +113,6 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
     updateMouse := func(){
         if selectedItem != nil {
-            // artifactImage, _ = imageCache.GetImage("items.lbx", selectedItem.Image, 0)
-            // mouse.Mouse.SetImage(artifactImage)
-
             mouse.Mouse.SetImageFunc(func (screen *ebiten.Image, options *ebiten.DrawImageOptions){
                 artifact.RenderArtifactImage(screen, &imageCache, *selectedItem, ui.Counter / 8, *options)
             })
