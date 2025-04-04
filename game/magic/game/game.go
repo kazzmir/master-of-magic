@@ -142,6 +142,7 @@ type GameEventNewOutpost struct {
 type GameEventRunUI struct {
     Group *uilib.UIElementGroup
     Quit context.Context
+    Song music.Song
 }
 
 type GameEventSelectLocationForSpell struct {
@@ -627,7 +628,8 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         game.DrawGame(screen)
     }
 
-    game.Music.PushSong(music.SongBackground1)
+    // FIXME: the background song should change every once in a while
+    game.Music.PushSong(randomChoose(music.SongBackground1, music.SongBackground2, music.SongBackground3))
 
     return game
 }
@@ -2835,7 +2837,15 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         }
                     case *GameEventRunUI:
                         runUI := event.(*GameEventRunUI)
+                        if runUI.Song != music.SongNone {
+                            game.Music.PushSong(runUI.Song)
+                        }
+
                         game.doRunUI(yield, runUI.Group, runUI.Quit)
+
+                        if runUI.Song != music.SongNone {
+                            game.Music.PopSong()
+                        }
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)
                     case *GameEventSurveyor:
@@ -5005,6 +5015,7 @@ func (game *Game) ShowTranquilityFizzle(tranquilityOwner *playerlib.Player, cast
     game.Events <- &GameEventRunUI{
         Group: group,
         Quit: quit,
+        Song: music.SongSupressMagicActivating,
     }
 }
 
