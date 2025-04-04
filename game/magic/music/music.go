@@ -7,6 +7,7 @@ import (
     "sync"
     "strings"
     "time"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/audio"
 
@@ -150,6 +151,14 @@ const (
     SongHeroGainedALevel Song = 115
 )
 
+type Songs struct {
+    Songs []Song
+}
+
+func (song Songs) Choose() Song {
+    return randomChoose(song.Songs...)
+}
+
 type Music struct {
     Cache *lbx.LbxCache
     done context.Context
@@ -159,7 +168,7 @@ type Music struct {
     XmiCache map[Song]*smf.SMF
 
     // queue of songs being played. a new song can be pushed on top, or popped off
-    songQueue []Song
+    songQueue []Songs
 }
 
 func MakeMusic(cache *lbx.LbxCache) *Music {
@@ -167,10 +176,17 @@ func MakeMusic(cache *lbx.LbxCache) *Music {
     return &Music{done: ctx, cancel: cancel, Cache: cache, XmiCache: make(map[Song]*smf.SMF)}
 }
 
+func randomChoose[T any](choices... T) T {
+    return choices[rand.N(len(choices))]
+}
+
+func (music *Music) PushSongs(songs... Song) {
+    music.songQueue = append(music.songQueue, Songs{Songs: songs})
+    music.PlaySong(music.songQueue[len(music.songQueue)-1].Choose())
+}
+
 func (music *Music) PushSong(index Song){
-    music.songQueue = append(music.songQueue, index)
-    music.Stop()
-    music.PlaySong(index)
+    music.PushSongs(index)
 }
 
 func (music *Music) PopSong(){
@@ -178,7 +194,7 @@ func (music *Music) PopSong(){
         music.songQueue = music.songQueue[:len(music.songQueue)-1]
         music.Stop()
         if len(music.songQueue) > 0 {
-            music.PlaySong(music.songQueue[len(music.songQueue)-1])
+            music.PlaySong(music.songQueue[len(music.songQueue)-1].Choose())
         }
     }
 }

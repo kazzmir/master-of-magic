@@ -628,8 +628,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         game.DrawGame(screen)
     }
 
-    // FIXME: the background song should change every once in a while
-    game.Music.PushSong(randomChoose(music.SongBackground1, music.SongBackground2, music.SongBackground3))
+    game.Music.PushSongs(music.SongBackground1, music.SongBackground2, music.SongBackground3)
 
     return game
 }
