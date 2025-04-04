@@ -5418,6 +5418,7 @@ func createScenario60(cache *lbx.LbxCache) *gamelib.Game {
     allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
     player.KnownSpells.AddSpell(allSpells.FindByName("Animate Dead"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Corruption"))
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 
@@ -5448,7 +5449,9 @@ func createScenario60(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
     }, false)
 
-    game.ShowTranquilityFizzle(player, enemy1, allSpells.FindByName("Healing"))
+    enemy1.AddEnchantment(data.EnchantmentTranquility)
+
+    // game.ShowTranquilityFizzle(player, enemy1, allSpells.FindByName("Healing"))
 
     return game
 }

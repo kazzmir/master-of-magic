@@ -4998,6 +4998,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     return state
 }
 
+// FIXME: maybe this should be generalized so it can handle any enchantment that cuases a spell to fizzle?
 func (game *Game) ShowTranquilityFizzle(tranquilityOwner *playerlib.Player, caster *playerlib.Player, spell spellbook.Spell) {
     group, quit := game.makeTranquilityFizzleUI(tranquilityOwner, caster, spell)
 
@@ -5827,6 +5828,10 @@ func (game *Game) ComputeCityStackInfo() CityStackInfo {
     }
 
     return out
+}
+
+func (game *Game) GetHumanPlayer() *playerlib.Player {
+    return game.Players[0]
 }
 
 func (game *Game) PlaneShift(stack *playerlib.UnitStack, player *playerlib.Player) error {
