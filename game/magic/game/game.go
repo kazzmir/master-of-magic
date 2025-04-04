@@ -5024,6 +5024,64 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     return state
 }
 
+// the spell was fizzled by the tranquility spell. show the fizzle picture of a broken wand
+func (game *Game) makeTranquilityFizzleUI(spell spellbook.Spell) (*uilib.UIElementGroup, context.Context) {
+    quit, cancel := context.WithCancel(context.Background())
+
+    group := uilib.MakeGroup()
+
+    rotateIndexLow := 247
+    rotateIndexHigh := 254
+    specfxLbx, _ := game.Cache.GetLbxFile("specfx.lbx")
+    wandAnimation := util.MakePaletteRotateAnimation(specfxLbx, 50, rotateIndexLow, rotateIndexHigh)
+
+    fader := group.MakeFadeIn(7)
+
+    clicked := false
+    shutdown := func(){
+        if !clicked {
+            clicked = true
+            fader = group.MakeFadeOut(7)
+            group.AddDelay(7, func() {
+                cancel()
+            })
+        }
+    }
+
+    uiX := 20
+    uiY := 30
+
+    group.Update = func() {
+        if group.Counter % 8 == 0 {
+            wandAnimation.Next()
+        }
+    }
+
+    left, _ := game.ImageCache.GetImage("resource.lbx", 43, 0)
+    right, _ := game.ImageCache.GetImage("resource.lbx", 44, 0)
+
+    rect := image.Rect(0, 0, left.Bounds().Dx() + right.Bounds().Dx(), left.Bounds().Dy()).Add(image.Pt(uiX, uiY))
+    group.AddElement(&uilib.UIElement{
+        Rect: rect,
+        Draw: func (element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(fader())
+            options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+
+            scale.DrawScaled(screen, left, &options)
+            options.GeoM.Translate(float64(left.Bounds().Dx()), 0)
+            scale.DrawScaled(screen, right, &options)
+
+            scale.DrawScaled(screen, wandAnimation.Frame(), &options)
+        },
+        LeftClick: func (element *uilib.UIElement){
+            shutdown()
+        },
+    })
+
+    return group, quit
+}
+
 func GetUnitImage(unit units.StackUnit, imageCache *util.ImageCache, banner data.BannerType) (*ebiten.Image, error) {
     image, err := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
 
