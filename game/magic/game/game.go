@@ -713,6 +713,44 @@ func (game *Game) NearCity(point image.Point, squares int, plane data.Plane) boo
     return false
 }
 
+type CityValidArea map[image.Point]bool
+
+func (area CityValidArea) FindLocation() (int, int, bool) {
+    choices := make([]image.Point, 0, len(area))
+    for point, ok := range area {
+        if ok {
+            choices = append(choices, point)
+        }
+    }
+
+    if len(choices) == 0 {
+        return 0, 0, false
+    }
+
+    point := choices[rand.N(len(choices))]
+    return point.X, point.Y, true
+}
+
+func (game *Game) MakeCityValidArea(plane data.Plane) CityValidArea {
+    out := make(CityValidArea)
+
+    mapUse := game.GetMap(plane)
+    continents := mapUse.Map.FindContinents()
+
+    for _, continent := range continents {
+        if len(continent) > 100 {
+            for _, point := range continent {
+                tile := terrain.GetTile(mapUse.Map.Terrain[point.X][point.Y])
+                if point.Y > 3 && point.Y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(point.X, point.Y) == nil {
+                    out[point] = true
+                }
+            }
+        }
+    }
+
+    return out
+}
+
 func (game *Game) FindValidCityLocation(plane data.Plane) (int, int, bool) {
     mapUse := game.GetMap(plane)
     continents := mapUse.Map.FindContinents()
