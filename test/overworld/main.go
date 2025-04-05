@@ -2008,6 +2008,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
     player.SetSelectedStack(stack)
 
     player.LiftFog(stack.X(), stack.Y(), 20, data.PlaneArcanus)
+    player.Admin = true
 
     enemyWizard := setup.WizardCustom{
         Name: "enemy",

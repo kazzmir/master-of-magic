@@ -361,8 +361,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     log.Printf("done create neutral player with %v cities", len(neutral.Cities))
 
     // hack
-    human.AddEnchantment(data.EnchantmentNatureAwareness)
-    game.ApplyGlobalEnchantment(data.EnchantmentNatureAwareness, human)
+    human.Admin = true
 
     game.DoNextTurn()
 

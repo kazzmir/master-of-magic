@@ -3974,10 +3974,20 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     return game.State
 }
 
-func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Player, move *playerlib.AIMoveStackDecision) {
+// FIXME: can this just use doMoveSelectedUnit?
+// returns the rest of the path the stack should walk (nil if the path ends)
+func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Player, move *playerlib.AIMoveStackDecision) pathfinding.Path {
     stack := move.Stack
     // FIXME: split the stack into just the active units in case some are busy or out of moves
-    to := move.Location
+    path := move.Path
+
+    if len(path) == 0 {
+        return nil
+    }
+
+    to := path[0]
+    path = path[1:]
+
     log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
     getStack := func(x int, y int) *playerlib.UnitStack {
         return player.FindStack(x, y, stack.Plane())
@@ -3990,10 +4000,10 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
         mapUse := game.GetMap(stack.Plane())
 
         encounter := mapUse.GetEncounter(mapUse.WrapX(to.X), to.Y)
-        if encounter != nil && move.ConfirmEncounter != nil {
+        if encounter != nil {
             if !move.ConfirmEncounter(encounter) {
                 move.Invalid()
-                return
+                return nil
             }
         }
 
@@ -4002,22 +4012,24 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
             for _, unit := range stack.ActiveUnits() {
                 if !newCity.CanEnter(unit) {
                     move.Invalid()
-                    return
+                    return nil
                 }
             }
         }
 
         stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
 
-        if game.Players[0].IsVisible(oldX, oldY, stack.Plane()) {
+        if game.GetHumanPlayer().IsVisible(oldX, oldY, stack.Plane()) {
             game.showMovement(yield, oldX, oldY, stack, false)
         }
+
+        move.Moved()
 
         player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
         if encounter != nil {
             game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
-            return
+            return nil
         }
 
         for _, enemy := range game.GetEnemies(player) {
@@ -4037,7 +4049,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
                     game.doMoveFleeingDefender(enemy, enemyStack)
                 }
 
-                return
+                return nil
             }
 
             city := enemy.FindCity(stack.X(), stack.Y(), stack.Plane())
@@ -4052,12 +4064,15 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
                 // FIXME: if the wizard is neutral and decides to raze the town, then the town could become
                 // an encounter zone
 
-                return
+                return nil
             }
         }
-    } else if move.Invalid != nil {
+    } else {
         move.Invalid()
+        return nil
     }
+
+    return path
 }
 
 func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
@@ -4072,7 +4087,9 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
         for _, decision := range decisions {
             switch decision.(type) {
                 case *playerlib.AIMoveStackDecision:
-                    game.doAiMoveUnit(yield, player, decision.(*playerlib.AIMoveStackDecision))
+                    moveDecision := decision.(*playerlib.AIMoveStackDecision)
+                    newPath := game.doAiMoveUnit(yield, player, moveDecision)
+                    moveDecision.Stack.CurrentPath = newPath
 
                 // mainly for the raider ai
                 case *playerlib.AICreateUnitDecision:

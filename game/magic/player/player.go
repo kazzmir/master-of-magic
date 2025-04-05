@@ -38,9 +38,35 @@ type AIProduceDecision struct {
 
 type AIMoveStackDecision struct {
     Stack *UnitStack
-    Location image.Point
-    Invalid func()
-    ConfirmEncounter func(*maplib.ExtraEncounter) bool
+    // the path to move on
+    Path pathfinding.Path
+    // invoked if the move was unable to be completed
+    invalid func()
+    // invoked if the move succeeded
+    moved func()
+    // invoked when the stack moves onto a tile with an encounter. this function should return true
+    // if the army should initiate combat with the encounter
+    ConfirmEncounter_ func(*maplib.ExtraEncounter) bool
+}
+
+func (move *AIMoveStackDecision) Invalid() {
+    if move.invalid != nil {
+        move.invalid()
+    }
+}
+
+func (move *AIMoveStackDecision) ConfirmEncounter(encounter *maplib.ExtraEncounter) bool {
+    if move.ConfirmEncounter_ != nil {
+        return move.ConfirmEncounter_(encounter)
+    }
+
+    return false
+}
+
+func (move *AIMoveStackDecision) Moved() {
+    if move.moved != nil {
+        move.moved()
+    }
 }
 
 type AICastSpellDecision struct {
@@ -67,6 +93,8 @@ type AIServices interface {
     FindPath(oldX int, oldY int, newX int, newY int, player *Player, stack *UnitStack, fog data.FogMap) pathfinding.Path
     FindSettlableLocations(x int, y int, plane data.Plane, fog data.FogMap) []image.Point
     IsSettlableLocation(x int, y int, plane data.Plane) bool
+    GetMap(data.Plane) *maplib.Map
+    FindCity(x int, y int, plane data.Plane) (*citylib.City, *Player)
 }
 
 type AIBehavior interface {
@@ -1064,6 +1092,10 @@ func (player *Player) UpdateFogVisibility() {
             for y := range row {
                 if fog[x][y] == data.FogTypeVisible {
                     fog[x][y] = data.FogTypeExplored
+                }
+
+                if player.Admin {
+                    fog[x][y] = data.FogTypeVisible
                 }
             }
         }

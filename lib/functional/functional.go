@@ -34,3 +34,22 @@ func Memoize2[Key1 comparable, Key2 comparable, Value any](f func(Key1, Key2) Va
     }
 }
 
+func Memoize3[Key1 comparable, Key2 comparable, Key3 comparable, Value any](f func(Key1, Key2, Key3) Value) func(Key1, Key2, Key3) Value {
+    type Key struct {
+        k1 Key1
+        k2 Key2
+        k3 Key3
+    }
+
+    cache := make(map[Key]Value)
+    return func(key1 Key1, key2 Key2, key3 Key3) Value {
+        key := Key{k1: key1, k2: key2, k3: key3}
+        if value, ok := cache[key]; ok {
+            return value
+        }
+
+        result := f(key1, key2, key3)
+        cache[key] = result
+        return result
+    }
+}

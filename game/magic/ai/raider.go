@@ -2,14 +2,15 @@ package ai
 
 import (
     _ "log"
-    "image"
     "math/rand/v2"
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/lib/functional"
 )
 
 type RaiderAI struct {
@@ -26,11 +27,36 @@ func (raider *RaiderAI) NewTurn(player *playerlib.Player) {
     raider.MovedStacks = make(map[*playerlib.UnitStack]bool)
 }
 
+// return a random number between low and high inclusive
+func randomRange(low int, high int) int {
+    if low > high {
+        return 0
+    }
+
+    if low == high {
+        return low
+    }
+
+    return rand.N(high-low+1) + low
+}
+
 func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
     for _, stack := range player.Stacks {
         _, moved := raider.MovedStacks[stack]
         if !moved && !stack.OutOfMoves() {
+            if stack.CurrentPath != nil {
+                decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                    Stack: stack,
+                    Path: stack.CurrentPath,
+                    ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
+                        return false
+                    },
+                })
+                raider.MovedStacks[stack] = true
+                continue
+            }
+
             fog := player.GetFog(stack.Plane())
 
             var currentPath pathfinding.Path
@@ -62,15 +88,19 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
 
             if len(currentPath) == 0 {
                 // just move randomly
-                whereX := stack.X() + rand.N(5) - 2
-                whereY := stack.Y() + rand.N(5) - 2
+                whereX := stack.X() + randomRange(-5, 5)
+                whereY := stack.Y() + randomRange(-5, 5)
                 currentPath = pathfinder.FindPath(stack.X(), stack.Y(), whereX, whereY, player, stack, player.GetFog(data.PlaneArcanus))
             }
 
             if len(currentPath) > 0 {
                 decisions = append(decisions, &playerlib.AIMoveStackDecision{
                     Stack: stack,
-                    Location: image.Pt(currentPath[0].X, currentPath[0].Y),
+                    Path: currentPath,
+                    // never enter an encounter
+                    ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
+                        return false
+                    },
                 })
 
             } else {
@@ -83,30 +113,50 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
     return decisions
 }
 
-func (raider *RaiderAI) CreateUnits(player *playerlib.Player) []playerlib.AIDecision {
+func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
-    if rand.N(10) == 0 && len(player.Cities) > 0 {
-        city := player.Cities[rand.N(len(player.Cities))]
+    getContinent := functional.Memoize3(func(x int, y int, plane data.Plane) []maplib.FullTile {
+        return aiServices.GetMap(plane).GetContinentTiles(x, y)
+    })
 
-        for range rand.N(3) + 1 {
-            decisions = append(decisions, &playerlib.AICreateUnitDecision{
-                Unit: units.ChooseRandomUnit(player.Wizard.Race),
-                X: city.X,
-                Y: city.Y,
-                Plane: city.Plane,
-            })
+    findEnemyCity := func (city *citylib.City) bool {
+        tiles := getContinent(city.X, city.Y, city.Plane)
+        for _, tile := range tiles {
+            otherCity, otherPlayer := aiServices.FindCity(tile.X, tile.Y, city.Plane)
+            if otherCity != nil && otherPlayer != player {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    for _, city := range player.Cities {
+
+        if rand.N(50) == 0 {
+            if findEnemyCity(city) {
+                // create a stack of N units
+                for range rand.N(3) + 1 {
+                    decisions = append(decisions, &playerlib.AICreateUnitDecision{
+                        Unit: units.ChooseRandomUnit(player.Wizard.Race),
+                        X: city.X,
+                        Y: city.Y,
+                        Plane: city.Plane,
+                    })
+                }
+            }
         }
     }
 
     return decisions
 }
 
-func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.AIServices, manaPerTurn int) []playerlib.AIDecision {
+func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices, manaPerTurn int) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
-    decisions = append(decisions, raider.MoveStacks(player, enemies, pathfinder)...)
-    decisions = append(decisions, raider.CreateUnits(player)...)
+    decisions = append(decisions, raider.MoveStacks(player, enemies, aiServices)...)
+    decisions = append(decisions, raider.CreateUnits(player, aiServices)...)
 
     return decisions
 }
