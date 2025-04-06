@@ -72,17 +72,21 @@ func (main *MainScreen) MakeUI() *uilib.UI {
 
     var elements []*uilib.UIElement
 
-    makeButton := func(index int, x, y int, action func()) *uilib.UIElement {
+    makeButton := func(index int, x, y int, isActive bool, action func()) *uilib.UIElement {
         images, _ := main.ImageCache.GetImages("mainscrn.lbx", index)
         rect := util.ImageRect(x, y, images[0])
         imageIndex := 1
         return &uilib.UIElement{
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
-                action()
+                if isActive {
+                    action()
+                }
             },
             Inside: func(element *uilib.UIElement, x, y int) {
-                imageIndex = 0
+                if isActive {
+                    imageIndex = 0
+                }
             },
             NotInside: func(element *uilib.UIElement){
                 imageIndex = 1
@@ -91,28 +95,35 @@ func (main *MainScreen) MakeUI() *uilib.UI {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
                 options.ColorScale.ScaleAlpha(getAlpha())
+                if !isActive {
+                    options.ColorScale.Scale(0.4, 0.4, 0.4, 1.0)
+                }
                 scale.DrawScaled(screen, images[imageIndex], &options)
             },
         }
     }
 
+    // TODO: when load game functionality is there, take save files presence into account for these vars
+    isContinueBtnActive := false
+    isLoadGameBtnActive := false
+
     // continue
-    elements = append(elements, makeButton(1, 110, 130, func(){
+    elements = append(elements, makeButton(1, 110, 130, isContinueBtnActive, func(){
         log.Printf("continue")
     }))
 
     // load game
-    elements = append(elements, makeButton(2, 110, 130 + 16 * 1, func(){
+    elements = append(elements, makeButton(2, 110, 130 + 16 * 1, isLoadGameBtnActive, func(){
         log.Printf("load")
     }))
 
     // new game
-    elements = append(elements, makeButton(3, 110, 130 + 16 * 2, func(){
+    elements = append(elements, makeButton(3, 110, 130 + 16 * 2, true, func(){
         main.State = MainScreenStateNewGame
     }))
 
     // exit
-    elements = append(elements, makeButton(4, 110, 130 + 16 * 3, func(){
+    elements = append(elements, makeButton(4, 110, 130 + 16 * 3, true, func(){
         main.State = MainScreenStateQuit
     }))
 
