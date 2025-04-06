@@ -45,6 +45,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
     for _, stack := range player.Stacks {
         _, moved := raider.MovedStacks[stack]
         if !moved && !stack.OutOfMoves() {
+            // FIXME: if the unit walked by a previously unknown city, they should stop their current path and possibly attack the city
             if stack.CurrentPath != nil {
                 decisions = append(decisions, &playerlib.AIMoveStackDecision{
                     Stack: stack,
