@@ -40,7 +40,7 @@ func randomRange(low int, high int) int {
     return rand.N(high-low+1) + low
 }
 
-func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerlib.Player, pathfinder playerlib.AIServices) []playerlib.AIDecision {
+func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
     for _, stack := range player.Stacks {
         _, moved := raider.MovedStacks[stack]
@@ -74,7 +74,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                         continue
                     }
 
-                    path := pathfinder.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
+                    path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
                     if path != nil {
                         if currentPath == nil {
                             currentPath = path
@@ -87,11 +87,23 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                 }
             }
 
+            // choose a random unexplored tile on this continent
             if len(currentPath) == 0 {
-                // just move randomly
+                continent := aiServices.GetMap(stack.Plane()).GetContinentTiles(stack.X(), stack.Y())
+                for _, tileIndex := range rand.Perm(len(continent)) {
+                    tile := &continent[tileIndex]
+                    if fog[tile.X][tile.Y] == data.FogTypeUnexplored {
+                        currentPath = aiServices.FindPath(stack.X(), stack.Y(), tile.X, tile.Y, player, stack, fog)
+                        if len(currentPath) > 0 {
+                            break
+                        }
+                    }
+                }
+
+                // just move randomly because all tiles have been explored
                 whereX := stack.X() + randomRange(-5, 5)
                 whereY := stack.Y() + randomRange(-5, 5)
-                currentPath = pathfinder.FindPath(stack.X(), stack.Y(), whereX, whereY, player, stack, player.GetFog(data.PlaneArcanus))
+                currentPath = aiServices.FindPath(stack.X(), stack.Y(), whereX, whereY, player, stack, fog)
             }
 
             if len(currentPath) > 0 {
@@ -117,6 +129,11 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
 func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
+    // don't create too many stacks
+    if len(player.Stacks) > 5 {
+        return decisions
+    }
+
     getContinent := functional.Memoize3(func(x int, y int, plane data.Plane) []maplib.FullTile {
         return aiServices.GetMap(plane).GetContinentTiles(x, y)
     })
@@ -135,7 +152,7 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
 
     for _, city := range player.Cities {
 
-        if rand.N(50) == 0 {
+        if rand.N(40) == 0 {
             if findEnemyCity(city) {
                 // create a stack of N units
                 for range rand.N(3) + 1 {

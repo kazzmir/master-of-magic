@@ -4139,9 +4139,9 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
         player.AIBehavior.PostUpdate(player, game.GetEnemies(player))
     }
 
-    if len(decisions) == 0 {
+    // if len(decisions) == 0 {
         game.DoNextTurn()
-    }
+    // }
 }
 
 // get all alive players that are not the current player

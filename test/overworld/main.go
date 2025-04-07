@@ -2041,10 +2041,12 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy.LiftFog(city2.X, city2.Y, 10, data.PlaneArcanus)
 
+    /*
     for range 8 {
         randomUnit := units.ChooseRandomUnit(enemy.Wizard.Race)
         enemy.AddUnit(units.MakeOverworldUnitFromUnit(randomUnit, city2.X, city2.Y, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo(), enemy.MakeUnitEnchantmentProvider()))
     }
+    */
 
     enemy.AddCity(city2)
 

@@ -466,6 +466,8 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
         return CombatDoneErr
     }
 
+    // make sure inputmanager is updated at least once first
+    inputmanager.Update()
     engine.Coroutine = coroutine.MakeCoroutine(run)
 }
 
