@@ -362,7 +362,8 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     log.Printf("done create neutral player with %v cities", len(neutral.Cities))
 
     // hack
-    human.Admin = true
+    // human.Admin = true
+    _ = human
 
     game.DoNextTurn()
 
