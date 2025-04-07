@@ -3983,6 +3983,9 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
 
     if len(move.Units) > 0 {
         stack = player.SplitStack(stack, move.Units)
+        for _, unit := range stack.Units() {
+            unit.SetBusy(units.BusyStatusNone)
+        }
     }
 
     // FIXME: split the stack into just the active units in case some are busy or out of moves
