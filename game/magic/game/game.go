@@ -7806,7 +7806,7 @@ func (game *Game) DoRandomEvents() {
                         if neutralPlayer != nil {
                             var choices []*citylib.City
                             for _, city := range target.Cities {
-                                if city.HasFortress() {
+                                if city.HasFortress() || city.HasSummoningCircle() {
                                     continue
                                 }
 
