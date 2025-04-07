@@ -978,6 +978,8 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
 
     // absorb last click
     yield()
+
+    game.RefreshUI()
 }
 
 func (game *Game) doArmyView(yield coroutine.YieldFunc) {

@@ -322,6 +322,7 @@ func initializeNeutralPlayer(game *gamelib.Game, arcanusCityArea gamelib.CityVal
             cityName := game.SuggestCityName(race)
             city := citylib.MakeCity(cityName, cityX, cityY, race, game.BuildingInfo, game.GetMap(plane), game, player)
             city.Population = rand.N(5) * 1000 + 2000
+            city.ProducingBuilding = buildinglib.BuildingHousing
             city.Plane = plane
             city.ResetCitizens()
 
