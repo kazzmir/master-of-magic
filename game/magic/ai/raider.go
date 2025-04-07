@@ -1,7 +1,7 @@
 package ai
 
 import (
-    _ "log"
+    "log"
     "math/rand/v2"
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -125,7 +125,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
             }
 
             // raider.MovedStacks[stack] = true
-        } else if player.FindCity(stack.X(), stack.Y(), stack.Plane()) != nil {
+        } else if player.FindCity(stack.X(), stack.Y(), stack.Plane()) != nil && rand.N(10) == 0 {
             busy := 0
             for _, unit := range stack.Units() {
                 if unit.GetBusy() == units.BusyStatusPatrol {
@@ -137,6 +137,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                 var moveUnits []units.StackUnit
                 maxUnits := rand.N(max(1, stack.Size() - 1))
                 if maxUnits > 0 {
+                    log.Printf("Raiders moving %v units", maxUnits)
                     stackUnits := stack.Units()
                     for _, i := range rand.Perm(stack.Size()) {
                         if maxUnits == 0 {
