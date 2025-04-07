@@ -4101,6 +4101,13 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
                     player.AddUnit(overworldUnit)
                     game.ResolveStackAt(create.X, create.Y, create.Plane)
+                case *playerlib.AIUpdateCityDecision:
+                    update := decision.(*playerlib.AIUpdateCityDecision)
+
+                    update.City.Farmers = update.Farmers
+                    update.City.Workers = update.Workers
+                    update.City.ResetCitizens()
+
                 case *playerlib.AIBuildOutpostDecision:
                     build := decision.(*playerlib.AIBuildOutpostDecision)
 

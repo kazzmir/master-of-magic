@@ -36,6 +36,13 @@ type AIProduceDecision struct {
     Unit units.Unit
 }
 
+// request the city to have the given number of farmers and workers, with farmers taking precedence
+type AIUpdateCityDecision struct {
+    City *citylib.City
+    Farmers int
+    Workers int
+}
+
 type AIMoveStackDecision struct {
     Stack *UnitStack
     // the path to move on

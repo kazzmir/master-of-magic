@@ -89,13 +89,16 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
 
             // choose a random unexplored tile on this continent
             if len(currentPath) == 0 {
-                continent := aiServices.GetMap(stack.Plane()).GetContinentTiles(stack.X(), stack.Y())
-                for _, tileIndex := range rand.Perm(len(continent)) {
-                    tile := &continent[tileIndex]
-                    if fog[tile.X][tile.Y] == data.FogTypeUnexplored {
-                        currentPath = aiServices.FindPath(stack.X(), stack.Y(), tile.X, tile.Y, player, stack, fog)
-                        if len(currentPath) > 0 {
-                            break
+                // allow flying/swimming units to walk randomly over the map
+                if stack.AnyLandWalkers() {
+                    continent := aiServices.GetMap(stack.Plane()).GetContinentTiles(stack.X(), stack.Y())
+                    for _, tileIndex := range rand.Perm(len(continent)) {
+                        tile := &continent[tileIndex]
+                        if fog[tile.X][tile.Y] == data.FogTypeUnexplored {
+                            currentPath = aiServices.FindPath(stack.X(), stack.Y(), tile.X, tile.Y, player, stack, fog)
+                            if len(currentPath) > 0 {
+                                break
+                            }
                         }
                     }
                 }
@@ -170,11 +173,28 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
     return decisions
 }
 
+// always force all raider cities to have the maximum number of farmers
+func (raider *RaiderAI) UpdateCities(self *playerlib.Player) []playerlib.AIDecision {
+    var decisions []playerlib.AIDecision
+
+    for _, city := range self.Cities {
+        // request the number of farmers to be the maximum possible
+        decisions = append(decisions, &playerlib.AIUpdateCityDecision{
+            City: city,
+            Farmers: city.Citizens(),
+            Workers: 0,
+        })
+    }
+
+    return decisions
+}
+
 func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices, manaPerTurn int) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
     decisions = append(decisions, raider.MoveStacks(player, enemies, aiServices)...)
     decisions = append(decisions, raider.CreateUnits(player, aiServices)...)
+    decisions = append(decisions, raider.UpdateCities(player)...)
 
     return decisions
 }

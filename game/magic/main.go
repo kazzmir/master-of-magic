@@ -14,6 +14,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     introlib "github.com/kazzmir/master-of-magic/game/magic/intro"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
@@ -298,6 +299,7 @@ func initializeNeutralPlayer(game *gamelib.Game, arcanusCityArea gamelib.CityVal
 
     player := game.AddPlayer(wizard, false)
     player.AIBehavior = ai.MakeRaiderAI()
+    player.TaxRate = fraction.Zero()
 
     for _, plane := range []data.Plane{data.PlaneArcanus, data.PlaneMyrror} {
         randomRace := func() data.Race {
@@ -324,6 +326,7 @@ func initializeNeutralPlayer(game *gamelib.Game, arcanusCityArea gamelib.CityVal
             city.Population = rand.N(5) * 1000 + 2000
             city.ProducingBuilding = buildinglib.BuildingHousing
             city.Plane = plane
+            city.Farmers = city.Citizens()
             city.ResetCitizens()
 
             area[image.Pt(cityX, cityY)] = false
