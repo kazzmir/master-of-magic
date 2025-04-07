@@ -3980,6 +3980,11 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 // returns the rest of the path the stack should walk (nil if the path ends)
 func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Player, move *playerlib.AIMoveStackDecision) pathfinding.Path {
     stack := move.Stack
+
+    if len(move.Units) > 0 {
+        stack = player.SplitStack(stack, move.Units)
+    }
+
     // FIXME: split the stack into just the active units in case some are busy or out of moves
     path := move.Path
 
@@ -4099,6 +4104,9 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     log.Printf("ai %v creating %+v", player.Wizard.Name, create)
 
                     overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
+                    if create.Patrol {
+                        overworldUnit.SetBusy(units.BusyStatusPatrol)
+                    }
                     player.AddUnit(overworldUnit)
                     game.ResolveStackAt(create.X, create.Y, create.Plane)
                 case *playerlib.AIUpdateCityDecision:

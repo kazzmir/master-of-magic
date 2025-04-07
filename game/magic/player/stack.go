@@ -68,13 +68,45 @@ func (stack *UnitStack) IsEmpty() bool {
     return len(stack.units) == 0
 }
 
+func (stack *UnitStack) Size() int {
+    return len(stack.units)
+}
+
 func (stack *UnitStack) Units() []units.StackUnit {
     return slices.Clone(stack.units)
+}
+
+// remove the given units from this stack and put them in a new stack, then return the new stack
+func (stack *UnitStack) SplitUnits(newUnits []units.StackUnit) *UnitStack {
+    var out []units.StackUnit
+    var oldUnits []units.StackUnit
+    for _, unit := range stack.units {
+        if slices.Contains(newUnits, unit) {
+            out = append(out, unit)
+        } else {
+            oldUnits = append(oldUnits, unit)
+        }
+    }
+
+    if len(out) == len(stack.units) {
+        return stack
+    }
+
+    stack.units = oldUnits
+
+    for _, unit := range out {
+        delete(stack.active, unit)
+    }
+
+    return MakeUnitStackFromUnits(out)
 }
 
 // return a new stack that only contains the active units
 // this might return the same stack if all units are active
 func (stack *UnitStack) SplitActiveUnits() *UnitStack {
+    return stack.SplitUnits(stack.ActiveUnits())
+
+    /*
     var out []units.StackUnit
     var oldUnits []units.StackUnit
     for unit, active := range stack.active {
@@ -96,6 +128,7 @@ func (stack *UnitStack) SplitActiveUnits() *UnitStack {
     }
 
     return MakeUnitStackFromUnits(out)
+    */
 }
 
 func (stack *UnitStack) ActiveUnits() []units.StackUnit {

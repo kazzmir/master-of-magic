@@ -5,6 +5,7 @@ import (
     "math"
     "math/rand/v2"
     "image"
+    "fmt"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -43,10 +44,16 @@ type AIUpdateCityDecision struct {
     Workers int
 }
 
+func (decision *AIUpdateCityDecision) String() string {
+    return fmt.Sprintf("UpdateCity name=%v farmers=%v workers=%v", decision.City.Name, decision.Farmers, decision.Workers)
+}
+
 type AIMoveStackDecision struct {
     Stack *UnitStack
     // the path to move on
     Path pathfinding.Path
+    // only move these specific units within the stack
+    Units []units.StackUnit
     // invoked if the move was unable to be completed
     invalid func()
     // invoked if the move succeeded
@@ -54,6 +61,10 @@ type AIMoveStackDecision struct {
     // invoked when the stack moves onto a tile with an encounter. this function should return true
     // if the army should initiate combat with the encounter
     ConfirmEncounter_ func(*maplib.ExtraEncounter) bool
+}
+
+func (move *AIMoveStackDecision) String() string {
+    return fmt.Sprintf("MoveStack %v", move.Stack)
 }
 
 func (move *AIMoveStackDecision) Invalid() {
@@ -85,6 +96,8 @@ type AICreateUnitDecision struct {
     X int
     Y int
     Plane data.Plane
+    // set to true to start this unit in a patrol state
+    Patrol bool
 }
 
 type AIBuildOutpostDecision struct {
@@ -1151,6 +1164,15 @@ func (player *Player) FindStack(x int, y int, plane data.Plane) *UnitStack {
     }
 
     return nil
+}
+
+// split the given stack into a new stack that contains the given units, and return the stack that contains the new units
+func (player *Player) SplitStack(stack *UnitStack, units []units.StackUnit) *UnitStack {
+    newStack := stack.SplitUnits(units)
+    if newStack != stack {
+        player.Stacks = append(player.Stacks, newStack)
+    }
+    return newStack
 }
 
 func (player *Player) SplitActiveStack(stack *UnitStack) *UnitStack {

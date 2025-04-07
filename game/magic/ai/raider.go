@@ -10,21 +10,21 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
-    "github.com/kazzmir/master-of-magic/lib/functional"
+    // "github.com/kazzmir/master-of-magic/lib/functional"
 )
 
 type RaiderAI struct {
-    MovedStacks map[*playerlib.UnitStack]bool
+    // MovedStacks map[*playerlib.UnitStack]bool
 }
 
 func MakeRaiderAI() *RaiderAI {
     return &RaiderAI{
-        MovedStacks: make(map[*playerlib.UnitStack]bool),
+        // MovedStacks: make(map[*playerlib.UnitStack]bool),
     }
 }
 
 func (raider *RaiderAI) NewTurn(player *playerlib.Player) {
-    raider.MovedStacks = make(map[*playerlib.UnitStack]bool)
+    // raider.MovedStacks = make(map[*playerlib.UnitStack]bool)
 }
 
 // return a random number between low and high inclusive
@@ -43,8 +43,11 @@ func randomRange(low int, high int) int {
 func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
     for _, stack := range player.Stacks {
-        _, moved := raider.MovedStacks[stack]
-        if !moved && !stack.OutOfMoves() {
+        fog := player.GetFog(stack.Plane())
+
+        // if the stack is in a city and all units are in a patrol state, then choose some subset of the units and make them move around
+
+        if !stack.OutOfMoves() {
             // FIXME: if the unit walked by a previously unknown city, they should stop their current path and possibly attack the city
             if stack.CurrentPath != nil {
                 decisions = append(decisions, &playerlib.AIMoveStackDecision{
@@ -54,11 +57,9 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                         return false
                     },
                 })
-                raider.MovedStacks[stack] = true
+                // raider.MovedStacks[stack] = true
                 continue
             }
-
-            fog := player.GetFog(stack.Plane())
 
             var currentPath pathfinding.Path
 
@@ -123,7 +124,49 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                 stack.ExhaustMoves()
             }
 
-            raider.MovedStacks[stack] = true
+            // raider.MovedStacks[stack] = true
+        } else if player.FindCity(stack.X(), stack.Y(), stack.Plane()) != nil {
+            busy := 0
+            for _, unit := range stack.Units() {
+                if unit.GetBusy() == units.BusyStatusPatrol {
+                    busy += 1
+                }
+            }
+
+            if busy == stack.Size() {
+                var moveUnits []units.StackUnit
+                maxUnits := rand.N(max(1, stack.Size() - 1))
+                if maxUnits > 0 {
+                    stackUnits := stack.Units()
+                    for _, i := range rand.Perm(stack.Size()) {
+                        if maxUnits == 0 {
+                            break
+                        }
+                        moveUnits = append(moveUnits, stackUnits[i])
+                        maxUnits -= 1
+                    }
+
+                    var paths []pathfinding.Path
+                    for dx := -1; dx <= 1; dx += 1 {
+                        for dy := -1; dy <= 1; dy += 1 {
+                            if dx == 0 && dy == 0 {
+                                path := aiServices.FindPath(stack.X(), stack.Y(), stack.X() + dx, stack.Y() + dy, player, stack, fog)
+                                if path != nil {
+                                    paths = append(paths, path)
+                                }
+                            }
+                        }
+                    }
+
+                    if len(paths) > 0 {
+                        decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                            Stack: stack,
+                            Units: moveUnits,
+                            Path: paths[rand.N(len(paths))],
+                        })
+                    }
+                }
+            }
         }
     }
     return decisions
@@ -133,10 +176,13 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
     var decisions []playerlib.AIDecision
 
     // don't create too many stacks
+    /*
     if len(player.Stacks) > 5 {
         return decisions
     }
+    */
 
+    /*
     getContinent := functional.Memoize3(func(x int, y int, plane data.Plane) []maplib.FullTile {
         return aiServices.GetMap(plane).GetContinentTiles(x, y)
     })
@@ -152,21 +198,27 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
 
         return false
     }
+    */
 
     for _, city := range player.Cities {
+        stack := player.FindStack(city.X, city.Y, city.Plane)
 
-        if rand.N(40) == 0 {
-            if findEnemyCity(city) {
-                // create a stack of N units
-                for range rand.N(3) + 1 {
-                    decisions = append(decisions, &playerlib.AICreateUnitDecision{
-                        Unit: units.ChooseRandomUnit(player.Wizard.Race),
-                        X: city.X,
-                        Y: city.Y,
-                        Plane: city.Plane,
-                    })
-                }
-            }
+        makeUnit := false
+        // always make a unit if there is no stack in the city
+        if stack == nil || stack.IsEmpty() {
+            makeUnit = true
+        } else if rand.N(10) == 0 && (stack != nil && stack.Size() < 6) {
+            makeUnit = true
+        }
+
+        if makeUnit {
+            decisions = append(decisions, &playerlib.AICreateUnitDecision{
+                Unit: units.ChooseRandomUnit(player.Wizard.Race),
+                X: city.X,
+                Y: city.Y,
+                Plane: city.Plane,
+                Patrol: true,
+            })
         }
     }
 
