@@ -2743,9 +2743,7 @@ func (model *CombatModel) summonUnit(player *playerlib.Player, x int, y int, uni
 
 func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing, summoned bool) *ArmyUnit {
     newUnit := ArmyUnit{
-        Unit: &units.OverworldUnit{
-            Unit: unit,
-        },
+        Unit: units.MakeOverworldUnitFromUnit(unit, 0, 0, model.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()),
         Facing: facing,
         Moving: false,
         X: x,
