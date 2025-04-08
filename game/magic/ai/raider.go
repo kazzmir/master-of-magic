@@ -93,9 +93,15 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                 // allow flying/swimming units to walk randomly over the map
                 if stack.AnyLandWalkers() {
                     continent := aiServices.GetMap(stack.Plane()).GetContinentTiles(stack.X(), stack.Y())
+                    attempts := 6
                     for _, tileIndex := range rand.Perm(len(continent)) {
                         tile := &continent[tileIndex]
                         if fog[tile.X][tile.Y] == data.FogTypeUnexplored {
+                            attempts -= 1
+                            if attempts <= 0 {
+                                break
+                            }
+
                             currentPath = aiServices.FindPath(stack.X(), stack.Y(), tile.X, tile.Y, player, stack, fog)
                             if len(currentPath) > 0 {
                                 break
