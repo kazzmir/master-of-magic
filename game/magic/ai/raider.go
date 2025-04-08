@@ -1,7 +1,7 @@
 package ai
 
 import (
-    "log"
+    _ "log"
     "math/rand/v2"
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -104,10 +104,12 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                     }
                 }
 
-                // just move randomly because all tiles have been explored
-                whereX := stack.X() + randomRange(-5, 5)
-                whereY := stack.Y() + randomRange(-5, 5)
-                currentPath = aiServices.FindPath(stack.X(), stack.Y(), whereX, whereY, player, stack, fog)
+                if len(currentPath) == 0 {
+                    // just move randomly because all tiles have been explored
+                    whereX := stack.X() + randomRange(-5, 5)
+                    whereY := stack.Y() + randomRange(-5, 5)
+                    currentPath = aiServices.FindPath(stack.X(), stack.Y(), whereX, whereY, player, stack, fog)
+                }
             }
 
             if len(currentPath) > 0 {
