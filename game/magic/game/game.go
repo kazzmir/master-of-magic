@@ -713,6 +713,44 @@ func (game *Game) NearCity(point image.Point, squares int, plane data.Plane) boo
     return false
 }
 
+type CityValidArea map[image.Point]bool
+
+func (area CityValidArea) FindLocation() (int, int, bool) {
+    choices := make([]image.Point, 0, len(area))
+    for point, ok := range area {
+        if ok {
+            choices = append(choices, point)
+        }
+    }
+
+    if len(choices) == 0 {
+        return 0, 0, false
+    }
+
+    point := choices[rand.N(len(choices))]
+    return point.X, point.Y, true
+}
+
+func (game *Game) MakeCityValidArea(plane data.Plane) CityValidArea {
+    out := make(CityValidArea)
+
+    mapUse := game.GetMap(plane)
+    continents := mapUse.Map.FindContinents()
+
+    for _, continent := range continents {
+        if len(continent) > 100 {
+            for _, point := range continent {
+                tile := terrain.GetTile(mapUse.Map.Terrain[point.X][point.Y])
+                if point.Y > 3 && point.Y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(point.X, point.Y) == nil {
+                    out[point] = true
+                }
+            }
+        }
+    }
+
+    return out
+}
+
 func (game *Game) FindValidCityLocation(plane data.Plane) (int, int, bool) {
     mapUse := game.GetMap(plane)
     continents := mapUse.Map.FindContinents()
@@ -940,6 +978,8 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
 
     // absorb last click
     yield()
+
+    game.RefreshUI()
 }
 
 func (game *Game) doArmyView(yield coroutine.YieldFunc) {
@@ -3936,10 +3976,28 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     return game.State
 }
 
-func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Player, move *playerlib.AIMoveStackDecision) {
+// FIXME: can this just use doMoveSelectedUnit?
+// returns the rest of the path the stack should walk (nil if the path ends)
+func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Player, move *playerlib.AIMoveStackDecision) pathfinding.Path {
     stack := move.Stack
+
+    if len(move.Units) > 0 {
+        stack = player.SplitStack(stack, move.Units)
+        for _, unit := range stack.Units() {
+            unit.SetBusy(units.BusyStatusNone)
+        }
+    }
+
     // FIXME: split the stack into just the active units in case some are busy or out of moves
-    to := move.Location
+    path := move.Path
+
+    if len(path) == 0 {
+        return nil
+    }
+
+    to := path[0]
+    path = path[1:]
+
     log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
     getStack := func(x int, y int) *playerlib.UnitStack {
         return player.FindStack(x, y, stack.Plane())
@@ -3952,10 +4010,10 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
         mapUse := game.GetMap(stack.Plane())
 
         encounter := mapUse.GetEncounter(mapUse.WrapX(to.X), to.Y)
-        if encounter != nil && move.ConfirmEncounter != nil {
+        if encounter != nil {
             if !move.ConfirmEncounter(encounter) {
                 move.Invalid()
-                return
+                return nil
             }
         }
 
@@ -3964,22 +4022,24 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
             for _, unit := range stack.ActiveUnits() {
                 if !newCity.CanEnter(unit) {
                     move.Invalid()
-                    return
+                    return nil
                 }
             }
         }
 
         stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
 
-        if game.Players[0].IsVisible(oldX, oldY, stack.Plane()) {
+        if game.GetHumanPlayer().IsVisible(oldX, oldY, stack.Plane()) {
             game.showMovement(yield, oldX, oldY, stack, false)
         }
+
+        move.Moved()
 
         player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
         if encounter != nil {
             game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
-            return
+            return nil
         }
 
         for _, enemy := range game.GetEnemies(player) {
@@ -3999,7 +4059,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
                     game.doMoveFleeingDefender(enemy, enemyStack)
                 }
 
-                return
+                return nil
             }
 
             city := enemy.FindCity(stack.X(), stack.Y(), stack.Plane())
@@ -4014,12 +4074,15 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
                 // FIXME: if the wizard is neutral and decides to raze the town, then the town could become
                 // an encounter zone
 
-                return
+                return nil
             }
         }
-    } else if move.Invalid != nil {
+    } else {
         move.Invalid()
+        return nil
     }
+
+    return path
 }
 
 func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
@@ -4034,7 +4097,9 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
         for _, decision := range decisions {
             switch decision.(type) {
                 case *playerlib.AIMoveStackDecision:
-                    game.doAiMoveUnit(yield, player, decision.(*playerlib.AIMoveStackDecision))
+                    moveDecision := decision.(*playerlib.AIMoveStackDecision)
+                    newPath := game.doAiMoveUnit(yield, player, moveDecision)
+                    moveDecision.Stack.CurrentPath = newPath
 
                 // mainly for the raider ai
                 case *playerlib.AICreateUnitDecision:
@@ -4042,8 +4107,18 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     log.Printf("ai %v creating %+v", player.Wizard.Name, create)
 
                     overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
+                    if create.Patrol {
+                        overworldUnit.SetBusy(units.BusyStatusPatrol)
+                    }
                     player.AddUnit(overworldUnit)
                     game.ResolveStackAt(create.X, create.Y, create.Plane)
+                case *playerlib.AIUpdateCityDecision:
+                    update := decision.(*playerlib.AIUpdateCityDecision)
+
+                    update.City.Farmers = update.Farmers
+                    update.City.Workers = update.Workers
+                    update.City.ResetCitizens()
+
                 case *playerlib.AIBuildOutpostDecision:
                     build := decision.(*playerlib.AIBuildOutpostDecision)
 
@@ -4084,9 +4159,9 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
         player.AIBehavior.PostUpdate(player, game.GetEnemies(player))
     }
 
-    if len(decisions) == 0 {
+    // if len(decisions) == 0 {
         game.DoNextTurn()
-    }
+    // }
 }
 
 // get all alive players that are not the current player
@@ -5748,73 +5823,8 @@ func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
     })
 }
 
-// stores information about every stack and city for fast lookups
-// Warning: do not store this information for long periods of time as it will become out of date
-type CityStackInfo struct {
-    ArcanusStacks map[image.Point]*playerlib.UnitStack
-    MyrrorStacks map[image.Point]*playerlib.UnitStack
-    ArcanusCities map[image.Point]*citylib.City
-    MyrrorCities map[image.Point]*citylib.City
-}
-
-func (info CityStackInfo) FindStack(x int, y int, plane data.Plane) *playerlib.UnitStack {
-    var use map[image.Point]*playerlib.UnitStack
-
-    switch plane {
-        case data.PlaneArcanus: use = info.ArcanusStacks
-        case data.PlaneMyrror: use = info.MyrrorStacks
-    }
-
-    stack, ok := use[image.Pt(x, y)]
-    if ok {
-        return stack
-    }
-
-    return nil
-}
-
-func (info CityStackInfo) FindCity(x int, y int, plane data.Plane) *citylib.City {
-    var use map[image.Point]*citylib.City
-
-    switch plane {
-        case data.PlaneArcanus: use = info.ArcanusCities
-        case data.PlaneMyrror: use = info.MyrrorCities
-    }
-
-    city, ok := use[image.Pt(x, y)]
-    if ok {
-        return city
-    }
-
-    return nil
-}
-
-func (info CityStackInfo) ContainsEnemy(x int, y int, plane data.Plane, player *playerlib.Player) bool {
-    stack := info.FindStack(x, y, plane)
-    if stack != nil && stack.GetBanner() != player.GetBanner() {
-        return true
-    }
-
-    city := info.FindCity(x, y, plane)
-    if city != nil && city.GetBanner() != player.GetBanner() {
-        return true
-    }
-
-    return false
-}
-
-func (info CityStackInfo) FindFriendlyStack(x int, y int, plane data.Plane, player *playerlib.Player) *playerlib.UnitStack {
-    stack := info.FindStack(x, y, plane)
-
-    if stack != nil && stack.GetBanner() == player.GetBanner() {
-        return stack
-    }
-
-    return nil
-}
-
-func (game *Game) ComputeCityStackInfo() CityStackInfo {
-    out := CityStackInfo{
+func (game *Game) ComputeCityStackInfo() playerlib.CityStackInfo {
+    out := playerlib.CityStackInfo{
         ArcanusStacks: make(map[image.Point]*playerlib.UnitStack),
         MyrrorStacks: make(map[image.Point]*playerlib.UnitStack),
         ArcanusCities: make(map[image.Point]*citylib.City),
@@ -7814,7 +7824,7 @@ func (game *Game) DoRandomEvents() {
                         if neutralPlayer != nil {
                             var choices []*citylib.City
                             for _, city := range target.Cities {
-                                if city.HasFortress() {
+                                if city.HasFortress() || city.HasSummoningCircle() {
                                     continue
                                 }
 

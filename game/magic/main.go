@@ -9,10 +9,12 @@ import (
     "math/rand/v2"
     "slices"
     "cmp"
+    "image"
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     introlib "github.com/kazzmir/master-of-magic/game/magic/intro"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
@@ -24,6 +26,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/ai"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/mainview"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
@@ -47,6 +51,10 @@ type MagicGame struct {
     NewWizardScreen *setup.NewWizardScreen
 
     Game *gamelib.Game
+}
+
+func randomChoose[T any](choices... T) T {
+    return choices[rand.N(len(choices))]
 }
 
 func runIntro(yield coroutine.YieldFunc, game *MagicGame) {
@@ -158,14 +166,7 @@ func euclideanDistance(x1, y1, x2, y2 int) float64 {
     return math.Sqrt(dx*dx + dy*dy)
 }
 
-func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman bool) {
-    startingPlane := data.PlaneArcanus
-    if wizard.RetortEnabled(data.RetortMyrran) {
-        startingPlane = data.PlaneMyrror
-    }
-
-    player := game.AddPlayer(wizard, isHuman)
-
+func findCityLocation(game *gamelib.Game, startingPlane data.Plane, cityArea gamelib.CityValidArea) (int, int) {
     allCities := game.AllCities()
 
     closestDistance := func(x, y int) int {
@@ -194,11 +195,10 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
         Population int
     }
 
-    var cityX int
-    var cityY int
     var locations []CityLocation
     for range 10 {
-        x, y, ok := game.FindValidCityLocation(startingPlane)
+        // x, y, ok := game.FindValidCityLocation(startingPlane)
+        x, y, ok := cityArea.FindLocation()
         if ok {
             distance := closestDistance(x, y)
             // either there are no other cities nearby (distance=0) or the closest city is farther than 10 squares away
@@ -225,20 +225,34 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
 
     if len(locations) > 0 {
         // choose furthest point
-        cityX = locations[len(locations) - 1].X
-        cityY = locations[len(locations) - 1].Y
+        return locations[len(locations) - 1].X, locations[len(locations) - 1].Y
     } else {
         // couldn't find a good spot, just pick anything
         for range 100 {
-            var ok bool
-            cityX, cityY, ok = game.FindValidCityLocation(startingPlane)
+            cityX, cityY, ok := cityArea.FindLocation()
             if ok {
-                break
+                return cityX, cityY
             }
         }
     }
 
+    return -1, -1
+}
+
+func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman bool, arcanusCityArea gamelib.CityValidArea, myrrorCityArea gamelib.CityValidArea) *playerlib.Player {
+    area := arcanusCityArea
+    startingPlane := data.PlaneArcanus
+    if wizard.RetortEnabled(data.RetortMyrran) {
+        startingPlane = data.PlaneMyrror
+        area = myrrorCityArea
+    }
+
+    player := game.AddPlayer(wizard, isHuman)
+
     cityName := game.SuggestCityName(player.Wizard.Race)
+
+    cityX, cityY := findCityLocation(game, startingPlane, area)
+    area[image.Pt(cityX, cityY)] = false
 
     introCity := citylib.MakeCity(cityName, cityX, cityY, player.Wizard.Race, game.BuildingInfo, game.GetMap(startingPlane), game, player)
     introCity.Population = 4000
@@ -271,6 +285,57 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
         game.Camera.Center(cityX, cityY)
         game.Plane = startingPlane
     }
+
+    return player
+}
+
+func initializeNeutralPlayer(game *gamelib.Game, arcanusCityArea gamelib.CityValidArea, myrrorCityArea gamelib.CityValidArea) *playerlib.Player {
+    wizard := setup.WizardCustom{
+        Name: "Raiders",
+        Base: data.WizardMerlin, // doesn't really matter
+        Race: data.RaceBarbarian, // doesn't really matter
+        Banner: data.BannerBrown,
+    }
+
+    player := game.AddPlayer(wizard, false)
+    player.AIBehavior = ai.MakeRaiderAI()
+    player.TaxRate = fraction.Zero()
+
+    for _, plane := range []data.Plane{data.PlaneArcanus, data.PlaneMyrror} {
+        randomRace := func() data.Race {
+            switch plane {
+                case data.PlaneArcanus: return randomChoose(data.ArcanianRaces()...)
+                case data.PlaneMyrror: return randomChoose(data.MyrranRaces()...)
+            }
+
+            return data.RaceNone
+        }
+
+        area := arcanusCityArea
+        if plane == data.PlaneMyrror {
+            area = myrrorCityArea
+        }
+
+        for range 5 {
+            cityX, cityY := findCityLocation(game, plane, area)
+
+            // should every neutral town be a random race, or should they all be related?
+            race := randomRace()
+            cityName := game.SuggestCityName(race)
+            city := citylib.MakeCity(cityName, cityX, cityY, race, game.BuildingInfo, game.GetMap(plane), game, player)
+            city.Population = rand.N(5) * 1000 + 2000
+            city.ProducingBuilding = buildinglib.BuildingHousing
+            city.Plane = plane
+            city.Farmers = city.Citizens()
+            city.ResetCitizens()
+
+            area[image.Pt(cityX, cityY)] = false
+
+            player.AddCity(city)
+        }
+    }
+
+    return player
 }
 
 func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) error {
@@ -281,16 +346,27 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
         game.Draw(screen)
     }
 
-    initializePlayer(game, humanWizard, true)
+    arcanusCityArea := game.MakeCityValidArea(data.PlaneArcanus)
+    myrrorCityArea := game.MakeCityValidArea(data.PlaneMyrror)
+
+    human := initializePlayer(game, humanWizard, true, arcanusCityArea, myrrorCityArea)
 
     for range settings.Opponents {
         wizard, ok := game.ChooseWizard()
         if ok {
-            initializePlayer(game, wizard, false)
+            initializePlayer(game, wizard, false, arcanusCityArea, myrrorCityArea)
         } else {
             log.Printf("Warning: unable to add another wizard to the game")
         }
     }
+
+    log.Printf("Create neutral player")
+    neutral := initializeNeutralPlayer(game, arcanusCityArea, myrrorCityArea)
+    log.Printf("done create neutral player with %v cities", len(neutral.Cities))
+
+    // hack
+    // human.Admin = true
+    _ = human
 
     game.DoNextTurn()
 

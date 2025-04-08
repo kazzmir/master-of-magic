@@ -13,6 +13,7 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -166,10 +167,20 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
     for _, stack := range self.Stacks {
         // don't move if this would leave a city undefended, otherwise try to split the stack and move part of it
         if stack.HasMoves() {
-            // FIXME: enter cities, lairs, nodes for combat
-            // also, sometimes choose a preferred location to move to, such as a square for building a new city
-            // or attacking a player's units
-            if len(stack.CurrentPath) == 0 {
+
+            if len(stack.CurrentPath) > 0 {
+                decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                    Stack: stack,
+                    Path: stack.CurrentPath,
+                    ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
+                        return true
+                    },
+                })
+                continue
+            } else {
+                // FIXME: enter cities, lairs, nodes for combat
+                // also, sometimes choose a preferred location to move to, such as a square for building a new city
+                // or attacking a player's units
 
                 // a stack of only settlers shouldn't move
                 nonSettlers := false
@@ -179,6 +190,8 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                         break
                     }
                 }
+
+                var path pathfinding.Path
 
                 // handling for settlers
                 if stack.ActiveUnitsHasAbility(data.AbilityCreateOutpost) {
@@ -223,8 +236,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                                     return cmp.Compare(getDistance(a), getDistance(b))
                                 })
 
-                                path := aiServices.FindPath(stack.X(), stack.Y(), candidateCities[0].X, candidateCities[0].Y, self, stack, self.GetFog(stack.Plane()))
-                                stack.CurrentPath = path
+                                path = aiServices.FindPath(stack.X(), stack.Y(), candidateCities[0].X, candidateCities[0].Y, self, stack, self.GetFog(stack.Plane()))
                             } else {
                                 // do nothing
                             }
@@ -233,10 +245,9 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                         // FIXME: choose a location with a high population maximum and near bonuses. Possibly also near a shore so we can build water units
                         // choose a random location
                         location := candidateLocations[rand.N(len(candidateLocations))]
-                        path := aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, self, stack, self.GetFog(stack.Plane()))
+                        path = aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, self, stack, self.GetFog(stack.Plane()))
                         if len(path) > 0 {
                             log.Printf("Settler going to %v, %v via %v", location.X, location.Y, path)
-                            stack.CurrentPath = path
                         }
                     }
                 }
@@ -245,28 +256,22 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                     // try upto 3 times to find a path
                     for range 3 {
                         newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
-                        path := aiServices.FindPath(stack.X(), stack.Y(), newX, newY, self, stack, self.GetFog(stack.Plane()))
+                        path = aiServices.FindPath(stack.X(), stack.Y(), newX, newY, self, stack, self.GetFog(stack.Plane()))
                         if len(path) != 0 {
-                            stack.CurrentPath = path
                             break
                         }
                     }
                 }
-            }
 
-            if len(stack.CurrentPath) > 0 {
-                nextMove := stack.CurrentPath[0]
-                stack.CurrentPath = stack.CurrentPath[1:]
-                decisions = append(decisions, &playerlib.AIMoveStackDecision{
-                    Stack: stack,
-                    Location: nextMove,
-                    Invalid: func(){
-                        stack.CurrentPath = nil
-                    },
-                    ConfirmEncounter: func (encounter *maplib.ExtraEncounter) bool {
-                        return true
-                    },
-                })
+                if len(path) > 0 {
+                    decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                        Stack: stack,
+                        Path: path,
+                        ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
+                            return true
+                        },
+                    })
+                }
             }
         }
     }

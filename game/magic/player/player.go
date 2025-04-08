@@ -5,6 +5,7 @@ import (
     "math"
     "math/rand/v2"
     "image"
+    "fmt"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -36,11 +37,54 @@ type AIProduceDecision struct {
     Unit units.Unit
 }
 
+// request the city to have the given number of farmers and workers, with farmers taking precedence
+type AIUpdateCityDecision struct {
+    City *citylib.City
+    Farmers int
+    Workers int
+}
+
+func (decision *AIUpdateCityDecision) String() string {
+    return fmt.Sprintf("UpdateCity name=%v farmers=%v workers=%v", decision.City.Name, decision.Farmers, decision.Workers)
+}
+
 type AIMoveStackDecision struct {
     Stack *UnitStack
-    Location image.Point
-    Invalid func()
-    ConfirmEncounter func(*maplib.ExtraEncounter) bool
+    // the path to move on
+    Path pathfinding.Path
+    // only move these specific units within the stack
+    Units []units.StackUnit
+    // invoked if the move was unable to be completed
+    invalid func()
+    // invoked if the move succeeded
+    moved func()
+    // invoked when the stack moves onto a tile with an encounter. this function should return true
+    // if the army should initiate combat with the encounter
+    ConfirmEncounter_ func(*maplib.ExtraEncounter) bool
+}
+
+func (move *AIMoveStackDecision) String() string {
+    return fmt.Sprintf("MoveStack %v", move.Stack)
+}
+
+func (move *AIMoveStackDecision) Invalid() {
+    if move.invalid != nil {
+        move.invalid()
+    }
+}
+
+func (move *AIMoveStackDecision) ConfirmEncounter(encounter *maplib.ExtraEncounter) bool {
+    if move.ConfirmEncounter_ != nil {
+        return move.ConfirmEncounter_(encounter)
+    }
+
+    return false
+}
+
+func (move *AIMoveStackDecision) Moved() {
+    if move.moved != nil {
+        move.moved()
+    }
 }
 
 type AICastSpellDecision struct {
@@ -52,6 +96,8 @@ type AICreateUnitDecision struct {
     X int
     Y int
     Plane data.Plane
+    // set to true to start this unit in a patrol state
+    Patrol bool
 }
 
 type AIBuildOutpostDecision struct {
@@ -63,10 +109,14 @@ type AIResearchSpellDecision struct {
     Spell spellbook.Spell
 }
 
+// implemented by the Game object
 type AIServices interface {
     FindPath(oldX int, oldY int, newX int, newY int, player *Player, stack *UnitStack, fog data.FogMap) pathfinding.Path
     FindSettlableLocations(x int, y int, plane data.Plane, fog data.FogMap) []image.Point
     IsSettlableLocation(x int, y int, plane data.Plane) bool
+    GetMap(data.Plane) *maplib.Map
+    FindCity(x int, y int, plane data.Plane) (*citylib.City, *Player)
+    ComputeCityStackInfo() CityStackInfo
 }
 
 type AIBehavior interface {
@@ -1065,6 +1115,10 @@ func (player *Player) UpdateFogVisibility() {
                 if fog[x][y] == data.FogTypeVisible {
                     fog[x][y] = data.FogTypeExplored
                 }
+
+                if player.Admin {
+                    fog[x][y] = data.FogTypeVisible
+                }
             }
         }
     }
@@ -1110,6 +1164,15 @@ func (player *Player) FindStack(x int, y int, plane data.Plane) *UnitStack {
     }
 
     return nil
+}
+
+// split the given stack into a new stack that contains the given units, and return the stack that contains the new units
+func (player *Player) SplitStack(stack *UnitStack, units []units.StackUnit) *UnitStack {
+    newStack := stack.SplitUnits(units)
+    if newStack != stack {
+        player.Stacks = append(player.Stacks, newStack)
+    }
+    return newStack
 }
 
 func (player *Player) SplitActiveStack(stack *UnitStack) *UnitStack {
