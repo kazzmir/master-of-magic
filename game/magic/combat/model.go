@@ -1769,7 +1769,9 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playe
         unit.Spells.AddAllSpells(player.KnownSpells)
         unit.SpellCharges = unit.Unit.GetSpellChargeSpells()
     } else {
-        unit.Spells.AddAllSpells(allSpells.GetSpellsByMagic(unit.GetRealm()))
+        if unit.GetRealm() != data.MagicNone {
+            unit.Spells.AddAllSpells(allSpells.GetSpellsByMagic(unit.GetRealm()))
+        }
     }
 }
 
