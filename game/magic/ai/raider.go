@@ -41,24 +41,46 @@ func randomRange(low int, high int) int {
 }
 
 func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
+    cityStackInfo := aiServices.ComputeCityStackInfo()
+
     var decisions []playerlib.AIDecision
     for _, stack := range player.Stacks {
         fog := player.GetFog(stack.Plane())
+        map_ := aiServices.GetMap(stack.Plane())
 
         // if the stack is in a city and all units are in a patrol state, then choose some subset of the units and make them move around
 
         if !stack.OutOfMoves() {
             // FIXME: if the unit walked by a previously unknown city, they should stop their current path and possibly attack the city
             if stack.CurrentPath != nil {
-                decisions = append(decisions, &playerlib.AIMoveStackDecision{
-                    Stack: stack,
-                    Path: stack.CurrentPath,
-                    ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
-                        return false
-                    },
-                })
-                // raider.MovedStacks[stack] = true
-                continue
+
+                foundCity := false
+                sightRange := stack.GetSightRange()
+                check:
+                for dx := -sightRange; dx <= sightRange; dx += sightRange {
+                    for dy := -sightRange; dy <= sightRange; dy += sightRange {
+                        city := cityStackInfo.FindCity(map_.WrapX(stack.X() + dx), stack.Y() + dy, stack.Plane())
+                        if city != nil && city.GetBanner() != player.GetBanner() {
+                            path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
+                            if len(path) > 0 {
+                                foundCity = true
+                                break check
+                            }
+                        }
+                    }
+                }
+
+                if !foundCity {
+                    decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                        Stack: stack,
+                        Path: stack.CurrentPath,
+                        ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
+                            return false
+                        },
+                    })
+                    // raider.MovedStacks[stack] = true
+                    continue
+                }
             }
 
             var currentPath pathfinding.Path
@@ -231,6 +253,7 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
 
         if makeUnit {
             decisions = append(decisions, &playerlib.AICreateUnitDecision{
+                // FIXME: use some sort of budget for the unit so that mostly low level units are created early in the game
                 Unit: units.ChooseRandomUnit(player.Wizard.Race),
                 X: city.X,
                 Y: city.Y,
