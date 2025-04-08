@@ -165,7 +165,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
 
             if busy == stack.Size() {
                 var moveUnits []units.StackUnit
-                maxUnits := rand.N(max(1, stack.Size() - 1))
+                maxUnits := rand.N(max(1, stack.Size() - 2))
                 if maxUnits > 0 {
                     // log.Printf("Raiders moving %v units", maxUnits)
                     stackUnits := stack.Units()
@@ -247,7 +247,7 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
         // always make a unit if there is no stack in the city
         if stack == nil || stack.IsEmpty() {
             makeUnit = true
-        } else if rand.N(20) == 0 && (stack != nil && stack.Size() < 6) {
+        } else if rand.N(15) == 0 && (stack != nil && stack.Size() < 6) {
             makeUnit = true
         }
 
