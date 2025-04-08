@@ -247,7 +247,7 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
         // always make a unit if there is no stack in the city
         if stack == nil || stack.IsEmpty() {
             makeUnit = true
-        } else if rand.N(10) == 0 && (stack != nil && stack.Size() < 6) {
+        } else if rand.N(20) == 0 && (stack != nil && stack.Size() < 6) {
             makeUnit = true
         }
 
