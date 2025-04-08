@@ -137,7 +137,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                 var moveUnits []units.StackUnit
                 maxUnits := rand.N(max(1, stack.Size() - 1))
                 if maxUnits > 0 {
-                    log.Printf("Raiders moving %v units", maxUnits)
+                    // log.Printf("Raiders moving %v units", maxUnits)
                     stackUnits := stack.Units()
                     for _, i := range rand.Perm(stack.Size()) {
                         if maxUnits == 0 {
@@ -151,19 +151,28 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                     for dx := -1; dx <= 1; dx += 1 {
                         for dy := -1; dy <= 1; dy += 1 {
                             if dx == 0 && dy == 0 {
-                                path := aiServices.FindPath(stack.X(), stack.Y(), stack.X() + dx, stack.Y() + dy, player, stack, fog)
-                                if path != nil {
-                                    paths = append(paths, path)
-                                }
+                                continue
+                            }
+                            path := aiServices.FindPath(stack.X(), stack.Y(), stack.X() + dx, stack.Y() + dy, player, stack, fog)
+                            if len(path) > 0 {
+                                paths = append(paths, path)
                             }
                         }
                     }
 
                     if len(paths) > 0 {
+                        chosenPath := paths[rand.N(len(paths))]
+                        /*
+                        log.Printf("  chosen path %v", chosenPath)
+                        for _, unit := range moveUnits {
+                            log.Printf("  move unit %v", unit.GetName())
+                        }
+                        */
+
                         decisions = append(decisions, &playerlib.AIMoveStackDecision{
                             Stack: stack,
                             Units: moveUnits,
-                            Path: paths[rand.N(len(paths))],
+                            Path: chosenPath,
                         })
                     }
                 }
