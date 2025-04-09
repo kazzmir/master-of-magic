@@ -5980,11 +5980,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
             scale.DrawScaled(screen, mainHud, &options)
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {

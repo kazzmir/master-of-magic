@@ -189,6 +189,7 @@ type UI struct {
     // the element that is currently being hovered over
     TooltipElement *UIElement
     TooltipPosition image.Point
+    TooltipTime uint64
 
     doubleClickCandidates []doubleClick
 
@@ -449,7 +450,20 @@ func (ui *UI) RenderTooltip(screen *ebiten.Image) {
         tip, renderFont := ui.TooltipElement.Tooltip(ui.TooltipElement)
         if tip != "" {
             var options ebiten.DrawImageOptions
-            renderFont.PrintOptions(screen, float64(ui.TooltipPosition.X), float64(ui.TooltipPosition.Y), font.FontOptions{Options: &options, Scale: scale.ScaleAmount, DropShadow: true}, tip)
+
+            diff := ui.Counter - ui.TooltipTime
+            var delay uint64 = 0
+            if diff > delay {
+                alpha := diff - delay
+
+                var alphaRange uint64 = 60 * 1 / 3
+
+                if alpha < alphaRange {
+                    options.ColorScale.ScaleAlpha(float32(alpha) / float32(alphaRange))
+                }
+
+                renderFont.PrintOptions(screen, float64(ui.TooltipPosition.X), float64(ui.TooltipPosition.Y), font.FontOptions{Options: &options, Scale: scale.ScaleAmount, DropShadow: true}, tip)
+            }
         }
     }
 }
@@ -588,10 +602,16 @@ func (ui *UI) StandardUpdate() {
 
     mouseX, mouseY = scale.Unscale2(mouseX, mouseY)
 
+    lastTooltip := ui.TooltipElement
+
     ui.TooltipElement = nil
 
     for _, element := range slices.Backward(ui.GetHighestLayer()) {
         if image.Pt(mouseX, mouseY).In(element.Rect) {
+            if lastTooltip != element {
+                ui.TooltipTime = ui.Counter
+            }
+
             ui.TooltipElement = element
             ui.TooltipPosition = image.Pt(mouseX, mouseY)
 
