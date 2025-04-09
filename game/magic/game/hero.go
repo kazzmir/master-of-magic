@@ -70,16 +70,35 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
             unitview.RenderUnitInfoNormal(screen, &imageCache, hero, hero.GetTitle(), "", fonts.DescriptionFont, fonts.SmallFont, options)
 
+            /*
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(float64(31), float64(6))
             options.GeoM.Translate(float64(10), float64(50))
             unitview.RenderUnitInfoStats(screen, &imageCache, hero, 15, fonts.DescriptionFont, fonts.SmallFont, options)
+            */
 
             /*
             options.GeoM.Translate(0, 60)
             unitview.RenderUnitAbilities(screen, &imageCache, hero, mediumFont, options, true, 0)
             */
+        },
+    })
+
+    uiGroup.AddElement(&uilib.UIElement{
+        Layer: 1,
+        Order: 1,
+        Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+            return "3", fonts.DescriptionFont
+        },
+        Rect: image.Rect(31, int(yTop) + 6 + 50, 31 + 150, int(yTop) + 6 + 50 + 50),
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(0, yTop)
+            options.GeoM.Translate(float64(31), float64(6))
+            options.GeoM.Translate(float64(10), float64(50))
+            options.ColorScale.ScaleAlpha(getAlpha())
+            unitview.RenderUnitInfoStats(screen, &imageCache, hero, 15, fonts.DescriptionFont, fonts.SmallFont, options)
         },
     })
 

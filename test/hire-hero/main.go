@@ -28,13 +28,7 @@ func NewEngine(scenario int) (*Engine, error) {
 
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
-
-        ui.IterateElementsByLayer(func (element *uilib.UIElement){
-            if element.Draw != nil {
-                element.Draw(element, screen)
-            }
-        })
-
+            ui.StandardDraw(screen)
         },
     }
     ui.SetElementsFromArray(nil)
