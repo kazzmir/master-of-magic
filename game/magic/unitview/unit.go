@@ -326,8 +326,6 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 }
 
 func CreateUnitInfoStatsElements(imageCache *util.ImageCache, unit UnitStats, maxIconsPerLine int, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions, getAlpha *util.AlphaFadeFunc) []*uilib.UIElement {
-    var elements []*uilib.UIElement
-
     type statsRender struct {
         Render func(*ebiten.Image, *util.ImageCache, UnitStats, int, *font.Font, *font.Font, ebiten.DrawImageOptions, float64, float64, float64)
         Value func() int
@@ -344,6 +342,8 @@ func CreateUnitInfoStatsElements(imageCache *util.ImageCache, unit UnitStats, ma
     background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
     width := descriptionFont.MeasureTextWidth("Armor", 1)
     x, y := defaultOptions.GeoM.Apply(0, 0)
+
+    var elements []*uilib.UIElement
 
     for _, render := range renders {
         elementX, elementY := x, y
@@ -362,41 +362,6 @@ func CreateUnitInfoStatsElements(imageCache *util.ImageCache, unit UnitStats, ma
         })
         y += float64(descriptionFont.Height())
     }
-
-    /*
-    meleeX, meleeY := x, y
-    elements = append(elements, &uilib.UIElement{
-        Order: 1,
-        Layer: 1,
-        Rect: image.Rect(int(meleeX), int(meleeY), int(meleeX) + background.Bounds().Dx(), int(meleeY) + descriptionFont.Height()),
-        Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
-            return strconv.Itoa(unit.GetMeleeAttackPower()), smallFont
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-            options := defaultOptions
-            options.ColorScale.ScaleAlpha((*getAlpha)())
-            RenderMeleeStats(screen, imageCache, unit, maxIconsPerLine, descriptionFont, smallFont, options, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), width)
-        },
-    })
-
-    y += float64(descriptionFont.Height())
-
-    defenseX, defenseY := x, y
-
-    elements = append(elements, &uilib.UIElement{
-        Order: 1,
-        Layer: 1,
-        Rect: image.Rect(int(defenseX), int(defenseY), int(defenseX) + background.Bounds().Dx(), int(defenseY) + descriptionFont.Height()),
-        Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
-            return strconv.Itoa(unit.GetDefense()), smallFont
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-            options := defaultOptions
-            options.ColorScale.ScaleAlpha((*getAlpha)())
-            RenderArmorStats(screen, imageCache, unit, maxIconsPerLine, descriptionFont, smallFont, options, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), width)
-        },
-    })
-    */
 
     return elements
 }
