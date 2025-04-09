@@ -5,6 +5,7 @@ import (
     "fmt"
     "math"
     "slices"
+    "strconv"
     "image"
     "image/color"
 
@@ -322,6 +323,82 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
     y += float64(descriptionFont.Height())
 
     RenderHitpointsStats(screen, imageCache, unit, maxIconsPerLine, descriptionFont, smallFont, defaultOptions, x, y, width)
+}
+
+func CreateUnitInfoStatsElements(imageCache *util.ImageCache, unit UnitStats, maxIconsPerLine int, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions, getAlpha *util.AlphaFadeFunc) []*uilib.UIElement {
+    var elements []*uilib.UIElement
+
+    type statsRender struct {
+        Render func(*ebiten.Image, *util.ImageCache, UnitStats, int, *font.Font, *font.Font, ebiten.DrawImageOptions, float64, float64, float64)
+        Value func() int
+    }
+
+    renders := []statsRender{
+        statsRender{Render: RenderMeleeStats, Value: unit.GetMeleeAttackPower},
+        statsRender{Render: RenderRangedStats, Value: unit.GetRangedAttackPower},
+        statsRender{Render: RenderArmorStats, Value: unit.GetDefense},
+        statsRender{Render: RenderResistanceStats, Value: unit.GetResistance},
+        statsRender{Render: RenderHitpointsStats, Value: unit.GetFullHitPoints},
+    }
+
+    background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
+    width := descriptionFont.MeasureTextWidth("Armor", 1)
+    x, y := defaultOptions.GeoM.Apply(0, 0)
+
+    for _, render := range renders {
+        elementX, elementY := x, y
+        elements = append(elements, &uilib.UIElement{
+            Order: 1,
+            Layer: 1,
+            Rect: image.Rect(int(elementX), int(elementY), int(elementX) + background.Bounds().Dx(), int(elementY) + descriptionFont.Height()),
+            Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
+                return strconv.Itoa(render.Value()), smallFont
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                options := defaultOptions
+                options.ColorScale.ScaleAlpha((*getAlpha)())
+                render.Render(screen, imageCache, unit, maxIconsPerLine, descriptionFont, smallFont, options, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), width)
+            },
+        })
+        y += float64(descriptionFont.Height())
+    }
+
+    /*
+    meleeX, meleeY := x, y
+    elements = append(elements, &uilib.UIElement{
+        Order: 1,
+        Layer: 1,
+        Rect: image.Rect(int(meleeX), int(meleeY), int(meleeX) + background.Bounds().Dx(), int(meleeY) + descriptionFont.Height()),
+        Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
+            return strconv.Itoa(unit.GetMeleeAttackPower()), smallFont
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            options := defaultOptions
+            options.ColorScale.ScaleAlpha((*getAlpha)())
+            RenderMeleeStats(screen, imageCache, unit, maxIconsPerLine, descriptionFont, smallFont, options, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), width)
+        },
+    })
+
+    y += float64(descriptionFont.Height())
+
+    defenseX, defenseY := x, y
+
+    elements = append(elements, &uilib.UIElement{
+        Order: 1,
+        Layer: 1,
+        Rect: image.Rect(int(defenseX), int(defenseY), int(defenseX) + background.Bounds().Dx(), int(defenseY) + descriptionFont.Height()),
+        Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
+            return strconv.Itoa(unit.GetDefense()), smallFont
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            options := defaultOptions
+            options.ColorScale.ScaleAlpha((*getAlpha)())
+            RenderArmorStats(screen, imageCache, unit, maxIconsPerLine, descriptionFont, smallFont, options, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), width)
+        },
+    })
+    */
+
+    return elements
 }
 
 func RenderExperienceBadge(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitExperience, showFont *font.Font, defaultOptions ebiten.DrawImageOptions, showExperience bool) (float64) {
