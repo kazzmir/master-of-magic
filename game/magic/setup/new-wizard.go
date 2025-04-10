@@ -602,9 +602,7 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
             customPictureBackground, _ := screen.ImageCache.GetImage("newgame.lbx", 39, 0)
             window.DrawImage(customPictureBackground, scale.ScaleOptions(options))
 
-            this.IterateElementsByLayer(func (element *uilib.UIElement){
-                element.Draw(element, window)
-            })
+            this.StandardDraw(window)
 
             portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
             if portrait != nil {
@@ -736,9 +734,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
             window.DrawImage(background, scale.ScaleOptions(options))
             screen.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Wizard")
 
-            this.IterateElementsByLayer(func (element *uilib.UIElement){
-                element.Draw(element, window)
-            })
+            this.StandardDraw(window)
 
             if screen.CurrentWizard >= 0 && screen.CurrentWizard < len(screen.WizardSlots) {
                 portraitX := 24
@@ -1369,11 +1365,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             options.GeoM.Translate(34, 135)
             draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, window)
-                }
-            })
+            ui.StandardDraw(window)
 
             screen.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
             screen.NameFontBright.PrintOptions(window, 223, 185, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("%v picks", picksLeft()))
@@ -1754,11 +1746,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                     showDescription(78, fmt.Sprintf("Rare: %v", spellInfo.RareMax), spellBackground2)
                 }
 
-                ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                    if element.Draw != nil {
-                        element.Draw(element, window)
-                    }
-                })
+                ui.StandardDraw(window)
             },
             HandleKeys: func(keys []ebiten.Key){
                 for _, key := range keys {
@@ -2013,12 +2001,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
             screen.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, window)
-                }
-            })
-
+            ui.StandardDraw(window)
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
@@ -2100,11 +2083,7 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
 
             screen.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, window)
-                }
-            })
+            ui.StandardDraw(window)
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {

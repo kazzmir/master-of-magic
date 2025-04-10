@@ -1822,6 +1822,8 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 }
             }
 
+            // FIXME: this should show the player's army, not always the attacking one
+
             y := 173
             right := 239
             combat.HudFont.PrintOptions(screen, float64(200), float64(y), font.FontOptions{Scale: scale.ScaleAmount}, "Skill:")
@@ -1896,11 +1898,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 combat.DrawHealthBar(screen, 123, 197, combat.Model.SelectedUnit)
             }
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
         },
     }
 

@@ -269,9 +269,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
             optionsImage, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 1, 0)
             scale.DrawScaled(screen, optionsImage, &options)
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                element.Draw(element, screen)
-            })
+            ui.StandardDraw(screen)
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {

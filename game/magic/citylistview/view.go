@@ -98,11 +98,7 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
             var options ebiten.DrawImageOptions
             scale.DrawScaled(screen, background, &options)
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
 
             bigFont.PrintCenter(screen, float64(160), float64(5), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("The Cities Of %v", view.Player.Wizard.Name))
 

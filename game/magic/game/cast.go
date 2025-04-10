@@ -1632,11 +1632,7 @@ func (game *Game) doSelectUnit(yield coroutine.YieldFunc, player *playerlib.Play
 
     ui := uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
         },
         LeftClick: func(){
             quit = true
@@ -1919,11 +1915,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
             options.GeoM.Translate(float64(240), float64(174))
             scale.DrawScaled(screen, cancelBackground, &options)
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
 
             game.Fonts.WhiteFont.PrintRight(screen, float64(276), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
             game.Fonts.WhiteFont.PrintRight(screen, float64(313), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))

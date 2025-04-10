@@ -60,11 +60,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
                 scale.DrawScaled(screen, background, &options)
             }
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
         },
     }
 

@@ -105,11 +105,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                 view.DrawMinimap(minimapArea, 10, 10, view.Player.GetFog(data.PlaneArcanus), data.PlaneArcanus, this.Counter)
             }
 
-            this.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            this.StandardDraw(screen)
 
             // vector.DrawFilledRect(minimapArea, float32(minimapRect.Min.X), float32(minimapRect.Min.Y), float32(minimapRect.Bounds().Dx()), float32(minimapRect.Bounds().Dy()), util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0, B: 0, A: 128}), false)
         },
