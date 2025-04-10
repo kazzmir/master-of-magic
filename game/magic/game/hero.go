@@ -46,6 +46,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
+        Order: 0,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
@@ -70,11 +71,13 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
 
             unitview.RenderUnitInfoNormal(screen, &imageCache, hero, hero.GetTitle(), "", fonts.DescriptionFont, fonts.SmallFont, options)
 
+            /*
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(float64(31), float64(6))
             options.GeoM.Translate(float64(10), float64(50))
             unitview.RenderUnitInfoStats(screen, &imageCache, hero, 15, fonts.DescriptionFont, fonts.SmallFont, options)
+            */
 
             /*
             options.GeoM.Translate(0, 60)
@@ -82,6 +85,32 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
             */
         },
     })
+
+    /*
+    uiGroup.AddElement(&uilib.UIElement{
+        Layer: 1,
+        Order: 1,
+        Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+            return "3", fonts.DescriptionFont
+        },
+        Rect: image.Rect(31, int(yTop) + 6 + 50, 31 + 150, int(yTop) + 6 + 50 + 50),
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(0, yTop)
+            options.GeoM.Translate(float64(31), float64(6))
+            options.GeoM.Translate(float64(10), float64(50))
+            options.ColorScale.ScaleAlpha(getAlpha())
+            unitview.RenderUnitInfoStats(screen, &imageCache, hero, 15, fonts.DescriptionFont, fonts.SmallFont, options)
+        },
+    })
+    */
+
+    var statsOptions ebiten.DrawImageOptions
+    statsOptions.GeoM.Translate(0, yTop)
+    statsOptions.GeoM.Translate(float64(31), float64(6))
+    statsOptions.GeoM.Translate(float64(10), float64(50))
+
+    uiGroup.AddElements(unitview.CreateUnitInfoStatsElements(&imageCache, hero, 15, fonts.DescriptionFont, fonts.SmallFont, statsOptions, &getAlpha, 1))
 
     uiGroup.AddElements(unitview.MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, hero, fonts.MediumFont, 40, 124, &ui.Counter, 1, &getAlpha, true, 0, false))
 
@@ -103,6 +132,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
     hireIndex := 0
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
+        Order: 1,
         Rect: hireRect,
         LeftClick: func(this *uilib.UIElement){
             hireIndex = 1
@@ -148,6 +178,7 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
     rejectIndex := 0
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
+        Order: 1,
         Rect: rejectRect,
         LeftClick: func(this *uilib.UIElement){
             rejectIndex = 1

@@ -659,11 +659,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     ui := &uilib.UI{
         Cache: cityScreen.LbxCache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
         },
     }
 
@@ -2369,11 +2365,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
             unitsX, unitsY := options.GeoM.Apply(float64(6), float64(43))
             fonts.DescriptionFont.PrintOptions(screen, unitsX, unitsY, fontOptions, fmt.Sprintf("Units   %v", currentUnitName))
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
         },
     }
 

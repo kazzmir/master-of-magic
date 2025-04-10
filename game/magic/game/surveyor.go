@@ -101,11 +101,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             options.GeoM.Translate(float64(240), float64(174))
             scale.DrawScaled(screen, cancelBackground, &options)
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
 
             player := game.Players[0]
 

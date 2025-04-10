@@ -1167,11 +1167,7 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
 
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
         },
     }
     ui.SetElementsFromArray(nil)
@@ -2208,11 +2204,7 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
             var options ebiten.DrawImageOptions
             scale.DrawScaled(screen, background, &options)
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
         },
     }
 
@@ -4325,11 +4317,7 @@ func (game *Game) confirmRazeTown(yield coroutine.YieldFunc, city *citylib.City)
     ui := &uilib.UI{
         Cache: game.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
         },
     }
 
@@ -5980,11 +5968,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             mainHud, _ := game.ImageCache.GetImage("main.lbx", 0, 0)
             scale.DrawScaled(screen, mainHud, &options)
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {

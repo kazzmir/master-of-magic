@@ -1190,11 +1190,7 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
             background, _ := imageCache.GetImage("spellscr.lbx", 13, 0)
             scale.DrawScaled(screen, background, &options)
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
         },
     }
 

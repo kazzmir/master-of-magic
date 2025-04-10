@@ -347,11 +347,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             fonts.NormalFont.PrintOptions(screen, float64(103), float64(160), rightShadow, fmt.Sprintf("%v RP", research))
             fonts.NormalFont.PrintOptions(screen, float64(151), float64(160), rightShadow, fmt.Sprintf("%v SP", skill))
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
         },
     }
 

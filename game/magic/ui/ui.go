@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -23,6 +24,7 @@ type UIInsideElementFunc func(element *UIElement, x int, y int)
 type UINotInsideElementFunc func(element *UIElement)
 type UIClickElementFunc func(element *UIElement)
 type UIDrawFunc func(element *UIElement, window *ebiten.Image)
+type UIToolTipFunc func(element *UIElement) (string, *font.Font)
 type UIKeyFunc func(key []ebiten.Key)
 type UIGainFocusFunc func(*UIElement)
 type UILoseFocusFunc func(*UIElement)
@@ -58,6 +60,10 @@ type UIElement struct {
     DoubleLeftClick UIClickElementFunc
     // fires when this element is right clicked
     RightClick UIClickElementFunc
+
+    // if not nil and doesn't return the empty string, the tooltip will be rendered on top of the ui when
+    // this element is hovered
+    Tooltip UIToolTipFunc
 
     // fires when this element is left clicked
     GainFocus UIGainFocusFunc
@@ -179,6 +185,11 @@ type UI struct {
     touchStartTime uint64
 
     textField textinput.Field
+
+    // the element that is currently being hovered over
+    TooltipElement *UIElement
+    TooltipPosition image.Point
+    TooltipTime uint64
 
     doubleClickCandidates []doubleClick
 
@@ -434,6 +445,41 @@ func (ui *UI) PlayStandardSound() {
     }
 }
 
+func (ui *UI) RenderTooltip(screen *ebiten.Image) {
+    if ui.TooltipElement != nil && ui.TooltipElement.Tooltip != nil {
+        tip, renderFont := ui.TooltipElement.Tooltip(ui.TooltipElement)
+        if tip != "" {
+            var options ebiten.DrawImageOptions
+
+            diff := ui.Counter - ui.TooltipTime
+            var delay uint64 = 0
+            if diff > delay {
+                alpha := diff - delay
+
+                var alphaRange uint64 = 60 * 1 / 3
+
+                if alpha < alphaRange {
+                    options.ColorScale.ScaleAlpha(float32(alpha) / float32(alphaRange))
+                }
+
+                renderFont.PrintOptions(screen, float64(ui.TooltipPosition.X), float64(ui.TooltipPosition.Y - renderFont.Height() - 1), font.FontOptions{Options: &options, Scale: scale.ScaleAmount, DropShadow: true}, tip)
+            }
+        }
+    }
+}
+
+// iterates through the elements in the highest layer and draws them
+// then draws the tooltip on top
+func (ui *UI) StandardDraw(screen *ebiten.Image) {
+    ui.IterateElementsByLayer(func (element *UIElement){
+        if element.Draw != nil {
+            element.Draw(element, screen)
+        }
+    })
+
+    ui.RenderTooltip(screen)
+}
+
 func (ui *UI) StandardUpdate() {
     ui.Counter += 1
 
@@ -556,8 +602,19 @@ func (ui *UI) StandardUpdate() {
 
     mouseX, mouseY = scale.Unscale2(mouseX, mouseY)
 
+    lastTooltip := ui.TooltipElement
+
+    ui.TooltipElement = nil
+
     for _, element := range slices.Backward(ui.GetHighestLayer()) {
         if image.Pt(mouseX, mouseY).In(element.Rect) {
+            if lastTooltip != element {
+                ui.TooltipTime = ui.Counter
+            }
+
+            ui.TooltipElement = element
+            ui.TooltipPosition = image.Pt(mouseX, mouseY)
+
             if element.Inside != nil {
                 element.Inside(element, mouseX - element.Rect.Min.X, mouseY - element.Rect.Min.Y)
             }

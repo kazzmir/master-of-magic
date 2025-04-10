@@ -152,6 +152,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
+        Order: -1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
@@ -179,10 +180,12 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
             RenderUnitInfoNormal(screen, &imageCache, unit, unit.GetTitle(), "", descriptionFont, smallFont, options)
 
+            /*
             options.GeoM.Reset()
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(10, 50)
             RenderUnitInfoStats(screen, &imageCache, unit, 15, descriptionFont, smallFont, options)
+            */
 
             /*
             options.GeoM.Translate(0, 60)
@@ -190,6 +193,12 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
             */
         },
     })
+
+    var defaultOptions ebiten.DrawImageOptions
+    defaultOptions.GeoM.Translate(31, 6)
+    defaultOptions.GeoM.Translate(10, 50)
+
+    uiGroup.AddElements(CreateUnitInfoStatsElements(&imageCache, unit, 15, descriptionFont, smallFont, defaultOptions, &getAlpha, 1))
 
     uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, mediumFont, 40, 114, &ui.Counter, 1, &getAlpha, false, 0, true))
 

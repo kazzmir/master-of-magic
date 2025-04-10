@@ -32,6 +32,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
+        Order: -1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
@@ -49,13 +50,22 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
             options.GeoM.Translate(float64(51), float64(7))
             unitview.RenderUnitInfoNormal(screen, &imageCache, unit, "", unit.Unit.Race.String(), fonts.DescriptionFont, fonts.SmallFont, options)
 
+            /*
             options.GeoM.Reset()
             options.GeoM.Translate(0, yTop)
             options.GeoM.Translate(float64(31), float64(6))
             options.GeoM.Translate(float64(10), float64(50))
             unitview.RenderUnitInfoStats(screen, &imageCache, unit, 15, fonts.DescriptionFont, fonts.SmallFont, options)
+            */
         },
     })
+
+    var statsOptions ebiten.DrawImageOptions
+    statsOptions.GeoM.Translate(0, yTop)
+    statsOptions.GeoM.Translate(float64(31), float64(6))
+    statsOptions.GeoM.Translate(float64(10), float64(50))
+
+    uiGroup.AddElements(unitview.CreateUnitInfoStatsElements(&imageCache, unit, 15, fonts.DescriptionFont, fonts.SmallFont, statsOptions, &getAlpha, 1))
 
     uiGroup.AddElements(unitview.MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, fonts.MediumFont, 40, 124, &ui.Counter, 1, &getAlpha, false, 0, false))
 

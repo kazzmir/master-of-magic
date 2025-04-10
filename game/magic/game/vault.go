@@ -101,11 +101,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             fonts.ResourceFont.PrintOptions(screen, 190, 166, fontOptions, fmt.Sprintf("%v GP", player.Gold))
             fonts.ResourceFont.PrintOptions(screen, 233, 166, fontOptions, fmt.Sprintf("%v MP", player.Mana))
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
+            ui.StandardDraw(screen)
         },
     }
 
