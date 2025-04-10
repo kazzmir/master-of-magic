@@ -126,12 +126,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 scale.DrawScaled(screen, mainInfo, &options)
             }
 
-            ui.IterateElementsByLayer(func (element *uilib.UIElement){
-                if element.Draw != nil {
-                    element.Draw(element, screen)
-                }
-            })
-
+            ui.StandardDraw(screen)
         },
     }
 
@@ -237,6 +232,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         bannerUnit := units.MakeOverworldUnitFromUnit(unit, 0, 0, city.Plane, city.GetBanner(), nil, &units.NoEnchantments{})
         productionCost := city.UnitProductionCost(&unit)
         mainGroup.AddElement(&uilib.UIElement{
+            Order: -1,
             Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(104), float64(28))
@@ -246,9 +242,11 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
                 options.GeoM.Translate(float64(130), float64(7))
                 unitview.RenderUnitInfoBuild(screen, imageCache, bannerUnit, fonts.DescriptionFont, fonts.SmallFont, options, productionCost)
 
+                /*
                 options.GeoM.Reset()
                 options.GeoM.Translate(float64(85), float64(48))
                 unitview.RenderUnitInfoStats(screen, imageCache, bannerUnit, 10, fonts.DescriptionFont, fonts.SmallFont, options)
+                */
 
                 /*
                 options.GeoM.Reset()
@@ -260,6 +258,12 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         var getAlpha util.AlphaFadeFunc = func () float32 {
             return 1
         }
+
+        var defaultOptions ebiten.DrawImageOptions
+        defaultOptions.GeoM.Translate(float64(85), float64(48))
+
+        mainGroup.AddElements(unitview.CreateUnitInfoStatsElements(imageCache, bannerUnit, 10, fonts.DescriptionFont, fonts.SmallFont, defaultOptions, &getAlpha, 0))
+
         mainGroup.AddElements(unitview.MakeUnitAbilitiesElements(mainGroup, cache, imageCache, bannerUnit, fonts.MediumFont, 85, 108, &ui.Counter, 0, &getAlpha, true, 0, false))
         // ui.AddElements(mainElements)
     }

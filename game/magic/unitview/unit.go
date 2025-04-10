@@ -299,6 +299,7 @@ func RenderHitpointsStats(screen *ebiten.Image, imageCache *util.ImageCache, uni
     showNIcons(screen, healthIcon, unit.GetBaseHitPoints(), healthIconGold, unit.GetFullHitPoints() - unit.GetBaseHitPoints(), unit.GetHitPoints() - unit.GetFullHitPoints(), defaultOptions, x, y, width, maxIconsPerLine)
 }
 
+/*
 func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitStats, maxIconsPerLine int, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions) {
     width := descriptionFont.MeasureTextWidth("Armor", 1)
 
@@ -324,8 +325,9 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     RenderHitpointsStats(screen, imageCache, unit, maxIconsPerLine, descriptionFont, smallFont, defaultOptions, x, y, width)
 }
+*/
 
-func CreateUnitInfoStatsElements(imageCache *util.ImageCache, unit UnitStats, maxIconsPerLine int, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions, getAlpha *util.AlphaFadeFunc) []*uilib.UIElement {
+func CreateUnitInfoStatsElements(imageCache *util.ImageCache, unit UnitStats, maxIconsPerLine int, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions, getAlpha *util.AlphaFadeFunc, layer uilib.UILayer) []*uilib.UIElement {
     type statsRender struct {
         Render func(*ebiten.Image, *util.ImageCache, UnitStats, int, *font.Font, *font.Font, ebiten.DrawImageOptions, float64, float64, float64)
         Value func() int
@@ -349,7 +351,7 @@ func CreateUnitInfoStatsElements(imageCache *util.ImageCache, unit UnitStats, ma
         elementX, elementY := x, y
         elements = append(elements, &uilib.UIElement{
             Order: 1,
-            Layer: 1,
+            Layer: layer,
             Rect: image.Rect(int(elementX), int(elementY), int(elementX) + background.Bounds().Dx(), int(elementY) + descriptionFont.Height()),
             Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
                 return strconv.Itoa(render.Value()), smallFont

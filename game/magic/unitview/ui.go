@@ -198,7 +198,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
     defaultOptions.GeoM.Translate(31, 6)
     defaultOptions.GeoM.Translate(10, 50)
 
-    uiGroup.AddElements(CreateUnitInfoStatsElements(&imageCache, unit, 15, descriptionFont, smallFont, defaultOptions, &getAlpha))
+    uiGroup.AddElements(CreateUnitInfoStatsElements(&imageCache, unit, 15, descriptionFont, smallFont, defaultOptions, &getAlpha, 1))
 
     uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, mediumFont, 40, 114, &ui.Counter, 1, &getAlpha, false, 0, true))
 

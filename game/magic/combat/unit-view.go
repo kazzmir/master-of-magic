@@ -71,8 +71,11 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
     const fadeSpeed = 7
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
+    var layer uilib.UILayer = 1
+
     group.AddElement(&uilib.UIElement{
-        Layer: 1,
+        Layer: layer,
+        Order: -1,
         NotLeftClicked: func(element *uilib.UIElement) {
             getAlpha = ui.MakeFadeOut(fadeSpeed)
             ui.AddDelay(fadeSpeed, func(){
@@ -106,10 +109,12 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
 
             RenderUnitInfo(screen, &imageCache, unit, fonts, options)
 
+            /*
             options.GeoM.Reset()
             options.GeoM.Translate(float64(31), float64(6))
             options.GeoM.Translate(float64(10), float64(50))
             unitview.RenderUnitInfoStats(screen, &imageCache, unit, 15, fonts.DescriptionFont, fonts.SmallFont, options)
+            */
 
             /*
             options.GeoM.Translate(0, 60)
@@ -118,7 +123,13 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
         },
     })
 
-    group.AddElements(unitview.MakeUnitAbilitiesElements(group, cache, &imageCache, unit, fonts.MediumFont, 40, 114, &ui.Counter, 1, &getAlpha, false, 0, false))
+    var defaultOptions ebiten.DrawImageOptions
+    defaultOptions.GeoM.Translate(float64(31), float64(6))
+    defaultOptions.GeoM.Translate(float64(10), float64(50))
+
+    group.AddElements(unitview.CreateUnitInfoStatsElements(&imageCache, unit, 15, fonts.DescriptionFont, fonts.SmallFont, defaultOptions, &getAlpha, layer))
+
+    group.AddElements(unitview.MakeUnitAbilitiesElements(group, cache, &imageCache, unit, fonts.MediumFont, 40, 114, &ui.Counter, layer, &getAlpha, false, 0, false))
 
     return group
 }
