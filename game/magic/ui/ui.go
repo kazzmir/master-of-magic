@@ -462,7 +462,7 @@ func (ui *UI) RenderTooltip(screen *ebiten.Image) {
                     options.ColorScale.ScaleAlpha(float32(alpha) / float32(alphaRange))
                 }
 
-                renderFont.PrintOptions(screen, float64(ui.TooltipPosition.X), float64(ui.TooltipPosition.Y), font.FontOptions{Options: &options, Scale: scale.ScaleAmount, DropShadow: true}, tip)
+                renderFont.PrintOptions(screen, float64(ui.TooltipPosition.X), float64(ui.TooltipPosition.Y - renderFont.Height() - 1), font.FontOptions{Options: &options, Scale: scale.ScaleAmount, DropShadow: true}, tip)
             }
         }
     }
