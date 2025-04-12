@@ -119,8 +119,13 @@ func (main *MainScreen) MakeUI() *uilib.UI {
             credits := []string{
                 "Programming",
                 "Jon Rafkind (kazzmir)",
-                "msom",
+                "Marc Sommerhalder (msom)",
                 "sidav",
+                "",
+                "",
+                "Thanks to",
+                "Master of Magic Wiki",
+                "https://masterofmagic.fandom.com",
             }
 
             sub := screen.SubImage(scale.ScaleRect(creditsRect)).(*ebiten.Image)
