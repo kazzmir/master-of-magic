@@ -2,11 +2,15 @@ package mainview
 
 import (
     "log"
+    "image"
+    // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    "github.com/kazzmir/master-of-magic/lib/font"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -98,6 +102,64 @@ func (main *MainScreen) MakeUI() *uilib.UI {
             },
         }
     }
+
+    mainFonts := fontslib.MakeMainFonts(main.Cache)
+
+    abs := func(x int) int {
+        if x < 0 {
+            return -x
+        }
+        return x
+    }
+
+    creditsRect := image.Rect(30, 35, 300, 130)
+    elements = append(elements, &uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+
+            credits := []string{
+                "Programming",
+                "Jon Rafkind (kazzmir)",
+                "Marc Sommerhalder (msom)",
+                "sidav",
+                "",
+                "",
+                "Thanks to",
+                "Master of Magic Wiki",
+                "https://masterofmagic.fandom.com",
+            }
+
+            sub := screen.SubImage(scale.ScaleRect(creditsRect)).(*ebiten.Image)
+
+            var options ebiten.DrawImageOptions
+
+            gap := 40
+
+            where := (ui.Counter / 3) % uint64(creditsRect.Dy() + gap + (len(credits)) * mainFonts.Credits.Height())
+            middle := creditsRect.Min.X + creditsRect.Dx() / 2
+            for i, line := range credits {
+                y := creditsRect.Max.Y + i * mainFonts.Credits.Height() + gap - int(where)
+
+                options.ColorScale.Reset()
+                options.ColorScale.ScaleAlpha(getAlpha())
+                distance := abs(y - (creditsRect.Min.Y + creditsRect.Dy() / 2))
+                // log.Printf("i=%v distance=%v dy=%v", i, distance, creditsRect.Dy() - 20)
+
+                alpha := float32(creditsRect.Dy()/2 + 10 - distance) / float32(creditsRect.Dy()/2)
+                if alpha > 1 {
+                    alpha = 1
+                }
+                if alpha < 0 {
+                    alpha = 0
+                }
+                options.ColorScale.ScaleAlpha(alpha)
+
+                mainFonts.Credits.PrintOptions(sub, float64(middle), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, line)
+            }
+
+            // for debugging
+            // util.DrawRect(screen, scale.ScaleRect(creditsRect), color.RGBA{R: 255, G: 255, B: 255, A: 255})
+        },
+    })
 
     // TODO: when load game functionality is there, take save files presence into account for these vars
     isContinueBtnActive := false
