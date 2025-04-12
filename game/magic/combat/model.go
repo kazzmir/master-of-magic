@@ -3808,6 +3808,8 @@ func (model *CombatModel) KillUnit(unit *ArmyUnit){
 
     model.Tiles[unit.Y][unit.X].Unit = nil
 
+    model.Events <- &CombatEventDyingUnit{Unit: unit}
+
     if unit == model.SelectedUnit {
         model.NextUnit()
     }

@@ -124,6 +124,10 @@ type CombatCreateWallOfDarkness struct {
     Sound int
 }
 
+type CombatEventDyingUnit struct {
+    Unit *ArmyUnit
+}
+
 // FIXME: kind of ugly to need a specific event like this for one projectile type
 type CombatEventCreateLightningBolt struct {
     Target *ArmyUnit
@@ -144,6 +148,17 @@ const (
     LightningBoltSound int = 19
 )
 
+type DyingUnit struct {
+    Unit *ArmyUnit
+    Creation uint64
+}
+
+func MakeDyingUnit(unit *ArmyUnit, creation uint64) *DyingUnit {
+    return &DyingUnit{
+        Unit: unit,
+        Creation: creation,
+    }
+}
 
 /* compute the distance between two tiles by moving in one of the 8 directions
  */
@@ -209,6 +224,8 @@ type CombatScreen struct {
     AllSpells spellbook.Spells
     // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
     TopDownOrder []image.Point
+
+    DyingUnits []*DyingUnit
 
     Coordinates ebiten.GeoM
     // ScreenToTile ebiten.GeoM
@@ -2666,6 +2683,9 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         combat.doSelectUnit(yield, use.Selecter, use.Spell, use.SelectTarget, use.CanTarget, use.SelectTeam)
                     case *CombatEventNextUnit:
                         combat.Model.NextUnit()
+                    case *CombatEventDyingUnit:
+                        use := event.(*CombatEventDyingUnit)
+                        combat.DyingUnits = append(combat.DyingUnits, MakeDyingUnit(use.Unit, combat.Counter))
                     case *CombatEventGlobalSpell:
                         use := event.(*CombatEventGlobalSpell)
                         combat.doCastEnchantment(yield, use.Caster, use.Magic, use.Name)
