@@ -1255,3 +1255,17 @@ func MakeSpellOfMasteryFonts(cache *lbx.LbxCache) *SpellOfMasteryFonts {
         RedFont: redFont,
     }
 }
+
+type MainFonts struct {
+    Credits *font.Font
+}
+
+func MakeMainFonts(cache *lbx.LbxCache) *MainFonts {
+    magicFonts := MakeMagicViewFonts(cache)
+
+    credits := magicFonts.NormalFont
+
+    return &MainFonts{
+        Credits: credits,
+    }
+}
