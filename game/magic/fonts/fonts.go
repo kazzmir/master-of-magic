@@ -1261,9 +1261,25 @@ type MainFonts struct {
 }
 
 func MakeMainFonts(cache *lbx.LbxCache) *MainFonts {
-    magicFonts := MakeMagicViewFonts(cache)
+    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
 
-    credits := magicFonts.NormalFont
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
+
+    yellowPalette := color.Palette{
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+        color.RGBA{R: 0xff, G: 0xcc, B: 0x0, A: 0xff},
+    }
+
+    credits := font.MakeOptimizedFontWithPalette(fonts[2], yellowPalette)
 
     return &MainFonts{
         Credits: credits,
