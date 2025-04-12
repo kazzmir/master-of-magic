@@ -140,12 +140,12 @@ func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebite
     }
 }
 
-func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, enchantment data.UnitEnchantment, timeCounter uint64, imageCache *util.ImageCache){
+func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, lostCount int, enchantment data.UnitEnchantment, timeCounter uint64, imageCache *util.ImageCache){
     // the ground is always 6 pixels above the bottom of the unit image
     groundHeight := float64(6)
 
     geoM := options.GeoM
-    for _, point := range CombatPoints(count) {
+    for i, point := range CombatPoints(count + lostCount) {
         options.GeoM.Reset()
         options.GeoM.Translate(float64(point.X), float64(point.Y))
         options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
@@ -160,7 +160,13 @@ func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
 
         // options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
         // options.GeoM.Translate(-13, -22)
+        savedScale := options.ColorScale
+
+        if i >= count {
+            options.ColorScale.SetR(3)
+        }
         screen.DrawImage(use, &options)
+        options.ColorScale = savedScale
 
         if enchantment != data.UnitEnchantmentNone {
             util.DrawOutline(screen, imageCache, use, options.GeoM, options.ColorScale, timeCounter/10, enchantment.Color())

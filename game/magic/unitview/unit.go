@@ -55,7 +55,7 @@ func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit
             if grey {
                 RenderCombatUnitGrey(screen, use, options, unit.GetVisibleCount(), first, counter, imageCache)
             } else {
-                RenderCombatUnit(screen, use, options, unit.GetVisibleCount(), first, counter, imageCache)
+                RenderCombatUnit(screen, use, options, unit.GetVisibleCount(), 0, first, counter, imageCache)
             }
         }
     }

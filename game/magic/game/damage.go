@@ -41,8 +41,9 @@ func (wrapper *UnitDamageWrapper) IsAsleep() bool {
     return false
 }
 
-func (wrapper *UnitDamageWrapper) TakeDamage(damage int, damageType combat.DamageType) {
+func (wrapper *UnitDamageWrapper) TakeDamage(damage int, damageType combat.DamageType) int {
     wrapper.Unit.AdjustHealth(-damage)
+    return 0
 }
 
 func (wrapper *UnitDamageWrapper) ToDefend(modifiers combat.DamageModifiers) int {

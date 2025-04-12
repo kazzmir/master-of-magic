@@ -153,6 +153,11 @@ type DyingUnit struct {
     Creation uint64
 }
 
+// how long the unit has been around for
+func (dyingUnit *DyingUnit) Lifetime(now uint64) uint64 {
+    return now - dyingUnit.Creation
+}
+
 func MakeDyingUnit(unit *ArmyUnit, creation uint64) *DyingUnit {
     return &DyingUnit{
         Unit: unit,
@@ -200,6 +205,23 @@ func computeTileDistance(x1 int, y1 int, x2 int, y2 int) int {
     return distance
 }
 
+type Gib struct {
+    X float64
+    Y float64
+    Z float64
+    // how the image rotates in air
+    Rotation float64
+
+    // angle in the x/y plane
+    Angle float64
+    // angle in the y/z plane
+    Phi float64
+
+    Velocity float64
+
+    Image *ebiten.Image
+}
+
 type CombatDrawFunc func(*ebiten.Image)
 
 type CombatScreen struct {
@@ -230,6 +252,8 @@ type CombatScreen struct {
     Coordinates ebiten.GeoM
     // ScreenToTile ebiten.GeoM
     MouseState MouseState
+
+    Gibs []*Gib
 
     CameraScale float64
 
@@ -601,7 +625,8 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
+        _, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
+        combat.MakeGibs(unit, lost)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -616,7 +641,8 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        fireDamage := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
+        fireDamage, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
+        combat.MakeGibs(unit, lost)
 
         combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.GetHealth() <= 0 {
@@ -649,7 +675,8 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Project
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        ApplyDamage(unit, unit.ReduceInvulnerability(15), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
+        _, lost := ApplyDamage(unit, unit.ReduceInvulnerability(15), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
+        combat.MakeGibs(unit, lost)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -680,7 +707,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
             }
         }
 
-        unit.TakeDamage(damage, DamageIrreversable)
+        combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -694,7 +721,8 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, stren
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(15, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
+        _, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(15, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
+        combat.MakeGibs(unit, lost)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -709,7 +737,7 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projecti
     explodeImages := images[3:]
 
     effect := func(unit *ArmyUnit) {
-        unit.TakeDamage(10, DamageNormal)
+        combat.MakeGibs(unit, unit.TakeDamage(10, DamageNormal))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -741,7 +769,8 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
         Effect: func(unit *ArmyUnit) {
-            ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+            _, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+            combat.MakeGibs(unit, lost)
             if unit.GetHealth() <= 0 {
                 combat.Model.KillUnit(unit)
             }
@@ -776,10 +805,13 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Pro
         Exploding: true,
         Effect: func(unit *ArmyUnit) {
 
+            lost := 0
             // 10 separate attacks are different than a single 55-point attack due to defense
             for strength := range 10 {
-                ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength + 1, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                _, more := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength + 1, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                lost += more
             }
+            combat.MakeGibs(unit, lost)
 
             if unit.GetHealth() <= 0 {
                 combat.Model.KillUnit(unit)
@@ -800,7 +832,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
         resistance := GetResistanceFor(unit, data.LifeMagic) - reduceResistance
         damage := rand.N(10) + 1 - resistance
         if damage > 0 {
-            unit.TakeDamage(damage, DamageUndead)
+            combat.MakeGibs(unit, unit.TakeDamage(damage, DamageUndead))
             if unitCaster != nil {
                 unitCaster.Heal(damage)
             } else {
@@ -1253,7 +1285,7 @@ func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit) *Projectil
         }
 
         // FIXME: do stoning damage, which is irreversable
-        unit.TakeDamage(damage, DamageIrreversable)
+        combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1376,7 +1408,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
             }
         }
 
-        unit.TakeDamage(damage, DamageIrreversable)
+        combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1411,7 +1443,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projec
             }
         }
 
-        unit.TakeDamage(damage, DamageIrreversable)
+        combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1434,7 +1466,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Proje
             }
         }
 
-        unit.TakeDamage(damage, DamageIrreversable)
+        combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1532,7 +1564,7 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
             }
         }
 
-        unit.TakeDamage(damage, DamageIrreversable)
+        combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1613,6 +1645,11 @@ func (caster *UnitCaster) ComputeEffectiveResearchPerTurn(research float64, spel
 
 func (caster *UnitCaster) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {
     return spell.Cost(overland)
+}
+
+// create gib effects for a unit
+func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
+    // TODO
 }
 
 func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
@@ -2350,7 +2387,8 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         damage := attacker.ComputeRangeDamage(target, tileDistance)
 
         // FIXME: for magical damage, set the Magic damage modifier for the proper realm
-        ApplyDamage(target, damage, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
+        _, lost := ApplyDamage(target, damage, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
+        combat.MakeGibs(target, lost)
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
             combat.Model.doTouchAttack(attacker, target, 0)
@@ -4016,12 +4054,11 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
         }
     }
 
-    renderUnit := func(unit *ArmyUnit){
+    renderUnit := func(unit *ArmyUnit, unitOptions ebiten.DrawImageOptions){
         banner := unit.Unit.GetBanner()
         combatImages, _ := combat.ImageCache.GetImagesTransform(unit.Unit.GetCombatLbxFile(), unit.Unit.GetCombatIndex(unit.Facing), banner.String(), units.MakeUpdateUnitColorsFunc(banner))
 
         if combatImages != nil {
-            var unitOptions ebiten.DrawImageOptions
             var tx float64
             var ty float64
 
@@ -4066,6 +4103,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 unitOptions.ColorScale.Scale(float32(scaleValue), 1, 1, 1)
             }
 
+            // for summoning units out of the ground, or the merging ability
             unitImage := combatImages[index]
             if unit.Height < 100 {
                 // log.Printf("unit %v has height %v", unit.Unit.GetName(), unit.Height)
@@ -4073,6 +4111,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 unitImage = unitImage.SubImage(image.Rect(0, 0, unitImage.Bounds().Dx(), unitImage.Bounds().Dy() + unit.Height)).(*ebiten.Image)
             }
 
+            // for units that teleport
             unitOptions.ColorScale.ScaleAlpha(1 - unit.Fade)
 
             /*
@@ -4115,7 +4154,15 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                     unitOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xb5, G: 0x5e, B: 0xf3, A: 0xff})
                 }
 
-                unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), use, combat.Counter, &combat.ImageCache)
+                if unit.LostUnits > 0 {
+                    savedScale := unitOptions.ColorScale
+                    savedScale.SetR(1.5)
+                    // unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, use, combat.Counter, &combat.ImageCache)
+                    unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), 0, use, combat.Counter, &combat.ImageCache)
+                    unitOptions.ColorScale = savedScale
+                } else {
+                    unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), 0, use, combat.Counter, &combat.ImageCache)
+                }
 
                 if warpCreature {
                     unitOptions.ColorScale = savedColor
@@ -4205,7 +4252,8 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
     slices.SortFunc(allUnits, compareUnit)
 
     for _, unit := range allUnits {
-        renderUnit(unit)
+        var options ebiten.DrawImageOptions
+        renderUnit(unit, options)
     }
 
     for _, unit := range combat.Model.OtherUnits {
@@ -4221,6 +4269,14 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
         scale.DrawScaled(screen, frame, &unitOptions)
     }
+
+    /*
+    for _, unit := range combat.DyingUnits {
+        var options ebiten.DrawImageOptions
+        options.ColorScale.SetR(1 + float32(unit.Lifetime(combat.Counter)) / 5)
+        renderUnit(unit.Unit, options)
+    }
+    */
 
     combat.UI.Draw(combat.UI, screen)
 
