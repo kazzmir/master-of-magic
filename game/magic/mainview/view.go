@@ -112,80 +112,84 @@ func (main *MainScreen) MakeUI() *uilib.UI {
         return x
     }
 
+    type creditsLine struct {
+        lineRight, lineCenter, lineLeft string
+    }
+
+    makeCreditsSection := func (title string, things... string) []creditsLine {
+        lines := make([]creditsLine, len(things))
+        for i, thing := range things {
+            if i == 0 {
+                lines[i].lineLeft = title
+            }
+
+            lines[i].lineRight = thing
+        }
+
+        return lines
+    }
+
+    makeCreditsTitle := func (title string) []creditsLine {
+        return []creditsLine{
+            {lineCenter: title},
+        }
+    }
+
+    makeCreditsBlank := func (count int) []creditsLine {
+        lines := make([]creditsLine, count)
+        for i := range lines {
+            lines[i] = creditsLine{}
+        }
+        return lines
+    }
+
+    appendAll := func (lines... []creditsLine) []creditsLine {
+        result := make([]creditsLine, 0)
+        for _, line := range lines {
+            result = append(result, line...)
+        }
+        return result
+    }
+
+    credits := appendAll(
+        makeCreditsTitle("MASTER OF MAGIC 2025"), // TODO: update the name :D
+        makeCreditsBlank(1),
+        makeCreditsSection("Programming", "Jon Rafkind (kazzmir)", "Marc Sommerhalder (msom)", "Vlad Kovun (sidav)"),
+        makeCreditsBlank(2),
+        makeCreditsSection("Thanks to:", "Master of Magic Wiki", "https://masterofmagic.fandom.com"),
+        makeCreditsBlank(4),
+        makeCreditsTitle("MASTER OF MAGIC 1994"),
+        makeCreditsBlank(1),
+        makeCreditsSection("Game Designer", "Steve Barcia"),
+        makeCreditsBlank(1),
+        makeCreditsSection("Programmers", "Jim Cowlishaw", "Ken Burd", "Steve Barcia", "Grissel Barcia"),
+        makeCreditsBlank(1),
+        makeCreditsSection("Producer", "Doug Caspian-Kaufman"),
+        makeCreditsBlank(1),
+        makeCreditsSection("Art Director", "Jeff Dee"),
+        makeCreditsBlank(1),
+        makeCreditsSection("Artists", "Shelly Hollen", "Amanda Dee", "Steve Austin", "George Purdy", "Patrick Owens", "Grissel Barcia"),
+        makeCreditsBlank(1),
+        makeCreditsSection("Music Producer", "The Fat Man"),
+        makeCreditsBlank(1),
+        makeCreditsSection("Composer", "Dave Govett"),
+        makeCreditsBlank(1),
+        makeCreditsSection("QA Lead", "Destin Strader"),
+        makeCreditsBlank(1),
+        makeCreditsSection("Play Test", "Mike Balogh", "Damon Harris", "Geoff Gessner", "Tammy Talbott", "Mick Uhl", "Jim Hendry", "Frank Brown", "Jim Tricario", "Jen MacLean", "Brian Wilson", "Brian Helleson", "Jeff Dinger", "Chris Bowling", "Charles Brubacker", "Tom Hughes"),
+        makeCreditsBlank(1),
+        makeCreditsSection("Sound Effects", "Midian"),
+        makeCreditsBlank(1),
+        makeCreditsSection("Speech", "Mark Reis", "Peter Woods", "David Ellis"),
+        makeCreditsBlank(1),
+        makeCreditsSection("Manual", "Petra Schlunk"),
+        makeCreditsBlank(1),
+        makeCreditsSection("Special thanks", "Jenna Cowlishaw"),
+    )
+
     creditsRect := image.Rect(60, 35, 270, 130)
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-
-            type creditsLine struct {
-                lineRight, lineCenter, lineLeft string
-            }
-            credits := []creditsLine{
-                { lineCenter: "MASTER OF MAGIC 2025"}, // TODO: update the name :D 
-                {},
-                { lineLeft: "Programming", lineRight: "Jon Rafkind (kazzmir)"},
-                { lineRight: "Marc Sommerhalder (msom)"},
-                { lineRight: "Vlad Kovun (sidav)"},
-                {},
-                {},
-                { lineLeft: "Thanks to:", lineRight: "Master of Magic Wiki"},
-                { lineRight: "https://masterofmagic.fandom.com"},
-                {},
-                {},
-                {},
-                {},
-                { lineCenter: "MASTER OF MAGIC 1994"},
-                {},
-                { lineLeft: "Game Designer", lineRight: "Steve Barcia"},
-                {}, 
-                { lineLeft: "Programmers", lineRight: "Jim Cowlishaw"},
-                { lineRight: "Ken Burd"},
-                { lineRight: "Steve Barcia"},
-                { lineRight: "Grissel Barcia"},
-                {},
-                { lineLeft: "Producer", lineRight: "Doug Caspian-Kaufman"},
-                {},
-                { lineLeft: "Art Director", lineRight: "Jeff Dee"},
-                {},
-                { lineLeft: "Artists", lineRight: "Shelly Hollen"},
-                { lineRight: "Amanda Dee"},
-                { lineRight: "Steve Austin"},
-                { lineRight: "George Purdy"},
-                { lineRight: "Patrick Owens"},
-                { lineRight: "Grissel Barcia"},
-                {},
-                { lineLeft: "Music Producer", lineRight: "The Fat Man"},
-                {},
-                { lineLeft: "Composer", lineRight: "Dave Govett"},
-                {},
-                { lineLeft: "QA Lead", lineRight: "Destin Strader"},
-                {},
-                { lineLeft: "Play Test", lineRight: "Mike Balogh"},
-                { lineRight: "Damon Harris"},
-                { lineRight: "Geoff Gessner"},
-                { lineRight: "Tammy Talbott"},
-                { lineRight: "Mick Uhl"},
-                { lineRight: "Jim Hendry"},
-                { lineRight: "Frank Brown"},
-                { lineRight: "Jim Tricario"},
-                { lineRight: "Jen MacLean"},
-                { lineRight: "Brian Wilson"},
-                { lineRight: "Brian Helleson"},
-                { lineRight: "Jeff Dinger"},
-                { lineRight: "Chris Bowling"},
-                { lineRight: "Charles Brubacker"},
-                { lineRight: "Tom Hughes"},
-                {},
-                { lineLeft: "Sound Effects", lineRight: "Midian"},
-                {},
-                { lineLeft: "Speech", lineRight: "Mark Reis"},
-                { lineRight: "Peter Woods"},
-                { lineRight: "David Ellis"},
-                {},
-                { lineLeft: "Manual", lineRight: "Petra Schlunk"},
-                {},
-                { lineLeft: "Special thanks", lineRight: "Jenna Cowlishaw"},
-            }
-
             sub := screen.SubImage(scale.ScaleRect(creditsRect)).(*ebiten.Image)
 
             var options ebiten.DrawImageOptions
