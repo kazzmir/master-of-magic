@@ -112,7 +112,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
         return x
     }
 
-    creditsRect := image.Rect(50, 35, 280, 130)
+    creditsRect := image.Rect(65, 35, 265, 130)
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
 
@@ -122,6 +122,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
             }
             credits := []creditsLine{
                 { line: "MASTER OF MAGIC 2025", justification: font.FontJustifyCenter}, // TODO: update the name :D 
+                { line: ""},
                 { line: "Programming", justification: font.FontJustifyLeft},
                 { line: "Jon Rafkind (kazzmir)", justification: font.FontJustifyRight},
                 { line: "Marc Sommerhalder (msom)", justification: font.FontJustifyRight},
@@ -150,6 +151,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
                 { line: "" },
                 { line: "Art Director", justification: font.FontJustifyLeft},
                 { line: "Jeff Dee", justification: font.FontJustifyRight},
+                { line: ""},
                 { line: "Artists", justification: font.FontJustifyLeft},
                 { line: "Shelly Hollen", justification: font.FontJustifyRight},
                 { line: "Amanda Dee", justification: font.FontJustifyRight},
@@ -160,11 +162,13 @@ func (main *MainScreen) MakeUI() *uilib.UI {
                 { line: "" },
                 { line: "Music Producer", justification: font.FontJustifyLeft},
                 { line: "The Fat Man", justification: font.FontJustifyRight},
+                { line: ""},
                 { line: "Composer", justification: font.FontJustifyLeft},
                 { line: "Dave Govett", justification: font.FontJustifyRight},
                 { line: "" },
                 { line: "QA Lead", justification: font.FontJustifyLeft},
                 { line: "Destin Strader", justification: font.FontJustifyRight},
+                { line: ""},
                 { line: "Play Test", justification: font.FontJustifyLeft},
                 { line: "Mike Balogh", justification: font.FontJustifyRight},
                 { line: "Damon Harris", justification: font.FontJustifyRight},
@@ -184,6 +188,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
                 { line: "" },
                 { line: "Sound Effects", justification: font.FontJustifyLeft},
                 { line: "Midian", justification: font.FontJustifyRight},
+                { line: ""},
                 { line: "Speech", justification: font.FontJustifyLeft},
                 { line: "Mark Reis", justification: font.FontJustifyRight},
                 { line: "Peter Woods", justification: font.FontJustifyRight},
@@ -192,10 +197,8 @@ func (main *MainScreen) MakeUI() *uilib.UI {
                 { line: "Manual", justification: font.FontJustifyLeft},
                 { line: "Petra Schlunk", justification: font.FontJustifyRight},
                 { line: "" },
-                { line: "" },
-                { line: "" },
                 { line: "Special thanks", justification: font.FontJustifyLeft},
-                { line: "Jenna Cowlishaw  ", justification: font.FontJustifyRight},
+                { line: "Jenna Cowlishaw", justification: font.FontJustifyRight},
             }
 
             sub := screen.SubImage(scale.ScaleRect(creditsRect)).(*ebiten.Image)
