@@ -592,7 +592,7 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
             background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
             window.DrawImage(background, scale.ScaleOptions(options))
 
-            screen.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Wizard")
+            screen.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Portrait")
 
             const portraitX = 24
             const portraitY = 10
@@ -638,6 +638,7 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
     counter := 0
     for column := 0; column < 2; column += 1 {
         for row := 0; row < 7; row++ {
+            clickedButtonOffset := 0
             wizard := counter
             background, _ := screen.ImageCache.GetImage("newgame.lbx", screen.WizardSlots[counter].Background, 0)
             name := screen.WizardSlots[counter].Name
@@ -647,14 +648,13 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
             y1 := top + row * space
             x2 := x1 + background.Bounds().Dx()
             y2 := y1 + background.Bounds().Dy()
-            var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(x1), float64(y1))
-
-            scaledOptions := scale.ScaleOptions(options)
 
             elements = append(elements, &uilib.UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
                 LeftClick: func(this *uilib.UIElement){
+                    clickedButtonOffset = 1
+                },
+                LeftClickRelease: func(element *uilib.UIElement) {
                     clickFunc(wizard)
                 },
                 Inside: func(this *uilib.UIElement, x int, y int){
@@ -662,8 +662,12 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
                     // screen.CurrentWizard = wizard
                 },
                 Draw: func(this *uilib.UIElement, window *ebiten.Image){
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(x1 + clickedButtonOffset), float64(y1 + clickedButtonOffset))
+                    scaledOptions := scale.ScaleOptions(options)
+
                     window.DrawImage(background, scaledOptions)
-                    screen.Font.PrintOptions(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, name)
+                    screen.Font.PrintOptions(window, float64(x1 + clickedButtonOffset) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3 + clickedButtonOffset), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, name)
                 },
             })
         }
@@ -700,6 +704,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
     }
 
     elements := screen.MakeWizardUIElements(clickFunc, insideFunc)
+    customBtnClickedOffset := 0
 
     // custom element
     elements = append(elements, (func () *uilib.UIElement {
@@ -711,7 +716,10 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
 
         return &uilib.UIElement{
             Rect: image.Rect(x1, y1, x2, y2),
-            LeftClick: func(this *uilib.UIElement){
+            LeftClick: func(element *uilib.UIElement) {
+                customBtnClickedOffset = 1
+            },
+            LeftClickRelease: func(this *uilib.UIElement){
                 screen.State = NewWizardScreenStateCustomPicture
                 screen.UI = screen.MakeCustomPictureUI()
             },
@@ -720,9 +728,9 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(x1), float64(y1))
+                options.GeoM.Translate(float64(x1 + customBtnClickedOffset), float64(y1 + customBtnClickedOffset))
                 window.DrawImage(background, scale.ScaleOptions(options))
-                screen.Font.PrintOptions(window, float64(x1) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Custom")
+                screen.Font.PrintOptions(window, float64(x1 + customBtnClickedOffset) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3 + customBtnClickedOffset), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Custom")
             },
         }
     })())
@@ -735,6 +743,11 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
             screen.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Wizard")
 
             this.StandardDraw(window)
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(166, 18)
+            buttonsBackgroundImg, _ := screen.ImageCache.GetImage("newgame.lbx", 8, 0)
+            window.DrawImage(buttonsBackgroundImg, scale.ScaleOptions(options))
 
             if screen.CurrentWizard >= 0 && screen.CurrentWizard < len(screen.WizardSlots) {
                 portraitX := 24
