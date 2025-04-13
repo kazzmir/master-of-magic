@@ -1673,12 +1673,27 @@ func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
     gibImage := combatImages[2]
     gibSize := 6
 
-    var gibParts []*ebiten.Image
+    type gibOffset struct {
+        Image *ebiten.Image
+        Angle float64
+        X int
+        Y int
+    }
+
+    middleX := gibImage.Bounds().Dx() / 2
+    middleY := gibImage.Bounds().Dy() / 2
+
+    var gibParts []gibOffset
     for x := 0; x < gibImage.Bounds().Dx(); x += gibSize {
         for y := 0; y < gibImage.Bounds().Dy(); y += gibSize {
             // FIXME: if the gib image is 90% transparent pixels then ignore it
             gibPart := gibImage.SubImage(image.Rect(x, y, x + gibSize, y + gibSize)).(*ebiten.Image)
-            gibParts = append(gibParts, gibPart)
+            gibParts = append(gibParts, gibOffset{
+                Image: gibPart,
+                Angle: math.Atan2(float64(y - middleY), float64(x - middleX)) + (rand.Float64() - 0.5) / 5,
+                X: x,
+                Y: -y,
+            })
         }
     }
 
@@ -1692,16 +1707,20 @@ func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
             moreGibs = append(moreGibs, &Gib{
                 X: float64(unit.X),
                 Y: float64(unit.Y),
+                /*
+                OffsetX: point.X + part.X,
+                OffsetY: point.Y + part.Y,
+                */
                 OffsetX: point.X,
-                OffsetY: point.Y,
+                OffsetY: point.Y - gibImage.Bounds().Dy() + 6 - part.Y,
                 Life: 120,
                 Z: rand.Float64() * 10, // FIXME: should be based on the gib part
                 Rotation: rand.Float64() * 2 * math.Pi,
-                Angle: rand.Float64() * 2 * math.Pi,
+                Angle: part.Angle,
                 Phi: rand.Float64() * 2 * math.Pi,
                 // Velocity: rand.Float64() * 2,
                 Velocity: 0.01,
-                Image: part,
+                Image: part.Image,
             })
         }
     }
@@ -4372,9 +4391,10 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
         }
 
         gibOptions.GeoM.Translate(float64(-gib.Image.Bounds().Dx()/2), float64(-gib.Image.Bounds().Dy()/2))
-        gibOptions.GeoM.Rotate(gib.Rotation)
-        // unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
+        // gibOptions.GeoM.Rotate(gib.Rotation)
+
         gibOptions.GeoM.Translate(0, float64(tile0.Bounds().Dy()/2))
+        gibOptions.GeoM.Translate(float64(gib.OffsetX), float64(gib.OffsetY))
 
         tx, ty := tilePosition(float64(gib.X), float64(gib.Y))
         gibOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
