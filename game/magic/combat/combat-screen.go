@@ -128,6 +128,12 @@ type CombatEventDyingUnit struct {
     Unit *ArmyUnit
 }
 
+type CombatEventMakeGibs struct {
+    Unit *ArmyUnit
+    // number of figures to make gibs for
+    Count int
+}
+
 // FIXME: kind of ugly to need a specific event like this for one projectile type
 type CombatEventCreateLightningBolt struct {
     Target *ArmyUnit
@@ -1649,7 +1655,48 @@ func (caster *UnitCaster) ComputeEffectiveSpellCost(spell spellbook.Spell, overl
 
 // create gib effects for a unit
 func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
-    // TODO
+    // create gibs at the location of figures from unit.VisibleFigures() to lost
+
+    banner := unit.Unit.GetBanner()
+    combatImages, _ := combat.ImageCache.GetImagesTransform(unit.Unit.GetCombatLbxFile(), unit.Unit.GetCombatIndex(unit.Facing), banner.String(), units.MakeUpdateUnitColorsFunc(banner))
+
+    if len(combatImages) < 2 {
+        return
+    }
+
+    gibImage := combatImages[2]
+    gibSize := 6
+
+    var gibParts []*ebiten.Image
+    for x := 0; x < gibImage.Bounds().Dx(); x += gibSize {
+        for y := 0; y < gibImage.Bounds().Dy(); y += gibSize {
+            // FIXME: if the gib image is 90% transparent pixels then ignore it
+            gibPart := gibImage.SubImage(image.Rect(x, y, x + gibSize, y + gibSize)).(*ebiten.Image)
+            gibParts = append(gibParts, gibPart)
+        }
+    }
+
+    var moreGibs []*Gib
+
+    points := unitview.CombatPoints(unit.VisibleFigures() + lost)
+    for i := range lost {
+        point := points[unit.VisibleFigures() + i]
+
+        for _, part := range gibParts {
+            moreGibs = append(moreGibs, &Gib{
+                X: float64(unit.X + point.X),
+                Y: float64(unit.Y + point.Y),
+                Z: rand.Float64() * 10, // FIXME: should be based on the gib part
+                Rotation: rand.Float64() * 2 * math.Pi,
+                Angle: math.Pi / 4 + rand.Float64() * math.Pi / 4,
+                Phi: rand.Float64() * 2 * math.Pi,
+                Velocity: rand.Float64() * 2,
+                Image: part,
+            })
+        }
+    }
+
+    combat.Gibs = append(combat.Gibs, moreGibs...)
 }
 
 func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
@@ -2724,6 +2771,9 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                     case *CombatEventDyingUnit:
                         use := event.(*CombatEventDyingUnit)
                         combat.DyingUnits = append(combat.DyingUnits, MakeDyingUnit(use.Unit, combat.Counter))
+                    case *CombatEventMakeGibs:
+                        use := event.(*CombatEventMakeGibs)
+                        combat.MakeGibs(use.Unit, use.Count)
                     case *CombatEventGlobalSpell:
                         use := event.(*CombatEventGlobalSpell)
                         combat.doCastEnchantment(yield, use.Caster, use.Magic, use.Name)

@@ -3572,7 +3572,10 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
 }
 
 func (model *CombatModel) MakeGibs(defender *ArmyUnit, lost int) {
-    // TODO
+    model.Events <- &CombatEventMakeGibs{
+        Unit: defender,
+        Count: lost,
+    }
 }
 
 /* attacker is performing a physical melee attack against defender
