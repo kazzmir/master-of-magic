@@ -215,6 +215,12 @@ type Gib struct {
     X float64
     Y float64
     Z float64
+
+    OffsetX int
+    OffsetY int
+
+    Life int
+
     // how the image rotates in air
     Rotation float64
 
@@ -1684,13 +1690,17 @@ func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
 
         for _, part := range gibParts {
             moreGibs = append(moreGibs, &Gib{
-                X: float64(unit.X + point.X),
-                Y: float64(unit.Y + point.Y),
+                X: float64(unit.X),
+                Y: float64(unit.Y),
+                OffsetX: point.X,
+                OffsetY: point.Y,
+                Life: 120,
                 Z: rand.Float64() * 10, // FIXME: should be based on the gib part
                 Rotation: rand.Float64() * 2 * math.Pi,
-                Angle: math.Pi / 4 + rand.Float64() * math.Pi / 4,
+                Angle: rand.Float64() * 2 * math.Pi,
                 Phi: rand.Float64() * 2 * math.Pi,
-                Velocity: rand.Float64() * 2,
+                // Velocity: rand.Float64() * 2,
+                Velocity: 0.01,
                 Image: part,
             })
         }
@@ -2336,6 +2346,8 @@ func distanceAboveRange(x1 float64, y1 float64, x2 float64, y2 float64, r float6
 func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
     for combat.Model.UpdateProjectiles(combat.Counter) {
         combat.Counter += 1
+        combat.UpdateAnimations()
+        combat.UpdateGibs()
         if yield() != nil {
             return
         }
@@ -2832,12 +2844,16 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
     if merge {
         for i := range mergeCount {
             combat.Counter += 1
+            combat.UpdateAnimations()
+            combat.UpdateGibs()
             mover.SetHeight(-i/mergeSpeed)
             yield()
         }
     } else {
         for i := range mergeCount {
             combat.Counter += 1
+            combat.UpdateAnimations()
+            combat.UpdateGibs()
             mover.SetFade(float32(i)/float32(mergeCount))
             yield()
         }
@@ -2852,6 +2868,8 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
     if merge {
         for i := range mergeCount {
             combat.Counter += 1
+            combat.UpdateAnimations()
+            combat.UpdateGibs()
             mover.SetHeight(-(mergeCount/mergeSpeed - i/mergeSpeed))
             yield()
         }
@@ -2859,6 +2877,8 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
     } else {
         for i := range mergeCount {
             combat.Counter += 1
+            combat.UpdateAnimations()
+            combat.UpdateGibs()
             mover.SetFade(float32(mergeCount - i)/float32(mergeCount))
             yield()
         }
@@ -2925,6 +2945,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         reached := false
         for !reached {
             combat.UpdateAnimations()
+            combat.UpdateGibs()
             combat.Counter += 1
 
             mouseX, mouseY := inputmanager.MousePosition()
@@ -3050,6 +3071,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
     for i := range 60 {
         combat.Counter += 1
         combat.UpdateAnimations()
+        combat.UpdateGibs()
 
         // delay the actual melee computation to give time for the sound to play
         if i == 20 {
@@ -3223,6 +3245,27 @@ func (combat *CombatScreen) UpdateMouseState() {
     }
 }
 
+func (combat *CombatScreen) UpdateGibs() {
+    var keepGibs []*Gib
+
+    for _, gib := range combat.Gibs {
+        gib.Life -= 1
+        if gib.Life > 0 {
+            gib.Rotation += 0.1
+            if gib.Rotation > 2*math.Pi {
+                gib.Rotation -= 2 * math.Pi
+            }
+
+            gib.X += math.Cos(gib.Angle) * gib.Velocity
+            gib.Y += math.Sin(gib.Angle) * gib.Velocity
+            // FIXME: Z should be adjust based on ZVelocity, then apply gravity to ZVelocity
+            keepGibs = append(keepGibs, gib)
+        }
+    }
+
+    combat.Gibs = keepGibs
+}
+
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     if combat.Model.CurrentTurn >= MAX_TURNS {
         combat.Model.AddLogEvent("Combat exceeded maximum number of turns, defender wins")
@@ -3267,6 +3310,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     combat.MouseTileY = int(math.Round(tileY))
 
     combat.UpdateAnimations()
+    combat.UpdateGibs()
 
     // hudY := data.ScreenHeightOriginal - hudImage.Bounds().Dy()
     hudY := (data.ScreenHeight - hudImage.Bounds().Dy())
@@ -4318,6 +4362,25 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
         unitOptions.GeoM.Translate(tx, ty)
 
         scale.DrawScaled(screen, frame, &unitOptions)
+    }
+
+    for _, gib := range combat.Gibs {
+        var gibOptions ebiten.DrawImageOptions
+
+        if gib.Life < 10 {
+            gibOptions.ColorScale.ScaleAlpha(float32(gib.Life) / 10)
+        }
+
+        gibOptions.GeoM.Translate(float64(-gib.Image.Bounds().Dx()/2), float64(-gib.Image.Bounds().Dy()/2))
+        gibOptions.GeoM.Rotate(gib.Rotation)
+        // unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
+        gibOptions.GeoM.Translate(0, float64(tile0.Bounds().Dy()/2))
+
+        tx, ty := tilePosition(float64(gib.X), float64(gib.Y))
+        gibOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+        gibOptions.GeoM.Translate(tx, ty)
+
+        scale.DrawScaled(screen, gib.Image, &gibOptions)
     }
 
     /*
