@@ -112,93 +112,77 @@ func (main *MainScreen) MakeUI() *uilib.UI {
         return x
     }
 
-    creditsRect := image.Rect(65, 35, 265, 130)
+    creditsRect := image.Rect(60, 35, 270, 130)
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
 
             type creditsLine struct {
-                line string
-                justification font.FontJustify
+                lineRight, lineCenter, lineLeft string
             }
             credits := []creditsLine{
-                { line: "MASTER OF MAGIC 2025", justification: font.FontJustifyCenter}, // TODO: update the name :D 
-                { line: ""},
-                { line: "Programming", justification: font.FontJustifyLeft},
-                { line: "Jon Rafkind (kazzmir)", justification: font.FontJustifyRight},
-                { line: "Marc Sommerhalder (msom)", justification: font.FontJustifyRight},
-                { line: "Vlad Kovun (sidav)", justification: font.FontJustifyRight},
-                { line: ""},
-                { line: ""},
-                { line: "Thanks to:", justification: font.FontJustifyLeft},
-                { line: "Master of Magic Wiki", justification: font.FontJustifyRight},
-                { line: "https://masterofmagic.fandom.com", justification: font.FontJustifyRight},
-                { line: "" },
-                { line: "" },
-                { line: "" },
-                { line: "MASTER OF MAGIC 1994", justification: font.FontJustifyCenter},
-                { line: "" },
-                { line: "Game Designer", justification: font.FontJustifyLeft},
-                { line: "Steve Barcia", justification: font.FontJustifyRight},
-                { line: "" }, 
-                { line: "Programmers", justification: font.FontJustifyLeft},
-                { line: "Jim Cowlishaw", justification: font.FontJustifyRight},
-                { line: "Ken Burd", justification: font.FontJustifyRight},
-                { line: "Steve Barcia", justification: font.FontJustifyRight},
-                { line: "Grissel Barcia", justification: font.FontJustifyRight},
-                { line: "" },
-                { line: "Producer", justification: font.FontJustifyLeft},
-                { line: "Doug Caspian-Kaufman", justification: font.FontJustifyRight},
-                { line: "" },
-                { line: "Art Director", justification: font.FontJustifyLeft},
-                { line: "Jeff Dee", justification: font.FontJustifyRight},
-                { line: ""},
-                { line: "Artists", justification: font.FontJustifyLeft},
-                { line: "Shelly Hollen", justification: font.FontJustifyRight},
-                { line: "Amanda Dee", justification: font.FontJustifyRight},
-                { line: "Steve Austin", justification: font.FontJustifyRight},
-                { line: "George Purdy", justification: font.FontJustifyRight},
-                { line: "Patrick Owens", justification: font.FontJustifyRight},
-                { line: "Grissel Barcia", justification: font.FontJustifyRight},
-                { line: "" },
-                { line: "Music Producer", justification: font.FontJustifyLeft},
-                { line: "The Fat Man", justification: font.FontJustifyRight},
-                { line: ""},
-                { line: "Composer", justification: font.FontJustifyLeft},
-                { line: "Dave Govett", justification: font.FontJustifyRight},
-                { line: "" },
-                { line: "QA Lead", justification: font.FontJustifyLeft},
-                { line: "Destin Strader", justification: font.FontJustifyRight},
-                { line: ""},
-                { line: "Play Test", justification: font.FontJustifyLeft},
-                { line: "Mike Balogh", justification: font.FontJustifyRight},
-                { line: "Damon Harris", justification: font.FontJustifyRight},
-                { line: "Geoff Gessner", justification: font.FontJustifyRight},
-                { line: "Tammy Talbott", justification: font.FontJustifyRight},
-                { line: "Mick Uhl", justification: font.FontJustifyRight},
-                { line: "Jim Hendry", justification: font.FontJustifyRight},
-                { line: "Frank Brown", justification: font.FontJustifyRight},
-                { line: "Jim Tricario", justification: font.FontJustifyRight},
-                { line: "Jen MacLean", justification: font.FontJustifyRight},
-                { line: "Brian Wilson", justification: font.FontJustifyRight},
-                { line: "Brian Helleson", justification: font.FontJustifyRight},
-                { line: "Jeff Dinger", justification: font.FontJustifyRight},
-                { line: "Chris Bowling", justification: font.FontJustifyRight},
-                { line: "Charles Brubacker", justification: font.FontJustifyRight},
-                { line: "Tom Hughes", justification: font.FontJustifyRight},
-                { line: "" },
-                { line: "Sound Effects", justification: font.FontJustifyLeft},
-                { line: "Midian", justification: font.FontJustifyRight},
-                { line: ""},
-                { line: "Speech", justification: font.FontJustifyLeft},
-                { line: "Mark Reis", justification: font.FontJustifyRight},
-                { line: "Peter Woods", justification: font.FontJustifyRight},
-                { line: "David Ellis", justification: font.FontJustifyRight},
-                { line: "" },
-                { line: "Manual", justification: font.FontJustifyLeft},
-                { line: "Petra Schlunk", justification: font.FontJustifyRight},
-                { line: "" },
-                { line: "Special thanks", justification: font.FontJustifyLeft},
-                { line: "Jenna Cowlishaw", justification: font.FontJustifyRight},
+                { lineCenter: "MASTER OF MAGIC 2025"}, // TODO: update the name :D 
+                {},
+                { lineLeft: "Programming", lineRight: "Jon Rafkind (kazzmir)"},
+                { lineRight: "Marc Sommerhalder (msom)"},
+                { lineRight: "Vlad Kovun (sidav)"},
+                {},
+                {},
+                { lineLeft: "Thanks to:", lineRight: "Master of Magic Wiki"},
+                { lineRight: "https://masterofmagic.fandom.com"},
+                {},
+                {},
+                {},
+                { lineCenter: "MASTER OF MAGIC 1994"},
+                {},
+                { lineLeft: "Game Designer", lineRight: "Steve Barcia"},
+                {}, 
+                { lineLeft: "Programmers", lineRight: "Jim Cowlishaw"},
+                { lineRight: "Ken Burd"},
+                { lineRight: "Steve Barcia"},
+                { lineRight: "Grissel Barcia"},
+                {},
+                { lineLeft: "Producer", lineRight: "Doug Caspian-Kaufman"},
+                {},
+                { lineLeft: "Art Director", lineRight: "Jeff Dee"},
+                {},
+                { lineLeft: "Artists", lineRight: "Shelly Hollen"},
+                { lineRight: "Amanda Dee"},
+                { lineRight: "Steve Austin"},
+                { lineRight: "George Purdy"},
+                { lineRight: "Patrick Owens"},
+                { lineRight: "Grissel Barcia"},
+                {},
+                { lineLeft: "Music Producer", lineRight: "The Fat Man"},
+                {},
+                { lineLeft: "Composer", lineRight: "Dave Govett"},
+                {},
+                { lineLeft: "QA Lead", lineRight: "Destin Strader"},
+                {},
+                { lineLeft: "Play Test", lineRight: "Mike Balogh"},
+                { lineRight: "Damon Harris"},
+                { lineRight: "Geoff Gessner"},
+                { lineRight: "Tammy Talbott"},
+                { lineRight: "Mick Uhl"},
+                { lineRight: "Jim Hendry"},
+                { lineRight: "Frank Brown"},
+                { lineRight: "Jim Tricario"},
+                { lineRight: "Jen MacLean"},
+                { lineRight: "Brian Wilson"},
+                { lineRight: "Brian Helleson"},
+                { lineRight: "Jeff Dinger"},
+                { lineRight: "Chris Bowling"},
+                { lineRight: "Charles Brubacker"},
+                { lineRight: "Tom Hughes"},
+                {},
+                { lineLeft: "Sound Effects", lineRight: "Midian"},
+                {},
+                { lineLeft: "Speech", lineRight: "Mark Reis"},
+                { lineRight: "Peter Woods"},
+                { lineRight: "David Ellis"},
+                {},
+                { lineLeft: "Manual", lineRight: "Petra Schlunk"},
+                {},
+                { lineLeft: "Special thanks", lineRight: "Jenna Cowlishaw"},
             }
 
             sub := screen.SubImage(scale.ScaleRect(creditsRect)).(*ebiten.Image)
@@ -210,12 +194,6 @@ func (main *MainScreen) MakeUI() *uilib.UI {
             where := (ui.Counter / 3) % uint64(creditsRect.Dy() + gap + (len(credits)) * mainFonts.Credits.Height())
             middle := creditsRect.Min.X + creditsRect.Dx() / 2
             for i, lineStruct := range credits {
-                x := middle
-                if lineStruct.justification == font.FontJustifyRight {
-                    x = creditsRect.Max.X
-                } else if lineStruct.justification == font.FontJustifyLeft {
-                    x = creditsRect.Min.X
-                }
                 y := creditsRect.Max.Y + i * mainFonts.Credits.Height() + gap - int(where)
 
                 options.ColorScale.Reset()
@@ -228,7 +206,15 @@ func (main *MainScreen) MakeUI() *uilib.UI {
                 alpha = max(alpha, 0)
                 options.ColorScale.ScaleAlpha(alpha)
 
-                mainFonts.Credits.PrintOptions(sub, float64(x), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: lineStruct.justification, Options: &options}, lineStruct.line)
+                if len(lineStruct.lineLeft) > 0 {
+                    mainFonts.Credits.PrintOptions(sub, float64(creditsRect.Min.X), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, lineStruct.lineLeft)
+                }
+                if len(lineStruct.lineCenter) > 0 {
+                    mainFonts.Credits.PrintOptions(sub, float64(middle), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, lineStruct.lineCenter)
+                }
+                if len(lineStruct.lineRight) > 0 {
+                    mainFonts.Credits.PrintOptions(sub, float64(creditsRect.Max.X), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyRight, Options: &options}, lineStruct.lineRight)
+                }
             }
 
             // for debugging
