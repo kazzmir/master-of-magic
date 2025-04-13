@@ -132,6 +132,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
                 {},
                 {},
                 {},
+                {},
                 { lineCenter: "MASTER OF MAGIC 1994"},
                 {},
                 { lineLeft: "Game Designer", lineRight: "Steve Barcia"},
@@ -193,7 +194,10 @@ func (main *MainScreen) MakeUI() *uilib.UI {
 
             where := (ui.Counter / 3) % uint64(creditsRect.Dy() + gap + (len(credits)) * mainFonts.Credits.Height())
             middle := creditsRect.Min.X + creditsRect.Dx() / 2
-            for i, lineStruct := range credits {
+            for i, currentLine := range credits {
+                if len(currentLine.lineLeft) + len(currentLine.lineCenter) + len(currentLine.lineRight) == 0 {
+                    continue
+                }
                 y := creditsRect.Max.Y + i * mainFonts.Credits.Height() + gap - int(where)
 
                 options.ColorScale.Reset()
@@ -206,14 +210,14 @@ func (main *MainScreen) MakeUI() *uilib.UI {
                 alpha = max(alpha, 0)
                 options.ColorScale.ScaleAlpha(alpha)
 
-                if len(lineStruct.lineLeft) > 0 {
-                    mainFonts.Credits.PrintOptions(sub, float64(creditsRect.Min.X), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, lineStruct.lineLeft)
+                if len(currentLine.lineLeft) > 0 {
+                    mainFonts.Credits.PrintOptions(sub, float64(creditsRect.Min.X), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, currentLine.lineLeft)
                 }
-                if len(lineStruct.lineCenter) > 0 {
-                    mainFonts.Credits.PrintOptions(sub, float64(middle), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, lineStruct.lineCenter)
+                if len(currentLine.lineCenter) > 0 {
+                    mainFonts.Credits.PrintOptions(sub, float64(middle), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, currentLine.lineCenter)
                 }
-                if len(lineStruct.lineRight) > 0 {
-                    mainFonts.Credits.PrintOptions(sub, float64(creditsRect.Max.X), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyRight, Options: &options}, lineStruct.lineRight)
+                if len(currentLine.lineRight) > 0 {
+                    mainFonts.Credits.PrintOptions(sub, float64(creditsRect.Max.X), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyRight, Options: &options}, currentLine.lineRight)
                 }
             }
 
