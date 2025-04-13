@@ -3572,9 +3572,14 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
 }
 
 func (model *CombatModel) MakeGibs(defender *ArmyUnit, lost int) {
-    model.Events <- &CombatEventMakeGibs{
+    event := CombatEventMakeGibs{
         Unit: defender,
         Count: lost,
+    }
+
+    select {
+        case model.Events <- &event:
+        default:
     }
 }
 
@@ -3844,7 +3849,6 @@ func (model *CombatModel) KillUnit(unit *ArmyUnit){
     model.Tiles[unit.Y][unit.X].Unit = nil
 
     unit.Heal(unit.GetMaxHealth())
-    model.Events <- &CombatEventDyingUnit{Unit: unit}
 
     if unit == model.SelectedUnit {
         model.NextUnit()
