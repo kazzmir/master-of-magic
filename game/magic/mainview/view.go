@@ -116,7 +116,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
         lineRight, lineCenter, lineLeft string
     }
 
-    makeCreditsSection := func (title string, things... string) []creditsLine {
+    makeCreditsSection := func (title string, things ...string) []creditsLine {
         lines := make([]creditsLine, len(things))
         for i, thing := range things {
             if i == 0 {
@@ -143,7 +143,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
         return lines
     }
 
-    appendAll := func (lines... []creditsLine) []creditsLine {
+    appendAll := func (lines ...[]creditsLine) []creditsLine {
         result := make([]creditsLine, 0)
         for _, line := range lines {
             result = append(result, line...)
