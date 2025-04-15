@@ -3848,8 +3848,6 @@ func (model *CombatModel) KillUnit(unit *ArmyUnit){
 
     model.Tiles[unit.Y][unit.X].Unit = nil
 
-    unit.Heal(unit.GetMaxHealth())
-
     if unit == model.SelectedUnit {
         model.NextUnit()
     }

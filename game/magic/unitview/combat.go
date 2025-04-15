@@ -1,6 +1,7 @@
 package unitview
 
 import (
+    "log"
     "image"
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -82,6 +83,8 @@ func CombatPoints(count int) []image.Point {
                 image.Pt(1, 5),
             }
     }
+
+    log.Printf("combat points: invalid value %d", count)
 
     return nil
 }

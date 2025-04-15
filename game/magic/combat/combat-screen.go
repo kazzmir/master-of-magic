@@ -1717,33 +1717,37 @@ func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
 
     var moreGibs []*Gib
 
-    points := unitview.CombatPoints(unit.VisibleFigures() + lost)
-    for i := range lost {
-        point := points[unit.VisibleFigures() + i]
+    visible := unit.VisibleFigures()
 
-        for _, part := range gibParts {
-            moreGibs = append(moreGibs, &Gib{
-                X: float64(unit.X),
-                Y: float64(unit.Y),
-                /*
-                OffsetX: point.X + part.X,
-                OffsetY: point.Y + part.Y,
-                */
-                OffsetX: float64(point.X),
-                OffsetY: float64(point.Y - gibImage.Bounds().Dy() + 6 + part.Y),
-                Z: float64(part.Y + 1),
-                Life: 120,
-                // Z: part.Y,
-                Rotation: rand.Float64() * 2 * math.Pi,
-                RotationSpeed: (rand.Float64() - 0.5) / 3,
-                Angle: part.Angle,
-                Phi: rand.Float64() * 2 * math.Pi,
-                Dx: part.Dx,
-                Dy: part.Dy,
-                // Velocity: rand.Float64() * 2,
-                // Velocity: 0.01,
-                Image: part.Image,
-            })
+    points := unitview.CombatPoints(visible + lost)
+    for i := range lost {
+        if i + visible < len(points) {
+            point := points[visible + i]
+
+            for _, part := range gibParts {
+                moreGibs = append(moreGibs, &Gib{
+                    X: float64(unit.X),
+                    Y: float64(unit.Y),
+                    /*
+                    OffsetX: point.X + part.X,
+                    OffsetY: point.Y + part.Y,
+                    */
+                    OffsetX: float64(point.X),
+                    OffsetY: float64(point.Y - gibImage.Bounds().Dy() + 6 + part.Y),
+                    Z: float64(part.Y + 1),
+                    Life: 120,
+                    // Z: part.Y,
+                    Rotation: rand.Float64() * 2 * math.Pi,
+                    RotationSpeed: (rand.Float64() - 0.5) / 3,
+                    Angle: part.Angle,
+                    Phi: rand.Float64() * 2 * math.Pi,
+                    Dx: part.Dx,
+                    Dy: part.Dy,
+                    // Velocity: rand.Float64() * 2,
+                    // Velocity: 0.01,
+                    Image: part.Image,
+                })
+            }
         }
     }
 
@@ -2410,21 +2414,32 @@ func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, targe
 
     // FIXME: these coordinates should be incorporated into a geom
 
-    screenY += 3
-    screenY -= float64(useImage.Bounds().Dy()/2)
-    screenX += 14
-    screenX -= float64(useImage.Bounds().Dx()/2)
+    var screenGeom ebiten.GeoM
+    screenGeom.Translate(screenX, screenY)
+    screenGeom.Translate(14, 3)
+    screenGeom.Translate(-float64(useImage.Bounds().Dy()/2), -float64(useImage.Bounds().Dy()/2))
+    screenGeom.Translate(float64(offset.X), float64(offset.Y))
+    // screenGeom.Scale(combat.CameraScale, combat.CameraScale)
 
-    screenY += float64(offset.Y)
-    screenX += float64(offset.X)
+    screenX, screenY = screenGeom.Apply(0, 0)
 
-    targetY += 3
-    targetY -= float64(useImage.Bounds().Dy()/2)
-    targetX += 14
-    targetX -= float64(useImage.Bounds().Dx()/2)
+    /*
+    screenY += 3 * combat.CameraScale
+    screenY -= float64(useImage.Bounds().Dy()/2) * combat.CameraScale
+    screenX += 14 * combat.CameraScale
+    screenX -= float64(useImage.Bounds().Dx()/2) * combat.CameraScale
 
-    targetY += rand.Float64() * 6 - 3
-    targetX += rand.Float64() * 6 - 3
+    screenY += float64(offset.Y) * combat.CameraScale
+    screenX += float64(offset.X) * combat.CameraScale
+    */
+
+    targetY += 3 * combat.CameraScale
+    targetY -= float64(useImage.Bounds().Dy()/2) * combat.CameraScale
+    targetX += 14 * combat.CameraScale
+    targetX -= float64(useImage.Bounds().Dx()/2) * combat.CameraScale
+
+    targetY += (rand.Float64() * 6 - 3) * combat.CameraScale
+    targetX += (rand.Float64() * 6 - 3) * combat.CameraScale
 
     /*
     switch position {
@@ -3113,6 +3128,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
         combat.Counter += 1
         combat.UpdateAnimations()
         combat.UpdateGibs()
+        combat.ProcessEvents(yield)
 
         // delay the actual melee computation to give time for the sound to play
         if i == 20 {
@@ -4455,8 +4471,8 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
         }
         if frame != nil {
             var options ebiten.DrawImageOptions
-            options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
             options.GeoM.Translate(float64(-frame.Bounds().Dx()/2), float64(-frame.Bounds().Dy())/2)
+            options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
             options.GeoM.Translate(projectile.X, projectile.Y)
             scale.DrawScaled(screen, frame, &options)
         }
