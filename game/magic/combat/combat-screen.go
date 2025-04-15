@@ -216,13 +216,17 @@ type Gib struct {
     Y float64
     Z float64
 
-    OffsetX int
-    OffsetY int
+    OffsetX float64
+    OffsetY float64
 
     Life int
 
     // how the image rotates in air
     Rotation float64
+    RotationSpeed float64
+
+    Dx float64
+    Dy float64
 
     // angle in the x/y plane
     Angle float64
@@ -1678,21 +1682,35 @@ func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
         Angle float64
         X int
         Y int
+        Dx float64
+        Dy float64
     }
 
-    middleX := gibImage.Bounds().Dx() / 2
-    middleY := gibImage.Bounds().Dy() / 2
+    middleX := float64(gibImage.Bounds().Dx()) / 2
+    // middleY := gibImage.Bounds().Dy() / 2
+
+    bottomY := gibImage.Bounds().Dy() + 6
 
     var gibParts []gibOffset
     for x := 0; x < gibImage.Bounds().Dx(); x += gibSize {
         for y := 0; y < gibImage.Bounds().Dy(); y += gibSize {
             // FIXME: if the gib image is 90% transparent pixels then ignore it
             gibPart := gibImage.SubImage(image.Rect(x, y, x + gibSize, y + gibSize)).(*ebiten.Image)
+
+            angle := math.Atan2(float64(y - bottomY), float64(x + gibSize / 2) - middleX) + (rand.Float64() - 0.5) / 10
+
+            dx := float64(x) - middleX
+            dy := float64(y - bottomY)
+
+            velocity := math.Sqrt(dx * dx + dy * dy) / 14
+
             gibParts = append(gibParts, gibOffset{
                 Image: gibPart,
-                Angle: math.Atan2(float64(y - middleY), float64(x - middleX)) + (rand.Float64() - 0.5) / 5,
+                Angle: angle,
+                Dx: math.Cos(angle) * velocity,
+                Dy: -math.Sin(angle) * velocity,
                 X: x,
-                Y: -y,
+                Y: gibImage.Bounds().Dy() - y,
             })
         }
     }
@@ -1711,15 +1729,19 @@ func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
                 OffsetX: point.X + part.X,
                 OffsetY: point.Y + part.Y,
                 */
-                OffsetX: point.X,
-                OffsetY: point.Y - gibImage.Bounds().Dy() + 6 - part.Y,
+                OffsetX: float64(point.X),
+                OffsetY: float64(point.Y - gibImage.Bounds().Dy() + 6 + part.Y),
+                Z: float64(part.Y + 1),
                 Life: 120,
-                Z: rand.Float64() * 10, // FIXME: should be based on the gib part
+                // Z: part.Y,
                 Rotation: rand.Float64() * 2 * math.Pi,
+                RotationSpeed: (rand.Float64() - 0.5) / 3,
                 Angle: part.Angle,
                 Phi: rand.Float64() * 2 * math.Pi,
+                Dx: part.Dx,
+                Dy: part.Dy,
                 // Velocity: rand.Float64() * 2,
-                Velocity: 0.01,
+                // Velocity: 0.01,
                 Image: part.Image,
             })
         }
@@ -3270,13 +3292,20 @@ func (combat *CombatScreen) UpdateGibs() {
     for _, gib := range combat.Gibs {
         gib.Life -= 1
         if gib.Life > 0 {
-            gib.Rotation += 0.1
-            if gib.Rotation > 2*math.Pi {
-                gib.Rotation -= 2 * math.Pi
-            }
 
-            gib.X += math.Cos(gib.Angle) * gib.Velocity
-            gib.Y += math.Sin(gib.Angle) * gib.Velocity
+            if gib.Z > 0 {
+                gib.Rotation += gib.RotationSpeed
+                if gib.Rotation < 0 {
+                    gib.Rotation += 2 * math.Pi
+                }
+                if gib.Rotation > 2*math.Pi {
+                    gib.Rotation -= 2 * math.Pi
+                }
+
+                gib.OffsetX += gib.Dx
+                gib.Z += gib.Dy
+                gib.Dy -= 0.08
+            }
             // FIXME: Z should be adjust based on ZVelocity, then apply gravity to ZVelocity
             keepGibs = append(keepGibs, gib)
         }
@@ -4391,10 +4420,10 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
         }
 
         gibOptions.GeoM.Translate(float64(-gib.Image.Bounds().Dx()/2), float64(-gib.Image.Bounds().Dy()/2))
-        // gibOptions.GeoM.Rotate(gib.Rotation)
+        gibOptions.GeoM.Rotate(gib.Rotation)
 
         gibOptions.GeoM.Translate(0, float64(tile0.Bounds().Dy()/2))
-        gibOptions.GeoM.Translate(float64(gib.OffsetX), float64(gib.OffsetY))
+        gibOptions.GeoM.Translate(float64(gib.OffsetX), float64(gib.OffsetY - gib.Z))
 
         tx, ty := tilePosition(float64(gib.X), float64(gib.Y))
         gibOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
