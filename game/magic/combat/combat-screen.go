@@ -209,8 +209,8 @@ type Gib struct {
 
     // angle in the x/y plane
     Angle float64
-    // angle in the y/z plane
-    Phi float64
+    // angle in the y/z plane. not used yet, but could be used to show a 3d effect
+    // Phi float64
 
     Velocity float64
 
@@ -1652,15 +1652,18 @@ func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
     }
 
     gibImage := combatImages[2]
-    gibSize := 6
+    gibSize := 5
 
     type gibOffset struct {
         Image *ebiten.Image
         Angle float64
         X int
         Y int
+        /*
         Dx float64
         Dy float64
+        */
+        Velocity float64
     }
 
     middleX := float64(gibImage.Bounds().Dx()) / 2
@@ -1668,13 +1671,40 @@ func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
 
     bottomY := gibImage.Bounds().Dy() + 6
 
+    pixels := make ([]byte, gibSize * gibSize * 4)
+
+    // returns true if the image has enough pixels to be considered a gib part
+    isGibImage := func (part *ebiten.Image) bool {
+        usePixels := pixels[:part.Bounds().Dx() * part.Bounds().Dy() * 4]
+
+        part.ReadPixels(usePixels)
+        nonAlpha := 0
+        for pixelX := 0; pixelX < part.Bounds().Dx(); pixelX++ {
+            for pixelY := 0; pixelY < part.Bounds().Dy(); pixelY++ {
+                alpha := usePixels[(pixelY * part.Bounds().Dx() + pixelX) * 4 + 3]
+                // 200 to account for the fact that alpha values are not always 255, but they might be something like 254. 200 is big enough for a cutoff
+                if alpha > 200 {
+                    nonAlpha += 1
+                }
+            }
+        }
+
+        return nonAlpha > len(usePixels) / 4 * 5 / 10
+    }
+
     var gibParts []gibOffset
     for x := 0; x < gibImage.Bounds().Dx(); x += gibSize {
         for y := 0; y < gibImage.Bounds().Dy(); y += gibSize {
-            // FIXME: if the gib image is 90% transparent pixels then ignore it
             gibPart := gibImage.SubImage(image.Rect(x, y, x + gibSize, y + gibSize)).(*ebiten.Image)
 
-            angle := math.Atan2(float64(y - bottomY), float64(x + gibSize / 2) - middleX) + (rand.Float64() - 0.5) / 10
+            if !isGibImage(gibPart) {
+                continue
+            }
+
+            // angle := math.Atan2(float64(y - bottomY), float64(x) + float64(gibSize) / 2 - middleX) / 10
+            angle := -rand.Float64() * (math.Pi - 2 * math.Pi / 4) - math.Pi / 4
+
+            // log.Printf("Angle x=%v y=%v centerX=%v centerY=%v angle=%v", x + gibSize / 2, y, middleX, bottomY, angle)
 
             dx := float64(x) - middleX
             dy := float64(y - bottomY)
@@ -1684,8 +1714,7 @@ func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
             gibParts = append(gibParts, gibOffset{
                 Image: gibPart,
                 Angle: angle,
-                Dx: math.Cos(angle) * velocity,
-                Dy: -math.Sin(angle) * velocity,
+                Velocity: velocity,
                 X: x,
                 Y: gibImage.Bounds().Dy() - y,
             })
@@ -1702,6 +1731,10 @@ func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
             point := points[visible + i]
 
             for _, part := range gibParts {
+                velocity := part.Velocity * (rand.Float64() + 0.5)
+                // angle := part.Angle + (rand.Float64() - 0.5) / 4
+                angle := part.Angle
+
                 moreGibs = append(moreGibs, &Gib{
                     X: float64(unit.X),
                     Y: float64(unit.Y),
@@ -1713,10 +1746,10 @@ func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
                     // Z: part.Y,
                     Rotation: rand.Float64() * 2 * math.Pi,
                     RotationSpeed: (rand.Float64() - 0.5) / 3,
-                    Angle: part.Angle,
-                    Phi: rand.Float64() * 2 * math.Pi,
-                    Dx: part.Dx,
-                    Dy: part.Dy,
+                    Angle: angle,
+                    // Phi: rand.Float64() * 2 * math.Pi,
+                    Dx: math.Cos(angle) * velocity * 0.5,
+                    Dy: -math.Sin(angle) * velocity,
                     // Velocity: rand.Float64() * 2,
                     // Velocity: 0.01,
                     Image: part.Image,
@@ -3277,23 +3310,27 @@ func (combat *CombatScreen) UpdateGibs() {
     var keepGibs []*Gib
 
     for _, gib := range combat.Gibs {
-        gib.Life -= 1
-        if gib.Life > 0 {
-
-            if gib.Z > 0 {
-                gib.Rotation += gib.RotationSpeed
-                if gib.Rotation < 0 {
-                    gib.Rotation += 2 * math.Pi
-                }
-                if gib.Rotation > 2*math.Pi {
-                    gib.Rotation -= 2 * math.Pi
-                }
-
-                gib.OffsetX += gib.Dx
-                gib.Z += gib.Dy
-                gib.Dy -= 0.08
+        if gib.Z > 0 {
+            gib.Life = 20
+            gib.Rotation += gib.RotationSpeed
+            if gib.Rotation < 0 {
+                gib.Rotation += 2 * math.Pi
             }
-            // FIXME: Z should be adjust based on ZVelocity, then apply gravity to ZVelocity
+            if gib.Rotation > 2*math.Pi {
+                gib.Rotation -= 2 * math.Pi
+            }
+
+            gib.OffsetX += gib.Dx
+            gib.Z += gib.Dy
+            // gravity
+            gib.Dy -= 0.08
+        } else {
+            if gib.Life > 0 {
+                gib.Life -= 1
+            }
+        }
+
+        if gib.Life > 0 {
             keepGibs = append(keepGibs, gib)
         }
     }
