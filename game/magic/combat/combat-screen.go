@@ -124,10 +124,6 @@ type CombatCreateWallOfDarkness struct {
     Sound int
 }
 
-type CombatEventDyingUnit struct {
-    Unit *ArmyUnit
-}
-
 type CombatEventMakeGibs struct {
     Unit *ArmyUnit
     // number of figures to make gibs for
@@ -153,23 +149,6 @@ const (
 const (
     LightningBoltSound int = 19
 )
-
-type DyingUnit struct {
-    Unit *ArmyUnit
-    Creation uint64
-}
-
-// how long the unit has been around for
-func (dyingUnit *DyingUnit) Lifetime(now uint64) uint64 {
-    return now - dyingUnit.Creation
-}
-
-func MakeDyingUnit(unit *ArmyUnit, creation uint64) *DyingUnit {
-    return &DyingUnit{
-        Unit: unit,
-        Creation: creation,
-    }
-}
 
 /* compute the distance between two tiles by moving in one of the 8 directions
  */
@@ -262,8 +241,6 @@ type CombatScreen struct {
     AllSpells spellbook.Spells
     // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
     TopDownOrder []image.Point
-
-    DyingUnits []*DyingUnit
 
     Coordinates ebiten.GeoM
     // ScreenToTile ebiten.GeoM
@@ -2833,9 +2810,6 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         combat.doSelectUnit(yield, use.Selecter, use.Spell, use.SelectTarget, use.CanTarget, use.SelectTeam)
                     case *CombatEventNextUnit:
                         combat.Model.NextUnit()
-                    case *CombatEventDyingUnit:
-                        use := event.(*CombatEventDyingUnit)
-                        combat.DyingUnits = append(combat.DyingUnits, MakeDyingUnit(use.Unit, combat.Counter))
                     case *CombatEventMakeGibs:
                         use := event.(*CombatEventMakeGibs)
                         combat.MakeGibs(use.Unit, use.Count)
@@ -4444,14 +4418,6 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
         scale.DrawScaled(screen, gib.Image, &gibOptions)
     }
-
-    /*
-    for _, unit := range combat.DyingUnits {
-        var options ebiten.DrawImageOptions
-        options.ColorScale.SetR(1 + float32(unit.Lifetime(combat.Counter)) / 5)
-        renderUnit(unit.Unit, options)
-    }
-    */
 
     combat.UI.Draw(combat.UI, screen)
 
