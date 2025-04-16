@@ -4320,15 +4320,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                     unitOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xb5, G: 0x5e, B: 0xf3, A: 0xff})
                 }
 
-                if unit.LostUnits > 0 {
-                    savedScale := unitOptions.ColorScale
-                    savedScale.SetR(1.5)
-                    // unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, use, combat.Counter, &combat.ImageCache)
-                    unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), 0, use, combat.Counter, &combat.ImageCache)
-                    unitOptions.ColorScale = savedScale
-                } else {
-                    unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), 0, use, combat.Counter, &combat.ImageCache)
-                }
+                unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), use, combat.Counter, &combat.ImageCache)
 
                 if warpCreature {
                     unitOptions.ColorScale = savedColor

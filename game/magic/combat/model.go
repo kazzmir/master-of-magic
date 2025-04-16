@@ -549,9 +549,6 @@ type ArmyUnit struct {
     // health of the web spell cast on this unit
     WebHealth int
 
-    // how many figures were in this unit before the unit took damage
-    LostUnits int
-
     Model *CombatModel
 
     Team Team
@@ -1675,8 +1672,6 @@ func (unit *ArmyUnit) TakeDamage(damage int, damageType DamageType) int {
         case DamageIrreversable: unit.IrreversableDamage += damage
         case DamageUndead: unit.UndeadDamage += damage
     }
-
-    unit.LostUnits += visibleFigures - unit.VisibleFigures()
 
     return visibleFigures - unit.VisibleFigures()
 }
