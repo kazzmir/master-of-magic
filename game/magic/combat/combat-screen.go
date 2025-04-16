@@ -1728,12 +1728,9 @@ func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
                 moreGibs = append(moreGibs, &Gib{
                     X: float64(unit.X),
                     Y: float64(unit.Y),
-                    /*
-                    OffsetX: point.X + part.X,
-                    OffsetY: point.Y + part.Y,
-                    */
                     OffsetX: float64(point.X),
-                    OffsetY: float64(point.Y - gibImage.Bounds().Dy() + 6 + part.Y),
+                    // 6 is the ground height
+                    OffsetY: float64(point.Y - 6),
                     Z: float64(part.Y + 1),
                     Life: 120,
                     // Z: part.Y,
