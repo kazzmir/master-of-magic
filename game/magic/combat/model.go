@@ -3567,6 +3567,10 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
 }
 
 func (model *CombatModel) MakeGibs(defender *ArmyUnit, lost int) {
+    if lost <= 0 {
+        return
+    }
+
     event := CombatEventMakeGibs{
         Unit: defender,
         Count: lost,

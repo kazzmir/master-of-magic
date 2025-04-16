@@ -1642,6 +1642,10 @@ func (caster *UnitCaster) ComputeEffectiveSpellCost(spell spellbook.Spell, overl
 
 // create gib effects for a unit
 func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
+    if lost <= 0 {
+        return
+    }
+
     // create gibs at the location of figures from unit.VisibleFigures() to lost
 
     banner := unit.Unit.GetBanner()
