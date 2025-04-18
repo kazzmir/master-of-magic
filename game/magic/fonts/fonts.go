@@ -27,6 +27,8 @@ const SmallFont = "SmallFont"
 const NormalFont = "NormalFont"
 const SmallerFont = "SmallerFont"
 const BigFont = "BigFont"
+const TitleYellowFont = "TitleYellowFont"
+const DescriptionFont = "DescriptionFont"
 
 func init() {
     fontLoaders = make(map[string]FontLoader)
@@ -117,6 +119,46 @@ func init() {
             yellow,
         }
         return font.MakeOptimizedFontWithPalette(fonts[4], bigPalette)
+    }
+
+    fontLoaders[TitleYellowFont] = func (fonts []*font.LbxFont) *font.Font {
+        yellowPalette := color.Palette{
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xd9, G: 0xb9, B: 0x9e, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xcb, B: 0x66, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xc9, B: 0x26, A: 0xff},
+            color.RGBA{R: 0xeb, G: 0xa3, B: 0x28, A: 0xff},
+            color.RGBA{R: 0xdb, G: 0x92, B: 0x1d, A: 0xff},
+            color.RGBA{R: 0xa3, G: 0x7c, B: 0x55, A: 0xff},
+            color.RGBA{R: 0xd4, G: 0x8d, B: 0x17, A: 0xff},
+            color.RGBA{R: 0xa1, G: 0x66, B: 0x12, A: 0xff},
+            color.RGBA{R: 0x78, G: 0x54, B: 0x23, A: 0xff},
+            color.RGBA{R: 0x47, G: 0x37, B: 0x24, A: 0xff},
+            color.RGBA{R: 0x69, G: 0x5c, B: 0xc, A: 0xff},
+            color.RGBA{R: 0x47, G: 0x37, B: 0x24, A: 0xff},
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
+    }
+
+    fontLoaders[DescriptionFont] = func (fonts []*font.LbxFont) *font.Font {
+        brownPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0xe1, G: 0x8e, B: 0x32, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[1], brownPalette)
     }
 }
 
@@ -211,56 +253,11 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
         return nil, err
     }
 
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xd9, G: 0xb9, B: 0x9e, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xcb, B: 0x66, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xc9, B: 0x26, A: 0xff},
-        color.RGBA{R: 0xeb, G: 0xa3, B: 0x28, A: 0xff},
-        color.RGBA{R: 0xdb, G: 0x92, B: 0x1d, A: 0xff},
-        color.RGBA{R: 0xa3, G: 0x7c, B: 0x55, A: 0xff},
-        color.RGBA{R: 0xd4, G: 0x8d, B: 0x17, A: 0xff},
-        color.RGBA{R: 0xa1, G: 0x66, B: 0x12, A: 0xff},
-        color.RGBA{R: 0x78, G: 0x54, B: 0x23, A: 0xff},
-        color.RGBA{R: 0x47, G: 0x37, B: 0x24, A: 0xff},
-        color.RGBA{R: 0x69, G: 0x5c, B: 0xc, A: 0xff},
-        color.RGBA{R: 0x47, G: 0x37, B: 0x24, A: 0xff},
+    use, err := LoadFonts(cache, TitleYellowFont, DescriptionFont, VaultItemName)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil, err
     }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
-
-    // FIXME: this palette isn't exactly right. It should be a yellow-orange fade. Probably it exists somewhere else in the codebase
-    yellow := color.RGBA{R: 0xef, G: 0xce, B: 0x4e, A: 0xff}
-    fadePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.RotateHue(yellow, -0.6),
-        // color.RGBA{R: 0xd5, G: 0x88, B: 0x25, A: 0xff},
-        util.RotateHue(yellow, -0.3),
-        util.RotateHue(yellow, -0.1),
-        yellow,
-    }
-
-    castFont := font.MakeOptimizedFontWithPalette(fonts[4], fadePalette)
-
-    brownPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xe1, G: 0x8e, B: 0x32, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-    }
-
-    // fixme: make shadow font as well
-    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[1], brownPalette)
 
     whitePalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -288,7 +285,6 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
         color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
     }
 
-    // FIXME: this font should have a black outline around all the glyphs
     smallFont := font.MakeOptimizedFontWithPalette(fonts[1], smallFontPalette)
 
     rubbleFontPalette := color.Palette{
@@ -301,7 +297,6 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
         color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
     }
 
-    // FIXME: this font should have a black outline around all the glyphs
     rubbleFont := font.MakeOptimizedFontWithPalette(fonts[1], rubbleFontPalette)
 
     makeBannerPalette := func(banner data.BannerType) color.Palette {
@@ -331,13 +326,13 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
     }
 
     return &CityViewFonts{
-        BigFont: bigFont,
-        DescriptionFont: descriptionFont,
+        BigFont: use[TitleYellowFont],
+        DescriptionFont: use[DescriptionFont],
         ProducingFont: producingFont,
         SmallFont: smallFont,
         RubbleFont: rubbleFont,
         BannerFonts: bannerFonts,
-        CastFont: castFont,
+        CastFont: use[VaultItemName],
     }, nil
 }
 
