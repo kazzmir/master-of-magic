@@ -30,6 +30,7 @@ const BigFont = "BigFont"
 const TitleYellowFont = "TitleYellowFont"
 const DescriptionFont = "DescriptionFont"
 
+// use util/font-list to see how these fonts are rendered
 func init() {
     fontLoaders = make(map[string]FontLoader)
 
@@ -253,27 +254,11 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
         return nil, err
     }
 
-    use, err := LoadFonts(cache, TitleYellowFont, DescriptionFont, VaultItemName)
+    use, err := LoadFonts(cache, TitleYellowFont, DescriptionFont, VaultItemName, ResourceFont)
     if err != nil {
         log.Printf("Unable to load fonts: %v", err)
         return nil, err
     }
-
-    whitePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    producingFont := font.MakeOptimizedFontWithPalette(fonts[1], whitePalette)
 
     smallFontPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
@@ -328,7 +313,7 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
     return &CityViewFonts{
         BigFont: use[TitleYellowFont],
         DescriptionFont: use[DescriptionFont],
-        ProducingFont: producingFont,
+        ProducingFont: use[ResourceFont],
         SmallFont: smallFont,
         RubbleFont: rubbleFont,
         BannerFonts: bannerFonts,
