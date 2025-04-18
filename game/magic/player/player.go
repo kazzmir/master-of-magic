@@ -830,9 +830,12 @@ func (player *Player) InitializeResearchableSpells(spells *spellbook.Spells) {
 
             remainingSpells := countFunc(book.Count) - len(alreadyKnown.Spells) - len(alreadyResearchable.Spells)
 
+            // fmt.Printf("Rarity %v, books %v, count %v, already known %v, already researchable %v, remaining %v\n", rarity, book.Count, countFunc(book.Count), len(alreadyKnown.Spells), len(alreadyResearchable.Spells), remainingSpells)
             // if the player can research 6 spells but already has 3 selected, then they can research 3 more
             for i := range remainingSpells {
-                player.ResearchPoolSpells.AddSpell(raritySpells.Spells[i])
+                if i < len(raritySpells.Spells) {
+                    player.ResearchPoolSpells.AddSpell(raritySpells.Spells[i])
+                }
             }
         }
     }
