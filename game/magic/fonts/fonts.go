@@ -33,7 +33,16 @@ func GetFont(cache *lbx.LbxCache, name string) (*font.Font, error) {
 
     return fonts[0], nil
     */
+
     fonts := MakeVaultFonts(cache)
+
+    switch name {
+        case "BigFont1": return fonts.ItemName, nil
+        case "BigFont2": return fonts.PowerFont, nil
+        case "BigFont3": return fonts.ResourceFont, nil
+        case "BigFont4": return fonts.SmallFont, nil
+    }
+
     return fonts.ItemName, nil
 }
 

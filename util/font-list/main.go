@@ -7,6 +7,7 @@ import (
     "cmp"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/functional"
     fontlib "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/util/common"
     "github.com/kazzmir/master-of-magic/game/magic/fonts"
@@ -118,7 +119,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     rootContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
             widget.RowLayoutOpts.Spacing(12),
             widget.RowLayoutOpts.Padding(widget.Insets{Top: 10, Left: 10, Right: 10}),
         )),
@@ -134,20 +135,28 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.RowLayoutOpts.Spacing(4),
             widget.RowLayoutOpts.Padding(padding(5)),
         )),
-        widget.ContainerOpts.BackgroundImage(makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5)),
+        widget.ContainerOpts.BackgroundImage(makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 32, G: 32, B: 32, A: 255}), 5)),
     )
+
+    makeFont := functional.Memoize(func (name string) *fontlib.Font {
+        font, err := fonts.GetFont(engine.Cache, name)
+        if err != nil {
+            log.Printf("Error loading font: %v", err)
+            return nil
+        }
+
+        return font
+    })
 
     updateTextFont := func (name string) {
         textArea.RemoveChildren()
 
         graphic := widget.NewGraphic()
 
-        surface := ebiten.NewImage(200, 200)
-        font, err := fonts.GetFont(engine.Cache, name)
-        if err != nil {
-            log.Printf("Error loading font: %v", err)
-        } else {
-            font.PrintOptions(surface, 1, 1, fontlib.FontOptions{}, "This is sample text. I am proud of it")
+        surface := ebiten.NewImage(600, 200)
+        font := makeFont(name)
+        if font != nil {
+            font.PrintWrap(surface, 1, 1, float64(surface.Bounds().Dx() - 2), fontlib.FontOptions{Scale: 2}, "This is sample text. I am proud of it")
             graphic.Image = surface
         }
 
