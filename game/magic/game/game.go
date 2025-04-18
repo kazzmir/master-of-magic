@@ -420,6 +420,7 @@ func (game *Game) InitializeResearchableSpells(spells *spellbook.Spells, player 
             return 3
         }
 
+        // when books=2, return 5
         return int(math.Min(10, float64(3 + books)))
     }
 
@@ -478,12 +479,16 @@ func (game *Game) InitializeResearchableSpells(spells *spellbook.Spells, player 
             raritySpells := realmSpells.GetSpellsByRarity(rarity)
 
             alreadyKnown := player.KnownSpells.GetSpellsByMagic(book.Magic).GetSpellsByRarity(rarity)
+            alreadyResearchable := player.ResearchPoolSpells.GetSpellsByMagic(book.Magic).GetSpellsByRarity(rarity)
 
             raritySpells.RemoveSpells(alreadyKnown)
+            raritySpells.RemoveSpells(alreadyResearchable)
             raritySpells.ShuffleSpells()
 
+            remainingSpells := countFunc(book.Count) - len(alreadyKnown.Spells) - len(alreadyResearchable.Spells)
+
             // if the player can research 6 spells but already has 3 selected, then they can research 3 more
-            for i := 0; i < countFunc(book.Count) - len(alreadyKnown.Spells); i++ {
+            for i := range remainingSpells {
                 player.ResearchPoolSpells.AddSpell(raritySpells.Spells[i])
             }
         }
@@ -512,6 +517,8 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
     }
 
     newPlayer.ResearchPoolSpells = wizard.StartingSpells.Copy()
+
+    // not sure its necessary to add the starting spells to the research pool
     for _, spell := range startingSpells {
         newPlayer.ResearchPoolSpells.AddSpell(allSpells.FindByName(spell))
     }
