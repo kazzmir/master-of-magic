@@ -139,13 +139,13 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     )
 
     makeFont := functional.Memoize(func (name string) *fontlib.Font {
-        font, err := fonts.GetFont(engine.Cache, name)
+        loadedFonts, err := fonts.LoadFonts(engine.Cache, name)
         if err != nil {
             log.Printf("Error loading font: %v", err)
             return nil
         }
 
-        return font
+        return loadedFonts[name]
     })
 
     updateTextFont := func (name string) {
@@ -153,10 +153,11 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         graphic := widget.NewGraphic()
 
-        surface := ebiten.NewImage(600, 200)
+        surface := ebiten.NewImage(700, 200)
         font := makeFont(name)
         if font != nil {
-            font.PrintWrap(surface, 1, 1, float64(surface.Bounds().Dx() - 2), fontlib.FontOptions{Scale: 2}, "This is sample text. I am proud of it")
+            scale := 3.0
+            font.PrintWrap(surface, 1, 1, float64(surface.Bounds().Dx() - 2) / scale, fontlib.FontOptions{Scale: scale}, "This is sample text. I am proud of it")
             graphic.Image = surface
         }
 

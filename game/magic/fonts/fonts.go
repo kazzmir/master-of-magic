@@ -3,6 +3,9 @@ package fonts
 import (
     "log"
     "image/color"
+    "slices"
+    "cmp"
+    "maps"
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -10,13 +13,95 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
 )
 
-func GetFontList() []string {
-    return []string{
-        "BigFont1",
-        "BigFont2",
-        "BigFont3",
-        "BigFont4",
+type FontLoader func(fonts []*font.LbxFont) *font.Font
+
+var fontLoaders map[string]FontLoader
+
+const VaultItemName = "VaultItemName"
+const PowerFont = "PowerFont"
+const ResourceFont = "ResourceFont"
+const SmallFont = "SmallFont"
+
+func init() {
+    fontLoaders = make(map[string]FontLoader)
+
+    fontLoaders[VaultItemName] = func (fonts []*font.LbxFont) *font.Font {
+        orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+        namePalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            util.Lighten(orange, 0),
+            util.Lighten(orange, 20),
+            util.Lighten(orange, 50),
+            util.Lighten(orange, 80),
+            orange,
+            orange,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[4], namePalette)
     }
+
+    fontLoaders[PowerFont] = func (fonts []*font.LbxFont) *font.Font {
+        orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+        // red1 := color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
+        powerPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            util.Lighten(orange, 40),
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[2], powerPalette)
+    }
+
+    fontLoaders[ResourceFont] = func (fonts []*font.LbxFont) *font.Font {
+        white := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+        whitePalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            white, white, white, white,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[1], whitePalette)
+    }
+
+    fontLoaders[SmallFont] = func (fonts []*font.LbxFont) *font.Font {
+        translucentWhite := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 80})
+        transmutePalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            translucentWhite, translucentWhite, translucentWhite,
+            translucentWhite, translucentWhite, translucentWhite,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[0], transmutePalette)
+    }
+}
+
+func GetFontList() []string {
+    return slices.SortedFunc(maps.Keys(fontLoaders), cmp.Compare)
+}
+
+func LoadFonts(cache *lbx.LbxCache, names ...string) (map[string]*font.Font, error) {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil, err
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil, err
+    }
+
+    out := make(map[string]*font.Font)
+
+    for _, name := range names {
+        loader, ok := fontLoaders[name]
+        if ok {
+            out[name] = loader(fonts)
+        }
+    }
+
+    return out, nil
 }
 
 func GetFont(cache *lbx.LbxCache, name string) (*font.Font, error) {
