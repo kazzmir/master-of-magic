@@ -1,5 +1,7 @@
 package fonts
 
+// a place to centralize font creation
+
 import (
     "log"
     "image/color"
@@ -104,35 +106,6 @@ func LoadFonts(cache *lbx.LbxCache, names ...string) (map[string]*font.Font, err
     return out, nil
 }
 
-func GetFont(cache *lbx.LbxCache, name string) (*font.Font, error) {
-    /*
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil, err
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil, err
-    }
-
-    return fonts[0], nil
-    */
-
-    fonts := MakeVaultFonts(cache)
-
-    switch name {
-        case "BigFont1": return fonts.ItemName, nil
-        case "BigFont2": return fonts.PowerFont, nil
-        case "BigFont3": return fonts.ResourceFont, nil
-        case "BigFont4": return fonts.SmallFont, nil
-    }
-
-    return fonts.ItemName, nil
-}
-
-// a place to centralize font creation
-
 type VaultFonts struct {
     ItemName *font.Font
     PowerFont *font.Font
@@ -140,6 +113,22 @@ type VaultFonts struct {
     SmallFont *font.Font
 }
 
+func MakeVaultFonts(cache *lbx.LbxCache) *VaultFonts {
+    use, err := LoadFonts(cache, VaultItemName, PowerFont, ResourceFont, SmallFont)
+    if err != nil {
+        log.Printf("Error loading vault fonts: %v", err)
+        return nil
+    }
+
+    return &VaultFonts{
+        ItemName: use[VaultItemName],
+        PowerFont: use[PowerFont],
+        ResourceFont: use[ResourceFont],
+        SmallFont: use[SmallFont],
+    }
+}
+
+/*
 func MakeVaultFonts(cache *lbx.LbxCache) *VaultFonts {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -201,6 +190,7 @@ func MakeVaultFonts(cache *lbx.LbxCache) *VaultFonts {
         SmallFont: transmuteFont,
     }
 }
+*/
 
 type ArmyViewFonts struct {
     NormalFont *font.Font

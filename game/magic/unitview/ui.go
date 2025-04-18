@@ -204,6 +204,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
+        Order: 0,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             box, _ := imageCache.GetImage("unitview.lbx", 2, 0)
             var options ebiten.DrawImageOptions
@@ -219,6 +220,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
     cancelIndex := 0
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
+        Order: 1,
         Rect: cancelRect,
         LeftClick: func(this *uilib.UIElement){
             cancelIndex = 1
@@ -255,6 +257,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
     okIndex := 0
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
+        Order: 1,
         Rect: okRect,
         LeftClick: func(this *uilib.UIElement){
             okIndex = 1
