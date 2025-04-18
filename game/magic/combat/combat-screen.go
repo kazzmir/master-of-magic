@@ -246,6 +246,8 @@ type CombatScreen struct {
     // ScreenToTile ebiten.GeoM
     MouseState MouseState
 
+    // creating gibs and be optional
+    EnableGibs bool
     Gibs []*Gib
 
     CameraScale float64
@@ -407,6 +409,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         WhitePixel: whitePixel,
         AttackingWizardFont: attackingWizardFont,
         DefendingWizardFont: defendingWizardFont,
+        EnableGibs: true, // enable gibs by default
 
         Model: MakeCombatModel(allSpells, defendingArmy, attackingArmy, landscape, plane, zone, influence, overworldX, overworldY, events),
     }
@@ -1642,6 +1645,10 @@ func (caster *UnitCaster) ComputeEffectiveSpellCost(spell spellbook.Spell, overl
 
 // create gib effects for a unit
 func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
+    if !combat.EnableGibs {
+        return
+    }
+
     if lost <= 0 {
         return
     }
