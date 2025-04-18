@@ -7955,7 +7955,8 @@ func (game *Game) doChaosRift() {
 
 func (game *Game) doMeteorStorm() {
     immolate := func (unit units.StackUnit) int {
-        return combat.ApplyAreaDamage(&UnitDamageWrapper{Unit: unit}, 4, units.DamageImmolation, 0)
+        damage, _ := combat.ApplyAreaDamage(&UnitDamageWrapper{Unit: unit}, 4, units.DamageImmolation, 0)
+        return damage
     }
 
     if !game.HasEnchantment(data.EnchantmentMeteorStorm) {
