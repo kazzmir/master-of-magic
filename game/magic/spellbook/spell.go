@@ -6,6 +6,8 @@ import (
     "image/color"
     "math"
     "log"
+    "slices"
+    "cmp"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -439,6 +441,14 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     if !pickResearchSpell {
         halfPages = computeHalfPages(allSpells, 4)
     }
+
+    // sort research spells by turns to research
+    slices.SortFunc(researchSpells.Spells, func(a, b Spell) int {
+        turnsA := a.ResearchCost / caster.ComputeEffectiveResearchPerTurn(researchPoints, a)
+        turnsB := b.ResearchCost / caster.ComputeEffectiveResearchPerTurn(researchPoints, b)
+
+        return cmp.Compare(turnsA, turnsB)
+    })
 
     researchPage1 := Page{
         Title: "Research",

@@ -2,6 +2,7 @@ package player
 
 import (
     "testing"
+    "fmt"
 
     "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -77,5 +78,58 @@ func TestResearchPoints(test *testing.T) {
 
     if computeEffectiveResearchPerTurn(&wizard, points, natureSpell) != int(points * (1 + 0.1 + 0.25)) {
         test.Errorf("Research points computation doesn't work")
+    }
+}
+
+func TestResearchPool(test *testing.T) {
+    wizard := setup.WizardCustom{
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.NatureMagic,
+                Count: 5,
+            },
+        },
+    }
+    player := MakePlayer(wizard, true, 1, 1, make(map[hero.HeroType]string), &NoGlobalEnchantments{})
+
+    if len(player.ResearchPoolSpells.Spells) != 0 {
+        test.Errorf("Research pool should be empty")
+    }
+
+    var fakeSpells spellbook.Spells
+
+    for i := range 10 {
+        fakeSpells.AddSpell(spellbook.Spell{
+            Name: fmt.Sprintf("nature common spell %d", i),
+            Magic: data.NatureMagic,
+            Rarity: spellbook.SpellRarityCommon,
+        })
+    }
+
+    player.InitializeResearchableSpells(&fakeSpells)
+
+    if len(player.ResearchPoolSpells.Spells) != 8 {
+        test.Errorf("Research pool should have 8 spells")
+    }
+
+    // one more nature spell should be learnable
+    wizard.Books[0].Count += 1
+
+    player.InitializeResearchableSpells(&fakeSpells)
+
+    if len(player.ResearchPoolSpells.Spells) != 9 {
+        test.Errorf("Research pool should have 9 spells")
+    }
+
+    wizard.Books[0].Count = 11
+
+    player.ResearchPoolSpells = spellbook.Spells{}
+    for i := range 9 {
+        player.KnownSpells.AddSpell(fakeSpells.Spells[i])
+    }
+
+    player.InitializeResearchableSpells(&fakeSpells)
+    if len(player.ResearchPoolSpells.Spells) != 1 {
+        test.Errorf("Research pool should have one spell in it, but had %d", len(player.ResearchPoolSpells.Spells))
     }
 }
