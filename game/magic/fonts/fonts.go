@@ -19,6 +19,24 @@ func GetFontList() []string {
     }
 }
 
+func GetFont(cache *lbx.LbxCache, name string) (*font.Font, error) {
+    /*
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return nil, err
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return nil, err
+    }
+
+    return fonts[0], nil
+    */
+    fonts := MakeVaultFonts(cache)
+    return fonts.ItemName, nil
+}
+
 // a place to centralize font creation
 
 type VaultFonts struct {
