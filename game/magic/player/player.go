@@ -739,7 +739,7 @@ func (player *Player) UpdateResearchCandidates() {
         return spellbook.Spell{}
     }
 
-    for i := 0; i < moreSpells; i++ {
+    for range moreSpells {
         if len(allSpells.Spells) > 0 {
             spell := chooseSpell(&allSpells)
             if spell.Valid() {
@@ -824,11 +824,14 @@ func (player *Player) InitializeResearchableSpells(spells *spellbook.Spells) {
             alreadyKnown := player.KnownSpells.GetSpellsByMagic(book.Magic).GetSpellsByRarity(rarity)
             alreadyResearchable := player.ResearchPoolSpells.GetSpellsByMagic(book.Magic).GetSpellsByRarity(rarity)
 
-            raritySpells.RemoveSpells(alreadyKnown)
-            raritySpells.RemoveSpells(alreadyResearchable)
+            var notUsed spellbook.Spells
+            notUsed.AddAllSpells(alreadyKnown)
+            notUsed.AddAllSpells(alreadyResearchable)
+
+            raritySpells.RemoveSpells(notUsed)
             raritySpells.ShuffleSpells()
 
-            remainingSpells := countFunc(book.Count) - len(alreadyKnown.Spells) - len(alreadyResearchable.Spells)
+            remainingSpells := countFunc(book.Count) - len(notUsed.Spells)
 
             // fmt.Printf("Rarity %v, books %v, count %v, already known %v, already researchable %v, remaining %v\n", rarity, book.Count, countFunc(book.Count), len(alreadyKnown.Spells), len(alreadyResearchable.Spells), remainingSpells)
             // if the player can research 6 spells but already has 3 selected, then they can research 3 more

@@ -120,4 +120,16 @@ func TestResearchPool(test *testing.T) {
     if len(player.ResearchPoolSpells.Spells) != 9 {
         test.Errorf("Research pool should have 9 spells")
     }
+
+    wizard.Books[0].Count = 11
+
+    player.ResearchPoolSpells = spellbook.Spells{}
+    for i := range 9 {
+        player.KnownSpells.AddSpell(fakeSpells.Spells[i])
+    }
+
+    player.InitializeResearchableSpells(&fakeSpells)
+    if len(player.ResearchPoolSpells.Spells) != 1 {
+        test.Errorf("Research pool should have one spell in it, but had %d", len(player.ResearchPoolSpells.Spells))
+    }
 }
