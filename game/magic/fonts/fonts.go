@@ -29,6 +29,7 @@ const SmallerFont = "SmallerFont"
 const BigFont = "BigFont"
 const TitleYellowFont = "TitleYellowFont"
 const DescriptionFont = "DescriptionFont"
+const SmallWhite = "SmallWhite"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -161,13 +162,28 @@ func init() {
 
         return font.MakeOptimizedFontWithPalette(fonts[1], brownPalette)
     }
+
+    fontLoaders[SmallWhite] = func (fonts []*font.LbxFont) *font.Font {
+        smallFontPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
+            color.RGBA{R: 128, G: 128, B: 128, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[1], smallFontPalette)
+    }
+
 }
 
 func GetFontList() []string {
     return slices.SortedFunc(maps.Keys(fontLoaders), cmp.Compare)
 }
 
-func LoadFonts(cache *lbx.LbxCache, names ...string) (map[string]*font.Font, error) {
+func Loader(cache *lbx.LbxCache) (func (string) *font.Font, error) {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         return nil, err
@@ -178,13 +194,26 @@ func LoadFonts(cache *lbx.LbxCache, names ...string) (map[string]*font.Font, err
         return nil, err
     }
 
+    return func (name string) *font.Font {
+        loader, ok := fontLoaders[name]
+        if ok {
+            return loader(fonts)
+        }
+
+        return nil
+    }, nil
+}
+
+func LoadFonts(cache *lbx.LbxCache, names ...string) (map[string]*font.Font, error) {
+    loader, err := Loader(cache)
+    if err != nil {
+        return nil, err
+    }
+
     out := make(map[string]*font.Font)
 
     for _, name := range names {
-        loader, ok := fontLoaders[name]
-        if ok {
-            out[name] = loader(fonts)
-        }
+        out[name] = loader(name)
     }
 
     return out, nil
@@ -198,17 +227,17 @@ type VaultFonts struct {
 }
 
 func MakeVaultFonts(cache *lbx.LbxCache) *VaultFonts {
-    use, err := LoadFonts(cache, VaultItemName, PowerFont, ResourceFont, SmallFont)
+    use, err := Loader(cache)
     if err != nil {
         log.Printf("Error loading vault fonts: %v", err)
         return nil
     }
 
     return &VaultFonts{
-        ItemName: use[VaultItemName],
-        PowerFont: use[PowerFont],
-        ResourceFont: use[ResourceFont],
-        SmallFont: use[SmallFont],
+        ItemName: use(VaultItemName),
+        PowerFont: use(PowerFont),
+        ResourceFont: use(ResourceFont),
+        SmallFont: use(SmallFont),
     }
 }
 
@@ -219,16 +248,16 @@ type ArmyViewFonts struct {
 }
 
 func MakeArmyViewFonts(cache *lbx.LbxCache) *ArmyViewFonts {
-    use, err := LoadFonts(cache, NormalFont, SmallerFont, BigFont)
+    use, err := Loader(cache)
     if err != nil {
         log.Printf("Error loading army view fonts: %v", err)
         return nil
     }
 
     return &ArmyViewFonts{
-        NormalFont: use[NormalFont],
-        SmallerFont: use[SmallerFont],
-        BigFont: use[BigFont],
+        NormalFont: use(NormalFont),
+        SmallerFont: use(SmallerFont),
+        BigFont: use(BigFont),
     }
 }
 
@@ -254,23 +283,11 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
         return nil, err
     }
 
-    use, err := LoadFonts(cache, TitleYellowFont, DescriptionFont, VaultItemName, ResourceFont)
+    loader, err := Loader(cache)
     if err != nil {
         log.Printf("Unable to load fonts: %v", err)
         return nil, err
     }
-
-    smallFontPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
-        color.RGBA{R: 128, G: 128, B: 128, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], smallFontPalette)
 
     rubbleFontPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
@@ -311,13 +328,13 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
     }
 
     return &CityViewFonts{
-        BigFont: use[TitleYellowFont],
-        DescriptionFont: use[DescriptionFont],
-        ProducingFont: use[ResourceFont],
-        SmallFont: smallFont,
+        BigFont: loader(TitleYellowFont),
+        DescriptionFont: loader(DescriptionFont),
+        ProducingFont: loader(ResourceFont),
+        SmallFont: loader(SmallWhite),
         RubbleFont: rubbleFont,
         BannerFonts: bannerFonts,
-        CastFont: use[VaultItemName],
+        CastFont: loader(VaultItemName),
     }, nil
 }
 

@@ -138,15 +138,13 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         widget.ContainerOpts.BackgroundImage(makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 32, G: 32, B: 32, A: 255}), 5)),
     )
 
-    makeFont := functional.Memoize(func (name string) *fontlib.Font {
-        loadedFonts, err := fonts.LoadFonts(engine.Cache, name)
-        if err != nil {
-            log.Printf("Error loading font: %v", err)
-            return nil
-        }
+    fontLoader, err := fonts.Loader(engine.Cache)
+    if err != nil {
+        log.Printf("Error loading fonts: %v", err)
+        return nil
+    }
 
-        return loadedFonts[name]
-    })
+    makeFont := functional.Memoize(fontLoader)
 
     updateTextFont := func (name string) {
         textArea.RemoveChildren()
