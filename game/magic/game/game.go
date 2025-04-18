@@ -4527,8 +4527,10 @@ func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Pla
                 player.LearnSpell(spell.Spell)
             case *TreasureSpellbook:
                 spellbook := item.(*TreasureSpellbook)
-                // FIXME: somehow recompute the research spell pool for the player
                 player.Wizard.AddMagicLevel(spellbook.Magic, spellbook.Count)
+                allSpells := game.AllSpells()
+                // add more researchable spells based on the new magic level
+                player.InitializeResearchableSpells(&allSpells)
             case *TreasureRetort:
                 retort := item.(*TreasureRetort)
                 player.Wizard.EnableRetort(retort.Retort)

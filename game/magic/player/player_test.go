@@ -113,7 +113,7 @@ func TestResearchPool(test *testing.T) {
     }
 
     // one more nature spell should be learnable
-    wizard.Books[0].Count = 6
+    wizard.Books[0].Count += 1
 
     player.InitializeResearchableSpells(&fakeSpells)
 
