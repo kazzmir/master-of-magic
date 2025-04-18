@@ -10,6 +10,15 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
 )
 
+func GetFontList() []string {
+    return []string{
+        "BigFont1",
+        "BigFont2",
+        "BigFont3",
+        "BigFont4",
+    }
+}
+
 // a place to centralize font creation
 
 type VaultFonts struct {
