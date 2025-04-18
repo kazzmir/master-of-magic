@@ -30,6 +30,7 @@ const BigFont = "BigFont"
 const TitleYellowFont = "TitleYellowFont"
 const DescriptionFont = "DescriptionFont"
 const SmallWhite = "SmallWhite"
+const SmallRed = "SmallRed"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -177,12 +178,28 @@ func init() {
         return font.MakeOptimizedFontWithPalette(fonts[1], smallFontPalette)
     }
 
+    fontLoaders[SmallRed] = func (fonts []*font.LbxFont) *font.Font {
+        rubbleFontPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
+            color.RGBA{R: 128, G: 0, B: 0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[1], rubbleFontPalette)
+    }
 }
 
 func GetFontList() []string {
     return slices.SortedFunc(maps.Keys(fontLoaders), cmp.Compare)
 }
 
+// return a function that returns a font given by its name
+//   loader, err := Loader(cache)
+//   font := loader(PowerFont)
 func Loader(cache *lbx.LbxCache) (func (string) *font.Font, error) {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
@@ -204,6 +221,7 @@ func Loader(cache *lbx.LbxCache) (func (string) *font.Font, error) {
     }, nil
 }
 
+// load a bunch of fonts at once in a map, not really much of an optimization over just using Loader()
 func LoadFonts(cache *lbx.LbxCache, names ...string) (map[string]*font.Font, error) {
     loader, err := Loader(cache)
     if err != nil {
@@ -289,18 +307,6 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
         return nil, err
     }
 
-    rubbleFontPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
-        color.RGBA{R: 128, G: 0, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
-    }
-
-    rubbleFont := font.MakeOptimizedFontWithPalette(fonts[1], rubbleFontPalette)
-
     makeBannerPalette := func(banner data.BannerType) color.Palette {
         var bannerColor color.RGBA
 
@@ -332,7 +338,7 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
         DescriptionFont: loader(DescriptionFont),
         ProducingFont: loader(ResourceFont),
         SmallFont: loader(SmallWhite),
-        RubbleFont: rubbleFont,
+        RubbleFont: loader(SmallRed),
         BannerFonts: bannerFonts,
         CastFont: loader(VaultItemName),
     }, nil
