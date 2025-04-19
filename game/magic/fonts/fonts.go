@@ -19,7 +19,7 @@ type FontLoader func(fonts []*font.LbxFont) *font.Font
 
 var fontLoaders map[string]FontLoader
 
-const VaultItemName = "VaultItemName"
+const LightGradient1 = "LightGradient1"
 const PowerFont = "PowerFont"
 const ResourceFont = "ResourceFont"
 const SmallFont = "SmallFont"
@@ -56,7 +56,7 @@ const SettingsFont = "SettingsFont"
 func init() {
     fontLoaders = make(map[string]FontLoader)
 
-    fontLoaders[VaultItemName] = func (fonts []*font.LbxFont) *font.Font {
+    fontLoaders[LightGradient1] = func (fonts []*font.LbxFont) *font.Font {
         orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
         namePalette := color.Palette{
             color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -532,7 +532,7 @@ func MakeVaultFonts(cache *lbx.LbxCache) *VaultFonts {
     }
 
     return &VaultFonts{
-        ItemName: use(VaultItemName),
+        ItemName: use(LightGradient1),
         PowerFont: use(PowerFont),
         ResourceFont: use(ResourceFont),
         SmallFont: use(SmallFont),
@@ -620,7 +620,7 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
         SmallFont: loader(SmallWhite),
         RubbleFont: loader(SmallRed),
         BannerFonts: bannerFonts,
-        CastFont: loader(VaultItemName),
+        CastFont: loader(LightGradient1),
     }, nil
 }
 
@@ -902,35 +902,14 @@ type TreasureFonts struct {
 }
 
 func MakeTreasureFonts(cache *lbx.LbxCache) *TreasureFonts {
-    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    loader, err := Loader(cache)
     if err != nil {
-        log.Printf("Error: %v", err)
+        log.Printf("Error loading fonts: %v", err)
         return nil
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return nil
-    }
-
-    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
-
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        orange,
-        util.Lighten(orange, 15),
-        util.Lighten(orange, 30),
-        util.Lighten(orange, 50),
-        orange,
-        orange,
-    }
-
-    treasureFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
 
     return &TreasureFonts{
-        TreasureFont: treasureFont,
+        TreasureFont: loader(LightGradient1),
     }
 }
 
