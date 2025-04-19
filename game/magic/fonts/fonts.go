@@ -1211,19 +1211,3 @@ func MakeSpellOfMasteryFonts(cache *lbx.LbxCache) *SpellOfMasteryFonts {
         RedFont: loader(HugeRed),
     }
 }
-
-type MainFonts struct {
-    Credits *font.Font
-}
-
-func MakeMainFonts(cache *lbx.LbxCache) *MainFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading fonts: %v", err)
-        return nil
-    }
-
-    return &MainFonts{
-        Credits: loader(NormalYellow),
-    }
-}
