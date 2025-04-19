@@ -944,16 +944,6 @@ func MakeGameFonts(cache *lbx.LbxCache) *GameFonts {
         return nil
     }
 
-    /*
-    whitePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0x90, G: 0x86, B: 0x81, A: 0xff},
-        color.White, color.White, color.White, color.White,
-    }
-
-    whiteFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
-    */
-
     return &GameFonts{
         InfoFontYellow: loader(SmallYellow),
         InfoFontRed: loader(SmallRed),
@@ -966,10 +956,14 @@ type SpellbookFonts struct {
 }
 
 func MakeSpellbookFonts(cache *lbx.LbxCache) *SpellbookFonts {
-    treasureFonts := MakeTreasureFonts(cache)
+    loader, err := Loader(cache)
+    if err != nil {
+        log.Printf("Error loading fonts: %v", err)
+        return nil
+    }
 
     return &SpellbookFonts{
-        BigOrange: treasureFonts.TreasureFont,
+        BigOrange: loader(LightGradient1),
     }
 }
 
