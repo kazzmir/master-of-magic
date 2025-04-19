@@ -1193,21 +1193,3 @@ func MakeNewWizardFonts(cache *lbx.LbxCache) *NewWizardFonts {
         BigYellowFont: loader(TitleYellowFont),
     }
 }
-
-type SpellOfMasteryFonts struct {
-    Font *font.Font
-    RedFont *font.Font
-}
-
-func MakeSpellOfMasteryFonts(cache *lbx.LbxCache) *SpellOfMasteryFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &SpellOfMasteryFonts{
-        Font: loader(HugeOrange),
-        RedFont: loader(HugeRed),
-    }
-}

@@ -2,6 +2,7 @@ package mastery
 
 import (
     "fmt"
+    "log"
     "slices"
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -15,6 +16,24 @@ import (
 
     "github.com/hajimehoshi/ebiten/v2"
 )
+
+type SpellOfMasteryFonts struct {
+    Font *fontlib.Font
+    RedFont *fontlib.Font
+}
+
+func MakeSpellOfMasteryFonts(cache *lbx.LbxCache) *SpellOfMasteryFonts {
+    loader, err := fonts.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &SpellOfMasteryFonts{
+        Font: loader(fonts.HugeOrange),
+        RedFont: loader(fonts.HugeRed),
+    }
+}
 
 func ShowSpellOfMasteryScreen(cache *lbx.LbxCache, wizard string) (coroutine.AcceptYieldFunc, func (*ebiten.Image)) {
     // play animations spellscr.lbx 67, 68, 69, 70 in order
@@ -32,7 +51,7 @@ func ShowSpellOfMasteryScreen(cache *lbx.LbxCache, wizard string) (coroutine.Acc
 
     var counter uint64 = 0
 
-    font := fonts.MakeSpellOfMasteryFonts(cache)
+    font := MakeSpellOfMasteryFonts(cache)
 
     wrapped := font.Font.CreateWrappedText(200, 1, fmt.Sprintf("%v has started casting the Spell of Mastery", wizard))
 
@@ -215,7 +234,7 @@ func SpellOfMasteryEndScreen(cache *lbx.LbxCache, wizard data.WizardBase) (corou
 
     imageCache := util.MakeImageCache(cache)
 
-    font := fonts.MakeSpellOfMasteryFonts(cache)
+    font := MakeSpellOfMasteryFonts(cache)
 
     talkingImages, _ := imageCache.GetImages("win.lbx", int(wizard) + 3)
     talkingHead := util.MakeAnimation(talkingImages, true)
