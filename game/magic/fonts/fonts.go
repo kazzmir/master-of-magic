@@ -792,24 +792,6 @@ func MakeBuildScreenFonts(cache *lbx.LbxCache) *BuildScreenFonts {
     }
 }
 
-type InputFonts struct {
-    NameFont *font.Font
-    TitleFont *font.Font
-}
-
-func MakeInputFonts(cache *lbx.LbxCache) *InputFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &InputFonts{
-        NameFont: loader(NameFont),
-        TitleFont: loader(TitleFontOrange),
-    }
-}
-
 type SurveyorFonts struct {
     SurveyorFont *font.Font
     YellowFont *font.Font

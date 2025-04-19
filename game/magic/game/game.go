@@ -1093,13 +1093,31 @@ func validNameString(s string) bool {
     return strings.ContainsAny(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-~@^")
 }
 
+type InputFonts struct {
+    NameFont *font.Font
+    TitleFont *font.Font
+}
+
+func MakeInputFonts(cache *lbx.LbxCache) *InputFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &InputFonts{
+        NameFont: loader(fontslib.NameFont),
+        TitleFont: loader(fontslib.TitleFontOrange),
+    }
+}
+
 func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, topX int, topY int) string {
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
     }()
 
-    fonts := fontslib.MakeInputFonts(game.Cache)
+    fonts := MakeInputFonts(game.Cache)
 
     maxLength := float64(84)
 
