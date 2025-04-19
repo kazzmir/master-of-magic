@@ -824,44 +824,14 @@ type OutpostFonts struct {
 }
 
 func MakeOutpostFonts(cache *lbx.LbxCache) *OutpostFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := Loader(cache)
     if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
+        log.Printf("Unable to load fonts: %v", err)
         return nil
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
-    }
-
-    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
-    yellow := util.Lighten(util.RotateHue(color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}, -0.60), 0)
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow,
-        util.Lighten(yellow, -20),
-        util.Lighten(yellow, -20),
-        util.Lighten(yellow, -15),
-        util.Lighten(yellow, -30),
-        util.Lighten(yellow, -10),
-        util.Lighten(yellow, -15),
-        util.Lighten(yellow, -10),
-        util.Lighten(yellow, -10),
-        util.Lighten(yellow, -35),
-        util.Lighten(yellow, -45),
-        yellow,
-        yellow,
-        yellow,
-    }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
 
     return &OutpostFonts{
-        BigFont: bigFont,
+        BigFont: loader(TitleYellowFont),
     }
 }
 
