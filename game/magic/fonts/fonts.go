@@ -52,6 +52,10 @@ const SmallRed2 = "SmallRed2"
 const BigOrangeGradient2 = "BigOrangeGradient2"
 const SettingsFont = "SettingsFont"
 const SmallYellow = "SmallYellow"
+const NormalBlue = "NormalBlue"
+const SmallBlue = "SmallBlue"
+const SpellFont = "SpellFont"
+const TransmuteFont = "TransmuteFont"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -488,6 +492,54 @@ func init() {
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
+    }
+
+    fontLoaders[NormalBlue] = func (fonts []*font.LbxFont) *font.Font {
+        blue := color.RGBA{R: 146, G: 146, B: 166, A: 0xff}
+        bluishPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            blue, blue, blue, blue,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[2], bluishPalette)
+    }
+
+    fontLoaders[SmallBlue] = func (fonts []*font.LbxFont) *font.Font {
+        blue := color.RGBA{R: 146, G: 146, B: 166, A: 0xff}
+        bluishPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            blue, blue, blue, blue,
+        }
+
+        // normalFont := font.MakeOptimizedFontWithPalette(fonts[2], bluishPalette)
+
+        blue2Palette := bluishPalette
+        blue2Palette[1] = color.RGBA{R: 97, G: 97, B: 125, A: 0xff}
+        return font.MakeOptimizedFontWithPalette(fonts[1], blue2Palette)
+    }
+
+    fontLoaders[SpellFont] = func (fonts []*font.LbxFont) *font.Font {
+        yellowishPalette := color.Palette{
+            color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x00},
+            color.RGBA{R: 0xa6, G: 0x6d, B: 0x1c, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xb6, B: 0x2c, A: 0xff},
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[0], yellowishPalette)
+    }
+
+    fontLoaders[TransmuteFont] = func (fonts []*font.LbxFont) *font.Font {
+        transmute := util.PremultiplyAlpha(color.RGBA{R: 223, G: 150, B: 28, A: 255})
+        transmutePalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            transmute, transmute, transmute,
+            transmute, transmute, transmute,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[0], transmutePalette)
     }
 }
 
@@ -980,7 +1032,13 @@ type MagicViewFonts struct {
 }
 
 func MakeMagicViewFonts(cache *lbx.LbxCache) *MagicViewFonts {
-    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    loader, err := Loader(cache)
+    if err != nil {
+        log.Printf("Error loading magic view fonts: %v", err)
+        return nil
+    }
+
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Error: %v", err)
         return nil
@@ -991,37 +1049,6 @@ func MakeMagicViewFonts(cache *lbx.LbxCache) *MagicViewFonts {
         log.Printf("Error: %v", err)
         return nil
     }
-
-    blue := color.RGBA{R: 146, G: 146, B: 166, A: 0xff}
-    bluishPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        blue, blue, blue, blue,
-    }
-
-    normalFont := font.MakeOptimizedFontWithPalette(fonts[2], bluishPalette)
-
-    blue2Palette := bluishPalette
-    blue2Palette[1] = color.RGBA{R: 97, G: 97, B: 125, A: 0xff}
-    smallerFont := font.MakeOptimizedFontWithPalette(fonts[1], blue2Palette)
-
-    yellowishPalette := color.Palette{
-        color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x00},
-        color.RGBA{R: 0xa6, G: 0x6d, B: 0x1c, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xb6, B: 0x2c, A: 0xff},
-    }
-
-    spellFont := font.MakeOptimizedFontWithPalette(fonts[0], yellowishPalette)
-
-    transmute := util.PremultiplyAlpha(color.RGBA{R: 223, G: 150, B: 28, A: 255})
-    transmutePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        transmute, transmute, transmute,
-        transmute, transmute, transmute,
-    }
-
-    transmuteFont := font.MakeOptimizedFontWithPalette(fonts[0], transmutePalette)
 
     bannerBlue := color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}
     bannerGreen := color.RGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff}
@@ -1067,10 +1094,10 @@ func MakeMagicViewFonts(cache *lbx.LbxCache) *MagicViewFonts {
     bannerYellowFont := font.MakeOptimizedFontWithPalette(fonts[2], bannerYellowPalette)
 
     return &MagicViewFonts{
-        NormalFont: normalFont,
-        SmallerFont: smallerFont,
-        SpellFont: spellFont,
-        TransmuteFont: transmuteFont,
+        NormalFont: loader(NormalBlue),
+        SmallerFont: loader(SmallBlue),
+        SpellFont: loader(SpellFont),
+        TransmuteFont: loader(TransmuteFont),
         BannerBlueFont: bannerBlueFont,
         BannerGreenFont: bannerGreenFont,
         BannerPurpleFont: bannerPurpleFont,
@@ -1084,12 +1111,15 @@ type SpellSpecialUIFonts struct {
 }
 
 func MakeSpellSpecialUIFonts(cache *lbx.LbxCache) *SpellSpecialUIFonts {
-    treasureFonts := MakeTreasureFonts(cache)
-    gameFonts := MakeGameFonts(cache)
+    loader, err := Loader(cache)
+    if err != nil {
+        log.Printf("Error loading fonts: %v", err)
+        return nil
+    }
 
     return &SpellSpecialUIFonts{
-        BigOrange: treasureFonts.TreasureFont,
-        InfoOrange: gameFonts.InfoFontYellow,
+        BigOrange: loader(LightGradient1),
+        InfoOrange: loader(SmallYellow),
     }
 }
 
