@@ -900,28 +900,6 @@ func MakeGlobalEnchantmentFonts(cache *lbx.LbxCache) *GlobalEnchantmentFonts {
     }
 }
 
-type HireHeroFonts struct {
-    DescriptionFont *font.Font
-    SmallFont *font.Font
-    MediumFont *font.Font
-    OkDismissFont *font.Font
-}
-
-func MakeHireHeroFonts(cache *lbx.LbxCache) *HireHeroFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &HireHeroFonts{
-        DescriptionFont: loader(WhiteBig),
-        SmallFont: loader(SmallWhite),
-        MediumFont: loader(MediumWhite2),
-        OkDismissFont: loader(LightFont),
-    }
-}
-
 type SettingsFonts struct {
     OptionFont *font.Font
 }
