@@ -59,6 +59,8 @@ const TransmuteFont = "TransmuteFont"
 const HugeOrange = "HugeOrange"
 const HugeRed = "HugeRed"
 const NormalYellow = "NormalYellow"
+const PowerFont1 = "PowerFont1"
+const PowerFontWhite = "PowerFontWhite"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -595,6 +597,34 @@ func init() {
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[2], yellowPalette)
+    }
+
+    fontLoaders[PowerFont1] = func (fonts []*font.LbxFont) *font.Font {
+
+        // solid := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -40)
+        solid := util.Lighten(color.RGBA{R: 0xca, G: 0x8a, B: 0x4a, A: 0xff}, -10)
+
+        palette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            solid, solid, solid,
+            solid, solid, solid,
+            solid, solid, solid,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[3], palette)
+    }
+
+    fontLoaders[PowerFontWhite] = func (fonts []*font.LbxFont) *font.Font {
+        grey := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -40)
+        greyPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            grey, grey, grey,
+            grey, grey, grey,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[3], greyPalette)
     }
 }
 
