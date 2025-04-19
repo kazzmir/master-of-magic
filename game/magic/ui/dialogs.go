@@ -18,26 +18,23 @@ func MakeHelpElement(container UIContainer, cache *lbx.LbxCache, imageCache *uti
     return MakeHelpElementWithLayer(container, cache, imageCache, UILayer(1), help, helpEntries...)
 }
 
-func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, help help.HelpEntry, helpEntries ...help.HelpEntry) *UIElement {
+type HelpFonts struct {
+    HelpFont *font.Font
+    HelpTitleFont *font.Font
+}
 
-    helpTop, err := imageCache.GetImage("help.lbx", 0, 0)
-    if err != nil {
-        return nil
-    }
-
+func MakeHelpFonts(cache *lbx.LbxCache) HelpFonts {
     fontLbx, err := cache.GetLbxFile("FONTS.LBX")
     if err != nil {
-        return nil
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return HelpFonts{}
     }
 
     fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
-        return nil
+        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
+        return HelpFonts{}
     }
-
-    const fadeSpeed = 7
-
-    getAlpha := container.MakeFadeIn(fadeSpeed)
 
     helpPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -68,6 +65,25 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
 
     helpTitleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
+    return HelpFonts{
+        HelpFont: helpFont,
+        HelpTitleFont: helpTitleFont,
+    }
+}
+
+func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, help help.HelpEntry, helpEntries ...help.HelpEntry) *UIElement {
+
+    helpTop, err := imageCache.GetImage("help.lbx", 0, 0)
+    if err != nil {
+        return nil
+    }
+
+    helpFonts := MakeHelpFonts(cache)
+
+    const fadeSpeed = 7
+
+    getAlpha := container.MakeFadeIn(fadeSpeed)
+
     infoX := 55
     // infoY := 30
     infoWidth := helpTop.Bounds().Dx()
@@ -79,7 +95,7 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
 
     // fmt.Printf("Help text: %v\n", []byte(help.Text))
 
-    wrapped := helpFont.CreateWrappedText(float64(maxInfoWidth), 1, help.Text)
+    wrapped := helpFonts.HelpFont.CreateWrappedText(float64(maxInfoWidth), 1, help.Text)
 
     helpTextY := infoTopMargin
     titleYAdjust := 0
@@ -94,15 +110,15 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
     }
 
     if extraImage != nil {
-        titleYAdjust = extraImage.Bounds().Dy() / 2 - helpTitleFont.Height() / 2
+        titleYAdjust = extraImage.Bounds().Dy() / 2 - helpFonts.HelpTitleFont.Height() / 2
 
-        if extraImage.Bounds().Dy() > helpTitleFont.Height() {
+        if extraImage.Bounds().Dy() > helpFonts.HelpTitleFont.Height() {
             helpTextY += extraImage.Bounds().Dy() + 1
         } else {
-            helpTextY += (helpTitleFont.Height() + 1)
+            helpTextY += (helpFonts.HelpTitleFont.Height() + 1)
         }
     } else {
-        helpTextY += (helpTitleFont.Height() + 1)
+        helpTextY += (helpFonts.HelpTitleFont.Height() + 1)
     }
 
     bottom := float64(helpTextY) + wrapped.TotalHeight
@@ -112,8 +128,8 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
     // add in more help entries
     for _, entry := range helpEntries {
         bottom += 2
-        bottom += float64(helpTitleFont.Height()) + 1
-        moreWrapped := helpFont.CreateWrappedText(float64(maxInfoWidth), 1, entry.Text)
+        bottom += float64(helpFonts.HelpTitleFont.Height()) + 1
+        moreWrapped := helpFonts.HelpFont.CreateWrappedText(float64(maxInfoWidth), 1, entry.Text)
         moreHelp = append(moreHelp, moreWrapped)
         bottom += moreWrapped.TotalHeight
     }
@@ -155,14 +171,14 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
                 titleX += extraImage.Bounds().Dx() + 5
             }
 
-            helpTitleFont.PrintOptions(window, float64(titleX), infoY + float64(infoTopMargin + titleYAdjust), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, help.Headline)
-            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY) + infoY, wrapped, font.FontOptions{Options: &options, Scale: scale.ScaleAmount})
+            helpFonts.HelpTitleFont.PrintOptions(window, float64(titleX), infoY + float64(infoTopMargin + titleYAdjust), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, help.Headline)
+            helpFonts.HelpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY) + infoY, wrapped, font.FontOptions{Options: &options, Scale: scale.ScaleAmount})
 
             yPos := float64(helpTextY) + infoY + wrapped.TotalHeight + 2
             for i, moreWrapped := range moreHelp {
-                helpTitleFont.PrintOptions(window, float64(titleX), yPos, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, helpEntries[i].Headline)
-                helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), yPos + float64(helpTitleFont.Height()) + 1, moreWrapped, font.FontOptions{Options: &options, Scale: scale.ScaleAmount})
-                yPos += float64(helpTitleFont.Height()) + 1 + float64(moreWrapped.TotalHeight) + 2
+                helpFonts.HelpTitleFont.PrintOptions(window, float64(titleX), yPos, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, helpEntries[i].Headline)
+                helpFonts.HelpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), yPos + float64(helpFonts.HelpTitleFont.Height()) + 1, moreWrapped, font.FontOptions{Options: &options, Scale: scale.ScaleAmount})
+                yPos += float64(helpFonts.HelpTitleFont.Height()) + 1 + float64(moreWrapped.TotalHeight) + 2
             }
 
         },
