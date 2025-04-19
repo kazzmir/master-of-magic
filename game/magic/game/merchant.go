@@ -2,6 +2,7 @@ package game
 
 import (
     "fmt"
+    "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -14,10 +15,26 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+type MerchantFonts struct {
+    LightFont *font.Font
+}
+
+func MakeMerchantFonts(cache *lbx.LbxCache) *MerchantFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to read fonts.lbx: %v", err)
+        return nil
+    }
+
+    return &MerchantFonts{
+        LightFont: loader(fontslib.LightFont),
+    }
+}
+
 func MakeMerchantScreenUI(cache *lbx.LbxCache, ui *uilib.UI, artifactToBuy *artifact.Artifact, goldToBuy int, action func(bool)) []*uilib.UIElement {
     imageCache := util.MakeImageCache(cache)
 
-    fonts := fontslib.MakeMerchantFonts(cache)
+    fonts := MakeMerchantFonts(cache)
     vaultFonts := fontslib.MakeVaultFonts(cache)
 
     var elements []*uilib.UIElement

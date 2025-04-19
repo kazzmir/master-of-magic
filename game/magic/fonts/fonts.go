@@ -810,22 +810,6 @@ func MakeInputFonts(cache *lbx.LbxCache) *InputFonts {
     }
 }
 
-type MerchantFonts struct {
-    LightFont *font.Font
-}
-
-func MakeMerchantFonts(cache *lbx.LbxCache) *MerchantFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil
-    }
-
-    return &MerchantFonts{
-        LightFont: loader(LightFont),
-    }
-}
-
 type SurveyorFonts struct {
     SurveyorFont *font.Font
     YellowFont *font.Font
