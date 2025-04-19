@@ -41,6 +41,8 @@ const MediumWhite2 = "MediumWhite2"
 const NameFont = "NameFont"
 const TitleFontOrange = "TitleFontOrange"
 const LightFont = "LightFont"
+const SurveyorFont = "SurveyorFont"
+const YellowFont = "YellowFont"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -332,6 +334,31 @@ func init() {
 
         return font.MakeOptimizedFontWithPalette(fonts[4], lightPalette)
     }
+
+    fontLoaders[SurveyorFont] = func (fonts []*font.LbxFont) *font.Font {
+        white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
+        palette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            white, white, white,
+            white, white, white,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[4], palette)
+    }
+
+    fontLoaders[YellowFont] = func (fonts []*font.LbxFont) *font.Font {
+        yellow := util.RotateHue(color.RGBA{R: 255, G: 255, B: 0, A: 255}, -0.15)
+
+        paletteYellow := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            yellow, yellow, yellow,
+            yellow, yellow, yellow,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[1], paletteYellow)
+    }
 }
 
 func GetFontList() []string {
@@ -570,52 +597,16 @@ type SurveyorFonts struct {
 }
 
 func MakeSurveyorFonts(cache *lbx.LbxCache) *SurveyorFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := Loader(cache)
     if err != nil {
-        log.Printf("Error reading fonts: %v", err)
+        log.Printf("Error loading surveyor fonts: %v", err)
         return nil
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Error reading fonts: %v", err)
-        return nil
-    }
-
-    white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
-    palette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        white, white, white,
-        white, white, white,
-    }
-
-    surveyorFont := font.MakeOptimizedFontWithPalette(fonts[4], palette)
-
-    yellow := util.RotateHue(color.RGBA{R: 255, G: 255, B: 0, A: 255}, -0.15)
-
-    paletteYellow := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-    }
-
-    yellowFont := font.MakeOptimizedFontWithPalette(fonts[1], paletteYellow)
-
-    paletteWhite := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        white, white, white,
-        white, white, white,
-    }
-
-    whiteFont := font.MakeOptimizedFontWithPalette(fonts[1], paletteWhite)
 
     return &SurveyorFonts{
-        SurveyorFont: surveyorFont,
-        YellowFont: yellowFont,
-        WhiteFont: whiteFont,
+        SurveyorFont: loader(SurveyorFont),
+        YellowFont: loader(YellowFont),
+        WhiteFont: loader(SmallWhite),
     }
 }
 
