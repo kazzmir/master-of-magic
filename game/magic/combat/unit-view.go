@@ -19,7 +19,6 @@ type UnitViewFonts struct {
     DescriptionFont *font.Font
     SmallFont *font.Font
     MediumFont *font.Font
-    YellowGradient *font.Font
 }
 
 func MakeFonts(cache *lbx.LbxCache) (*UnitViewFonts, error) {
