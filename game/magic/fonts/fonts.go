@@ -766,32 +766,6 @@ func MakeCityViewResourceFonts(cache *lbx.LbxCache) *CityViewResourceFonts {
     }
 }
 
-type BuildScreenFonts struct {
-    TitleFont *font.Font
-    TitleFontWhite *font.Font
-    DescriptionFont *font.Font
-    OkCancelFont *font.Font
-    SmallFont *font.Font
-    MediumFont *font.Font
-}
-
-func MakeBuildScreenFonts(cache *lbx.LbxCache) *BuildScreenFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &BuildScreenFonts{
-        TitleFont: loader(TitleFont),
-        TitleFontWhite: loader(TitleFontWhite),
-        DescriptionFont: loader(WhiteBig),
-        OkCancelFont: loader(YellowBig),
-        SmallFont: loader(SmallWhite),
-        MediumFont: loader(MediumWhite2),
-    }
-}
-
 type SurveyorFonts struct {
     SurveyorFont *font.Font
     YellowFont *font.Font
