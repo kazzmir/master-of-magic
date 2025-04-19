@@ -194,6 +194,40 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
     return infoElement
 }
 
+type UIFonts struct {
+    Yellow *font.Font
+}
+
+func MakeUIFonts(cache *lbx.LbxCache) UIFonts {
+    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    if err != nil {
+        return UIFonts{}
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return UIFonts{}
+    }
+
+    // FIXME: this should be a fade from bright yellow to dark yellow/orange
+    yellowFade := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
+        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    yellow := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+
+    return UIFonts{
+        Yellow: yellow,
+    }
+}
+
 func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, clicked func()) *UIElement {
     errorX := 67
     errorY := 73
@@ -211,33 +245,11 @@ func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.Imag
         return nil
     }
 
-    // FIXME: this should be a fade from bright yellow to dark yellow/orange
-    yellowFade := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
-        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
-    errorFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+    fonts := MakeUIFonts(cache)
 
     maxWidth := errorTop.Bounds().Dx() - errorMargin * 2
 
-    wrapped := errorFont.CreateWrappedText(float64(maxWidth), 1, message)
+    wrapped := fonts.Yellow.CreateWrappedText(float64(maxWidth), 1, message)
 
     bottom := float64(errorY + errorTopMargin) + wrapped.TotalHeight
 
@@ -255,7 +267,7 @@ func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.Imag
             options.GeoM.Translate(float64(errorX), float64(errorY))
             scale.DrawScaled(window, topDraw, &options)
 
-            errorFont.RenderWrapped(window, float64((errorX + errorMargin) + maxWidth / 2), float64(errorY + errorTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount})
+            fonts.Yellow.RenderWrapped(window, float64((errorX + errorMargin) + maxWidth / 2), float64(errorY + errorTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount})
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(errorX), float64(bottom))
@@ -300,33 +312,11 @@ func MakeConfirmDialogWithLayerFull(container UIContainer, cache *lbx.LbxCache, 
         return nil
     }
 
-    // FIXME: this should be a fade from bright yellow to dark yellow/orange
-    yellowFade := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
-        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
-    confirmFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+    fonts := MakeUIFonts(cache)
 
     maxWidth := confirmTop.Bounds().Dx() - confirmMargin * 2
 
-    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), 1, message)
+    wrapped := fonts.Yellow.CreateWrappedText(float64(maxWidth), 1, message)
 
     bottom := float64(confirmY + confirmTopMargin) + wrapped.TotalHeight
 
@@ -347,9 +337,9 @@ func MakeConfirmDialogWithLayerFull(container UIContainer, cache *lbx.LbxCache, 
             scale.DrawScaled(window, topDraw, &options)
 
             if center {
-                confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options})
+                fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options})
             } else {
-                confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
+                fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
             }
 
             options.GeoM.Reset()
@@ -457,33 +447,11 @@ func MakeLairConfirmDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCa
         return nil
     }
 
-    // FIXME: this should be a fade from bright yellow to dark yellow/orange
-    yellowFade := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
-        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
-    confirmFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+    fonts := MakeUIFonts(cache)
 
     maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5
 
-    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), 1, message)
+    wrapped := fonts.Yellow.CreateWrappedText(float64(maxWidth), 1, message)
 
     bottom := float64(confirmY + confirmTopMargin) + wrapped.TotalHeight
 
@@ -506,7 +474,7 @@ func MakeLairConfirmDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCa
             options.GeoM.Translate(float64(7), float64(7))
             scale.DrawScaled(window, lairPicture.Frame(), &options)
 
-            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options})
+            fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options})
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(confirmX - 1), float64(bottom))
@@ -611,33 +579,11 @@ func MakeLairShowDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCache
         return nil
     }
 
-    // FIXME: this should be a fade from bright yellow to dark yellow/orange
-    yellowFade := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
-        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
-    confirmFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+    fonts := MakeUIFonts(cache)
 
     maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5
 
-    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), 1, message)
+    wrapped := fonts.Yellow.CreateWrappedText(float64(maxWidth), 1, message)
 
     bottom := float64(confirmY + confirmTopMargin) + max(wrapped.TotalHeight, float64(lairPicture.Frame().Bounds().Dy()))
 
@@ -663,7 +609,7 @@ func MakeLairShowDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCache
             options.GeoM.Translate(float64(7), float64(7))
             scale.DrawScaled(window, lairPicture.Frame(), &options)
 
-            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options})
+            fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options})
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(confirmX), float64(bottom))
