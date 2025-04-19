@@ -1276,8 +1276,26 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
 }
 
+type ScrollFonts struct {
+    BigFont *font.Font
+    SmallFont *font.Font
+}
+
+func MakeScrollFonts(cache *lbx.LbxCache) *ScrollFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &ScrollFonts{
+        BigFont: loader(fontslib.BigRed2),
+        SmallFont: loader(fontslib.SmallRed2),
+    }
+}
+
 func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text string){
-    fonts := fontslib.MakeScrollFonts(game.Cache)
+    fonts := MakeScrollFonts(game.Cache)
 
     wrappedText := fonts.SmallFont.CreateWrappedText(float64(180), 1, text)
 

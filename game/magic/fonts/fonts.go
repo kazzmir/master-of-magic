@@ -956,23 +956,6 @@ func MakeNewBuildingFonts(cache *lbx.LbxCache) *NewBuildingFonts {
     }
 }
 
-type ScrollFonts struct {
-    BigFont *font.Font
-    SmallFont *font.Font
-}
-
-func MakeScrollFonts(cache *lbx.LbxCache) *ScrollFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &ScrollFonts{
-        BigFont: loader(BigRed2),
-        SmallFont: loader(SmallRed2),
-    }
-}
 
 type RandomEventFonts struct {
     BigFont *font.Font
