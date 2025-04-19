@@ -1728,6 +1728,23 @@ func (cityScreen *CityScreen) drawIcons(total int, small *ebiten.Image, large *e
     return optionsM.GeoM
 }
 
+type CityViewResourceFonts struct {
+    HelpFont *font.Font
+    HelpTitleFont *font.Font
+}
+
+func MakeCityViewResourceFonts(cache *lbx.LbxCache) *CityViewResourceFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        return nil
+    }
+
+    return &CityViewResourceFonts{
+        HelpFont: loader(fontslib.HelpFont),
+        HelpTitleFont: loader(fontslib.HelpTitleFont),
+    }
+}
+
 // copied heavily from ui/dialogs.go:MakeHelpElementWithLayer
 func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten.Image, bigIcon *ebiten.Image, ui *uilib.UI, resources []ResourceUsage) []*uilib.UIElement {
     helpTop, err := cityScreen.ImageCache.GetImage("help.lbx", 0, 0)
@@ -1735,7 +1752,7 @@ func (cityScreen *CityScreen) MakeResourceDialog(title string, smallIcon *ebiten
         return nil
     }
 
-    fonts := fontslib.MakeCityViewResourceFonts(cityScreen.LbxCache)
+    fonts := MakeCityViewResourceFonts(cityScreen.LbxCache)
 
     const fadeSpeed = 7
 

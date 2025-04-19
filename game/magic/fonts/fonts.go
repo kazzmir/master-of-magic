@@ -749,23 +749,6 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
     }, nil
 }
 
-type CityViewResourceFonts struct {
-    HelpFont *font.Font
-    HelpTitleFont *font.Font
-}
-
-func MakeCityViewResourceFonts(cache *lbx.LbxCache) *CityViewResourceFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        return nil
-    }
-
-    return &CityViewResourceFonts{
-        HelpFont: loader(HelpFont),
-        HelpTitleFont: loader(HelpTitleFont),
-    }
-}
-
 type SurveyorFonts struct {
     SurveyorFont *font.Font
     YellowFont *font.Font
