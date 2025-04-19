@@ -2,6 +2,7 @@ package game
 
 import (
     "fmt"
+    "log"
 
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
@@ -15,12 +16,34 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+type MercenariesFonts struct {
+    DescriptionFont *font.Font
+    SmallFont *font.Font
+    MediumFont *font.Font
+    OkDismissFont *font.Font
+}
+
+func MakeMercenariesFonts(cache *lbx.LbxCache) *MercenariesFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Error loading mercenaries fonts: %v", err)
+        return nil
+    }
+
+    return &MercenariesFonts{
+        DescriptionFont: loader(fontslib.WhiteBig),
+        SmallFont: loader(fontslib.SmallWhite),
+        MediumFont: loader(fontslib.MediumWhite2),
+        OkDismissFont: loader(fontslib.LightFont),
+    }
+}
+
 func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.OverworldUnit, count int, goldToHire int, action func(bool)) *uilib.UIElementGroup {
     imageCache := util.MakeImageCache(cache)
 
     yTop := float64(10)
 
-    fonts := fontslib.MakeMercenariesFonts(cache)
+    fonts := MakeMercenariesFonts(cache)
 
     var elements []*uilib.UIElement
 

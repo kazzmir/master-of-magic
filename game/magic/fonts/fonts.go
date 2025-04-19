@@ -846,28 +846,6 @@ func MakeSurveyorFonts(cache *lbx.LbxCache) *SurveyorFonts {
     }
 }
 
-type MercenariesFonts struct {
-    DescriptionFont *font.Font
-    SmallFont *font.Font
-    MediumFont *font.Font
-    OkDismissFont *font.Font
-}
-
-func MakeMercenariesFonts(cache *lbx.LbxCache) *MercenariesFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading mercenaries fonts: %v", err)
-        return nil
-    }
-
-    return &MercenariesFonts{
-        DescriptionFont: loader(WhiteBig),
-        SmallFont: loader(SmallWhite),
-        MediumFont: loader(MediumWhite2),
-        OkDismissFont: loader(LightFont),
-    }
-}
-
 type SettingsFonts struct {
     OptionFont *font.Font
 }
