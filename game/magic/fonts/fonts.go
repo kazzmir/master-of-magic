@@ -956,23 +956,6 @@ func MakeNewBuildingFonts(cache *lbx.LbxCache) *NewBuildingFonts {
     }
 }
 
-
-type RandomEventFonts struct {
-    BigFont *font.Font
-}
-
-func MakeRandomEventFonts(cache *lbx.LbxCache) *RandomEventFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &RandomEventFonts{
-        BigFont: loader(BigOrangeGradient2),
-    }
-}
-
 type SettingsFonts struct {
     OptionFont *font.Font
 }

@@ -2723,13 +2723,29 @@ func (game *Game) AddExperience(player *playerlib.Player, unit units.StackUnit, 
     }
 }
 
+type RandomEventFonts struct {
+    BigFont *font.Font
+}
+
+func MakeRandomEventFonts(cache *lbx.LbxCache) *RandomEventFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &RandomEventFonts{
+        BigFont: loader(fontslib.BigOrangeGradient2),
+    }
+}
+
 func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, start bool, wizard setup.WizardCustom) {
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
     }()
 
-    fonts := fontslib.MakeRandomEventFonts(game.Cache)
+    fonts := MakeRandomEventFonts(game.Cache)
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
 
