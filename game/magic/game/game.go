@@ -58,14 +58,24 @@ import (
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-func (game *Game) GetFogImage() *ebiten.Image {
-    if game.Fog != nil {
-        return game.Fog
+type GameFonts struct {
+    InfoFontYellow *font.Font
+    InfoFontRed *font.Font
+    WhiteFont *font.Font
+}
+
+func MakeGameFonts(cache *lbx.LbxCache) *GameFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Error loading fonts: %v", err)
+        return nil
     }
 
-    game.Fog = ebiten.NewImage(game.CurrentMap().TileWidth(), game.CurrentMap().TileHeight())
-    game.Fog.Fill(color.RGBA{R: 8, G: 4, B: 4, A: 0xff})
-    return game.Fog
+    return &GameFonts{
+        InfoFontYellow: loader(fontslib.SmallYellow),
+        InfoFontRed: loader(fontslib.SmallRed),
+        WhiteFont: loader(fontslib.SmallWhite),
+    }
 }
 
 type GameEvent interface {
@@ -266,7 +276,7 @@ type Game struct {
 
     Music *music.Music
 
-    Fonts *fontslib.GameFonts
+    Fonts *GameFonts
 
     Settings setup.NewGameSettings
 
@@ -309,6 +319,16 @@ type Game struct {
     CurrentPlayer int
 
     Camera camera.Camera
+}
+
+func (game *Game) GetFogImage() *ebiten.Image {
+    if game.Fog != nil {
+        return game.Fog
+    }
+
+    game.Fog = ebiten.NewImage(game.CurrentMap().TileWidth(), game.CurrentMap().TileHeight())
+    game.Fog.Fill(color.RGBA{R: 8, G: 4, B: 4, A: 0xff})
+    return game.Fog
 }
 
 func (game *Game) GetMap(plane data.Plane) *maplib.Map {
@@ -501,7 +521,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         return nil
     }
 
-    fonts := fontslib.MakeGameFonts(lbxCache)
+    fonts := MakeGameFonts(lbxCache)
 
     buildingInfo, err := buildinglib.ReadBuildingInfo(lbxCache)
     if err != nil {

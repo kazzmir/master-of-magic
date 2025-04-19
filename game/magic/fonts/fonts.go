@@ -1038,26 +1038,6 @@ func MakeTreasureFonts(cache *lbx.LbxCache) *TreasureFonts {
     }
 }
 
-type GameFonts struct {
-    InfoFontYellow *font.Font
-    InfoFontRed *font.Font
-    WhiteFont *font.Font
-}
-
-func MakeGameFonts(cache *lbx.LbxCache) *GameFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading fonts: %v", err)
-        return nil
-    }
-
-    return &GameFonts{
-        InfoFontYellow: loader(SmallYellow),
-        InfoFontRed: loader(SmallRed),
-        WhiteFont: loader(SmallWhite),
-    }
-}
-
 type SpellbookFonts struct {
     BigOrange *font.Font
 }
