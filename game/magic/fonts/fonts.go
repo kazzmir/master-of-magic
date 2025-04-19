@@ -1177,19 +1177,3 @@ func MakeSpellSpecialUIFonts(cache *lbx.LbxCache) *SpellSpecialUIFonts {
         InfoOrange: loader(SmallYellow),
     }
 }
-
-type NewWizardFonts struct {
-    BigYellowFont *font.Font
-}
-
-func MakeNewWizardFonts(cache *lbx.LbxCache) *NewWizardFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &NewWizardFonts{
-        BigYellowFont: loader(TitleYellowFont),
-    }
-}

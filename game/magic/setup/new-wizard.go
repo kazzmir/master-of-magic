@@ -416,6 +416,22 @@ func (wizard *WizardCustom) MagicLevel(kind data.MagicType) int {
     return 0
 }
 
+type NewWizardFonts struct {
+    BigYellowFont *font.Font
+}
+
+func MakeNewWizardFonts(cache *lbx.LbxCache) *NewWizardFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &NewWizardFonts{
+        BigYellowFont: loader(fontslib.TitleYellowFont),
+    }
+}
+
 type NewWizardScreen struct {
     LbxCache *lbx.LbxCache
 
@@ -871,7 +887,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         return err
     }
 
-    newWizardFonts := fontslib.MakeNewWizardFonts(cache)
+    newWizardFonts := MakeNewWizardFonts(cache)
 
     // FIXME: this is a fudged palette to look like the original, but its probably slightly wrong
     brightYellowPalette := color.Palette{
