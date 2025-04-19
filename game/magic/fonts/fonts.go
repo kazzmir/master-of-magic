@@ -974,22 +974,6 @@ func MakeScrollFonts(cache *lbx.LbxCache) *ScrollFonts {
     }
 }
 
-type OutpostFonts struct {
-    BigFont *font.Font
-}
-
-func MakeOutpostFonts(cache *lbx.LbxCache) *OutpostFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &OutpostFonts{
-        BigFont: loader(TitleYellowFont),
-    }
-}
-
 type RandomEventFonts struct {
     BigFont *font.Font
 }

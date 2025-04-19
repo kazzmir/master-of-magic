@@ -1394,13 +1394,29 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
     }
 }
 
+type OutpostFonts struct {
+    BigFont *font.Font
+}
+
+func MakeOutpostFonts(cache *lbx.LbxCache) *OutpostFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &OutpostFonts{
+        BigFont: loader(fontslib.TitleYellowFont),
+    }
+}
+
 func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack, rename bool){
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
     }()
 
-    fonts := fontslib.MakeOutpostFonts(game.Cache)
+    fonts := MakeOutpostFonts(game.Cache)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
