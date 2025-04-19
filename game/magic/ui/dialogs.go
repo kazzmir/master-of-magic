@@ -626,24 +626,23 @@ type Selection struct {
     Hotkey string
 }
 
-func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.ImageCache, cornerX int, cornerY int, selectionTitle string, choices []Selection, canCancel bool) []*UIElement {
-    var elements []*UIElement
+type SelectionFonts struct {
+    Black *font.Font
+    Title *font.Font
+}
 
-    fontLbx, err := lbxCache.GetLbxFile("fonts.lbx")
+func MakeSelectionFonts(cache *lbx.LbxCache) SelectionFonts {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil
+        return SelectionFonts{}
     }
 
     font4, err := font.ReadFont(fontLbx, 0, 4)
     if err != nil {
         log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
+        return SelectionFonts{}
     }
-
-    fadeSpeed := uint64(6)
-
-    getAlpha := ui.MakeFadeIn(fadeSpeed)
 
     blackPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0, A: 0},
@@ -671,16 +670,31 @@ func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.Im
     buttonFont := font.MakeOptimizedFontWithPalette(font4, blackPalette)
     topFont := font.MakeOptimizedFontWithPalette(font4, yellowGradient)
 
+    return SelectionFonts{
+        Black: buttonFont,
+        Title: topFont,
+    }
+}
+
+func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.ImageCache, cornerX int, cornerY int, selectionTitle string, choices []Selection, canCancel bool) []*UIElement {
+    var elements []*UIElement
+
+    fadeSpeed := uint64(6)
+
+    getAlpha := ui.MakeFadeIn(fadeSpeed)
+
+    fonts := MakeSelectionFonts(lbxCache)
+
     buttonBackground1, _ := imageCache.GetImage("resource.lbx", 13, 0)
     left, _ := imageCache.GetImage("resource.lbx", 5, 0)
     top, _ := imageCache.GetImage("resource.lbx", 7, 0)
 
-    requiredWidth := buttonFont.MeasureTextWidth(selectionTitle, 1) + 2
+    requiredWidth := fonts.Black.MeasureTextWidth(selectionTitle, 1) + 2
 
     for _, choice := range choices {
-        width := buttonFont.MeasureTextWidth(choice.Name, 1) + 2
+        width := fonts.Black.MeasureTextWidth(choice.Name, 1) + 2
         if choice.Hotkey != "" {
-            width += buttonFont.MeasureTextWidth(choice.Hotkey, 1) + 2
+            width += fonts.Black.MeasureTextWidth(choice.Hotkey, 1) + 2
         }
         if width > requiredWidth {
             requiredWidth = width
@@ -737,7 +751,7 @@ func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.Im
             options.GeoM.Translate((float64(cornerX + left.Bounds().Dx()) + requiredWidth), float64(cornerY + totalHeight))
             scale.DrawScaled(screen, bottomRight, &options)
 
-            topFont.PrintOptions(screen, float64(cornerX + left.Bounds().Dx() + 4), float64(cornerY + 4), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, selectionTitle)
+            fonts.Title.PrintOptions(screen, float64(cornerX + left.Bounds().Dx() + 4), float64(cornerY + 4), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, selectionTitle)
         },
     })
 
@@ -786,9 +800,9 @@ func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.Im
 
                 y := float64(myY + 2)
 
-                buttonFont.PrintOptions(screen, float64(myX + 2), y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, choice.Name)
+                fonts.Black.PrintOptions(screen, float64(myX + 2), y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, choice.Name)
                 if choice.Hotkey != "" {
-                    buttonFont.PrintOptions(screen, float64(myX) + requiredWidth - 2, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, choice.Hotkey)
+                    fonts.Black.PrintOptions(screen, float64(myX) + requiredWidth - 2, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, choice.Hotkey)
                 }
             },
         })
