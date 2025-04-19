@@ -49,6 +49,7 @@ const InfoFont = "InfoFont"
 
 const BigRed2 = "BigRed2"
 const SmallRed2 = "SmallRed2"
+const BigOrangeGradient2 = "BigOrangeGradient2"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -440,6 +441,21 @@ func init() {
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[1], redPalette2)
+    }
+
+    // this is very similar to TitleOrangeFont
+    fontLoaders[BigOrangeGradient2] = func (fonts []*font.LbxFont) *font.Font {
+        yellow := util.RotateHue(color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}, -0.1)
+        yellowPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            yellow,
+            util.Lighten(yellow, -5),
+            util.Lighten(yellow, -15),
+            util.Lighten(yellow, -25),
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
     }
 }
 
@@ -840,32 +856,14 @@ type RandomEventFonts struct {
 }
 
 func MakeRandomEventFonts(cache *lbx.LbxCache) *RandomEventFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := Loader(cache)
     if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
+        log.Printf("Unable to load fonts: %v", err)
         return nil
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
-    }
-
-    yellow := util.RotateHue(color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}, -0.1)
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow,
-        util.Lighten(yellow, -5),
-        util.Lighten(yellow, -15),
-        util.Lighten(yellow, -25),
-    }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
 
     return &RandomEventFonts{
-        BigFont: bigFont,
+        BigFont: loader(BigOrangeGradient2),
     }
 }
 
