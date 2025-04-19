@@ -868,22 +868,6 @@ func MakeMercenariesFonts(cache *lbx.LbxCache) *MercenariesFonts {
     }
 }
 
-type FizzleFonts struct {
-    Font *font.Font
-}
-
-func MakeFizzleFonts(cache *lbx.LbxCache) *FizzleFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading fizzle fonts: %v", err)
-        return nil
-    }
-
-    return &FizzleFonts{
-        Font: loader(LightFont),
-    }
-}
-
 type SettingsFonts struct {
     OptionFont *font.Font
 }

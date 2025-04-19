@@ -5110,6 +5110,22 @@ func (game *Game) GetWizardAnimal(wizard setup.WizardCustom) *ebiten.Image {
     return animal
 }
 
+type FizzleFonts struct {
+    Font *font.Font
+}
+
+func MakeFizzleFonts(cache *lbx.LbxCache) *FizzleFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Error loading fizzle fonts: %v", err)
+        return nil
+    }
+
+    return &FizzleFonts{
+        Font: loader(fontslib.LightFont),
+    }
+}
+
 // the spell was fizzled by the tranquility spell. show the fizzle picture of a broken wand
 func (game *Game) makeTranquilityFizzleUI(tranquilityOwner *playerlib.Player, caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context) {
     quit, cancel := context.WithCancel(context.Background())
@@ -5123,7 +5139,7 @@ func (game *Game) makeTranquilityFizzleUI(tranquilityOwner *playerlib.Player, ca
 
     fader := group.MakeFadeIn(7)
 
-    fonts := fontslib.MakeFizzleFonts(game.Cache)
+    fonts := MakeFizzleFonts(game.Cache)
 
     clicked := false
     shutdown := func(){
