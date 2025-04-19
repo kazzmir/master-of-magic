@@ -25,50 +25,15 @@ type HelpFonts struct {
 }
 
 func MakeHelpFonts(cache *lbx.LbxCache) HelpFonts {
-    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    loader, err := fontslib.Loader(cache)
     if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
+        log.Printf("Unable to read fonts: %v", err)
         return HelpFonts{}
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return HelpFonts{}
-    }
-
-    helpPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0x5e, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    helpFont := font.MakeOptimizedFontWithPalette(fonts[1], helpPalette)
-
-    titleRed := color.RGBA{R: 0x50, G: 0x00, B: 0x0e, A: 0xff}
-    titlePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        titleRed,
-        titleRed,
-        titleRed,
-        titleRed,
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    helpTitleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
     return HelpFonts{
-        HelpFont: helpFont,
-        HelpTitleFont: helpTitleFont,
+        HelpFont: loader(fontslib.HelpFont),
+        HelpTitleFont: loader(fontslib.HelpTitleFont),
     }
 }
 
