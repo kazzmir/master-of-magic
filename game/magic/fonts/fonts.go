@@ -43,6 +43,7 @@ const TitleFontOrange = "TitleFontOrange"
 const LightFont = "LightFont"
 const SurveyorFont = "SurveyorFont"
 const YellowFont = "YellowFont"
+const InfoFont = "InfoFont"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -359,6 +360,29 @@ func init() {
 
         return font.MakeOptimizedFontWithPalette(fonts[1], paletteYellow)
     }
+
+    fontLoaders[InfoFont] = func (fonts []*font.LbxFont) *font.Font {
+        white := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
+        // red := color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
+        palette := color.Palette{
+            color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x0},
+            color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x0},
+            white,
+            white,
+            white,
+            white,
+            white,
+            white,
+            util.Lighten(white, -20),
+            util.Lighten(white, -30),
+            util.Lighten(white, -60),
+            util.Lighten(white, -40),
+            util.Lighten(white, -60),
+            util.Lighten(white, -50),
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[5], palette)
+    }
 }
 
 func GetFontList() []string {
@@ -653,41 +677,14 @@ type GlobalEnchantmentFonts struct {
 }
 
 func MakeGlobalEnchantmentFonts(cache *lbx.LbxCache) *GlobalEnchantmentFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := Loader(cache)
     if err != nil {
-        log.Printf("Error reading fonts: %v", err)
+        log.Printf("Error loading global enchantment fonts: %v", err)
         return nil
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Error reading fonts: %v", err)
-        return nil
-    }
-
-    white := color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
-    // red := color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
-    palette := color.Palette{
-        color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x0},
-        color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 0x0},
-        white,
-        white,
-        white,
-        white,
-        white,
-        white,
-        util.Lighten(white, -20),
-        util.Lighten(white, -30),
-        util.Lighten(white, -60),
-        util.Lighten(white, -40),
-        util.Lighten(white, -60),
-        util.Lighten(white, -50),
-    }
-
-    infoFont := font.MakeOptimizedFontWithPalette(fonts[5], palette)
 
     return &GlobalEnchantmentFonts{
-        InfoFont: infoFont,
+        InfoFont: loader(InfoFont),
     }
 }
 
