@@ -1160,20 +1160,3 @@ func MakeMagicViewFonts(cache *lbx.LbxCache) *MagicViewFonts {
         BannerYellowFont: bannerYellowFont,
     }
 }
-type SpellSpecialUIFonts struct {
-    BigOrange *font.Font
-    InfoOrange *font.Font
-}
-
-func MakeSpellSpecialUIFonts(cache *lbx.LbxCache) *SpellSpecialUIFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading fonts: %v", err)
-        return nil
-    }
-
-    return &SpellSpecialUIFonts{
-        BigOrange: loader(LightGradient1),
-        InfoOrange: loader(SmallYellow),
-    }
-}
