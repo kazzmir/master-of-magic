@@ -47,6 +47,9 @@ const SurveyorFont = "SurveyorFont"
 const YellowFont = "YellowFont"
 const InfoFont = "InfoFont"
 
+const BigRed2 = "BigRed2"
+const SmallRed2 = "SmallRed2"
+
 // use util/font-list to see how these fonts are rendered
 func init() {
     fontLoaders = make(map[string]FontLoader)
@@ -415,6 +418,29 @@ func init() {
 
         return font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
     }
+
+    fontLoaders[BigRed2] = func (fonts []*font.LbxFont) *font.Font {
+        red := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -60)
+        redPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            red, red, red,
+            red, red, red,
+        }
+        return font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
+    }
+
+    fontLoaders[SmallRed2] = func (fonts []*font.LbxFont) *font.Font {
+        red2 := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -80)
+        redPalette2 := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            red2, red2, red2,
+            red2, red2, red2,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[1], redPalette2)
+    }
 }
 
 func GetFontList() []string {
@@ -781,41 +807,15 @@ type ScrollFonts struct {
 }
 
 func MakeScrollFonts(cache *lbx.LbxCache) *ScrollFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := Loader(cache)
     if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
+        log.Printf("Unable to load fonts: %v", err)
         return nil
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
-    }
-
-    red := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -60)
-    redPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        red, red, red,
-        red, red, red,
-    }
-
-    red2 := util.Lighten(color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}, -80)
-    redPalette2 := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        red2, red2, red2,
-        red2, red2, red2,
-    }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
-
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], redPalette2)
 
     return &ScrollFonts{
-        BigFont: bigFont,
-        SmallFont: smallFont,
+        BigFont: loader(BigRed2),
+        SmallFont: loader(SmallRed2),
     }
 }
 
