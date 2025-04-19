@@ -2,6 +2,7 @@ package armyview
 
 import (
     "fmt"
+    "log"
     "image"
     "image/color"
 
@@ -63,10 +64,30 @@ func MakeArmyScreen(cache *lbx.LbxCache, player *playerlib.Player, drawMinimap f
     return view
 }
 
+type ArmyViewFonts struct {
+    NormalFont *font.Font
+    SmallerFont *font.Font
+    BigFont *font.Font
+}
+
+func MakeArmyViewFonts(cache *lbx.LbxCache) *ArmyViewFonts {
+    use, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Error loading army view fonts: %v", err)
+        return nil
+    }
+
+    return &ArmyViewFonts{
+        NormalFont: use(fontslib.NormalFont),
+        SmallerFont: use(fontslib.SmallerFont),
+        BigFont: use(fontslib.BigFont),
+    }
+}
+
 func (view *ArmyScreen) MakeUI() *uilib.UI {
     var highlightedUnit units.StackUnit
 
-    fonts := fontslib.MakeArmyViewFonts(view.Cache)
+    fonts := MakeArmyViewFonts(view.Cache)
 
     upArrows, _ := view.ImageCache.GetImages("armylist.lbx", 1)
     downArrows, _ := view.ImageCache.GetImages("armylist.lbx", 2)

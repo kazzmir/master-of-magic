@@ -664,26 +664,6 @@ func MakeVaultFonts(cache *lbx.LbxCache) *VaultFonts {
     }
 }
 
-type ArmyViewFonts struct {
-    NormalFont *font.Font
-    SmallerFont *font.Font
-    BigFont *font.Font
-}
-
-func MakeArmyViewFonts(cache *lbx.LbxCache) *ArmyViewFonts {
-    use, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading army view fonts: %v", err)
-        return nil
-    }
-
-    return &ArmyViewFonts{
-        NormalFont: use(NormalFont),
-        SmallerFont: use(SmallerFont),
-        BigFont: use(BigFont),
-    }
-}
-
 type CityViewFonts struct {
     BigFont *font.Font
     DescriptionFont *font.Font
