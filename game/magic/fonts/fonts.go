@@ -884,22 +884,6 @@ func MakeFizzleFonts(cache *lbx.LbxCache) *FizzleFonts {
     }
 }
 
-type GlobalEnchantmentFonts struct {
-    InfoFont *font.Font
-}
-
-func MakeGlobalEnchantmentFonts(cache *lbx.LbxCache) *GlobalEnchantmentFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading global enchantment fonts: %v", err)
-        return nil
-    }
-
-    return &GlobalEnchantmentFonts{
-        InfoFont: loader(InfoFont),
-    }
-}
-
 type SettingsFonts struct {
     OptionFont *font.Font
 }

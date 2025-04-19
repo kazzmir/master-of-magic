@@ -2519,6 +2519,22 @@ func (game *Game) doCastWarpNode(yield coroutine.YieldFunc, tileX int, tileY int
     }
 }
 
+type GlobalEnchantmentFonts struct {
+    InfoFont *font.Font
+}
+
+func MakeGlobalEnchantmentFonts(cache *lbx.LbxCache) *GlobalEnchantmentFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Error loading global enchantment fonts: %v", err)
+        return nil
+    }
+
+    return &GlobalEnchantmentFonts{
+        InfoFont: loader(fontslib.InfoFont),
+    }
+}
+
 func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *playerlib.Player, enchantment data.Enchantment, after func()) {
 
     song := music.SongNone
@@ -2557,7 +2573,7 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
         defer game.Music.PopSong()
     }
 
-    fonts := fontslib.MakeGlobalEnchantmentFonts(game.Cache)
+    fonts := MakeGlobalEnchantmentFonts(game.Cache)
 
     diplomacLbx, _ := game.Cache.GetLbxFile("diplomac.lbx")
     // the tauron fade in, but any mask will work
