@@ -3,6 +3,7 @@ package game
 import (
     "fmt"
     "image"
+    "log"
     "math"
     "slices"
     "cmp"
@@ -220,8 +221,26 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
     return uiGroup
 }
 
+type HeroLevelUpFonts struct {
+    TitleFont *font.Font
+    SmallFont *font.Font
+}
+
+func MakeHeroLevelUpFonts(cache *lbx.LbxCache) *HeroLevelUpFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &HeroLevelUpFonts{
+        TitleFont: loader(fontslib.LightFont),
+        SmallFont: loader(fontslib.LightFontSmall),
+    }
+}
+
 func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.Hero) {
-    fonts := fontslib.MakeHeroLevelUpFonts(game.Cache)
+    fonts := MakeHeroLevelUpFonts(game.Cache)
 
     top := float64(40)
     left := float64(30)

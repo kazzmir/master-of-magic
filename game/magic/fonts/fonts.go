@@ -922,24 +922,6 @@ func MakeHireHeroFonts(cache *lbx.LbxCache) *HireHeroFonts {
     }
 }
 
-type HeroLevelUpFonts struct {
-    TitleFont *font.Font
-    SmallFont *font.Font
-}
-
-func MakeHeroLevelUpFonts(cache *lbx.LbxCache) *HeroLevelUpFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &HeroLevelUpFonts{
-        TitleFont: loader(LightFont),
-        SmallFont: loader(LightFontSmall),
-    }
-}
-
 type SettingsFonts struct {
     OptionFont *font.Font
 }
