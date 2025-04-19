@@ -1183,13 +1183,29 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
     return name
 }
 
+type NewBuildingFonts struct {
+    BigFont *font.Font
+}
+
+func MakeNewBuildingFonts(cache *lbx.LbxCache) *NewBuildingFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &NewBuildingFonts{
+        BigFont: loader(fontslib.YellowBig2),
+    }
+}
+
 func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City, building buildinglib.Building, player *playerlib.Player){
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
     }()
 
-    fonts := fontslib.MakeNewBuildingFonts(game.Cache)
+    fonts := MakeNewBuildingFonts(game.Cache)
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
 

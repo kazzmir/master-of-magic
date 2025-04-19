@@ -940,22 +940,6 @@ func MakeHeroLevelUpFonts(cache *lbx.LbxCache) *HeroLevelUpFonts {
     }
 }
 
-type NewBuildingFonts struct {
-    BigFont *font.Font
-}
-
-func MakeNewBuildingFonts(cache *lbx.LbxCache) *NewBuildingFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &NewBuildingFonts{
-        BigFont: loader(YellowBig2),
-    }
-}
-
 type SettingsFonts struct {
     OptionFont *font.Font
 }
