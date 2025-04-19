@@ -58,6 +58,7 @@ const SpellFont = "SpellFont"
 const TransmuteFont = "TransmuteFont"
 const HugeOrange = "HugeOrange"
 const HugeRed = "HugeRed"
+const NormalYellow = "NormalYellow"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -586,6 +587,15 @@ func init() {
         return font.MakeOptimizedFontWithPalette(fonts[5], redPalette)
     }
 
+    fontLoaders[NormalYellow] = func (fonts []*font.LbxFont) *font.Font {
+        yellowPalette := color.Palette{
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+            color.RGBA{R: 0xff, G: 0xcc, B: 0x0, A: 0xff},
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[2], yellowPalette)
+    }
 }
 
 func GetFontList() []string {
@@ -1207,27 +1217,13 @@ type MainFonts struct {
 }
 
 func MakeMainFonts(cache *lbx.LbxCache) *MainFonts {
-    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    loader, err := Loader(cache)
     if err != nil {
-        log.Printf("Error: %v", err)
+        log.Printf("Error loading fonts: %v", err)
         return nil
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return nil
-    }
-
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-        color.RGBA{R: 0xff, G: 0xcc, B: 0x0, A: 0xff},
-    }
-
-    credits := font.MakeOptimizedFontWithPalette(fonts[2], yellowPalette)
 
     return &MainFonts{
-        Credits: credits,
+        Credits: loader(NormalYellow),
     }
 }
