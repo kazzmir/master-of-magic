@@ -210,6 +210,7 @@ func MakeUIFonts(cache *lbx.LbxCache) UIFonts {
     }
 
     // FIXME: this should be a fade from bright yellow to dark yellow/orange
+    /*
     yellowFade := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -219,6 +220,15 @@ func MakeUIFonts(cache *lbx.LbxCache) UIFonts {
         color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
         color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
         color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+    */
+    yellowFade := color.Palette{
+        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+        color.RGBA{R: 0x8c, G: 0x71, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xe8, G: 0x9d, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xe8, G: 0xb6, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xed, G: 0xd3, B: 0x0, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xea, B: 0x0, A: 0xff},
     }
 
     yellow := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
