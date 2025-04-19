@@ -765,22 +765,6 @@ func MakeSettingsFonts(cache *lbx.LbxCache) *SettingsFonts {
     }
 }
 
-type TreasureFonts struct {
-    TreasureFont *font.Font
-}
-
-func MakeTreasureFonts(cache *lbx.LbxCache) *TreasureFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading fonts: %v", err)
-        return nil
-    }
-
-    return &TreasureFonts{
-        TreasureFont: loader(LightGradient1),
-    }
-}
-
 type MagicViewFonts struct {
     NormalFont *font.Font
     SmallerFont *font.Font

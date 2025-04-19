@@ -4540,10 +4540,26 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
     }
 }
 
+type TreasureFonts struct {
+    TreasureFont *font.Font
+}
+
+func MakeTreasureFonts(cache *lbx.LbxCache) *TreasureFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Error loading fonts: %v", err)
+        return nil
+    }
+
+    return &TreasureFonts{
+        TreasureFont: loader(fontslib.LightGradient1),
+    }
+}
+
 func (game *Game) doTreasurePopup(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure){
     uiDone := false
 
-    fonts := fontslib.MakeTreasureFonts(game.Cache)
+    fonts := MakeTreasureFonts(game.Cache)
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
