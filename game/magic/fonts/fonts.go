@@ -62,6 +62,7 @@ const HugeRed = "HugeRed"
 const NormalYellow = "NormalYellow"
 const PowerFont1 = "PowerFont1"
 const PowerFontWhite = "PowerFontWhite"
+const BigBlack = "BigBlack"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -357,18 +358,21 @@ func init() {
     fontLoaders[LightFontSmall] = func (fonts []*font.LbxFont) *font.Font {
         lightPalette := color.Palette{
             color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
-            color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0xe1, G: 0x8e, B: 0x32, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[2], lightPalette)
     }
-
 
     fontLoaders[SurveyorFont] = func (fonts []*font.LbxFont) *font.Font {
         white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
@@ -639,6 +643,21 @@ func init() {
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[3], spellPalette)
+    }
+
+    fontLoaders[BigBlack] = func (fonts []*font.LbxFont) *font.Font {
+        blackPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[4], blackPalette)
     }
 }
 

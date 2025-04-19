@@ -3,10 +3,10 @@ package ui
 import (
     "log"
     "image"
-    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
@@ -18,6 +18,24 @@ func MakeHelpElement(container UIContainer, cache *lbx.LbxCache, imageCache *uti
     return MakeHelpElementWithLayer(container, cache, imageCache, UILayer(1), help, helpEntries...)
 }
 
+type HelpFonts struct {
+    HelpFont *font.Font
+    HelpTitleFont *font.Font
+}
+
+func MakeHelpFonts(cache *lbx.LbxCache) HelpFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to read fonts: %v", err)
+        return HelpFonts{}
+    }
+
+    return HelpFonts{
+        HelpFont: loader(fontslib.HelpFont),
+        HelpTitleFont: loader(fontslib.HelpTitleFont),
+    }
+}
+
 func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, layer UILayer, help help.HelpEntry, helpEntries ...help.HelpEntry) *UIElement {
 
     helpTop, err := imageCache.GetImage("help.lbx", 0, 0)
@@ -25,48 +43,11 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
         return nil
     }
 
-    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
+    helpFonts := MakeHelpFonts(cache)
 
     const fadeSpeed = 7
 
     getAlpha := container.MakeFadeIn(fadeSpeed)
-
-    helpPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0x5e, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    helpFont := font.MakeOptimizedFontWithPalette(fonts[1], helpPalette)
-
-    titleRed := color.RGBA{R: 0x50, G: 0x00, B: 0x0e, A: 0xff}
-    titlePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        titleRed,
-        titleRed,
-        titleRed,
-        titleRed,
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    helpTitleFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
 
     infoX := 55
     // infoY := 30
@@ -79,7 +60,7 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
 
     // fmt.Printf("Help text: %v\n", []byte(help.Text))
 
-    wrapped := helpFont.CreateWrappedText(float64(maxInfoWidth), 1, help.Text)
+    wrapped := helpFonts.HelpFont.CreateWrappedText(float64(maxInfoWidth), 1, help.Text)
 
     helpTextY := infoTopMargin
     titleYAdjust := 0
@@ -94,15 +75,15 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
     }
 
     if extraImage != nil {
-        titleYAdjust = extraImage.Bounds().Dy() / 2 - helpTitleFont.Height() / 2
+        titleYAdjust = extraImage.Bounds().Dy() / 2 - helpFonts.HelpTitleFont.Height() / 2
 
-        if extraImage.Bounds().Dy() > helpTitleFont.Height() {
+        if extraImage.Bounds().Dy() > helpFonts.HelpTitleFont.Height() {
             helpTextY += extraImage.Bounds().Dy() + 1
         } else {
-            helpTextY += (helpTitleFont.Height() + 1)
+            helpTextY += (helpFonts.HelpTitleFont.Height() + 1)
         }
     } else {
-        helpTextY += (helpTitleFont.Height() + 1)
+        helpTextY += (helpFonts.HelpTitleFont.Height() + 1)
     }
 
     bottom := float64(helpTextY) + wrapped.TotalHeight
@@ -112,8 +93,8 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
     // add in more help entries
     for _, entry := range helpEntries {
         bottom += 2
-        bottom += float64(helpTitleFont.Height()) + 1
-        moreWrapped := helpFont.CreateWrappedText(float64(maxInfoWidth), 1, entry.Text)
+        bottom += float64(helpFonts.HelpTitleFont.Height()) + 1
+        moreWrapped := helpFonts.HelpFont.CreateWrappedText(float64(maxInfoWidth), 1, entry.Text)
         moreHelp = append(moreHelp, moreWrapped)
         bottom += moreWrapped.TotalHeight
     }
@@ -155,14 +136,14 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
                 titleX += extraImage.Bounds().Dx() + 5
             }
 
-            helpTitleFont.PrintOptions(window, float64(titleX), infoY + float64(infoTopMargin + titleYAdjust), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, help.Headline)
-            helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY) + infoY, wrapped, font.FontOptions{Options: &options, Scale: scale.ScaleAmount})
+            helpFonts.HelpTitleFont.PrintOptions(window, float64(titleX), infoY + float64(infoTopMargin + titleYAdjust), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, help.Headline)
+            helpFonts.HelpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), float64(helpTextY) + infoY, wrapped, font.FontOptions{Options: &options, Scale: scale.ScaleAmount})
 
             yPos := float64(helpTextY) + infoY + wrapped.TotalHeight + 2
             for i, moreWrapped := range moreHelp {
-                helpTitleFont.PrintOptions(window, float64(titleX), yPos, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, helpEntries[i].Headline)
-                helpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), yPos + float64(helpTitleFont.Height()) + 1, moreWrapped, font.FontOptions{Options: &options, Scale: scale.ScaleAmount})
-                yPos += float64(helpTitleFont.Height()) + 1 + float64(moreWrapped.TotalHeight) + 2
+                helpFonts.HelpTitleFont.PrintOptions(window, float64(titleX), yPos, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, helpEntries[i].Headline)
+                helpFonts.HelpFont.RenderWrapped(window, float64(infoX + infoLeftMargin + infoBodyMargin), yPos + float64(helpFonts.HelpTitleFont.Height()) + 1, moreWrapped, font.FontOptions{Options: &options, Scale: scale.ScaleAmount})
+                yPos += float64(helpFonts.HelpTitleFont.Height()) + 1 + float64(moreWrapped.TotalHeight) + 2
             }
 
         },
@@ -176,6 +157,22 @@ func MakeHelpElementWithLayer(container UIContainer, cache *lbx.LbxCache, imageC
     }
 
     return infoElement
+}
+
+type UIFonts struct {
+    Yellow *font.Font
+}
+
+func MakeUIFonts(cache *lbx.LbxCache) UIFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to read fonts: %v", err)
+        return UIFonts{}
+    }
+
+    return UIFonts{
+        Yellow: loader(fontslib.LightFont),
+    }
 }
 
 func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, clicked func()) *UIElement {
@@ -195,33 +192,11 @@ func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.Imag
         return nil
     }
 
-    // FIXME: this should be a fade from bright yellow to dark yellow/orange
-    yellowFade := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
-        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
-    errorFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+    fonts := MakeUIFonts(cache)
 
     maxWidth := errorTop.Bounds().Dx() - errorMargin * 2
 
-    wrapped := errorFont.CreateWrappedText(float64(maxWidth), 1, message)
+    wrapped := fonts.Yellow.CreateWrappedText(float64(maxWidth), 1, message)
 
     bottom := float64(errorY + errorTopMargin) + wrapped.TotalHeight
 
@@ -239,7 +214,8 @@ func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.Imag
             options.GeoM.Translate(float64(errorX), float64(errorY))
             scale.DrawScaled(window, topDraw, &options)
 
-            errorFont.RenderWrapped(window, float64((errorX + errorMargin) + maxWidth / 2), float64(errorY + errorTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount})
+            fontOptions := font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}
+            fonts.Yellow.RenderWrapped(window, float64((errorX + errorMargin) + maxWidth / 2), float64(errorY + errorTopMargin), wrapped, fontOptions)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(errorX), float64(bottom))
@@ -284,33 +260,11 @@ func MakeConfirmDialogWithLayerFull(container UIContainer, cache *lbx.LbxCache, 
         return nil
     }
 
-    // FIXME: this should be a fade from bright yellow to dark yellow/orange
-    yellowFade := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
-        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
-    confirmFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+    fonts := MakeUIFonts(cache)
 
     maxWidth := confirmTop.Bounds().Dx() - confirmMargin * 2
 
-    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), 1, message)
+    wrapped := fonts.Yellow.CreateWrappedText(float64(maxWidth), 1, message)
 
     bottom := float64(confirmY + confirmTopMargin) + wrapped.TotalHeight
 
@@ -331,9 +285,9 @@ func MakeConfirmDialogWithLayerFull(container UIContainer, cache *lbx.LbxCache, 
             scale.DrawScaled(window, topDraw, &options)
 
             if center {
-                confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options})
+                fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options, DropShadow: true})
             } else {
-                confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
+                fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Scale: scale.ScaleAmount, Options: &options, DropShadow: true})
             }
 
             options.GeoM.Reset()
@@ -441,33 +395,11 @@ func MakeLairConfirmDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCa
         return nil
     }
 
-    // FIXME: this should be a fade from bright yellow to dark yellow/orange
-    yellowFade := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
-        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
-    confirmFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+    fonts := MakeUIFonts(cache)
 
     maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5
 
-    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), 1, message)
+    wrapped := fonts.Yellow.CreateWrappedText(float64(maxWidth), 1, message)
 
     bottom := float64(confirmY + confirmTopMargin) + wrapped.TotalHeight
 
@@ -490,7 +422,7 @@ func MakeLairConfirmDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCa
             options.GeoM.Translate(float64(7), float64(7))
             scale.DrawScaled(window, lairPicture.Frame(), &options)
 
-            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options})
+            fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options, DropShadow: true})
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(confirmX - 1), float64(bottom))
@@ -595,33 +527,11 @@ func MakeLairShowDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCache
         return nil
     }
 
-    // FIXME: this should be a fade from bright yellow to dark yellow/orange
-    yellowFade := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
-        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        return nil
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
-    confirmFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+    fonts := MakeUIFonts(cache)
 
     maxWidth := confirmTop.Bounds().Dx() - confirmMargin - 5
 
-    wrapped := confirmFont.CreateWrappedText(float64(maxWidth), 1, message)
+    wrapped := fonts.Yellow.CreateWrappedText(float64(maxWidth), 1, message)
 
     bottom := float64(confirmY + confirmTopMargin) + max(wrapped.TotalHeight, float64(lairPicture.Frame().Bounds().Dy()))
 
@@ -647,7 +557,7 @@ func MakeLairShowDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCache
             options.GeoM.Translate(float64(7), float64(7))
             scale.DrawScaled(window, lairPicture.Frame(), &options)
 
-            confirmFont.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options})
+            fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options, DropShadow: true})
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(confirmX), float64(bottom))
@@ -664,61 +574,43 @@ type Selection struct {
     Hotkey string
 }
 
+type SelectionFonts struct {
+    Black *font.Font
+    Title *font.Font
+}
+
+func MakeSelectionFonts(cache *lbx.LbxCache) SelectionFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to read fonts: %v", err)
+        return SelectionFonts{}
+    }
+
+    return SelectionFonts{
+        Black: loader(fontslib.BigBlack),
+        Title: loader(fontslib.LightFont),
+    }
+}
+
 func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.ImageCache, cornerX int, cornerY int, selectionTitle string, choices []Selection, canCancel bool) []*UIElement {
     var elements []*UIElement
-
-    fontLbx, err := lbxCache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil
-    }
-
-    font4, err := font.ReadFont(fontLbx, 0, 4)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
-    }
 
     fadeSpeed := uint64(6)
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
-    blackPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-    }
-
-    // FIXME: this is too bright
-    yellowGradient := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
-        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-    }
-
-    buttonFont := font.MakeOptimizedFontWithPalette(font4, blackPalette)
-    topFont := font.MakeOptimizedFontWithPalette(font4, yellowGradient)
+    fonts := MakeSelectionFonts(lbxCache)
 
     buttonBackground1, _ := imageCache.GetImage("resource.lbx", 13, 0)
     left, _ := imageCache.GetImage("resource.lbx", 5, 0)
     top, _ := imageCache.GetImage("resource.lbx", 7, 0)
 
-    requiredWidth := buttonFont.MeasureTextWidth(selectionTitle, 1) + 2
+    requiredWidth := fonts.Black.MeasureTextWidth(selectionTitle, 1) + 2
 
     for _, choice := range choices {
-        width := buttonFont.MeasureTextWidth(choice.Name, 1) + 2
+        width := fonts.Black.MeasureTextWidth(choice.Name, 1) + 2
         if choice.Hotkey != "" {
-            width += buttonFont.MeasureTextWidth(choice.Hotkey, 1) + 2
+            width += fonts.Black.MeasureTextWidth(choice.Hotkey, 1) + 2
         }
         if width > requiredWidth {
             requiredWidth = width
@@ -775,7 +667,7 @@ func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.Im
             options.GeoM.Translate((float64(cornerX + left.Bounds().Dx()) + requiredWidth), float64(cornerY + totalHeight))
             scale.DrawScaled(screen, bottomRight, &options)
 
-            topFont.PrintOptions(screen, float64(cornerX + left.Bounds().Dx() + 4), float64(cornerY + 4), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, selectionTitle)
+            fonts.Title.PrintOptions(screen, float64(cornerX + left.Bounds().Dx() + 4), float64(cornerY + 4), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, selectionTitle)
         },
     })
 
@@ -824,9 +716,9 @@ func MakeSelectionUI(ui UIContainer, lbxCache *lbx.LbxCache, imageCache *util.Im
 
                 y := float64(myY + 2)
 
-                buttonFont.PrintOptions(screen, float64(myX + 2), y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, choice.Name)
+                fonts.Black.PrintOptions(screen, float64(myX + 2), y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, choice.Name)
                 if choice.Hotkey != "" {
-                    buttonFont.PrintOptions(screen, float64(myX) + requiredWidth - 2, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, choice.Hotkey)
+                    fonts.Black.PrintOptions(screen, float64(myX) + requiredWidth - 2, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, choice.Hotkey)
                 }
             },
         })

@@ -349,7 +349,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
             options.GeoM.Translate(left + (48 + xOffset), top + (25 + yOffset))
             scale.DrawScaled(screen, dot, &options)
 
-            fonts.SmallFont.PrintOptions(screen, left + (55 + xOffset), top + (24 + yOffset), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, progression)
+            fonts.SmallFont.PrintOptions(screen, left + (55 + xOffset), top + (24 + yOffset), font.FontOptions{Options: &options, Scale: scale.ScaleAmount, DropShadow: true}, progression)
         }
 
         row := 0
@@ -376,9 +376,9 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
                 abilityBonus := hero.GetAbilityBonus(ability.Ability)
                 if abilityBonus > 0 {
-                    fonts.SmallFont.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v +%v", ability.Name(), abilityBonus))
+                    fonts.SmallFont.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("%v +%v", ability.Name(), abilityBonus))
                 } else {
-                    fonts.SmallFont.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, ability.Name())
+                    fonts.SmallFont.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, DropShadow: true}, ability.Name())
                 }
             }
 
