@@ -36,6 +36,7 @@ const HelpTitleFont = "HelpTitleFont"
 const TitleFont = "TitleFont"
 const TitleFontWhite = "TitleFontWhite"
 const YellowBig = "YellowBig"
+const YellowBig2 = "YellowBig2"
 const WhiteBig = "WhiteBig"
 const MediumWhite2 = "MediumWhite2"
 const NameFont = "NameFont"
@@ -400,6 +401,20 @@ func init() {
 
         return font.MakeOptimizedFontWithPalette(fonts[5], palette)
     }
+
+    fontLoaders[YellowBig2] = func (fonts []*font.LbxFont) *font.Font {
+        yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
+        yellowPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            yellow, yellow, yellow,
+            yellow, yellow, yellow,
+            yellow, yellow, yellow,
+            yellow, yellow, yellow,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+    }
 }
 
 func GetFontList() []string {
@@ -586,7 +601,6 @@ func MakeBuildScreenFonts(cache *lbx.LbxCache) *BuildScreenFonts {
         return nil
     }
 
-
     return &BuildScreenFonts{
         TitleFont: loader(TitleFont),
         TitleFontWhite: loader(TitleFontWhite),
@@ -750,32 +764,14 @@ type NewBuildingFonts struct {
 }
 
 func MakeNewBuildingFonts(cache *lbx.LbxCache) *NewBuildingFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := Loader(cache)
     if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
+        log.Printf("Unable to load fonts: %v", err)
         return nil
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
-    }
-
-    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-    }
-
-    bigFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
 
     return &NewBuildingFonts{
-        BigFont: bigFont,
+        BigFont: loader(YellowBig2),
     }
 }
 
