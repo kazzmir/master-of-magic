@@ -33,6 +33,11 @@ const SmallWhite = "SmallWhite"
 const SmallRed = "SmallRed"
 const HelpFont = "HelpFont"
 const HelpTitleFont = "HelpTitleFont"
+const TitleFont = "TitleFont"
+const TitleFontWhite = "TitleFontWhite"
+const YellowBig = "YellowBig"
+const WhiteBig = "WhiteBig"
+const MediumWhite2 = "MediumWhite2"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -227,6 +232,59 @@ func init() {
         return font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
     }
 
+    fontLoaders[TitleFontWhite] = func (fonts []*font.LbxFont) *font.Font {
+        alphaWhite := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 180})
+
+        whitePalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            alphaWhite, alphaWhite, alphaWhite,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[2], whitePalette)
+    }
+
+    fontLoaders[YellowBig] = func (fonts []*font.LbxFont) *font.Font {
+        yellowGradient := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
+    }
+
+    fontLoaders[TitleFont] = func (fonts []*font.LbxFont) *font.Font {
+        return font.MakeOptimizedFont(fonts[2])
+    }
+
+    descriptionPalette := func () color.Palette {
+        return color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
+            util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
+            util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+            util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+            util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        }
+    }
+
+    fontLoaders[WhiteBig] = func (fonts []*font.LbxFont) *font.Font {
+        return font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette())
+    }
+
+    fontLoaders[MediumWhite2] = func (fonts []*font.LbxFont) *font.Font {
+        return font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette())
+    }
 }
 
 func GetFontList() []string {
@@ -407,69 +465,20 @@ type BuildScreenFonts struct {
 }
 
 func MakeBuildScreenFonts(cache *lbx.LbxCache) *BuildScreenFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := Loader(cache)
     if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
+        log.Printf("Unable to load fonts: %v", err)
         return nil
     }
 
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
-    }
-
-    titleFont := font.MakeOptimizedFont(fonts[2])
-
-    alphaWhite := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 180})
-
-    whitePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        alphaWhite, alphaWhite, alphaWhite,
-    }
-
-    titleFontWhite := font.MakeOptimizedFontWithPalette(fonts[2], whitePalette)
-
-    descriptionPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
-
-    yellowGradient := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-    }
-
-    okCancelFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
-
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
-
-    mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
 
     return &BuildScreenFonts{
-        TitleFont: titleFont,
-        TitleFontWhite: titleFontWhite,
-        DescriptionFont: descriptionFont,
-        OkCancelFont: okCancelFont,
-        SmallFont: smallFont,
-        MediumFont: mediumFont,
+        TitleFont: loader(TitleFont),
+        TitleFontWhite: loader(TitleFontWhite),
+        DescriptionFont: loader(WhiteBig),
+        OkCancelFont: loader(YellowBig),
+        SmallFont: loader(SmallWhite),
+        MediumFont: loader(MediumWhite2),
     }
 }
 
