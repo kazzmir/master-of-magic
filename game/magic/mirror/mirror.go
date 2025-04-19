@@ -3,7 +3,6 @@ package mirror
 import (
     "log"
     "fmt"
-    "image/color"
     "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -13,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/draw"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/hajimehoshi/ebiten/v2"
@@ -58,36 +58,16 @@ type MirrorFonts struct {
 }
 
 func MakeMirrorFonts(cache *lbx.LbxCache) MirrorFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := fontslib.Loader(cache)
     if err != nil {
-        log.Printf("Could not read fonts: %v", err)
+        log.Printf("Could not load fonts: %v", err)
         return MirrorFonts{}
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Could not read fonts: %v", err)
-        return MirrorFonts{}
-    }
-
-    yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow, yellow, yellow,
-        yellow, yellow, yellow,
-    }
-
-    nameFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
-
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
-
-    heroFont := font.MakeOptimizedFontWithPalette(fonts[2], yellowPalette)
 
     return MirrorFonts{
-        Name: nameFont,
-        Small: smallFont,
-        Hero: heroFont,
+        Name: loader(fontslib.BigOrangeGradient2),
+        Small: loader(fontslib.DescriptionFont),
+        Hero: loader(fontslib.LightFontSmall),
     }
 }
 

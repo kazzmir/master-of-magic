@@ -358,13 +358,17 @@ func init() {
     fontLoaders[LightFontSmall] = func (fonts []*font.LbxFont) *font.Font {
         lightPalette := color.Palette{
             color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
-            color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0xe1, G: 0x8e, B: 0x32, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[2], lightPalette)
