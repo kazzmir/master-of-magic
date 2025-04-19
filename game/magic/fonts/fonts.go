@@ -50,6 +50,7 @@ const InfoFont = "InfoFont"
 const BigRed2 = "BigRed2"
 const SmallRed2 = "SmallRed2"
 const BigOrangeGradient2 = "BigOrangeGradient2"
+const SettingsFont = "SettingsFont"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -456,6 +457,19 @@ func init() {
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[4], yellowPalette)
+    }
+
+    fontLoaders[SettingsFont] = func (fonts []*font.LbxFont) *font.Font {
+        bluish := util.Lighten(color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}, 90)
+
+        optionPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            bluish, bluish, bluish, bluish,
+            bluish, bluish, bluish, bluish,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[2], optionPalette)
     }
 }
 
@@ -872,31 +886,14 @@ type SettingsFonts struct {
 }
 
 func MakeSettingsFonts(cache *lbx.LbxCache) *SettingsFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := Loader(cache)
     if err != nil {
-        log.Printf("Error: %v", err)
+        log.Printf("Error loading settings fonts: %v", err)
         return nil
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Error: %v", err)
-        return nil
-    }
-
-    bluish := util.Lighten(color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}, 90)
-
-    optionPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        bluish, bluish, bluish, bluish,
-        bluish, bluish, bluish, bluish,
-    }
-
-    optionFont := font.MakeOptimizedFontWithPalette(fonts[2], optionPalette)
 
     return &SettingsFonts{
-        OptionFont: optionFont,
+        OptionFont: loader(SettingsFont),
     }
 }
 
