@@ -150,16 +150,24 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         textArea.RemoveChildren()
 
         graphic := widget.NewGraphic()
-
         surface := ebiten.NewImage(700, 200)
+
+        surface2 := ebiten.NewImage(700, 200)
+        surface2.Fill(color.White)
+        graphic2 := widget.NewGraphic()
+
         font := makeFont(name)
         if font != nil {
             scale := 3.0
             font.PrintWrap(surface, 1, 1, float64(surface.Bounds().Dx() - 2) / scale, fontlib.FontOptions{Scale: scale}, "This is sample text. I am proud of it")
             graphic.Image = surface
+
+            font.PrintWrap(surface2, 1, 1, float64(surface.Bounds().Dx() - 2) / scale, fontlib.FontOptions{Scale: scale}, "This is sample text. I am proud of it")
+            graphic2.Image = surface2
         }
 
         textArea.AddChild(graphic)
+        textArea.AddChild(graphic2)
     }
 
     fontList := widget.NewList(
