@@ -3,11 +3,11 @@ package combat
 import (
     "log"
     "fmt"
-    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
@@ -23,37 +23,15 @@ type UnitViewFonts struct {
 }
 
 func MakeFonts(cache *lbx.LbxCache) (*UnitViewFonts, error) {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := fontslib.Loader(cache)
     if err != nil {
         return nil, err
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil, err
-    }
-
-    descriptionPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
-    mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
 
     return &UnitViewFonts{
-        DescriptionFont: descriptionFont,
-        SmallFont: smallFont,
-        MediumFont: mediumFont,
+        DescriptionFont: loader(fontslib.WhiteBig),
+        SmallFont: loader(fontslib.SmallWhite),
+        MediumFont: loader(fontslib.MediumWhite2),
     }, nil
 }
 
