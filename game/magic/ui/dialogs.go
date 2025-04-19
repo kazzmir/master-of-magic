@@ -7,6 +7,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
@@ -199,42 +200,14 @@ type UIFonts struct {
 }
 
 func MakeUIFonts(cache *lbx.LbxCache) UIFonts {
-    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    loader, err := fontslib.Loader(cache)
     if err != nil {
+        log.Printf("Unable to read fonts: %v", err)
         return UIFonts{}
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return UIFonts{}
-    }
-
-    // FIXME: this should be a fade from bright yellow to dark yellow/orange
-    /*
-    yellowFade := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
-        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-    */
-    yellowFade := color.Palette{
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-        color.RGBA{R: 0x8c, G: 0x71, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe8, G: 0x9d, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe8, G: 0xb6, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xed, G: 0xd3, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xea, B: 0x0, A: 0xff},
-    }
-
-    yellow := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
     return UIFonts{
-        Yellow: yellow,
+        Yellow: loader(fontslib.LightFont),
     }
 }
 
@@ -277,7 +250,8 @@ func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.Imag
             options.GeoM.Translate(float64(errorX), float64(errorY))
             scale.DrawScaled(window, topDraw, &options)
 
-            fonts.Yellow.RenderWrapped(window, float64((errorX + errorMargin) + maxWidth / 2), float64(errorY + errorTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount})
+            fontOptions := font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}
+            fonts.Yellow.RenderWrapped(window, float64((errorX + errorMargin) + maxWidth / 2), float64(errorY + errorTopMargin), wrapped, fontOptions)
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(errorX), float64(bottom))

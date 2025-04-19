@@ -369,7 +369,6 @@ func init() {
         return font.MakeOptimizedFontWithPalette(fonts[2], lightPalette)
     }
 
-
     fontLoaders[SurveyorFont] = func (fonts []*font.LbxFont) *font.Font {
         white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
         palette := color.Palette{
