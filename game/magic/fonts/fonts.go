@@ -40,6 +40,7 @@ const WhiteBig = "WhiteBig"
 const MediumWhite2 = "MediumWhite2"
 const NameFont = "NameFont"
 const TitleFontOrange = "TitleFontOrange"
+const LightFont = "LightFont"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -316,6 +317,21 @@ func init() {
 
         return font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
     }
+
+    fontLoaders[LightFont] = func (fonts []*font.LbxFont) *font.Font {
+        lightPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
+            color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[4], lightPalette)
+    }
 }
 
 func GetFontList() []string {
@@ -536,33 +552,14 @@ type MerchantFonts struct {
 }
 
 func MakeMerchantFonts(cache *lbx.LbxCache) *MerchantFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := Loader(cache)
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
         return nil
     }
 
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
-    }
-
-    lightPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
-        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-    }
-
-    lightFont := font.MakeOptimizedFontWithPalette(fonts[4], lightPalette)
-
     return &MerchantFonts{
-        LightFont: lightFont,
+        LightFont: loader(LightFont),
     }
 }
 
