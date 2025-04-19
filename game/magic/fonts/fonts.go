@@ -637,9 +637,14 @@ type FizzleFonts struct {
 }
 
 func MakeFizzleFonts(cache *lbx.LbxCache) *FizzleFonts {
-    fonts := MakeMercenariesFonts(cache)
+    loader, err := Loader(cache)
+    if err != nil {
+        log.Printf("Error loading fizzle fonts: %v", err)
+        return nil
+    }
+
     return &FizzleFonts{
-        Font: fonts.OkDismissFont,
+        Font: loader(LightFont),
     }
 }
 
