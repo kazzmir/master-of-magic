@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
@@ -65,6 +66,24 @@ type CityCallback func (*citylib.City) bool
 
 func noCityCallback(city *citylib.City) bool {
     return true
+}
+
+type SpellSpecialUIFonts struct {
+    BigOrange *font.Font
+    InfoOrange *font.Font
+}
+
+func MakeSpellSpecialUIFonts(cache *lbx.LbxCache) *SpellSpecialUIFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Error loading fonts: %v", err)
+        return nil
+    }
+
+    return &SpellSpecialUIFonts{
+        BigOrange: loader(fontslib.LightGradient1),
+        InfoOrange: loader(fontslib.SmallYellow),
+    }
 }
 
 // the reason a spell was fizzled due to some global enchantment
@@ -879,7 +898,7 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
     uiX := 40
     uiY := 1
 
-    specialFonts := fontslib.MakeSpellSpecialUIFonts(game.Cache)
+    specialFonts := MakeSpellSpecialUIFonts(game.Cache)
 
     var selectedHero *herolib.Hero
     selectedHero = heroes[0]
@@ -1141,7 +1160,7 @@ func (game *Game) makeGlobalEnchantmentSelectionUI(caster *playerlib.Player, spe
 
     const uiX = 30
 
-    specialFonts := fontslib.MakeSpellSpecialUIFonts(game.Cache)
+    specialFonts := MakeSpellSpecialUIFonts(game.Cache)
 
     header := "Select a spell to disjunct."
 

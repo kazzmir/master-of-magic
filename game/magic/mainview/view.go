@@ -103,7 +103,12 @@ func (main *MainScreen) MakeUI() *uilib.UI {
         }
     }
 
-    mainFonts := fontslib.MakeMainFonts(main.Cache)
+    fontLoader, err := fontslib.Loader(main.Cache)
+    if err != nil {
+        log.Printf("error loading fonts: %v", err)
+        return nil
+    }
+    creditsFont := fontLoader(fontslib.NormalYellow)
 
     abs := func(x int) int {
         if x < 0 {
@@ -196,13 +201,13 @@ func (main *MainScreen) MakeUI() *uilib.UI {
 
             gap := 40
 
-            where := (ui.Counter / 3) % uint64(creditsRect.Dy() + gap + (len(credits)) * mainFonts.Credits.Height())
+            where := (ui.Counter / 3) % uint64(creditsRect.Dy() + gap + (len(credits)) * creditsFont.Height())
             middle := creditsRect.Min.X + creditsRect.Dx() / 2
             for i, currentLine := range credits {
                 if len(currentLine.lineLeft) + len(currentLine.lineCenter) + len(currentLine.lineRight) == 0 {
                     continue
                 }
-                y := creditsRect.Max.Y + i * mainFonts.Credits.Height() + gap - int(where)
+                y := creditsRect.Max.Y + i * creditsFont.Height() + gap - int(where)
 
                 options.ColorScale.Reset()
                 options.ColorScale.ScaleAlpha(getAlpha())
@@ -215,13 +220,13 @@ func (main *MainScreen) MakeUI() *uilib.UI {
                 options.ColorScale.ScaleAlpha(alpha)
 
                 if len(currentLine.lineLeft) > 0 {
-                    mainFonts.Credits.PrintOptions(sub, float64(creditsRect.Min.X), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, currentLine.lineLeft)
+                    creditsFont.PrintOptions(sub, float64(creditsRect.Min.X), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, currentLine.lineLeft)
                 }
                 if len(currentLine.lineCenter) > 0 {
-                    mainFonts.Credits.PrintOptions(sub, float64(middle), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, currentLine.lineCenter)
+                    creditsFont.PrintOptions(sub, float64(middle), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, currentLine.lineCenter)
                 }
                 if len(currentLine.lineRight) > 0 {
-                    mainFonts.Credits.PrintOptions(sub, float64(creditsRect.Max.X), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyRight, Options: &options}, currentLine.lineRight)
+                    creditsFont.PrintOptions(sub, float64(creditsRect.Max.X), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyRight, Options: &options}, currentLine.lineRight)
                 }
             }
 

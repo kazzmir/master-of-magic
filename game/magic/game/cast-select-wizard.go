@@ -5,7 +5,6 @@ import (
 	"image"
     "context"
 
-	fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
 	playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 	uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -29,7 +28,7 @@ func makeSelectSpellBlastTargetUI(finish context.CancelFunc, cache *lbx.LbxCache
     x := 77
     y := 10
 
-    fonts := fontslib.MakeSpellSpecialUIFonts(cache)
+    fonts := MakeSpellSpecialUIFonts(cache)
     header := "Choose target for a Spell Blast spell"
 
     // A func for creating a sparks element when a target is selected
@@ -199,7 +198,7 @@ func makeSelectTargetWizardUI(finish context.CancelFunc, cache *lbx.LbxCache, im
     x := 77
     y := 10
 
-    fonts := fontslib.MakeSpellSpecialUIFonts(cache)
+    fonts := MakeSpellSpecialUIFonts(cache)
     header := initialHeader
 
     // A func for creating a sparks element when a target is selected
