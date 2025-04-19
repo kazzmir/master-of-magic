@@ -55,6 +55,7 @@ const SmallYellow = "SmallYellow"
 const NormalBlue = "NormalBlue"
 const SmallBlue = "SmallBlue"
 const SpellFont = "SpellFont"
+const SpellFont2 = "SpellFont2"
 const TransmuteFont = "TransmuteFont"
 const HugeOrange = "HugeOrange"
 const HugeRed = "HugeRed"
@@ -625,6 +626,19 @@ func init() {
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[3], greyPalette)
+    }
+
+    fontLoaders[SpellFont2] = func (fonts []*font.LbxFont) *font.Font {
+        darkRed := color.RGBA{R: 0x6d, G: 0x09, B: 0x0c, A: 0xff}
+
+        spellPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            darkRed, darkRed, darkRed,
+            darkRed, darkRed, darkRed,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[3], spellPalette)
     }
 }
 

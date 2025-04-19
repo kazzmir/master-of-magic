@@ -592,7 +592,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            vector.DrawFilledRect(screen, 0, 0, float32(data.ScreenWidth), float32(data.ScreenHeight), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
+            vector.DrawFilledRect(screen, 0, 0, scale.Scale(float32(data.ScreenWidth)), scale.Scale(float32(data.ScreenHeight)), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
 
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(28), float64(12))
@@ -1106,53 +1106,18 @@ type ArtifactFonts struct {
 }
 
 func makeFonts(cache *lbx.LbxCache) ArtifactFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return ArtifactFonts{}
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return ArtifactFonts{}
-    }
-
     loader, err := fontslib.Loader(cache)
     if err != nil {
         log.Printf("Unable to read fonts: %v", err)
         return ArtifactFonts{}
     }
 
-    grey := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -40)
-    greyPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        grey, grey, grey,
-        grey, grey, grey,
-    }
-
-    nameFont := font.MakeOptimizedFontWithPalette(fonts[1], greyPalette)
-
-    // powerFontWhite := font.MakeOptimizedFontWithPalette(fonts[3], greyPalette)
-
-    darkRed := color.RGBA{R: 0x6d, G: 0x09, B: 0x0c, A: 0xff}
-
-    spellPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        darkRed, darkRed, darkRed,
-        darkRed, darkRed, darkRed,
-    }
-
-    spellFont := font.MakeOptimizedFontWithPalette(fonts[3], spellPalette)
-
     return ArtifactFonts{
         PowerFont: loader(fontslib.PowerFont1),
         PowerFontWhite: loader(fontslib.PowerFontWhite),
-        NameFont: nameFont,
+        NameFont: loader(fontslib.NormalFont),
         TitleSpellFont: loader(fontslib.TitleFontOrange),
-        SpellFont: spellFont,
+        SpellFont: loader(fontslib.SpellFont2),
     }
 }
 
