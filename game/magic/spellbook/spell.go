@@ -1037,6 +1037,22 @@ func CastRightSideDistortions2(page *ebiten.Image) util.Distortion {
     }
 }
 
+type SpellbookFonts struct {
+    BigOrange *font.Font
+}
+
+func MakeSpellbookFonts(cache *lbx.LbxCache) *SpellbookFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Error loading fonts: %v", err)
+        return nil
+    }
+
+    return &SpellbookFonts{
+        BigOrange: loader(fontslib.LightGradient1),
+    }
+}
+
 // a popup that allows the user to select an additional amount of mana to add to the spell, upto maximum
 func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCache, maximum int, okCallback func(amount int)) *uilib.UIElementGroup {
     group := uilib.MakeGroup()
@@ -1046,7 +1062,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
     x := 320 - 158
     y := 30
 
-    fonts := fontslib.MakeSpellbookFonts(cache)
+    fonts := MakeSpellbookFonts(cache)
 
     amount := float64(0)
 

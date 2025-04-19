@@ -781,22 +781,6 @@ func MakeTreasureFonts(cache *lbx.LbxCache) *TreasureFonts {
     }
 }
 
-type SpellbookFonts struct {
-    BigOrange *font.Font
-}
-
-func MakeSpellbookFonts(cache *lbx.LbxCache) *SpellbookFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading fonts: %v", err)
-        return nil
-    }
-
-    return &SpellbookFonts{
-        BigOrange: loader(LightGradient1),
-    }
-}
-
 type MagicViewFonts struct {
     NormalFont *font.Font
     SmallerFont *font.Font
