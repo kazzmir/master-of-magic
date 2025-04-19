@@ -55,10 +55,13 @@ const SmallYellow = "SmallYellow"
 const NormalBlue = "NormalBlue"
 const SmallBlue = "SmallBlue"
 const SpellFont = "SpellFont"
+const SpellFont2 = "SpellFont2"
 const TransmuteFont = "TransmuteFont"
 const HugeOrange = "HugeOrange"
 const HugeRed = "HugeRed"
 const NormalYellow = "NormalYellow"
+const PowerFont1 = "PowerFont1"
+const PowerFontWhite = "PowerFontWhite"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -596,6 +599,47 @@ func init() {
 
         return font.MakeOptimizedFontWithPalette(fonts[2], yellowPalette)
     }
+
+    fontLoaders[PowerFont1] = func (fonts []*font.LbxFont) *font.Font {
+
+        // solid := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -40)
+        solid := util.Lighten(color.RGBA{R: 0xca, G: 0x8a, B: 0x4a, A: 0xff}, -10)
+
+        palette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            solid, solid, solid,
+            solid, solid, solid,
+            solid, solid, solid,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[3], palette)
+    }
+
+    fontLoaders[PowerFontWhite] = func (fonts []*font.LbxFont) *font.Font {
+        grey := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -40)
+        greyPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            grey, grey, grey,
+            grey, grey, grey,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[3], greyPalette)
+    }
+
+    fontLoaders[SpellFont2] = func (fonts []*font.LbxFont) *font.Font {
+        darkRed := color.RGBA{R: 0x6d, G: 0x09, B: 0x0c, A: 0xff}
+
+        spellPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            darkRed, darkRed, darkRed,
+            darkRed, darkRed, darkRed,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[3], spellPalette)
+    }
 }
 
 func GetFontList() []string {
@@ -664,26 +708,6 @@ func MakeVaultFonts(cache *lbx.LbxCache) *VaultFonts {
     }
 }
 
-type ArmyViewFonts struct {
-    NormalFont *font.Font
-    SmallerFont *font.Font
-    BigFont *font.Font
-}
-
-func MakeArmyViewFonts(cache *lbx.LbxCache) *ArmyViewFonts {
-    use, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading army view fonts: %v", err)
-        return nil
-    }
-
-    return &ArmyViewFonts{
-        NormalFont: use(NormalFont),
-        SmallerFont: use(SmallerFont),
-        BigFont: use(BigFont),
-    }
-}
-
 type CityViewFonts struct {
     BigFont *font.Font
     DescriptionFont *font.Font
@@ -749,83 +773,6 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
     }, nil
 }
 
-type CityViewResourceFonts struct {
-    HelpFont *font.Font
-    HelpTitleFont *font.Font
-}
-
-func MakeCityViewResourceFonts(cache *lbx.LbxCache) *CityViewResourceFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        return nil
-    }
-
-    return &CityViewResourceFonts{
-        HelpFont: loader(HelpFont),
-        HelpTitleFont: loader(HelpTitleFont),
-    }
-}
-
-type BuildScreenFonts struct {
-    TitleFont *font.Font
-    TitleFontWhite *font.Font
-    DescriptionFont *font.Font
-    OkCancelFont *font.Font
-    SmallFont *font.Font
-    MediumFont *font.Font
-}
-
-func MakeBuildScreenFonts(cache *lbx.LbxCache) *BuildScreenFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &BuildScreenFonts{
-        TitleFont: loader(TitleFont),
-        TitleFontWhite: loader(TitleFontWhite),
-        DescriptionFont: loader(WhiteBig),
-        OkCancelFont: loader(YellowBig),
-        SmallFont: loader(SmallWhite),
-        MediumFont: loader(MediumWhite2),
-    }
-}
-
-type InputFonts struct {
-    NameFont *font.Font
-    TitleFont *font.Font
-}
-
-func MakeInputFonts(cache *lbx.LbxCache) *InputFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &InputFonts{
-        NameFont: loader(NameFont),
-        TitleFont: loader(TitleFontOrange),
-    }
-}
-
-type MerchantFonts struct {
-    LightFont *font.Font
-}
-
-func MakeMerchantFonts(cache *lbx.LbxCache) *MerchantFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil
-    }
-
-    return &MerchantFonts{
-        LightFont: loader(LightFont),
-    }
-}
-
 type SurveyorFonts struct {
     SurveyorFont *font.Font
     YellowFont *font.Font
@@ -846,166 +793,6 @@ func MakeSurveyorFonts(cache *lbx.LbxCache) *SurveyorFonts {
     }
 }
 
-type MercenariesFonts struct {
-    DescriptionFont *font.Font
-    SmallFont *font.Font
-    MediumFont *font.Font
-    OkDismissFont *font.Font
-}
-
-func MakeMercenariesFonts(cache *lbx.LbxCache) *MercenariesFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading mercenaries fonts: %v", err)
-        return nil
-    }
-
-    return &MercenariesFonts{
-        DescriptionFont: loader(WhiteBig),
-        SmallFont: loader(SmallWhite),
-        MediumFont: loader(MediumWhite2),
-        OkDismissFont: loader(LightFont),
-    }
-}
-
-type FizzleFonts struct {
-    Font *font.Font
-}
-
-func MakeFizzleFonts(cache *lbx.LbxCache) *FizzleFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading fizzle fonts: %v", err)
-        return nil
-    }
-
-    return &FizzleFonts{
-        Font: loader(LightFont),
-    }
-}
-
-type GlobalEnchantmentFonts struct {
-    InfoFont *font.Font
-}
-
-func MakeGlobalEnchantmentFonts(cache *lbx.LbxCache) *GlobalEnchantmentFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading global enchantment fonts: %v", err)
-        return nil
-    }
-
-    return &GlobalEnchantmentFonts{
-        InfoFont: loader(InfoFont),
-    }
-}
-
-type HireHeroFonts struct {
-    DescriptionFont *font.Font
-    SmallFont *font.Font
-    MediumFont *font.Font
-    OkDismissFont *font.Font
-}
-
-func MakeHireHeroFonts(cache *lbx.LbxCache) *HireHeroFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &HireHeroFonts{
-        DescriptionFont: loader(WhiteBig),
-        SmallFont: loader(SmallWhite),
-        MediumFont: loader(MediumWhite2),
-        OkDismissFont: loader(LightFont),
-    }
-}
-
-type HeroLevelUpFonts struct {
-    TitleFont *font.Font
-    SmallFont *font.Font
-}
-
-func MakeHeroLevelUpFonts(cache *lbx.LbxCache) *HeroLevelUpFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &HeroLevelUpFonts{
-        TitleFont: loader(LightFont),
-        SmallFont: loader(LightFontSmall),
-    }
-}
-
-type NewBuildingFonts struct {
-    BigFont *font.Font
-}
-
-func MakeNewBuildingFonts(cache *lbx.LbxCache) *NewBuildingFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &NewBuildingFonts{
-        BigFont: loader(YellowBig2),
-    }
-}
-
-type ScrollFonts struct {
-    BigFont *font.Font
-    SmallFont *font.Font
-}
-
-func MakeScrollFonts(cache *lbx.LbxCache) *ScrollFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &ScrollFonts{
-        BigFont: loader(BigRed2),
-        SmallFont: loader(SmallRed2),
-    }
-}
-
-type OutpostFonts struct {
-    BigFont *font.Font
-}
-
-func MakeOutpostFonts(cache *lbx.LbxCache) *OutpostFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &OutpostFonts{
-        BigFont: loader(TitleYellowFont),
-    }
-}
-
-type RandomEventFonts struct {
-    BigFont *font.Font
-}
-
-func MakeRandomEventFonts(cache *lbx.LbxCache) *RandomEventFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &RandomEventFonts{
-        BigFont: loader(BigOrangeGradient2),
-    }
-}
-
 type SettingsFonts struct {
     OptionFont *font.Font
 }
@@ -1019,38 +806,6 @@ func MakeSettingsFonts(cache *lbx.LbxCache) *SettingsFonts {
 
     return &SettingsFonts{
         OptionFont: loader(SettingsFont),
-    }
-}
-
-type TreasureFonts struct {
-    TreasureFont *font.Font
-}
-
-func MakeTreasureFonts(cache *lbx.LbxCache) *TreasureFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading fonts: %v", err)
-        return nil
-    }
-
-    return &TreasureFonts{
-        TreasureFont: loader(LightGradient1),
-    }
-}
-
-type SpellbookFonts struct {
-    BigOrange *font.Font
-}
-
-func MakeSpellbookFonts(cache *lbx.LbxCache) *SpellbookFonts {
-    loader, err := Loader(cache)
-    if err != nil {
-        log.Printf("Error loading fonts: %v", err)
-        return nil
-    }
-
-    return &SpellbookFonts{
-        BigOrange: loader(LightGradient1),
     }
 }
 

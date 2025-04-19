@@ -3,6 +3,7 @@ package game
 import (
     "fmt"
     "image"
+    "log"
     "math"
     "slices"
     "cmp"
@@ -24,12 +25,34 @@ import (
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
+type HireHeroFonts struct {
+    DescriptionFont *font.Font
+    SmallFont *font.Font
+    MediumFont *font.Font
+    OkDismissFont *font.Font
+}
+
+func MakeHireHeroFonts(cache *lbx.LbxCache) *HireHeroFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &HireHeroFonts{
+        DescriptionFont: loader(fontslib.WhiteBig),
+        SmallFont: loader(fontslib.SmallWhite),
+        MediumFont: loader(fontslib.MediumWhite2),
+        OkDismissFont: loader(fontslib.LightFont),
+    }
+}
+
 func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, goldToHire int, action func(bool), onFadeOut func()) *uilib.UIElementGroup {
     imageCache := util.MakeImageCache(cache)
 
     yTop := float64(10)
 
-    fonts := fontslib.MakeHireHeroFonts(cache)
+    fonts := MakeHireHeroFonts(cache)
 
     const fadeSpeed = 7
 
@@ -220,8 +243,26 @@ func MakeHireHeroScreenUI(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero,
     return uiGroup
 }
 
+type HeroLevelUpFonts struct {
+    TitleFont *font.Font
+    SmallFont *font.Font
+}
+
+func MakeHeroLevelUpFonts(cache *lbx.LbxCache) *HeroLevelUpFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &HeroLevelUpFonts{
+        TitleFont: loader(fontslib.LightFont),
+        SmallFont: loader(fontslib.LightFontSmall),
+    }
+}
+
 func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.Hero) {
-    fonts := fontslib.MakeHeroLevelUpFonts(game.Cache)
+    fonts := MakeHeroLevelUpFonts(game.Cache)
 
     top := float64(40)
     left := float64(30)

@@ -5,6 +5,7 @@ import (
     "image"
     "slices"
     "cmp"
+    "log"
     // "strings"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -99,6 +100,32 @@ func combineStrings(all []string) string {
     return out
 }
 
+type BuildScreenFonts struct {
+    TitleFont *font.Font
+    TitleFontWhite *font.Font
+    DescriptionFont *font.Font
+    OkCancelFont *font.Font
+    SmallFont *font.Font
+    MediumFont *font.Font
+}
+
+func MakeBuildScreenFonts(cache *lbx.LbxCache) *BuildScreenFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &BuildScreenFonts{
+        TitleFont: loader(fontslib.TitleFont),
+        TitleFontWhite: loader(fontslib.TitleFontWhite),
+        DescriptionFont: loader(fontslib.WhiteBig),
+        OkCancelFont: loader(fontslib.YellowBig),
+        SmallFont: loader(fontslib.SmallWhite),
+        MediumFont: loader(fontslib.MediumWhite2),
+    }
+}
+
 func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib.City, buildScreen *BuildScreen, doCancel func(), doOk func()) *uilib.UI {
     helpLbx, err := cache.GetLbxFile("HELP.LBX")
     if err != nil {
@@ -112,7 +139,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
 
     buildDescriptions := buildinglib.MakeBuildDescriptions(cache)
 
-    fonts := fontslib.MakeBuildScreenFonts(cache)
+    fonts := MakeBuildScreenFonts(cache)
 
     // var elements []*uilib.UIElement
 

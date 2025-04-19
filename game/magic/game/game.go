@@ -1093,13 +1093,31 @@ func validNameString(s string) bool {
     return strings.ContainsAny(s, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-~@^")
 }
 
+type InputFonts struct {
+    NameFont *font.Font
+    TitleFont *font.Font
+}
+
+func MakeInputFonts(cache *lbx.LbxCache) *InputFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &InputFonts{
+        NameFont: loader(fontslib.NameFont),
+        TitleFont: loader(fontslib.TitleFontOrange),
+    }
+}
+
 func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, topX int, topY int) string {
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
     }()
 
-    fonts := fontslib.MakeInputFonts(game.Cache)
+    fonts := MakeInputFonts(game.Cache)
 
     maxLength := float64(84)
 
@@ -1183,13 +1201,29 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
     return name
 }
 
+type NewBuildingFonts struct {
+    BigFont *font.Font
+}
+
+func MakeNewBuildingFonts(cache *lbx.LbxCache) *NewBuildingFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &NewBuildingFonts{
+        BigFont: loader(fontslib.YellowBig2),
+    }
+}
+
 func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City, building buildinglib.Building, player *playerlib.Player){
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
     }()
 
-    fonts := fontslib.MakeNewBuildingFonts(game.Cache)
+    fonts := MakeNewBuildingFonts(game.Cache)
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
 
@@ -1276,8 +1310,26 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
 }
 
+type ScrollFonts struct {
+    BigFont *font.Font
+    SmallFont *font.Font
+}
+
+func MakeScrollFonts(cache *lbx.LbxCache) *ScrollFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &ScrollFonts{
+        BigFont: loader(fontslib.BigRed2),
+        SmallFont: loader(fontslib.SmallRed2),
+    }
+}
+
 func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text string){
-    fonts := fontslib.MakeScrollFonts(game.Cache)
+    fonts := MakeScrollFonts(game.Cache)
 
     wrappedText := fonts.SmallFont.CreateWrappedText(float64(180), 1, text)
 
@@ -1394,13 +1446,29 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
     }
 }
 
+type OutpostFonts struct {
+    BigFont *font.Font
+}
+
+func MakeOutpostFonts(cache *lbx.LbxCache) *OutpostFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &OutpostFonts{
+        BigFont: loader(fontslib.TitleYellowFont),
+    }
+}
+
 func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack, rename bool){
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
     }()
 
-    fonts := fontslib.MakeOutpostFonts(game.Cache)
+    fonts := MakeOutpostFonts(game.Cache)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         drawer(screen, game)
@@ -2689,13 +2757,29 @@ func (game *Game) AddExperience(player *playerlib.Player, unit units.StackUnit, 
     }
 }
 
+type RandomEventFonts struct {
+    BigFont *font.Font
+}
+
+func MakeRandomEventFonts(cache *lbx.LbxCache) *RandomEventFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return nil
+    }
+
+    return &RandomEventFonts{
+        BigFont: loader(fontslib.BigOrangeGradient2),
+    }
+}
+
 func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, start bool, wizard setup.WizardCustom) {
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
     }()
 
-    fonts := fontslib.MakeRandomEventFonts(game.Cache)
+    fonts := MakeRandomEventFonts(game.Cache)
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
 
@@ -4456,10 +4540,26 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
     }
 }
 
+type TreasureFonts struct {
+    TreasureFont *font.Font
+}
+
+func MakeTreasureFonts(cache *lbx.LbxCache) *TreasureFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Error loading fonts: %v", err)
+        return nil
+    }
+
+    return &TreasureFonts{
+        TreasureFont: loader(fontslib.LightGradient1),
+    }
+}
+
 func (game *Game) doTreasurePopup(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure){
     uiDone := false
 
-    fonts := fontslib.MakeTreasureFonts(game.Cache)
+    fonts := MakeTreasureFonts(game.Cache)
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
@@ -5044,6 +5144,22 @@ func (game *Game) GetWizardAnimal(wizard setup.WizardCustom) *ebiten.Image {
     return animal
 }
 
+type FizzleFonts struct {
+    Font *font.Font
+}
+
+func MakeFizzleFonts(cache *lbx.LbxCache) *FizzleFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Error loading fizzle fonts: %v", err)
+        return nil
+    }
+
+    return &FizzleFonts{
+        Font: loader(fontslib.LightFont),
+    }
+}
+
 // the spell was fizzled by the tranquility spell. show the fizzle picture of a broken wand
 func (game *Game) makeTranquilityFizzleUI(tranquilityOwner *playerlib.Player, caster *playerlib.Player, spell spellbook.Spell) (*uilib.UIElementGroup, context.Context) {
     quit, cancel := context.WithCancel(context.Background())
@@ -5057,7 +5173,7 @@ func (game *Game) makeTranquilityFizzleUI(tranquilityOwner *playerlib.Player, ca
 
     fader := group.MakeFadeIn(7)
 
-    fonts := fontslib.MakeFizzleFonts(game.Cache)
+    fonts := MakeFizzleFonts(game.Cache)
 
     clicked := false
     shutdown := func(){

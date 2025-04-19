@@ -17,6 +17,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -591,7 +592,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            vector.DrawFilledRect(screen, 0, 0, float32(data.ScreenWidth), float32(data.ScreenHeight), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
+            vector.DrawFilledRect(screen, 0, 0, scale.Scale(float32(data.ScreenWidth)), scale.Scale(float32(data.ScreenHeight)), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
 
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(28), float64(12))
@@ -599,7 +600,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
             scale.DrawScaled(screen, background, &options)
 
             // print text "Choose a spell to embed in this item"
-            fonts.TitleSpellFont.PrintOptions(screen, float64(data.ScreenWidth / 2), float64(2), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Choose a spell to embed in this item")
+            fonts.TitleSpellFont.PrintOptions(screen, float64(data.ScreenWidth / 2), float64(2), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, DropShadow: true}, "Choose a spell to embed in this item")
         },
     })
 
@@ -1105,73 +1106,18 @@ type ArtifactFonts struct {
 }
 
 func makeFonts(cache *lbx.LbxCache) ArtifactFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := fontslib.Loader(cache)
     if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
+        log.Printf("Unable to read fonts: %v", err)
         return ArtifactFonts{}
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return ArtifactFonts{}
-    }
-
-    // solid := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -40)
-    solid := util.Lighten(color.RGBA{R: 0xca, G: 0x8a, B: 0x4a, A: 0xff}, -10)
-
-    palette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        solid, solid, solid,
-        solid, solid, solid,
-        solid, solid, solid,
-    }
-
-    powerFont := font.MakeOptimizedFontWithPalette(fonts[3], palette)
-
-    grey := util.Lighten(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, -40)
-    greyPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        grey, grey, grey,
-        grey, grey, grey,
-    }
-
-    nameFont := font.MakeOptimizedFontWithPalette(fonts[1], greyPalette)
-
-    powerFontWhite := font.MakeOptimizedFontWithPalette(fonts[3], greyPalette)
-
-    orange := util.Lighten(color.RGBA{R: 0xe5, G: 0x7b, B: 0x12, A: 0xff}, 10)
-    // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
-    titlePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.Lighten(orange, 20),
-        util.Lighten(orange, 12),
-        util.Lighten(orange, 8),
-        orange,
-    }
-
-    titleSpellFont := font.MakeOptimizedFontWithPalette(fonts[4], titlePalette)
-
-    darkRed := color.RGBA{R: 0x6d, G: 0x09, B: 0x0c, A: 0xff}
-
-    spellPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        darkRed, darkRed, darkRed,
-        darkRed, darkRed, darkRed,
-    }
-
-    spellFont := font.MakeOptimizedFontWithPalette(fonts[3], spellPalette)
 
     return ArtifactFonts{
-        PowerFont: powerFont,
-        PowerFontWhite: powerFontWhite,
-        NameFont: nameFont,
-        TitleSpellFont: titleSpellFont,
-        SpellFont: spellFont,
+        PowerFont: loader(fontslib.PowerFont1),
+        PowerFontWhite: loader(fontslib.PowerFontWhite),
+        NameFont: loader(fontslib.NormalFont),
+        TitleSpellFont: loader(fontslib.TitleFontOrange),
+        SpellFont: loader(fontslib.SpellFont2),
     }
 }
 
