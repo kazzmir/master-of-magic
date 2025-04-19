@@ -51,6 +51,7 @@ const BigRed2 = "BigRed2"
 const SmallRed2 = "SmallRed2"
 const BigOrangeGradient2 = "BigOrangeGradient2"
 const SettingsFont = "SettingsFont"
+const SmallYellow = "SmallYellow"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -200,8 +201,8 @@ func init() {
 
     fontLoaders[SmallRed] = func (fonts []*font.LbxFont) *font.Font {
         rubbleFontPalette := color.Palette{
-            color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
-            color.RGBA{R: 128, G: 0, B: 0, A: 0xff},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0x0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0x0},
             color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
             color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
             color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff},
@@ -470,6 +471,23 @@ func init() {
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[2], optionPalette)
+    }
+
+    fontLoaders[SmallYellow] = func (fonts []*font.LbxFont) *font.Font {
+        orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
+
+        yellowPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            orange,
+            orange,
+            orange,
+            orange,
+            orange,
+            orange,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
     }
 }
 
@@ -920,41 +938,13 @@ type GameFonts struct {
 }
 
 func MakeGameFonts(cache *lbx.LbxCache) *GameFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := Loader(cache)
     if err != nil {
+        log.Printf("Error loading fonts: %v", err)
         return nil
     }
 
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        return nil
-    }
-
-    orange := color.RGBA{R: 0xc7, G: 0x82, B: 0x1b, A: 0xff}
-
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        orange,
-        orange,
-        orange,
-        orange,
-        orange,
-        orange,
-    }
-
-    infoFontYellow := font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
-
-    red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
-    redPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        red, red, red,
-        red, red, red,
-    }
-
-    infoFontRed := font.MakeOptimizedFontWithPalette(fonts[0], redPalette)
-
+    /*
     whitePalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         color.RGBA{R: 0x90, G: 0x86, B: 0x81, A: 0xff},
@@ -962,11 +952,12 @@ func MakeGameFonts(cache *lbx.LbxCache) *GameFonts {
     }
 
     whiteFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
+    */
 
     return &GameFonts{
-        InfoFontYellow: infoFontYellow,
-        InfoFontRed: infoFontRed,
-        WhiteFont: whiteFont,
+        InfoFontYellow: loader(SmallYellow),
+        InfoFontRed: loader(SmallRed),
+        WhiteFont: loader(SmallWhite),
     }
 }
 
