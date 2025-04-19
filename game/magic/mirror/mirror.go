@@ -51,20 +51,23 @@ func GetWizardPortraitIndex(base data.WizardBase, banner data.BannerType) int {
     return wizardIndex + bannerIndex
 }
 
-func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *uilib.UIElement {
-    cornerX := 50
-    cornerY := 1
+type MirrorFonts struct {
+    Name *font.Font
+    Small *font.Font
+    Hero *font.Font
+}
 
+func MakeMirrorFonts(cache *lbx.LbxCache) MirrorFonts {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Could not read fonts: %v", err)
-        return nil
+        return MirrorFonts{}
     }
 
     fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         log.Printf("Could not read fonts: %v", err)
-        return nil
+        return MirrorFonts{}
     }
 
     yellow := color.RGBA{R: 0xea, G: 0xb6, B: 0x00, A: 0xff}
@@ -80,6 +83,19 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *
     smallFont := font.MakeOptimizedFontWithPalette(fonts[0], yellowPalette)
 
     heroFont := font.MakeOptimizedFontWithPalette(fonts[2], yellowPalette)
+
+    return MirrorFonts{
+        Name: nameFont,
+        Small: smallFont,
+        Hero: heroFont,
+    }
+}
+
+func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *uilib.UIElement {
+    cornerX := 50
+    cornerY := 1
+
+    fonts := MakeMirrorFonts(cache)
 
     var element *uilib.UIElement
 
@@ -98,7 +114,7 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *
         })
     }
 
-    wrappedAbilities := smallFont.CreateWrappedText(float64(160), 1, setup.JoinAbilities(player.Wizard.Retorts))
+    wrappedAbilities := fonts.Small.CreateWrappedText(float64(160), 1, setup.JoinAbilities(player.Wizard.Retorts))
 
     element = &uilib.UIElement{
         Layer: 1,
@@ -123,28 +139,28 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *
 
             centerOptions := font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}
 
-            nameFont.PrintOptions(screen, float64(cornerX + 110), float64(cornerY + 10), centerOptions, player.Wizard.Name)
+            fonts.Name.PrintOptions(screen, float64(cornerX + 110), float64(cornerY + 10), centerOptions, player.Wizard.Name)
 
-            smallFont.PrintOptions(screen, float64(cornerX + 30), float64(cornerY + 75), centerOptions, fmt.Sprintf("%v GP", player.Gold))
-            smallFont.PrintOptions(screen, float64(cornerX + 170), float64(cornerY + 75), font.FontOptions{Justify: font.FontJustifyRight, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v MP", player.Mana))
+            fonts.Small.PrintOptions(screen, float64(cornerX + 30), float64(cornerY + 75), centerOptions, fmt.Sprintf("%v GP", player.Gold))
+            fonts.Small.PrintOptions(screen, float64(cornerX + 170), float64(cornerY + 75), font.FontOptions{Justify: font.FontJustifyRight, Options: &options, Scale: scale.ScaleAmount}, fmt.Sprintf("%v MP", player.Mana))
 
             options.GeoM.Translate(float64(34), float64(55))
             newRand := rand.New(rand.NewPCG(player.BookOrderSeed1, player.BookOrderSeed2))
             draw.DrawBooks(screen, options, &imageCache, player.Wizard.Books, newRand)
 
             if player.GetFame() > 0 {
-                heroFont.PrintOptions(screen, float64(cornerX + 90), float64(cornerY + 95), centerOptions, fmt.Sprintf("%v Fame", player.GetFame()))
+                fonts.Hero.PrintOptions(screen, float64(cornerX + 90), float64(cornerY + 95), centerOptions, fmt.Sprintf("%v Fame", player.GetFame()))
             }
 
-            smallFont.RenderWrapped(screen, float64(cornerX + 13), float64(cornerY + 112), wrappedAbilities, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
+            fonts.Small.RenderWrapped(screen, float64(cornerX + 13), float64(cornerY + 112), wrappedAbilities, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
 
-            heroFont.PrintOptions(screen, float64(cornerX + 90), float64(cornerY + 131), centerOptions, "Heroes")
+            fonts.Hero.PrintOptions(screen, float64(cornerX + 90), float64(cornerY + 131), centerOptions, "Heroes")
 
             heroX := cornerX + 13
             heroY := cornerY + 142
             for _, hero := range player.AliveHeroes() {
-                smallFont.PrintOptions(screen, float64(heroX), float64(heroY), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, hero.GetFullName())
-                heroY += smallFont.Height()
+                fonts.Small.PrintOptions(screen, float64(heroX), float64(heroY), font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, hero.GetFullName())
+                heroY += fonts.Small.Height()
             }
         },
     }
