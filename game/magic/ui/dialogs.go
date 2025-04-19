@@ -3,7 +3,6 @@ package ui
 import (
     "log"
     "image"
-    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -286,9 +285,9 @@ func MakeConfirmDialogWithLayerFull(container UIContainer, cache *lbx.LbxCache, 
             scale.DrawScaled(window, topDraw, &options)
 
             if center {
-                fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options})
+                fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options, DropShadow: true})
             } else {
-                fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Scale: scale.ScaleAmount, Options: &options})
+                fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Scale: scale.ScaleAmount, Options: &options, DropShadow: true})
             }
 
             options.GeoM.Reset()
@@ -423,7 +422,7 @@ func MakeLairConfirmDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCa
             options.GeoM.Translate(float64(7), float64(7))
             scale.DrawScaled(window, lairPicture.Frame(), &options)
 
-            fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options})
+            fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options, DropShadow: true})
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(confirmX - 1), float64(bottom))
@@ -558,7 +557,7 @@ func MakeLairShowDialogWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCache
             options.GeoM.Translate(float64(7), float64(7))
             scale.DrawScaled(window, lairPicture.Frame(), &options)
 
-            fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options})
+            fonts.Yellow.RenderWrapped(window, float64(confirmX + confirmMargin + maxWidth / 2), float64(confirmY + confirmTopMargin), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options, DropShadow: true})
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(confirmX), float64(bottom))
@@ -581,47 +580,15 @@ type SelectionFonts struct {
 }
 
 func MakeSelectionFonts(cache *lbx.LbxCache) SelectionFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := fontslib.Loader(cache)
     if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
+        log.Printf("Unable to read fonts: %v", err)
         return SelectionFonts{}
     }
-
-    font4, err := font.ReadFont(fontLbx, 0, 4)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return SelectionFonts{}
-    }
-
-    blackPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-    }
-
-    // FIXME: this is too bright
-    yellowGradient := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
-        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-    }
-
-    buttonFont := font.MakeOptimizedFontWithPalette(font4, blackPalette)
-    topFont := font.MakeOptimizedFontWithPalette(font4, yellowGradient)
 
     return SelectionFonts{
-        Black: buttonFont,
-        Title: topFont,
+        Black: loader(fontslib.BigBlack),
+        Title: loader(fontslib.LightFont),
     }
 }
 

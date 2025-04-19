@@ -62,6 +62,7 @@ const HugeRed = "HugeRed"
 const NormalYellow = "NormalYellow"
 const PowerFont1 = "PowerFont1"
 const PowerFontWhite = "PowerFontWhite"
+const BigBlack = "BigBlack"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -638,6 +639,21 @@ func init() {
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[3], spellPalette)
+    }
+
+    fontLoaders[BigBlack] = func (fonts []*font.LbxFont) *font.Font {
+        blackPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[4], blackPalette)
     }
 }
 
