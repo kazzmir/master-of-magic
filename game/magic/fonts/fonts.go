@@ -56,6 +56,8 @@ const NormalBlue = "NormalBlue"
 const SmallBlue = "SmallBlue"
 const SpellFont = "SpellFont"
 const TransmuteFont = "TransmuteFont"
+const HugeOrange = "HugeOrange"
+const HugeRed = "HugeRed"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -541,6 +543,49 @@ func init() {
 
         return font.MakeOptimizedFontWithPalette(fonts[0], transmutePalette)
     }
+
+    fontLoaders[HugeOrange] = func (fonts []*font.LbxFont) *font.Font {
+        orangePalette := color.Palette{
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xc6, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xc6, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+            color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xe3, G: 0xb0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xe3, G: 0xb0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[5], orangePalette)
+    }
+
+    fontLoaders[HugeRed] = func (fonts []*font.LbxFont) *font.Font {
+        redPalette := color.Palette{
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xcf, G: 0x29, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xe0, G: 0x2d, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xd4, G: 0x2a, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xba, G: 0x25, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+            color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
+            color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[5], redPalette)
+    }
+
 }
 
 func GetFontList() []string {
@@ -1128,13 +1173,14 @@ type NewWizardFonts struct {
 }
 
 func MakeNewWizardFonts(cache *lbx.LbxCache) *NewWizardFonts {
-    cityViewFonts, err := MakeCityViewFonts(cache)
+    loader, err := Loader(cache)
     if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
         return nil
     }
 
     return &NewWizardFonts{
-        BigYellowFont: cityViewFonts.BigFont,
+        BigYellowFont: loader(TitleYellowFont),
     }
 }
 
@@ -1144,58 +1190,15 @@ type SpellOfMasteryFonts struct {
 }
 
 func MakeSpellOfMasteryFonts(cache *lbx.LbxCache) *SpellOfMasteryFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := Loader(cache)
     if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
         return nil
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
-    }
-
-    orangePalette := color.Palette{
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xc6, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xc6, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-        color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe3, G: 0xb0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe3, G: 0xb0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xc1, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-    }
-
-    orangeFont := font.MakeOptimizedFontWithPalette(fonts[5], orangePalette)
-
-    redPalette := color.Palette{
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xcf, G: 0x29, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe0, G: 0x2d, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xd4, G: 0x2a, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xba, G: 0x25, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
-        color.RGBA{R: 0xe8, G: 0x2e, B: 0x0, A: 0xff},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-    }
-
-    redFont := font.MakeOptimizedFontWithPalette(fonts[5], redPalette)
 
     return &SpellOfMasteryFonts{
-        Font: orangeFont,
-        RedFont: redFont,
+        Font: loader(HugeOrange),
+        RedFont: loader(HugeRed),
     }
 }
 
