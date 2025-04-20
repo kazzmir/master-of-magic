@@ -1855,45 +1855,17 @@ type RaceFonts struct {
     Select *font.Font
 }
 
-func MakeRaceFonts(cache *lbx.LbxCache, lbxFonts []*font.LbxFont) RaceFonts {
+func MakeRaceFonts(cache *lbx.LbxCache) RaceFonts {
     loader, err := fontslib.Loader(cache)
     if err != nil {
         return RaceFonts{}
     }
 
-    yellow1 := color.RGBA{R: 0xd6, G: 0xb3, B: 0x85, A: 0xff}
-    availablePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        premultiplyAlpha(color.RGBA{R: 0xd6, G: 0xb3, B: 0x85, A: 0xff}, 0.5),
-        // color.RGBA{R: 0x85, G: 0x68, B: 0x3d, A: 0xff},
-        yellow1, yellow1, yellow1,
-        yellow1, yellow1, yellow1,
-    }
-
-    yellow2 := premultiplyAlpha(yellow1, 0.3)
-    raceUnavailablePalette := color.Palette {
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        yellow2, yellow2, yellow2,
-        yellow2, yellow2, yellow2,
-    }
-
-    selectColor := color.RGBA{R: 0xfc, G: 0xf3, B: 0x1c, A: 0xff}
-    selectPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        premultiplyAlpha(selectColor, 0.5),
-        selectColor, selectColor, selectColor,
-        selectColor, selectColor, selectColor,
-    }
-
-    raceAvailable := font.MakeOptimizedFontWithPalette(lbxFonts[2], availablePalette)
-    raceUnavailable := font.MakeOptimizedFontWithPalette(lbxFonts[2], raceUnavailablePalette)
-    raceSelect := font.MakeOptimizedFontWithPalette(lbxFonts[2], selectPalette)
-
     return RaceFonts{
         Race: loader(fontslib.PowerFont1),
-        Available: raceAvailable,
-        Unavailable: raceUnavailable,
-        Select: raceSelect,
+        Available: loader(fontslib.NormalLight),
+        Unavailable: loader(fontslib.NormalLightTranslucent),
+        Select: loader(fontslib.Select1),
     }
 }
 
@@ -1901,7 +1873,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
     imageCache := util.MakeImageCache(screen.LbxCache)
 
-    fonts := MakeRaceFonts(screen.LbxCache, screen.LbxFonts)
+    fonts := MakeRaceFonts(screen.LbxCache)
 
     var elements []*uilib.UIElement
     group := uilib.MakeGroup()

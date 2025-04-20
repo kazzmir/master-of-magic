@@ -51,6 +51,9 @@ const InfoFont = "InfoFont"
 const SmallBlack = "SmallBlack"
 const SmallerWhite = "SmallerWhite"
 const MediumBlack = "MediumBlack"
+const NormalLight = "NormalLight"
+const NormalLightTranslucent = "NormalLightTranslucent"
+const Select1 = "Select1"
 
 const BigRed2 = "BigRed2"
 const SmallRed2 = "SmallRed2"
@@ -723,6 +726,43 @@ func init() {
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[4], blackPalette)
+    }
+
+    fontLoaders[NormalLight] = func (fonts []*font.LbxFont) *font.Font {
+        yellow1 := color.RGBA{R: 0xd6, G: 0xb3, B: 0x85, A: 0xff}
+        alpha := uint8(0xff)
+        availablePalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            util.PremultiplyAlpha(color.RGBA{R: 0xd6, G: 0xb3, B: 0x85, A: alpha/2}),
+            // color.RGBA{R: 0x85, G: 0x68, B: 0x3d, A: 0xff},
+            yellow1, yellow1, yellow1,
+            yellow1, yellow1, yellow1,
+        }
+        return font.MakeOptimizedFontWithPalette(fonts[2], availablePalette)
+    }
+
+    fontLoaders[NormalLightTranslucent] = func (fonts []*font.LbxFont) *font.Font {
+        alpha := uint8(0xff)
+        yellow2 := util.PremultiplyAlpha(color.RGBA{R: 0xd6, G: 0xb3, B: 0x85, A: uint8(float32(alpha) * 0.3)})
+        raceUnavailablePalette := color.Palette {
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            yellow2, yellow2, yellow2,
+            yellow2, yellow2, yellow2,
+        }
+        return font.MakeOptimizedFontWithPalette(fonts[2], raceUnavailablePalette)
+    }
+
+    fontLoaders[Select1] = func (fonts []*font.LbxFont) *font.Font {
+        alpha := uint8(0xff)
+        selectColor := color.RGBA{R: 0xfc, G: 0xf3, B: 0x1c, A: alpha}
+        selectPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            util.PremultiplyAlpha(color.RGBA{R: 0xfc, G: 0xf3, B: 0x1c, A: alpha/2}),
+            selectColor, selectColor, selectColor,
+            selectColor, selectColor, selectColor,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[2], selectPalette)
     }
 }
 
