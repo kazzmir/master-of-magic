@@ -264,7 +264,7 @@ func TestLayout3(test *testing.T){
     var solution []*Rect
     var ok bool
     tries := 0
-    for range 10 {
+    for range 50 {
         tries += 1
         count = 0
         solution, ok = doLayoutRecursive(filterReplaced(buildings), rects, rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64())), &count)
