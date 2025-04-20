@@ -1848,15 +1848,20 @@ func premultiplyAlpha(c color.RGBA, alpha float32) color.RGBA {
     }
 }
 
+type RaceFonts struct {
+}
+
 func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
     imageCache := util.MakeImageCache(screen.LbxCache)
 
+    /*
     black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
     blackPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
         black, black, black, black, black,
     }
+    */
 
     raceColor := color.RGBA{R: 0xc1, G: 0x7a, B: 0x23, A: 0xff}
     racePalette := color.Palette{
@@ -1865,7 +1870,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
         raceColor, raceColor, raceColor,
     }
 
-    raceShadowFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
+    // raceShadowFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
     raceFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], racePalette)
 
     yellow1 := color.RGBA{R: 0xd6, G: 0xb3, B: 0x85, A: 0xff}
@@ -2006,7 +2011,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             options.GeoM.Translate(float64(portraitX), float64(portraitY))
             portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
             window.DrawImage(portrait, scale.ScaleOptions(options))
-            screen.Fonts.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
+            screen.Fonts.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
             options.GeoM.Translate(34, 135)
@@ -2019,15 +2024,13 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             windyBorder, _ := screen.ImageCache.GetImage("newgame.lbx", 47, 0)
             window.DrawImage(windyBorder, scale.ScaleOptions(options))
 
-            raceShadowFont.PrintOptions(window, 243 + 1, 25, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Arcanian Races:")
-            raceFont.PrintOptions(window, 243, 25, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Arcanian Races:")
+            raceFont.PrintOptions(window, 243, 25, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, "Arcanian Races:")
 
             options.GeoM.Reset()
             options.GeoM.Translate(210, 33)
             window.DrawImage(raceBackground, scale.ScaleOptions(options))
 
-            raceShadowFont.PrintOptions(window, 243 + 1, 132, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Myrran Races:")
-            raceFont.PrintOptions(window, 243, 132, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Myrran Races:")
+            raceFont.PrintOptions(window, 243, 132, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, "Myrran Races:")
 
             screen.Fonts.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
 
