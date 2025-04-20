@@ -65,8 +65,6 @@ func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, enemies []*p
 func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib.Player, help *helplib.Help, cache *lbx.LbxCache, imageCache *util.ImageCache) *uilib.UIElementGroup {
     group := uilib.MakeGroup()
 
-    fontOptions := font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}
-
     ok, _ := imageCache.GetImages("magic.lbx", 54)
     okRect := util.ImageRect(176, 99, ok[0])
     okIndex := 0
@@ -93,6 +91,8 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
         alchemyConversion = 1
     }
 
+    getAlpha := group.MakeFadeIn(7)
+
     conveyor, _ := imageCache.GetImage("magic.lbx", 57, 0)
     cursor, _ := imageCache.GetImage("magic.lbx", 58, 0)
 
@@ -104,6 +104,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("magic.lbx", 52, 0)
             var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
             options.GeoM.Translate(75, 60)
             scale.DrawScaled(screen, background, &options)
 
@@ -168,6 +169,8 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
             options.GeoM.Translate(float64(cancelRect.Min.X), float64(cancelRect.Min.Y))
             scale.DrawScaled(screen, cancel[cancelIndex], &options)
 
+            fontOptions := font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount, Options: &options}
+
             leftSide := float64(122)
             rightSide := float64(224)
             if isRight {
@@ -183,6 +186,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     {
         posX := 0
         conveyorRect := image.Rect(131, 85, (131 + 56), (85 + 7))
+        doUpdate := false
         group.AddElement(&uilib.UIElement{
             Rect: conveyorRect,
             Layer: 1,
@@ -194,14 +198,20 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
                 }
             },
             LeftClick: func(element *uilib.UIElement){
-                cursorPosition = posX
-                if cursorPosition < 0 {
-                    cursorPosition = 0
-                }
-                changePercent = float64(cursorPosition) / float64(conveyorRect.Dx())
+                doUpdate = true
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                doUpdate = false
             },
             Inside: func(element *uilib.UIElement, x, y int){
                 posX = x
+                if doUpdate {
+                    cursorPosition = posX
+                    if cursorPosition < 0 {
+                        cursorPosition = 0
+                    }
+                    changePercent = float64(cursorPosition) / float64(conveyorRect.Dx())
+                }
             },
         })
     }
@@ -228,6 +238,15 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
         },
     })
 
+    finished := false
+    finish := func(){
+        finished = true
+        getAlpha = group.MakeFadeOut(7)
+        group.AddDelay(7, func(){
+            ui.RemoveGroup(group)
+        })
+    }
+
     // cancel button
     group.AddElement(&uilib.UIElement{
         Rect: cancelRect,
@@ -237,8 +256,11 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
             cancelIndex = 1
         },
         LeftClickRelease: func(element *uilib.UIElement){
+            if finished {
+                return
+            }
             cancelIndex = 0
-            ui.RemoveGroup(group)
+            finish()
         },
         RightClick: func(element *uilib.UIElement){
             helpEntries := help.GetEntries(371)
@@ -273,8 +295,12 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
             okIndex = 1
         },
         LeftClickRelease: func(element *uilib.UIElement){
+            if finished {
+                return
+            }
+
             okIndex = 0
-            ui.RemoveGroup(group)
+            finish()
 
             goldChange := 0
             manaChange := 0
