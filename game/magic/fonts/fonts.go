@@ -49,6 +49,7 @@ const SurveyorFont = "SurveyorFont"
 const YellowFont = "YellowFont"
 const InfoFont = "InfoFont"
 const SmallBlack = "SmallBlack"
+const SmallBlack2 = "SmallBlack2"
 const SmallerWhite = "SmallerWhite"
 const MediumBlack = "MediumBlack"
 const NormalLight = "NormalLight"
@@ -161,6 +162,18 @@ func init() {
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[0], blackPalette)
+    }
+
+    fontLoaders[SmallBlack2] = func (fonts []*font.LbxFont) *font.Font {
+        black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
+        blackPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            black, black, black,
+            black, black, black,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[1], blackPalette)
     }
 
     fontLoaders[MediumBlack] = func (fonts []*font.LbxFont) *font.Font {

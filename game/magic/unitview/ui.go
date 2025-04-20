@@ -290,48 +290,47 @@ func makePaletteFromBanner(banner data.BannerType) color.Palette {
     }
 }
 
-// list of units that shows up when you right click on an enemy unit stack
-func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, title string, clicked func(UnitView)) []*uilib.UIElement {
-    imageCache := util.MakeImageCache(cache)
+type SmallListFonts struct {
+    Title *font.Font
+    Small *font.Font
+    Medium *font.Font
+}
 
-    titleHeight := 22
-    unitHeight := 19
+func MakeSmallListFonts(cache *lbx.LbxCache, banner data.BannerType) SmallListFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        return SmallListFonts{}
+    }
 
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil
+        return SmallListFonts{}
     }
 
     fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
+        return SmallListFonts{}
     }
 
-    black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
-    descriptionPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        black, black, black, black,
-        black, black, black, black,
-    }
+    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(banner))
 
-    brightPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    return SmallListFonts{
+        Title: titleFont,
+        Small: loader(fontslib.SmallBlack2),
+        Medium: loader(fontslib.MediumWhite2),
     }
+}
 
-    titleFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(stack[0].GetBanner()))
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
-    mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], brightPalette)
+// list of units that shows up when you right click on an enemy unit stack
+func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, title string, clicked func(UnitView)) []*uilib.UIElement {
+    imageCache := util.MakeImageCache(cache)
+
+    fonts := MakeSmallListFonts(cache, stack[0].GetBanner())
+
+    titleHeight := 22
+    unitHeight := 19
 
     // title bar + 1 for each unit
     height := titleHeight + 1 + unitHeight * len(stack)
@@ -379,7 +378,7 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
             screen.DrawImage(background, scale.ScaleOptions(options))
 
             titleX, titleY := options.GeoM.Apply(float64(background.Bounds().Dx() / 2), 8)
-            titleFont.PrintOptions(screen, titleX, titleY, font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, title)
+            fonts.Title.PrintOptions(screen, titleX, titleY, font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}, title)
 
             /*
             util.DrawRect(screen, image.Rect(posX, posY, posX+1, posY + titleHeight), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
@@ -446,20 +445,20 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
                 }
 
                 x, y = unitOptions.GeoM.Apply(float64(unitBack.Bounds().Dx() + 2), 5)
-                mediumFont.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, unit.GetName())
+                fonts.Medium.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, unit.GetName())
 
                 rightOptions := font.FontOptions{Justify: font.FontJustifyRight, Options: &options, Scale: scale.ScaleAmount}
 
                 unitOptions.GeoM.Translate(133, 5)
                 x, y = unitOptions.GeoM.Apply(0, float64(1))
-                smallFont.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetMeleeAttackPower()))
+                fonts.Small.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetMeleeAttackPower()))
                 // FIXME: show mythril/adamantium weapons?
                 screen.DrawImage(meleeImage, scale.ScaleOptions(unitOptions))
 
                 unitOptions.GeoM.Translate(20, 0)
                 if unit.GetRangedAttackPower() > 0 {
                     x, y = unitOptions.GeoM.Apply(0, 1)
-                    smallFont.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
+                    fonts.Small.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
                     switch unit.GetRangedAttackDamageType() {
                         case units.DamageNone: // nothing
                         case units.DamageRangedMagical:
@@ -473,18 +472,18 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
 
                 unitOptions.GeoM.Translate(20, 0)
                 x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetDefense()))
+                fonts.Small.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetDefense()))
                 screen.DrawImage(defenseImage, scale.ScaleOptions(unitOptions))
 
                 unitOptions.GeoM.Translate(20, 0)
                 x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetHitPoints()))
+                fonts.Small.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetHitPoints()))
 
                 screen.DrawImage(healthImage, scale.ScaleOptions(unitOptions))
 
                 unitOptions.GeoM.Translate(20, 0)
                 x, y = unitOptions.GeoM.Apply(0, 1)
-                smallFont.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetMovementSpeed().ToFloat()))
+                fonts.Small.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetMovementSpeed().ToFloat()))
 
                 moveImage, _ := imageCache.GetImageTransform("unitview.lbx", 24, 0, "cut1", cut1PixelFunc)
                 if unit.IsFlying() {
