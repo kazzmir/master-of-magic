@@ -968,12 +968,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         return err
     }
 
-    spellsLbx, err := cache.GetLbxFile("SPELLDAT.LBX")
-    if err != nil {
-        return err
-    }
-
-    screen.Spells, err = spellbook.ReadSpells(spellsLbx, 0)
+    screen.Spells, err = spellbook.ReadSpellsFromCache(cache)
     if err != nil {
         return err
     }
