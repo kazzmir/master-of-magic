@@ -74,7 +74,7 @@ func MakeGameFonts(cache *lbx.LbxCache) *GameFonts {
     return &GameFonts{
         InfoFontYellow: loader(fontslib.SmallYellow),
         InfoFontRed: loader(fontslib.SmallRed),
-        WhiteFont: loader(fontslib.SmallWhite),
+        WhiteFont: loader(fontslib.SmallerWhite),
     }
 }
 
@@ -6772,7 +6772,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.Fonts.WhiteFont.PrintOptions(screen, 315, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.Fonts.WhiteFont.PrintOptions(screen, 314, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v MP", game.Players[0].Mana))
         },
     })
 

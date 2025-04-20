@@ -3,9 +3,9 @@ package banish
 import (
     "fmt"
     "log"
-    "image/color"
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
@@ -83,51 +83,27 @@ func getWizardStandingImageIndex(wizard data.WizardBase) int {
     return -1
 }
 
+type BanishFonts struct {
+    Main *font.Font
+}
+
+func MakeBanishFonts(cache *lbx.LbxCache) BanishFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Could not load fonts: %v", err)
+        return BanishFonts{}
+    }
+
+    return BanishFonts{
+        Main: loader(fontslib.TitleYellowFont),
+    }
+}
+
 func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player, defeatedWizard *playerlib.Player) (func (coroutine.YieldFunc) error, func (*ebiten.Image)) {
 
     imageCache := util.MakeImageCache(cache)
 
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
-    if err != nil {
-        log.Printf("Could not read fonts: %v", err)
-        return func (coroutine.YieldFunc) error { return fmt.Errorf("fail") }, func (*ebiten.Image) {}
-    }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Could not read fonts: %v", err)
-        return func (coroutine.YieldFunc) error { return fmt.Errorf("fail") }, func (*ebiten.Image) {}
-    }
-
-    yellow := util.Lighten(util.RotateHue(color.RGBA{R: 255, G: 255, B: 0, A: 255}, -0.60), 0)
-    // red := color.RGBA{R: 255, G: 0, B: 0, A: 255}
-    yellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        yellow,
-        util.Lighten(yellow, -20),
-        util.Lighten(yellow, -10),
-        util.Lighten(yellow, -30),
-        yellow,
-        util.Lighten(yellow, -10),
-        util.Lighten(yellow, -15),
-        util.Lighten(yellow, -25),
-        util.Lighten(yellow, -40),
-        util.Lighten(yellow, -30),
-        util.Lighten(yellow, -50),
-        yellow,
-        yellow,
-        yellow,
-        yellow,
-        yellow,
-        yellow,
-        yellow,
-        yellow,
-        yellow,
-    }
-
-    mainFont := font.MakeOptimizedFontWithPalette(fonts[5], yellowPalette)
+    fonts := MakeBanishFonts(cache)
 
     background, _ := imageCache.GetImage("wizlab.lbx", 19, 0)
 
@@ -226,7 +202,7 @@ func ShowBanishAnimation(cache *lbx.LbxCache, attackingWizard *playerlib.Player,
             scale.DrawScaled(screen, sprite.Image, &options)
         }
 
-        mainFont.PrintOptions(screen, 160, 10, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("%v banishes %v", attackingWizard.Wizard.Name, defeatedWizard.Wizard.Name))
+        fonts.Main.PrintOptions(screen, 160, 10, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("%v banishes %v", attackingWizard.Wizard.Name, defeatedWizard.Wizard.Name))
     }
 
     yellSound, err := audio.LoadSound(cache, 35)
