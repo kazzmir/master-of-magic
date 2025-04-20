@@ -10,31 +10,7 @@ import (
 
 // an implementation of combat/UnitDamage that wraps a StackUnit for the purpose of applying damage to a StackUnit
 type UnitDamageWrapper struct {
-    Unit units.StackUnit
-}
-
-func (wrapper *UnitDamageWrapper) GetMaxHealth() int {
-    return wrapper.Unit.GetMaxHealth()
-}
-
-func (wrapper *UnitDamageWrapper) GetHealth() int {
-    return wrapper.Unit.GetHealth()
-}
-
-func (wrapper *UnitDamageWrapper) GetCount() int {
-    return wrapper.Unit.GetCount()
-}
-
-func (wrapper *UnitDamageWrapper) GetDefense() int {
-    return wrapper.Unit.GetDefense()
-}
-
-func (wrapper *UnitDamageWrapper) HasAbility(ability data.AbilityType) bool {
-    return wrapper.Unit.HasAbility(ability)
-}
-
-func (wrapper *UnitDamageWrapper) HasEnchantment(enchantment data.UnitEnchantment) bool {
-    return wrapper.Unit.HasEnchantment(enchantment)
+    units.StackUnit
 }
 
 func (wrapper *UnitDamageWrapper) IsAsleep() bool {
@@ -42,7 +18,7 @@ func (wrapper *UnitDamageWrapper) IsAsleep() bool {
 }
 
 func (wrapper *UnitDamageWrapper) TakeDamage(damage int, damageType combat.DamageType) int {
-    wrapper.Unit.AdjustHealth(-damage)
+    wrapper.StackUnit.AdjustHealth(-damage)
     return 0
 }
 
@@ -51,7 +27,7 @@ func (wrapper *UnitDamageWrapper) ToDefend(modifiers combat.DamageModifiers) int
 }
 
 func (wrapper *UnitDamageWrapper) ReduceInvulnerability(damage int) int {
-    if wrapper.Unit.HasEnchantment(data.UnitEnchantmentInvulnerability) {
+    if wrapper.StackUnit.HasEnchantment(data.UnitEnchantmentInvulnerability) {
         return max(0, damage - 2)
     }
 

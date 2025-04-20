@@ -28,7 +28,7 @@ func TestDamageNormal(test *testing.T) {
     baseUnit := units.MakeOverworldUnitFromUnit(testUnit, 1, 1, data.PlaneArcanus, data.BannerRed, &NoExperienceInfo{}, &units.NoEnchantments{})
 
     wrapper := UnitDamageWrapper{
-        Unit: baseUnit,
+        StackUnit: baseUnit,
     }
 
     maxHealth := testUnit.HitPoints * testUnit.Count
@@ -65,7 +65,7 @@ func TestDamageHero(test *testing.T) {
     baseUnit := hero.MakeHero(units.MakeOverworldUnitFromUnit(testUnit, 1, 1, data.PlaneArcanus, data.BannerRed, &NoExperienceInfo{}, &units.NoEnchantments{}), hero.HeroRakir, "Rakir")
 
     wrapper := UnitDamageWrapper{
-        Unit: baseUnit,
+        StackUnit: baseUnit,
     }
 
     if wrapper.GetHealth() != units.HeroRakir.HitPoints {
