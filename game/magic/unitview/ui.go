@@ -116,7 +116,7 @@ func MakeUIFonts(cache *lbx.LbxCache) UIFonts {
 
     return UIFonts{
         Description: loader(fontslib.WhiteBig),
-        Small: loader(fontslib.SmallWhite2),
+        Small: loader(fontslib.SmallWhite),
         Medium: loader(fontslib.MediumWhite2),
         OkDismiss: loader(fontslib.LightFont),
     }
