@@ -37,6 +37,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/summon"
+    "github.com/kazzmir/master-of-magic/game/magic/cartographer"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
@@ -91,6 +92,9 @@ type GameEventRefreshUI struct {
 }
 
 type GameEventSurveyor struct {
+}
+
+type GameEventCartographer struct {
 }
 
 type GameEventNextTurn struct {
@@ -2908,6 +2912,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doNextTurn(yield)
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
+                    case *GameEventCartographer:
+                        game.doCartographer(yield)
                     case *GameEventApprenticeUI:
                         game.ShowApprenticeUI(yield, game.Players[0])
                     case *GameEventArmyView:
@@ -3043,6 +3049,23 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                 return
         }
     }
+}
+
+func (game *Game) doCartographer(yield coroutine.YieldFunc) {
+    logic, draw := cartographer.MakeCartographer(game.Cache)
+
+    yield()
+    oldDrawer := game.Drawer
+    defer func(){
+        game.Drawer = oldDrawer
+    }()
+
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        oldDrawer(screen, game)
+        draw(screen)
+    }
+
+    logic(yield)
 }
 
 func (game *Game) doRunUI(yield coroutine.YieldFunc, group *uilib.UIElementGroup, quit context.Context) {
@@ -5408,7 +5431,12 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         },
         uilib.Selection{
             Name: "Cartographer",
-            Action: func(){},
+            Action: func(){
+                select {
+                    case game.Events <- &GameEventCartographer{}:
+                    default:
+                }
+            },
             Hotkey: "(F2)",
         },
         uilib.Selection{

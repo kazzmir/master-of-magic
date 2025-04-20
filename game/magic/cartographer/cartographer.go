@@ -1,6 +1,8 @@
 package cartographer
 
 import (
+    _ "log"
+
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -33,6 +35,7 @@ func MakeCartographer(cache *lbx.LbxCache) (func(coroutine.YieldFunc), func (*eb
 
         getAlpha = util.MakeFadeOut(7, &counter)
         for range 7 {
+            counter += 1
             yield()
         }
     }
