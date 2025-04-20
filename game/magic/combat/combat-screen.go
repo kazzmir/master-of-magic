@@ -387,18 +387,6 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         DrawRoad: zone.City != nil,
         DrawClouds: zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentFlyingFortress),
         Fonts: fonts,
-
-        /*
-        DebugFont: debugFont,
-        HudFont: hudFont,
-        InfoFont: infoFont,
-        InfoUIFont: infoUIFont,
-        WhiteFont: whiteFont,
-        EnchantmentFont: enchantmentFont,
-        AttackingWizardFont: attackingWizardFont,
-        DefendingWizardFont: defendingWizardFont,
-        */
-
         Coordinates: coordinates,
         // ScreenToTile: screenToTile,
         WhitePixel: whitePixel,
