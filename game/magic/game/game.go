@@ -3052,7 +3052,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
 }
 
 func (game *Game) doCartographer(yield coroutine.YieldFunc) {
-    logic, draw := cartographer.MakeCartographer(game.Cache)
+    logic, draw := cartographer.MakeCartographer(game.Cache, game.AllCities(), game.ArcanusMap, game.GetHumanPlayer().GetFog(data.PlaneArcanus), game.MyrrorMap, game.GetHumanPlayer().GetFog(data.PlaneMyrror))
 
     yield()
     oldDrawer := game.Drawer
