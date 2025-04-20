@@ -37,7 +37,7 @@ func makeFonts(cache *lbx.LbxCache) Fonts {
     }
 }
 
-func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *maplib.Map, arcanusFog data.FogMap, myrrorMap *maplib.Map, myrrorFog data.FogMap) (func(coroutine.YieldFunc), func (*ebiten.Image)) {
+func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *maplib.Map, arcanusFog data.FogMap, myrrorMap *maplib.Map, myrrorFog data.FogMap) (coroutine.AcceptYieldFunc, func (*ebiten.Image)) {
     quit := false
 
     fonts := makeFonts(cache)
@@ -83,14 +83,15 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
         },
     })
 
-    logic := func (yield coroutine.YieldFunc) {
+    logic := func (yield coroutine.YieldFunc) error {
         for !quit {
             counter += 1
 
             ui.StandardUpdate()
 
-            if yield() != nil {
-                return
+            err := yield()
+            if err != nil {
+                return err
             }
         }
 
@@ -99,6 +100,8 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
             counter += 1
             yield()
         }
+
+        return nil
     }
 
     draw := func (screen *ebiten.Image) {
