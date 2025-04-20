@@ -271,7 +271,7 @@ func AllHeroTypes() []HeroType {
 }
 
 type Hero struct {
-    Unit *units.OverworldUnit
+    *units.OverworldUnit
     HeroType HeroType
     Name string
     Status HeroStatus
@@ -291,7 +291,7 @@ func MakeHeroSimple(heroType HeroType) *Hero {
 
 func MakeHero(unit *units.OverworldUnit, heroType HeroType, name string) *Hero {
     return &Hero{
-        Unit: unit,
+        OverworldUnit: unit,
         Name: name,
         HeroType: heroType,
         Abilities: slices.Clone(unit.GetAbilities()),
@@ -527,29 +527,17 @@ func (hero *Hero) GetHireFee() int {
 }
 
 func (hero *Hero) AdjustHealth(amount int) {
-    hero.Unit.Damage -= amount
-    if hero.Unit.Damage < 0 {
-        hero.Unit.Damage = 0
+    hero.OverworldUnit.Damage -= amount
+    if hero.OverworldUnit.Damage < 0 {
+        hero.OverworldUnit.Damage = 0
     }
-    if hero.Unit.Damage > hero.GetMaxHealth() {
-        hero.Unit.Damage = hero.GetMaxHealth()
+    if hero.OverworldUnit.Damage > hero.GetMaxHealth() {
+        hero.OverworldUnit.Damage = hero.GetMaxHealth()
     }
 
     if hero.GetHealth() <= 0 {
         hero.SetStatus(StatusDead)
     }
-}
-
-func (hero *Hero) GetDamage() int {
-    return hero.Unit.Damage
-}
-
-func (hero *Hero) GetBusy() units.BusyStatus {
-    return hero.Unit.GetBusy()
-}
-
-func (hero *Hero) SetBusy(busy units.BusyStatus) {
-    hero.Unit.SetBusy(busy)
 }
 
 func (hero *Hero) HasItem(itemType artifact.ArtifactType) bool {
@@ -573,28 +561,12 @@ func (hero *Hero) CanTouchAttack(damage units.Damage) bool {
     return false
 }
 
-func (hero *Hero) IsUndead() bool {
-    return hero.Unit.IsUndead()
-}
-
-func (hero *Hero) SetUndead() {
-    hero.Unit.SetUndead()
-}
-
-func (hero *Hero) GetRealm() data.MagicType {
-    return hero.Unit.GetRealm()
-}
-
 // for mythril/adamantium, heroes dont use those
 func (hero *Hero) SetWeaponBonus(bonus data.WeaponBonus) {
 }
 
 func (hero *Hero) GetWeaponBonus() data.WeaponBonus {
     return data.WeaponNone
-}
-
-func (hero *Hero) GetCombatRangeIndex(facing units.Facing) int {
-    return hero.Unit.GetCombatRangeIndex(facing)
 }
 
 func (hero *Hero) GetHealth() int {
@@ -607,12 +579,8 @@ func (hero *Hero) GetMaxHealth() int {
 
 func (hero *Hero) AddExperience(amount int) {
     if hero.Status != StatusDead {
-        hero.Unit.AddExperience(amount)
+        hero.OverworldUnit.AddExperience(amount)
     }
-}
-
-func (hero *Hero) GetExperience() int {
-    return hero.Unit.GetExperience()
 }
 
 func (hero *Hero) GetEnchantments() []data.UnitEnchantment {
@@ -624,27 +592,15 @@ func (hero *Hero) GetEnchantments() []data.UnitEnchantment {
         }
     }
 
-    return append(hero.Unit.GetEnchantments(), artifactsEnchantments...)
-}
-
-func (hero *Hero) SetEnchantmentProvider(provider units.EnchantmentProvider) {
-    hero.Unit.SetEnchantmentProvider(provider)
+    return append(hero.OverworldUnit.GetEnchantments(), artifactsEnchantments...)
 }
 
 // note that HasEnchantment is not the same as contains(GetEnchantments(), enchantment) because HasEnchantment will search
 // in the artifacts as well. GetEnchantments will only return the enchantments that have been explicitly cast on a unit
 func (hero *Hero) HasEnchantment(enchantment data.UnitEnchantment) bool {
-    return hero.Unit.HasEnchantment(enchantment) || slices.ContainsFunc(hero.Equipment[:], func (a *artifact.Artifact) bool {
+    return hero.OverworldUnit.HasEnchantment(enchantment) || slices.ContainsFunc(hero.Equipment[:], func (a *artifact.Artifact) bool {
         return a != nil && a.HasEnchantment(enchantment)
     })
-}
-
-func (hero *Hero) AddEnchantment(enchantment data.UnitEnchantment) {
-    hero.Unit.AddEnchantment(enchantment)
-}
-
-func (hero *Hero) RemoveEnchantment(enchantment data.UnitEnchantment) {
-    hero.Unit.RemoveEnchantment(enchantment)
 }
 
 func (hero *Hero) IsHero() bool {
@@ -733,50 +689,6 @@ func (hero *Hero) GetToDefend() int {
     return base + modifier
 }
 
-func (hero *Hero) GetLbxFile() string {
-    return hero.Unit.GetLbxFile()
-}
-
-func (hero *Hero) GetLbxIndex() int {
-    return hero.Unit.GetLbxIndex()
-}
-
-func (hero *Hero) GetPlane() data.Plane {
-    return hero.Unit.GetPlane()
-}
-
-func (hero *Hero) SetPlane(plane data.Plane) {
-    hero.Unit.SetPlane(plane)
-}
-
-func (hero *Hero) GetRace() data.Race {
-    return hero.Unit.GetRace()
-}
-
-func (hero *Hero) GetRawUnit() units.Unit {
-    return hero.Unit.GetRawUnit()
-}
-
-func (hero *Hero) GetX() int {
-    return hero.Unit.GetX()
-}
-
-func (hero *Hero) GetY() int {
-    return hero.Unit.GetY()
-}
-
-func (hero *Hero) SetX(x int) {
-    hero.Unit.SetX(x)
-}
-
-func (hero *Hero) SetY(y int) {
-    hero.Unit.SetY(y)
-}
-
-func (hero *Hero) Move(dx int, dy int, cost fraction.Fraction, normalize units.NormalizeCoordinateFunc) {
-    hero.Unit.Move(dx, dy, cost, normalize)
-}
-
 func (hero *Hero) NaturalHeal(rate float64) {
     if hero.IsUndead() {
         return
@@ -789,40 +701,12 @@ func (hero *Hero) NaturalHeal(rate float64) {
     hero.AdjustHealth(int(amount))
 }
 
-func (hero *Hero) ResetMoves() {
-    hero.Unit.ResetMoves()
-}
-
-func (hero *Hero) SetId(id uint64) {
-    hero.Unit.SetId(id)
-}
-
 func (hero *Hero) GetMovesLeft() fraction.Fraction {
-    return fraction.Zero().Max(hero.GetMovementSpeed().Subtract(hero.Unit.MovesUsed))
+    return fraction.Zero().Max(hero.GetMovementSpeed().Subtract(hero.OverworldUnit.MovesUsed))
 }
 
 func (hero *Hero) SetMovesLeft(moves fraction.Fraction) {
-    hero.Unit.MovesUsed = hero.GetMovementSpeed().Subtract(moves)
-}
-
-func (hero *Hero) GetAttackSound() units.AttackSound {
-    return hero.Unit.GetAttackSound()
-}
-
-func (hero *Hero) GetMovementSound() units.MovementSound {
-    return hero.Unit.GetMovementSound()
-}
-
-func (hero *Hero) GetRangeAttackSound() units.RangeAttackSound {
-    return hero.Unit.GetRangeAttackSound()
-}
-
-func (hero *Hero) GetRangedAttackDamageType() units.Damage {
-    return hero.Unit.GetRangedAttackDamageType()
-}
-
-func (hero *Hero) GetRangedAttacks() int {
-    return hero.Unit.GetRangedAttacks()
+    hero.OverworldUnit.MovesUsed = hero.GetMovementSpeed().Subtract(moves)
 }
 
 func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
@@ -837,7 +721,7 @@ func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
 
             modifier := float32(0)
 
-            if hero.GetRealm() == data.ChaosMagic && hero.Unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+            if hero.GetRealm() == data.ChaosMagic && hero.OverworldUnit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
                 modifier += 2
             }
 
@@ -856,7 +740,7 @@ func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
 
             modifier := float32(0)
 
-            if hero.GetRealm() == data.ChaosMagic && hero.Unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+            if hero.GetRealm() == data.ChaosMagic && hero.OverworldUnit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
                 modifier += 2
             }
 
@@ -907,40 +791,12 @@ func (hero *Hero) IsInvisible() bool {
     return hero.HasAbility(data.AbilityInvisibility)
 }
 
-func (hero *Hero) IsFlying() bool {
-    return hero.Unit.IsFlying()
-}
-
 func (hero *Hero) IsSailing() bool {
     return false
 }
 
-func (hero *Hero) IsLandWalker() bool {
-    return hero.Unit.IsLandWalker()
-}
-
 func (hero *Hero) IsSwimmer() bool {
-    return hero.Unit.IsSwimmer() || hero.HasEnchantment(data.UnitEnchantmentWaterWalking)
-}
-
-func (hero *Hero) GetBanner() data.BannerType {
-    return hero.Unit.GetBanner()
-}
-
-func (hero *Hero) SetBanner(banner data.BannerType) {
-    hero.Unit.SetBanner(banner)
-}
-
-func (hero *Hero) SetGlobalEnchantmentProvider(provider units.GlobalEnchantmentProvider) {
-    hero.Unit.SetGlobalEnchantmentProvider(provider)
-}
-
-func (hero *Hero) GetCombatLbxFile() string {
-    return hero.Unit.GetCombatLbxFile()
-}
-
-func (hero *Hero) GetCombatIndex(facing units.Facing) int {
-    return hero.Unit.GetCombatIndex(facing)
+    return hero.OverworldUnit.IsSwimmer() || hero.HasEnchantment(data.UnitEnchantmentWaterWalking)
 }
 
 func (hero *Hero) GetCount() int {
@@ -956,23 +812,11 @@ func (hero *Hero) GetUpkeepGold() int {
         return 0
     }
 
-    return hero.Unit.GetUpkeepGold()
-}
-
-func (hero *Hero) GetUpkeepFood() int {
-    return hero.Unit.GetUpkeepFood()
-}
-
-func (hero *Hero) GetUpkeepMana() int {
-    return hero.Unit.GetUpkeepMana()
-}
-
-func (hero *Hero) MovementSpeedEnchantmentBonus(base fraction.Fraction, enchantments []data.UnitEnchantment) fraction.Fraction {
-    return hero.Unit.MovementSpeedEnchantmentBonus(base, enchantments)
+    return hero.OverworldUnit.GetUpkeepGold()
 }
 
 func (hero *Hero) GetMovementSpeed() fraction.Fraction {
-    base := hero.Unit.GetBaseMovementSpeed()
+    base := hero.OverworldUnit.GetBaseMovementSpeed()
 
     for _, item := range hero.Equipment {
         if item != nil {
@@ -980,11 +824,7 @@ func (hero *Hero) GetMovementSpeed() fraction.Fraction {
         }
     }
 
-    return hero.Unit.MovementSpeedEnchantmentBonus(fraction.FromInt(base), hero.GetEnchantments())
-}
-
-func (hero *Hero) GetProductionCost() int {
-    return hero.Unit.GetProductionCost()
+    return hero.OverworldUnit.MovementSpeedEnchantmentBonus(fraction.FromInt(base), hero.GetEnchantments())
 }
 
 func (hero *Hero) GetExperienceData() units.ExperienceData {
@@ -998,21 +838,17 @@ func (hero *Hero) GetExperienceLevel() units.NormalExperienceLevel {
 
 func (hero *Hero) GetHeroExperienceLevel() units.HeroExperienceLevel {
 
-    experience := hero.Unit.Experience
+    experience := hero.OverworldUnit.Experience
 
     if experience < 120 && hero.HasEnchantment(data.UnitEnchantmentHeroism) {
         experience = 120
     }
 
-    if hero.Unit.ExperienceInfo != nil {
-        return units.GetHeroExperienceLevel(experience, hero.Unit.ExperienceInfo.HasWarlord(), hero.Unit.ExperienceInfo.Crusade())
+    if hero.OverworldUnit.ExperienceInfo != nil {
+        return units.GetHeroExperienceLevel(experience, hero.OverworldUnit.ExperienceInfo.HasWarlord(), hero.OverworldUnit.ExperienceInfo.Crusade())
     }
 
     return units.ExperienceHero
-}
-
-func (hero *Hero) SetExperienceInfo(info units.ExperienceInfo) {
-    hero.Unit.SetExperienceInfo(info)
 }
 
 func (hero *Hero) ResetOwner() {
@@ -1038,7 +874,7 @@ func (hero *Hero) GainLevel(maxLevel units.HeroExperienceLevel) {
     // add just enough experience to make it to the next level
     for i := range len(levels) - 1 {
         if currentLevel == levels[i] {
-            hero.AddExperience(levels[i + 1].ExperienceRequired(false, false) - hero.Unit.GetExperience())
+            hero.AddExperience(levels[i + 1].ExperienceRequired(false, false) - hero.OverworldUnit.GetExperience())
             break
         }
     }
@@ -1046,7 +882,7 @@ func (hero *Hero) GainLevel(maxLevel units.HeroExperienceLevel) {
 
 func (hero *Hero) GetBaseMeleeAttackPower() int {
     level := hero.GetHeroExperienceLevel()
-    return hero.Unit.GetBaseMeleeAttackPower() + hero.getBaseMeleeAttackPowerProgression(level)
+    return hero.OverworldUnit.GetBaseMeleeAttackPower() + hero.getBaseMeleeAttackPowerProgression(level)
 }
 
 func (hero *Hero) getBaseMeleeAttackPowerProgression(level units.HeroExperienceLevel) int {
@@ -1064,18 +900,6 @@ func (hero *Hero) getBaseMeleeAttackPowerProgression(level units.HeroExperienceL
     return 0
 }
 
-func (hero *Hero) MeleeEnchantmentBonus(enchantment data.UnitEnchantment) int {
-    return hero.Unit.MeleeEnchantmentBonus(enchantment)
-}
-
-func (hero *Hero) DefenseEnchantmentBonus(enchantment data.UnitEnchantment) int {
-    return hero.Unit.DefenseEnchantmentBonus(enchantment)
-}
-
-func (hero *Hero) ResistanceEnchantmentBonus(enchantment data.UnitEnchantment) int {
-    return hero.Unit.ResistanceEnchantmentBonus(enchantment)
-}
-
 func (hero *Hero) GetMeleeAttackPower() int {
     base := hero.GetBaseMeleeAttackPower()
 
@@ -1089,7 +913,7 @@ func (hero *Hero) GetMeleeAttackPower() int {
         base += hero.MeleeEnchantmentBonus(enchantment)
     }
 
-    if hero.GetRealm() == data.ChaosMagic && hero.Unit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+    if hero.GetRealm() == data.ChaosMagic && hero.OverworldUnit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
         base += 2
     }
 
@@ -1139,10 +963,6 @@ func (hero *Hero) getBaseRangedAttackPowerProgression(level units.HeroExperience
         case units.ExperienceDemiGod: return 8
     }
     return 0
-}
-
-func (hero *Hero) RangedEnchantmentBonus(enchantment data.UnitEnchantment) int {
-    return hero.Unit.RangedEnchantmentBonus(enchantment)
 }
 
 func (hero *Hero) GetRangedAttackPower() int {
@@ -1433,15 +1253,11 @@ func (hero *Hero) GetFullHitPoints() int {
         base += hero.HitPointsEnchantmentBonus(enchantment)
     }
 
-    if hero.Unit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentCharmOfLife) {
+    if hero.OverworldUnit.GlobalEnchantments.HasFriendlyEnchantment(data.EnchantmentCharmOfLife) {
         base = int(math.Ceil(float64(base) * 1.25))
     }
 
     return base + hero.GetAbilityHealth()
-}
-
-func (hero *Hero) HitPointsEnchantmentBonus(enchantment data.UnitEnchantment) int {
-    return hero.Unit.HitPointsEnchantmentBonus(enchantment)
 }
 
 func (hero *Hero) GetHitPoints() int {
@@ -1450,7 +1266,7 @@ func (hero *Hero) GetHitPoints() int {
 
 func (hero *Hero) GetBaseHitPoints() int {
     level := hero.GetHeroExperienceLevel()
-    return hero.Unit.GetBaseHitPoints() + hero.getBaseHitPointsProgression(level)
+    return hero.OverworldUnit.GetBaseHitPoints() + hero.getBaseHitPointsProgression(level)
 }
 
 func (hero *Hero) getBaseHitPointsProgression(level units.HeroExperienceLevel) int {
@@ -1556,149 +1372,145 @@ func (hero *Hero) GetArtifacts() []*artifact.Artifact {
 }
 
 func (hero *Hero) GetArtifactSlots() []artifact.ArtifactSlot {
-    if hero.Unit.Unit.Equals(units.HeroTorin) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroTorin) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroFang) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroFang) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroBShan) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroBShan) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotRangedWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroMorgana) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroMorgana) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroWarrax) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroWarrax) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotAnyWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroMysticX) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroMysticX) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotAnyWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroBahgtru) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroBahgtru) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroDethStryke) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroDethStryke) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroSpyder) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroSpyder) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroSirHarold) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroSirHarold) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroBrax) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroBrax) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroRavashack) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroRavashack) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroGreyfairer) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroGreyfairer) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroShalla) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroShalla) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroRoland) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroRoland) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroMalleus) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroMalleus) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroMortu) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroMortu) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroGunther) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroGunther) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroRakir) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroRakir) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroJaer) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroJaer) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroTaki) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroTaki) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroYramrag) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroYramrag) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroValana) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroValana) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroElana) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroElana) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroAerie) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroAerie) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroMarcus) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroMarcus) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotRangedWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroReywind) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroReywind) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotAnyWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroAlorra) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroAlorra) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotRangedWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroZaldron) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroZaldron) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMagicWeapon, artifact.ArtifactSlotJewelry, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroShinBo) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroShinBo) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroSerena) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroSerena) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroShuri) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroShuri) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotRangedWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroTheria) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroTheria) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroTumu) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroTumu) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
-    if hero.Unit.Unit.Equals(units.HeroAureus) {
+    if hero.OverworldUnit.Unit.Equals(units.HeroAureus) {
         return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotJewelry}
     }
 
     return []artifact.ArtifactSlot{artifact.ArtifactSlotMeleeWeapon, artifact.ArtifactSlotArmor, artifact.ArtifactSlotArmor}
-}
-
-func (hero *Hero) GetSightRange() int {
-    return hero.Unit.GetSightRange()
 }
