@@ -930,7 +930,7 @@ func (screen *NewWizardScreen) Update() NewWizardScreenState {
 }
 
 func (screen *NewWizardScreen) LoadHelp(cache *lbx.LbxCache) error {
-    helpLbx, err := cache.GetLbxFile("HELP.LBX")
+    helpLbx, err := cache.GetLbxFile("help.lbx")
     if err != nil {
         return err
     }
@@ -953,7 +953,7 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
     // 36-38 are chaos/red books
     // 41 is custom screen
 
-    fontLbx, err := cache.GetLbxFile("FONTS.LBX")
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         return err
     }
