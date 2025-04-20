@@ -240,6 +240,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
 
     finished := false
     finish := func(){
+        finished = true
         getAlpha = group.MakeFadeOut(7)
         group.AddDelay(7, func(){
             ui.RemoveGroup(group)
