@@ -4697,10 +4697,10 @@ func createScenario51_52(cache *lbx.LbxCache, kill bool) *gamelib.Game {
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.MagicSpirit, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.Nagas, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.SkyDrake, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
-    player.HeroPool[hero.HeroRakir].Unit.Experience = 0
-    player.HeroPool[hero.HeroShinBo].Unit.Experience = 100
-    player.HeroPool[hero.HeroAerie].Unit.Experience = 200
-    player.HeroPool[hero.HeroBShan].Unit.Experience = 300
+    player.HeroPool[hero.HeroRakir].AddExperience(0)
+    player.HeroPool[hero.HeroShinBo].AddExperience(100)
+    player.HeroPool[hero.HeroAerie].AddExperience(200)
+    player.HeroPool[hero.HeroBShan].AddExperience(300)
     player.AddHeroToFortress(player.HeroPool[hero.HeroRakir])
     player.AddHeroToFortress(player.HeroPool[hero.HeroAerie])
     player.AddHeroToFortress(player.HeroPool[hero.HeroBShan])

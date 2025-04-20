@@ -8011,7 +8011,7 @@ func (game *Game) doChaosRift() {
                         continue
                     }
 
-                    wrapper := &UnitDamageWrapper{Unit: choice}
+                    wrapper := &UnitDamageWrapper{StackUnit: choice}
 
                     combat.ApplyDamage(wrapper, wrapper.ReduceInvulnerability(combat.ComputeRoll(8, 30)), units.DamageRangedMagical, combat.DamageSourceSpell, combat.DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
                 }
@@ -8044,7 +8044,7 @@ func (game *Game) doChaosRift() {
 
 func (game *Game) doMeteorStorm() {
     immolate := func (unit units.StackUnit) int {
-        damage, _ := combat.ApplyAreaDamage(&UnitDamageWrapper{Unit: unit}, 4, units.DamageImmolation, 0)
+        damage, _ := combat.ApplyAreaDamage(&UnitDamageWrapper{StackUnit: unit}, 4, units.DamageImmolation, 0)
         return damage
     }
 
