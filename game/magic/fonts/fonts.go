@@ -31,6 +31,7 @@ const TitleYellowFont = "TitleYellowFont"
 const DescriptionFont = "DescriptionFont"
 const SmallWhite = "SmallWhite"
 const SmallRed = "SmallRed"
+const SmallOrange = "SmallOrange"
 const HelpFont = "HelpFont"
 const HelpTitleFont = "HelpTitleFont"
 const TitleFont = "TitleFont"
@@ -39,6 +40,7 @@ const YellowBig = "YellowBig"
 const YellowBig2 = "YellowBig2"
 const WhiteBig = "WhiteBig"
 const MediumWhite2 = "MediumWhite2"
+const MediumOrange = "MediumOrange"
 const NameFont = "NameFont"
 const TitleFontOrange = "TitleFontOrange"
 const LightFont = "LightFont"
@@ -46,6 +48,8 @@ const LightFontSmall = "LightFontSmall"
 const SurveyorFont = "SurveyorFont"
 const YellowFont = "YellowFont"
 const InfoFont = "InfoFont"
+const SmallBlack = "SmallBlack"
+const SmallerWhite = "SmallerWhite"
 
 const BigRed2 = "BigRed2"
 const SmallRed2 = "SmallRed2"
@@ -117,6 +121,54 @@ func init() {
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[0], transmutePalette)
+    }
+
+    fontLoaders[SmallOrange] = func (fonts []*font.LbxFont) *font.Font {
+        orange := color.RGBA{R: 0xf6, G: 0x9c, B: 0x22, A: 0xff}
+        orangePalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            orange, orange, orange,
+            orange, orange, orange,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[0], orangePalette)
+    }
+
+    fontLoaders[MediumOrange] = func (fonts []*font.LbxFont) *font.Font {
+        orange := color.RGBA{R: 0xf6, G: 0x9c, B: 0x22, A: 0xff}
+        orangePalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            orange, orange, orange,
+            orange, orange, orange,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[1], orangePalette)
+    }
+
+    fontLoaders[SmallBlack] = func (fonts []*font.LbxFont) *font.Font {
+        black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
+        blackPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            black, black, black,
+            black, black, black,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[0], blackPalette)
+    }
+
+    fontLoaders[SmallerWhite] = func (fonts []*font.LbxFont) *font.Font {
+        white := color.White
+        whitePalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            white, white, white,
+            white, white, white,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
     }
 
     fontLoaders[NormalFont] = func (fonts []*font.LbxFont) *font.Font {

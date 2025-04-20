@@ -21,6 +21,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/functional"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     globalMouse "github.com/kazzmir/master-of-magic/game/magic/mouse"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -231,17 +232,6 @@ type CombatScreen struct {
 
     Fonts CombatFonts
 
-    /*
-    DebugFont *font.Font
-    HudFont *font.Font
-    InfoFont *font.Font
-    InfoUIFont *font.Font
-    WhiteFont *font.Font
-    AttackingWizardFont *font.Font
-    DefendingWizardFont *font.Font
-    EnchantmentFont *font.Font
-    */
-
     DrawRoad bool
     DrawClouds bool
     AllSpells spellbook.Spells
@@ -317,6 +307,12 @@ type CombatFonts struct {
 }
 
 func MakeCombatFonts(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army) CombatFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return CombatFonts{}
+    }
+
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
@@ -329,56 +325,16 @@ func MakeCombatFonts(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
         return CombatFonts{}
     }
 
-    white := color.RGBA{R: 255, G: 255, B: 255, A: 255}
-    whitePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        white, white, white,
-        white, white, white,
-    }
-
-    debugFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
-
-    black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
-    blackPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        black, black, black,
-        black, black, black,
-    }
-
-    hudFont := font.MakeOptimizedFontWithPalette(fonts[0], blackPalette)
-
-    orange := color.RGBA{R: 0xf6, G: 0x9c, B: 0x22, A: 0xff}
-    orangePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0, A: 0},
-        orange, orange, orange,
-        orange, orange, orange,
-    }
-
-    infoFont := font.MakeOptimizedFontWithPalette(fonts[0], orangePalette)
-
-    enchantmentFont := font.MakeOptimizedFontWithPalette(fonts[1], orangePalette)
-
-    whiteFont := font.MakeOptimizedFontWithPalette(fonts[0], whitePalette)
-
     defendingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(defendingArmy.Player.Wizard.Banner))
     attackingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(attackingArmy.Player.Wizard.Banner))
 
-    infoUIFont := font.MakeOptimizedFontWithPalette(fonts[2], color.Palette{
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0x0},
-        color.RGBA{R: 0xff, G: 0xb0, B: 0x0, A: 0xff},
-    })
-
     return CombatFonts{
-        DebugFont: debugFont,
-        HudFont: hudFont,
-        InfoFont: infoFont,
-        InfoUIFont: infoUIFont,
-        WhiteFont: whiteFont,
-        EnchantmentFont: enchantmentFont,
+        DebugFont: loader(fontslib.SmallFont),
+        HudFont: loader(fontslib.SmallBlack),
+        InfoFont: loader(fontslib.SmallOrange),
+        InfoUIFont: loader(fontslib.LightFontSmall),
+        WhiteFont: loader(fontslib.SmallerWhite),
+        EnchantmentFont: loader(fontslib.MediumOrange),
         AttackingWizardFont: attackingWizardFont,
         DefendingWizardFont: defendingWizardFont,
     }
