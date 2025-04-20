@@ -99,20 +99,25 @@ func makeHeroContextMenu(cache *lbx.LbxCache, ui *uilib.UI, hero *herolib.Hero, 
     return MakeGenericContextMenu(cache, ui, hero, fmt.Sprintf("Do you wish to dismiss %v?", hero.GetName()), doDisband)
 }
 
-func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, disbandMessage string, doDisband func()) *uilib.UIElementGroup {
+type UIFonts struct {
+    Description *font.Font
+    Small *font.Font
+    Medium *font.Font
+    OkDismiss *font.Font
+}
+
+func MakeUIFonts(cache *lbx.LbxCache) UIFonts {
     fontLbx, err := cache.GetLbxFile("fonts.lbx")
     if err != nil {
         log.Printf("Unable to read fonts.lbx: %v", err)
-        return nil
+        return UIFonts{}
     }
 
     fonts, err := font.ReadFonts(fontLbx, 0)
     if err != nil {
         log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return nil
+        return UIFonts{}
     }
-
-    imageCache := util.MakeImageCache(cache)
 
     descriptionPalette := color.Palette{
         color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
@@ -143,6 +148,18 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
     }
 
     okDismissFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
+
+    return UIFonts{
+        Description: descriptionFont,
+        Small: smallFont,
+        Medium: mediumFont,
+        OkDismiss: okDismissFont,
+    }
+}
+
+func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, disbandMessage string, doDisband func()) *uilib.UIElementGroup {
+    imageCache := util.MakeImageCache(cache)
+    fonts := MakeUIFonts(cache)
 
     uiGroup := uilib.MakeGroup()
 
@@ -178,7 +195,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
             options.GeoM.Translate(31, 6)
             options.GeoM.Translate(51, 6)
 
-            RenderUnitInfoNormal(screen, &imageCache, unit, unit.GetTitle(), "", descriptionFont, smallFont, options)
+            RenderUnitInfoNormal(screen, &imageCache, unit, unit.GetTitle(), "", fonts.Description, fonts.Small, options)
 
             /*
             options.GeoM.Reset()
@@ -198,9 +215,9 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
     defaultOptions.GeoM.Translate(31, 6)
     defaultOptions.GeoM.Translate(10, 50)
 
-    uiGroup.AddElements(CreateUnitInfoStatsElements(&imageCache, unit, 15, descriptionFont, smallFont, defaultOptions, &getAlpha, 1))
+    uiGroup.AddElements(CreateUnitInfoStatsElements(&imageCache, unit, 15, fonts.Description, fonts.Small, defaultOptions, &getAlpha, 1))
 
-    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, mediumFont, 40, 114, &ui.Counter, 1, &getAlpha, false, 0, true))
+    uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, fonts.Medium, 40, 114, &ui.Counter, 1, &getAlpha, false, 0, true))
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
@@ -249,7 +266,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
             x := float64(cancelRect.Min.X + cancelRect.Max.X) / 2
             y := float64(cancelRect.Min.Y + cancelRect.Max.Y) / 2
-            okDismissFont.PrintOptions(screen, x, y - 5, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Dismiss")
+            fonts.OkDismiss.PrintOptions(screen, x, y - 5, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Dismiss")
         },
     })
 
@@ -277,7 +294,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
             x := float64(okRect.Min.X + okRect.Max.X) / 2
             y := float64(okRect.Min.Y + okRect.Max.Y) / 2
-            okDismissFont.PrintOptions(screen, x, y - 5, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Ok")
+            fonts.OkDismiss.PrintOptions(screen, x, y - 5, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, "Ok")
         },
     })
 
