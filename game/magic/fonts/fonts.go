@@ -50,6 +50,7 @@ const YellowFont = "YellowFont"
 const InfoFont = "InfoFont"
 const SmallBlack = "SmallBlack"
 const SmallerWhite = "SmallerWhite"
+const MediumBlack = "MediumBlack"
 
 const BigRed2 = "BigRed2"
 const SmallRed2 = "SmallRed2"
@@ -157,6 +158,18 @@ func init() {
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[0], blackPalette)
+    }
+
+    fontLoaders[MediumBlack] = func (fonts []*font.LbxFont) *font.Font {
+        black := color.RGBA{R: 0, G: 0, B: 0, A: 255}
+        blackPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            black, black, black,
+            black, black, black,
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[3], blackPalette)
     }
 
     fontLoaders[SmallerWhite] = func (fonts []*font.LbxFont) *font.Font {

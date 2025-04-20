@@ -1543,13 +1543,6 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
     magicOrder := []data.MagicType{data.LifeMagic, data.DeathMagic, data.ChaosMagic, data.NatureMagic, data.SorceryMagic}
 
-    // an all black palette
-    black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
-    blackPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        black, black, black, black, black,
-    }
-
     // create a mono-color palette where the color depends on the magic type
     getPalette := func(magic data.MagicType) color.Palette {
         var use color.RGBA
@@ -1566,9 +1559,6 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
             use, use, use, use, use,
         }
     }
-
-    blackFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[4], blackPalette)
-    shadowDescriptionFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
 
     var doNextMagicUI func (magic data.MagicType)
     var doPreviousMagicUI func (magic data.MagicType)
@@ -1750,13 +1740,12 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 titleX := 240
                 titleY := 5
 
-                blackFont.PrintOptions(window, float64(titleX + 1), float64(titleY + 1), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("Select %v Spells", magic.String()))
-                titleFont.PrintOptions(window, float64(titleX), float64(titleY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("Select %v Spells", magic.String()))
+                titleFont.PrintOptions(window, float64(titleX), float64(titleY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("Select %v Spells", magic.String()))
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(180, 18)
                 windyBorder, _ := screen.ImageCache.GetImage("newgame.lbx", 47, 0)
-                window.DrawImage(windyBorder, &options)
+                window.DrawImage(windyBorder, scale.ScaleOptions(options))
 
                 screen.Fonts.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
                 screen.Fonts.NameFontBright.PrintOptions(window, 223, 185, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("%v picks", picksLeft()))
@@ -1764,8 +1753,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 showDescription := func(y float64, text string, background *ebiten.Image){
                     descriptionX := float64(167)
 
-                    shadowDescriptionFont.PrintOptions(window, descriptionX + 1, y + 1, font.FontOptions{Scale: scale.ScaleAmount}, text)
-                    descriptionFont.PrintOptions(window, descriptionX, y, font.FontOptions{Scale: scale.ScaleAmount}, text)
+                    descriptionFont.PrintOptions(window, descriptionX, y, font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true}, text)
 
                     boxY := y + float64(descriptionFont.Height()) + 1
 
