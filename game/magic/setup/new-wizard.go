@@ -1849,29 +1849,17 @@ func premultiplyAlpha(c color.RGBA, alpha float32) color.RGBA {
 }
 
 type RaceFonts struct {
+    Race *font.Font
+    Available *font.Font
+    Unavailable *font.Font
+    Select *font.Font
 }
 
-func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
-
-    imageCache := util.MakeImageCache(screen.LbxCache)
-
-    /*
-    black := color.RGBA{R: 0, G: 0, B: 0, A: 0xff}
-    blackPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        black, black, black, black, black,
+func MakeRaceFonts(cache *lbx.LbxCache, lbxFonts []*font.LbxFont) RaceFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        return RaceFonts{}
     }
-    */
-
-    raceColor := color.RGBA{R: 0xc1, G: 0x7a, B: 0x23, A: 0xff}
-    racePalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        raceColor, raceColor, raceColor,
-        raceColor, raceColor, raceColor,
-    }
-
-    // raceShadowFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], blackPalette)
-    raceFont := font.MakeOptimizedFontWithPalette(screen.LbxFonts[3], racePalette)
 
     yellow1 := color.RGBA{R: 0xd6, G: 0xb3, B: 0x85, A: 0xff}
     availablePalette := color.Palette{
@@ -1897,9 +1885,23 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
         selectColor, selectColor, selectColor,
     }
 
-    raceAvailable := font.MakeOptimizedFontWithPalette(screen.LbxFonts[2], availablePalette)
-    raceUnavailable := font.MakeOptimizedFontWithPalette(screen.LbxFonts[2], raceUnavailablePalette)
-    raceSelect := font.MakeOptimizedFontWithPalette(screen.LbxFonts[2], selectPalette)
+    raceAvailable := font.MakeOptimizedFontWithPalette(lbxFonts[2], availablePalette)
+    raceUnavailable := font.MakeOptimizedFontWithPalette(lbxFonts[2], raceUnavailablePalette)
+    raceSelect := font.MakeOptimizedFontWithPalette(lbxFonts[2], selectPalette)
+
+    return RaceFonts{
+        Race: loader(fontslib.PowerFont1),
+        Available: raceAvailable,
+        Unavailable: raceUnavailable,
+        Select: raceSelect,
+    }
+}
+
+func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
+
+    imageCache := util.MakeImageCache(screen.LbxCache)
+
+    fonts := MakeRaceFonts(screen.LbxCache, screen.LbxFonts)
 
     var elements []*uilib.UIElement
     group := uilib.MakeGroup()
@@ -1909,12 +1911,12 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
 
     raceBackground, _ := screen.ImageCache.GetImage("newgame.lbx", 55, 0)
     for i, race := range arcanianRaces {
-        yPos := 35 + 1 + i * (raceFont.Height() + 1)
+        yPos := 35 + 1 + i * (fonts.Race.Height() + 1)
 
         highlight := false
 
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(210, yPos, 210 * raceBackground.Bounds().Dx(), (yPos + raceAvailable.Height())),
+            Rect: image.Rect(210, yPos, 210 * raceBackground.Bounds().Dx(), (yPos + fonts.Available.Height())),
             Inside: func(this *uilib.UIElement, x int, y int){
                 highlight = true
             },
@@ -1937,26 +1939,26 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 if highlight {
-                    raceSelect.PrintOptions(window, float64(this.Rect.Min.X + 5), float64(this.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount}, race.String())
+                    fonts.Select.PrintOptions(window, float64(this.Rect.Min.X + 5), float64(this.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount}, race.String())
                 } else {
-                    raceAvailable.PrintOptions(window, float64(this.Rect.Min.X + 5), float64(this.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount}, race.String())
+                    fonts.Available.PrintOptions(window, float64(this.Rect.Min.X + 5), float64(this.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount}, race.String())
                 }
             },
         })
     }
 
     for i, race := range myrranRaces {
-        yPos := 145 + 1 + i * (raceFont.Height() + 1)
-        fontUse := raceUnavailable
+        yPos := 145 + 1 + i * (fonts.Race.Height() + 1)
+        fontUse := fonts.Unavailable
 
         if screen.CustomWizard.RetortEnabled(data.RetortMyrran){
-            fontUse = raceAvailable
+            fontUse = fonts.Available
         }
 
         highlight := false
 
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(210, yPos, 210 + raceBackground.Bounds().Dx(), (yPos + raceAvailable.Height())),
+            Rect: image.Rect(210, yPos, 210 + raceBackground.Bounds().Dx(), (yPos + fonts.Available.Height())),
             Inside: func(this *uilib.UIElement, x int, y int){
                 highlight = true
             },
@@ -1985,9 +1987,9 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
                 fontDraw := fontUse
                 if screen.CustomWizard.RetortEnabled(data.RetortMyrran) {
                     if highlight {
-                        fontDraw = raceSelect
+                        fontDraw = fonts.Select
                     } else {
-                        fontDraw = raceAvailable
+                        fontDraw = fonts.Available
                     }
                 }
 
@@ -2024,13 +2026,13 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             windyBorder, _ := screen.ImageCache.GetImage("newgame.lbx", 47, 0)
             window.DrawImage(windyBorder, scale.ScaleOptions(options))
 
-            raceFont.PrintOptions(window, 243, 25, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, "Arcanian Races:")
+            fonts.Race.PrintOptions(window, 243, 25, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, "Arcanian Races:")
 
             options.GeoM.Reset()
             options.GeoM.Translate(210, 33)
             window.DrawImage(raceBackground, scale.ScaleOptions(options))
 
-            raceFont.PrintOptions(window, 243, 132, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, "Myrran Races:")
+            fonts.Race.PrintOptions(window, 243, 132, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, "Myrran Races:")
 
             screen.Fonts.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
 
