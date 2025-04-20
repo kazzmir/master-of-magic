@@ -417,25 +417,6 @@ func (wizard *WizardCustom) MagicLevel(kind data.MagicType) int {
 }
 
 type NewWizardFonts struct {
-    BigYellowFont *font.Font
-}
-
-func MakeNewWizardFonts(cache *lbx.LbxCache) *NewWizardFonts {
-    loader, err := fontslib.Loader(cache)
-    if err != nil {
-        log.Printf("Unable to load fonts: %v", err)
-        return nil
-    }
-
-    return &NewWizardFonts{
-        BigYellowFont: loader(fontslib.TitleYellowFont),
-    }
-}
-
-type NewWizardScreen struct {
-    LbxCache *lbx.LbxCache
-
-    LbxFonts []*font.LbxFont
     Font *font.Font
     AbilityFont *font.Font
     AbilityFontSelected *font.Font
@@ -444,6 +425,116 @@ type NewWizardScreen struct {
     NameFont *font.Font
     NameFontBright *font.Font
     SelectFont *font.Font
+}
+
+func MakeNewWizardFonts(cache *lbx.LbxCache) NewWizardFonts {
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Unable to load fonts: %v", err)
+        return NewWizardFonts{}
+    }
+
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        return NewWizardFonts{}
+    }
+
+    fonts, err := font.ReadFonts(fontLbx, 0)
+    if err != nil {
+        return NewWizardFonts{}
+    }
+
+    // FIXME: this is a fudged palette to look like the original, but its probably slightly wrong
+    brightYellowPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        // orangish
+        color.RGBA{R: 0xff, G: 0xaa, B: 0x00, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    // FIXME: also a fudged palette
+    whitishPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    pickPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    transparentPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: uint8(math.Round(0xc6 * 0.3)), G: uint8(math.Round(0x9d * 0.3)), B: uint8(math.Round(0x65 * 0.3)), A: uint8(math.Round(0xff * 0.3))},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    abilityFont := font.MakeOptimizedFontWithPalette(fonts[0], transparentPalette)
+    abilityFontSelected := font.MakeOptimizedFontWithPalette(fonts[0], brightYellowPalette)
+    abilityFontAvailable := font.MakeOptimizedFontWithPalette(fonts[0], whitishPalette)
+
+    // FIXME: use a monochrome color scheme, light-brownish
+    nameFont := font.MakeOptimizedFont(fonts[3])
+    nameFontBright := font.MakeOptimizedFontWithPalette(fonts[3], pickPalette)
+
+    // FIXME: this should be a fade from bright yellow to dark yellow/orange
+    yellowFade := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
+        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+    }
+
+    errorFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
+
+    return NewWizardFonts{
+        Font: font.MakeOptimizedFont(fonts[3]),
+        AbilityFont: abilityFont,
+        AbilityFontSelected: abilityFontSelected,
+        AbilityFontAvailable: abilityFontAvailable,
+        NameFont: nameFont,
+        NameFontBright: nameFontBright,
+        ErrorFont: errorFont,
+        SelectFont: loader(fontslib.TitleYellowFont),
+    }
+}
+
+type NewWizardScreen struct {
+    LbxCache *lbx.LbxCache
+
+    LbxFonts []*font.LbxFont
+    Fonts NewWizardFonts
+
     WizardSlots []WizardSlot
     ImageCache util.ImageCache
 
@@ -483,8 +574,8 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
             options.GeoM.Translate(float64(portraitX), float64(portraitY))
             portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
             window.DrawImage(portrait, scale.ScaleOptions(options))
-            screen.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
-            screen.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Wizard's Name")
+            screen.Fonts.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
+            screen.Fonts.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Wizard's Name")
 
             options.GeoM.Reset()
             options.GeoM.Translate(184, 20)
@@ -498,7 +589,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
                 name += "_"
             }
 
-            screen.NameFontBright.PrintOptions(window, 195, 39, font.FontOptions{Scale: scale.ScaleAmount}, name)
+            screen.Fonts.NameFontBright.PrintOptions(window, 195, 39, font.FontOptions{Scale: scale.ScaleAmount}, name)
 
             return
         },
@@ -608,7 +699,7 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
             background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
             window.DrawImage(background, scale.ScaleOptions(options))
 
-            screen.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Portrait")
+            screen.Fonts.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Portrait")
 
             const portraitX = 24
             const portraitY = 10
@@ -683,7 +774,7 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
                     scaledOptions := scale.ScaleOptions(options)
 
                     window.DrawImage(background, scaledOptions)
-                    screen.Font.PrintOptions(window, float64(x1 + clickedButtonOffset) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3 + clickedButtonOffset), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, name)
+                    screen.Fonts.Font.PrintOptions(window, float64(x1 + clickedButtonOffset) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3 + clickedButtonOffset), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, name)
                 },
             })
         }
@@ -746,7 +837,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(x1 + customButtonClickedOffset), float64(y1 + customButtonClickedOffset))
                 window.DrawImage(background, scale.ScaleOptions(options))
-                screen.Font.PrintOptions(window, float64(x1 + customButtonClickedOffset) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3 + customButtonClickedOffset), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Custom")
+                screen.Fonts.Font.PrintOptions(window, float64(x1 + customButtonClickedOffset) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3 + customButtonClickedOffset), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Custom")
             },
         }
     })())
@@ -756,7 +847,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
             var options ebiten.DrawImageOptions
             background, _ := screen.ImageCache.GetImage("newgame.lbx", 0, 0)
             window.DrawImage(background, scale.ScaleOptions(options))
-            screen.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Wizard")
+            screen.Fonts.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Wizard")
 
             this.StandardDraw(window)
 
@@ -777,14 +868,14 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
                     var options ebiten.DrawImageOptions
                     options.GeoM.Translate(float64(portraitX), float64(portraitY))
                     window.DrawImage(portrait, scale.ScaleOptions(options))
-                    screen.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.WizardSlots[screen.CurrentWizard].Name)
+                    screen.Fonts.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.WizardSlots[screen.CurrentWizard].Name)
 
                     // screen.DrawBooks(window, 36, 135, screen.WizardSlots[screen.CurrentWizard].Books)
                     options.GeoM.Reset()
                     options.GeoM.Translate(34, 135)
                     draw.DrawBooks(window, options, &screen.ImageCache, screen.WizardSlots[screen.CurrentWizard].Books, screen.BooksOrderRandom())
                     if screen.WizardSlots[screen.CurrentWizard].ExtraRetort != data.RetortNone {
-                        screen.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, screen.WizardSlots[screen.CurrentWizard].ExtraRetort.String())
+                        screen.Fonts.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, screen.WizardSlots[screen.CurrentWizard].ExtraRetort.String())
                     }
                 }
             }
@@ -887,88 +978,10 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
         return err
     }
 
-    newWizardFonts := MakeNewWizardFonts(cache)
-
-    // FIXME: this is a fudged palette to look like the original, but its probably slightly wrong
-    brightYellowPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        // orangish
-        color.RGBA{R: 0xff, G: 0xaa, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    // FIXME: also a fudged palette
-    whitishPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    pickPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
-        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
-        color.RGBA{R: 0xc6, G: 0x9d, B: 0x65, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    transparentPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: uint8(math.Round(0xc6 * 0.3)), G: uint8(math.Round(0x9d * 0.3)), B: uint8(math.Round(0x65 * 0.3)), A: uint8(math.Round(0xff * 0.3))},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
     screen.LbxFonts = fonts
+    screen.Fonts = MakeNewWizardFonts(cache)
 
-    screen.Font = font.MakeOptimizedFont(fonts[3])
     screen.WizardSlots = DefaultWizardSlots()
-
-    // FIXME: load with a yellowish palette
-    screen.SelectFont = newWizardFonts.BigYellowFont
-
-    screen.AbilityFont = font.MakeOptimizedFontWithPalette(fonts[0], transparentPalette)
-    screen.AbilityFontSelected = font.MakeOptimizedFontWithPalette(fonts[0], brightYellowPalette)
-    screen.AbilityFontAvailable = font.MakeOptimizedFontWithPalette(fonts[0], whitishPalette)
-
-    // FIXME: use a monochrome color scheme, light-brownish
-    screen.NameFont = font.MakeOptimizedFont(fonts[3])
-    screen.NameFontBright = font.MakeOptimizedFontWithPalette(fonts[3], pickPalette)
-
-    // FIXME: this should be a fade from bright yellow to dark yellow/orange
-    yellowFade := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0xb2, G: 0x8c, B: 0x05, A: 0xff},
-        color.RGBA{R: 0xc9, G: 0xa1, B: 0x26, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd3, B: 0x5b, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xe8, B: 0x6f, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    screen.ErrorFont = font.MakeOptimizedFontWithPalette(fonts[4], yellowFade)
 
     if screen.State == NewWizardScreenStateSelectWizard {
         screen.UI = screen.MakeSelectWizardUI()
@@ -1292,7 +1305,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
     for ability := range produceAbilityPositions() {
         elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(int(ability.X), int(ability.Y), (int(ability.X) + ability.Length), (int(ability.Y) + screen.AbilityFont.Height())),
+            Rect: image.Rect(int(ability.X), int(ability.Y), (int(ability.X) + ability.Length), (int(ability.Y) + screen.Fonts.AbilityFont.Height())),
             LeftClick: func(this *uilib.UIElement){
                 if screen.CustomWizard.RetortEnabled(ability.Ability) {
                     screen.CustomWizard.ToggleRetort(ability.Ability, picksLeft())
@@ -1323,16 +1336,16 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
                 group.AddElement(uilib.MakeHelpElement(group, screen.LbxCache, &imageCache, helpEntries[0]))
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
-                useFont := screen.AbilityFont
+                useFont := screen.Fonts.AbilityFont
 
                 if screen.CustomWizard.RetortEnabled(ability.Ability) {
                     var options ebiten.DrawImageOptions
                     checkMark, _ := screen.ImageCache.GetImage("newgame.lbx", 52, 0)
                     options.GeoM.Translate((ability.X - 1) - float64(checkMark.Bounds().Dx()), (ability.Y + 1))
                     window.DrawImage(checkMark, scale.ScaleOptions(options))
-                    useFont = screen.AbilityFontSelected
+                    useFont = screen.Fonts.AbilityFontSelected
                 } else if isAbilityAvailable(ability.Ability) {
-                    useFont = screen.AbilityFontAvailable
+                    useFont = screen.Fonts.AbilityFontAvailable
                 }
 
                 useFont.PrintOptions(window, ability.X, ability.Y, font.FontOptions{Scale: scale.ScaleAmount}, ability.Ability.String())
@@ -1388,7 +1401,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
             options.GeoM.Translate(float64(portraitX), float64(portraitY))
             portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
             window.DrawImage(portrait, scale.ScaleOptions(options))
-            screen.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
+            screen.Fonts.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
             options.GeoM.Translate(34, 135)
@@ -1396,8 +1409,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
 
             ui.StandardDraw(window)
 
-            screen.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
-            screen.NameFontBright.PrintOptions(window, 223, 185, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("%v picks", picksLeft()))
+            screen.Fonts.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
+            screen.Fonts.NameFontBright.PrintOptions(window, 223, 185, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("%v picks", picksLeft()))
         },
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
@@ -1617,7 +1630,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 useY := y
 
                 elements = append(elements, &uilib.UIElement{
-                    Rect: image.Rect(int(x), int(y), int(x) + width, (int(y) + screen.AbilityFontAvailable.Height())),
+                    Rect: image.Rect(int(x), int(y), int(x) + width, (int(y) + screen.Fonts.AbilityFontAvailable.Height())),
                     LeftClick: func(this *uilib.UIElement){
                         if screen.CustomWizard.StartingSpells.HasSpell(spell) {
                             screen.CustomWizard.StartingSpells.RemoveSpell(spell)
@@ -1642,14 +1655,14 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                             var options ebiten.DrawImageOptions
                             options.GeoM.Translate(float64(useX), float64(useY))
                             window.DrawImage(checkMark, scale.ScaleOptions(options))
-                            screen.AbilityFontSelected.PrintOptions(window, float64(useX + margin), float64(useY), font.FontOptions{Scale: scale.ScaleAmount}, spell.Name)
+                            screen.Fonts.AbilityFontSelected.PrintOptions(window, float64(useX + margin), float64(useY), font.FontOptions{Scale: scale.ScaleAmount}, spell.Name)
                         } else {
-                            screen.AbilityFontAvailable.PrintOptions(window, float64(useX + margin), float64(useY), font.FontOptions{Scale: scale.ScaleAmount}, spell.Name)
+                            screen.Fonts.AbilityFontAvailable.PrintOptions(window, float64(useX + margin), float64(useY), font.FontOptions{Scale: scale.ScaleAmount}, spell.Name)
                         }
                     },
                 })
 
-                y += screen.AbilityFontAvailable.Height() + 1
+                y += screen.Fonts.AbilityFontAvailable.Height() + 1
                 if i == 4 {
                     y = yTop
                     x += width
@@ -1723,7 +1736,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 options.GeoM.Translate(float64(portraitX), float64(portraitY))
                 portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
                 window.DrawImage(portrait, scale.ScaleOptions(options))
-                screen.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
+                screen.Fonts.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(34, 135)
@@ -1745,8 +1758,8 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
                 windyBorder, _ := screen.ImageCache.GetImage("newgame.lbx", 47, 0)
                 window.DrawImage(windyBorder, &options)
 
-                screen.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
-                screen.NameFontBright.PrintOptions(window, 223, 185, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("%v picks", picksLeft()))
+                screen.Fonts.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
+                screen.Fonts.NameFontBright.PrintOptions(window, 223, 185, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("%v picks", picksLeft()))
 
                 showDescription := func(y float64, text string, background *ebiten.Image){
                     descriptionX := float64(167)
@@ -2005,13 +2018,13 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             options.GeoM.Translate(float64(portraitX), float64(portraitY))
             portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
             window.DrawImage(portrait, scale.ScaleOptions(options))
-            screen.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
+            screen.Fonts.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
             options.GeoM.Translate(34, 135)
             draw.DrawBooks(window, options, &imageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
 
-            screen.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Race")
+            screen.Fonts.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Race")
 
             options.GeoM.Reset()
             options.GeoM.Translate(180, 18)
@@ -2028,7 +2041,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             raceShadowFont.PrintOptions(window, 243 + 1, 132, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Myrran Races:")
             raceFont.PrintOptions(window, 243, 132, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Myrran Races:")
 
-            screen.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
+            screen.Fonts.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
 
             ui.StandardDraw(window)
         },
@@ -2097,7 +2110,7 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
             options.GeoM.Translate(float64(portraitX), float64(portraitY))
             portrait, _ := screen.ImageCache.GetImage("wizards.lbx", screen.CustomWizard.Portrait, 0)
             window.DrawImage(portrait, scale.ScaleOptions(options))
-            screen.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
+            screen.Fonts.Font.PrintOptions(window, float64(nameX), float64(nameY), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, screen.CustomWizard.Name)
 
             options.GeoM.Reset()
             options.GeoM.Translate(34, 135)
@@ -2108,9 +2121,9 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
             bannerBackground, _ := screen.ImageCache.GetImage("newgame.lbx", 46, 0)
             window.DrawImage(bannerBackground, scale.ScaleOptions(options))
 
-            screen.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Banner")
+            screen.Fonts.SelectFont.PrintOptions(window, 245, 2, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Select Banner")
 
-            screen.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
+            screen.Fonts.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
 
             ui.StandardDraw(window)
         },
