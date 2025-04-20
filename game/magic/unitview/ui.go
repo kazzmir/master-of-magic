@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -107,53 +108,17 @@ type UIFonts struct {
 }
 
 func MakeUIFonts(cache *lbx.LbxCache) UIFonts {
-    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    loader, err := fontslib.Loader(cache)
     if err != nil {
-        log.Printf("Unable to read fonts.lbx: %v", err)
+        log.Printf("Unable to load fonts: %v", err)
         return UIFonts{}
     }
-
-    fonts, err := font.ReadFonts(fontLbx, 0)
-    if err != nil {
-        log.Printf("Unable to read fonts from fonts.lbx: %v", err)
-        return UIFonts{}
-    }
-
-    descriptionPalette := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 90}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 200}),
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
-    }
-
-    descriptionFont := font.MakeOptimizedFontWithPalette(fonts[4], descriptionPalette)
-    smallFont := font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette)
-    mediumFont := font.MakeOptimizedFontWithPalette(fonts[2], descriptionPalette)
-
-    yellowGradient := color.Palette{
-        color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
-        color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0},
-        color.RGBA{R: 0xed, G: 0xa4, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xbc, B: 0x00, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xd6, B: 0x11, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-        color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff},
-    }
-
-    okDismissFont := font.MakeOptimizedFontWithPalette(fonts[4], yellowGradient)
 
     return UIFonts{
-        Description: descriptionFont,
-        Small: smallFont,
-        Medium: mediumFont,
-        OkDismiss: okDismissFont,
+        Description: loader(fontslib.WhiteBig),
+        Small: loader(fontslib.SmallWhite2),
+        Medium: loader(fontslib.MediumWhite2),
+        OkDismiss: loader(fontslib.LightFont),
     }
 }
 

@@ -30,6 +30,7 @@ const BigFont = "BigFont"
 const TitleYellowFont = "TitleYellowFont"
 const DescriptionFont = "DescriptionFont"
 const SmallWhite = "SmallWhite"
+const SmallWhite2 = "SmallWhite2"
 const SmallRed = "SmallRed"
 const SmallOrange = "SmallOrange"
 const HelpFont = "HelpFont"
@@ -369,6 +370,10 @@ func init() {
             color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
             color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
         }
+    }
+
+    fontLoaders[SmallWhite2] = func (fonts []*font.LbxFont) *font.Font {
+        return font.MakeOptimizedFontWithPalette(fonts[1], descriptionPalette())
     }
 
     fontLoaders[WhiteBig] = func (fonts []*font.LbxFont) *font.Font {
