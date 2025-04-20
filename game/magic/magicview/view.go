@@ -186,6 +186,7 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
     {
         posX := 0
         conveyorRect := image.Rect(131, 85, (131 + 56), (85 + 7))
+        doUpdate := false
         group.AddElement(&uilib.UIElement{
             Rect: conveyorRect,
             Layer: 1,
@@ -197,14 +198,20 @@ func MakeTransmuteElements(ui *uilib.UI, smallFont *font.Font, player *playerlib
                 }
             },
             LeftClick: func(element *uilib.UIElement){
-                cursorPosition = posX
-                if cursorPosition < 0 {
-                    cursorPosition = 0
-                }
-                changePercent = float64(cursorPosition) / float64(conveyorRect.Dx())
+                doUpdate = true
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                doUpdate = false
             },
             Inside: func(element *uilib.UIElement, x, y int){
                 posX = x
+                if doUpdate {
+                    cursorPosition = posX
+                    if cursorPosition < 0 {
+                        cursorPosition = 0
+                    }
+                    changePercent = float64(cursorPosition) / float64(conveyorRect.Dx())
+                }
             },
         })
     }
