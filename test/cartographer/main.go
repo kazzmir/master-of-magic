@@ -68,7 +68,7 @@ func NewEngine(scenario int) (*Engine, error) {
         return fog
     }
 
-    arcanusMap := maplib.MakeMap(terrainData, 0, data.MagicSettingNormal, data.DifficultyAverage, data.PlaneArcanus, &cityProvider{}, nil)
+    arcanusMap := maplib.MakeMap(terrainData, 1, data.MagicSettingNormal, data.DifficultyAverage, data.PlaneArcanus, &cityProvider{}, nil)
     arcanusFog := makeFog(arcanusMap)
 
     for x := range len(arcanusFog) {
@@ -77,7 +77,7 @@ func NewEngine(scenario int) (*Engine, error) {
         }
     }
 
-    myrrorMap := maplib.MakeMap(terrainData, 0, data.MagicSettingNormal, data.DifficultyAverage, data.PlaneMyrror, &cityProvider{}, nil)
+    myrrorMap := maplib.MakeMap(terrainData, 1, data.MagicSettingNormal, data.DifficultyAverage, data.PlaneMyrror, &cityProvider{}, nil)
     myrrorFog := makeFog(myrrorMap)
 
     for x := range len(myrrorFog) {

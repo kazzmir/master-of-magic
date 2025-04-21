@@ -118,7 +118,7 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
                     if err == nil {
                         options.GeoM.Reset()
                         options.GeoM.Translate(float64(x*tileImage.Bounds().Dx()), float64(y*tileImage.Bounds().Dy()))
-                        options.GeoM.Scale(0.2, 0.2)
+                        options.GeoM.Scale(float64(showMap.Bounds().Dx()) / float64(useMap.Width() * tileImage.Bounds().Dx()), float64(showMap.Bounds().Dy()) / float64(useMap.Height() * tileImage.Bounds().Dy()))
                         colorm.DrawImage(showMap, tileImage, matrix, &options)
                     }
                     // vector.DrawFilledRect(showMap, float32(x*2), float32(y*2), 2, 2, tileColor, false)
