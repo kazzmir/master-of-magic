@@ -8,18 +8,19 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
-    "github.com/kazzmir/master-of-magic/lib/functional"
+    // "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
-    "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    // "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/vector"
+    "github.com/hajimehoshi/ebiten/v2/colorm"
 )
 
 type Fonts struct {
@@ -53,13 +54,14 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
 
     currentPlane := data.PlaneArcanus
 
+    /*
     getTileColor := functional.Memoize(func (kind terrain.TerrainType) color.RGBA {
         switch kind {
             case terrain.Ocean, terrain.River: return color.RGBA{R: 88, G: 68, B: 54, A: 255}
             case terrain.Mountain: return color.RGBA{R: 173, G: 138, B: 114, A: 255}
             case terrain.Desert: return color.RGBA{R: 172, G: 133, B: 107, A: 255}
             case terrain.SorceryNode: return color.RGBA{R: 170, G: 146, B: 129, A: 255}
-            /*
+            / *
             case terrain.Shore:
             case terrain.Hill
             case terrain.Grass
@@ -70,11 +72,12 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
             case terrain.Lake
             case terrain.NatureNode
             case terrain.ChaosNode
-            */
+            * /
         }
 
         return color.RGBA{R: 47, G: 30, B: 12, A: 255}
     })
+    */
 
     bannerColor := func (banner data.BannerType) color.RGBA {
         switch banner {
@@ -100,12 +103,23 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
             useFog = myrrorFog
         }
 
+        var options colorm.DrawImageOptions
+        var matrix colorm.ColorM
+        matrix.ScaleWithColor(color.RGBA{R: 217, G: 112, B: 61, A: 255})
+        // matrix.Translate(155/255.0, 80/255.0, 44/255.0, 1)
         for x := range useFog {
             for y := range useFog[x] {
                 if useFog[x][y] != data.FogTypeUnexplored {
-                    tile := useMap.GetTile(x, y)
-                    tileColor := getTileColor(tile.Tile.TerrainType())
-                    vector.DrawFilledRect(showMap, float32(x*2), float32(y*2), 2, 2, tileColor, false)
+                    // tile := useMap.GetTile(x, y)
+                    // tileColor := getTileColor(tile.Tile.TerrainType())
+                    tileImage, err := useMap.GetTileImage(x, y, 0)
+                    if err == nil {
+                        options.GeoM.Reset()
+                        options.GeoM.Translate(float64(x*2), float64(y*2))
+                        options.GeoM.Scale(0.5, 0.5)
+                        colorm.DrawImage(showMap, tileImage, matrix, &options)
+                    }
+                    // vector.DrawFilledRect(showMap, float32(x*2), float32(y*2), 2, 2, tileColor, false)
                 }
             }
         }
