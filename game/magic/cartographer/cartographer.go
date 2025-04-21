@@ -8,15 +8,18 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 type Fonts struct {
@@ -50,6 +53,78 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
 
     currentPlane := data.PlaneArcanus
 
+    getTileColor := functional.Memoize(func (kind terrain.TerrainType) color.RGBA {
+        switch kind {
+            case terrain.Ocean, terrain.River: return color.RGBA{R: 88, G: 68, B: 54, A: 255}
+            case terrain.Mountain: return color.RGBA{R: 173, G: 138, B: 114, A: 255}
+            case terrain.Desert: return color.RGBA{R: 172, G: 133, B: 107, A: 255}
+            case terrain.SorceryNode: return color.RGBA{R: 170, G: 146, B: 129, A: 255}
+            /*
+            case terrain.Shore:
+            case terrain.Hill
+            case terrain.Grass
+            case terrain.Swamp
+            case terrain.Forest
+            case terrain.Tundra
+            case terrain.Volcano
+            case terrain.Lake
+            case terrain.NatureNode
+            case terrain.ChaosNode
+            */
+        }
+
+        return color.RGBA{R: 47, G: 30, B: 12, A: 255}
+    })
+
+    bannerColor := func (banner data.BannerType) color.RGBA {
+        switch banner {
+            case data.BannerBlue: return color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}
+            case data.BannerGreen: return color.RGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff}
+            case data.BannerPurple: return color.RGBA{R: 0x8f, G: 0x30, B: 0xff, A: 0xff}
+            case data.BannerRed: return color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
+            case data.BannerYellow: return color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}
+            case data.BannerBrown: return color.RGBA{R: 0xce, G: 0x65, B: 0x00, A: 0xff}
+        }
+
+        return color.RGBA{}
+    }
+
+    renderMap := func (plane data.Plane) *ebiten.Image {
+        showMap := ebiten.NewImage(240, 140)
+        // showMap.Fill(color.RGBA{R: 32, G: 32, B: 32, A: 255})
+
+        useMap := arcanusMap
+        useFog := arcanusFog
+        if plane == data.PlaneMyrror {
+            useMap = myrrorMap
+            useFog = myrrorFog
+        }
+
+        for x := range useFog {
+            for y := range useFog[x] {
+                if useFog[x][y] != data.FogTypeUnexplored {
+                    tile := useMap.GetTile(x, y)
+                    tileColor := getTileColor(tile.Tile.TerrainType())
+                    vector.DrawFilledRect(showMap, float32(x*2), float32(y*2), 2, 2, tileColor, false)
+                }
+            }
+        }
+
+        for _, city := range cities {
+            if city.Plane == plane {
+                if useFog[city.X][city.Y] != data.FogTypeUnexplored {
+                    vector.DrawFilledRect(showMap, float32(city.X*2), float32(city.Y*2), 2, 2, bannerColor(city.GetBanner()), false)
+                }
+            }
+        }
+
+
+        return showMap
+    }
+
+    arcanusRender := renderMap(data.PlaneArcanus)
+    myrrorRender := renderMap(data.PlaneMyrror)
+
     ui := &uilib.UI{
         Draw: func (ui *uilib.UI, screen *ebiten.Image) {
             background, _ := imageCache.GetImage("reload.lbx", 2, 0)
@@ -57,11 +132,16 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
             options.ColorScale.ScaleAlpha(getAlpha())
             scale.DrawScaled(screen, background, &options)
 
+            render := arcanusRender
             planeName := "Arcanus Plane"
             if currentPlane == data.PlaneMyrror {
                 planeName = "Myrror Plane"
+                render = myrrorRender
             }
             fonts.Title.PrintOptions(screen, float64(background.Bounds().Dx() / 2), 10, font.FontOptions{Scale: scale.ScaleAmount, Options: &options, Justify: font.FontJustifyCenter}, planeName)
+
+            options.GeoM.Translate(15, 40)
+            scale.DrawScaled(screen, render, &options)
 
             ui.StandardDraw(screen)
         },

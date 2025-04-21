@@ -12,8 +12,9 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/cartographer"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
-    // playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
-    // "github.com/kazzmir/master-of-magic/game/magic/setup"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -33,17 +34,17 @@ func (c *cityProvider) ContainsCity(x int, y int, plane data.Plane) bool {
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
-    /*
     player1 := playerlib.Player{
         Wizard: setup.WizardCustom{
-            Base: randomWizard(),
+            Banner: data.BannerBlue,
             Name: "bob",
         },
     }
 
+    /*
     player2 := playerlib.Player{
         Wizard: setup.WizardCustom{
-            Base: randomWizard(),
+            Banner: data.BannerPurple,
             Name: "Kali",
         },
     }
@@ -70,10 +71,29 @@ func NewEngine(scenario int) (*Engine, error) {
     arcanusMap := maplib.MakeMap(terrainData, 0, data.MagicSettingNormal, data.DifficultyAverage, data.PlaneArcanus, &cityProvider{}, nil)
     arcanusFog := makeFog(arcanusMap)
 
+    for x := range len(arcanusFog) {
+        for y := range len(arcanusFog[x]) {
+            arcanusFog[x][y] = data.FogTypeVisible
+        }
+    }
+
     myrrorMap := maplib.MakeMap(terrainData, 0, data.MagicSettingNormal, data.DifficultyAverage, data.PlaneMyrror, &cityProvider{}, nil)
     myrrorFog := makeFog(myrrorMap)
 
-    logic, draw := cartographer.MakeCartographer(cache, nil, arcanusMap, arcanusFog, myrrorMap, myrrorFog)
+    for x := range len(myrrorFog) {
+        for y := range len(myrrorFog[x]) {
+            myrrorFog[x][y] = data.FogTypeVisible
+        }
+    }
+
+    var cities []*citylib.City
+
+    city1 := citylib.MakeCity("city1", 10, 10, data.RaceBarbarian, nil, nil, nil, &player1)
+    player1.AddCity(city1)
+
+    cities = append(cities, city1)
+
+    logic, draw := cartographer.MakeCartographer(cache, cities, arcanusMap, arcanusFog, myrrorMap, myrrorFog)
 
     return &Engine{
         LbxCache: cache,
