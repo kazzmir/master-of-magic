@@ -105,8 +105,10 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
 
         var options colorm.DrawImageOptions
         var matrix colorm.ColorM
-        matrix.ScaleWithColor(color.RGBA{R: 217, G: 112, B: 61, A: 255})
-        // matrix.Translate(155/255.0, 80/255.0, 44/255.0, 1)
+        // matrix.ScaleWithColor(color.RGBA{R: 217, G: 112, B: 61, A: 255})
+        matrix.ChangeHSV(0, 0, 1.5)
+        // matrix.Translate(155/255.0, 80/255.0, 44/255.0, 0)
+        matrix.Scale(0.7, 0.5, 0.3, 1)
         for x := range useFog {
             for y := range useFog[x] {
                 if useFog[x][y] != data.FogTypeUnexplored {
@@ -115,8 +117,8 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
                     tileImage, err := useMap.GetTileImage(x, y, 0)
                     if err == nil {
                         options.GeoM.Reset()
-                        options.GeoM.Translate(float64(x*2), float64(y*2))
-                        options.GeoM.Scale(0.5, 0.5)
+                        options.GeoM.Translate(float64(x*tileImage.Bounds().Dx()), float64(y*tileImage.Bounds().Dy()))
+                        options.GeoM.Scale(0.2, 0.2)
                         colorm.DrawImage(showMap, tileImage, matrix, &options)
                     }
                     // vector.DrawFilledRect(showMap, float32(x*2), float32(y*2), 2, 2, tileColor, false)
