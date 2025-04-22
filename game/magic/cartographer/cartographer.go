@@ -93,7 +93,8 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
     }
 
     renderMap := func (plane data.Plane) *ebiten.Image {
-        showMap := ebiten.NewImage(240, 140)
+        showMap := ebiten.NewImage(20*11, 18*9)
+        showMap.Fill(color.RGBA{A: 0})
         // showMap.Fill(color.RGBA{R: 32, G: 32, B: 32, A: 255})
 
         useMap := arcanusMap
@@ -103,6 +104,12 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
             useFog = myrrorFog
         }
 
+        tileImage0, _ := useMap.GetTileImage(0, 0, 0)
+        // log.Printf("tile width: %v height: %v", tileImage0.Bounds().Dx(), tileImage0.Bounds().Dy())
+
+        scaleX := float64(showMap.Bounds().Dx()) / float64(useMap.Width() * tileImage0.Bounds().Dx())
+        scaleY := float64(showMap.Bounds().Dy()) / float64(useMap.Height() * tileImage0.Bounds().Dy())
+
         var options colorm.DrawImageOptions
         var matrix colorm.ColorM
         // matrix.ScaleWithColor(color.RGBA{R: 217, G: 112, B: 61, A: 255})
@@ -111,15 +118,27 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
         matrix.Scale(0.7, 0.5, 0.3, 1)
         for x := range useFog {
             for y := range useFog[x] {
-                if useFog[x][y] != data.FogTypeUnexplored {
+                if /*x%2 == 0 && y%2 == 0 &&*/ useFog[x][y] != data.FogTypeUnexplored {
                     // tile := useMap.GetTile(x, y)
                     // tileColor := getTileColor(tile.Tile.TerrainType())
                     tileImage, err := useMap.GetTileImage(x, y, 0)
                     if err == nil {
                         options.GeoM.Reset()
                         options.GeoM.Translate(float64(x*tileImage.Bounds().Dx()), float64(y*tileImage.Bounds().Dy()))
-                        options.GeoM.Scale(float64(showMap.Bounds().Dx()) / float64(useMap.Width() * tileImage.Bounds().Dx()), float64(showMap.Bounds().Dy()) / float64(useMap.Height() * tileImage.Bounds().Dy()))
+                        options.GeoM.Scale(scaleX, scaleY)
                         colorm.DrawImage(showMap, tileImage, matrix, &options)
+
+                        /*
+                        var options2 ebiten.DrawImageOptions
+                        options2.GeoM = options.GeoM
+                        showMap.DrawImage(tileImage, &options2)
+                        */
+
+                        /*
+                        x1, y1 := options.GeoM.Apply(1, 1)
+                        x2, y2 := options.GeoM.Apply(float64(tileImage.Bounds().Dx()-1), float64(tileImage.Bounds().Dy()-1))
+                        vector.StrokeRect(showMap, float32(x1), float32(y1), float32(x2-x1), float32(y2-y1), 1, color.RGBA{R: 255, G: 0, B: 0, A: 255}, false)
+                        */
                     }
                     // vector.DrawFilledRect(showMap, float32(x*2), float32(y*2), 2, 2, tileColor, false)
                 }
@@ -129,7 +148,14 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
         for _, city := range cities {
             if city.Plane == plane {
                 if useFog[city.X][city.Y] != data.FogTypeUnexplored {
-                    vector.DrawFilledRect(showMap, float32(city.X*2), float32(city.Y*2), 2, 2, bannerColor(city.GetBanner()), false)
+                    options.GeoM.Reset()
+                    options.GeoM.Translate(float64(city.X*tileImage0.Bounds().Dx()), float64(city.Y*tileImage0.Bounds().Dy()))
+                    options.GeoM.Scale(scaleX, scaleY)
+
+                    x1, y1 := options.GeoM.Apply(0, 0)
+                    // x2, y2 := options.GeoM.Apply(float64(tileImage0.Bounds().Dx()), float64(tileImage0.Bounds().Dy()))
+
+                    vector.DrawFilledRect(showMap, float32(x1), float32(y1), float32(tileImage0.Bounds().Dx())*1.4 * float32(scaleX), float32(tileImage0.Bounds().Dy())*1.4 * float32(scaleY), bannerColor(city.GetBanner()), false)
                 }
             }
         }
@@ -156,7 +182,7 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
             }
             fonts.Title.PrintOptions(screen, float64(background.Bounds().Dx() / 2), 10, font.FontOptions{Scale: scale.ScaleAmount, Options: &options, Justify: font.FontJustifyCenter}, planeName)
 
-            options.GeoM.Translate(15, 40)
+            options.GeoM.Translate(25, 30)
             scale.DrawScaled(screen, render, &options)
 
             ui.StandardDraw(screen)

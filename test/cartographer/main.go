@@ -71,6 +71,15 @@ func NewEngine(scenario int) (*Engine, error) {
     arcanusMap := maplib.MakeMap(terrainData, 1, data.MagicSettingNormal, data.DifficultyAverage, data.PlaneArcanus, &cityProvider{}, nil)
     arcanusFog := makeFog(arcanusMap)
 
+    /*
+    for x := range arcanusMap.Width() {
+        for y := range arcanusMap.Height() {
+            arcanusMap.Map.Terrain[x][y] = terrain.TileOcean.Index(data.PlaneArcanus)
+            // arcanusMap.Map.Terrain[x][y] = terrain.IndexBugGrass
+        }
+    }
+    */
+
     for x := range len(arcanusFog) {
         for y := range len(arcanusFog[x]) {
             arcanusFog[x][y] = data.FogTypeVisible
