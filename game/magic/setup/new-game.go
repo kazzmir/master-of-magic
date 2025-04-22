@@ -175,15 +175,13 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
         },
     })
 
-    const pressedButtonOffset = 1
-
     difficultyX := 160 + 91
     difficultyY := 39
     difficultyBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 4, 0)
 
     elements = append(elements, &uilib.UIElement{
         Rect: util.ImageRect(difficultyX, difficultyY, difficultyBlock),
-        GetsOffsetWhenPressed: true, 
+        IsOffsetWhenPressed: true, 
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.DifficultyNext()
         },
@@ -204,7 +202,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Rect: util.ImageRect(opponentsX, opponentsY, opponentsBlock),
-        GetsOffsetWhenPressed: true, 
+        IsOffsetWhenPressed: true, 
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.OpponentsNext()
         },
@@ -225,7 +223,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Rect: util.ImageRect(landsizeX, landsizeY, landSizeBlock),
-        GetsOffsetWhenPressed: true, 
+        IsOffsetWhenPressed: true, 
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.LandSizeNext()
         },
@@ -247,7 +245,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Rect: util.ImageRect(magicX, magicY, magicBlock),
-        GetsOffsetWhenPressed: true, 
+        IsOffsetWhenPressed: true, 
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.MagicNext()
         },
