@@ -478,11 +478,11 @@ func (ui *UI) StandardDraw(screen *ebiten.Image) {
         if element.Draw != nil {
             if element.IsOffsetWhenPressed && element.isPressed {
                 element.Rect = element.Rect.Add(image.Pt(1, 1))
-            } 
+            }
             element.Draw(element, screen)
             if element.IsOffsetWhenPressed && element.isPressed {
                 element.Rect = element.Rect.Add(image.Pt(-1, -1))
-            } 
+            }
         }
     })
 

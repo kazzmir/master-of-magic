@@ -181,7 +181,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Rect: util.ImageRect(difficultyX, difficultyY, difficultyBlock),
-        IsOffsetWhenPressed: true, 
+        IsOffsetWhenPressed: true,
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.DifficultyNext()
         },
@@ -202,7 +202,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Rect: util.ImageRect(opponentsX, opponentsY, opponentsBlock),
-        IsOffsetWhenPressed: true, 
+        IsOffsetWhenPressed: true,
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.OpponentsNext()
         },
@@ -223,7 +223,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Rect: util.ImageRect(landsizeX, landsizeY, landSizeBlock),
-        IsOffsetWhenPressed: true, 
+        IsOffsetWhenPressed: true,
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.LandSizeNext()
         },
@@ -245,7 +245,7 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Rect: util.ImageRect(magicX, magicY, magicBlock),
-        IsOffsetWhenPressed: true, 
+        IsOffsetWhenPressed: true,
         LeftClick: func(element *uilib.UIElement) {
             newGameScreen.Settings.MagicNext()
         },
