@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     // "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -41,7 +42,7 @@ func makeFonts(cache *lbx.LbxCache) Fonts {
     }
 }
 
-func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *maplib.Map, arcanusFog data.FogMap, myrrorMap *maplib.Map, myrrorFog data.FogMap) (coroutine.AcceptYieldFunc, func (*ebiten.Image)) {
+func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*playerlib.UnitStack, arcanusMap *maplib.Map, arcanusFog data.FogMap, myrrorMap *maplib.Map, myrrorFog data.FogMap) (coroutine.AcceptYieldFunc, func (*ebiten.Image)) {
     quit := false
 
     fonts := makeFonts(cache)
@@ -152,7 +153,7 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
                     options.GeoM.Translate(float64(city.X*tileImage0.Bounds().Dx()), float64(city.Y*tileImage0.Bounds().Dy()))
                     options.GeoM.Scale(scaleX, scaleY)
 
-                    size := 25.0
+                    size := 20.0
 
                     x1, y1 := options.GeoM.Apply(0, 0)
                     x2, y2 := options.GeoM.Apply(size, size)
@@ -163,6 +164,20 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
 
                     vector.DrawFilledRect(showMap, float32(shadow_x1), float32(shadow_y1), float32(shadow_x2 - shadow_x1), float32(shadow_y2 - shadow_y1), color.RGBA{A:255}, false)
                     vector.DrawFilledRect(showMap, float32(x1), float32(y1), float32(x2 - x1), float32(y2 - y1), bannerColor(city.GetBanner()), false)
+                }
+            }
+        }
+
+        for _, stack := range stacks {
+            if stack.Plane() == plane {
+                if useFog[stack.X()][stack.Y()] != data.FogTypeUnexplored {
+                    options.GeoM.Reset()
+                    options.GeoM.Translate(float64(stack.X()*tileImage0.Bounds().Dx()), float64(stack.Y()*tileImage0.Bounds().Dy()))
+                    options.GeoM.Scale(scaleX, scaleY)
+
+                    x1, y1 := options.GeoM.Apply(3, 3)
+
+                    vector.DrawFilledRect(showMap, float32(x1), float32(y1), 1, 1, bannerColor(stack.GetBanner()), false)
                 }
             }
         }

@@ -4,6 +4,7 @@ import (
     "log"
     "strconv"
     "os"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -12,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/cartographer"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -41,14 +43,12 @@ func NewEngine(scenario int) (*Engine, error) {
         },
     }
 
-    /*
     player2 := playerlib.Player{
         Wizard: setup.WizardCustom{
             Banner: data.BannerPurple,
             Name: "Kali",
         },
     }
-    */
 
     terrainLbx, err := cache.GetLbxFile("terrain.lbx")
     if err != nil {
@@ -100,9 +100,25 @@ func NewEngine(scenario int) (*Engine, error) {
     city1 := citylib.MakeCity("city1", 10, 10, data.RaceBarbarian, nil, nil, nil, &player1)
     player1.AddCity(city1)
 
-    cities = append(cities, city1)
+    city2 := citylib.MakeCity("city2", 30, 40, data.RaceKlackon, nil, nil, nil, &player2)
+    player2.AddCity(city2)
 
-    logic, draw := cartographer.MakeCartographer(cache, cities, arcanusMap, arcanusFog, myrrorMap, myrrorFog)
+    cities = append(cities, city1, city2)
+
+    makeStack := func(player *playerlib.Player) *playerlib.UnitStack {
+        x := rand.N(50)
+        y := rand.N(50)
+
+        unit := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, x, y, data.PlaneArcanus, player.GetBanner(), player.MakeExperienceInfo(), &units.NoEnchantments{})
+
+        return playerlib.MakeUnitStackFromUnits([]units.StackUnit{unit})
+    }
+
+    var stacks []*playerlib.UnitStack
+    stacks = append(stacks, makeStack(&player1))
+    stacks = append(stacks, makeStack(&player2))
+
+    logic, draw := cartographer.MakeCartographer(cache, cities, stacks, arcanusMap, arcanusFog, myrrorMap, myrrorFog)
 
     return &Engine{
         LbxCache: cache,

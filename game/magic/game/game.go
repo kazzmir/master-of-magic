@@ -3052,7 +3052,15 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
 }
 
 func (game *Game) doCartographer(yield coroutine.YieldFunc) {
-    logic, draw := cartographer.MakeCartographer(game.Cache, game.AllCities(), game.ArcanusMap, game.GetHumanPlayer().GetFog(data.PlaneArcanus), game.MyrrorMap, game.GetHumanPlayer().GetFog(data.PlaneMyrror))
+
+    var stacks []*playerlib.UnitStack
+    for _, player := range game.Players {
+        if !player.Defeated {
+            stacks = append(stacks, player.Stacks...)
+        }
+    }
+
+    logic, draw := cartographer.MakeCartographer(game.Cache, game.AllCities(), stacks, game.ArcanusMap, game.GetHumanPlayer().GetFog(data.PlaneArcanus), game.MyrrorMap, game.GetHumanPlayer().GetFog(data.PlaneMyrror))
 
     yield()
     oldDrawer := game.Drawer
