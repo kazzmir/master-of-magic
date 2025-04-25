@@ -4,6 +4,7 @@ import (
     "log"
     "image"
     "image/color"
+    "math"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -93,6 +94,8 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
         return color.RGBA{}
     }
 
+    tileImage0, _ := arcanusMap.GetTileImage(0, 0, 0)
+
     renderMap := func (plane data.Plane) *ebiten.Image {
         showMap := ebiten.NewImage(20*11, 18*9)
         showMap.Fill(color.RGBA{A: 0})
@@ -105,7 +108,6 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
             useFog = myrrorFog
         }
 
-        tileImage0, _ := useMap.GetTileImage(0, 0, 0)
         // log.Printf("tile width: %v height: %v", tileImage0.Bounds().Dx(), tileImage0.Bounds().Dy())
 
         scaleX := float64(showMap.Bounds().Dx()) / float64(useMap.Width() * tileImage0.Bounds().Dx())
@@ -189,6 +191,15 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
     arcanusRender := renderMap(data.PlaneArcanus)
     myrrorRender := renderMap(data.PlaneMyrror)
 
+    mouseX, mouseY := 0, 0
+    var drawCityName *citylib.City
+
+    offsetX := 25
+    offsetY := 30
+
+    scaleX := float64(arcanusRender.Bounds().Dx()) / float64(arcanusMap.Width() * tileImage0.Bounds().Dx())
+    scaleY := float64(arcanusRender.Bounds().Dy()) / float64(arcanusMap.Height() * tileImage0.Bounds().Dy())
+
     ui := &uilib.UI{
         Draw: func (ui *uilib.UI, screen *ebiten.Image) {
             background, _ := imageCache.GetImage("reload.lbx", 2, 0)
@@ -204,8 +215,21 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
             }
             fonts.Title.PrintOptions(screen, float64(background.Bounds().Dx() / 2), 10, font.FontOptions{Scale: scale.ScaleAmount, Options: &options, Justify: font.FontJustifyCenter}, planeName)
 
-            options.GeoM.Translate(25, 30)
+            options.GeoM.Translate(float64(offsetX), float64(offsetY))
             scale.DrawScaled(screen, render, &options)
+
+            if drawCityName != nil {
+                cityName := drawCityName.Name
+
+                options.GeoM.Reset()
+                options.GeoM.Translate(float64(drawCityName.X*tileImage0.Bounds().Dx()), float64(drawCityName.Y*tileImage0.Bounds().Dy()))
+                options.GeoM.Scale(scaleX, scaleY)
+
+                // why is -60 so large? it seems like we should use -10 or so
+                x1, y1 := options.GeoM.Apply(0, -60)
+
+                fonts.Name.PrintOptions(screen, x1 + float64(offsetX), y1 + float64(offsetY), font.FontOptions{Scale: scale.ScaleAmount, Options: &options, Justify: font.FontJustifyCenter, DropShadow: true}, cityName)
+            }
 
             ui.StandardDraw(screen)
         },
@@ -227,9 +251,47 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
         },
     })
 
+    /*
+    abs := func (a int) int {
+        if a < 0 {
+            return -a
+        }
+
+        return a
+    }
+    */
+
     logic := func (yield coroutine.YieldFunc) error {
         for !quit {
             counter += 1
+
+            mouseX, mouseY = ebiten.CursorPosition()
+            mouseX, mouseY = scale.Unscale2(mouseX, mouseY)
+
+            usePlane := data.PlaneArcanus
+            if currentPlane == data.PlaneMyrror {
+                usePlane = data.PlaneMyrror
+            }
+
+            var geom ebiten.GeoM
+            geom.Scale(float64(tileImage0.Bounds().Dx()), float64(tileImage0.Bounds().Dy()))
+            geom.Scale(scaleX, scaleY)
+            geom.Invert()
+
+            mx, my := geom.Apply(float64(mouseX - offsetX), float64(mouseY - offsetY))
+            // log.Printf("converted mouse coordinates: %v %v", mx, my)
+
+            drawCityName = nil
+            // FIXME: use a kd-tree or some spatial datastructure for faster look ups
+            maxDistance := 1.0
+            for _, city := range cities {
+                if city.Plane == usePlane {
+                    if math.Abs(mx - float64(city.X)) < maxDistance && math.Abs(my - float64(city.Y)) < maxDistance {
+                        drawCityName = city
+                        break
+                    }
+                }
+            }
 
             ui.StandardUpdate()
 
