@@ -113,7 +113,7 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
         var options colorm.DrawImageOptions
         var matrix colorm.ColorM
         // matrix.ScaleWithColor(color.RGBA{R: 217, G: 112, B: 61, A: 255})
-        matrix.ChangeHSV(0, 0, 1.5)
+        matrix.ChangeHSV(0, 0, 1.8)
         // matrix.Translate(155/255.0, 80/255.0, 44/255.0, 0)
         matrix.Scale(0.7, 0.5, 0.3, 1)
         for x := range useFog {
@@ -152,10 +152,17 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, arcanusMap *m
                     options.GeoM.Translate(float64(city.X*tileImage0.Bounds().Dx()), float64(city.Y*tileImage0.Bounds().Dy()))
                     options.GeoM.Scale(scaleX, scaleY)
 
-                    x1, y1 := options.GeoM.Apply(0, 0)
-                    // x2, y2 := options.GeoM.Apply(float64(tileImage0.Bounds().Dx()), float64(tileImage0.Bounds().Dy()))
+                    size := 25.0
 
-                    vector.DrawFilledRect(showMap, float32(x1), float32(y1), float32(tileImage0.Bounds().Dx())*1.4 * float32(scaleX), float32(tileImage0.Bounds().Dy())*1.4 * float32(scaleY), bannerColor(city.GetBanner()), false)
+                    x1, y1 := options.GeoM.Apply(0, 0)
+                    x2, y2 := options.GeoM.Apply(size, size)
+
+                    offset := 7.0
+                    shadow_x1, shadow_y1 := options.GeoM.Apply(offset, offset)
+                    shadow_x2, shadow_y2 := options.GeoM.Apply(offset + size, offset + size)
+
+                    vector.DrawFilledRect(showMap, float32(shadow_x1), float32(shadow_y1), float32(shadow_x2 - shadow_x1), float32(shadow_y2 - shadow_y1), color.RGBA{A:255}, false)
+                    vector.DrawFilledRect(showMap, float32(x1), float32(y1), float32(x2 - x1), float32(y2 - y1), bannerColor(city.GetBanner()), false)
                 }
             }
         }
