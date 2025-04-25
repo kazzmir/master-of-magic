@@ -882,6 +882,7 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
             case data.BannerPurple: bannerColor = color.RGBA{R: 0x8f, G: 0x30, B: 0xff, A: 0xff}
             case data.BannerRed: bannerColor = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
             case data.BannerYellow: bannerColor = color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}
+            case data.BannerBrown: bannerColor = color.RGBA{R: 0xbb, G: 0x7c, B: 0x3d, A: 0xff}
         }
 
         return color.Palette{
@@ -895,7 +896,7 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
 
     bannerFonts := make(map[data.BannerType]*font.Font)
 
-    for _, banner := range []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow} {
+    for _, banner := range []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow, data.BannerBrown} {
         bannerFonts[banner] = font.MakeOptimizedFontWithPalette(fonts[0], makeBannerPalette(banner))
     }
 
