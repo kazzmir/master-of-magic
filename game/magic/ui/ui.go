@@ -476,13 +476,14 @@ func (ui *UI) RenderTooltip(screen *ebiten.Image) {
 func (ui *UI) StandardDraw(screen *ebiten.Image) {
     ui.IterateElementsByLayer(func (element *UIElement){
         if element.Draw != nil {
+            var offsetPoint image.Point
             if element.IsOffsetWhenPressed && element.isPressed {
-                element.Rect = element.Rect.Add(image.Pt(1, 1))
+                offsetPoint = image.Pt(1, 1)
             }
+
+            element.Rect = element.Rect.Add(offsetPoint)
             element.Draw(element, screen)
-            if element.IsOffsetWhenPressed && element.isPressed {
-                element.Rect = element.Rect.Add(image.Pt(-1, -1))
-            }
+            element.Rect = element.Rect.Sub(offsetPoint)
         }
     })
 
