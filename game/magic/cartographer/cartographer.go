@@ -28,6 +28,8 @@ import (
 type Fonts struct {
     Name *font.Font
     Title *font.Font
+
+    BannerFonts map[data.BannerType]*font.Font
 }
 
 func makeFonts(cache *lbx.LbxCache) Fonts {
@@ -37,9 +39,15 @@ func makeFonts(cache *lbx.LbxCache) Fonts {
         return Fonts{}
     }
 
+    cityViewFonts, err := fontslib.MakeCityViewFonts(cache)
+    if err != nil {
+        return Fonts{}
+    }
+
     return Fonts{
         Name: loader(fontslib.SmallBlack),
         Title: loader(fontslib.BigBlack),
+        BannerFonts: cityViewFonts.BannerFonts,
     }
 }
 
@@ -226,9 +234,13 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
                 options.GeoM.Scale(scaleX, scaleY)
 
                 // why is -60 so large? it seems like we should use -10 or so
-                x1, y1 := options.GeoM.Apply(0, -60)
+                x1, y1 := options.GeoM.Apply(0, -65)
 
-                fonts.Name.PrintOptions(screen, x1 + float64(offsetX), y1 + float64(offsetY), font.FontOptions{Scale: scale.ScaleAmount, Options: &options, Justify: font.FontJustifyCenter, DropShadow: true}, cityName)
+                fontUse, ok := fonts.BannerFonts[drawCityName.GetBanner()]
+
+                if ok {
+                    fontUse.PrintOptions(screen, x1 + float64(offsetX), y1 + float64(offsetY), font.FontOptions{Scale: scale.ScaleAmount, Options: &options, Justify: font.FontJustifyCenter, DropShadow: true}, cityName)
+                }
             }
 
             ui.StandardDraw(screen)
