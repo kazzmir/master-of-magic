@@ -72,6 +72,7 @@ const NormalYellow = "NormalYellow"
 const PowerFont1 = "PowerFont1"
 const PowerFontWhite = "PowerFontWhite"
 const BigBlack = "BigBlack"
+const MassiveBlack = "MassiveBlack"
 
 // use util/font-list to see how these fonts are rendered
 func init() {
@@ -741,6 +742,19 @@ func init() {
         return font.MakeOptimizedFontWithPalette(fonts[4], blackPalette)
     }
 
+    fontLoaders[MassiveBlack] = func (fonts []*font.LbxFont) *font.Font {
+        black := color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff}
+        blackPalette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0, A: 0},
+            black, black, black, black, black, black,
+            black, black, black, black, black, black,
+            black, black, black, black, black, black,
+            black, black, black, black, black, black,
+        }
+        return font.MakeOptimizedFontWithPalette(fonts[5], blackPalette)
+    }
+
     fontLoaders[NormalLight] = func (fonts []*font.LbxFont) *font.Font {
         yellow1 := color.RGBA{R: 0xd6, G: 0xb3, B: 0x85, A: 0xff}
         alpha := uint8(0xff)
@@ -882,6 +896,7 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
             case data.BannerPurple: bannerColor = color.RGBA{R: 0x8f, G: 0x30, B: 0xff, A: 0xff}
             case data.BannerRed: bannerColor = color.RGBA{R: 0xff, G: 0x00, B: 0x00, A: 0xff}
             case data.BannerYellow: bannerColor = color.RGBA{R: 0xff, G: 0xff, B: 0x00, A: 0xff}
+            case data.BannerBrown: bannerColor = color.RGBA{R: 0xbb, G: 0x7c, B: 0x3d, A: 0xff}
         }
 
         return color.Palette{
@@ -895,7 +910,7 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
 
     bannerFonts := make(map[data.BannerType]*font.Font)
 
-    for _, banner := range []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow} {
+    for _, banner := range []data.BannerType{data.BannerGreen, data.BannerBlue, data.BannerRed, data.BannerPurple, data.BannerYellow, data.BannerBrown} {
         bannerFonts[banner] = font.MakeOptimizedFontWithPalette(fonts[0], makeBannerPalette(banner))
     }
 
