@@ -745,7 +745,6 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
     counter := 0
     for column := 0; column < 2; column += 1 {
         for row := 0; row < 7; row++ {
-            clickedButtonOffset := 0
             wizard := counter
             background, _ := screen.ImageCache.GetImage("newgame.lbx", screen.WizardSlots[counter].Background, 0)
             name := screen.WizardSlots[counter].Name
@@ -758,9 +757,7 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
 
             elements = append(elements, &uilib.UIElement{
                 Rect: image.Rect(x1, y1, x2, y2),
-                LeftClick: func(this *uilib.UIElement){
-                    clickedButtonOffset = 1
-                },
+                IsOffsetWhenPressed: true,
                 LeftClickRelease: func(element *uilib.UIElement) {
                     clickFunc(wizard)
                 },
@@ -770,11 +767,11 @@ func (screen *NewWizardScreen) MakeWizardUIElements(clickFunc func(wizard int), 
                 },
                 Draw: func(this *uilib.UIElement, window *ebiten.Image){
                     var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(x1 + clickedButtonOffset), float64(y1 + clickedButtonOffset))
+                    options.GeoM.Translate(float64(this.Rect.Min.X), float64(this.Rect.Min.Y))
                     scaledOptions := scale.ScaleOptions(options)
 
                     window.DrawImage(background, scaledOptions)
-                    screen.Fonts.Font.PrintOptions(window, float64(x1 + clickedButtonOffset) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3 + clickedButtonOffset), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, name)
+                    screen.Fonts.Font.PrintOptions(window, float64(this.Rect.Min.X) + float64(background.Bounds().Dx()) / 2, float64(this.Rect.Min.Y + 3), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, name)
                 },
             })
         }
@@ -811,7 +808,6 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
     }
 
     elements := screen.MakeWizardUIElements(clickFunc, insideFunc)
-    customButtonClickedOffset := 0
 
     // custom element
     elements = append(elements, (func () *uilib.UIElement {
@@ -823,9 +819,7 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
 
         return &uilib.UIElement{
             Rect: image.Rect(x1, y1, x2, y2),
-            LeftClick: func(element *uilib.UIElement) {
-                customButtonClickedOffset = 1
-            },
+            IsOffsetWhenPressed: true,
             LeftClickRelease: func(this *uilib.UIElement){
                 screen.State = NewWizardScreenStateCustomPicture
                 screen.UI = screen.MakeCustomPictureUI()
@@ -835,9 +829,9 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
             },
             Draw: func(this *uilib.UIElement, window *ebiten.Image){
                 var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(x1 + customButtonClickedOffset), float64(y1 + customButtonClickedOffset))
+                options.GeoM.Translate(float64(this.Rect.Min.X), float64(this.Rect.Min.Y))
                 window.DrawImage(background, scale.ScaleOptions(options))
-                screen.Fonts.Font.PrintOptions(window, float64(x1 + customButtonClickedOffset) + float64(background.Bounds().Dx()) / 2, float64(y1 + 3 + customButtonClickedOffset), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Custom")
+                screen.Fonts.Font.PrintOptions(window, float64(this.Rect.Min.X) + float64(background.Bounds().Dx()) / 2, float64(this.Rect.Min.Y + 3), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, "Custom")
             },
         }
     })())
