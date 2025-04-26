@@ -244,19 +244,24 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
                 return nil
             }
 
-            if strings.HasSuffix(entry.Name(), ".sf2") {
-                log.Printf("Found candidate %v", path)
+            if strings.HasSuffix(strings.ToLower(entry.Name()), ".sf2") {
                 file, err := useFs.Open(path)
                 if err != nil {
                     log.Printf("Error opening file %v: %v", path, err)
                     return nil
                 }
 
+                // FIXME: handle symlinks
+
                 info, err := entry.Info()
                 if err != nil {
                     log.Printf("Error getting file info %v: %v", path, err)
                     return nil
                 }
+
+                log.Printf("Found candidate %v size %v", path, info.Size())
+
+                // FIXME: check that the file is really a soundfont by opening it
 
                 candidates = append(candidates, candidate{File: file, Size: int(info.Size()), Name: path})
             }
@@ -266,17 +271,9 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
     }
 
     fs.WalkDir(data.Data, ".", makeWalkFunc(data.Data))
+    // any other places to check by default?
     soundsDir := os.DirFS("/usr/share/sounds")
     fs.WalkDir(soundsDir, ".", makeWalkFunc(soundsDir))
-
-    /*
-    soundFontPath := "/usr/share/sounds/sf2/FluidR3_GM.sf2"
-    sf2, err := os.Open(soundFontPath)
-    if err != nil {
-        return nil, err
-    }
-    defer sf2.Close()
-    */
 
     if len(candidates) == 0 {
         return nil, fmt.Errorf("no soundfont candidates found")
