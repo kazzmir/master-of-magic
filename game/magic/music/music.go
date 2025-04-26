@@ -8,12 +8,15 @@ import (
     "strings"
     "time"
     "math/rand/v2"
+    "math"
+    "os"
 
     "github.com/kazzmir/master-of-magic/game/magic/audio"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/xmi"
 
+    "github.com/kazzmir/master-of-magic/lib/meltysynth"
     "github.com/kazzmir/master-of-magic/lib/midi"
     "github.com/kazzmir/master-of-magic/lib/midi/smf"
     midiPlayer "github.com/kazzmir/master-of-magic/lib/midi/smf/player"
@@ -237,7 +240,10 @@ func (music *Music) PlaySong(index Song){
             }
         }
 
-        playMidi(song, music.done)
+        err := playMidi(song, music.done)
+        if err != nil {
+            log.Printf("Error: could not play midi %v: %v", index, err)
+        }
     }()
 }
 
@@ -246,7 +252,110 @@ func (music *Music) Stop() {
     music.wait.Wait()
 }
 
-func playMidi(song *smf.SMF, done context.Context) {
+type MidiPlayer struct {
+    Sequencer *meltysynth.MidiFileSequencer
+    Left []float32
+    Right []float32
+}
+
+func (player *MidiPlayer) Read(p []byte) (int, error) {
+    samples := len(p) / 4 / 2
+
+    /*
+    engineLeft, engineRight := engine.PCMReader.Lock()
+    defer engine.PCMReader.Unlock()
+    */
+
+    if len(player.Left) < samples {
+        player.Left = make([]float32, samples)
+        player.Right = make([]float32, samples)
+    }
+
+    left := player.Left
+    right := player.Right
+
+    log.Printf("Render audio %v samples", len(left))
+    player.Sequencer.Render(left, right)
+    // log.Printf("Wrote midi samples %v", midiSamples)
+
+    // myWriter := &ByteWriter{Data: p}
+
+    for i := 0; i < samples; i++ {
+        /*
+        binary.Write(myWriter, binary.LittleEndian, left[i])
+        binary.Write(myWriter, binary.LittleEndian, right[i])
+        */
+
+        v := math.Float32bits(left[i])
+        p[i*8] = byte(v)
+        p[i*8+1] = byte(v >> 8)
+        p[i*8+2] = byte(v >> 16)
+        p[i*8+3] = byte(v >> 24)
+        // binary.LittleEndian.PutUint32(p[i*4:], v)
+        v = math.Float32bits(right[i])
+        // binary.LittleEndian.PutUint32(p[i*4+4:], v)
+        p[i*8+4] = byte(v)
+        p[i*8+5] = byte(v >> 8)
+        p[i*8+6] = byte(v >> 16)
+        p[i*8+7] = byte(v >> 24)
+    }
+
+    n := samples * 4 * 2
+
+    return n, nil
+}
+
+func playMidi(song *smf.SMF, done context.Context) error {
+    var buffer bytes.Buffer
+    // write out a normal midi file
+    song.WriteTo(&buffer)
+
+    soundFontPath := "/usr/share/sounds/sf2/FluidR3_GM.sf2"
+    sf2, err := os.Open(soundFontPath)
+    if err != nil {
+        return err
+    }
+    defer sf2.Close()
+
+    soundFont, err := meltysynth.NewSoundFont(sf2)
+    if err != nil {
+        return err
+    }
+
+    settings := meltysynth.NewSynthesizerSettings(audio.SampleRate)
+    synthesizer, err := meltysynth.NewSynthesizer(soundFont, settings)
+    if err != nil {
+        return err
+    }
+
+    midi, err := meltysynth.NewMidiFile(&buffer)
+    if err != nil {
+        return err
+    }
+
+    sequencer := meltysynth.NewMidiFileSequencer(synthesizer)
+    sequencer.Play(midi, true)
+
+    midiPlayer := &MidiPlayer{
+        Sequencer: sequencer,
+    }
+
+    player, err := audio.Context.NewPlayerF32(midiPlayer)
+    if err != nil {
+        return err
+    }
+
+    player.SetVolume(1.0)
+    player.SetBufferSize(time.Second / 10)
+    player.Play()
+
+    <-done.Done()
+    player.Close()
+
+    return nil
+}
+
+func playMidi2(song *smf.SMF, done context.Context) {
     driver := midiDrivers.Get()
     if driver == nil {
         log.Printf("No midi driver available!\n")
