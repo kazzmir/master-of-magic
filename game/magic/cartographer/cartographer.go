@@ -296,6 +296,11 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
     */
 
     logic := func (yield coroutine.YieldFunc) error {
+        var geom ebiten.GeoM
+        geom.Scale(float64(tileImage0.Bounds().Dx()), float64(tileImage0.Bounds().Dy()))
+        geom.Scale(scaleX, scaleY)
+        geom.Invert()
+
         for !quit {
             counter += 1
 
@@ -306,11 +311,6 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
             if currentPlane == data.PlaneMyrror {
                 usePlane = data.PlaneMyrror
             }
-
-            var geom ebiten.GeoM
-            geom.Scale(float64(tileImage0.Bounds().Dx()), float64(tileImage0.Bounds().Dy()))
-            geom.Scale(scaleX, scaleY)
-            geom.Invert()
 
             mx, my := geom.Apply(float64(mouseX - offsetX), float64(mouseY - offsetY))
             // log.Printf("converted mouse coordinates: %v %v", mx, my)
