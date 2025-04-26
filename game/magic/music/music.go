@@ -228,6 +228,20 @@ func (music *Music) PlaySong(index Song){
         return
     }
 
+    soundFontPath := "/usr/share/sounds/sf2/FluidR3_GM.sf2"
+    sf2, err := os.Open(soundFontPath)
+    if err != nil {
+        log.Printf("Error: could not open soundfont %v: %v", soundFontPath, err)
+        return
+    }
+    defer sf2.Close()
+
+    soundFont, err := meltysynth.NewSoundFont(sf2)
+    if err != nil {
+        log.Printf("Error: could not load soundfont %v: %v", soundFontPath, err)
+        return
+    }
+
     music.wait.Add(1)
     go func(){
         defer music.wait.Done()
@@ -240,7 +254,7 @@ func (music *Music) PlaySong(index Song){
             }
         }
 
-        err := playMidi(song, music.done)
+        err := playMidi(song, music.done, soundFont)
         if err != nil {
             log.Printf("Error: could not play midi %v: %v", index, err)
         }
@@ -274,7 +288,7 @@ func (player *MidiPlayer) Read(p []byte) (int, error) {
     left := player.Left
     right := player.Right
 
-    log.Printf("Render audio %v samples", len(left))
+    // log.Printf("Render audio %v samples", len(left))
     player.Sequencer.Render(left, right)
     // log.Printf("Wrote midi samples %v", midiSamples)
 
@@ -305,22 +319,11 @@ func (player *MidiPlayer) Read(p []byte) (int, error) {
     return n, nil
 }
 
-func playMidi(song *smf.SMF, done context.Context) error {
+// FIXME: replace smf.SMF with meltysynth.MidiFile
+func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFont) error {
     var buffer bytes.Buffer
     // write out a normal midi file
     song.WriteTo(&buffer)
-
-    soundFontPath := "/usr/share/sounds/sf2/FluidR3_GM.sf2"
-    sf2, err := os.Open(soundFontPath)
-    if err != nil {
-        return err
-    }
-    defer sf2.Close()
-
-    soundFont, err := meltysynth.NewSoundFont(sf2)
-    if err != nil {
-        return err
-    }
 
     settings := meltysynth.NewSynthesizerSettings(audio.SampleRate)
     synthesizer, err := meltysynth.NewSynthesizer(soundFont, settings)
