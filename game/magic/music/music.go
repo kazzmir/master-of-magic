@@ -9,7 +9,9 @@ import (
     "time"
     "math/rand/v2"
     "math"
-    // "os"
+    "os"
+    "slices"
+    "cmp"
     "io/fs"
     "fmt"
 
@@ -226,39 +228,46 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
 
     type candidate struct {
         File fs.File
+        Name string
         Size int
     }
 
     var candidates []candidate
 
-    fs.WalkDir(data.Data, ".", func(path string, entry fs.DirEntry, err error) error {
-        if err != nil {
-            return fs.SkipDir
-        }
+    makeWalkFunc := func(useFs fs.FS) fs.WalkDirFunc {
+        return func(path string, entry fs.DirEntry, err error) error {
+            if err != nil {
+                return fs.SkipDir
+            }
 
-        if entry.IsDir() {
+            if entry.IsDir() {
+                return nil
+            }
+
+            if strings.HasSuffix(entry.Name(), ".sf2") {
+                log.Printf("Found candidate %v", path)
+                file, err := useFs.Open(path)
+                if err != nil {
+                    log.Printf("Error opening file %v: %v", path, err)
+                    return nil
+                }
+
+                info, err := entry.Info()
+                if err != nil {
+                    log.Printf("Error getting file info %v: %v", path, err)
+                    return nil
+                }
+
+                candidates = append(candidates, candidate{File: file, Size: int(info.Size()), Name: path})
+            }
+
             return nil
         }
+    }
 
-        if strings.HasSuffix(entry.Name(), ".sf2") {
-            log.Printf("Found candidate %v", path)
-            file, err := data.Data.Open(path)
-            if err != nil {
-                log.Printf("Error opening file %v: %v", path, err)
-                return nil
-            }
-
-            info, err := entry.Info()
-            if err != nil {
-                log.Printf("Error getting file info %v: %v", path, err)
-                return nil
-            }
-
-            candidates = append(candidates, candidate{File: file, Size: int(info.Size())})
-        }
-
-        return nil
-    })
+    fs.WalkDir(data.Data, ".", makeWalkFunc(data.Data))
+    soundsDir := os.DirFS("/usr/share/sounds")
+    fs.WalkDir(soundsDir, ".", makeWalkFunc(soundsDir))
 
     /*
     soundFontPath := "/usr/share/sounds/sf2/FluidR3_GM.sf2"
@@ -273,7 +282,21 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
         return nil, fmt.Errorf("no soundfont candidates found")
     }
 
-    soundFont, err := meltysynth.NewSoundFont(candidates[0].File)
+    defer func() {
+        for _, candidate := range candidates {
+            candidate.File.Close()
+        }
+    }()
+
+    candidates = slices.SortedFunc(slices.Values(candidates), func (a, b candidate) int {
+        return cmp.Compare(a.Size, b.Size)
+    })
+
+    choose := candidates[len(candidates) - 1]
+
+    log.Printf("Opening soundfont %v", choose.Name)
+
+    soundFont, err := meltysynth.NewSoundFont(choose.File)
     if err != nil {
         return nil, err
     }
