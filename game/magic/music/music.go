@@ -9,10 +9,13 @@ import (
     "time"
     "math/rand/v2"
     "math"
-    "os"
+    // "os"
+    "io/fs"
+    "fmt"
 
     "github.com/kazzmir/master-of-magic/game/magic/audio"
 
+    "github.com/kazzmir/master-of-magic/data"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/xmi"
 
@@ -168,6 +171,7 @@ type Music struct {
     cancel context.CancelFunc
     wait sync.WaitGroup
 
+    SoundFont *meltysynth.SoundFont
     XmiCache map[Song]*smf.SMF
 
     // queue of songs being played. a new song can be pushed on top, or popped off
@@ -215,6 +219,69 @@ func (music *Music) LoadSong(index Song) (*smf.SMF, error) {
     return song, nil
 }
 
+func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
+    if music.SoundFont != nil {
+        return music.SoundFont, nil
+    }
+
+    type candidate struct {
+        File fs.File
+        Size int
+    }
+
+    var candidates []candidate
+
+    fs.WalkDir(data.Data, ".", func(path string, entry fs.DirEntry, err error) error {
+        if err != nil {
+            return fs.SkipDir
+        }
+
+        if entry.IsDir() {
+            return nil
+        }
+
+        if strings.HasSuffix(entry.Name(), ".sf2") {
+            log.Printf("Found candidate %v", path)
+            file, err := data.Data.Open(path)
+            if err != nil {
+                log.Printf("Error opening file %v: %v", path, err)
+                return nil
+            }
+
+            info, err := entry.Info()
+            if err != nil {
+                log.Printf("Error getting file info %v: %v", path, err)
+                return nil
+            }
+
+            candidates = append(candidates, candidate{File: file, Size: int(info.Size())})
+        }
+
+        return nil
+    })
+
+    /*
+    soundFontPath := "/usr/share/sounds/sf2/FluidR3_GM.sf2"
+    sf2, err := os.Open(soundFontPath)
+    if err != nil {
+        return nil, err
+    }
+    defer sf2.Close()
+    */
+
+    if len(candidates) == 0 {
+        return nil, fmt.Errorf("no soundfont candidates found")
+    }
+
+    soundFont, err := meltysynth.NewSoundFont(candidates[0].File)
+    if err != nil {
+        return nil, err
+    }
+
+    music.SoundFont = soundFont
+    return soundFont, nil
+}
+
 func (music *Music) PlaySong(index Song){
     log.Printf("Playing song %v", index)
     music.Stop()
@@ -228,17 +295,9 @@ func (music *Music) PlaySong(index Song){
         return
     }
 
-    soundFontPath := "/usr/share/sounds/sf2/FluidR3_GM.sf2"
-    sf2, err := os.Open(soundFontPath)
+    soundFont, err := music.LoadSoundFont()
     if err != nil {
-        log.Printf("Error: could not open soundfont %v: %v", soundFontPath, err)
-        return
-    }
-    defer sf2.Close()
-
-    soundFont, err := meltysynth.NewSoundFont(sf2)
-    if err != nil {
-        log.Printf("Error: could not load soundfont %v: %v", soundFontPath, err)
+        log.Printf("Error: could not load soundfont: %v", err)
         return
     }
 
