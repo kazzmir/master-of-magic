@@ -180,6 +180,8 @@ type NoteOffDuration struct {
     index int
 }
 
+// FIXME: add a ConvertToMeltySynthMidi instead of smf
+
 // convert from an XMI midi event to a standard midi event by keeping track of note on durations
 func (event *MidiEvent) ConvertToSMF() *smf.SMF {
     object := smf.New()
