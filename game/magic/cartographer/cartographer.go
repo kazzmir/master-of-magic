@@ -12,7 +12,6 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/functional"
-    // "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
@@ -136,36 +135,23 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
         // matrix.ScaleWithColor(color.RGBA{R: 217, G: 112, B: 61, A: 255})
         matrix.ChangeHSV(0, 0, 1.8)
         // matrix.Translate(155/255.0, 80/255.0, 44/255.0, 0)
+        // a brownish color
         matrix.Scale(0.7, 0.5, 0.3, 1)
         for x := range useFog {
             for y := range useFog[x] {
-                if /*x%2 == 0 && y%2 == 0 &&*/ useFog[x][y] != data.FogTypeUnexplored {
-                    // tile := useMap.GetTile(x, y)
-                    // tileColor := getTileColor(tile.Tile.TerrainType())
+                if useFog[x][y] != data.FogTypeUnexplored {
                     tileImage, err := useMap.GetTileImage(x, y, 0)
                     if err == nil {
                         options.GeoM.Reset()
                         options.GeoM.Translate(float64(x*tileImage.Bounds().Dx()), float64(y*tileImage.Bounds().Dy()))
                         options.GeoM.Scale(scaleX, scaleY)
                         colorm.DrawImage(showMap, tileImage, matrix, &options)
-
-                        /*
-                        var options2 ebiten.DrawImageOptions
-                        options2.GeoM = options.GeoM
-                        showMap.DrawImage(tileImage, &options2)
-                        */
-
-                        /*
-                        x1, y1 := options.GeoM.Apply(1, 1)
-                        x2, y2 := options.GeoM.Apply(float64(tileImage.Bounds().Dx()-1), float64(tileImage.Bounds().Dy()-1))
-                        vector.StrokeRect(showMap, float32(x1), float32(y1), float32(x2-x1), float32(y2-y1), 1, color.RGBA{R: 255, G: 0, B: 0, A: 255}, false)
-                        */
                     }
-                    // vector.DrawFilledRect(showMap, float32(x*2), float32(y*2), 2, 2, tileColor, false)
                 }
             }
         }
 
+        // draw squares for cities
         for _, city := range cities {
             if city.Plane == plane {
                 if useFog[city.X][city.Y] != data.FogTypeUnexplored {
@@ -188,6 +174,7 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
             }
         }
 
+        // draw single pixel for unit stack
         for _, stack := range stacks {
             if stack.Plane() == plane {
                 if useFog[stack.X()][stack.Y()] != data.FogTypeUnexplored {
@@ -243,7 +230,7 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
                 options.GeoM.Translate(float64(drawCityName.X*tileImage0.Bounds().Dx()), float64(drawCityName.Y*tileImage0.Bounds().Dy()))
                 options.GeoM.Scale(scaleX, scaleY)
 
-                // why is -60 so large? it seems like we should use -10 or so
+                // why is -60 so large? it seems like we should use -10 or so. A: this is because of the scale in the geom
                 x1, y1 := options.GeoM.Apply(0, -65)
 
                 fontUse, ok := fonts.BannerFonts[drawCityName.GetBanner()]
@@ -284,16 +271,6 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
             quit = true
         },
     })
-
-    /*
-    abs := func (a int) int {
-        if a < 0 {
-            return -a
-        }
-
-        return a
-    }
-    */
 
     logic := func (yield coroutine.YieldFunc) error {
         var geom ebiten.GeoM
