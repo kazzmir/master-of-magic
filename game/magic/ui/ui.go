@@ -89,6 +89,9 @@ type UIElement struct {
 
     // if true, the standard ui sound will play when this element is left clicked
     PlaySoundLeftClick bool
+
+    IsOffsetWhenPressed bool
+    isPressed bool
 }
 
 // a collection of ui elements that can be removed all at once
@@ -473,7 +476,14 @@ func (ui *UI) RenderTooltip(screen *ebiten.Image) {
 func (ui *UI) StandardDraw(screen *ebiten.Image) {
     ui.IterateElementsByLayer(func (element *UIElement){
         if element.Draw != nil {
+            var offsetPoint image.Point
+            if element.IsOffsetWhenPressed && element.isPressed {
+                offsetPoint = image.Pt(1, 1)
+            }
+
+            element.Rect = element.Rect.Add(offsetPoint)
             element.Draw(element, screen)
+            element.Rect = element.Rect.Sub(offsetPoint)
         }
     })
 
@@ -580,6 +590,7 @@ func (ui *UI) StandardUpdate() {
 
     if leftClickReleased {
         for _, element := range ui.LeftClickedElements {
+            element.isPressed = false
             if element.LeftClickRelease != nil {
                 element.LeftClickRelease(element)
             }
@@ -627,6 +638,7 @@ func (ui *UI) StandardUpdate() {
                 // if the element is interested in left click at all
                 if element.LeftClick != nil || element.LeftClickRelease != nil || element.DoubleLeftClick != nil {
                     elementLeftClicked = true
+                    element.isPressed = true
                 }
                 if element.LeftClick != nil {
                     if element.PlaySoundLeftClick {

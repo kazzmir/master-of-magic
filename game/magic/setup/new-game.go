@@ -175,78 +175,65 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
         },
     })
 
-    const pressedButtonOffset = 1
-
     difficultyX := 160 + 91
     difficultyY := 39
-    difficultyButtonOffset := 0
     difficultyBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 4, 0)
 
     elements = append(elements, &uilib.UIElement{
         Rect: util.ImageRect(difficultyX, difficultyY, difficultyBlock),
+        IsOffsetWhenPressed: true,
         LeftClick: func(element *uilib.UIElement) {
-            difficultyButtonOffset = pressedButtonOffset
             newGameScreen.Settings.DifficultyNext()
         },
-        LeftClickRelease: func(element *uilib.UIElement) {
-            difficultyButtonOffset = 0
-        }, 
         Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(this.Rect.Min.X + difficultyButtonOffset), float64(this.Rect.Min.Y + difficultyButtonOffset))
+            options.GeoM.Translate(float64(this.Rect.Min.X), float64(this.Rect.Min.Y))
             scale.DrawScaled(screen, difficultyBlock, &options)
 
-            x := difficultyX + difficultyBlock.Bounds().Dx() / 2 + difficultyButtonOffset
-            y := (difficultyY + 3) + difficultyButtonOffset
+            x := this.Rect.Min.X + difficultyBlock.Bounds().Dx() / 2
+            y := this.Rect.Min.Y + 3
             buttonFont.PrintOptions(screen, float64(x), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, newGameScreen.Settings.DifficultyString())
         },
     })
 
     opponentsX := 160 + 91
     opponentsY := 66
-    opponentsButtonOffset := 0
     opponentsBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 5, 0)
 
     elements = append(elements, &uilib.UIElement{
         Rect: util.ImageRect(opponentsX, opponentsY, opponentsBlock),
+        IsOffsetWhenPressed: true,
         LeftClick: func(element *uilib.UIElement) {
-            opponentsButtonOffset = pressedButtonOffset
             newGameScreen.Settings.OpponentsNext()
         },
-        LeftClickRelease: func(element *uilib.UIElement) {
-            opponentsButtonOffset = 0
-        }, 
         Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(this.Rect.Min.X + opponentsButtonOffset), float64(this.Rect.Min.Y + opponentsButtonOffset))
+            options.GeoM.Translate(float64(this.Rect.Min.X), float64(this.Rect.Min.Y))
             scale.DrawScaled(screen, opponentsBlock, &options)
-            x := opponentsX + opponentsBlock.Bounds().Dx() / 2 + opponentsButtonOffset
-            y := (opponentsY + 4) + opponentsButtonOffset
+
+            x := this.Rect.Min.X + opponentsBlock.Bounds().Dx() / 2
+            y := this.Rect.Min.Y + 4
             buttonFont.PrintOptions(screen, float64(x), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, newGameScreen.Settings.OpponentsString())
         },
     })
 
     landsizeX := 160 + 91
     landsizeY := 93
-    landsizeButtonOffset := 0
     landSizeBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 6, 0)
 
     elements = append(elements, &uilib.UIElement{
         Rect: util.ImageRect(landsizeX, landsizeY, landSizeBlock),
+        IsOffsetWhenPressed: true,
         LeftClick: func(element *uilib.UIElement) {
-            landsizeButtonOffset = pressedButtonOffset
             newGameScreen.Settings.LandSizeNext()
         },
-        LeftClickRelease: func(element *uilib.UIElement) {
-            landsizeButtonOffset = 0
-        }, 
         Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(this.Rect.Min.X + landsizeButtonOffset), float64(this.Rect.Min.Y + landsizeButtonOffset))
+            options.GeoM.Translate(float64(this.Rect.Min.X), float64(this.Rect.Min.Y))
             scale.DrawScaled(screen, landSizeBlock, &options)
 
-            x := landsizeX + landSizeBlock.Bounds().Dx() / 2 + landsizeButtonOffset
-            y := (landsizeY + 4) + landsizeButtonOffset
+            x := this.Rect.Min.X + landSizeBlock.Bounds().Dx() / 2
+            y := this.Rect.Min.Y + 4
 
             buttonFont.PrintOptions(screen, float64(x), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, newGameScreen.Settings.LandSizeString())
         },
@@ -254,24 +241,20 @@ func (newGameScreen *NewGameScreen) MakeUI() *uilib.UI {
 
     magicX := 160 + 91
     magicY := 120
-    magicButtonOffset := 0
     magicBlock, _ := newGameScreen.ImageCache.GetImage("newgame.lbx", 7, 0)
 
     elements = append(elements, &uilib.UIElement{
         Rect: util.ImageRect(magicX, magicY, magicBlock),
+        IsOffsetWhenPressed: true,
         LeftClick: func(element *uilib.UIElement) {
-            magicButtonOffset = pressedButtonOffset
             newGameScreen.Settings.MagicNext()
-        },
-        LeftClickRelease: func(element *uilib.UIElement) {
-            magicButtonOffset = 0
         },
         Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(float64(this.Rect.Min.X + magicButtonOffset), float64(this.Rect.Min.Y + magicButtonOffset))
+            options.GeoM.Translate(float64(this.Rect.Min.X), float64(this.Rect.Min.Y))
             scale.DrawScaled(screen, magicBlock, &options)
-            x := magicX + magicBlock.Bounds().Dx() / 2 + magicButtonOffset
-            y := (magicY + 4) + magicButtonOffset
+            x := this.Rect.Min.X + magicBlock.Bounds().Dx() / 2
+            y := this.Rect.Min.Y + 4
             buttonFont.PrintOptions(screen, float64(x), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, newGameScreen.Settings.MagicString())
         },
     })
