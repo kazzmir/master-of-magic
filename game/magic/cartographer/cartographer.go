@@ -49,7 +49,7 @@ func makeFonts(cache *lbx.LbxCache) Fonts {
 
     return Fonts{
         Name: loader(fontslib.SmallBlack),
-        Title: loader(fontslib.BigBlack),
+        Title: loader(fontslib.MassiveBlack),
         BannerFonts: cityViewFonts.BannerFonts,
     }
 }
