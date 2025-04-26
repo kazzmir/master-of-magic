@@ -5,10 +5,13 @@ import (
     "image"
     "image/color"
     "math"
+    "maps"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/functional"
     // "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
@@ -51,7 +54,7 @@ func makeFonts(cache *lbx.LbxCache) Fonts {
     }
 }
 
-func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*playerlib.UnitStack, arcanusMap *maplib.Map, arcanusFog data.FogMap, myrrorMap *maplib.Map, myrrorFog data.FogMap) (coroutine.AcceptYieldFunc, func (*ebiten.Image)) {
+func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*playerlib.UnitStack, players []*playerlib.Player, arcanusMap *maplib.Map, arcanusFog data.FogMap, myrrorMap *maplib.Map, myrrorFog data.FogMap) (coroutine.AcceptYieldFunc, func (*ebiten.Image)) {
     quit := false
 
     fonts := makeFonts(cache)
@@ -64,30 +67,37 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
 
     currentPlane := data.PlaneArcanus
 
-    /*
-    getTileColor := functional.Memoize(func (kind terrain.TerrainType) color.RGBA {
-        switch kind {
-            case terrain.Ocean, terrain.River: return color.RGBA{R: 88, G: 68, B: 54, A: 255}
-            case terrain.Mountain: return color.RGBA{R: 173, G: 138, B: 114, A: 255}
-            case terrain.Desert: return color.RGBA{R: 172, G: 133, B: 107, A: 255}
-            case terrain.SorceryNode: return color.RGBA{R: 170, G: 146, B: 129, A: 255}
-            / *
-            case terrain.Shore:
-            case terrain.Hill
-            case terrain.Grass
-            case terrain.Swamp
-            case terrain.Forest
-            case terrain.Tundra
-            case terrain.Volcano
-            case terrain.Lake
-            case terrain.NatureNode
-            case terrain.ChaosNode
-            * /
+    playerName := functional.Memoize(func (banner data.BannerType) string {
+        for _, player := range players {
+            if player.GetBanner() == banner {
+                return player.Wizard.Name
+            }
         }
 
-        return color.RGBA{R: 47, G: 30, B: 12, A: 255}
+        return ""
     })
-    */
+
+    usedBanners := make(map[data.BannerType]string)
+    for _, city := range cities {
+        usedBanners[city.GetBanner()] = playerName(city.GetBanner())
+    }
+
+    bannerList := slices.Sorted(maps.Keys(usedBanners))
+
+    getFlag := func (banner data.BannerType) *ebiten.Image {
+        index := 3
+        switch banner {
+            case data.BannerBlue: index = 3
+            case data.BannerGreen: index = 4
+            case data.BannerPurple: index = 5
+            case data.BannerRed: index = 6
+            case data.BannerYellow: index = 7
+            case data.BannerBrown: index = 8
+        }
+
+        flag, _ := imageCache.GetImage("reload.lbx", index, 0)
+        return flag
+    }
 
     bannerColor := func (banner data.BannerType) color.RGBA {
         switch banner {
@@ -243,6 +253,18 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
                 }
             }
 
+            bannerY := 80
+            for _, banner := range bannerList {
+                name := usedBanners[banner]
+                options.GeoM.Reset()
+                options.GeoM.Translate(260, float64(bannerY))
+                flag := getFlag(banner)
+                scale.DrawScaled(screen, flag, &options)
+                x, _ := options.GeoM.Apply(float64(flag.Bounds().Dx() + 2), 0)
+                fonts.Name.PrintOptions(screen, x, float64(bannerY), font.FontOptions{Scale: scale.ScaleAmount, Options: &options, Justify: font.FontJustifyLeft}, name)
+                bannerY += flag.Bounds().Dy() + 2
+            }
+
             ui.StandardDraw(screen)
         },
     }
@@ -253,7 +275,7 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
     ui.AddElement(&uilib.UIElement{
         Rect: pageTurnRect,
         Draw: func (element *uilib.UIElement, screen *ebiten.Image) {
-            util.DrawRect(screen, scale.ScaleRect(pageTurnRect), color.RGBA{R: 255, A: 255})
+            // util.DrawRect(screen, scale.ScaleRect(pageTurnRect), color.RGBA{R: 255, A: 255})
         },
         LeftClick: func (element *uilib.UIElement) {
             currentPlane = currentPlane.Opposite()

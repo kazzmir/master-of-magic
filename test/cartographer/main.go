@@ -118,7 +118,9 @@ func NewEngine(scenario int) (*Engine, error) {
     stacks = append(stacks, makeStack(&player1))
     stacks = append(stacks, makeStack(&player2))
 
-    logic, draw := cartographer.MakeCartographer(cache, cities, stacks, arcanusMap, arcanusFog, myrrorMap, myrrorFog)
+    players := []*playerlib.Player{&player1, &player2}
+
+    logic, draw := cartographer.MakeCartographer(cache, cities, stacks, players, arcanusMap, arcanusFog, myrrorMap, myrrorFog)
 
     return &Engine{
         LbxCache: cache,
