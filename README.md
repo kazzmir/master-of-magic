@@ -50,14 +50,16 @@ $ go run ./game/magic
 
 # Music:
 
-To hear the music you must have a midi synthesizer running separately. On linux and macos you can use [fluidsynth](https://www.fluidsynth.org/). Simply run fluidsynth on its own, and `magic` will automatically connect to it.
+This game comes with a midi synthesizer built in, so the music should play with no issues. A default soundfont is included in data/data, but the soundfont is somewhat small. If you would like to use a different soundfont so that the music sounds better, then place a soundfont file (.sf2) into data/data or in the directory that the executable is in, or in /usr/share/sounds on linux.
+
+Installing fluidsynth will provide a high quality soundfont, so that is one option. [fluidsynth](https://www.fluidsynth.org/)
 
 # Screenshots:
 ![new wizard](./images/new-custom-wizard.png)
 
 # Directory layout:
 - game/ Contains go code that implements the game functionality
-- lib/ Supporting code used to load data/fonts
+- lib/ Supporting code used to load data/fonts/midi
 - util/ Extra utility programs for development purposes (sprite viewer, font viewer, etc)
 - data/ Put a zip file with the game data to embed the data in the final binary
 - test/ Test programs for executing small pieces of functionality at a time
