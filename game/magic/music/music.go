@@ -239,6 +239,29 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
         return strings.HasSuffix(lower, ".sf2") || strings.HasSuffix(lower, ".sf3")
     }
 
+    addCandidate := func (useFs fs.FS, path string, entry fs.DirEntry) {
+        file, err := useFs.Open(path)
+        if err != nil {
+            log.Printf("Error opening file %v: %v", path, err)
+            return
+        }
+
+        // FIXME: handle symlinks
+
+        info, err := entry.Info()
+        if err != nil {
+            log.Printf("Error getting file info %v: %v", path, err)
+            file.Close()
+            return
+        }
+
+        log.Printf("Found candidate %v size %v", path, info.Size())
+
+        // FIXME: check that the file is really a soundfont by opening it
+
+        candidates = append(candidates, candidate{File: file, Size: int(info.Size()), Name: path})
+    }
+
     makeWalkFunc := func(useFs fs.FS) fs.WalkDirFunc {
         return func(path string, entry fs.DirEntry, err error) error {
             if err != nil {
@@ -250,26 +273,7 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
             }
 
             if isSoundFont(entry.Name()) {
-                file, err := useFs.Open(path)
-                if err != nil {
-                    log.Printf("Error opening file %v: %v", path, err)
-                    return nil
-                }
-
-                // FIXME: handle symlinks
-
-                info, err := entry.Info()
-                if err != nil {
-                    log.Printf("Error getting file info %v: %v", path, err)
-                    file.Close()
-                    return nil
-                }
-
-                log.Printf("Found candidate %v size %v", path, info.Size())
-
-                // FIXME: check that the file is really a soundfont by opening it
-
-                candidates = append(candidates, candidate{File: file, Size: int(info.Size()), Name: path})
+                addCandidate(useFs, path, entry)
             }
 
             return nil
@@ -289,26 +293,7 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
                 continue
             }
 
-            file, err := hereDir.Open(entry.Name())
-            if err != nil {
-                log.Printf("Error opening file %v: %v", entry.Name(), err)
-                continue
-            }
-
-            // FIXME: handle symlinks
-
-            info, err := entry.Info()
-            if err != nil {
-                log.Printf("Error getting file info %v: %v", entry.Name(), err)
-                file.Close()
-                continue
-            }
-
-            log.Printf("Found candidate %v size %v", entry.Name(), info.Size())
-
-            // FIXME: check that the file is really a soundfont by opening it
-
-            candidates = append(candidates, candidate{File: file, Size: int(info.Size()), Name: entry.Name()})
+            addCandidate(hereDir, entry.Name(), entry)
         }
     }
 
@@ -326,17 +311,20 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
         return cmp.Compare(a.Size, b.Size)
     })
 
-    choose := candidates[len(candidates) - 1]
+    slices.Reverse(candidates)
 
-    log.Printf("Opening soundfont %v", choose.Name)
+    // try to open the largest soundfont first
+    for _, choose := range candidates {
+        log.Printf("Opening soundfont %v", choose.Name)
 
-    soundFont, err := meltysynth.NewSoundFont(choose.File)
-    if err != nil {
-        return nil, err
+        soundFont, err := meltysynth.NewSoundFont(choose.File)
+        if err == nil {
+            music.SoundFont = soundFont
+            return soundFont, nil
+        }
     }
 
-    music.SoundFont = soundFont
-    return soundFont, nil
+    return nil, fmt.Errorf("could not open any soundfont")
 }
 
 func (music *Music) PlaySong(index Song){
