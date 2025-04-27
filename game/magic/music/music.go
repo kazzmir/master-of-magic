@@ -22,10 +22,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/xmi"
 
     "github.com/kazzmir/master-of-magic/lib/meltysynth"
-    "github.com/kazzmir/master-of-magic/lib/midi"
     "github.com/kazzmir/master-of-magic/lib/midi/smf"
-    midiPlayer "github.com/kazzmir/master-of-magic/lib/midi/smf/player"
-    midiDrivers "github.com/kazzmir/master-of-magic/lib/midi/drivers"
 )
 
 type Song int
@@ -370,6 +367,7 @@ func (music *Music) Stop() {
     music.wait.Wait()
 }
 
+// implements the io.Reader interface for ebiten's NewPlayerF32 function
 type MidiPlayer struct {
     Sequencer *meltysynth.MidiFileSequencer
     Left []float32
@@ -377,12 +375,8 @@ type MidiPlayer struct {
 }
 
 func (player *MidiPlayer) Read(p []byte) (int, error) {
+    // 4 bytes per sample, 2 channels
     samples := len(p) / 4 / 2
-
-    /*
-    engineLeft, engineRight := engine.PCMReader.Lock()
-    defer engine.PCMReader.Unlock()
-    */
 
     if len(player.Left) < samples {
         player.Left = make([]float32, samples)
@@ -392,26 +386,20 @@ func (player *MidiPlayer) Read(p []byte) (int, error) {
     left := player.Left
     right := player.Right
 
-    // log.Printf("Render audio %v samples", len(left))
+    // actually generate the audio
     player.Sequencer.Render(left, right)
+
     // log.Printf("Wrote midi samples %v", midiSamples)
 
-    // myWriter := &ByteWriter{Data: p}
-
+    // write left and right channels to p
     for i := 0; i < samples; i++ {
-        /*
-        binary.Write(myWriter, binary.LittleEndian, left[i])
-        binary.Write(myWriter, binary.LittleEndian, right[i])
-        */
-
         v := math.Float32bits(left[i])
         p[i*8] = byte(v)
         p[i*8+1] = byte(v >> 8)
         p[i*8+2] = byte(v >> 16)
         p[i*8+3] = byte(v >> 24)
-        // binary.LittleEndian.PutUint32(p[i*4:], v)
+
         v = math.Float32bits(right[i])
-        // binary.LittleEndian.PutUint32(p[i*4+4:], v)
         p[i*8+4] = byte(v)
         p[i*8+5] = byte(v >> 8)
         p[i*8+6] = byte(v >> 16)
@@ -460,75 +448,4 @@ func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFo
     player.Close()
 
     return nil
-}
-
-func playMidi2(song *smf.SMF, done context.Context) {
-    driver := midiDrivers.Get()
-    if driver == nil {
-        log.Printf("No midi driver available!\n")
-        return
-    }
-    log.Printf("Got driver: %v\n", driver)
-    outs, err := driver.Outs()
-    if err != nil {
-        log.Printf("Could not get midi output ports: %v\n", err)
-    } else {
-        log.Printf("Got midi output ports: %v\n", outs)
-        if len(outs) > 0 {
-            for _, out := range outs {
-
-                if strings.Contains(strings.ToLower(out.String()), "through"){
-                    continue
-                }
-
-                log.Printf("Using midi output port: %v", out)
-
-                send, err := midi.SendTo(out)
-                if err != nil {
-                    log.Printf("Could not send to midi output port: %v\n", err)
-                    return
-                }
-
-                defer out.Close()
-
-                var data bytes.Buffer
-
-                _, err = song.WriteTo(&data)
-                if err != nil {
-                    log.Printf("Could not write midi to buffer: %v", err)
-                    return
-                }
-
-                // play forever
-                for done.Err() == nil {
-                    _, err := midiPlayer.Play(out, bytes.NewReader(data.Bytes()), done, 0)
-                    if err != nil {
-                        log.Printf("Could not play midi: %v", err)
-                        break
-                    }
-
-
-                    /* not really sure why this doesn't work, but the notes are played too fast somehow
-                    _, err := midiPlayer.PlaySMF(out, song, done)
-                    if err != nil {
-                        log.Printf("Could not play midi: %v", err)
-                        break
-                    }
-                    */
-                }
-
-                // turn off all notes
-                for _, message := range midi.SilenceChannel(-1) {
-                    send(message.Bytes())
-                }
-
-                return
-            }
-
-            log.Printf("No playable output ports available!\n")
-
-        } else {
-            log.Printf("No midi output ports available!\n")
-        }
-    }
 }
