@@ -234,6 +234,11 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
 
     var candidates []candidate
 
+    isSoundFont := func(name string) bool {
+        lower := strings.ToLower(name)
+        return strings.HasSuffix(lower, ".sf2") || strings.HasSuffix(lower, ".sf3")
+    }
+
     makeWalkFunc := func(useFs fs.FS) fs.WalkDirFunc {
         return func(path string, entry fs.DirEntry, err error) error {
             if err != nil {
@@ -244,7 +249,7 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
                 return nil
             }
 
-            if strings.HasSuffix(strings.ToLower(entry.Name()), ".sf2") {
+            if isSoundFont(entry.Name()) {
                 file, err := useFs.Open(path)
                 if err != nil {
                     log.Printf("Error opening file %v: %v", path, err)
@@ -256,6 +261,7 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
                 info, err := entry.Info()
                 if err != nil {
                     log.Printf("Error getting file info %v: %v", path, err)
+                    file.Close()
                     return nil
                 }
 
@@ -274,6 +280,37 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
     // any other places to check by default?
     soundsDir := os.DirFS("/usr/share/sounds")
     fs.WalkDir(soundsDir, ".", makeWalkFunc(soundsDir))
+
+    hereDir := os.DirFS(".")
+    entries, err := fs.ReadDir(hereDir, ".")
+    if err == nil {
+        for _, entry := range entries {
+            if !isSoundFont(entry.Name()) {
+                continue
+            }
+
+            file, err := hereDir.Open(entry.Name())
+            if err != nil {
+                log.Printf("Error opening file %v: %v", entry.Name(), err)
+                continue
+            }
+
+            // FIXME: handle symlinks
+
+            info, err := entry.Info()
+            if err != nil {
+                log.Printf("Error getting file info %v: %v", entry.Name(), err)
+                file.Close()
+                continue
+            }
+
+            log.Printf("Found candidate %v size %v", entry.Name(), info.Size())
+
+            // FIXME: check that the file is really a soundfont by opening it
+
+            candidates = append(candidates, candidate{File: file, Size: int(info.Size()), Name: entry.Name()})
+        }
+    }
 
     if len(candidates) == 0 {
         return nil, fmt.Errorf("no soundfont candidates found")
