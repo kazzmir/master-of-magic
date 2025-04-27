@@ -515,12 +515,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         return nil
     }
 
-    helpLbx, err := lbxCache.GetLbxFile("help.lbx")
-    if err != nil {
-        return nil
-    }
-
-    help, err := helplib.ReadHelp(helpLbx, 2)
+    help, err := helplib.ReadHelpFromCache(lbxCache)
     if err != nil {
         return nil
     }

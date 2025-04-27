@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    helplib "github.com/kazzmir/master-of-magic/game/magic/help"
     "github.com/kazzmir/master-of-magic/lib/font"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -45,6 +46,12 @@ func MakeMainScreen(cache *lbx.LbxCache) *MainScreen {
 
 func (main *MainScreen) MakeUI() *uilib.UI {
 
+    help, err := helplib.ReadHelpFromCache(main.Cache)
+    if err != nil {
+        log.Printf("error reading help: %v", err)
+        return nil
+    }
+
     var getAlpha util.AlphaFadeFunc
 
     ui := &uilib.UI{
@@ -72,7 +79,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
 
     var elements []*uilib.UIElement
 
-    makeButton := func(index int, x, y int, isActive bool, action func()) *uilib.UIElement {
+    makeButton := func(index int, x, y int, helpName string, isActive bool, action func()) *uilib.UIElement {
         images, _ := main.ImageCache.GetImages("mainscrn.lbx", index)
         rect := util.ImageRect(x, y, images[0])
         imageIndex := 1
@@ -81,6 +88,12 @@ func (main *MainScreen) MakeUI() *uilib.UI {
             LeftClick: func(element *uilib.UIElement){
                 if isActive {
                     action()
+                }
+            },
+            RightClick: func(element *uilib.UIElement){
+                helpEntries := help.GetEntriesByName(helpName)
+                if helpEntries != nil {
+                    ui.AddElement(uilib.MakeHelpElementWithLayer(ui, main.Cache, &main.ImageCache, 1, helpEntries[0], helpEntries[1:]...))
                 }
             },
             Inside: func(element *uilib.UIElement, x, y int) {
@@ -240,22 +253,24 @@ func (main *MainScreen) MakeUI() *uilib.UI {
     isLoadGameBtnActive := false
 
     // continue
-    elements = append(elements, makeButton(1, 110, 130, isContinueBtnActive, func(){
+    elements = append(elements, makeButton(1, 110, 130, "Continue", isContinueBtnActive, func(){
         log.Printf("continue")
     }))
 
     // load game
-    elements = append(elements, makeButton(2, 110, 130 + 16 * 1, isLoadGameBtnActive, func(){
+    elements = append(elements, makeButton(2, 110, 130 + 16 * 1, "Load", isLoadGameBtnActive, func(){
         log.Printf("load")
     }))
 
     // new game
-    elements = append(elements, makeButton(3, 110, 130 + 16 * 2, true, func(){
+    elements = append(elements, makeButton(3, 110, 130 + 16 * 2, "New Game", true, func(){
         main.State = MainScreenStateNewGame
     }))
 
+    // FIXME: add "Hall of Fame" button
+
     // exit
-    elements = append(elements, makeButton(4, 110, 130 + 16 * 3, true, func(){
+    elements = append(elements, makeButton(4, 110, 130 + 16 * 3, "Quit to Dos", true, func(){
         main.State = MainScreenStateQuit
     }))
 

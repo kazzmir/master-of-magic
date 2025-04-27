@@ -203,3 +203,12 @@ func ReadHelp(lbxFile *lbx.LbxFile, entry int) (Help, error) {
     out.updateMap()
     return out, nil
 }
+
+func ReadHelpFromCache(cache *lbx.LbxCache) (Help, error) {
+    helpLbx, err := cache.GetLbxFile("help.lbx")
+    if err != nil {
+        return Help{}, nil
+    }
+
+    return ReadHelp(helpLbx, 2)
+}
