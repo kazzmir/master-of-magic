@@ -243,13 +243,15 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
             bannerY := 80
             for _, banner := range bannerList {
                 name := usedBanners[banner]
-                options.GeoM.Reset()
-                options.GeoM.Translate(260, float64(bannerY))
-                flag := getFlag(banner)
-                scale.DrawScaled(screen, flag, &options)
-                x, _ := options.GeoM.Apply(float64(flag.Bounds().Dx() + 2), 0)
-                fonts.Name.PrintOptions(screen, x, float64(bannerY), font.FontOptions{Scale: scale.ScaleAmount, Options: &options, Justify: font.FontJustifyLeft}, name)
-                bannerY += flag.Bounds().Dy() + 2
+                if name != "" {
+                    options.GeoM.Reset()
+                    options.GeoM.Translate(260, float64(bannerY))
+                    flag := getFlag(banner)
+                    scale.DrawScaled(screen, flag, &options)
+                    x, _ := options.GeoM.Apply(float64(flag.Bounds().Dx() + 2), 0)
+                    fonts.Name.PrintOptions(screen, x, float64(bannerY), font.FontOptions{Scale: scale.ScaleAmount, Options: &options, Justify: font.FontJustifyLeft}, name)
+                    bannerY += flag.Bounds().Dy() + 2
+                }
             }
 
             ui.StandardDraw(screen)
@@ -285,8 +287,10 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
             mouseX, mouseY = scale.Unscale2(mouseX, mouseY)
 
             usePlane := data.PlaneArcanus
+            useFog := arcanusFog
             if currentPlane == data.PlaneMyrror {
                 usePlane = data.PlaneMyrror
+                useFog = myrrorFog
             }
 
             mx, my := geom.Apply(float64(mouseX - offsetX), float64(mouseY - offsetY))
@@ -296,7 +300,7 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
             // FIXME: use a kd-tree or some spatial datastructure for faster look ups
             maxDistance := 1.0
             for _, city := range cities {
-                if city.Plane == usePlane {
+                if city.Plane == usePlane && useFog[city.X][city.Y] != data.FogTypeUnexplored {
                     if math.Abs(mx - float64(city.X)) < maxDistance && math.Abs(my - float64(city.Y)) < maxDistance {
                         drawCityName = city
                         break
