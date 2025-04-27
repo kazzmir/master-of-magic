@@ -18,7 +18,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/midi/smf"
     "github.com/kazzmir/master-of-magic/lib/midi"
     midiDrivers "github.com/kazzmir/master-of-magic/lib/midi/drivers"
-    _ "github.com/kazzmir/master-of-magic/lib/midi/drivers/rtmididrv"
+    // _ "github.com/kazzmir/master-of-magic/lib/midi/drivers/rtmididrv"
     // "gitlab.com/gomidi/midi/v2"
 )
 

@@ -23,6 +23,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -37,6 +38,7 @@ type Engine struct {
     CombatScreen *combat.CombatScreen
     CombatEndScreen *combat.CombatEndScreen
     Coroutine *coroutine.Coroutine
+    Music *musiclib.Music
 }
 
 func createWarlockArmy(player *player.Player) *combat.Army {
@@ -771,7 +773,11 @@ func NewEngine(scenario int) (*Engine, error) {
         return ebiten.Termination
     }
 
+    music := musiclib.MakeMusic(cache)
+    music.PlaySong(musiclib.SongCombat1)
+
     return &Engine{
+        Music: music,
         LbxCache: cache,
         CombatScreen: combatScreen,
         CombatEndScreen: nil,
