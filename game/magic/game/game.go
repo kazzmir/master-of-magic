@@ -3060,7 +3060,9 @@ func (game *Game) doCartographer(yield coroutine.YieldFunc) {
         }
     }
 
-    logic, draw := cartographer.MakeCartographer(game.Cache, game.AllCities(), stacks, game.Players, game.ArcanusMap, game.GetHumanPlayer().GetFog(data.PlaneArcanus), game.MyrrorMap, game.GetHumanPlayer().GetFog(data.PlaneMyrror))
+    knownPlayers := append([]*playerlib.Player{game.GetHumanPlayer()}, game.GetHumanPlayer().GetKnownPlayers()...)
+
+    logic, draw := cartographer.MakeCartographer(game.Cache, game.AllCities(), stacks, knownPlayers, game.ArcanusMap, game.GetHumanPlayer().GetFog(data.PlaneArcanus), game.MyrrorMap, game.GetHumanPlayer().GetFog(data.PlaneMyrror))
 
     yield()
     oldDrawer := game.Drawer
