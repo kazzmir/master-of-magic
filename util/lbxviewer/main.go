@@ -533,9 +533,27 @@ func MakeViewer(dataPath string, names []string) (*Viewer, error) {
     if dataPath == "" {
         cache = lbx.AutoCache()
     } else {
-        cache = lbx.CacheFromPath(dataPath)
-        if cache == nil {
-            return nil, fmt.Errorf("No lbx files found at %v", dataPath)
+        if isFile(dataPath) {
+            file, err := os.Open(dataPath)
+            if err != nil {
+                return nil, err
+            }
+            defer file.Close()
+            lbxFile, err := lbx.ReadLbx(file)
+            if err != nil {
+                return nil, err
+            }
+
+            lbxFiles := make(map[string]*lbx.LbxFile)
+            lbxFiles[dataPath] = &lbxFile
+
+            cache = lbx.MakeCacheFromLbxFiles(lbxFiles)
+        } else {
+
+            cache = lbx.CacheFromPath(dataPath)
+            if cache == nil {
+                return nil, fmt.Errorf("No lbx files found at %v", dataPath)
+            }
         }
     }
 

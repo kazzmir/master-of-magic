@@ -9,6 +9,8 @@ import (
     "io/fs"
     "strings"
     "archive/zip"
+    "maps"
+    "slices"
     // "path/filepath"
 
     "github.com/kazzmir/master-of-magic/data"
@@ -236,7 +238,7 @@ func (cache *LbxCache) GetLbxFilesSimilarName(name string) []string {
 
     entries, err := fs.ReadDir(cache.Base, ".")
     if err != nil {
-        return out
+        return slices.Collect(maps.Keys(cache.lbxFiles))
     }
 
     for _, entry := range entries {
