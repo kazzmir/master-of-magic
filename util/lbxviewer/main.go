@@ -524,6 +524,11 @@ func MakeViewer(names []string) (*Viewer, error) {
 
     cache := lbx.AutoCache()
 
+    if len(names) == 0 {
+        // get all lbx files to show up
+        names = append(names, "")
+    }
+
     imageIndex := 0
     for _, name := range names {
         allLbx := cache.GetLbxFilesSimilarName(name)
@@ -653,11 +658,6 @@ func isFile(path string) bool {
 
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
-
-    if len(os.Args) < 2 {
-        log.Printf("Give an lbx file to view")
-        return
-    }
 
     ebiten.SetWindowSize(1100, 1000)
     ebiten.SetWindowTitle("lbx viewer")
