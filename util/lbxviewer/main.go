@@ -143,16 +143,22 @@ func (viewer *Viewer) Update() error {
 
     shiftSpeed := 4
 
+    quick := viewer.ShiftCount % shiftSpeed == 1
+
+    if ebiten.IsKeyPressed(ebiten.KeyControlLeft) {
+        quick = true
+    }
+
     for _, key := range keys {
         switch key {
-            case ebiten.KeyUp:
+            case ebiten.KeyUp, ebiten.KeyK:
                 if viewer.State == ViewStateImage {
                     viewer.Scale *= 1 + scaleAmount
                 }
-                if viewer.State == ViewStateTiles && viewer.ShiftCount % shiftSpeed == 1 {
+                if viewer.State == ViewStateTiles && quick {
                     press_up = true
                 }
-            case ebiten.KeyDown:
+            case ebiten.KeyDown, ebiten.KeyJ:
                 if viewer.State == ViewStateImage {
                     viewer.Scale *= 1 - scaleAmount
                     if viewer.Scale < 1 {
@@ -160,15 +166,15 @@ func (viewer *Viewer) Update() error {
                     }
                 }
 
-                if viewer.State == ViewStateTiles && viewer.ShiftCount % shiftSpeed == 1 {
+                if viewer.State == ViewStateTiles && quick {
                     press_down = true
                 }
-            case ebiten.KeyLeft:
-                if viewer.State == ViewStateTiles && viewer.ShiftCount % shiftSpeed == 1 {
+            case ebiten.KeyLeft, ebiten.KeyH:
+                if viewer.State == ViewStateTiles && quick {
                     press_left = true
                 }
-            case ebiten.KeyRight:
-                if viewer.State == ViewStateTiles && viewer.ShiftCount % shiftSpeed == 1 {
+            case ebiten.KeyRight, ebiten.KeyL:
+                if viewer.State == ViewStateTiles && quick {
                     press_right = true
                 }
             case ebiten.KeyPageDown:
@@ -214,7 +220,7 @@ func (viewer *Viewer) Update() error {
                     viewer.ShowPalette = !viewer.ShowPalette
                 }
 
-            case ebiten.KeyLeft:
+            case ebiten.KeyLeft, ebiten.KeyH:
                 switch viewer.State {
                     case ViewStateTiles:
                         press_left = true
@@ -225,7 +231,7 @@ func (viewer *Viewer) Update() error {
                         }
                 }
 
-            case ebiten.KeyRight:
+            case ebiten.KeyRight, ebiten.KeyL:
                 switch viewer.State {
                     case ViewStateTiles:
                         press_right = true
@@ -236,13 +242,13 @@ func (viewer *Viewer) Update() error {
                         }
                 }
 
-            case ebiten.KeyUp:
+            case ebiten.KeyUp, ebiten.KeyK:
                 switch viewer.State {
                     case ViewStateTiles:
                         press_up = true
                 }
 
-            case ebiten.KeyDown:
+            case ebiten.KeyDown, ebiten.KeyJ:
                 switch viewer.State {
                     case ViewStateTiles:
                         press_down = true
