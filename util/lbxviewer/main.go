@@ -6,6 +6,7 @@ import (
     "fmt"
     "sync"
     "math"
+    "flag"
     // "slices"
 
     "image/color"
@@ -504,7 +505,7 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     }
 }
 
-func MakeViewer(names []string) (*Viewer, error) {
+func MakeViewer(dataPath string, names []string) (*Viewer, error) {
     font, err := common.LoadFont()
     if err != nil {
         return nil, err
@@ -528,7 +529,15 @@ func MakeViewer(names []string) (*Viewer, error) {
 
     indexes := make(map[string]int)
 
-    cache := lbx.AutoCache()
+    var cache *lbx.LbxCache
+    if dataPath == "" {
+        cache = lbx.AutoCache()
+    } else {
+        cache = lbx.CacheFromPath(dataPath)
+        if cache == nil {
+            return nil, fmt.Errorf("No lbx files found at %v", dataPath)
+        }
+    }
 
     if len(names) == 0 {
         // get all lbx files to show up
@@ -610,49 +619,11 @@ func MakeViewer(names []string) (*Viewer, error) {
     return viewer, nil
 }
 
+/*
 func MakeViewerFromFiles(paths []string) (*Viewer, error) {
-    /*
-    var data []*LbxData
-
-    for _, path := range paths {
-        if isFile(path) {
-            var lbxFile lbx.LbxFile
-
-            open, err := os.Open(path)
-            if err != nil {
-                return nil, err
-            }
-            defer open.Close()
-            lbxFile, err = lbx.ReadLbx(open)
-            if err != nil {
-                return nil, err
-            }
-            data = append(data, &LbxData{Lbx: &lbxFile, Name: path})
-        } else {
-            entries, err := os.ReadDir(path)
-            if err != nil {
-                return nil, err
-            }
-
-            for _, entry := range entries {
-                open, err := os.Open(path + "/" + entry.Name())
-                if err != nil {
-                    continue
-                }
-
-                lbxFile, err := lbx.ReadLbx(open)
-                if err == nil {
-                    data = append(data, &LbxData{Lbx: &lbxFile, Name: entry.Name()})
-                }
-
-                open.Close()
-            }
-        }
-    }
-    */
-
     return MakeViewer(paths)
 }
+*/
 
 func isFile(path string) bool {
     info, err := os.Stat(path)
@@ -665,11 +636,18 @@ func isFile(path string) bool {
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
+    var dataPath string
+    flag.StringVar(&dataPath, "data", "", "path to master of magic lbx files. Given either a directory, zip file, or a single lbx file. Data is searched for in the current directory if not given.")
+
+    flag.Parse()
+
     ebiten.SetWindowSize(1100, 1000)
     ebiten.SetWindowTitle("lbx viewer")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    viewer, err := MakeViewerFromFiles(os.Args[1:])
+    restArgs := os.Args[len(os.Args) - flag.NArg():]
+
+    viewer, err := MakeViewer(dataPath, restArgs)
     if err != nil {
         log.Printf("Error: %v", err)
         return
