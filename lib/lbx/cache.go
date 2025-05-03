@@ -234,8 +234,6 @@ func (cache *LbxCache) GetLbxFilesSimilarName(name string) []string {
 
     name = strings.ToUpper(name)
 
-    log.Printf("Lbx files in cache: %v", len(cache.lbxFiles))
-
     entries, err := fs.ReadDir(cache.Base, ".")
     if err != nil {
         return slices.Collect(maps.Keys(cache.lbxFiles))
