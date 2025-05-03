@@ -95,7 +95,6 @@ const (
 )
 
 type Viewer struct {
-    // Data []*LbxData
     StartingRow int
     Indexes map[string]int
     Images []*LbxImages
@@ -636,12 +635,6 @@ func MakeViewer(dataPath string, names []string) (*Viewer, error) {
 
     return viewer, nil
 }
-
-/*
-func MakeViewerFromFiles(paths []string) (*Viewer, error) {
-    return MakeViewer(paths)
-}
-*/
 
 func isFile(path string) bool {
     info, err := os.Stat(path)
