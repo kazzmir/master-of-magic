@@ -9,6 +9,8 @@ import (
     "io/fs"
     "strings"
     "archive/zip"
+    "maps"
+    "slices"
     // "path/filepath"
 
     "github.com/kazzmir/master-of-magic/data"
@@ -224,6 +226,27 @@ func createReadSeeker(reader fs.File) (io.ReadSeeker, error) {
     }
 
     return makeByteReader(reader)
+}
+
+// get all the lbx files that have the given name as a substring
+func (cache *LbxCache) GetLbxFilesSimilarName(name string) []string {
+    var out []string
+
+    name = strings.ToUpper(name)
+
+    entries, err := fs.ReadDir(cache.Base, ".")
+    if err != nil {
+        return slices.Collect(maps.Keys(cache.lbxFiles))
+    }
+
+    for _, entry := range entries {
+        entryName := strings.ToUpper(entry.Name())
+        if strings.Contains(entryName, name) {
+            out = append(out, entryName)
+        }
+    }
+
+    return out
 }
 
 func (cache *LbxCache) GetLbxFile(filename string) (*LbxFile, error) {

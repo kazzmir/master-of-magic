@@ -6,6 +6,7 @@ import (
     "fmt"
     "sync"
     "math"
+    "flag"
     // "slices"
 
     "image/color"
@@ -94,7 +95,6 @@ const (
 )
 
 type Viewer struct {
-    Data []*LbxData
     StartingRow int
     Indexes map[string]int
     Images []*LbxImages
@@ -143,16 +143,22 @@ func (viewer *Viewer) Update() error {
 
     shiftSpeed := 4
 
+    quick := viewer.ShiftCount % shiftSpeed == 1
+
+    if ebiten.IsKeyPressed(ebiten.KeyControlLeft) {
+        quick = true
+    }
+
     for _, key := range keys {
         switch key {
-            case ebiten.KeyUp:
+            case ebiten.KeyUp, ebiten.KeyK:
                 if viewer.State == ViewStateImage {
                     viewer.Scale *= 1 + scaleAmount
                 }
-                if viewer.State == ViewStateTiles && viewer.ShiftCount % shiftSpeed == 1 {
+                if viewer.State == ViewStateTiles && quick {
                     press_up = true
                 }
-            case ebiten.KeyDown:
+            case ebiten.KeyDown, ebiten.KeyJ:
                 if viewer.State == ViewStateImage {
                     viewer.Scale *= 1 - scaleAmount
                     if viewer.Scale < 1 {
@@ -160,15 +166,15 @@ func (viewer *Viewer) Update() error {
                     }
                 }
 
-                if viewer.State == ViewStateTiles && viewer.ShiftCount % shiftSpeed == 1 {
+                if viewer.State == ViewStateTiles && quick {
                     press_down = true
                 }
-            case ebiten.KeyLeft:
-                if viewer.State == ViewStateTiles && viewer.ShiftCount % shiftSpeed == 1 {
+            case ebiten.KeyLeft, ebiten.KeyH:
+                if viewer.State == ViewStateTiles && quick {
                     press_left = true
                 }
-            case ebiten.KeyRight:
-                if viewer.State == ViewStateTiles && viewer.ShiftCount % shiftSpeed == 1 {
+            case ebiten.KeyRight, ebiten.KeyL:
+                if viewer.State == ViewStateTiles && quick {
                     press_right = true
                 }
             case ebiten.KeyPageDown:
@@ -214,7 +220,7 @@ func (viewer *Viewer) Update() error {
                     viewer.ShowPalette = !viewer.ShowPalette
                 }
 
-            case ebiten.KeyLeft:
+            case ebiten.KeyLeft, ebiten.KeyH:
                 switch viewer.State {
                     case ViewStateTiles:
                         press_left = true
@@ -225,7 +231,7 @@ func (viewer *Viewer) Update() error {
                         }
                 }
 
-            case ebiten.KeyRight:
+            case ebiten.KeyRight, ebiten.KeyL:
                 switch viewer.State {
                     case ViewStateTiles:
                         press_right = true
@@ -236,13 +242,13 @@ func (viewer *Viewer) Update() error {
                         }
                 }
 
-            case ebiten.KeyUp:
+            case ebiten.KeyUp, ebiten.KeyK:
                 switch viewer.State {
                     case ViewStateTiles:
                         press_up = true
                 }
 
-            case ebiten.KeyDown:
+            case ebiten.KeyDown, ebiten.KeyJ:
                 switch viewer.State {
                     case ViewStateTiles:
                         press_down = true
@@ -340,6 +346,10 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     screen.Fill(color.RGBA{0x80, 0xa0, 0xc0, 0xff})
 
     face := &text.GoTextFace{Source: viewer.Font, Size: 15}
+
+    if viewer.CurrentTile >= len(viewer.Images) {
+        return
+    }
 
     op := &text.DrawOptions{}
     op.GeoM.Translate(1, 1)
@@ -494,14 +504,14 @@ func (viewer *Viewer) Draw(screen *ebiten.Image) {
     }
 }
 
-func MakeViewer(data []*LbxData) (*Viewer, error) {
+func MakeViewer(dataPath string, names []string) (*Viewer, error) {
     font, err := common.LoadFont()
     if err != nil {
         return nil, err
     }
 
     viewer := &Viewer{
-        Data: data,
+        // Data: data,
         Scale: 1,
         Font: font,
         CurrentImage: 0,
@@ -518,109 +528,112 @@ func MakeViewer(data []*LbxData) (*Viewer, error) {
 
     indexes := make(map[string]int)
 
-    cache := lbx.AutoCache()
+    var cache *lbx.LbxCache
+    if dataPath == "" {
+        cache = lbx.AutoCache()
+    } else {
+        if isFile(dataPath) {
+            file, err := os.Open(dataPath)
+            if err != nil {
+                return nil, err
+            }
+            defer file.Close()
+            lbxFile, err := lbx.ReadLbx(file)
+            if err != nil {
+                return nil, err
+            }
+
+            lbxFiles := make(map[string]*lbx.LbxFile)
+            lbxFiles[dataPath] = &lbxFile
+
+            cache = lbx.MakeCacheFromLbxFiles(lbxFiles)
+        } else {
+
+            cache = lbx.CacheFromPath(dataPath)
+            if cache == nil {
+                return nil, fmt.Errorf("No lbx files found at %v", dataPath)
+            }
+        }
+    }
+
+    if len(names) == 0 {
+        // get all lbx files to show up
+        names = append(names, "")
+    }
 
     imageIndex := 0
-    for _, lbxData := range data {
-        indexes[lbxData.Name] = imageIndex
-        imageIndex += lbxData.Lbx.TotalEntries()
-
-        customPaletteMap, err := lbx.GetPaletteOverrideMap(cache, lbxData.Lbx, lbxData.Name)
-        if err != nil {
-            return nil, err
+    for _, name := range names {
+        allLbx := cache.GetLbxFilesSimilarName(name)
+        if len(allLbx) == 0 {
+            log.Printf("No LBX files found for name '%v'", name)
+            continue
         }
 
-        for i := 0; i < lbxData.Lbx.TotalEntries(); i++ {
-            loader := &LbxImages{}
-            loader.LbxData = lbxData
-            viewer.Images = append(viewer.Images, loader)
+        for _, lbxDataName := range allLbx {
+            lbxFile, err := cache.GetLbxFile(lbxDataName)
+            if err != nil {
+                log.Printf("Unable to load lbx file %v: %v", lbxDataName, err)
+                continue
+            }
 
-            go func(){
-                <-maxLoad
+            indexes[lbxDataName] = imageIndex
+            imageIndex += lbxFile.TotalEntries()
 
-                loader.Load.Do(func(){
+            customPaletteMap, err := lbx.GetPaletteOverrideMap(cache, lbxFile, lbxDataName)
+            if err != nil {
+                return nil, err
+            }
 
-                    palette := customPaletteMap[i]
-                    if palette == nil {
-                        palette = customPaletteMap[-1]
-                    }
+            for i := 0; i < lbxFile.TotalEntries(); i++ {
+                loader := &LbxImages{}
+                loader.LbxData = &LbxData{Name: lbxDataName, Lbx: lbxFile}
+                viewer.Images = append(viewer.Images, loader)
 
-                    rawImages, err := lbxData.Lbx.ReadImagesWithPalette(i, palette, palette != nil)
-                    if err != nil {
-                        log.Printf("Unable to load images from %v at index %v: %v", lbxData.Name, i, err)
-                        return
-                    }
+                go func(){
+                    <-maxLoad
 
-                    var keys []string
-                    for z := 0; z < len(rawImages); z++ {
-                        keys = append(keys, fmt.Sprintf("%v-%v-%v", lbxData.Name, i, z))
-                    }
+                    loader.Load.Do(func(){
 
-                    loader.Keys = keys
-                    loader.Images = rawImages
+                        palette := customPaletteMap[i]
+                        if palette == nil {
+                            palette = customPaletteMap[-1]
+                        }
 
-                    hasPalette, err := lbxData.Lbx.GetPalette(i)
-                    if err == nil && hasPalette != nil {
-                        loader.CustomPalette = true
-                    } else {
-                        loader.CustomPalette = false
-                    }
+                        rawImages, err := lbxFile.ReadImagesWithPalette(i, palette, palette != nil)
+                        if err != nil {
+                            log.Printf("Unable to load images from %v at index %v: %v", lbxDataName, i, err)
+                            return
+                        }
 
-                    loader.Lock.Lock()
-                    loader.Loaded = true
-                    loader.Lock.Unlock()
-                })
+                        var keys []string
+                        for z := 0; z < len(rawImages); z++ {
+                            keys = append(keys, fmt.Sprintf("%v-%v-%v", lbxDataName, i, z))
+                        }
 
-                maxLoad <- true
-            }()
+                        loader.Keys = keys
+                        loader.Images = rawImages
+
+                        hasPalette, err := lbxFile.GetPalette(i)
+                        if err == nil && hasPalette != nil {
+                            loader.CustomPalette = true
+                        } else {
+                            loader.CustomPalette = false
+                        }
+
+                        loader.Lock.Lock()
+                        loader.Loaded = true
+                        loader.Lock.Unlock()
+                    })
+
+                    maxLoad <- true
+                }()
+            }
         }
     }
 
     viewer.Indexes = indexes
 
     return viewer, nil
-}
-
-func MakeViewerFromFiles(paths []string) (*Viewer, error) {
-    var data []*LbxData
-
-    for _, path := range paths {
-        if isFile(path) {
-            var lbxFile lbx.LbxFile
-
-            open, err := os.Open(path)
-            if err != nil {
-                return nil, err
-            }
-            defer open.Close()
-            lbxFile, err = lbx.ReadLbx(open)
-            if err != nil {
-                return nil, err
-            }
-            data = append(data, &LbxData{Lbx: &lbxFile, Name: path})
-        } else {
-            entries, err := os.ReadDir(path)
-            if err != nil {
-                return nil, err
-            }
-
-            for _, entry := range entries {
-                open, err := os.Open(path + "/" + entry.Name())
-                if err != nil {
-                    continue
-                }
-
-                lbxFile, err := lbx.ReadLbx(open)
-                if err == nil {
-                    data = append(data, &LbxData{Lbx: &lbxFile, Name: entry.Name()})
-                }
-
-                open.Close()
-            }
-        }
-    }
-
-    return MakeViewer(data)
 }
 
 func isFile(path string) bool {
@@ -634,16 +647,18 @@ func isFile(path string) bool {
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    if len(os.Args) < 2 {
-        log.Printf("Give an lbx file to view")
-        return
-    }
+    var dataPath string
+    flag.StringVar(&dataPath, "data", "", "path to master of magic lbx files. Given either a directory, zip file, or a single lbx file. Data is searched for in the current directory if not given.")
+
+    flag.Parse()
 
     ebiten.SetWindowSize(1100, 1000)
     ebiten.SetWindowTitle("lbx viewer")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 
-    viewer, err := MakeViewerFromFiles(os.Args[1:])
+    restArgs := os.Args[len(os.Args) - flag.NArg():]
+
+    viewer, err := MakeViewer(dataPath, restArgs)
     if err != nil {
         log.Printf("Error: %v", err)
         return
