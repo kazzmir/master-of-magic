@@ -540,13 +540,16 @@ func MakeViewer(dataPath string, names []string) (*Viewer, error) {
             defer file.Close()
             lbxFile, err := lbx.ReadLbx(file)
             if err != nil {
-                return nil, err
+                cache = lbx.CacheFromPath(dataPath)
+                if cache == nil {
+                    return nil, err
+                }
+            } else {
+                lbxFiles := make(map[string]*lbx.LbxFile)
+                lbxFiles[dataPath] = &lbxFile
+
+                cache = lbx.MakeCacheFromLbxFiles(lbxFiles)
             }
-
-            lbxFiles := make(map[string]*lbx.LbxFile)
-            lbxFiles[dataPath] = &lbxFile
-
-            cache = lbx.MakeCacheFromLbxFiles(lbxFiles)
         } else {
 
             cache = lbx.CacheFromPath(dataPath)
