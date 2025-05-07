@@ -5427,10 +5427,20 @@ func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.
 
 // show all scroll events for this turn, or a message that no events occurred
 func (game *Game) DoChancellor(){
-    for _, event := range game.ScrollEvents {
+    if len(game.ScrollEvents) == 0 {
+        event := &GameEventScroll{
+            Title: "NO EVENTS THIS MONTH",
+        }
         select {
             case game.Events <- event:
             default:
+        }
+    } else {
+        for _, event := range game.ScrollEvents {
+            select {
+                case game.Events <- event:
+                default:
+            }
         }
     }
 }
