@@ -322,6 +322,9 @@ type Game struct {
     Players []*playerlib.Player
     CurrentPlayer int
 
+    // the scroll events that occurred this turn
+    ScrollEvents []*GameEventScroll
+
     Camera camera.Camera
 }
 
@@ -2941,6 +2944,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)
+                        game.ScrollEvents = append(game.ScrollEvents, scroll)
                     case *GameEventLearnedSpell:
                         learnedSpell := event.(*GameEventLearnedSpell)
                         game.doLearnSpell(yield, learnedSpell.Player, learnedSpell.Spell)
@@ -7100,6 +7104,10 @@ func handleStasis(stack *playerlib.UnitStack) {
 }
 
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
+    if player.IsHuman() {
+        game.ScrollEvents = nil
+    }
+
     disbandedMessages := game.DisbandUnits(player)
 
     if player.IsHuman() && len(disbandedMessages) > 0 {
