@@ -219,6 +219,7 @@ type GameEventNewBuilding struct {
 type GameEventScroll struct {
     Title string
     Text string
+    Old bool // a replayed event, don't add it again
 }
 
 type GameEventCityName struct {
@@ -321,6 +322,9 @@ type Game struct {
 
     Players []*playerlib.Player
     CurrentPlayer int
+
+    // the scroll events that occurred this turn
+    ScrollEvents []*GameEventScroll
 
     Camera camera.Camera
 }
@@ -2941,6 +2945,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)
+                        if !scroll.Old {
+                            game.ScrollEvents = append(game.ScrollEvents, scroll)
+                        }
                     case *GameEventLearnedSpell:
                         learnedSpell := event.(*GameEventLearnedSpell)
                         game.doLearnSpell(yield, learnedSpell.Player, learnedSpell.Spell)
@@ -5421,6 +5428,27 @@ func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.
     }
 }
 
+// show all scroll events for this turn, or a message that no events occurred
+func (game *Game) DoChancellor(){
+    if len(game.ScrollEvents) == 0 {
+        event := &GameEventScroll{
+            Title: "NO EVENTS THIS MONTH",
+        }
+        select {
+            case game.Events <- event:
+            default:
+        }
+    } else {
+        for _, event := range game.ScrollEvents {
+            event.Old = true
+            select {
+                case game.Events <- event:
+                default:
+            }
+        }
+    }
+}
+
 // advisor ui
 func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
     advisors := []uilib.Selection{
@@ -5466,7 +5494,9 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         },
         uilib.Selection{
             Name: "Chancellor",
-            Action: func(){},
+            Action: func(){
+                game.DoChancellor()
+            },
             Hotkey: "(F6)",
         },
         uilib.Selection{
@@ -7100,6 +7130,10 @@ func handleStasis(stack *playerlib.UnitStack) {
 }
 
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
+    if player.IsHuman() {
+        game.ScrollEvents = nil
+    }
+
     disbandedMessages := game.DisbandUnits(player)
 
     if player.IsHuman() && len(disbandedMessages) > 0 {
