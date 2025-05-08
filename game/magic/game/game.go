@@ -219,6 +219,7 @@ type GameEventNewBuilding struct {
 type GameEventScroll struct {
     Title string
     Text string
+    Old bool // a replayed event, don't add it again
 }
 
 type GameEventCityName struct {
@@ -2944,7 +2945,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)
-                        game.ScrollEvents = append(game.ScrollEvents, scroll)
+                        if !scroll.Old {
+                            game.ScrollEvents = append(game.ScrollEvents, scroll)
+                        }
                     case *GameEventLearnedSpell:
                         learnedSpell := event.(*GameEventLearnedSpell)
                         game.doLearnSpell(yield, learnedSpell.Player, learnedSpell.Spell)
@@ -5437,6 +5440,7 @@ func (game *Game) DoChancellor(){
         }
     } else {
         for _, event := range game.ScrollEvents {
+            event.Old = true
             select {
                 case game.Events <- event:
                 default:
