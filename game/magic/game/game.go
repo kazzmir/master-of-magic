@@ -8163,8 +8163,18 @@ func (game *Game) doMeteorStorm() {
 
 }
 
+func (game *Game) ComputeWizardPower(player *playerlib.Player) playerlib.WizardPower {
+    return playerlib.WizardPower{}
+}
+
 func (game *Game) EndOfTurn() {
     // put stuff here that should happen when all players have taken their turn
+
+    for _, player := range game.Players {
+        if !player.Defeated {
+            player.PowerHistory = append(player.PowerHistory, game.ComputeWizardPower(player))
+        }
+    }
 
     game.revertVolcanos()
 

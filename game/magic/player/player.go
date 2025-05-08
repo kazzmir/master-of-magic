@@ -248,6 +248,12 @@ func (*NoGlobalEnchantments) HasRivalEnchantment(player *Player, enchantment dat
     return false
 }
 
+type WizardPower struct {
+    Army int
+    Magic int
+    SpellResearch int
+}
+
 type Player struct {
     // matrix the same size as the map containg information if the tile is explored,
     // unexplored or in the range of sight
@@ -324,6 +330,9 @@ type Player struct {
     CreateArtifact *artifact.Artifact
 
     Wizard setup.WizardCustom
+
+    // an array of objects that track the power of the wizard, where each index represents a turn
+    PowerHistory []WizardPower
 
     // FIXME: probably remove Units and just use Stacks to track the units
     Units []units.StackUnit
