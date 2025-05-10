@@ -3117,10 +3117,39 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
                     continue
                 }
 
+                var lineColor color.RGBA
+
+                switch player.GetBanner() {
+                    case data.BannerGreen: lineColor = color.RGBA{R: 0x20, G: 0x80, B: 0x2c, A: 0xff}
+                    case data.BannerBlue: lineColor = color.RGBA{R: 0x15, G: 0x1d, B: 0x9d, A: 0xff}
+                    case data.BannerRed: lineColor = color.RGBA{R: 0x9d, G: 0x15, B: 0x15, A: 0xff}
+                    case data.BannerPurple: lineColor = color.RGBA{R: 0x6d, G: 0x15, B: 0x9d, A: 0xff}
+                    case data.BannerYellow: lineColor = color.RGBA{R: 0x9d, G: 0x9d, B: 0x15, A: 0xff}
+                    case data.BannerBrown: lineColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
+                }
+
+                lineColor = color.RGBA{R:
+                    uint8(float32(lineColor.R) * options.ColorScale.A()),
+                    G: uint8(float32(lineColor.G) * options.ColorScale.A()),
+                    B: uint8(float32(lineColor.B) * options.ColorScale.A()),
+                    A: uint8(float32(lineColor.A) * options.ColorScale.A()),
+                }
+
+                black := color.RGBA{A: uint8(255.0 * options.ColorScale.A())}
+
                 xStart := float64(12)
+
+                barStart := xStart + 50
+
+                power := player.LatestWizardPower()
+
+                // log.Printf("Power for %v: %v", player.Wizard.Name, power)
 
                 x, y := options.GeoM.Apply(xStart, armyStart + float64(i * fonts.Name.Height()))
                 fonts.Name.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
+
+                vector.DrawFilledRect(screen, float32(scale.Scale(barStart + 1)), float32(scale.Scale(y + 2 + 1)), float32(power.Army), float32(scale.Scale(2)), black, false)
+                vector.DrawFilledRect(screen, float32(scale.Scale(barStart)), float32(scale.Scale(y + 2)), float32(power.Army), float32(scale.Scale(2)), lineColor, false)
 
                 x, y = options.GeoM.Apply(xStart, magicStart + float64(i * fonts.Name.Height()))
                 fonts.Name.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
@@ -8255,7 +8284,11 @@ func (game *Game) doMeteorStorm() {
 }
 
 func (game *Game) ComputeWizardPower(player *playerlib.Player) playerlib.WizardPower {
-    return playerlib.WizardPower{}
+    return playerlib.WizardPower{
+        Army: 10,
+        Magic: 20,
+        SpellResearch: 30,
+    }
 }
 
 func (game *Game) EndOfTurn() {
@@ -8263,7 +8296,7 @@ func (game *Game) EndOfTurn() {
 
     for _, player := range game.Players {
         if !player.Defeated {
-            player.PowerHistory = append(player.PowerHistory, game.ComputeWizardPower(player))
+            player.AddPowerHistory(game.ComputeWizardPower(player))
         }
     }
 

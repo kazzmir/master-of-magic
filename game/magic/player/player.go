@@ -429,6 +429,18 @@ func (player *Player) GetKnownPlayers() []*Player {
     return out
 }
 
+func (player *Player) AddPowerHistory(power WizardPower) {
+    player.PowerHistory = append(player.PowerHistory, power)
+}
+
+func (player *Player) LatestWizardPower() WizardPower {
+    if len(player.PowerHistory) == 0 {
+        return WizardPower{}
+    }
+
+    return player.PowerHistory[len(player.PowerHistory) - 1]
+}
+
 func (player *Player) UpdateDiplomaticRelations() {
     // FIXME: relation value should be adjusted each turn
     // if aura of majesty is in effect by some rival wizard, then the relation value should go up by 1 for that wizard
