@@ -3078,6 +3078,7 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
 
     if err != nil {
         log.Printf("Error: astrologer: unable to load font: %v", err)
+        cancel()
         return
     }
 
