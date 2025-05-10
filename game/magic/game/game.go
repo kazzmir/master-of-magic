@@ -3068,6 +3068,19 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
 
     fade := group.MakeFadeIn(7)
 
+    titleFont, err := (func() (*font.Font, error){
+        loader, err := fontslib.Loader(game.Cache)
+        if err != nil {
+            return nil, err
+        }
+        return loader(fontslib.BigOrangeGradient2), nil
+    })()
+
+    if err != nil {
+        log.Printf("Error: astrologer: unable to load font: %v", err)
+        return
+    }
+
     group.AddElement(&uilib.UIElement{
         Rect: rect,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -3075,6 +3088,9 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
             options.ColorScale.ScaleAlpha(fade())
             options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
             scale.DrawScaled(screen, background, &options)
+
+            x, y := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, 9)
+            titleFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, "Current Status Of Wizards")
         },
         LeftClick: func(element *uilib.UIElement){
             fade = group.MakeFadeOut(7)
