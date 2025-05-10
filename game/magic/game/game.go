@@ -3107,6 +3107,28 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
             fonts.Subtitle.PrintOptions(screen, x, y + 14, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, "Army Strength")
             fonts.Subtitle.PrintOptions(screen, x, y + 63, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, "Magic Power")
             fonts.Subtitle.PrintOptions(screen, x, y + 113, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, "Spell Research")
+
+            armyStart := y + 14 + 2
+            magicStart := y + 63 + 2
+            researchStart := y + 113 + 2
+
+            for i, player := range game.Players {
+                if player.Defeated {
+                    continue
+                }
+
+                xStart := float64(12)
+
+                x, y := options.GeoM.Apply(xStart, armyStart + float64(i * fonts.Name.Height()))
+                fonts.Name.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
+
+                x, y = options.GeoM.Apply(xStart, magicStart + float64(i * fonts.Name.Height()))
+                fonts.Name.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
+
+                x, y = options.GeoM.Apply(xStart, researchStart + float64(i * fonts.Name.Height()))
+                fonts.Name.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
+            }
+
         },
         LeftClick: func(element *uilib.UIElement){
             fade = group.MakeFadeOut(7)
