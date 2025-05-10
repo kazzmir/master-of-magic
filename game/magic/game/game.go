@@ -106,6 +106,9 @@ type GameEventCityListView struct {
 type GameEventApprenticeUI struct {
 }
 
+type GameEventAstrologer struct {
+}
+
 type GameEventCastSpellBook struct {
 }
 
@@ -2913,6 +2916,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doSurveyor(yield)
                     case *GameEventCartographer:
                         game.doCartographer(yield)
+                    case *GameEventAstrologer:
+                        game.ShowAstrologer(yield)
                     case *GameEventApprenticeUI:
                         game.ShowApprenticeUI(yield, game.Players[0])
                     case *GameEventArmyView:
@@ -3051,6 +3056,33 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                 return
         }
     }
+}
+
+func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
+    group := uilib.MakeGroup()
+
+    quit, cancel := context.WithCancel(context.Background())
+
+    background, _ := game.ImageCache.GetImage("reload.lbx", 1, 0)
+    rect := util.ImageRect(10, 10, background)
+
+    fade := group.MakeFadeIn(7)
+
+    group.AddElement(&uilib.UIElement{
+        Rect: rect,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(fade())
+            options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+            scale.DrawScaled(screen, background, &options)
+        },
+        LeftClick: func(element *uilib.UIElement){
+            fade = group.MakeFadeOut(7)
+            group.AddDelay(7, cancel)
+        },
+    })
+
+    game.doRunUI(yield, group, quit)
 }
 
 func (game *Game) doCartographer(yield coroutine.YieldFunc) {
@@ -5489,7 +5521,12 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         },
         uilib.Selection{
             Name: "Astrologer",
-            Action: func(){},
+            Action: func(){
+                select {
+                    case game.Events <- &GameEventAstrologer{}:
+                    default:
+                }
+            },
             Hotkey: "(F5)",
         },
         uilib.Selection{
