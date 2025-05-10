@@ -3068,12 +3068,23 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
 
     fade := group.MakeFadeIn(7)
 
-    titleFont, err := (func() (*font.Font, error){
+    type Fonts struct {
+        Title *font.Font
+        Subtitle *font.Font
+        Name *font.Font
+    }
+
+    fonts, err := (func() (Fonts, error){
         loader, err := fontslib.Loader(game.Cache)
         if err != nil {
-            return nil, err
+            return Fonts{}, err
         }
-        return loader(fontslib.BigOrangeGradient2), nil
+
+        return Fonts{
+            Title: loader(fontslib.BigOrangeGradient2),
+            Subtitle: loader(fontslib.NormalBlue),
+            Name: loader(fontslib.SmallOrange),
+        }, nil
     })()
 
     if err != nil {
@@ -3091,7 +3102,11 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
             scale.DrawScaled(screen, background, &options)
 
             x, y := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, 9)
-            titleFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, "Current Status Of Wizards")
+            fonts.Title.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, "Current Status Of Wizards")
+
+            fonts.Subtitle.PrintOptions(screen, x, y + 14, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, "Army Strength")
+            fonts.Subtitle.PrintOptions(screen, x, y + 63, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, "Magic Power")
+            fonts.Subtitle.PrintOptions(screen, x, y + 113, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, "Spell Research")
         },
         LeftClick: func(element *uilib.UIElement){
             fade = group.MakeFadeOut(7)
