@@ -254,6 +254,10 @@ type WizardPower struct {
     SpellResearch int
 }
 
+func (power *WizardPower) TotalPower() int {
+    return power.Army + power.Magic + power.SpellResearch
+}
+
 type Player struct {
     // matrix the same size as the map containg information if the tile is explored,
     // unexplored or in the range of sight
@@ -427,6 +431,14 @@ func (player *Player) GetKnownPlayers() []*Player {
     }
 
     return out
+}
+
+func (player *Player) GetPowerHistoryForTurn(turn uint64) WizardPower {
+    if turn < 0 || turn >= uint64(len(player.PowerHistory)) {
+        return WizardPower{}
+    }
+
+    return player.PowerHistory[turn]
 }
 
 func (player *Player) AddPowerHistory(power WizardPower) {

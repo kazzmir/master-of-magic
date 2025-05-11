@@ -3128,6 +3128,55 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
 
         fonts.Date.PrintOptions(mainImage, float64(mainImage.Bounds().Dx() - 8), 11, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyRight, Options: &options}, game.TurnDate())
 
+        xStart := 10
+        xEnd := mainImage.Bounds().Dx() - 10
+
+        nameFont := fonts.Date
+
+        players := append(game.GetHumanPlayer().GetKnownPlayers(), game.GetHumanPlayer())
+
+        for i, player := range players {
+            nameFont.PrintOptions(mainImage, float64(8), float64(30 + i * nameFont.Height()), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
+
+            first := true
+            lastX := float64(0)
+            lastY := float64(0)
+
+            var lineColor color.RGBA
+
+            switch player.GetBanner() {
+                case data.BannerGreen: lineColor = color.RGBA{R: 0x20, G: 0x80, B: 0x2c, A: 0xff}
+                case data.BannerBlue: lineColor = color.RGBA{R: 0x15, G: 0x1d, B: 0x9d, A: 0xff}
+                case data.BannerRed: lineColor = color.RGBA{R: 0x9d, G: 0x15, B: 0x15, A: 0xff}
+                case data.BannerPurple: lineColor = color.RGBA{R: 0x6d, G: 0x15, B: 0x9d, A: 0xff}
+                case data.BannerYellow: lineColor = color.RGBA{R: 0x9d, G: 0x9d, B: 0x15, A: 0xff}
+                case data.BannerBrown: lineColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
+            }
+
+            for turn := range game.TurnNumber {
+                history := player.GetPowerHistoryForTurn(turn)
+                power := history.TotalPower()
+                if power < 0 {
+                    power = 0
+                }
+
+                x := float64(turn) * float64(xEnd - xStart) / float64(game.TurnNumber)
+
+                if first || x != lastX {
+                    y := float64(mainImage.Bounds().Dy() - 20 - power / 200)
+
+                    if !first {
+                        vector.StrokeLine(mainImage, float32(float64(xStart) + lastX), float32(lastY), float32(float64(xStart) + x), float32(y), 1, lineColor, false)
+                    }
+
+                    first = false
+                    lastX = x
+                    lastY = y
+                }
+            }
+
+        }
+
         return mainImage
     }
 
