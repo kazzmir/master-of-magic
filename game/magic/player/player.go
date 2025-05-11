@@ -248,6 +248,12 @@ func (*NoGlobalEnchantments) HasRivalEnchantment(player *Player, enchantment dat
     return false
 }
 
+type WizardPower struct {
+    Army int
+    Magic int
+    SpellResearch int
+}
+
 type Player struct {
     // matrix the same size as the map containg information if the tile is explored,
     // unexplored or in the range of sight
@@ -324,6 +330,9 @@ type Player struct {
     CreateArtifact *artifact.Artifact
 
     Wizard setup.WizardCustom
+
+    // an array of objects that track the power of the wizard, where each index represents a turn
+    PowerHistory []WizardPower
 
     // FIXME: probably remove Units and just use Stacks to track the units
     Units []units.StackUnit
@@ -420,6 +429,18 @@ func (player *Player) GetKnownPlayers() []*Player {
     return out
 }
 
+func (player *Player) AddPowerHistory(power WizardPower) {
+    player.PowerHistory = append(player.PowerHistory, power)
+}
+
+func (player *Player) LatestWizardPower() WizardPower {
+    if len(player.PowerHistory) == 0 {
+        return WizardPower{}
+    }
+
+    return player.PowerHistory[len(player.PowerHistory) - 1]
+}
+
 func (player *Player) UpdateDiplomaticRelations() {
     // FIXME: relation value should be adjusted each turn
     // if aura of majesty is in effect by some rival wizard, then the relation value should go up by 1 for that wizard
@@ -477,6 +498,11 @@ func (player *Player) IsAI() bool {
 
 func (player *Player) IsHuman() bool {
     return player.Human
+}
+
+func (player *Player) IsNeutral() bool {
+    // it might also be better to check if the player is AI and their ai behavior is raider
+    return player.GetBanner() == data.BannerBrown
 }
 
 func (player *Player) GetBanner() data.BannerType {

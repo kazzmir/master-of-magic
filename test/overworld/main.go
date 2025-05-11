@@ -26,6 +26,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -154,6 +155,9 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x + 2, y + 2, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
+
+    player.AddPowerHistory(playerlib.WizardPower{Army: 30, Magic: 4053, SpellResearch: 40})
+    enemy1.AddPowerHistory(playerlib.WizardPower{Army: 15, Magic: 3088, SpellResearch: 30})
 
     game.Camera.Center(stack.X(), stack.Y())
 
