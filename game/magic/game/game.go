@@ -3096,6 +3096,7 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
     type Fonts struct {
         Title *font.Font
         Date *font.Font
+        Year *font.Font
     }
 
     fonts, err := (func() (Fonts, error){
@@ -3107,6 +3108,7 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
         return Fonts{
             Title: loader(fontslib.BigOrangeGradient2),
             Date: loader(fontslib.LightFontSmall),
+            Year: loader(fontslib.SmallWhite),
         }, nil
     })()
 
@@ -3134,6 +3136,22 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
         nameFont := fonts.Date
 
         players := append(game.GetHumanPlayer().GetKnownPlayers(), game.GetHumanPlayer())
+
+        // draw bottom line of graph with tick marks
+        tickLineY := mainImage.Bounds().Dy() - 20
+        tickLineColor := color.RGBA{R: 0xec, G: 0x8d, B: 0x13, A: 0xff}
+        vector.StrokeLine(mainImage, float32(xStart), float32(tickLineY), float32(xEnd), float32(tickLineY), 1, tickLineColor, false)
+        ticks := 23
+        for i := range ticks {
+            x := float64(xStart) + (float64(i) + 0.5) * float64(xEnd - xStart) / float64(ticks)
+            vector.StrokeLine(mainImage, float32(x), float32(tickLineY - 2), float32(x), float32(tickLineY + 1), 1, tickLineColor, false)
+        }
+
+        for i := range 10 {
+            x := float64(xStart) + (float64(i) + 0.5) * float64(xEnd - xStart) / float64(10)
+            year := uint64(i) * game.TurnNumber / 10
+            fonts.Year.PrintOptions(mainImage, x, float64(tickLineY + 3), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, fmt.Sprintf("%v", 1400 + year))
+        }
 
         for i, player := range players {
             nameFont.PrintOptions(mainImage, float64(8), float64(30 + i * nameFont.Height()), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
