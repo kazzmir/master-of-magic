@@ -500,6 +500,11 @@ func (player *Player) IsHuman() bool {
     return player.Human
 }
 
+func (player *Player) IsNeutral() bool {
+    // it might also be better to check if the player is AI and their ai behavior is raider
+    return player.GetBanner() == data.BannerBrown
+}
+
 func (player *Player) GetBanner() data.BannerType {
     return player.Wizard.Banner
 }

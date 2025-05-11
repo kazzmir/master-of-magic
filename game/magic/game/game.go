@@ -3109,8 +3109,42 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
         magicStart := y + 63 + 12
         researchStart := y + 113 + 12
 
-        for i, player := range game.Players {
-            if player.Defeated {
+        // max values used to normalize the bars
+        // initial values so that the bars don't immediately take up the full volume
+        maxArmy := 400
+        maxMagic := 400
+        maxResearch := 400
+
+        players := append(game.GetHumanPlayer().GetKnownPlayers(), game.GetHumanPlayer())
+
+        for _, player := range players {
+            if player.Defeated || player.IsNeutral() {
+                continue
+            }
+
+            power := player.LatestWizardPower()
+            maxArmy = max(maxArmy, power.Army)
+            maxMagic = max(maxMagic, power.Magic)
+            maxResearch = max(maxResearch, power.SpellResearch)
+        }
+
+        computeBarSize := func(value int, maxValue int) float64 {
+            maxLength := 180
+
+            return float64(value) / float64(maxValue) * float64(maxLength)
+        }
+
+        xStart := float64(14)
+        barStart := xStart + 50
+        black := color.RGBA{A: 255}
+
+        drawBar := func (y float64, size float64, lineColor color.RGBA) {
+            vector.DrawFilledRect(mainImage, float32(barStart + 1), float32(y + 1), float32(size), 2, black, false)
+            vector.DrawFilledRect(mainImage, float32(barStart), float32(y), float32(size), 2, lineColor, false)
+        }
+
+        for i, player := range players {
+            if player.Defeated || player.IsNeutral() {
                 continue
             }
 
@@ -3125,19 +3159,6 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
                 case data.BannerBrown: lineColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
             }
 
-            lineColor = color.RGBA{
-                R: uint8(float32(lineColor.R) * options.ColorScale.A()),
-                G: uint8(float32(lineColor.G) * options.ColorScale.A()),
-                B: uint8(float32(lineColor.B) * options.ColorScale.A()),
-                A: uint8(float32(lineColor.A) * options.ColorScale.A()),
-            }
-
-            black := color.RGBA{A: uint8(255.0 * options.ColorScale.A())}
-
-            xStart := float64(14)
-
-            barStart := xStart + 50
-
             power := player.LatestWizardPower()
 
             // log.Printf("Power for %v: %v", player.Wizard.Name, power)
@@ -3145,20 +3166,22 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
             x, y := options.GeoM.Apply(xStart, armyStart + float64(i * fonts.Name.Height()))
             fonts.Name.PrintOptions(mainImage, x, y, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
 
-            vector.DrawFilledRect(mainImage, float32(barStart + 1), float32(y + 2 + 1), float32(power.Army), 2, black, false)
-            vector.DrawFilledRect(mainImage, float32(barStart), float32(y + 2), float32(power.Army), 2, lineColor, false)
+            armyBarLength := computeBarSize(power.Army, maxArmy)
+
+            drawBar(y + 2, armyBarLength, lineColor)
 
             x, y = options.GeoM.Apply(xStart, magicStart + float64(i * fonts.Name.Height()))
             fonts.Name.PrintOptions(mainImage, x, y, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
 
-            vector.DrawFilledRect(mainImage, float32(barStart + 1), float32(y + 2 + 1), float32(power.Magic), 2, black, false)
-            vector.DrawFilledRect(mainImage, float32(barStart), float32(y + 2), float32(power.Magic), 2, lineColor, false)
+            magicBarLength := computeBarSize(power.Magic, maxMagic)
+
+            drawBar(y + 2, magicBarLength, lineColor)
 
             x, y = options.GeoM.Apply(xStart, researchStart + float64(i * fonts.Name.Height()))
             fonts.Name.PrintOptions(mainImage, x, y, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
 
-            vector.DrawFilledRect(mainImage, float32(barStart + 1), float32(y + 2 + 1), float32(power.SpellResearch), 2, black, false)
-            vector.DrawFilledRect(mainImage, float32(barStart), float32(y + 2), float32(power.SpellResearch), 2, lineColor, false)
+            researchBarLength := computeBarSize(power.SpellResearch, maxResearch)
+            drawBar(y + 2, researchBarLength, lineColor)
         }
 
         return mainImage
