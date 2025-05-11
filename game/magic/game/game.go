@@ -106,6 +106,9 @@ type GameEventCityListView struct {
 type GameEventApprenticeUI struct {
 }
 
+type GameEventAstrologer struct {
+}
+
 type GameEventCastSpellBook struct {
 }
 
@@ -2913,6 +2916,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doSurveyor(yield)
                     case *GameEventCartographer:
                         game.doCartographer(yield)
+                    case *GameEventAstrologer:
+                        game.ShowAstrologer(yield)
                     case *GameEventApprenticeUI:
                         game.ShowApprenticeUI(yield, game.Players[0])
                     case *GameEventArmyView:
@@ -3051,6 +3056,155 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                 return
         }
     }
+}
+
+func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
+    group := uilib.MakeGroup()
+
+    quit, cancel := context.WithCancel(context.Background())
+
+    background, _ := game.ImageCache.GetImage("reload.lbx", 1, 0)
+    rect := util.ImageRect(10, 10, background)
+
+    fade := group.MakeFadeIn(7)
+
+    type Fonts struct {
+        Title *font.Font
+        Subtitle *font.Font
+        Name *font.Font
+    }
+
+    fonts, err := (func() (Fonts, error){
+        loader, err := fontslib.Loader(game.Cache)
+        if err != nil {
+            return Fonts{}, err
+        }
+
+        return Fonts{
+            Title: loader(fontslib.BigOrangeGradient2),
+            Subtitle: loader(fontslib.NormalBlue),
+            Name: loader(fontslib.SmallOrange),
+        }, nil
+    })()
+
+    if err != nil {
+        log.Printf("Error: astrologer: unable to load font: %v", err)
+        cancel()
+        return
+    }
+
+    generateImage := func() *ebiten.Image {
+        mainImage := ebiten.NewImage(background.Bounds().Dx(), background.Bounds().Dy())
+        var options ebiten.DrawImageOptions
+        mainImage.DrawImage(background, &options)
+
+        x, y := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, 9)
+        fonts.Title.PrintOptions(mainImage, x, y, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, "Current Status Of Wizards")
+
+        fonts.Subtitle.PrintOptions(mainImage, x, y + 14, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, "Army Strength")
+        fonts.Subtitle.PrintOptions(mainImage, x, y + 63, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, "Magic Power")
+        fonts.Subtitle.PrintOptions(mainImage, x, y + 113, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, "Spell Research")
+
+        armyStart := y + 14 + 12
+        magicStart := y + 63 + 12
+        researchStart := y + 113 + 12
+
+        // max values used to normalize the bars
+        // initial values so that the bars don't immediately take up the full volume
+        maxArmy := 400
+        maxMagic := 400
+        maxResearch := 400
+
+        players := append(game.GetHumanPlayer().GetKnownPlayers(), game.GetHumanPlayer())
+
+        for _, player := range players {
+            if player.Defeated || player.IsNeutral() {
+                continue
+            }
+
+            power := player.LatestWizardPower()
+            maxArmy = max(maxArmy, power.Army)
+            maxMagic = max(maxMagic, power.Magic)
+            maxResearch = max(maxResearch, power.SpellResearch)
+        }
+
+        computeBarSize := func(value int, maxValue int) float64 {
+            maxLength := 180
+
+            return float64(value) / float64(maxValue) * float64(maxLength)
+        }
+
+        xStart := float64(14)
+        barStart := xStart + 50
+        black := color.RGBA{A: 255}
+
+        drawBar := func (y float64, size float64, lineColor color.RGBA) {
+            vector.DrawFilledRect(mainImage, float32(barStart + 1), float32(y + 1), float32(size), 2, black, false)
+            vector.DrawFilledRect(mainImage, float32(barStart), float32(y), float32(size), 2, lineColor, false)
+        }
+
+        for i, player := range players {
+            if player.Defeated || player.IsNeutral() {
+                continue
+            }
+
+            var lineColor color.RGBA
+
+            switch player.GetBanner() {
+                case data.BannerGreen: lineColor = color.RGBA{R: 0x20, G: 0x80, B: 0x2c, A: 0xff}
+                case data.BannerBlue: lineColor = color.RGBA{R: 0x15, G: 0x1d, B: 0x9d, A: 0xff}
+                case data.BannerRed: lineColor = color.RGBA{R: 0x9d, G: 0x15, B: 0x15, A: 0xff}
+                case data.BannerPurple: lineColor = color.RGBA{R: 0x6d, G: 0x15, B: 0x9d, A: 0xff}
+                case data.BannerYellow: lineColor = color.RGBA{R: 0x9d, G: 0x9d, B: 0x15, A: 0xff}
+                case data.BannerBrown: lineColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
+            }
+
+            power := player.LatestWizardPower()
+
+            // log.Printf("Power for %v: %v", player.Wizard.Name, power)
+
+            x, y := options.GeoM.Apply(xStart, armyStart + float64(i * fonts.Name.Height()))
+            fonts.Name.PrintOptions(mainImage, x, y, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
+
+            armyBarLength := computeBarSize(power.Army, maxArmy)
+
+            drawBar(y + 2, armyBarLength, lineColor)
+
+            x, y = options.GeoM.Apply(xStart, magicStart + float64(i * fonts.Name.Height()))
+            fonts.Name.PrintOptions(mainImage, x, y, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
+
+            magicBarLength := computeBarSize(power.Magic, maxMagic)
+
+            drawBar(y + 2, magicBarLength, lineColor)
+
+            x, y = options.GeoM.Apply(xStart, researchStart + float64(i * fonts.Name.Height()))
+            fonts.Name.PrintOptions(mainImage, x, y, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
+
+            researchBarLength := computeBarSize(power.SpellResearch, maxResearch)
+            drawBar(y + 2, researchBarLength, lineColor)
+        }
+
+        return mainImage
+    }
+
+    mainImage := generateImage()
+
+    group.AddElement(&uilib.UIElement{
+        Rect: rect,
+        Layer: 1,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(fade())
+            options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+            scale.DrawScaled(screen, mainImage, &options)
+        },
+        LeftClick: func(element *uilib.UIElement){
+            fade = group.MakeFadeOut(7)
+            group.AddDelay(7, cancel)
+        },
+    })
+
+    game.doRunUI(yield, group, quit)
 }
 
 func (game *Game) doCartographer(yield coroutine.YieldFunc) {
@@ -5489,7 +5643,12 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         },
         uilib.Selection{
             Name: "Astrologer",
-            Action: func(){},
+            Action: func(){
+                select {
+                    case game.Events <- &GameEventAstrologer{}:
+                    default:
+                }
+            },
             Hotkey: "(F5)",
         },
         uilib.Selection{
@@ -8163,8 +8322,50 @@ func (game *Game) doMeteorStorm() {
 
 }
 
+// stolen from combat/model.go
+func computeUnitPower(unit units.StackUnit) int {
+    power := 0
+
+    power += unit.GetMaxHealth()
+    power += unit.GetDefense()
+    power += unit.GetResistance()
+    power += unit.GetRangedAttackPower() * unit.GetCount()
+    power += unit.GetMeleeAttackPower() * unit.GetCount()
+
+    return power
+}
+
+func (game *Game) ComputeWizardPower(player *playerlib.Player) playerlib.WizardPower {
+    armyStrength := 0
+
+    for _, stack := range player.Stacks {
+        for _, unit := range stack.Units() {
+            armyStrength += computeUnitPower(unit)
+        }
+    }
+
+    manaPerTurn := player.ManaPerTurn(game.ComputePower(player), game)
+
+    research := 0
+    for _, spell := range player.KnownSpells.Spells {
+        research += spell.ResearchCost
+    }
+
+    return playerlib.WizardPower{
+        Army: armyStrength / 2,
+        Magic: max(0, player.Mana / 2 + manaPerTurn),
+        SpellResearch: research / 20,
+    }
+}
+
 func (game *Game) EndOfTurn() {
     // put stuff here that should happen when all players have taken their turn
+
+    for _, player := range game.Players {
+        if !player.Defeated {
+            player.AddPowerHistory(game.ComputeWizardPower(player))
+        }
+    }
 
     game.revertVolcanos()
 
