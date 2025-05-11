@@ -5560,18 +5560,19 @@ func createScenario61(cache *lbx.LbxCache) *gamelib.Game {
 
     _ = enemy1
 
-    game.TurnNumber = 1000
+    game.TurnNumber = 300
     power := playerlib.WizardPower{
-        Army: 100,
-        Magic: 50,
-        SpellResearch: 85,
+        Army: 5,
+        Magic: 5,
+        SpellResearch: 5,
     }
 
     for range game.TurnNumber {
         player.AddPowerHistory(power)
-        power.Army = max(0, power.Army + rand.N(50) - 25)
-        power.Magic = max(0, power.Magic + rand.N(50) - 25)
-        power.SpellResearch = max(0, power.SpellResearch + rand.N(50) - 25)
+        V := 10
+        power.Army = max(0, power.Army + rand.N(V*2) - V)
+        power.Magic = max(0, power.Magic + rand.N(V*3) - V)
+        power.SpellResearch = max(0, power.SpellResearch + rand.N(V*2) - V)
     }
 
     game.Events <- &gamelib.GameEventHistorian{}

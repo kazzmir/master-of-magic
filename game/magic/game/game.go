@@ -3167,10 +3167,6 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
         for i, player := range players {
             nameFont.PrintOptions(mainImage, float64(10), float64(30 + i * nameFont.Height()), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
 
-            first := true
-            // lastX := float64(0)
-            lastY := float64(0)
-
             var lineColor color.RGBA
 
             switch player.GetBanner() {
@@ -3196,11 +3192,15 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
             }
 
             yHeight := 100
-            baseLine := mainImage.Bounds().Dy() - 20
+            baseLine := mainImage.Bounds().Dy() - 25
+
+            first := true
+            // lastX := float64(0)
+            lastY := float64(0)
 
             for x := range xEnd - xStart {
                 turn := uint64(float64(x) * float64(maxTurn) / float64(xEnd - xStart))
-                if turn > game.TurnNumber {
+                if turn >= game.TurnNumber {
                     break
                 }
 
@@ -3210,16 +3210,14 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
                     power = 0
                 }
 
-                if first {
-                    y := float64(baseLine - power * yHeight / maxPower)
+                y := float64(baseLine - power * yHeight / maxPower)
 
-                    if !first {
-                        vector.StrokeLine(mainImage, float32(xStart + x - 1), float32(lastY), float32(xStart + x), float32(y), 1, lineColor, false)
-                    }
-
-                    first = false
-                    lastY = y
+                if !first {
+                    vector.StrokeLine(mainImage, float32(xStart + x - 1), float32(lastY), float32(xStart + x), float32(y), 1, lineColor, false)
                 }
+
+                first = false
+                lastY = y
             }
 
             /*
