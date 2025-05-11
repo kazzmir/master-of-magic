@@ -3191,6 +3191,7 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
 
     group.AddElement(&uilib.UIElement{
         Rect: rect,
+        Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(fade())
