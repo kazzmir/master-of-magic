@@ -5558,10 +5558,14 @@ func createScenario61(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
     }, false)
 
-    _ = enemy1
-
     game.TurnNumber = 300
     power := playerlib.WizardPower{
+        Army: 5,
+        Magic: 5,
+        SpellResearch: 5,
+    }
+
+    enemyPower := playerlib.WizardPower{
         Army: 5,
         Magic: 5,
         SpellResearch: 5,
@@ -5573,7 +5577,14 @@ func createScenario61(cache *lbx.LbxCache) *gamelib.Game {
         power.Army = max(0, power.Army + rand.N(V*2) - V)
         power.Magic = max(0, power.Magic + rand.N(V*3) - V)
         power.SpellResearch = max(0, power.SpellResearch + rand.N(V*2) - V)
+
+        enemy1.AddPowerHistory(enemyPower)
+        enemyPower.Army = max(0, enemyPower.Army + rand.N(V*3) - V)
+        enemyPower.Magic = max(0, enemyPower.Magic + rand.N(V*2) - V)
+        enemyPower.SpellResearch = max(0, enemyPower.SpellResearch + rand.N(V*2) - V)
     }
+
+    player.AwarePlayer(enemy1)
 
     game.Events <- &gamelib.GameEventHistorian{}
 
