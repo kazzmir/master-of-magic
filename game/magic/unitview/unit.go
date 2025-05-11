@@ -352,7 +352,8 @@ func CreateUnitInfoStatsElements(imageCache *util.ImageCache, unit UnitStats, ma
         elements = append(elements, &uilib.UIElement{
             Order: 1,
             Layer: layer,
-            Rect: image.Rect(int(elementX), int(elementY), int(elementX) + background.Bounds().Dx(), int(elementY) + descriptionFont.Height()),
+            // FIXME: lame to add a constant here, it should be based on where the element is relative to the rectangle of the outer element
+            Rect: image.Rect(int(elementX), int(elementY), int(elementX) + background.Bounds().Dx() - 15, int(elementY) + descriptionFont.Height()),
             Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
                 return strconv.Itoa(render.Value()), smallFont
             },
