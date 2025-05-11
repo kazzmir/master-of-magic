@@ -3164,6 +3164,19 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
             fonts.Year.PrintOptions(mainImage, x, float64(tickLineY + 3), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, fmt.Sprintf("%v", 1400 + year))
         }
 
+        // get maximum power of any player
+        maxPower := 0
+        for _, player := range players {
+            for _, power := range player.PowerHistory {
+                maxPower = max(maxPower, power.TotalPower())
+            }
+        }
+
+        // have some minimum of the Y axis
+        if maxPower < 1000 {
+            maxPower = 1000
+        }
+
         for i, player := range players {
             nameFont.PrintOptions(mainImage, float64(10), float64(30 + i * nameFont.Height()), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
 
@@ -3183,15 +3196,7 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
                 maxTurn = maxYear * 12
             }
 
-            maxPower := 0
-            for _, power := range player.PowerHistory {
-                maxPower = max(maxPower, power.TotalPower())
-            }
-            if maxPower < 1000 {
-                maxPower = 1000
-            }
-
-            yHeight := 100
+            yHeight := 120
             baseLine := mainImage.Bounds().Dy() - 25
 
             first := true
