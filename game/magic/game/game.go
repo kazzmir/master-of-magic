@@ -3165,10 +3165,10 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
         }
 
         for i, player := range players {
-            nameFont.PrintOptions(mainImage, float64(8), float64(30 + i * nameFont.Height()), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
+            nameFont.PrintOptions(mainImage, float64(10), float64(30 + i * nameFont.Height()), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
 
             first := true
-            lastX := float64(0)
+            // lastX := float64(0)
             lastY := float64(0)
 
             var lineColor color.RGBA
@@ -3182,6 +3182,47 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
                 case data.BannerBrown: lineColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
             }
 
+            maxTurn := game.TurnNumber
+            if maxTurn < maxYear * 12 {
+                maxTurn = maxYear * 12
+            }
+
+            maxPower := 0
+            for _, power := range player.PowerHistory {
+                maxPower = max(maxPower, power.TotalPower())
+            }
+            if maxPower < 1000 {
+                maxPower = 1000
+            }
+
+            yHeight := 100
+            baseLine := mainImage.Bounds().Dy() - 20
+
+            for x := range xEnd - xStart {
+                turn := uint64(float64(x) * float64(maxTurn) / float64(xEnd - xStart))
+                if turn > game.TurnNumber {
+                    break
+                }
+
+                history := player.GetPowerHistoryForTurn(turn)
+                power := history.TotalPower()
+                if power < 0 {
+                    power = 0
+                }
+
+                if first {
+                    y := float64(baseLine - power * yHeight / maxPower)
+
+                    if !first {
+                        vector.StrokeLine(mainImage, float32(xStart + x - 1), float32(lastY), float32(xStart + x), float32(y), 1, lineColor, false)
+                    }
+
+                    first = false
+                    lastY = y
+                }
+            }
+
+            /*
             for turn := range game.TurnNumber {
                 history := player.GetPowerHistoryForTurn(turn)
                 power := history.TotalPower()
@@ -3203,6 +3244,7 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
                     lastY = y
                 }
             }
+            */
 
         }
 

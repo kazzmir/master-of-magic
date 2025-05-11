@@ -5463,6 +5463,122 @@ func createScenario60(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// power history
+func createScenario61(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 60: power history")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Retorts: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+            data.RetortRunemaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.DeathMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.NatureMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.TaxRate = fraction.Zero()
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    /*
+    x = 20
+    y = 20
+    */
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.Buildings.Insert(buildinglib.BuildingGranary)
+    city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
+    city.ProducingBuilding = buildinglib.BuildingBank
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 14
+    city.Workers = 3
+
+    city.ResetCitizens()
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 2600
+    player.CastingSkillPower = 10000
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player.KnownSpells.AddSpell(allSpells.FindByName("Animate Dead"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Corruption"))
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    // log.Printf("City at %v, %v", x, y)
+
+    player.LiftFog(x, y, 30, data.PlaneArcanus)
+    player.LiftFog(x, y, 30, data.PlaneMyrror)
+
+    drake := player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+
+    for i := 0; i < 5; i++ {
+        fireElemental := player.AddUnit(units.MakeOverworldUnitFromUnit(units.FireElemental, x + 1, y + 1, data.PlaneMyrror, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+        _ = fireElemental
+    }
+
+    // player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
+
+    stack := player.FindStackByUnit(drake)
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
+    player.LiftFog(x, y, 2, data.PlaneMyrror)
+
+    game.Camera.Center(stack.X(), stack.Y())
+
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "Tauron",
+        Banner: data.BannerRed,
+    }, false)
+
+    _ = enemy1
+
+    game.TurnNumber = 1000
+    power := playerlib.WizardPower{
+        Army: 100,
+        Magic: 50,
+        SpellResearch: 85,
+    }
+
+    for range game.TurnNumber {
+        player.AddPowerHistory(power)
+        power.Army = max(0, power.Army + rand.N(50) - 25)
+        power.Magic = max(0, power.Magic + rand.N(50) - 25)
+        power.SpellResearch = max(0, power.SpellResearch + rand.N(50) - 25)
+    }
+
+    game.Events <- &gamelib.GameEventHistorian{}
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -5529,6 +5645,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 58: game = createScenario58(cache)
         case 59: game = createScenario59(cache)
         case 60: game = createScenario60(cache)
+        case 61: game = createScenario61(cache)
         default: game = createScenario1(cache)
     }
 
