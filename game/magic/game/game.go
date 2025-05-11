@@ -3067,10 +3067,26 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
     group := uilib.MakeGroup()
     quit, cancel := context.WithCancel(context.Background())
 
+    background, _ := game.ImageCache.GetImage("reload.lbx", 0, 0)
+
+    rect := util.ImageRect(0, 0, background)
+
+    fade := group.MakeFadeIn(7)
+
     group.AddElement(&uilib.UIElement{
         Layer: 1,
+        Rect: rect,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(fade())
+            options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+            scale.DrawScaled(screen, background, &options)
+        },
         LeftClick: func(element *uilib.UIElement){
-            cancel()
+            fade = group.MakeFadeOut(7)
+            group.AddDelay(7, func(){
+                cancel()
+            })
         },
     })
 
