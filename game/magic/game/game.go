@@ -109,6 +109,9 @@ type GameEventApprenticeUI struct {
 type GameEventAstrologer struct {
 }
 
+type GameEventHistorian struct {
+}
+
 type GameEventCastSpellBook struct {
 }
 
@@ -2918,6 +2921,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doCartographer(yield)
                     case *GameEventAstrologer:
                         game.ShowAstrologer(yield)
+                    case *GameEventHistorian:
+                        game.ShowHistorian(yield)
                     case *GameEventApprenticeUI:
                         game.ShowApprenticeUI(yield, game.Players[0])
                     case *GameEventArmyView:
@@ -3056,6 +3061,20 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                 return
         }
     }
+}
+
+func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
+    group := uilib.MakeGroup()
+    quit, cancel := context.WithCancel(context.Background())
+
+    group.AddElement(&uilib.UIElement{
+        Layer: 1,
+        LeftClick: func(element *uilib.UIElement){
+            cancel()
+        },
+    })
+
+    game.doRunUI(yield, group, quit)
 }
 
 func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
@@ -5620,7 +5639,7 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
             Name: "Cartographer",
             Action: func(){
                 select {
-                    case game.Events <- &GameEventCartographer{}:
+                    case game.Events<- &GameEventCartographer{}:
                     default:
                 }
             },
@@ -5638,14 +5657,19 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         },
         uilib.Selection{
             Name: "Historian",
-            Action: func(){},
+            Action: func(){
+                select {
+                    case game.Events<- &GameEventHistorian{}:
+                    default:
+                }
+            },
             Hotkey: "(F4)",
         },
         uilib.Selection{
             Name: "Astrologer",
             Action: func(){
                 select {
-                    case game.Events <- &GameEventAstrologer{}:
+                    case game.Events<- &GameEventAstrologer{}:
                     default:
                 }
             },
