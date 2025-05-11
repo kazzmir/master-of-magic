@@ -3140,6 +3140,8 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
         // draw bottom line of graph with tick marks
         tickLineY := mainImage.Bounds().Dy() - 20
         tickLineColor := color.RGBA{R: 0xec, G: 0x8d, B: 0x13, A: 0xff}
+        black := color.RGBA{A: 96}
+        vector.StrokeLine(mainImage, float32(xStart), float32(tickLineY+1), float32(xEnd), float32(tickLineY+1), 1, black, false)
         vector.StrokeLine(mainImage, float32(xStart), float32(tickLineY), float32(xEnd), float32(tickLineY), 1, tickLineColor, false)
         ticks := 23
         for i := range ticks {
