@@ -3147,9 +3147,20 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
             vector.StrokeLine(mainImage, float32(x), float32(tickLineY - 2), float32(x), float32(tickLineY + 1), 1, tickLineColor, false)
         }
 
-        for i := range 10 {
-            x := float64(xStart) + (float64(i) + 0.5) * float64(xEnd - xStart) / float64(10)
-            year := uint64(i) * game.TurnNumber / 10
+        dates := uint64(10)
+
+        maxYear := game.TurnNumber / 12
+        if maxYear < dates {
+            maxYear = dates
+        }
+        for i := range dates {
+            x := float64(xStart) + (float64(i) + 0.5) * float64(xEnd - xStart) / float64(dates)
+            year := i * maxYear / dates
+            // dont show the same year twice
+            if i > 0 && (i-1) * maxYear / dates == year {
+                break
+            }
+
             fonts.Year.PrintOptions(mainImage, x, float64(tickLineY + 3), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, fmt.Sprintf("%v", 1400 + year))
         }
 
