@@ -3063,15 +3063,76 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     }
 }
 
+// the turn as a readable date, such as June 1450
+func (game *Game) TurnDate() string {
+    base := uint64(1400)
+
+    month := game.TurnNumber % 12
+    years := game.TurnNumber / 12
+
+    monthNames := []string{
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    }
+
+    return fmt.Sprintf("%s %v", monthNames[month], base + years)
+}
+
 func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
     group := uilib.MakeGroup()
-    quit, cancel := context.WithCancel(context.Background())
-
-    background, _ := game.ImageCache.GetImage("reload.lbx", 0, 0)
-
-    rect := util.ImageRect(0, 0, background)
 
     fade := group.MakeFadeIn(7)
+
+    type Fonts struct {
+        Title *font.Font
+        Date *font.Font
+    }
+
+    fonts, err := (func() (Fonts, error){
+        loader, err := fontslib.Loader(game.Cache)
+        if err != nil {
+            return Fonts{}, err
+        }
+
+        return Fonts{
+            Title: loader(fontslib.BigOrangeGradient2),
+            Date: loader(fontslib.LightFontSmall),
+        }, nil
+    })()
+
+    if err != nil {
+        log.Printf("Error: historian: unable to load font: %v", err)
+        return
+    }
+
+    quit, cancel := context.WithCancel(context.Background())
+
+    generateImage := func() *ebiten.Image {
+        background, _ := game.ImageCache.GetImage("reload.lbx", 0, 0)
+
+        mainImage := ebiten.NewImage(background.Bounds().Dx(), background.Bounds().Dy())
+        var options ebiten.DrawImageOptions
+        mainImage.DrawImage(background, &options)
+
+        fonts.Title.PrintOptions(mainImage, float64(mainImage.Bounds().Dx() / 2), 10, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, "History Of Wizards Power")
+
+        fonts.Date.PrintOptions(mainImage, float64(mainImage.Bounds().Dx() - 8), 11, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyRight, Options: &options}, game.TurnDate())
+
+        return mainImage
+    }
+
+    mainImage := generateImage()
+    rect := util.ImageRect(0, 0, mainImage)
 
     group.AddElement(&uilib.UIElement{
         Layer: 1,
@@ -3080,7 +3141,7 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(fade())
             options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
-            scale.DrawScaled(screen, background, &options)
+            scale.DrawScaled(screen, mainImage, &options)
         },
         LeftClick: func(element *uilib.UIElement){
             fade = group.MakeFadeOut(7)
