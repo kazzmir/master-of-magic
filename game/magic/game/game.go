@@ -8321,11 +8321,39 @@ func (game *Game) doMeteorStorm() {
 
 }
 
+// stolen from combat/model.go
+func computeUnitPower(unit units.StackUnit) int {
+    power := 0
+
+    power += unit.GetMaxHealth()
+    power += unit.GetDefense()
+    power += unit.GetResistance()
+    power += unit.GetRangedAttackPower() * unit.GetCount()
+    power += unit.GetMeleeAttackPower() * unit.GetCount()
+
+    return power
+}
+
 func (game *Game) ComputeWizardPower(player *playerlib.Player) playerlib.WizardPower {
+    armyStrength := 0
+
+    for _, stack := range player.Stacks {
+        for _, unit := range stack.Units() {
+            armyStrength += computeUnitPower(unit)
+        }
+    }
+
+    manaPerTurn := player.ManaPerTurn(game.ComputePower(player), game)
+
+    research := 0
+    for _, spell := range player.KnownSpells.Spells {
+        research += spell.ResearchCost
+    }
+
     return playerlib.WizardPower{
-        Army: 10,
-        Magic: 20,
-        SpellResearch: 30,
+        Army: armyStrength / 2,
+        Magic: max(0, player.Mana / 2 + manaPerTurn),
+        SpellResearch: research / 20,
     }
 }
 
