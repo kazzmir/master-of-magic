@@ -3093,71 +3093,86 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
         return
     }
 
+    generateImage := func() *ebiten.Image {
+        mainImage := ebiten.NewImage(background.Bounds().Dx(), background.Bounds().Dy())
+        var options ebiten.DrawImageOptions
+        mainImage.DrawImage(background, &options)
+
+        x, y := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, 9)
+        fonts.Title.PrintOptions(mainImage, x, y, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, "Current Status Of Wizards")
+
+        fonts.Subtitle.PrintOptions(mainImage, x, y + 14, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, "Army Strength")
+        fonts.Subtitle.PrintOptions(mainImage, x, y + 63, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, "Magic Power")
+        fonts.Subtitle.PrintOptions(mainImage, x, y + 113, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, "Spell Research")
+
+        armyStart := y + 14 + 12
+        magicStart := y + 63 + 12
+        researchStart := y + 113 + 12
+
+        for i, player := range game.Players {
+            if player.Defeated {
+                continue
+            }
+
+            var lineColor color.RGBA
+
+            switch player.GetBanner() {
+                case data.BannerGreen: lineColor = color.RGBA{R: 0x20, G: 0x80, B: 0x2c, A: 0xff}
+                case data.BannerBlue: lineColor = color.RGBA{R: 0x15, G: 0x1d, B: 0x9d, A: 0xff}
+                case data.BannerRed: lineColor = color.RGBA{R: 0x9d, G: 0x15, B: 0x15, A: 0xff}
+                case data.BannerPurple: lineColor = color.RGBA{R: 0x6d, G: 0x15, B: 0x9d, A: 0xff}
+                case data.BannerYellow: lineColor = color.RGBA{R: 0x9d, G: 0x9d, B: 0x15, A: 0xff}
+                case data.BannerBrown: lineColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
+            }
+
+            lineColor = color.RGBA{
+                R: uint8(float32(lineColor.R) * options.ColorScale.A()),
+                G: uint8(float32(lineColor.G) * options.ColorScale.A()),
+                B: uint8(float32(lineColor.B) * options.ColorScale.A()),
+                A: uint8(float32(lineColor.A) * options.ColorScale.A()),
+            }
+
+            black := color.RGBA{A: uint8(255.0 * options.ColorScale.A())}
+
+            xStart := float64(14)
+
+            barStart := xStart + 50
+
+            power := player.LatestWizardPower()
+
+            // log.Printf("Power for %v: %v", player.Wizard.Name, power)
+
+            x, y := options.GeoM.Apply(xStart, armyStart + float64(i * fonts.Name.Height()))
+            fonts.Name.PrintOptions(mainImage, x, y, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
+
+            vector.DrawFilledRect(mainImage, float32(barStart + 1), float32(y + 2 + 1), float32(power.Army), 2, black, false)
+            vector.DrawFilledRect(mainImage, float32(barStart), float32(y + 2), float32(power.Army), 2, lineColor, false)
+
+            x, y = options.GeoM.Apply(xStart, magicStart + float64(i * fonts.Name.Height()))
+            fonts.Name.PrintOptions(mainImage, x, y, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
+
+            vector.DrawFilledRect(mainImage, float32(barStart + 1), float32(y + 2 + 1), float32(power.Magic), 2, black, false)
+            vector.DrawFilledRect(mainImage, float32(barStart), float32(y + 2), float32(power.Magic), 2, lineColor, false)
+
+            x, y = options.GeoM.Apply(xStart, researchStart + float64(i * fonts.Name.Height()))
+            fonts.Name.PrintOptions(mainImage, x, y, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
+
+            vector.DrawFilledRect(mainImage, float32(barStart + 1), float32(y + 2 + 1), float32(power.SpellResearch), 2, black, false)
+            vector.DrawFilledRect(mainImage, float32(barStart), float32(y + 2), float32(power.SpellResearch), 2, lineColor, false)
+        }
+
+        return mainImage
+    }
+
+    mainImage := generateImage()
+
     group.AddElement(&uilib.UIElement{
         Rect: rect,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(fade())
             options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
-            scale.DrawScaled(screen, background, &options)
-
-            x, y := options.GeoM.Apply(float64(background.Bounds().Dx()) / 2, 9)
-            fonts.Title.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, "Current Status Of Wizards")
-
-            fonts.Subtitle.PrintOptions(screen, x, y + 14, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, "Army Strength")
-            fonts.Subtitle.PrintOptions(screen, x, y + 63, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, "Magic Power")
-            fonts.Subtitle.PrintOptions(screen, x, y + 113, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, Options: &options}, "Spell Research")
-
-            armyStart := y + 14 + 2
-            magicStart := y + 63 + 2
-            researchStart := y + 113 + 2
-
-            for i, player := range game.Players {
-                if player.Defeated {
-                    continue
-                }
-
-                var lineColor color.RGBA
-
-                switch player.GetBanner() {
-                    case data.BannerGreen: lineColor = color.RGBA{R: 0x20, G: 0x80, B: 0x2c, A: 0xff}
-                    case data.BannerBlue: lineColor = color.RGBA{R: 0x15, G: 0x1d, B: 0x9d, A: 0xff}
-                    case data.BannerRed: lineColor = color.RGBA{R: 0x9d, G: 0x15, B: 0x15, A: 0xff}
-                    case data.BannerPurple: lineColor = color.RGBA{R: 0x6d, G: 0x15, B: 0x9d, A: 0xff}
-                    case data.BannerYellow: lineColor = color.RGBA{R: 0x9d, G: 0x9d, B: 0x15, A: 0xff}
-                    case data.BannerBrown: lineColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
-                }
-
-                lineColor = color.RGBA{R:
-                    uint8(float32(lineColor.R) * options.ColorScale.A()),
-                    G: uint8(float32(lineColor.G) * options.ColorScale.A()),
-                    B: uint8(float32(lineColor.B) * options.ColorScale.A()),
-                    A: uint8(float32(lineColor.A) * options.ColorScale.A()),
-                }
-
-                black := color.RGBA{A: uint8(255.0 * options.ColorScale.A())}
-
-                xStart := float64(12)
-
-                barStart := xStart + 50
-
-                power := player.LatestWizardPower()
-
-                // log.Printf("Power for %v: %v", player.Wizard.Name, power)
-
-                x, y := options.GeoM.Apply(xStart, armyStart + float64(i * fonts.Name.Height()))
-                fonts.Name.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
-
-                vector.DrawFilledRect(screen, float32(scale.Scale(barStart + 1)), float32(scale.Scale(y + 2 + 1)), float32(power.Army), float32(scale.Scale(2)), black, false)
-                vector.DrawFilledRect(screen, float32(scale.Scale(barStart)), float32(scale.Scale(y + 2)), float32(power.Army), float32(scale.Scale(2)), lineColor, false)
-
-                x, y = options.GeoM.Apply(xStart, magicStart + float64(i * fonts.Name.Height()))
-                fonts.Name.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
-
-                x, y = options.GeoM.Apply(xStart, researchStart + float64(i * fonts.Name.Height()))
-                fonts.Name.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
-            }
-
+            scale.DrawScaled(screen, mainImage, &options)
         },
         LeftClick: func(element *uilib.UIElement){
             fade = group.MakeFadeOut(7)
