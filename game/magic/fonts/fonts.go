@@ -1047,3 +1047,35 @@ func MakeMagicViewFonts(cache *lbx.LbxCache) *MagicViewFonts {
         BannerYellowFont: bannerYellowFont,
     }
 }
+
+func MakeBannerFonts(cache *lbx.LbxCache, fontIndex int) map[data.BannerType]*font.Font {
+    fontLbx, err := cache.GetLbxFile("fonts.lbx")
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
+
+    useFont, err := font.ReadFont(fontLbx, 0, fontIndex)
+    if err != nil {
+        log.Printf("Error: %v", err)
+        return nil
+    }
+
+    out := make(map[data.BannerType]*font.Font)
+
+    for _, banner := range data.AllBanners() {
+        mainColor := banner.Color()
+        palette := color.Palette{
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
+            mainColor, mainColor, mainColor,
+            mainColor, mainColor, mainColor,
+            mainColor, mainColor, mainColor,
+        }
+
+        bannerFont := font.MakeOptimizedFontWithPalette(useFont, palette)
+        out[banner] = bannerFont
+    }
+
+    return out
+}

@@ -3097,6 +3097,7 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
         Title *font.Font
         Date *font.Font
         Year *font.Font
+        BannerFonts map[data.BannerType]*font.Font
     }
 
     fonts, err := (func() (Fonts, error){
@@ -3109,6 +3110,7 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
             Title: loader(fontslib.BigOrangeGradient2),
             Date: loader(fontslib.LightFontSmall),
             Year: loader(fontslib.SmallWhite),
+            BannerFonts: fontslib.MakeBannerFonts(game.Cache, 3),
         }, nil
     })()
 
@@ -3132,8 +3134,6 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
 
         xStart := 10
         xEnd := mainImage.Bounds().Dx() - 10
-
-        nameFont := fonts.Date
 
         players := append(game.GetHumanPlayer().GetKnownPlayers(), game.GetHumanPlayer())
 
@@ -3178,6 +3178,8 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
         }
 
         for i, player := range players {
+            nameFont := fonts.BannerFonts[player.GetBanner()]
+
             nameFont.PrintOptions(mainImage, float64(10), float64(30 + i * nameFont.Height()), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
 
             maxTurn := game.TurnNumber

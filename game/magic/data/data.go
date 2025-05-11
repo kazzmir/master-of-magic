@@ -19,6 +19,17 @@ const (
     BannerBrown
 )
 
+func AllBanners() []BannerType {
+    return []BannerType{
+        BannerGreen,
+        BannerBlue,
+        BannerRed,
+        BannerPurple,
+        BannerYellow,
+        BannerBrown,
+    }
+}
+
 func (banner BannerType) String() string {
     switch banner {
         case BannerGreen: return "green"
