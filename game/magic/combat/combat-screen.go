@@ -273,16 +273,7 @@ type CombatScreen struct {
 }
 
 func makePaletteFromBanner(banner data.BannerType) color.Palette {
-    var topColor color.RGBA
-
-    switch banner {
-        case data.BannerGreen: topColor = color.RGBA{R: 0x20, G: 0x80, B: 0x2c, A: 0xff}
-        case data.BannerBlue: topColor = color.RGBA{R: 0x15, G: 0x1d, B: 0x9d, A: 0xff}
-        case data.BannerRed: topColor = color.RGBA{R: 0x9d, G: 0x15, B: 0x15, A: 0xff}
-        case data.BannerPurple: topColor = color.RGBA{R: 0x6d, G: 0x15, B: 0x9d, A: 0xff}
-        case data.BannerYellow: topColor = color.RGBA{R: 0x9d, G: 0x9d, B: 0x15, A: 0xff}
-        case data.BannerBrown: topColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
-    }
+    topColor := banner.Color()
 
     // red := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
 

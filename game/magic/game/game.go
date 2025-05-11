@@ -109,6 +109,9 @@ type GameEventApprenticeUI struct {
 type GameEventAstrologer struct {
 }
 
+type GameEventHistorian struct {
+}
+
 type GameEventCastSpellBook struct {
 }
 
@@ -2918,6 +2921,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doCartographer(yield)
                     case *GameEventAstrologer:
                         game.ShowAstrologer(yield)
+                    case *GameEventHistorian:
+                        game.ShowHistorian(yield)
                     case *GameEventApprenticeUI:
                         game.ShowApprenticeUI(yield, game.Players[0])
                     case *GameEventArmyView:
@@ -3058,6 +3063,196 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     }
 }
 
+// the turn as a readable date, such as June 1450
+func (game *Game) TurnDate() string {
+    base := uint64(1400)
+
+    month := game.TurnNumber % 12
+    years := game.TurnNumber / 12
+
+    monthNames := []string{
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    }
+
+    return fmt.Sprintf("%s %v", monthNames[month], base + years)
+}
+
+func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
+    group := uilib.MakeGroup()
+
+    fade := group.MakeFadeIn(7)
+
+    type Fonts struct {
+        Title *font.Font
+        Date *font.Font
+        Year *font.Font
+        BannerFonts map[data.BannerType]*font.Font
+    }
+
+    fonts, err := (func() (Fonts, error){
+        loader, err := fontslib.Loader(game.Cache)
+        if err != nil {
+            return Fonts{}, err
+        }
+
+        return Fonts{
+            Title: loader(fontslib.BigOrangeGradient2),
+            Date: loader(fontslib.LightFontSmall),
+            Year: loader(fontslib.SmallWhite),
+            BannerFonts: fontslib.MakeBannerFonts(game.Cache, 3),
+        }, nil
+    })()
+
+    if err != nil {
+        log.Printf("Error: historian: unable to load font: %v", err)
+        return
+    }
+
+    quit, cancel := context.WithCancel(context.Background())
+
+    generateImage := func() *ebiten.Image {
+        background, _ := game.ImageCache.GetImage("reload.lbx", 0, 0)
+
+        mainImage := ebiten.NewImage(background.Bounds().Dx(), background.Bounds().Dy())
+        var options ebiten.DrawImageOptions
+        mainImage.DrawImage(background, &options)
+
+        fonts.Title.PrintOptions(mainImage, float64(mainImage.Bounds().Dx() / 2), 10, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, "History Of Wizards Power")
+
+        fonts.Date.PrintOptions(mainImage, float64(mainImage.Bounds().Dx() - 8), 11, font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyRight, Options: &options}, game.TurnDate())
+
+        xStart := 10
+        xEnd := mainImage.Bounds().Dx() - 10
+
+        players := append(game.GetHumanPlayer().GetKnownPlayers(), game.GetHumanPlayer())
+
+        // draw bottom line of graph with tick marks
+        tickLineY := mainImage.Bounds().Dy() - 20
+        tickLineColor := color.RGBA{R: 0xec, G: 0x8d, B: 0x13, A: 0xff}
+        black := color.RGBA{A: 96}
+        vector.StrokeLine(mainImage, float32(xStart), float32(tickLineY+1), float32(xEnd), float32(tickLineY+1), 1, black, false)
+        vector.StrokeLine(mainImage, float32(xStart), float32(tickLineY), float32(xEnd), float32(tickLineY), 1, tickLineColor, false)
+        ticks := 23
+        for i := range ticks {
+            x := float64(xStart) + (float64(i) + 0.5) * float64(xEnd - xStart) / float64(ticks)
+            vector.StrokeLine(mainImage, float32(x), float32(tickLineY - 2), float32(x), float32(tickLineY + 1), 1, tickLineColor, false)
+        }
+
+        dates := uint64(10)
+
+        maxYear := game.TurnNumber / 12
+        if maxYear < dates {
+            maxYear = dates
+        }
+        for i := range dates {
+            x := float64(xStart) + (float64(i) + 0.5) * float64(xEnd - xStart) / float64(dates)
+            year := i * maxYear / dates
+            // dont show the same year twice
+            if i > 0 && (i-1) * maxYear / dates == year {
+                break
+            }
+
+            fonts.Year.PrintOptions(mainImage, x, float64(tickLineY + 3), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyCenter, Options: &options}, fmt.Sprintf("%v", 1400 + year))
+        }
+
+        // get maximum power of any player
+        maxPower := 0
+        for _, player := range players {
+            for _, power := range player.PowerHistory {
+                maxPower = max(maxPower, power.TotalPower())
+            }
+        }
+
+        // have some minimum of the Y axis
+        if maxPower < 1000 {
+            maxPower = 1000
+        }
+
+        for i, player := range players {
+            nameFont := fonts.BannerFonts[player.GetBanner()]
+
+            nameFont.PrintOptions(mainImage, float64(10), float64(30 + i * nameFont.Height()), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
+
+            maxTurn := game.TurnNumber
+            if maxTurn < maxYear * 12 {
+                maxTurn = maxYear * 12
+            }
+
+            lineColor := player.GetBanner().Color()
+
+            yHeight := 120
+            baseLine := mainImage.Bounds().Dy() - 25
+
+            first := true
+            // lastX := float64(0)
+            lastY := float64(0)
+
+            // iterate through the X coordinates on the graph, and get the turn number associated with that coordinate
+            // draw a small line between the point at that X coordinate and the previous X coordinate, where the Y value
+            // is the power at that turn
+            for x := range xEnd - xStart {
+                turn := uint64(float64(x) * float64(maxTurn) / float64(xEnd - xStart))
+                if turn >= game.TurnNumber {
+                    break
+                }
+
+                history, ok := player.GetPowerHistoryForTurn(turn)
+                if !ok {
+                    break
+                }
+                power := history.TotalPower()
+                if power < 0 {
+                    power = 0
+                }
+
+                y := float64(baseLine - power * yHeight / maxPower)
+
+                if !first {
+                    vector.StrokeLine(mainImage, float32(xStart + x - 1), float32(lastY), float32(xStart + x), float32(y), 1, lineColor, false)
+                }
+
+                first = false
+                lastY = y
+            }
+        }
+
+        return mainImage
+    }
+
+    mainImage := generateImage()
+    rect := util.ImageRect(0, 0, mainImage)
+
+    group.AddElement(&uilib.UIElement{
+        Layer: 1,
+        Rect: rect,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(fade())
+            options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+            scale.DrawScaled(screen, mainImage, &options)
+        },
+        LeftClick: func(element *uilib.UIElement){
+            fade = group.MakeFadeOut(7)
+            group.AddDelay(7, func(){
+                cancel()
+            })
+        },
+    })
+
+    game.doRunUI(yield, group, quit)
+}
+
 func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
     group := uilib.MakeGroup()
 
@@ -3148,16 +3343,7 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
                 continue
             }
 
-            var lineColor color.RGBA
-
-            switch player.GetBanner() {
-                case data.BannerGreen: lineColor = color.RGBA{R: 0x20, G: 0x80, B: 0x2c, A: 0xff}
-                case data.BannerBlue: lineColor = color.RGBA{R: 0x15, G: 0x1d, B: 0x9d, A: 0xff}
-                case data.BannerRed: lineColor = color.RGBA{R: 0x9d, G: 0x15, B: 0x15, A: 0xff}
-                case data.BannerPurple: lineColor = color.RGBA{R: 0x6d, G: 0x15, B: 0x9d, A: 0xff}
-                case data.BannerYellow: lineColor = color.RGBA{R: 0x9d, G: 0x9d, B: 0x15, A: 0xff}
-                case data.BannerBrown: lineColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
-            }
+            lineColor := player.GetBanner().Color()
 
             power := player.LatestWizardPower()
 
@@ -5620,7 +5806,7 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
             Name: "Cartographer",
             Action: func(){
                 select {
-                    case game.Events <- &GameEventCartographer{}:
+                    case game.Events<- &GameEventCartographer{}:
                     default:
                 }
             },
@@ -5638,14 +5824,19 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         },
         uilib.Selection{
             Name: "Historian",
-            Action: func(){},
+            Action: func(){
+                select {
+                    case game.Events<- &GameEventHistorian{}:
+                    default:
+                }
+            },
             Hotkey: "(F4)",
         },
         uilib.Selection{
             Name: "Astrologer",
             Action: func(){
                 select {
-                    case game.Events <- &GameEventAstrologer{}:
+                    case game.Events<- &GameEventAstrologer{}:
                     default:
                 }
             },
