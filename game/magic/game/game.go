@@ -3207,7 +3207,10 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
                     break
                 }
 
-                history := player.GetPowerHistoryForTurn(turn)
+                history, ok := player.GetPowerHistoryForTurn(turn)
+                if !ok {
+                    break
+                }
                 power := history.TotalPower()
                 if power < 0 {
                     power = 0

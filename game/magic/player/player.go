@@ -433,12 +433,12 @@ func (player *Player) GetKnownPlayers() []*Player {
     return out
 }
 
-func (player *Player) GetPowerHistoryForTurn(turn uint64) WizardPower {
+func (player *Player) GetPowerHistoryForTurn(turn uint64) (WizardPower, bool) {
     if turn < 0 || turn >= uint64(len(player.PowerHistory)) {
-        return WizardPower{}
+        return WizardPower{}, false
     }
 
-    return player.PowerHistory[turn]
+    return player.PowerHistory[turn], true
 }
 
 func (player *Player) AddPowerHistory(power WizardPower) {
