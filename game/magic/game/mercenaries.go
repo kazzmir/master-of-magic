@@ -55,7 +55,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
-        Order: -1,
+        Order: 0,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
@@ -94,6 +94,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
+        Order: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             box, _ := imageCache.GetImage("unitview.lbx", 2, 0)
             var options ebiten.DrawImageOptions
@@ -110,6 +111,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
     hireIndex := 0
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
+        Order: 1,
         Rect: hireRect,
         LeftClick: func(this *uilib.UIElement){
             hireIndex = 1
@@ -139,6 +141,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
     rejectIndex := 0
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
+        Order: 1,
         Rect: rejectRect,
         LeftClick: func(this *uilib.UIElement){
             rejectIndex = 1
@@ -166,6 +169,7 @@ func MakeHireMercenariesScreenUI(cache *lbx.LbxCache, ui *uilib.UI, unit *units.
 
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
+        Order: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             banner, _ := imageCache.GetImage("hire.lbx", 0, 0)
             var options ebiten.DrawImageOptions
