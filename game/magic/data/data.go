@@ -1,5 +1,9 @@
 package data
 
+import (
+    "image/color"
+)
+
 const ScreenWidth = 320
 const ScreenHeight = 200
 
@@ -26,6 +30,19 @@ func (banner BannerType) String() string {
     }
 
     return ""
+}
+
+func (banner BannerType) Color() color.RGBA {
+    switch banner {
+        case BannerGreen: return color.RGBA{R: 0x20, G: 0x80, B: 0x2c, A: 0xff}
+        case BannerBlue: return color.RGBA{R: 0x15, G: 0x1d, B: 0x9d, A: 0xff}
+        case BannerRed: return color.RGBA{R: 0x9d, G: 0x15, B: 0x15, A: 0xff}
+        case BannerPurple: return color.RGBA{R: 0x6d, G: 0x15, B: 0x9d, A: 0xff}
+        case BannerYellow: return color.RGBA{R: 0x9d, G: 0x9d, B: 0x15, A: 0xff}
+        case BannerBrown: return color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
+    }
+
+    return color.RGBA{}
 }
 
 type Race int

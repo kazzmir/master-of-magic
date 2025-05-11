@@ -3180,21 +3180,12 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
         for i, player := range players {
             nameFont.PrintOptions(mainImage, float64(10), float64(30 + i * nameFont.Height()), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
 
-            var lineColor color.RGBA
-
-            switch player.GetBanner() {
-                case data.BannerGreen: lineColor = color.RGBA{R: 0x20, G: 0x80, B: 0x2c, A: 0xff}
-                case data.BannerBlue: lineColor = color.RGBA{R: 0x15, G: 0x1d, B: 0x9d, A: 0xff}
-                case data.BannerRed: lineColor = color.RGBA{R: 0x9d, G: 0x15, B: 0x15, A: 0xff}
-                case data.BannerPurple: lineColor = color.RGBA{R: 0x6d, G: 0x15, B: 0x9d, A: 0xff}
-                case data.BannerYellow: lineColor = color.RGBA{R: 0x9d, G: 0x9d, B: 0x15, A: 0xff}
-                case data.BannerBrown: lineColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
-            }
-
             maxTurn := game.TurnNumber
             if maxTurn < maxYear * 12 {
                 maxTurn = maxYear * 12
             }
+
+            lineColor := player.GetBanner().Color()
 
             yHeight := 120
             baseLine := mainImage.Bounds().Dy() - 25
@@ -3203,6 +3194,9 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
             // lastX := float64(0)
             lastY := float64(0)
 
+            // iterate through the X coordinates on the graph, and get the turn number associated with that coordinate
+            // draw a small line between the point at that X coordinate and the previous X coordinate, where the Y value
+            // is the power at that turn
             for x := range xEnd - xStart {
                 turn := uint64(float64(x) * float64(maxTurn) / float64(xEnd - xStart))
                 if turn >= game.TurnNumber {
@@ -3224,31 +3218,6 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
                 first = false
                 lastY = y
             }
-
-            /*
-            for turn := range game.TurnNumber {
-                history := player.GetPowerHistoryForTurn(turn)
-                power := history.TotalPower()
-                if power < 0 {
-                    power = 0
-                }
-
-                x := float64(turn) * float64(xEnd - xStart) / float64(game.TurnNumber)
-
-                if first || x != lastX {
-                    y := float64(mainImage.Bounds().Dy() - 20 - power / 200)
-
-                    if !first {
-                        vector.StrokeLine(mainImage, float32(float64(xStart) + lastX), float32(lastY), float32(float64(xStart) + x), float32(y), 1, lineColor, false)
-                    }
-
-                    first = false
-                    lastX = x
-                    lastY = y
-                }
-            }
-            */
-
         }
 
         return mainImage
@@ -3367,16 +3336,7 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
                 continue
             }
 
-            var lineColor color.RGBA
-
-            switch player.GetBanner() {
-                case data.BannerGreen: lineColor = color.RGBA{R: 0x20, G: 0x80, B: 0x2c, A: 0xff}
-                case data.BannerBlue: lineColor = color.RGBA{R: 0x15, G: 0x1d, B: 0x9d, A: 0xff}
-                case data.BannerRed: lineColor = color.RGBA{R: 0x9d, G: 0x15, B: 0x15, A: 0xff}
-                case data.BannerPurple: lineColor = color.RGBA{R: 0x6d, G: 0x15, B: 0x9d, A: 0xff}
-                case data.BannerYellow: lineColor = color.RGBA{R: 0x9d, G: 0x9d, B: 0x15, A: 0xff}
-                case data.BannerBrown: lineColor = color.RGBA{R: 0x82, G: 0x60, B: 0x12, A: 0xff}
-            }
+            lineColor := player.GetBanner().Color()
 
             power := player.LatestWizardPower()
 
