@@ -281,7 +281,7 @@ func ComputeSpellCost(wizard Wizard, spell Spell, overland bool, hasEvilOmens bo
  *
  * This function does all 3, which makes it kind of ugly and has too many parameters.
  */
-func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, researchingSpell Spell, researchProgress int, researchPoints float64, castingSkill int, learnedSpell Spell, pickResearchSpell bool, chosenSpell *Spell, caster SpellCaster, drawFunc *func(screen *ebiten.Image)) {
+func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spells, knownSpells Spells, researchSpells Spells, researchingSpell Spell, researchProgress int, researchPoints float64, castingSkill int, userPage *int, learnedSpell Spell, pickResearchSpell bool, chosenSpell *Spell, caster SpellCaster, drawFunc *func(screen *ebiten.Image)) {
     ui := &uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             ui.StandardDraw(screen)
@@ -438,9 +438,9 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
     // compute half pages
     var halfPages []Page
-    if !pickResearchSpell {
+    // if !pickResearchSpell {
         halfPages = computeHalfPages(allSpells, 4)
-    }
+    // }
 
     // sort research spells by turns to research
     slices.SortFunc(researchSpells.Spells, func(a, b Spell) int {
@@ -630,33 +630,48 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
     // FIXME: this page could be passed in, so that it is stored for a while
     // page := 0
-    showLeftPage := 0
-    showRightPage := 1
+    showLeftPage := *userPage
+    showRightPage := showLeftPage + 1
+
+    if showLeftPage >= len(halfPages) {
+        showLeftPage = len(halfPages) - 1
+        showLeftPage -= showLeftPage % 2
+        showRightPage = showLeftPage + 1
+        *userPage = showLeftPage
+    }
 
     flipLeftSide := 0
     flipRightSide := 1
 
     openPage := func (findSpell Spell){
+        log.Printf("Open page to %v", findSpell.Name)
         currentPage := 0
+        found := false
 
         loop:
         for page, halfPage := range halfPages {
             for _, spell := range halfPage.Spells.Spells {
                 if spell.Name == findSpell.Name {
                     currentPage = page
+                    found = true
                     break loop
                 }
             }
         }
 
-        // force it to be even
-        currentPage -= currentPage % 2
-        showLeftPage = currentPage
-        showRightPage = currentPage + 1
+        if found {
+            // force it to be even
+            currentPage -= currentPage % 2
+            showLeftPage = currentPage
+            showRightPage = currentPage + 1
+            *userPage = showLeftPage
+        }
     }
 
-    if researchingSpell.Valid() {
-        openPage(researchingSpell)
+    if pickResearchSpell {
+        showLeftPage = len(halfPages) - 2
+        showRightPage = len(halfPages) - 1
+        *userPage = len(halfPages) - 2
     }
 
     if learnedSpell.Valid() {
@@ -832,6 +847,7 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
             flipLeftSide = showLeftPage - 1
             flipRightSide = showLeftPage
             showLeftPage -= 2
+            *userPage = showLeftPage
             flipping = true
 
             ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
@@ -854,46 +870,49 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
             ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)) - 1, func(){
                 showLeftPage += 2
+                *userPage = showLeftPage
                 flipping = false
             })
         }
     }
 
-    // left page turn
-    leftTurn, _ := imageCache.GetImage("scroll.lbx", 7, 0)
-    leftRect := util.ImageRect(15, 9, leftTurn)
-    elements = append(elements, &uilib.UIElement{
-        Rect: leftRect,
-        LeftClick: func(this *uilib.UIElement){
-            doLeftPageTurn()
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            if hasPreviousPage(showLeftPage){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(leftRect.Min.X), float64(leftRect.Min.Y))
-                options.ColorScale.ScaleAlpha(getAlpha())
-                scale.DrawScaled(screen, leftTurn, &options)
-            }
-        },
-    })
+    if !pickResearchSpell {
+        // left page turn
+        leftTurn, _ := imageCache.GetImage("scroll.lbx", 7, 0)
+        leftRect := util.ImageRect(15, 9, leftTurn)
+        elements = append(elements, &uilib.UIElement{
+            Rect: leftRect,
+            LeftClick: func(this *uilib.UIElement){
+                doLeftPageTurn()
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                if hasPreviousPage(showLeftPage){
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(leftRect.Min.X), float64(leftRect.Min.Y))
+                    options.ColorScale.ScaleAlpha(getAlpha())
+                    scale.DrawScaled(screen, leftTurn, &options)
+                }
+            },
+        })
 
-    // right page turn
-    rightTurn, _ := imageCache.GetImage("scroll.lbx", 8, 0)
-    rightRect := util.ImageRect(289, 9, rightTurn)
-    elements = append(elements, &uilib.UIElement{
-        Rect: rightRect,
-        LeftClick: func(this *uilib.UIElement){
-            doRightPageTurn()
-        },
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            if hasNextPage(showRightPage){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(rightRect.Min.X), float64(rightRect.Min.Y))
-                options.ColorScale.ScaleAlpha(getAlpha())
-                scale.DrawScaled(screen, rightTurn, &options)
-            }
-        },
-    })
+        // right page turn
+        rightTurn, _ := imageCache.GetImage("scroll.lbx", 8, 0)
+        rightRect := util.ImageRect(289, 9, rightTurn)
+        elements = append(elements, &uilib.UIElement{
+            Rect: rightRect,
+            LeftClick: func(this *uilib.UIElement){
+                doRightPageTurn()
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                if hasNextPage(showRightPage){
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(rightRect.Min.X), float64(rightRect.Min.Y))
+                    options.ColorScale.ScaleAlpha(getAlpha())
+                    scale.DrawScaled(screen, rightTurn, &options)
+                }
+            },
+        })
+    }
 
     ui.SetElementsFromArray(elements)
 
