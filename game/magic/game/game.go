@@ -5789,6 +5789,12 @@ func (game *Game) DoChancellor(){
     }
 }
 
+func (game *Game) ShowMirror() {
+    if len(game.Players) > 0 {
+        game.HudUI.AddElement(mirror.MakeMirrorUI(game.Cache, game.Players[0], game.HudUI))
+    }
+}
+
 // advisor ui
 func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
     advisors := []uilib.Selection{
@@ -5866,9 +5872,7 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
         uilib.Selection{
             Name: "Mirror",
             Action: func(){
-                if len(game.Players) > 0 {
-                    game.HudUI.AddElement(mirror.MakeMirrorUI(game.Cache, game.Players[0], game.HudUI))
-                }
+                game.ShowMirror()
             },
             Hotkey: "(F9)",
         },
@@ -6468,6 +6472,41 @@ func (game *Game) MakeHudUI() *uilib.UI {
                                         default:
                                     }
                                 }
+                            case ebiten.KeyF1:
+                                select {
+                                    case game.Events<- &GameEventSurveyor{}:
+                                    default:
+                                }
+                            case ebiten.KeyF2:
+                                select {
+                                    case game.Events<- &GameEventCartographer{}:
+                                    default:
+                                }
+                            case ebiten.KeyF3:
+                                select {
+                                    case game.Events<- &GameEventApprenticeUI{}:
+                                    default:
+                                }
+                            case ebiten.KeyF4:
+                                select {
+                                    case game.Events<- &GameEventHistorian{}:
+                                    default:
+                                }
+                            case ebiten.KeyF5:
+                                select {
+                                    case game.Events<- &GameEventAstrologer{}:
+                                    default:
+                                }
+                            case ebiten.KeyF6:
+                                game.DoChancellor()
+                            case ebiten.KeyF7:
+                                cornerX := 60
+                                cornerY := 25
+                                game.ShowTaxCollectorUI(cornerX - 10, cornerY + 10)
+                            case ebiten.KeyF8:
+                                game.ShowGrandVizierUI()
+                            case ebiten.KeyF9:
+                                game.ShowMirror()
                         }
                     }
                 }
