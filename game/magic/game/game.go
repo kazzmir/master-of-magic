@@ -6445,22 +6445,31 @@ func (game *Game) MakeHudUI() *uilib.UI {
             ui.StandardDraw(screen)
         },
         HandleKeys: func(keys []ebiten.Key){
-            for _, key := range keys {
-                switch key {
-                    case ebiten.KeySpace:
-                        stack := game.Players[0].SelectedStack
+            player := game.Players[game.CurrentPlayer]
+            if player.IsHuman() {
+                if game.HudUI.GetHighestLayerValue() == 0 {
+                    for _, key := range keys {
+                        switch key {
+                            case ebiten.KeySpace:
+                                stack := game.Players[0].SelectedStack
 
-                        if stack == nil {
-                            select {
-                                case game.Events <- &GameEventNextTurn{}:
-                                default:
-                            }
-                        } else {
-                            select {
-                                case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y()}:
-                                default:
-                            }
+                                if stack != nil {
+                                    select {
+                                        case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y()}:
+                                        default:
+                                    }
+                                }
+                            case ebiten.KeyN:
+                                stack := game.Players[0].SelectedStack
+
+                                if stack == nil || stack.OutOfMoves() {
+                                    select {
+                                        case game.Events <- &GameEventNextTurn{}:
+                                        default:
+                                    }
+                                }
                         }
+                    }
                 }
             }
         },
