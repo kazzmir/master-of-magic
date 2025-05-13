@@ -636,31 +636,39 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     flipLeftSide := 0
     flipRightSide := 1
 
-    openPage := func (findSpell Spell){
+    openPage := func (findSpell Spell, isOk func(Page) bool){
         currentPage := 0
+        found := false
 
         loop:
         for page, halfPage := range halfPages {
             for _, spell := range halfPage.Spells.Spells {
-                if spell.Name == findSpell.Name {
+                if spell.Name == findSpell.Name && isOk(halfPage) {
                     currentPage = page
+                    found = true
                     break loop
                 }
             }
         }
 
-        // force it to be even
-        currentPage -= currentPage % 2
-        showLeftPage = currentPage
-        showRightPage = currentPage + 1
+        if found {
+            // force it to be even
+            currentPage -= currentPage % 2
+            showLeftPage = currentPage
+            showRightPage = currentPage + 1
+        }
     }
 
     if researchingSpell.Valid() {
-        openPage(researchingSpell)
+        openPage(researchingSpell, func (page Page) bool {
+            return page.IsResearch
+        })
     }
 
     if learnedSpell.Valid() {
-        openPage(learnedSpell)
+        openPage(learnedSpell, func (page Page) bool {
+            return !page.IsResearch
+        })
     }
 
     flipping := false
