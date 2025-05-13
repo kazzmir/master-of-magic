@@ -2073,6 +2073,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     }
 
     // spell
+    spellPage := 0
     elements = append(elements, makeButton(1, 0, 0, func(){
         army := combat.Model.GetArmyForPlayer(player)
 
@@ -2087,7 +2088,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             // the lower of the mana pool (casting skill) or the wizard's mana divided by the range
             minimumMana := min(army.ManaPool, int(float64(army.Player.Mana) / army.Range.ToFloat()))
 
-            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(defendingCity), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, player, func (spell spellbook.Spell, picked bool){
+            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(defendingCity), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, player, &spellPage, func (spell spellbook.Spell, picked bool){
                 if picked {
                     // player mana and skill should go down accordingly
                     combat.Model.InvokeSpell(combat, player, nil, spell, func(){
@@ -2163,7 +2164,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             }
 
                             // what is casting skill based on for a unit?
-                            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, unitSpells.CombatSpells(defendingCity), caster.SpellCharges, int(caster.CastingSkill), spellbook.Spell{}, 0, false, &UnitCaster{}, func (spell spellbook.Spell, picked bool){
+                            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, unitSpells.CombatSpells(defendingCity), caster.SpellCharges, int(caster.CastingSkill), spellbook.Spell{}, 0, false, &UnitCaster{}, &spellPage, func (spell spellbook.Spell, picked bool){
                                 if picked {
                                     doCast(spell)
                                 }

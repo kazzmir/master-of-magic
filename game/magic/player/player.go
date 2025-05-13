@@ -296,6 +296,8 @@ type Player struct {
     // spells that can be researched
     ResearchCandidateSpells spellbook.Spells
 
+    CastingSpellPage int
+
     // enchantments owned by this player
     GlobalEnchantments *set.Set[data.Enchantment]
     // to get enchantments owned by any player

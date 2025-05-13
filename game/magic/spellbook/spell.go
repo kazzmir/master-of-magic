@@ -636,31 +636,39 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     flipLeftSide := 0
     flipRightSide := 1
 
-    openPage := func (findSpell Spell){
+    openPage := func (findSpell Spell, isOk func(Page) bool){
         currentPage := 0
+        found := false
 
         loop:
         for page, halfPage := range halfPages {
             for _, spell := range halfPage.Spells.Spells {
-                if spell.Name == findSpell.Name {
+                if spell.Name == findSpell.Name && isOk(halfPage) {
                     currentPage = page
+                    found = true
                     break loop
                 }
             }
         }
 
-        // force it to be even
-        currentPage -= currentPage % 2
-        showLeftPage = currentPage
-        showRightPage = currentPage + 1
+        if found {
+            // force it to be even
+            currentPage -= currentPage % 2
+            showLeftPage = currentPage
+            showRightPage = currentPage + 1
+        }
     }
 
     if researchingSpell.Valid() {
-        openPage(researchingSpell)
+        openPage(researchingSpell, func (page Page) bool {
+            return page.IsResearch
+        })
     }
 
     if learnedSpell.Valid() {
-        openPage(learnedSpell)
+        openPage(learnedSpell, func (page Page) bool {
+            return !page.IsResearch
+        })
     }
 
     flipping := false
@@ -1169,7 +1177,7 @@ func makeAdditionalPowerElements(cache *lbx.LbxCache, imageCache *util.ImageCach
 // selected a spell or because they canceled the ui
 // if a spell is chosen then it will be passed in as the first argument to the callback along with true
 // if the ui is cancelled then the second argument will be false
-func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charges map[Spell]int, castingSkill int, currentSpell Spell, currentProgress int, overland bool, caster SpellCaster, chosenCallback func(Spell, bool)) []*uilib.UIElement {
+func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charges map[Spell]int, castingSkill int, currentSpell Spell, currentProgress int, overland bool, caster SpellCaster, currentPage *int, chosenCallback func(Spell, bool)) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
     imageCache := util.MakeImageCache(cache)
@@ -1566,21 +1574,22 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         ui.AddElements(spellButtons)
     }
 
-    currentPage := 0
+    if *currentPage >= len(spellPages) - len(spellPages) % 2 {
+        *currentPage = len(spellPages) - len(spellPages) % 2
+    }
 
     if currentSpell.Valid() {
         loop:
         for page, halfPage := range spellPages {
             for _, spell := range halfPage.Spells.Spells {
                 if spell.Name == currentSpell.Name {
-                    currentPage = page
+                    *currentPage = page
+                    // force it to be even
+                    *currentPage -= *currentPage % 2
                     break loop
                 }
             }
         }
-
-        // force it to be even
-        currentPage -= currentPage % 2
     }
 
     bookFlip, _ := imageCache.GetImages("book.lbx", 0)
@@ -1721,14 +1730,14 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
             } else {
                 options.GeoM.Translate(15, 5)
-                if currentPage < len(spellPages) {
-                    renderPage(screen, options, spellPages[currentPage], highlightedSpell)
+                if *currentPage < len(spellPages) {
+                    renderPage(screen, options, spellPages[*currentPage], highlightedSpell)
                 }
 
-                if currentPage + 1 < len(spellPages) {
+                if *currentPage + 1 < len(spellPages) {
                     options.GeoM.Translate(134, 0)
                     // screen.DrawImage(right, &options)
-                    renderPage(screen, options, spellPages[currentPage+1], highlightedSpell)
+                    renderPage(screen, options, spellPages[*currentPage+1], highlightedSpell)
                 }
             }
         },
@@ -1748,7 +1757,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
     // hack to add the spell ui elements after the main element
     ui.AddDelay(0, func(){
-        setupSpells(currentPage)
+        setupSpells(*currentPage)
     })
 
     pageTurnRight, _ := imageCache.GetImage("spells.lbx", 2, 0)
@@ -1758,25 +1767,25 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         Order: 1,
         Rect: pageTurnRightRect,
         LeftClick: func(this *uilib.UIElement){
-            if currentPage + 2 < len(spellPages) && !flipping {
+            if *currentPage + 2 < len(spellPages) && !flipping {
                 flipping = true
                 bookFlipReverse = false
                 bookFlipIndex = ui.Counter
 
-                showPageRight = currentPage + 3
-                pageSideLeft = currentPage + 1
-                pageSideRight = currentPage + 2
-                showPageLeft = currentPage
+                showPageRight = *currentPage + 3
+                pageSideLeft = *currentPage + 1
+                pageSideRight = *currentPage + 2
+                showPageLeft = *currentPage
 
                 ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip)), func (){
                     flipping = false
-                    currentPage += 2
-                    setupSpells(currentPage)
+                    *currentPage += 2
+                    setupSpells(*currentPage)
                 })
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            if currentPage + 2 < len(spellPages) {
+            if *currentPage + 2 < len(spellPages) {
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(getAlpha())
                 options.GeoM.Translate(float64(pageTurnRightRect.Min.X), float64(pageTurnRightRect.Min.Y))
@@ -1792,25 +1801,25 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         Layer: 1,
         Order: 1,
         LeftClick: func(this *uilib.UIElement){
-            if currentPage >= 2 && !flipping {
+            if *currentPage >= 2 && !flipping {
                 flipping = true
                 bookFlipReverse = true
                 bookFlipIndex = ui.Counter
 
-                showPageRight = currentPage + 1
-                showPageLeft = currentPage - 2
-                pageSideLeft = currentPage - 1
-                pageSideRight = currentPage
+                showPageRight = *currentPage + 1
+                showPageLeft = *currentPage - 2
+                pageSideLeft = *currentPage - 1
+                pageSideRight = *currentPage
 
                 ui.AddDelay(bookFlipSpeed * uint64(len(bookFlip) - 1), func (){
                     flipping = false
-                    currentPage -= 2
-                    setupSpells(currentPage)
+                    *currentPage -= 2
+                    setupSpells(*currentPage)
                 })
             }
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            if currentPage > 0 {
+            if *currentPage > 0 {
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(getAlpha())
                 options.GeoM.Translate(float64(pageTurnLeftRect.Min.X), float64(pageTurnLeftRect.Min.Y))
@@ -1868,12 +1877,12 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                 updateUseSpells(filterMagic)
                 spellPages = computeHalfPages(useSpells, 6)
                 pageCache = make(map[int]*ebiten.Image)
-                if currentPage >= len(spellPages) {
-                    currentPage = max(0, len(spellPages) - 1)
-                    currentPage -= currentPage % 2
+                if *currentPage >= len(spellPages) {
+                    *currentPage = max(0, len(spellPages) - 1)
+                    *currentPage -= *currentPage % 2
                 }
 
-                setupSpells(currentPage)
+                setupSpells(*currentPage)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
