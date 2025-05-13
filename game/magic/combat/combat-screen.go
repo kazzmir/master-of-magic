@@ -2073,12 +2073,11 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     }
 
     // spell
+    spellPage := 0
     elements = append(elements, makeButton(1, 0, 0, func(){
         army := combat.Model.GetArmyForPlayer(player)
 
         defendingCity := combat.Model.Zone.City != nil && army == combat.Model.DefendingArmy
-
-        spellPage := 0
 
         doPlayerSpell := func(){
             // FIXME: this check should be done earlier so that we don't even let the player pick a spell
