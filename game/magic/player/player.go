@@ -114,6 +114,7 @@ type AIServices interface {
     FindPath(oldX int, oldY int, newX int, newY int, player *Player, stack *UnitStack, fog data.FogMap) pathfinding.Path
     FindSettlableLocations(x int, y int, plane data.Plane, fog data.FogMap) []image.Point
     IsSettlableLocation(x int, y int, plane data.Plane) bool
+    GetDifficulty() data.DifficultySetting
     GetMap(data.Plane) *maplib.Map
     FindCity(x int, y int, plane data.Plane) (*citylib.City, *Player)
     ComputeCityStackInfo() CityStackInfo
