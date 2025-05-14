@@ -1,7 +1,7 @@
 package ai
 
 import (
-    _ "log"
+    "log"
     "math/rand/v2"
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -14,6 +14,7 @@ import (
 )
 
 type RaiderAI struct {
+    MonsterAccumulator int
     // MovedStacks map[*playerlib.UnitStack]bool
 }
 
@@ -212,6 +213,25 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
     return decisions
 }
 
+func (raider *RaiderAI) GetRampageRate(difficulty data.DifficultySetting) int {
+    switch difficulty {
+        case data.DifficultyIntro:
+            return 1
+        case data.DifficultyEasy:
+            return rand.N(2) + 1
+        case data.DifficultyAverage:
+            return rand.N(3) + 1
+        case data.DifficultyHard:
+            return rand.N(4) + 1
+        case data.DifficultyExtreme:
+            return rand.N(5) + 1
+        case data.DifficultyImpossible:
+            return rand.N(6) + 1
+    }
+
+    return 0
+}
+
 func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
@@ -239,6 +259,15 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
         return false
     }
     */
+
+    // after turn 50, every turn there is a N% chance (based on difficulty) to create a pack of monsters
+    // in an encounter zone (but not a tower or node)
+    // the monsters should try to walk towards the nearest city, but will roam around randomly if no city is found
+    raider.MonsterAccumulator += raider.GetRampageRate(aiServices.GetDifficulty())
+    if raider.MonsterAccumulator > 50 {
+        raider.MonsterAccumulator = 0
+        log.Printf("Create rampaging monsters")
+    }
 
     for _, city := range player.Cities {
         stack := player.FindStack(city.X, city.Y, city.Plane)

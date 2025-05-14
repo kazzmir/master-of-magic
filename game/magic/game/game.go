@@ -585,6 +585,10 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     return game
 }
 
+func (game *Game) GetDifficulty() data.DifficultySetting {
+    return game.Settings.Difficulty
+}
+
 func (game *Game) Shutdown() {
     game.Music.Stop()
 }
