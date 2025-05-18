@@ -153,15 +153,15 @@ func TestContinents(test *testing.T) {
 
     continent := continents[0]
 
-    if len(continent) != 4 {
-        test.Errorf("should be 4 tiles in continent but was %v: %v", len(continent), continent)
+    if continent.Size() != 4 {
+        test.Errorf("should be 4 tiles in continent but was %v: %v", continent.Size(), continent)
     }
 
-    if len(use.FindContinent(0, 0)) != 0 {
+    if use.FindContinent(0, 0).Size() != 0 {
         test.Errorf("should be 0 tiles in continent")
     }
 
-    if len(use.FindContinent(5, 5)) != 4 {
+    if use.FindContinent(5, 5).Size() != 4 {
         test.Errorf("should be 4 tiles in continent")
     }
 
@@ -177,8 +177,8 @@ func TestContinents(test *testing.T) {
     }
 
     for _, continent := range continents {
-        if len(continent) != 4 && len(continent) != 9 {
-            test.Errorf("should be either 4 or 9 tiles in continent but was %v: %v", len(continent), continent)
+        if continent.Size() != 4 && continent.Size() != 9 {
+            test.Errorf("should be either 4 or 9 tiles in continent but was %v: %v", continent.Size(), continent)
         }
     }
 

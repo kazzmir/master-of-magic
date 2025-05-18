@@ -13,14 +13,19 @@ import (
 )
 
 // a continent is a list of points that are indices into the Terrain matrix
-type Continent []image.Point
+type Continent = *set.Set[image.Point]
 
+func MakeContinent() Continent {
+    return set.MakeSet[image.Point]()
+}
+
+/*
 func (continent Continent) Size() int {
-    return len(continent)
+    return continent.Size()
 }
 
 func (continent Continent) Contains(point image.Point) bool {
-    for _, check := range continent {
+    for _, check := range continent.Values() {
         if check == point {
             return true
         }
@@ -28,6 +33,7 @@ func (continent Continent) Contains(point image.Point) bool {
 
     return false
 }
+*/
 
 type Map struct {
     Terrain [][]int
@@ -70,7 +76,7 @@ func (map_ *Map) findContinent(seen map[image.Point]struct{}, x int, y int) Cont
     rows := map_.Rows()
     columns := map_.Columns()
 
-    var continent Continent
+    continent := MakeContinent()
 
     // count all tiles connected to this one if those tiles are land
     searchTiles := func(startX int, startY int){
@@ -90,7 +96,7 @@ func (map_ *Map) findContinent(seen map[image.Point]struct{}, x int, y int) Cont
             seen[image.Pt(x, y)] = struct{}{}
 
             if GetTile(map_.Terrain[x][y]).IsLand() {
-                continent = append(continent, image.Pt(x, y))
+                continent.Insert(image.Pt(x, y))
 
                 for dx := -1; dx <= 1; dx++ {
                     for dy := -1; dy <= 1; dy++ {
@@ -127,7 +133,7 @@ func (map_ *Map) FindContinents() []Continent {
     for x := 0; x < map_.Columns(); x++ {
         for y := 0; y < map_.Rows(); y++ {
             continent := map_.findContinent(seen, x, y)
-            if len(continent) > 0 {
+            if continent.Size() > 0 {
                 continents = append(continents, continent)
             }
         }
@@ -323,8 +329,9 @@ func (map_ *Map) placeRandomTerrainTiles(plane data.Plane, continents []Continen
 
     for _, continent := range continents {
 
+        points := continent.Values()
         for i := 0; i < continent.Size() * 2; i++ {
-            point := chooseRandomElement(continent)
+            point := chooseRandomElement(points)
 
             choices := []int{
                 randomGrasslands(point.Y),
@@ -361,13 +368,13 @@ func (map_ *Map) placeRandomTerrainTiles(plane data.Plane, continents []Continen
         }
 
         maxNodes := int(math.Sqrt(float64(continent.Size()))) / 7
-        for _, index := range rand.Perm(len(continent)) {
+        for _, index := range rand.Perm(len(points)) {
             // fmt.Printf("Index: %v, maxNodes: %v\n", index, maxNodes)
             if maxNodes <= 0 {
                 break
             }
 
-            point := continent[index]
+            point := points[index]
             if magicNodeOk(point) {
                 map_.Terrain[point.X][point.Y] = chooseRandomElement(magicTiles)
                 maxNodes -= 1
@@ -526,8 +533,9 @@ func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane, cont
     }
 
     for _, continent := range continents {
+        points := continent.Values()
         for i := 0; i < continent.Size() / area; i++ {
-            point := chooseRandomElement(continent)
+            point := chooseRandomElement(points)
             successful, path := walk(point)
             if successful {
                 for _, point := range path {
@@ -544,7 +552,8 @@ func (map_ *Map) removeSmallIslands(area int, plane data.Plane){
 
     for _, continent := range continents {
         if continent.Size() < area {
-            for _, point := range continent {
+            points := continent.Values()
+            for _, point := range points {
                 map_.Terrain[point.X][point.Y] = TileOcean.Index(plane)
             }
         }
