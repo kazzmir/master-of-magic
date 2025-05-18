@@ -50,3 +50,20 @@ func TestMemoize(test *testing.T) {
         test.Errorf("Expected 2 calls to f2, got %d", count)
     }
 }
+
+func TestCurry(test *testing.T) {
+    f := func(x, y int) int {
+        return x + y
+    }
+
+    curried := Curry2(f)
+    f1 := curried(3)
+    if f1(4) != 7 {
+        test.Errorf("Expected 7")
+    }
+
+    f2 := curried(5)
+    if f2(6) != 11 {
+        test.Errorf("Expected 11")
+    }
+}

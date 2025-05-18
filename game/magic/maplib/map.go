@@ -910,14 +910,15 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
     for i := range len(continents) {
 
         // try to place N encounters. if we can't place them all, then we just place as many as we can
-        maxEncounters := len(continents[i]) / 10
-        for _, index := range rand.Perm(len(continents[i])) {
+        maxEncounters := continents[i].Size() / 10
+        points := continents[i].Values()
+        for _, index := range rand.Perm(len(points)) {
 
             if maxEncounters == 0 {
                 break
             }
 
-            x, y := continents[i][index].X, continents[i][index].Y
+            x, y := points[index].X, points[index].Y
 
             if canPlaceEncounter(x, y) {
                 // log.Printf("Place encounter at %v, %v", x, y)
@@ -927,7 +928,7 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
         }
 
         var candidates []image.Point
-        for _, point := range continents[i] {
+        for _, point := range points {
             if canContainMineral(point.X, point.Y) {
                 candidates = append(candidates, point)
             }
@@ -1015,11 +1016,15 @@ func GeneratePlaneTowerPositions(landSize int, count int) []image.Point {
     return out
 }
 
+func (mapObject *Map) GetContinents() []terrain.Continent {
+    return mapObject.Map.FindContinents()
+}
+
 // get all the tiles that are part of the continent that contains the given x, y
 func (mapObject *Map) GetContinentTiles(x int, y int) []FullTile {
     continent := mapObject.Map.FindContinent(x, y)
     var out []FullTile
-    for _, point := range continent {
+    for _, point := range continent.Values() {
         tile := mapObject.GetTile(point.X, point.Y)
         out = append(out, tile)
     }

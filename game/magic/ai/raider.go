@@ -3,6 +3,7 @@ package ai
 import (
     "log"
     "math/rand/v2"
+    "image"
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
@@ -10,7 +11,9 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
-    // "github.com/kazzmir/master-of-magic/lib/functional"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/functional"
 )
 
 type RaiderAI struct {
@@ -267,6 +270,74 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
     if raider.MonsterAccumulator > 50 {
         raider.MonsterAccumulator = 0
         log.Printf("Create rampaging monsters")
+
+        isValidEncounterType := func (encounterType maplib.EncounterType) bool {
+            switch encounterType {
+                case maplib.EncounterTypeLair, maplib.EncounterTypeCave,
+                     maplib.EncounterTypeAncientTemple, maplib.EncounterTypeFallenTemple,
+                     maplib.EncounterTypeRuins, maplib.EncounterTypeAbandonedKeep, maplib.EncounterTypeDungeon:
+                     return true
+                 default:
+                     return false
+             }
+        }
+
+        type MakeMonster func (plane data.Plane, continent terrain.Continent) *playerlib.AICreateUnitDecision
+
+        makeMonster := func (plane data.Plane, continent terrain.Continent) *playerlib.AICreateUnitDecision {
+            // find a random encounter tile on the continent
+
+            encounterTiles := set.MakeSet[image.Point]()
+            map_ := aiServices.GetMap(plane)
+
+            for _, point := range continent.Values() {
+                encounter := map_.GetEncounter(point.X, point.Y)
+                // encounter must be lair, dungeon, 
+                if encounter != nil && isValidEncounterType(encounter.Type) {
+                    encounterTiles.Insert(point)
+                }
+            }
+
+            return nil
+        }
+
+        type MakeMonsterPlane func (terrain.Continent) *playerlib.AICreateUnitDecision
+
+        makeMonsterPlane := functional.Curry2(makeMonster)
+
+        candidateContinents := set.MakeSet[terrain.Continent]()
+
+        var creators []func() *playerlib.AICreateUnitDecision
+        for _, plane := range []data.Plane{data.PlaneArcanus, data.PlaneMyrror} {
+
+            // get all continents with cities on them
+            arcanusContinents := aiServices.GetMap(plane).GetContinents()
+            allCities := aiServices.AllCities()
+            for _, city := range allCities {
+                if city.Plane == data.PlaneArcanus {
+                    for _, continent := range arcanusContinents {
+                        if continent.Contains(image.Pt(city.X, city.Y)) {
+                            candidateContinents.Insert(continent)
+                        }
+                    }
+                }
+            }
+
+            for _, continent := range candidateContinents.Values() {
+                f := functional.Curry1(makeMonsterPlane(plane))(continent)
+                creators = append(creators, f)
+            }
+        }
+
+        for _, i := range rand.Perm(len(creators)) {
+            f := creators[i]
+            decision := f()
+            if decision != nil {
+                decisions = append(decisions, decision)
+                break
+            }
+        }
+
     }
 
     for _, city := range player.Cities {

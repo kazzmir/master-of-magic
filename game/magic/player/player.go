@@ -116,6 +116,7 @@ type AIServices interface {
     IsSettlableLocation(x int, y int, plane data.Plane) bool
     GetDifficulty() data.DifficultySetting
     GetMap(data.Plane) *maplib.Map
+    AllCities() []*citylib.City
     FindCity(x int, y int, plane data.Plane) (*citylib.City, *Player)
     ComputeCityStackInfo() CityStackInfo
 }
