@@ -282,9 +282,15 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
              }
         }
 
-        type MakeMonster func (plane data.Plane, continent terrain.Continent) *playerlib.AICreateUnitDecision
+        type FoundPoint struct {
+            Point image.Point
+            Plane data.Plane
+            Found bool
+        }
 
-        makeMonster := func (plane data.Plane, continent terrain.Continent) *playerlib.AICreateUnitDecision {
+        type FindPoint func (plane data.Plane, continent terrain.Continent) FoundPoint
+
+        findPoint := func (plane data.Plane, continent terrain.Continent) FoundPoint {
             // find a random encounter tile on the continent
 
             encounterTiles := set.MakeSet[image.Point]()
@@ -298,32 +304,21 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
                 }
             }
 
-            if encounterTiles.Size() == 0 {
-                return nil
-            }
-
             choices := encounterTiles.Values()
             for _, i := range rand.Perm(len(choices)) {
-                return &playerlib.AICreateUnitDecision{
-                    // FIXME: use some sort of budget for the unit so that mostly low level units are created early in the game
-                    Unit: units.ChooseRandomUnit(data.RaceFantastic),
-                    X: choices[i].X,
-                    Y: choices[i].Y,
-                    Plane: plane,
-                    Patrol: false,
-                }
+                return FoundPoint{Point: choices[i], Plane: plane, Found: true}
             }
 
-            return nil
+            return FoundPoint{}
         }
 
-        type MakeMonsterPlane func (terrain.Continent) *playerlib.AICreateUnitDecision
+        type FindPointPlane func (terrain.Continent) FoundPoint
 
-        makeMonsterPlane := functional.Curry2(makeMonster)
+        findPointPlane := functional.Curry2(findPoint)
 
         candidateContinents := set.MakeSet[terrain.Continent]()
 
-        var creators []func() *playerlib.AICreateUnitDecision
+        var creators []func() FoundPoint
         allCities := aiServices.AllCities()
         for _, plane := range []data.Plane{data.PlaneArcanus, data.PlaneMyrror} {
 
@@ -340,16 +335,21 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
             }
 
             for _, continent := range candidateContinents.Values() {
-                f := functional.Curry1(makeMonsterPlane(plane))(continent)
+                f := functional.Curry1(findPointPlane(plane))(continent)
                 creators = append(creators, f)
             }
         }
 
         for _, i := range rand.Perm(len(creators)) {
             f := creators[i]
-            decision := f()
-            if decision != nil {
-                decisions = append(decisions, decision)
+            found := f()
+            if found.Found {
+                decisions = append(decisions, &playerlib.AICreateUnitDecision{
+                    Unit: units.ChooseRandomUnit(data.RaceFantastic),
+                    X: found.Point.X,
+                    Y: found.Point.Y,
+                    Plane: found.Plane,
+                })
                 break
             }
         }
