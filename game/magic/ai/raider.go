@@ -23,6 +23,7 @@ type RaiderAI struct {
 
 func MakeRaiderAI() *RaiderAI {
     return &RaiderAI{
+        MonsterAccumulator: 0,
         // MovedStacks: make(map[*playerlib.UnitStack]bool),
     }
 }
@@ -100,6 +101,8 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                     if fog[city.X][city.Y] == data.FogTypeUnexplored {
                         continue
                     }
+
+                    // log.Printf("ai stack %v found enemy city %v", stack, city)
 
                     path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
                     if path != nil {
@@ -285,17 +288,17 @@ func (raider *RaiderAI) CreateRampagingMonsters(player *playerlib.Player, aiServ
 
     findPointPlane := functional.Curry2(findPoint)
 
-    candidateContinents := set.MakeSet[terrain.Continent]()
 
     var creators []func() FoundPoint
     allCities := aiServices.AllCities()
     for _, plane := range []data.Plane{data.PlaneArcanus, data.PlaneMyrror} {
+        candidateContinents := set.MakeSet[terrain.Continent]()
 
         // get all continents with cities on them
-        arcanusContinents := aiServices.GetMap(plane).GetContinents()
+        continents := aiServices.GetMap(plane).GetContinents()
         for _, city := range allCities {
-            if city.Plane == data.PlaneArcanus {
-                for _, continent := range arcanusContinents {
+            if city.Plane == plane && city.GetBanner() != player.GetBanner() {
+                for _, continent := range continents {
                     if continent.Contains(image.Pt(city.X, city.Y)) {
                         candidateContinents.Insert(continent)
                     }
@@ -423,7 +426,7 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
     // after turn 50, every turn there is a N% chance (based on difficulty) to create a pack of monsters
     // in an encounter zone (but not a tower or node)
     // the monsters should try to walk towards the nearest city, but will roam around randomly if no city is found
-    raider.MonsterAccumulator += raider.GetRampageRate(aiServices.GetDifficulty()) + 50
+    raider.MonsterAccumulator += raider.GetRampageRate(aiServices.GetDifficulty())
     if raider.MonsterAccumulator > 50 {
         raider.MonsterAccumulator = 0
         log.Printf("Create rampaging monsters")
