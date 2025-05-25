@@ -266,7 +266,7 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
     // after turn 50, every turn there is a N% chance (based on difficulty) to create a pack of monsters
     // in an encounter zone (but not a tower or node)
     // the monsters should try to walk towards the nearest city, but will roam around randomly if no city is found
-    raider.MonsterAccumulator += raider.GetRampageRate(aiServices.GetDifficulty())
+    raider.MonsterAccumulator += raider.GetRampageRate(aiServices.GetDifficulty()) + 50
     if raider.MonsterAccumulator > 50 {
         raider.MonsterAccumulator = 0
         log.Printf("Create rampaging monsters")
@@ -298,6 +298,22 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
                 }
             }
 
+            if encounterTiles.Size() == 0 {
+                return nil
+            }
+
+            choices := encounterTiles.Values()
+            for _, i := range rand.Perm(len(choices)) {
+                return &playerlib.AICreateUnitDecision{
+                    // FIXME: use some sort of budget for the unit so that mostly low level units are created early in the game
+                    Unit: units.ChooseRandomUnit(data.RaceFantastic),
+                    X: choices[i].X,
+                    Y: choices[i].Y,
+                    Plane: plane,
+                    Patrol: false,
+                }
+            }
+
             return nil
         }
 
@@ -308,11 +324,11 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
         candidateContinents := set.MakeSet[terrain.Continent]()
 
         var creators []func() *playerlib.AICreateUnitDecision
+        allCities := aiServices.AllCities()
         for _, plane := range []data.Plane{data.PlaneArcanus, data.PlaneMyrror} {
 
             // get all continents with cities on them
             arcanusContinents := aiServices.GetMap(plane).GetContinents()
-            allCities := aiServices.AllCities()
             for _, city := range allCities {
                 if city.Plane == data.PlaneArcanus {
                     for _, continent := range arcanusContinents {
