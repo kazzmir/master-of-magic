@@ -235,6 +235,10 @@ func (raider *RaiderAI) GetRampageRate(difficulty data.DifficultySetting) int {
     return 0
 }
 
+func first[A any, B any](a A, b B) A {
+    return a
+}
+
 func (raider *RaiderAI) CreateRampagingMonsters(player *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     isValidEncounterType := func (encounterType maplib.EncounterType) bool {
         switch encounterType {
@@ -263,8 +267,8 @@ func (raider *RaiderAI) CreateRampagingMonsters(player *playerlib.Player, aiServ
 
         for _, point := range continent.Values() {
             encounter := map_.GetEncounter(point.X, point.Y)
-            // encounter must be lair, dungeon, 
-            if encounter != nil && isValidEncounterType(encounter.Type) {
+            // encounter must be lair, dungeon, etc, and not have a stack on it already
+            if encounter != nil && isValidEncounterType(encounter.Type) && first(aiServices.FindStack(point.X, point.Y, plane)) == nil {
                 encounterTiles.Insert(point)
             }
         }
@@ -311,6 +315,7 @@ func (raider *RaiderAI) CreateRampagingMonsters(player *playerlib.Player, aiServ
         if found.Found {
             map_ := aiServices.GetMap(found.Plane)
             encounter := map_.GetEncounter(found.Point.X, found.Point.Y)
+            // selected a point on the map, now create monsters
             return createMonsters(found.Point, found.Plane, encounter.Type, aiServices.GetDifficulty(), aiServices.GetTurnNumber())
         }
     }
@@ -318,6 +323,10 @@ func (raider *RaiderAI) CreateRampagingMonsters(player *playerlib.Player, aiServ
     return nil
 }
 
+// create some fantastic creatures at the given point based on the realm of the encounter type
+// FIXME: this will create monsters on top of the encounter zone, but if a battle occurs then the wizard will fight the overland
+// monsters rather than the monsters guarding the encounter zone. after defeating the overland monsters the wizard must
+// then re-enter the encounter zone to fight the monsters guarding it.
 func createMonsters(point image.Point, plane data.Plane, encounterType maplib.EncounterType, difficulty data.DifficultySetting, turn uint64) []playerlib.AIDecision {
     budget := 20
     switch difficulty {
@@ -355,12 +364,11 @@ func createMonsters(point image.Point, plane data.Plane, encounterType maplib.En
     allUnits := units.UnitsByRealm(choose)
 
     for budget > 0 {
-        log.Printf("monster budget is %v", budget)
-
+        // log.Printf("monster budget: %v", budget)
         added := false
         // find a random unit that can be created within the budget
         for _, i := range rand.Perm(len(allUnits)) {
-            if allUnits[i].CastingCost <= budget {
+            if allUnits[i].CastingCost > 0 && allUnits[i].CastingCost <= budget {
                 budget -= allUnits[i].CastingCost
                 decision := &playerlib.AICreateUnitDecision{
                     Unit: allUnits[i],

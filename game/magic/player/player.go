@@ -118,6 +118,7 @@ type AIServices interface {
     GetMap(data.Plane) *maplib.Map
     GetTurnNumber() uint64
     AllCities() []*citylib.City
+    FindStack(x int, y int, plane data.Plane) (*UnitStack, *Player)
     FindCity(x int, y int, plane data.Plane) (*citylib.City, *Player)
     ComputeCityStackInfo() CityStackInfo
 }
