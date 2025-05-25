@@ -235,6 +235,155 @@ func (raider *RaiderAI) GetRampageRate(difficulty data.DifficultySetting) int {
     return 0
 }
 
+func (raider *RaiderAI) CreateRampagingMonsters(player *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
+    isValidEncounterType := func (encounterType maplib.EncounterType) bool {
+        switch encounterType {
+            case maplib.EncounterTypeLair, maplib.EncounterTypeCave,
+            maplib.EncounterTypeAncientTemple, maplib.EncounterTypeFallenTemple,
+            maplib.EncounterTypeRuins, maplib.EncounterTypeAbandonedKeep, maplib.EncounterTypeDungeon:
+            return true
+        default:
+            return false
+        }
+    }
+
+    type FoundPoint struct {
+        Point image.Point
+        Plane data.Plane
+        Found bool
+    }
+
+    type FindPoint func (plane data.Plane, continent terrain.Continent) FoundPoint
+
+    findPoint := func (plane data.Plane, continent terrain.Continent) FoundPoint {
+        // find a random encounter tile on the continent
+
+        encounterTiles := set.MakeSet[image.Point]()
+        map_ := aiServices.GetMap(plane)
+
+        for _, point := range continent.Values() {
+            encounter := map_.GetEncounter(point.X, point.Y)
+            // encounter must be lair, dungeon, 
+            if encounter != nil && isValidEncounterType(encounter.Type) {
+                encounterTiles.Insert(point)
+            }
+        }
+
+        choices := encounterTiles.Values()
+        for _, i := range rand.Perm(len(choices)) {
+            return FoundPoint{Point: choices[i], Plane: plane, Found: true}
+        }
+
+        return FoundPoint{}
+    }
+
+    type FindPointPlane func (terrain.Continent) FoundPoint
+
+    findPointPlane := functional.Curry2(findPoint)
+
+    candidateContinents := set.MakeSet[terrain.Continent]()
+
+    var creators []func() FoundPoint
+    allCities := aiServices.AllCities()
+    for _, plane := range []data.Plane{data.PlaneArcanus, data.PlaneMyrror} {
+
+        // get all continents with cities on them
+        arcanusContinents := aiServices.GetMap(plane).GetContinents()
+        for _, city := range allCities {
+            if city.Plane == data.PlaneArcanus {
+                for _, continent := range arcanusContinents {
+                    if continent.Contains(image.Pt(city.X, city.Y)) {
+                        candidateContinents.Insert(continent)
+                    }
+                }
+            }
+        }
+
+        for _, continent := range candidateContinents.Values() {
+            f := functional.Curry1(findPointPlane(plane))(continent)
+            creators = append(creators, f)
+        }
+    }
+
+    for _, i := range rand.Perm(len(creators)) {
+        f := creators[i]
+        found := f()
+        if found.Found {
+            map_ := aiServices.GetMap(found.Plane)
+            encounter := map_.GetEncounter(found.Point.X, found.Point.Y)
+            return createMonsters(found.Point, found.Plane, encounter.Type, aiServices.GetDifficulty(), aiServices.GetTurnNumber())
+        }
+    }
+
+    return nil
+}
+
+func createMonsters(point image.Point, plane data.Plane, encounterType maplib.EncounterType, difficulty data.DifficultySetting, turn uint64) []playerlib.AIDecision {
+    budget := 20
+    switch difficulty {
+        case data.DifficultyIntro: budget = 20
+        case data.DifficultyEasy: budget = 30
+        case data.DifficultyAverage: budget = 40
+        case data.DifficultyHard: budget = 50
+        case data.DifficultyExtreme: budget = 60
+        case data.DifficultyImpossible: budget = 70
+    }
+
+    // by turn 200, the budget is increased by 3x
+    budget = int(float64(budget) * (1.0 + float64(min(150, turn - 50)) / 50.0))
+
+    var decisions []playerlib.AIDecision
+
+    // each encounter type can create monsters of a specific realm
+    var realms []data.MagicType
+    switch encounterType {
+        case maplib.EncounterTypeLair: realms = []data.MagicType{data.ChaosMagic, data.DeathMagic, data.NatureMagic}
+        case maplib.EncounterTypeCave: realms = []data.MagicType{data.ChaosMagic, data.DeathMagic, data.NatureMagic}
+        case maplib.EncounterTypeAncientTemple: realms = []data.MagicType{data.DeathMagic, data.LifeMagic}
+        case maplib.EncounterTypeFallenTemple: realms = []data.MagicType{data.DeathMagic, data.LifeMagic}
+        case maplib.EncounterTypeRuins: realms = []data.MagicType{data.DeathMagic, data.LifeMagic}
+        case maplib.EncounterTypeAbandonedKeep: realms = []data.MagicType{data.ChaosMagic, data.DeathMagic, data.NatureMagic}
+        case maplib.EncounterTypeDungeon: realms = []data.MagicType{data.ChaosMagic, data.DeathMagic, data.NatureMagic}
+    }
+
+    if len(realms) == 0 {
+        return nil
+    }
+
+    // choose one of the available realm options
+    choose := realms[rand.N(len(realms))]
+    allUnits := units.UnitsByRealm(choose)
+
+    for budget > 0 {
+        log.Printf("monster budget is %v", budget)
+
+        added := false
+        // find a random unit that can be created within the budget
+        for _, i := range rand.Perm(len(allUnits)) {
+            if allUnits[i].CastingCost <= budget {
+                budget -= allUnits[i].CastingCost
+                decision := &playerlib.AICreateUnitDecision{
+                    Unit: allUnits[i],
+                    X: point.X,
+                    Y: point.Y,
+                    Plane: plane,
+                }
+
+                decisions = append(decisions, decision)
+                added = true
+                break
+            }
+        }
+
+        // couldnt add any more units, so stop
+        if !added {
+            budget = 0
+        }
+    }
+
+    return decisions
+}
+
 func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
@@ -270,90 +419,7 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
     if raider.MonsterAccumulator > 50 {
         raider.MonsterAccumulator = 0
         log.Printf("Create rampaging monsters")
-
-        isValidEncounterType := func (encounterType maplib.EncounterType) bool {
-            switch encounterType {
-                case maplib.EncounterTypeLair, maplib.EncounterTypeCave,
-                     maplib.EncounterTypeAncientTemple, maplib.EncounterTypeFallenTemple,
-                     maplib.EncounterTypeRuins, maplib.EncounterTypeAbandonedKeep, maplib.EncounterTypeDungeon:
-                     return true
-                 default:
-                     return false
-             }
-        }
-
-        type FoundPoint struct {
-            Point image.Point
-            Plane data.Plane
-            Found bool
-        }
-
-        type FindPoint func (plane data.Plane, continent terrain.Continent) FoundPoint
-
-        findPoint := func (plane data.Plane, continent terrain.Continent) FoundPoint {
-            // find a random encounter tile on the continent
-
-            encounterTiles := set.MakeSet[image.Point]()
-            map_ := aiServices.GetMap(plane)
-
-            for _, point := range continent.Values() {
-                encounter := map_.GetEncounter(point.X, point.Y)
-                // encounter must be lair, dungeon, 
-                if encounter != nil && isValidEncounterType(encounter.Type) {
-                    encounterTiles.Insert(point)
-                }
-            }
-
-            choices := encounterTiles.Values()
-            for _, i := range rand.Perm(len(choices)) {
-                return FoundPoint{Point: choices[i], Plane: plane, Found: true}
-            }
-
-            return FoundPoint{}
-        }
-
-        type FindPointPlane func (terrain.Continent) FoundPoint
-
-        findPointPlane := functional.Curry2(findPoint)
-
-        candidateContinents := set.MakeSet[terrain.Continent]()
-
-        var creators []func() FoundPoint
-        allCities := aiServices.AllCities()
-        for _, plane := range []data.Plane{data.PlaneArcanus, data.PlaneMyrror} {
-
-            // get all continents with cities on them
-            arcanusContinents := aiServices.GetMap(plane).GetContinents()
-            for _, city := range allCities {
-                if city.Plane == data.PlaneArcanus {
-                    for _, continent := range arcanusContinents {
-                        if continent.Contains(image.Pt(city.X, city.Y)) {
-                            candidateContinents.Insert(continent)
-                        }
-                    }
-                }
-            }
-
-            for _, continent := range candidateContinents.Values() {
-                f := functional.Curry1(findPointPlane(plane))(continent)
-                creators = append(creators, f)
-            }
-        }
-
-        for _, i := range rand.Perm(len(creators)) {
-            f := creators[i]
-            found := f()
-            if found.Found {
-                decisions = append(decisions, &playerlib.AICreateUnitDecision{
-                    Unit: units.ChooseRandomUnit(data.RaceFantastic),
-                    X: found.Point.X,
-                    Y: found.Point.Y,
-                    Plane: found.Plane,
-                })
-                break
-            }
-        }
-
+        decisions = append(decisions, raider.CreateRampagingMonsters(player, aiServices)...)
     }
 
     for _, city := range player.Cities {

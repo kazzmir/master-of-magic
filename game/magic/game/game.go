@@ -3069,6 +3069,10 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     }
 }
 
+func (game *Game) GetTurnNumber() uint64 {
+    return game.TurnNumber
+}
+
 // the turn as a readable date, such as June 1450
 func (game *Game) TurnDate() string {
     base := uint64(1400)

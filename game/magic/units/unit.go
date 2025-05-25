@@ -5424,6 +5424,18 @@ func UnitsByRace(race data.Race) []Unit {
     return units
 }
 
+func UnitsByRealm(realm data.MagicType) []Unit {
+    var units []Unit
+
+    for _, unit := range AllUnits {
+        if unit.Realm == realm {
+            units = append(units, unit)
+        }
+    }
+
+    return units
+}
+
 func ChooseRandomUnit(race data.Race) Unit {
     var units []Unit
     for _, unit := range AllUnits {
