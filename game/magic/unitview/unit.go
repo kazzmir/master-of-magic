@@ -475,7 +475,7 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
                     screen.DrawImage(background, scale.ScaleOptions(options))
 
                     if showArtifact != nil {
-                        artifactPic := artifact.RenderArtifactImage(screen, imageCache, *showArtifact, *counter, options)
+                        artifactPic := artifact.RenderArtifactImage(screen, imageCache, *showArtifact, *counter / 8, options)
 
                         x, y := options.GeoM.Apply(0, 0)
                         printX := x + float64(artifactPic.Bounds().Dx() + 2)
