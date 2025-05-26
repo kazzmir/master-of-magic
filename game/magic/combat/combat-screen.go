@@ -2493,8 +2493,10 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         damage := attacker.ComputeRangeDamage(target, tileDistance)
 
         // FIXME: for magical damage, set the Magic damage modifier for the proper realm
-        _, lost := ApplyDamage(target, damage, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
+        appliedDamage, lost := ApplyDamage(target, damage, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
         combat.MakeGibs(target, lost)
+
+        log.Printf("attacker %v rolled %v ranged damage to defender %v, applied %v", attacker.Unit.GetName(), damage, target.Unit.GetName(), appliedDamage)
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
             combat.Model.doTouchAttack(attacker, target, 0)

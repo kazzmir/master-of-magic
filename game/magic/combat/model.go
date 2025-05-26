@@ -1820,12 +1820,7 @@ func (unit *ArmyUnit) ComputeRangeDamage(defender *ArmyUnit, tileDistance int) i
 
     }
 
-    damage := 0
-    for range unit.Figures() {
-        damage += defender.ReduceInvulnerability(ComputeRoll(unit.GetRangedAttackPower(), toHit))
-    }
-
-    return damage
+    return defender.ReduceInvulnerability(ComputeRoll(unit.GetRangedAttackPower(), toHit))
 }
 
 func (unit *ArmyUnit) ComputeMeleeDamage(defender *ArmyUnit, fearFigure int, counterAttack bool) (int, bool) {
