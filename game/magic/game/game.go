@@ -585,6 +585,10 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     return game
 }
 
+func (game *Game) GetDifficulty() data.DifficultySetting {
+    return game.Settings.Difficulty
+}
+
 func (game *Game) Shutdown() {
     game.Music.Stop()
 }
@@ -690,8 +694,8 @@ func (game *Game) MakeCityValidArea(plane data.Plane) CityValidArea {
     continents := mapUse.Map.FindContinents()
 
     for _, continent := range continents {
-        if len(continent) > 100 {
-            for _, point := range continent {
+        if continent.Size() > 100 {
+            for _, point := range continent.Values() {
                 tile := terrain.GetTile(mapUse.Map.Terrain[point.X][point.Y])
                 if point.Y > 3 && point.Y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(point.X, point.Y) == nil {
                     out[point] = true
@@ -710,10 +714,11 @@ func (game *Game) FindValidCityLocation(plane data.Plane) (int, int, bool) {
     for i := 0; i < 10; i++ {
         continentIndex := rand.IntN(len(continents))
         continent := continents[continentIndex]
-        if len(continent) > 100 {
-            index := rand.IntN(len(continent))
-            x := continent[index].X
-            y := continent[index].Y
+        if continent.Size() > 100 {
+            points := continent.Values()
+            index := rand.IntN(len(points))
+            x := points[index].X
+            y := points[index].Y
 
             tile := terrain.GetTile(mapUse.Map.Terrain[x][y])
             if y > 3 && y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
@@ -732,10 +737,10 @@ func (game *Game) FindValidCityLocationOnShore(plane data.Plane) (int, int, bool
     for i := 0; i < 10; i++ {
         continentIndex := rand.N(len(continents))
         continent := continents[continentIndex]
-        if len(continent) > 100 {
+        if continent.Size() > 100 {
 
             var candidates []image.Point
-            for _, point := range continent {
+            for _, point := range continent.Values() {
                 x := point.X
                 y := point.Y
                 tile := terrain.GetTile(mapUse.Map.Terrain[x][y])
@@ -773,10 +778,11 @@ func (game *Game) FindValidCityLocationOnContinent(plane data.Plane, x int, y in
 
     for _, continent := range continents {
         if continent.Contains(image.Pt(x, y)) {
-            for _, index := range rand.Perm(continent.Size()) {
-                tile := mapUse.GetTile(continent[index].X, continent[index].Y)
+            points := continent.Values()
+            for _, index := range rand.Perm(len(points)) {
+                tile := mapUse.GetTile(points[index].X, points[index].Y)
                 if tile.Tile.IsLand() && !tile.Tile.IsMagic() {
-                    return continent[index].X, continent[index].Y
+                    return points[index].X, points[index].Y
                 }
             }
         }
@@ -3061,6 +3067,10 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                 return
         }
     }
+}
+
+func (game *Game) GetTurnNumber() uint64 {
+    return game.TurnNumber
 }
 
 // the turn as a readable date, such as June 1450

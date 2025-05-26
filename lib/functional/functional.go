@@ -53,3 +53,21 @@ func Memoize3[Key1 comparable, Key2 comparable, Key3 comparable, Value any](f fu
         return result
     }
 }
+
+// curry a 2-argument function to produce a 1-argument function
+func Curry2[Arg1 any, Arg2 any, Result any](f func(Arg1, Arg2) Result) func(Arg1) func(Arg2) Result {
+    return func(arg1 Arg1) func(Arg2) Result {
+        return func(arg2 Arg2) Result {
+            return f(arg1, arg2)
+        }
+    }
+}
+
+// curry a 1-argument function to produce a 0-argument function
+func Curry1[Arg1 any, Result any](f func(Arg1) Result) func(Arg1) func () Result {
+    return func(arg Arg1) func () Result {
+        return func() Result {
+            return f(arg)
+        }
+    }
+}

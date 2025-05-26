@@ -1,8 +1,9 @@
 package ai
 
 import (
-    _ "log"
+    "log"
     "math/rand/v2"
+    "image"
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
@@ -10,15 +11,19 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
-    // "github.com/kazzmir/master-of-magic/lib/functional"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/functional"
 )
 
 type RaiderAI struct {
+    MonsterAccumulator int
     // MovedStacks map[*playerlib.UnitStack]bool
 }
 
 func MakeRaiderAI() *RaiderAI {
     return &RaiderAI{
+        MonsterAccumulator: 0,
         // MovedStacks: make(map[*playerlib.UnitStack]bool),
     }
 }
@@ -96,6 +101,8 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                     if fog[city.X][city.Y] == data.FogTypeUnexplored {
                         continue
                     }
+
+                    // log.Printf("ai stack %v found enemy city %v", stack, city)
 
                     path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
                     if path != nil {
@@ -212,6 +219,182 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
     return decisions
 }
 
+func (raider *RaiderAI) GetRampageRate(difficulty data.DifficultySetting) int {
+    switch difficulty {
+        case data.DifficultyIntro:
+            return 1
+        case data.DifficultyEasy:
+            return rand.N(2) + 1
+        case data.DifficultyAverage:
+            return rand.N(3) + 1
+        case data.DifficultyHard:
+            return rand.N(4) + 1
+        case data.DifficultyExtreme:
+            return rand.N(5) + 1
+        case data.DifficultyImpossible:
+            return rand.N(6) + 1
+    }
+
+    return 0
+}
+
+func first[A any, B any](a A, b B) A {
+    return a
+}
+
+func (raider *RaiderAI) CreateRampagingMonsters(player *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
+    isValidEncounterType := func (encounterType maplib.EncounterType) bool {
+        switch encounterType {
+            case maplib.EncounterTypeLair, maplib.EncounterTypeCave,
+            maplib.EncounterTypeAncientTemple, maplib.EncounterTypeFallenTemple,
+            maplib.EncounterTypeRuins, maplib.EncounterTypeAbandonedKeep, maplib.EncounterTypeDungeon:
+            return true
+        default:
+            return false
+        }
+    }
+
+    type FoundPoint struct {
+        Point image.Point
+        Plane data.Plane
+        Found bool
+    }
+
+    type FindPoint func (plane data.Plane, continent terrain.Continent) FoundPoint
+
+    findPoint := func (plane data.Plane, continent terrain.Continent) FoundPoint {
+        // find a random encounter tile on the continent
+
+        encounterTiles := set.MakeSet[image.Point]()
+        map_ := aiServices.GetMap(plane)
+
+        for _, point := range continent.Values() {
+            encounter := map_.GetEncounter(point.X, point.Y)
+            // encounter must be lair, dungeon, etc, and not have a stack on it already
+            if encounter != nil && isValidEncounterType(encounter.Type) && first(aiServices.FindStack(point.X, point.Y, plane)) == nil {
+                encounterTiles.Insert(point)
+            }
+        }
+
+        choices := encounterTiles.Values()
+        for _, i := range rand.Perm(len(choices)) {
+            return FoundPoint{Point: choices[i], Plane: plane, Found: true}
+        }
+
+        return FoundPoint{}
+    }
+
+    type FindPointPlane func (terrain.Continent) FoundPoint
+
+    findPointPlane := functional.Curry2(findPoint)
+
+
+    var creators []func() FoundPoint
+    allCities := aiServices.AllCities()
+    for _, plane := range []data.Plane{data.PlaneArcanus, data.PlaneMyrror} {
+        candidateContinents := set.MakeSet[terrain.Continent]()
+
+        // get all continents with cities on them
+        continents := aiServices.GetMap(plane).GetContinents()
+        for _, city := range allCities {
+            if city.Plane == plane && city.GetBanner() != player.GetBanner() {
+                for _, continent := range continents {
+                    if continent.Contains(image.Pt(city.X, city.Y)) {
+                        candidateContinents.Insert(continent)
+                    }
+                }
+            }
+        }
+
+        for _, continent := range candidateContinents.Values() {
+            f := functional.Curry1(findPointPlane(plane))(continent)
+            creators = append(creators, f)
+        }
+    }
+
+    for _, i := range rand.Perm(len(creators)) {
+        f := creators[i]
+        found := f()
+        if found.Found {
+            map_ := aiServices.GetMap(found.Plane)
+            encounter := map_.GetEncounter(found.Point.X, found.Point.Y)
+            // selected a point on the map, now create monsters
+            return createMonsters(found.Point, found.Plane, encounter.Type, aiServices.GetDifficulty(), aiServices.GetTurnNumber())
+        }
+    }
+
+    return nil
+}
+
+// create some fantastic creatures at the given point based on the realm of the encounter type
+// FIXME: this will create monsters on top of the encounter zone, but if a battle occurs then the wizard will fight the overland
+// monsters rather than the monsters guarding the encounter zone. after defeating the overland monsters the wizard must
+// then re-enter the encounter zone to fight the monsters guarding it.
+func createMonsters(point image.Point, plane data.Plane, encounterType maplib.EncounterType, difficulty data.DifficultySetting, turn uint64) []playerlib.AIDecision {
+    budget := 20
+    switch difficulty {
+        case data.DifficultyIntro: budget = 20
+        case data.DifficultyEasy: budget = 30
+        case data.DifficultyAverage: budget = 40
+        case data.DifficultyHard: budget = 50
+        case data.DifficultyExtreme: budget = 60
+        case data.DifficultyImpossible: budget = 70
+    }
+
+    // by turn 200, the budget is increased by 3x
+    budget = int(float64(budget) * (1.0 + float64(min(150, turn - 50)) / 50.0))
+
+    var decisions []playerlib.AIDecision
+
+    // each encounter type can create monsters of a specific realm
+    var realms []data.MagicType
+    switch encounterType {
+        case maplib.EncounterTypeLair: realms = []data.MagicType{data.ChaosMagic, data.DeathMagic, data.NatureMagic}
+        case maplib.EncounterTypeCave: realms = []data.MagicType{data.ChaosMagic, data.DeathMagic, data.NatureMagic}
+        case maplib.EncounterTypeAncientTemple: realms = []data.MagicType{data.DeathMagic, data.LifeMagic}
+        case maplib.EncounterTypeFallenTemple: realms = []data.MagicType{data.DeathMagic, data.LifeMagic}
+        case maplib.EncounterTypeRuins: realms = []data.MagicType{data.DeathMagic, data.LifeMagic}
+        case maplib.EncounterTypeAbandonedKeep: realms = []data.MagicType{data.ChaosMagic, data.DeathMagic, data.NatureMagic}
+        case maplib.EncounterTypeDungeon: realms = []data.MagicType{data.ChaosMagic, data.DeathMagic, data.NatureMagic}
+    }
+
+    if len(realms) == 0 {
+        return nil
+    }
+
+    // choose one of the available realm options
+    choose := realms[rand.N(len(realms))]
+    allUnits := units.UnitsByRealm(choose)
+
+    for budget > 0 {
+        // log.Printf("monster budget: %v", budget)
+        added := false
+        // find a random unit that can be created within the budget
+        for _, i := range rand.Perm(len(allUnits)) {
+            if allUnits[i].CastingCost > 0 && allUnits[i].CastingCost <= budget {
+                budget -= allUnits[i].CastingCost
+                decision := &playerlib.AICreateUnitDecision{
+                    Unit: allUnits[i],
+                    X: point.X,
+                    Y: point.Y,
+                    Plane: plane,
+                }
+
+                decisions = append(decisions, decision)
+                added = true
+                break
+            }
+        }
+
+        // couldnt add any more units, so stop
+        if !added {
+            budget = 0
+        }
+    }
+
+    return decisions
+}
+
 func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
@@ -239,6 +422,16 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
         return false
     }
     */
+
+    // after turn 50, every turn there is a N% chance (based on difficulty) to create a pack of monsters
+    // in an encounter zone (but not a tower or node)
+    // the monsters should try to walk towards the nearest city, but will roam around randomly if no city is found
+    raider.MonsterAccumulator += raider.GetRampageRate(aiServices.GetDifficulty())
+    if raider.MonsterAccumulator >= 50 && aiServices.GetTurnNumber() >= 50 {
+        raider.MonsterAccumulator = 0
+        log.Printf("Create rampaging monsters")
+        decisions = append(decisions, raider.CreateRampagingMonsters(player, aiServices)...)
+    }
 
     for _, city := range player.Cities {
         stack := player.FindStack(city.X, city.Y, city.Plane)
