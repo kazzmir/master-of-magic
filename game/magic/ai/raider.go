@@ -427,7 +427,7 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
     // in an encounter zone (but not a tower or node)
     // the monsters should try to walk towards the nearest city, but will roam around randomly if no city is found
     raider.MonsterAccumulator += raider.GetRampageRate(aiServices.GetDifficulty())
-    if raider.MonsterAccumulator > 50 {
+    if raider.MonsterAccumulator >= 50 && aiServices.GetTurnNumber() >= 50 {
         raider.MonsterAccumulator = 0
         log.Printf("Create rampaging monsters")
         decisions = append(decisions, raider.CreateRampagingMonsters(player, aiServices)...)
