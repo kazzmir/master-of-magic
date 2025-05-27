@@ -4969,6 +4969,7 @@ var HighMenMagician Unit = Unit{
     MovementSound: MovementSoundShuffle,
     AttackSound: AttackSoundNormal,
     RangeAttackSound: RangeAttackSoundMagic,
+    RangedAttackDamageType: DamageRangedMagical,
     RangeAttackIndex: 72,
     MovementSpeed: 1,
     MeleeAttackPower: 1,
