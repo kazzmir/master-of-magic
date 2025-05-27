@@ -1,5 +1,9 @@
 package units
 
+import (
+    "github.com/kazzmir/master-of-magic/game/magic/data"
+)
+
 type ExperienceInfo interface {
     HasWarlord() bool
     Crusade() bool
@@ -228,4 +232,122 @@ func (hero *HeroExperienceLevel) Name() string {
     }
 
     return ""
+}
+
+type Badge int
+const (
+    BadgeNone Badge = iota
+    BadgeSilver
+    BadgeGold
+    BadgeRed
+)
+
+// index into main.lbx of the icon images
+func (badge Badge) IconLbxIndex() int {
+    switch badge {
+        case BadgeNone: return -1
+        case BadgeSilver: return 51
+        case BadgeGold: return 52
+        case BadgeRed: return 53
+    }
+
+    return -1
+}
+
+type ExperienceBadge struct {
+    Badge Badge
+    Count int
+}
+
+type BadgeUnit interface {
+    GetRace() data.Race
+    GetHeroExperienceLevel() HeroExperienceLevel
+    GetExperienceLevel() NormalExperienceLevel
+}
+
+// return an object that contains the badge type and the number of icons
+func GetExperienceBadge(unit BadgeUnit) ExperienceBadge {
+    if unit.GetRace() == data.RaceHero {
+        switch unit.GetHeroExperienceLevel() {
+            case ExperienceHero:
+            case ExperienceMyrmidon:
+                return ExperienceBadge{
+                    Badge: BadgeSilver,
+                    Count: 1,
+                }
+            case ExperienceCaptain:
+                return ExperienceBadge{
+                    Badge: BadgeSilver,
+                    Count: 2,
+                }
+            case ExperienceCommander:
+                return ExperienceBadge{
+                    Badge: BadgeSilver,
+                    Count: 3,
+                }
+            case ExperienceChampionHero:
+                return ExperienceBadge{
+                    Badge: BadgeGold,
+                    Count: 1,
+                }
+            case ExperienceLord:
+                return ExperienceBadge{
+                    Badge: BadgeGold,
+                    Count: 2,
+                }
+            case ExperienceGrandLord:
+                return ExperienceBadge{
+                    Badge: BadgeGold,
+                    Count: 3,
+                }
+            case ExperienceSuperHero:
+                return ExperienceBadge{
+                    Badge: BadgeRed,
+                    Count: 1,
+                }
+            case ExperienceDemiGod:
+                return ExperienceBadge{
+                    Badge: BadgeRed,
+                    Count: 2,
+                }
+        }
+    } else {
+
+        switch unit.GetExperienceLevel() {
+            case ExperienceRecruit:
+                // nothing
+            case ExperienceRegular:
+                // one white circle
+                return ExperienceBadge{
+                    Badge: BadgeSilver,
+                    Count: 1,
+                }
+            case ExperienceVeteran:
+                // two white circles
+                return ExperienceBadge{
+                    Badge: BadgeSilver,
+                    Count: 2,
+                }
+            case ExperienceElite:
+                // three white circles
+                return ExperienceBadge{
+                    Badge: BadgeSilver,
+                    Count: 3,
+                }
+            case ExperienceUltraElite:
+                // one yellow
+                return ExperienceBadge{
+                    Badge: BadgeGold,
+                    Count: 1,
+                }
+            case ExperienceChampionNormal:
+                // two yellow
+                return ExperienceBadge{
+                    Badge: BadgeGold,
+                    Count: 2,
+                }
+        }
+    }
+
+    return ExperienceBadge{}
 }
