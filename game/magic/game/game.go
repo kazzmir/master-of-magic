@@ -6752,73 +6752,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             vector.StrokeLine(screen, scale.Scale(float32(x)), scale.Scale(float32(y)), scale.Scale(float32(x + healthLength)), scale.Scale(float32(y)), float32(scale.ScaleAmount), useColor, false)
                         }
 
-                        silverBadge := 51
-                        goldBadge := 52
-                        redBadge := 53
-                        count := 0
-                        index := 0
-
-                        // draw experience badges
-                        if unit.GetRace() == data.RaceHero {
-                            switch unit.GetHeroExperienceLevel() {
-                            case units.ExperienceHero:
-                            case units.ExperienceMyrmidon:
-                                count = 1
-                                index = silverBadge
-                            case units.ExperienceCaptain:
-                                count = 2
-                                index = silverBadge
-                            case units.ExperienceCommander:
-                                count = 3
-                                index = silverBadge
-                            case units.ExperienceChampionHero:
-                                count = 1
-                                index = goldBadge
-                            case units.ExperienceLord:
-                                count = 2
-                                index = goldBadge
-                            case units.ExperienceGrandLord:
-                                count = 3
-                                index = goldBadge
-                            case units.ExperienceSuperHero:
-                                count = 1
-                                index = redBadge
-                            case units.ExperienceDemiGod:
-                                count = 2
-                                index = redBadge
-                            }
-                        } else {
-
-                            switch unit.GetExperienceLevel() {
-                            case units.ExperienceRecruit:
-                                // nothing
-                            case units.ExperienceRegular:
-                                // one white circle
-                                count = 1
-                                index = silverBadge
-                            case units.ExperienceVeteran:
-                                // two white circles
-                                count = 2
-                                index = silverBadge
-                            case units.ExperienceElite:
-                                // three white circles
-                                count = 3
-                                index = silverBadge
-                            case units.ExperienceUltraElite:
-                                // one yellow
-                                count = 1
-                                index = goldBadge
-                            case units.ExperienceChampionNormal:
-                                // two yellow
-                                count = 2
-                                index = goldBadge
-                            }
-                        }
+                        badgeInfo := units.GetExperienceBadge(unit)
 
                         badgeOptions := options
                         badgeOptions.GeoM.Translate(1, 21)
-                        for i := 0; i < count; i++ {
-                            pic, _ := game.ImageCache.GetImage("main.lbx", index, 0)
+                        for range badgeInfo.Count {
+                            pic, _ := game.ImageCache.GetImage("main.lbx", badgeInfo.Badge.IconLbxIndex(), 0)
                             scale.DrawScaled(screen, pic, &badgeOptions)
                             badgeOptions.GeoM.Translate(4, 0)
                         }

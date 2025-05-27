@@ -2011,7 +2011,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 scale.DrawScaled(screen, plainAttack, &options)
                 combat.Fonts.HudFont.PrintOptions(screen, 130, 174, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, fmt.Sprintf("%v", combat.Model.SelectedUnit.GetMeleeAttackPower()))
 
-                if combat.Model.SelectedUnit.RangedAttacks > 0 {
+                if combat.Model.SelectedUnit.RangedAttacks > 0 || combat.Model.SelectedUnit.GetCastingSkill() > 0 {
                     y := float64(180)
                     switch combat.Model.SelectedUnit.Unit.GetRangedAttackDamageType() {
                         case units.DamageRangedPhysical:
@@ -2019,6 +2019,12 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                             options.GeoM.Reset()
                             options.GeoM.Translate(float64(130), y)
                             scale.DrawScaled(screen, arrow, &options)
+                            combat.Fonts.HudFont.PrintOptions(screen, 130, y+float64(2), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, fmt.Sprintf("%v", combat.Model.SelectedUnit.GetRangedAttackPower()))
+                        case units.DamageRangedBoulder:
+                            boulder, _ := combat.ImageCache.GetImage("compix.lbx", 35, 0)
+                            options.GeoM.Reset()
+                            options.GeoM.Translate(float64(130), y)
+                            scale.DrawScaled(screen, boulder, &options)
                             combat.Fonts.HudFont.PrintOptions(screen, 130, y+float64(2), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, fmt.Sprintf("%v", combat.Model.SelectedUnit.GetRangedAttackPower()))
                         case units.DamageRangedMagical:
                             magic, _ := combat.ImageCache.GetImage("compix.lbx", 30, 0)
@@ -2493,8 +2499,10 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         damage := attacker.ComputeRangeDamage(target, tileDistance)
 
         // FIXME: for magical damage, set the Magic damage modifier for the proper realm
-        _, lost := ApplyDamage(target, damage, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
+        appliedDamage, lost := ApplyDamage(target, damage, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
         combat.MakeGibs(target, lost)
+
+        log.Printf("attacker %v rolled %v ranged damage to defender %v, applied %v", attacker.Unit.GetName(), damage, target.Unit.GetName(), appliedDamage)
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
             combat.Model.doTouchAttack(attacker, target, 0)
@@ -3646,6 +3654,14 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
             scale.DrawScaled(screen, fire, &options)
             ax, ay := options.GeoM.Apply(0, 2)
             combat.Fonts.InfoFont.PrintOptions(screen, ax, ay, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
+        case units.DamageRangedBoulder:
+            boulder, _ := combat.ImageCache.GetImage("compix.lbx", 67, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(x1 + 14), float64(y1 + 18))
+            scale.DrawScaled(screen, boulder, &options)
+            ax, ay := options.GeoM.Apply(0, 2)
+            combat.Fonts.InfoFont.PrintOptions(screen, ax, ay, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v", unit.GetRangedAttackPower()))
+
         case units.DamageRangedPhysical:
             arrow, _ := combat.ImageCache.GetImage("compix.lbx", 66, 0)
             var options ebiten.DrawImageOptions
@@ -3680,9 +3696,29 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     ax, ay = options.GeoM.Apply(0, 2)
     combat.Fonts.InfoFont.PrintOptions(screen, ax, ay, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v", unit.GetResistance()))
 
+    options.GeoM.Translate(0, 10)
+    if unit.GetRangedAttacks() > 0 {
+        ax, ay := options.GeoM.Apply(-5, 0)
+        combat.Fonts.InfoFont.PrintOptions(screen, ax, ay, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v ammo", unit.GetRangedAttacks()))
+    } else if unit.GetCastingSkill() > 0 {
+        ax, ay := options.GeoM.Apply(-5, 0)
+        combat.Fonts.InfoFont.PrintOptions(screen, ax, ay, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v mp", int(unit.GetCastingSkill())))
+    }
+
     combat.Fonts.InfoFont.PrintOptions(screen, float64(x1 + 14), float64(y1 + 37), font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, "Hits")
 
     combat.DrawHealthBar(screen, x1 + 25, y1 + 40, unit)
+
+    // draw experience badge
+    badge := units.GetExperienceBadge(unit)
+
+    badgeOptions := options
+    badgeOptions.GeoM.Translate(-4, 10)
+    for range badge.Count {
+        pic, _ := combat.ImageCache.GetImage("main.lbx", badge.Badge.IconLbxIndex(), 0)
+        scale.DrawScaled(screen, pic, &badgeOptions)
+        badgeOptions.GeoM.Translate(5, 0)
+    }
 }
 
 // draw a horizontal bar that represents the health of the unit

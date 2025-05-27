@@ -636,3 +636,47 @@ func TestCounterAttackPenalty(test *testing.T){
         test.Errorf("Error: defender should have 20%% counter attack to-hit")
     }
 }
+
+type OverrideToHitMelee struct {
+    *units.OverworldUnit
+}
+
+func (unit *OverrideToHitMelee) GetToHitMelee() int {
+    return 1000
+}
+
+func TestRangedAttack(test *testing.T){
+    defendingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    attackingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    attackerUnit := units.Slingers
+    defenderUnit := units.LizardSwordsmen
+    attackerUnit.RangedAttackPower = 38
+
+    defender := units.MakeOverworldUnitFromUnit(defenderUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(attackerUnit, 0, 0, data.PlaneArcanus, data.BannerGreen, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+
+    defendingArmy.AddUnit(defender)
+    attackingArmy.AddUnit(&OverrideToHitMelee{attacker})
+
+    combat := &CombatModel{
+        SelectedUnit: nil,
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Turn: TeamDefender,
+        DefendingArmy: defendingArmy,
+        AttackingArmy: attackingArmy,
+    }
+
+    combat.Initialize(spellbook.Spells{}, 0, 0)
+
+    damage := attackingArmy.units[0].ComputeRangeDamage(defendingArmy.units[0], 1)
+
+    if damage != attackerUnit.RangedAttackPower {
+        test.Errorf("Error: ranged damage should be %d, got %d", attackerUnit.RangedAttackPower, damage)
+    }
+}
