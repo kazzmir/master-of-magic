@@ -710,6 +710,14 @@ func (unit *ArmyUnit) GetArtifactSlots() []artifact.ArtifactSlot {
     return unit.Unit.GetArtifactSlots()
 }
 
+func (unit *ArmyUnit) GetHeroExperienceLevel() units.HeroExperienceLevel {
+    return unit.Unit.GetHeroExperienceLevel()
+}
+
+func (unit *ArmyUnit) GetExperienceLevel() units.NormalExperienceLevel {
+    return unit.Unit.GetExperienceLevel()
+}
+
 func (unit *ArmyUnit) GetExperience() int {
     return unit.Unit.GetExperience()
 }
