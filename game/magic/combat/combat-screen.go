@@ -3682,6 +3682,15 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     ax, ay = options.GeoM.Apply(0, 2)
     combat.Fonts.InfoFont.PrintOptions(screen, ax, ay, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v", unit.GetResistance()))
 
+    options.GeoM.Translate(0, 10)
+    if unit.GetRangedAttacks() > 0 {
+        ax, ay := options.GeoM.Apply(-5, 0)
+        combat.Fonts.InfoFont.PrintOptions(screen, ax, ay, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v ammo", unit.GetRangedAttacks()))
+    } else if unit.GetCastingSkill() > 0 {
+        ax, ay := options.GeoM.Apply(-5, 0)
+        combat.Fonts.InfoFont.PrintOptions(screen, ax, ay, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v mp", int(unit.GetCastingSkill())))
+    }
+
     combat.Fonts.InfoFont.PrintOptions(screen, float64(x1 + 14), float64(y1 + 37), font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, "Hits")
 
     combat.DrawHealthBar(screen, x1 + 25, y1 + 40, unit)
@@ -3690,7 +3699,7 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     badge := units.GetExperienceBadge(unit)
 
     badgeOptions := options
-    badgeOptions.GeoM.Translate(-4, 20)
+    badgeOptions.GeoM.Translate(-4, 10)
     for range badge.Count {
         pic, _ := combat.ImageCache.GetImage("main.lbx", badge.Badge.IconLbxIndex(), 0)
         scale.DrawScaled(screen, pic, &badgeOptions)
