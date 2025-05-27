@@ -442,7 +442,7 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
 
     for _, unit := range combatDescription.AttackerUnits {
         made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, humanPlayer.Wizard.Banner, humanPlayer.MakeExperienceInfo(), humanPlayer.MakeUnitEnchantmentProvider())
-        made.AddExperience(200)
+        // made.AddExperience(200)
 
         if made.GetRace() == data.RaceHero {
             attackingArmy.AddUnit(makeHero(made))
