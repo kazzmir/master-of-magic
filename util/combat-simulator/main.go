@@ -406,7 +406,8 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
     }
 
     defendingArmy := combat.Army{
-        Player: cpuPlayer,
+        // Player: cpuPlayer,
+        Player: humanPlayer,
     }
 
     makeHero := func (unit *units.OverworldUnit) *herolib.Hero {
@@ -437,7 +438,8 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     attackingArmy := combat.Army{
-        Player: humanPlayer,
+        // Player: humanPlayer,
+        Player: cpuPlayer,
     }
 
     for _, unit := range combatDescription.AttackerUnits {

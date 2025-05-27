@@ -5395,3 +5395,11 @@ func (model *CombatModel) CastEnchantment(player *playerlib.Player, enchantment 
         }
     }
 }
+
+func (model *CombatModel) GetHumanArmy() *Army {
+    if model.AttackingArmy.Player.IsHuman() {
+        return model.AttackingArmy
+    } else {
+        return model.DefendingArmy
+    }
+}

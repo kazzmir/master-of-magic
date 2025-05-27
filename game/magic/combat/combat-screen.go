@@ -1968,20 +1968,19 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 }
             }
 
-            // FIXME: this should show the player's army, not always the attacking one
-
+            humanArmy := combat.Model.GetHumanArmy()
             y := 173
             right := 239
             combat.Fonts.HudFont.PrintOptions(screen, float64(200), float64(y), font.FontOptions{Scale: scale.ScaleAmount}, "Skill:")
-            combat.Fonts.HudFont.PrintOptions(screen, float64(right), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, fmt.Sprintf("%v", combat.Model.AttackingArmy.ManaPool))
+            combat.Fonts.HudFont.PrintOptions(screen, float64(right), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, fmt.Sprintf("%v", humanArmy.ManaPool))
             y += combat.Fonts.HudFont.Height() + 2
 
             combat.Fonts.HudFont.PrintOptions(screen, float64(200), float64(y), font.FontOptions{Scale: scale.ScaleAmount}, "Mana:")
-            combat.Fonts.HudFont.PrintOptions(screen, float64(right), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, fmt.Sprintf("%v", combat.Model.AttackingArmy.Player.Mana))
+            combat.Fonts.HudFont.PrintOptions(screen, float64(right), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, fmt.Sprintf("%v", humanArmy.Player.Mana))
             y += combat.Fonts.HudFont.Height() + 2
 
             combat.Fonts.HudFont.PrintOptions(screen, float64(200), float64(y), font.FontOptions{Scale: scale.ScaleAmount}, "Range:")
-            combat.Fonts.HudFont.PrintOptions(screen, float64(right), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, fmt.Sprintf("%vx", combat.Model.AttackingArmy.Range.ToFloat()))
+            combat.Fonts.HudFont.PrintOptions(screen, float64(right), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, fmt.Sprintf("%vx", humanArmy.Range.ToFloat()))
 
             if combat.Model.DefendingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
