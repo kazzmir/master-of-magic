@@ -74,6 +74,7 @@ const (
 type CombatDescription struct {
     DefenderUnits []units.Unit
     AttackerUnits []units.Unit
+    HumanDefender bool
 }
 
 func (description *CombatDescription) Save(filename string) error {
@@ -127,9 +128,15 @@ func LoadCombatDescription(filename string) (*CombatDescription, error) {
         attackers = append(attackers, unit)
     }
 
+    defender, ok := output["human_defender"].(bool)
+    if !ok {
+        defender = true
+    }
+
     return &CombatDescription{
         DefenderUnits: defenders,
         AttackerUnits: attackers,
+        HumanDefender: defender,
     }, nil
 }
 
@@ -156,6 +163,8 @@ func (description *CombatDescription) String() string {
         log.Printf("Error with json: %v", err)
         return fmt.Sprintf("Error: %v", err)
     }
+
+    out["human_defender"] = description.HumanDefender
 
     return string(jsonString)
 }
@@ -211,6 +220,9 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
         Cache: cache,
         LastCombatScreen: ebiten.NewImage(data.ScreenWidth, data.ScreenHeight),
         UIUpdates: make(chan func(), 10000),
+        CombatDescription: CombatDescription{
+            HumanDefender: true,
+        },
     }
 
     engine.UI = engine.MakeUI()
@@ -405,8 +417,15 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
         humanPlayer.KnownSpells.AddSpell(spell)
     }
 
+    defendingPlayer := cpuPlayer
+    attackingPlayer := humanPlayer
+    if combatDescription.HumanDefender {
+        defendingPlayer = humanPlayer
+        attackingPlayer = cpuPlayer
+    }
+
     defendingArmy := combat.Army{
-        Player: cpuPlayer,
+        Player: defendingPlayer,
     }
 
     makeHero := func (unit *units.OverworldUnit) *herolib.Hero {
@@ -437,7 +456,7 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     attackingArmy := combat.Army{
-        Player: humanPlayer,
+        Player: attackingPlayer,
     }
 
     for _, unit := range combatDescription.AttackerUnits {
