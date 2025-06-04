@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/diplomacy"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -35,6 +36,13 @@ func NewEngine() (*Engine, error) {
 
     player.Gold = 234
     player.Mana = 981
+
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        return nil, err
+    }
+
+    player.KnownSpells.AddAllSpells(allSpells.GetSpellsByMagic(data.LifeMagic))
 
     player.Wizard.ToggleRetort(data.RetortAlchemy, 2)
 

@@ -5,7 +5,7 @@ import (
     "fmt"
     "image"
     "image/color"
-    // "math/rand/v2"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -242,7 +243,20 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
 
         talk.SetTitle("What spell do you wish to exchange?")
 
-        talk.AddItem("Give spell Resist Elements", true, func(){})
+        var choices spellbook.Spells
+        for _, spell := range player.KnownSpells.Spells {
+            if !enemy.KnownSpells.Contains(spell) {
+                choices.AddSpell(spell)
+            }
+        }
+
+        for i, index := range rand.Perm(len(choices.Spells)) {
+            talk.AddItem(fmt.Sprintf("Give spell %v", choices.Spells[index].Name), true, func(){})
+            if i >= 4 {
+                break
+            }
+        }
+
         talk.AddItem("Back", true, talkMain)
     }
 
