@@ -894,7 +894,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         return widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff})),
-            widget.ButtonOpts.TextAndImage(race.String(), face, &widget.ButtonImageImage{Idle: rescaled, Disabled: raceImage}, &widget.ButtonTextColor{
+            widget.ButtonOpts.TextAndImage(race.String(), face, &widget.GraphicImage{Idle: rescaled, Disabled: raceImage}, &widget.ButtonTextColor{
                 Idle: color.White,
                 Hover: color.White,
                 Pressed: color.White,
@@ -908,7 +908,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     for _, race := range allRaces {
         clickTimer := make(map[string]uint64)
 
-        unitGraphic := widget.NewGraphic()
+        var graphicOptions widget.GraphicOptions
+        unitGraphic := widget.NewGraphic(graphicOptions.Image(ebiten.NewImage(60, 30)))
 
         updateGraphic := func (unit units.Unit) {
             unitImage, err := imageCache.GetImageTransform(unit.CombatLbxFile, unit.CombatIndex + 2, 0, "race-enlarge", enlargeTransform(4))
@@ -1353,7 +1354,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x2d, G: 0xbf, B: 0x5a, A: 0xff})),
-            widget.ButtonOpts.TextAndImage("Enter Combat!", face, &widget.ButtonImageImage{Idle: combatPicture, Disabled: combatPicture}, &widget.ButtonTextColor{
+            widget.ButtonOpts.TextAndImage("Enter Combat!", face, &widget.GraphicImage{Idle: combatPicture, Disabled: combatPicture}, &widget.ButtonTextColor{
                 Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                 Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
                 Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
@@ -1383,7 +1384,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xc9, G: 0x25, B: 0xcd, A: 0xff})),
-            widget.ButtonOpts.TextAndImage("Random Combat!", face, &widget.ButtonImageImage{Idle: randomCombatPicture, Disabled: randomCombatPicture}, &widget.ButtonTextColor{
+            widget.ButtonOpts.TextAndImage("Random Combat!", face, &widget.GraphicImage{Idle: randomCombatPicture, Disabled: randomCombatPicture}, &widget.ButtonTextColor{
                 Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                 Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
                 Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
@@ -1408,7 +1409,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x29, G: 0x9d, B: 0x39, A: 0xff})),
-            widget.ButtonOpts.TextAndImage("Save Configuration", face, &widget.ButtonImageImage{Idle: savePicture, Disabled: savePicture}, &widget.ButtonTextColor{
+            widget.ButtonOpts.TextAndImage("Save Configuration", face, &widget.GraphicImage{Idle: savePicture, Disabled: savePicture}, &widget.ButtonTextColor{
                 Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                 Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
                 Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
@@ -1450,7 +1451,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x29, G: 0x9d, B: 0x7a, A: 0xff})),
-            widget.ButtonOpts.TextAndImage("Load Configuration", face, &widget.ButtonImageImage{Idle: loadPicture, Disabled: loadPicture}, &widget.ButtonTextColor{
+            widget.ButtonOpts.TextAndImage("Load Configuration", face, &widget.GraphicImage{Idle: loadPicture, Disabled: loadPicture}, &widget.ButtonTextColor{
                 Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
                 Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
                 Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
