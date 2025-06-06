@@ -210,6 +210,7 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
     }
 
     var talkMain func()
+    var talkTributeSpells func()
 
     clickedOnce := false
 
@@ -276,12 +277,18 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         })
     }
 
+    talkTributeSpells = func(){
+        doTalk = true
+        talk.Clear()
+        talk.SetTitle("What spell do you offer as tribute?")
+    }
+
     talkTribute = func(){
         doTalk = true
         talk.Clear()
         talk.SetTitle("What do you offer as tribute?")
         talk.AddItem("25 gold", true, func(){})
-        talk.AddItem("Spells", true, func(){})
+        talk.AddItem("Spells", true, talkTributeSpells)
         talk.AddItem("Forget It", true, talkMain)
     }
 
