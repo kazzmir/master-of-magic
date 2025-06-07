@@ -310,6 +310,8 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         doTalk = true
         talk.Clear()
         talk.SetTitle(fmt.Sprintf("I thank you, glorius %v, for your tribute.", player.Wizard.Name))
+        enemy.AdjustDiplomaticRelation(player, 5)
+        player.AdjustDiplomaticRelation(enemy, 5)
         ui.AddDelay(140, talkMain)
     }
 
