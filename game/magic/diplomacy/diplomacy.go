@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/music"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -113,6 +114,28 @@ func (talk *Talk) AddItem(item string, available bool, action func()){
 
     talk.Elements = append(talk.Elements, newElement)
     talk.UI.AddElement(newElement)
+}
+
+func GetSong(enemy *playerlib.Player) music.Song {
+    // FIXME: when to return the Mad versions?
+    switch enemy.Wizard.Base {
+        case data.WizardMerlin: return music.SongMerlin
+        case data.WizardRaven: return music.SongRaven
+        case data.WizardSharee: return music.SongSharee
+        case data.WizardLoPan: return music.SongLoPan
+        case data.WizardJafar: return music.SongJafar
+        case data.WizardOberic: return music.SongOberic
+        case data.WizardRjak: return music.SongRjak
+        case data.WizardSssra: return music.SongSssra
+        case data.WizardTauron: return music.SongTauron
+        case data.WizardFreya: return music.SongFreya
+        case data.WizardHorus: return music.SongHorus
+        case data.WizardAriel: return music.SongAriel
+        case data.WizardTlaloc: return music.SongTlaloc
+        case data.WizardKali: return music.SongKali
+    }
+
+    return music.SongNone
 }
 
 /* player is talking to enemy
