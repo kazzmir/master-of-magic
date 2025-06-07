@@ -307,13 +307,25 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         talk.AddItem("Forget It", true, talkMain)
     }
 
+    talkTreaty := func(){
+        doTalk = true
+        talk.Clear()
+        talk.SetTitle("You propopse a treaty:")
+        talk.AddItem("Wizard Pact", true, func(){})
+        talk.AddItem("Alliance", true, func(){})
+        talk.AddItem("Peace Treaty", true, func(){})
+        talk.AddItem("Declaration of War on Another Wizard", true, func(){})
+        talk.AddItem("Break Alliance With Another Wizard", true, func(){})
+        talk.AddItem("Forget It", true, talkMain)
+    }
+
     talkMain = func(){
         doTalk = true
         talk.Clear()
 
         talk.SetTitle("How may I serve you:")
 
-        talk.AddItem("Propose Treaty", true, func(){})
+        talk.AddItem("Propose Treaty", true, talkTreaty)
         talk.AddItem("Threaten/Break Treaty", false, func(){})
         talk.AddItem("Offer Tribute", true, talkTribute)
         talk.AddItem("Exchange spells", willTrade, talkSpells)
