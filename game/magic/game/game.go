@@ -1103,7 +1103,7 @@ func (game *Game) doDiplomacy(yield coroutine.YieldFunc, player *playerlib.Playe
         draw(screen)
     }
 
-    game.Music.PushSong(diplomacy.GetSong(enemy))
+    game.Music.PushSong(diplomacy.GetSong(player, enemy))
     defer game.Music.PopSong()
 
     logic(yield)

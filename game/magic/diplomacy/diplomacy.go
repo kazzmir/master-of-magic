@@ -116,23 +116,83 @@ func (talk *Talk) AddItem(item string, available bool, action func()){
     talk.UI.AddElement(newElement)
 }
 
-func GetSong(enemy *playerlib.Player) music.Song {
-    // FIXME: when to return the Mad versions?
+func GetSong(player *playerlib.Player, enemy *playerlib.Player) music.Song {
+    mad := false
+    relationship, ok := enemy.GetDiplomaticRelation(player)
+    if ok && (relationship.Treaty == data.TreatyWar || relationship.VisibleRelation < -50) {
+        mad = true
+    }
     switch enemy.Wizard.Base {
-        case data.WizardMerlin: return music.SongMerlin
-        case data.WizardRaven: return music.SongRaven
-        case data.WizardSharee: return music.SongSharee
-        case data.WizardLoPan: return music.SongLoPan
-        case data.WizardJafar: return music.SongJafar
-        case data.WizardOberic: return music.SongOberic
-        case data.WizardRjak: return music.SongRjak
-        case data.WizardSssra: return music.SongSssra
-        case data.WizardTauron: return music.SongTauron
-        case data.WizardFreya: return music.SongFreya
-        case data.WizardHorus: return music.SongHorus
-        case data.WizardAriel: return music.SongAriel
-        case data.WizardTlaloc: return music.SongTlaloc
-        case data.WizardKali: return music.SongKali
+        case data.WizardMerlin:
+            if mad {
+                return music.SongMerlinMad
+            }
+            return music.SongMerlin
+        case data.WizardRaven:
+            if mad {
+                return music.SongRavenMad
+            }
+            return music.SongRaven
+        case data.WizardSharee:
+            if mad {
+                return music.SongShareeMad
+            }
+            return music.SongSharee
+        case data.WizardLoPan:
+            if mad {
+                return music.SongLoPanMad
+            }
+            return music.SongLoPan
+        case data.WizardJafar:
+            if mad {
+                return music.SongJafarMad
+            }
+            return music.SongJafar
+        case data.WizardOberic:
+            if mad {
+                return music.SongObericMad
+            }
+            return music.SongOberic
+        case data.WizardRjak:
+            if mad {
+                return music.SongRjakMad
+            }
+            return music.SongRjak
+        case data.WizardSssra:
+            if mad {
+                return music.SongSssraMad
+            }
+            return music.SongSssra
+        case data.WizardTauron:
+            if mad {
+                return music.SongTauronMad
+            }
+            return music.SongTauron
+        case data.WizardFreya:
+            if mad {
+                return music.SongFreyaMad
+            }
+            return music.SongFreya
+        case data.WizardHorus:
+            if mad {
+                return music.SongHorusMad
+            }
+            return music.SongHorus
+        case data.WizardAriel:
+            if mad {
+                return music.SongArielMad
+            }
+            return music.SongAriel
+        case data.WizardTlaloc:
+            if mad {
+                return music.SongTlalocMad
+            }
+            return music.SongTlaloc
+        case data.WizardKali:
+            if mad {
+                return music.SongKaliMad
+            }
+            return music.SongKali
     }
 
     return music.SongNone
