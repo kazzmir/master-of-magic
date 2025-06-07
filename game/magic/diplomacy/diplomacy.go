@@ -238,6 +238,35 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
 
     var talkTribute func()
 
+    makeTalkTradeSpell := func(spell spellbook.Spell) func(){
+
+        var choices spellbook.Spells
+        for _, spell := range enemy.KnownSpells.Spells {
+            if !player.KnownSpells.Contains(spell) {
+                choices.AddSpell(spell)
+            }
+        }
+
+        if len(choices.Spells) == 0 {
+            return talkMain
+        }
+
+        choice := rand.N(len(choices.Spells))
+
+        return func(){
+            doTalk = true
+            talk.Clear()
+            talk.SetTitle(fmt.Sprintf("I will trade you %v", choices.Spells[choice].Name))
+            talk.AddItem("Yes", true, func(){
+                player.KnownSpells.AddSpell(choices.Spells[choice])
+                enemy.KnownSpells.AddSpell(spell)
+
+                talkMain()
+            })
+            talk.AddItem("Forget It", true, talkMain)
+        }
+    }
+
     talkSpells := func(){
         doTalk = true
         talk.Clear()
@@ -252,13 +281,13 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         }
 
         for i, index := range rand.Perm(len(choices.Spells)) {
-            talk.AddItem(fmt.Sprintf("Give spell %v", choices.Spells[index].Name), true, func(){})
+            talk.AddItem(choices.Spells[index].Name, true, makeTalkTradeSpell(choices.Spells[index]))
             if i >= 4 {
                 break
             }
         }
 
-        talk.AddItem("Back", true, talkMain)
+        talk.AddItem("Forget It", true, talkMain)
     }
 
     talkMain = func(){

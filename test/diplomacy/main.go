@@ -56,6 +56,8 @@ func NewEngine() (*Engine, error) {
         },
     }
 
+    enemy1.KnownSpells.AddAllSpells(allSpells.GetSpellsByMagic(data.NatureMagic))
+
     logic, draw := diplomacy.ShowDiplomacyScreen(cache, player, enemy1)
 
     run := func(yield coroutine.YieldFunc) error {
