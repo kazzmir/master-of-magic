@@ -23,6 +23,10 @@ type Engine struct {
     ImageCache util.ImageCache
 }
 
+type NoDiplomacy struct{}
+func (no *NoDiplomacy) EnterDiplomacy(player *playerlib.Player, enemy *playerlib.Player) {
+}
+
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -79,7 +83,7 @@ func NewEngine() (*Engine, error) {
 
     enemy4.Defeated = true
 
-    magicScreen := magicview.MakeMagicScreen(cache, player, []*playerlib.Player{enemy1, enemy2, enemy3, enemy4}, 100)
+    magicScreen := magicview.MakeMagicScreen(cache, player, []*playerlib.Player{enemy1, enemy2, enemy3, enemy4}, 100, &NoDiplomacy{})
 
     return &Engine{
         LbxCache: cache,

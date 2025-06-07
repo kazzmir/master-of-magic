@@ -44,7 +44,11 @@ type MagicScreen struct {
     SkillLocked bool
 }
 
-func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, enemies []*playerlib.Player, power int) *MagicScreen {
+type DiplomacyAction interface {
+    EnterDiplomacy(*playerlib.Player, *playerlib.Player)
+}
+
+func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, enemies []*playerlib.Player, power int, diplomacyAction DiplomacyAction) *MagicScreen {
     magic := &MagicScreen{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
@@ -57,7 +61,7 @@ func MakeMagicScreen(cache *lbx.LbxCache, player *playerlib.Player, enemies []*p
         SkillLocked: false,
     }
 
-    magic.UI = magic.MakeUI(player, enemies)
+    magic.UI = magic.MakeUI(player, enemies, diplomacyAction)
 
     return magic
 }
@@ -338,7 +342,7 @@ func randomizeBookOrder(books int) []int {
     return order
 }
 
-func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.Player) *uilib.UI {
+func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.Player, diplomacyAction DiplomacyAction) *uilib.UI {
     knownPlayers := player.GetKnownPlayers()
 
     fonts := fontslib.MakeMagicViewFonts(magic.Cache)
@@ -426,6 +430,10 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
                 // show diplomatic dialogue screen
+                if i < len(knownPlayers) && !knownPlayers[i].Defeated {
+                    diplomacyAction.EnterDiplomacy(player, knownPlayers[i])
+                    magic.State = MagicScreenStateDone
+                }
             },
             RightClick: func(element *uilib.UIElement){
                 // show mirror ui with extra enemy info: relations, treaties, personality, objective

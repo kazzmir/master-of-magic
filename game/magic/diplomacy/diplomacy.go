@@ -493,8 +493,15 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
 
         ui.Draw(ui, screen)
 
-        if quit && fadeOut > 0 {
-            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: uint8(255 * fadeOut)}, false)
+        if quit {
+            alpha := 255 * fadeOut
+            if alpha < 0 {
+                alpha = 0
+            }
+            if alpha > 255 {
+                alpha = 255
+            }
+            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: uint8(alpha)}, false)
         }
 
         /*
