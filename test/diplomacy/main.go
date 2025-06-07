@@ -26,17 +26,17 @@ type Engine struct {
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
-    player := &playerlib.Player{
-        CastingSkillPower: 28,
-        PowerDistribution: playerlib.PowerDistribution{
-            Mana: 1.0/3,
-            Research: 1.0/3,
-            Skill: 1.0/3,
+    player := playerlib.MakePlayer(
+        setup.WizardCustom{
+            Name: "Gandalf",
         },
-    }
+        true, 1, 1, make(map[herolib.HeroType]string),
+        &playerlib.NoGlobalEnchantments{},
+    )
 
     player.Gold = 234
     player.Mana = 981
+    player.CastingSkillPower = 28
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
     if err != nil {
@@ -45,7 +45,6 @@ func NewEngine() (*Engine, error) {
 
     player.KnownSpells.AddAllSpells(allSpells.GetSpellsByMagic(data.LifeMagic))
 
-    player.Wizard.Name = "Gandalf"
     player.Wizard.ToggleRetort(data.RetortAlchemy, 2)
 
     enemy1 := playerlib.MakePlayer(
@@ -61,7 +60,7 @@ func NewEngine() (*Engine, error) {
     enemy1.KnownSpells.AddAllSpells(allSpells.GetSpellsByMagic(data.NatureMagic))
     enemy1.AwarePlayer(player)
 
-    logic, draw := diplomacy.ShowDiplomacyScreen(cache, player, enemy1)
+    logic, draw := diplomacy.ShowDiplomacyScreen(cache, player, enemy1, 1458)
 
     run := func(yield coroutine.YieldFunc) error {
         logic(yield)

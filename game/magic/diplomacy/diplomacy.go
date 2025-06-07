@@ -117,7 +117,7 @@ func (talk *Talk) AddItem(item string, available bool, action func()){
 
 /* player is talking to enemy
  */
-func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *playerlib.Player) (func (coroutine.YieldFunc), func (*ebiten.Image)) {
+func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *playerlib.Player, gameYear int) (func (coroutine.YieldFunc), func (*ebiten.Image)) {
 
     imageCache := util.MakeImageCache(cache)
 
@@ -307,13 +307,47 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         talk.AddItem("Forget It", true, talkMain)
     }
 
+    talkEnterPact := func(){
+        doTalk = true
+        talk.Clear()
+        talk.SetTitle(fmt.Sprintf("Let it be known that in the year %v, %v and I have entered into a wizard pact.", gameYear, player.Wizard.Name))
+        ui.AddDelay(140, talkMain)
+    }
+
+    talkEnterAlliance := func(){
+        doTalk = true
+        talk.Clear()
+        talk.SetTitle(fmt.Sprintf("Let it be known that in the year %v, %v and I have entered into an alliance.", gameYear, player.Wizard.Name))
+        ui.AddDelay(140, talkMain)
+    }
+
+    talkEnterPeaceTreaty := func(){
+        doTalk = true
+        talk.Clear()
+        talk.SetTitle(fmt.Sprintf("Let it be known that in the year %v, %v and I have entered into a peace treaty.", gameYear, player.Wizard.Name))
+        ui.AddDelay(140, talkMain)
+    }
+
     talkTreaty := func(){
         doTalk = true
         talk.Clear()
         talk.SetTitle("You propopse a treaty:")
-        talk.AddItem("Wizard Pact", true, func(){})
-        talk.AddItem("Alliance", true, func(){})
-        talk.AddItem("Peace Treaty", true, func(){})
+        talk.AddItem("Wizard Pact", true, func(){
+            enemy.PactWithPlayer(player)
+            player.PactWithPlayer(enemy)
+            talkEnterPact()
+        })
+        talk.AddItem("Alliance", true, func(){
+            enemy.AllianceWithPlayer(player)
+            player.AllianceWithPlayer(enemy)
+            talkEnterAlliance()
+        })
+        talk.AddItem("Peace Treaty", true, func(){
+            if hasRelationship {
+                relationship.PeaceCounter = 50
+                talkEnterPeaceTreaty()
+            }
+        })
         talk.AddItem("Declaration of War on Another Wizard", true, func(){})
         talk.AddItem("Break Alliance With Another Wizard", true, func(){})
         talk.AddItem("Forget It", true, talkMain)
