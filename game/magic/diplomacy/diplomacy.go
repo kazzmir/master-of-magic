@@ -181,6 +181,8 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         case data.WizardKali: animationIndex = 13
     }
 
+    relationship, hasRelationship := enemy.GetDiplomaticRelation(player)
+
     // the fade in animation
     images, _ := imageCache.GetImages("diplomac.lbx", 38 + animationIndex)
     wizardAnimation := util.MakeAnimation(images, false)
@@ -238,6 +240,18 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
 
     var talkTribute func()
 
+    willTrade := false
+
+    updateWillTrade := func() {
+        if hasRelationship && rand.N(100) < relationship.TradeInterest {
+            willTrade = true
+        } else {
+            willTrade = false
+        }
+    }
+
+    updateWillTrade()
+
     makeTalkTradeSpell := func(spell spellbook.Spell) func(){
 
         var choices spellbook.Spells
@@ -260,6 +274,9 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
             talk.AddItem("Yes", true, func(){
                 player.KnownSpells.AddSpell(choices.Spells[choice])
                 enemy.KnownSpells.AddSpell(spell)
+
+                relationship.TradeInterest = max(-100, relationship.TradeInterest - 20)
+                updateWillTrade()
 
                 talkMain()
             })
@@ -299,8 +316,7 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         talk.AddItem("Propose Treaty", true, func(){})
         talk.AddItem("Threaten/Break Treaty", false, func(){})
         talk.AddItem("Offer Tribute", true, talkTribute)
-        talk.AddItem("Exchange spells", true, talkSpells)
-
+        talk.AddItem("Exchange spells", willTrade, talkSpells)
         talk.AddItem("Good Bye", true, func(){
             quit = true
         })

@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/diplomacy"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -47,16 +48,18 @@ func NewEngine() (*Engine, error) {
     player.Wizard.Name = "Gandalf"
     player.Wizard.ToggleRetort(data.RetortAlchemy, 2)
 
-    enemy1 := &playerlib.Player{
-        Human: false,
-        Wizard: setup.WizardCustom{
+    enemy1 := playerlib.MakePlayer(
+        setup.WizardCustom{
             Base: data.WizardTauron,
             Name: "Merlin",
             Banner: data.BannerPurple,
         },
-    }
+        false, 1, 1, make(map[herolib.HeroType]string),
+        &playerlib.NoGlobalEnchantments{},
+    )
 
     enemy1.KnownSpells.AddAllSpells(allSpells.GetSpellsByMagic(data.NatureMagic))
+    enemy1.AwarePlayer(player)
 
     logic, draw := diplomacy.ShowDiplomacyScreen(cache, player, enemy1)
 
