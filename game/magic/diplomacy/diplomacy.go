@@ -425,11 +425,20 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         var options ebiten.DrawImageOptions
         scale.DrawScaled(screen, background, &options)
 
+        // choose eye color based on relationship
+        eyes := 10
+        eyeChoice := 5
+        if hasRelationship {
+            eyeChoice = (relationship.VisibleRelation + 100) * eyes / 200
+            if eyeChoice > eyes {
+                eyeChoice = eyes
+            }
+        }
+
         // red left eye
-        leftEye, _ := imageCache.GetImage("diplomac.lbx", 2, 0)
-        // FIXME: what do the other eye colors mean? is it related to the diplomatic relationship level between the wizards?
+        leftEye, _ := imageCache.GetImage("diplomac.lbx", 2 + eyeChoice, 0)
         // red right eye
-        rightEye, _ := imageCache.GetImage("diplomac.lbx", 13, 0)
+        rightEye, _ := imageCache.GetImage("diplomac.lbx", 13 + eyeChoice, 0)
 
         options.GeoM.Translate(63, 58)
         scale.DrawScaled(screen, leftEye, &options)
