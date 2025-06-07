@@ -343,7 +343,14 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         doTalk = true
         talk.Clear()
         talk.SetTitle("What do you offer as tribute?")
-        talk.AddItem("25 gold", true, func(){})
+        gold := int(float64(player.Gold) * 0.1)
+        if gold > 5 {
+            talk.AddItem(fmt.Sprintf("%v gold", gold), true, func(){
+                player.Gold -= gold
+                enemy.Gold += gold
+                talkThanksTribute()
+            })
+        }
         talk.AddItem("Spells", true, talkTributeSpells)
         talk.AddItem("Forget It", true, talkMain)
     }
