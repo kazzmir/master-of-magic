@@ -422,6 +422,8 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
     talk.Clear()
     talk.SetTitle(fmt.Sprintf("Hail, mighty %v. I bear greetings and words of wisdom.", player.Wizard.Name))
 
+    fadeOut := 0.0
+
     var counter uint64
     logic := func (yield coroutine.YieldFunc) {
         animating := true
@@ -450,6 +452,11 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
                 animating = true
             }
 
+            yield()
+        }
+
+        for fadeOut < 1 {
+            fadeOut += 0.07
             yield()
         }
     }
@@ -485,6 +492,10 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         scale.DrawScaled(screen, wizardAnimation.Frame(), &options)
 
         ui.Draw(ui, screen)
+
+        if quit && fadeOut > 0 {
+            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: uint8(255 * fadeOut)}, false)
+        }
 
         /*
         bigFont.Print(screen, 60, 140, 1, ebiten.ColorScale{}, "How may I serve you:")
