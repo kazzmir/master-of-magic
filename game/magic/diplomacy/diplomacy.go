@@ -59,7 +59,7 @@ func (talk *Talk) AddItem(item string, available bool, action func()){
         Action: action,
     })
 
-    posY := 150
+    posY := 145
     for range len(talk.Elements) {
         posY += (talk.Font.Height() + 1)
     }
@@ -277,10 +277,37 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         })
     }
 
+    talkThanksTribute := func(){
+        doTalk = true
+        talk.Clear()
+        talk.SetTitle(fmt.Sprintf("I thank you, glorius %v, for your tribute.", player.Wizard.Name))
+        ui.AddDelay(140, talkMain)
+    }
+
     talkTributeSpells = func(){
         doTalk = true
         talk.Clear()
-        talk.SetTitle("What spell do you offer as tribute?")
+        talk.SetTitle("What do you offer as tribute?")
+
+        var choices spellbook.Spells
+        for _, spell := range player.KnownSpells.Spells {
+            if !enemy.KnownSpells.Contains(spell) {
+                choices.AddSpell(spell)
+            }
+        }
+
+        for i, index := range rand.Perm(len(choices.Spells)) {
+            talk.AddItem(choices.Spells[index].Name, true, func(){
+                log.Printf("Grant spell %v to %v", choices.Spells[index].Name, enemy.Wizard.Name)
+                enemy.KnownSpells.AddSpell(choices.Spells[index])
+                talkThanksTribute()
+            })
+            if i >= 4 {
+                break
+            }
+        }
+
+        talk.AddItem("Forget It", true, talkTribute)
     }
 
     talkTribute = func(){

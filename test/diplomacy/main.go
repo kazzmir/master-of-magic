@@ -44,6 +44,7 @@ func NewEngine() (*Engine, error) {
 
     player.KnownSpells.AddAllSpells(allSpells.GetSpellsByMagic(data.LifeMagic))
 
+    player.Wizard.Name = "Gandalf"
     player.Wizard.ToggleRetort(data.RetortAlchemy, 2)
 
     enemy1 := &playerlib.Player{
