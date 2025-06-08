@@ -5,7 +5,7 @@ import (
     "fmt"
     "image"
     "image/color"
-    // "math/rand/v2"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -13,6 +13,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/music"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -58,7 +60,7 @@ func (talk *Talk) AddItem(item string, available bool, action func()){
         Action: action,
     })
 
-    posY := 150
+    posY := 145
     for range len(talk.Elements) {
         posY += (talk.Font.Height() + 1)
     }
@@ -114,9 +116,91 @@ func (talk *Talk) AddItem(item string, available bool, action func()){
     talk.UI.AddElement(newElement)
 }
 
+func GetSong(player *playerlib.Player, enemy *playerlib.Player) music.Song {
+    mad := false
+    relationship, ok := enemy.GetDiplomaticRelation(player)
+    if ok && (relationship.Treaty == data.TreatyWar || relationship.VisibleRelation < -50) {
+        mad = true
+    }
+    switch enemy.Wizard.Base {
+        case data.WizardMerlin:
+            if mad {
+                return music.SongMerlinMad
+            }
+            return music.SongMerlin
+        case data.WizardRaven:
+            if mad {
+                return music.SongRavenMad
+            }
+            return music.SongRaven
+        case data.WizardSharee:
+            if mad {
+                return music.SongShareeMad
+            }
+            return music.SongSharee
+        case data.WizardLoPan:
+            if mad {
+                return music.SongLoPanMad
+            }
+            return music.SongLoPan
+        case data.WizardJafar:
+            if mad {
+                return music.SongJafarMad
+            }
+            return music.SongJafar
+        case data.WizardOberic:
+            if mad {
+                return music.SongObericMad
+            }
+            return music.SongOberic
+        case data.WizardRjak:
+            if mad {
+                return music.SongRjakMad
+            }
+            return music.SongRjak
+        case data.WizardSssra:
+            if mad {
+                return music.SongSssraMad
+            }
+            return music.SongSssra
+        case data.WizardTauron:
+            if mad {
+                return music.SongTauronMad
+            }
+            return music.SongTauron
+        case data.WizardFreya:
+            if mad {
+                return music.SongFreyaMad
+            }
+            return music.SongFreya
+        case data.WizardHorus:
+            if mad {
+                return music.SongHorusMad
+            }
+            return music.SongHorus
+        case data.WizardAriel:
+            if mad {
+                return music.SongArielMad
+            }
+            return music.SongAriel
+        case data.WizardTlaloc:
+            if mad {
+                return music.SongTlalocMad
+            }
+            return music.SongTlaloc
+        case data.WizardKali:
+            if mad {
+                return music.SongKaliMad
+            }
+            return music.SongKali
+    }
+
+    return music.SongNone
+}
+
 /* player is talking to enemy
  */
-func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *playerlib.Player) (func (coroutine.YieldFunc), func (*ebiten.Image)) {
+func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *playerlib.Player, gameYear int) (func (coroutine.YieldFunc), func (*ebiten.Image)) {
 
     imageCache := util.MakeImageCache(cache)
 
@@ -180,6 +264,8 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         case data.WizardKali: animationIndex = 13
     }
 
+    relationship, hasRelationship := enemy.GetDiplomaticRelation(player)
+
     // the fade in animation
     images, _ := imageCache.GetImages("diplomac.lbx", 38 + animationIndex)
     wizardAnimation := util.MakeAnimation(images, false)
@@ -209,6 +295,7 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
     }
 
     var talkMain func()
+    var talkTributeSpells func()
 
     clickedOnce := false
 
@@ -236,14 +323,117 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
 
     var talkTribute func()
 
+    willTrade := false
+
+    updateWillTrade := func() {
+        if hasRelationship && rand.N(100) < relationship.TradeInterest {
+            willTrade = true
+        } else {
+            willTrade = false
+        }
+    }
+
+    updateWillTrade()
+
+    makeTalkTradeSpell := func(spell spellbook.Spell) func(){
+
+        var choices spellbook.Spells
+        for _, spell := range enemy.KnownSpells.Spells {
+            if !player.KnownSpells.Contains(spell) {
+                choices.AddSpell(spell)
+            }
+        }
+
+        if len(choices.Spells) == 0 {
+            return talkMain
+        }
+
+        choice := rand.N(len(choices.Spells))
+
+        return func(){
+            doTalk = true
+            talk.Clear()
+            talk.SetTitle(fmt.Sprintf("I will trade you %v", choices.Spells[choice].Name))
+            talk.AddItem("Yes", true, func(){
+                player.KnownSpells.AddSpell(choices.Spells[choice])
+                enemy.KnownSpells.AddSpell(spell)
+
+                relationship.TradeInterest = max(-100, relationship.TradeInterest - 20)
+                updateWillTrade()
+
+                talkMain()
+            })
+            talk.AddItem("Forget It", true, talkMain)
+        }
+    }
+
     talkSpells := func(){
         doTalk = true
         talk.Clear()
 
         talk.SetTitle("What spell do you wish to exchange?")
 
-        talk.AddItem("Give spell Resist Elements", true, func(){})
-        talk.AddItem("Back", true, talkMain)
+        var choices spellbook.Spells
+        for _, spell := range player.KnownSpells.Spells {
+            if !enemy.KnownSpells.Contains(spell) {
+                choices.AddSpell(spell)
+            }
+        }
+
+        for i, index := range rand.Perm(len(choices.Spells)) {
+            talk.AddItem(choices.Spells[index].Name, true, makeTalkTradeSpell(choices.Spells[index]))
+            if i >= 4 {
+                break
+            }
+        }
+
+        talk.AddItem("Forget It", true, talkMain)
+    }
+
+    talkEnterPact := func(){
+        doTalk = true
+        talk.Clear()
+        talk.SetTitle(fmt.Sprintf("Let it be known that in the year %v, %v and I have entered into a wizard pact.", gameYear, player.Wizard.Name))
+        ui.AddDelay(140, talkMain)
+    }
+
+    talkEnterAlliance := func(){
+        doTalk = true
+        talk.Clear()
+        talk.SetTitle(fmt.Sprintf("Let it be known that in the year %v, %v and I have entered into an alliance.", gameYear, player.Wizard.Name))
+        ui.AddDelay(140, talkMain)
+    }
+
+    talkEnterPeaceTreaty := func(){
+        doTalk = true
+        talk.Clear()
+        talk.SetTitle(fmt.Sprintf("Let it be known that in the year %v, %v and I have entered into a peace treaty.", gameYear, player.Wizard.Name))
+        ui.AddDelay(140, talkMain)
+    }
+
+    talkTreaty := func(){
+        doTalk = true
+        talk.Clear()
+        talk.SetTitle("You propopse a treaty:")
+        talk.AddItem("Wizard Pact", true, func(){
+            enemy.PactWithPlayer(player)
+            player.PactWithPlayer(enemy)
+            talkEnterPact()
+        })
+        talk.AddItem("Alliance", true, func(){
+            enemy.AllianceWithPlayer(player)
+            player.AllianceWithPlayer(enemy)
+            talkEnterAlliance()
+        })
+        talk.AddItem("Peace Treaty", true, func(){
+            if hasRelationship {
+                relationship.PeaceCounter = 50
+                talkEnterPeaceTreaty()
+            }
+        })
+        talk.AddItem("Declaration of War on Another Wizard", true, func(){})
+        talk.AddItem("Break Alliance With Another Wizard", true, func(){})
+        talk.AddItem("Forget It", true, talkMain)
     }
 
     talkMain = func(){
@@ -252,27 +442,70 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
 
         talk.SetTitle("How may I serve you:")
 
-        talk.AddItem("Propose Treaty", true, func(){})
+        talk.AddItem("Propose Treaty", true, talkTreaty)
         talk.AddItem("Threaten/Break Treaty", false, func(){})
         talk.AddItem("Offer Tribute", true, talkTribute)
-        talk.AddItem("Exchange spells", true, talkSpells)
-
+        talk.AddItem("Exchange spells", willTrade, talkSpells)
         talk.AddItem("Good Bye", true, func(){
             quit = true
         })
+    }
+
+    talkThanksTribute := func(){
+        doTalk = true
+        talk.Clear()
+        talk.SetTitle(fmt.Sprintf("I thank you, glorius %v, for your tribute.", player.Wizard.Name))
+        enemy.AdjustDiplomaticRelation(player, 5)
+        player.AdjustDiplomaticRelation(enemy, 5)
+        ui.AddDelay(140, talkMain)
+    }
+
+    talkTributeSpells = func(){
+        doTalk = true
+        talk.Clear()
+        talk.SetTitle("What do you offer as tribute?")
+
+        var choices spellbook.Spells
+        for _, spell := range player.KnownSpells.Spells {
+            if !enemy.KnownSpells.Contains(spell) {
+                choices.AddSpell(spell)
+            }
+        }
+
+        for i, index := range rand.Perm(len(choices.Spells)) {
+            talk.AddItem(choices.Spells[index].Name, true, func(){
+                log.Printf("Grant spell %v to %v", choices.Spells[index].Name, enemy.Wizard.Name)
+                enemy.KnownSpells.AddSpell(choices.Spells[index])
+                talkThanksTribute()
+            })
+            if i >= 4 {
+                break
+            }
+        }
+
+        talk.AddItem("Forget It", true, talkTribute)
     }
 
     talkTribute = func(){
         doTalk = true
         talk.Clear()
         talk.SetTitle("What do you offer as tribute?")
-        talk.AddItem("25 gold", true, func(){})
-        talk.AddItem("Spells", true, func(){})
+        gold := int(float64(player.Gold) * 0.1)
+        if gold > 5 {
+            talk.AddItem(fmt.Sprintf("%v gold", gold), true, func(){
+                player.Gold -= gold
+                enemy.Gold += gold
+                talkThanksTribute()
+            })
+        }
+        talk.AddItem("Spells", true, talkTributeSpells)
         talk.AddItem("Forget It", true, talkMain)
     }
 
     talk.Clear()
     talk.SetTitle(fmt.Sprintf("Hail, mighty %v. I bear greetings and words of wisdom.", player.Wizard.Name))
+
+    fadeOut := 0.0
 
     var counter uint64
     logic := func (yield coroutine.YieldFunc) {
@@ -304,6 +537,11 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
 
             yield()
         }
+
+        for fadeOut < 1 {
+            fadeOut += 0.07
+            yield()
+        }
     }
 
     draw := func (screen *ebiten.Image) {
@@ -311,11 +549,20 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         var options ebiten.DrawImageOptions
         scale.DrawScaled(screen, background, &options)
 
+        // choose eye color based on relationship
+        eyes := 10
+        eyeChoice := 5
+        if hasRelationship {
+            eyeChoice = (relationship.VisibleRelation + 100) * eyes / 200
+            if eyeChoice > eyes {
+                eyeChoice = eyes
+            }
+        }
+
         // red left eye
-        leftEye, _ := imageCache.GetImage("diplomac.lbx", 2, 0)
-        // FIXME: what do the other eye colors mean? is it related to the diplomatic relationship level between the wizards?
+        leftEye, _ := imageCache.GetImage("diplomac.lbx", 2 + eyeChoice, 0)
         // red right eye
-        rightEye, _ := imageCache.GetImage("diplomac.lbx", 13, 0)
+        rightEye, _ := imageCache.GetImage("diplomac.lbx", 13 + eyeChoice, 0)
 
         options.GeoM.Translate(63, 58)
         scale.DrawScaled(screen, leftEye, &options)
@@ -328,6 +575,17 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
         scale.DrawScaled(screen, wizardAnimation.Frame(), &options)
 
         ui.Draw(ui, screen)
+
+        if quit {
+            alpha := 255 * fadeOut
+            if alpha < 0 {
+                alpha = 0
+            }
+            if alpha > 255 {
+                alpha = 255
+            }
+            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: uint8(alpha)}, false)
+        }
 
         /*
         bigFont.Print(screen, 60, 140, 1, ebiten.ColorScale{}, "How may I serve you:")

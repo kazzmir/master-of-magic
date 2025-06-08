@@ -35,6 +35,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/armyview"
     "github.com/kazzmir/master-of-magic/game/magic/citylistview"
     "github.com/kazzmir/master-of-magic/game/magic/magicview"
+    "github.com/kazzmir/master-of-magic/game/magic/diplomacy"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/summon"
     "github.com/kazzmir/master-of-magic/game/magic/cartographer"
@@ -83,6 +84,11 @@ type GameEvent interface {
 }
 
 type GameEventMagicView struct {
+}
+
+type GameEventDiplomacy struct {
+    Player *playerlib.Player
+    Enemy *playerlib.Player
 }
 
 type GameEventArmyView struct {
@@ -1080,10 +1086,37 @@ func (game *Game) GetEnemyWizards() []*playerlib.Player {
     return out
 }
 
+func (game *Game) EnterDiplomacy(player *playerlib.Player, enemy *playerlib.Player) {
+    game.Events <- &GameEventDiplomacy{
+        Player: player,
+        Enemy: enemy,
+    }
+
+    game.Events <- &GameEventMagicView{}
+}
+
+func (game *Game) doDiplomacy(yield coroutine.YieldFunc, player *playerlib.Player, enemy *playerlib.Player) {
+    logic, draw := diplomacy.ShowDiplomacyScreen(game.Cache, player, enemy, 1400 + int(game.TurnNumber / 12))
+
+    oldDrawer := game.Drawer
+    game.Drawer = func (screen *ebiten.Image, game *Game){
+        draw(screen)
+    }
+
+    game.Music.PushSong(diplomacy.GetSong(player, enemy))
+    defer game.Music.PopSong()
+
+    logic(yield)
+
+    game.Drawer = oldDrawer
+    yield()
+    game.RefreshUI()
+}
+
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
 
     oldDrawer := game.Drawer
-    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Players[0], game.GetEnemies(game.Players[0]), game.ComputePower(game.Players[0]))
+    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Players[0], game.GetEnemies(game.Players[0]), game.ComputePower(game.Players[0]), game)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         magicScreen.Draw(screen)
@@ -2887,6 +2920,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                 switch event.(type) {
                     case *GameEventMagicView:
                         game.doMagicView(yield)
+                    case *GameEventDiplomacy:
+                        diplomacy := event.(*GameEventDiplomacy)
+                        game.doDiplomacy(yield, diplomacy.Player, diplomacy.Enemy)
                     case *GameEventRefreshUI:
                         // compress ui refreshes
                         switch lastEvent.(type) {

@@ -2218,8 +2218,10 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
     enemy.AwarePlayer(enemy2)
     enemy2.AwarePlayer(enemy)
 
-    player.AwarePlayer(enemy2)
-    enemy2.AwarePlayer(player)
+    // player.AwarePlayer(enemy2)
+    // enemy2.AwarePlayer(player)
+    player.WarWithPlayer(enemy2)
+    enemy2.WarWithPlayer(player)
 
     enemy.PactWithPlayer(enemy2)
     enemy2.PactWithPlayer(enemy)

@@ -6,6 +6,7 @@ import (
     "math/rand/v2"
     "image"
     "fmt"
+    "cmp"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -436,7 +437,9 @@ func (player *Player) GetKnownPlayers() []*Player {
         out = append(out, other)
     }
 
-    return out
+    return slices.SortedFunc(slices.Values(out), func(a, b *Player) int {
+        return cmp.Compare(a.Wizard.Base, b.Wizard.Base)
+    })
 }
 
 func (player *Player) GetPowerHistoryForTurn(turn uint64) (WizardPower, bool) {

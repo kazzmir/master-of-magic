@@ -9,6 +9,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/diplomacy"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -24,30 +26,41 @@ type Engine struct {
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
-    player := &playerlib.Player{
-        CastingSkillPower: 28,
-        PowerDistribution: playerlib.PowerDistribution{
-            Mana: 1.0/3,
-            Research: 1.0/3,
-            Skill: 1.0/3,
+    player := playerlib.MakePlayer(
+        setup.WizardCustom{
+            Name: "Gandalf",
         },
-    }
+        true, 1, 1, make(map[herolib.HeroType]string),
+        &playerlib.NoGlobalEnchantments{},
+    )
 
     player.Gold = 234
     player.Mana = 981
+    player.CastingSkillPower = 28
+
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        return nil, err
+    }
+
+    player.KnownSpells.AddAllSpells(allSpells.GetSpellsByMagic(data.LifeMagic))
 
     player.Wizard.ToggleRetort(data.RetortAlchemy, 2)
 
-    enemy1 := &playerlib.Player{
-        Human: false,
-        Wizard: setup.WizardCustom{
+    enemy1 := playerlib.MakePlayer(
+        setup.WizardCustom{
             Base: data.WizardTauron,
             Name: "Merlin",
             Banner: data.BannerPurple,
         },
-    }
+        false, 1, 1, make(map[herolib.HeroType]string),
+        &playerlib.NoGlobalEnchantments{},
+    )
 
-    logic, draw := diplomacy.ShowDiplomacyScreen(cache, player, enemy1)
+    enemy1.KnownSpells.AddAllSpells(allSpells.GetSpellsByMagic(data.NatureMagic))
+    enemy1.AwarePlayer(player)
+
+    logic, draw := diplomacy.ShowDiplomacyScreen(cache, player, enemy1, 1458)
 
     run := func(yield coroutine.YieldFunc) error {
         logic(yield)
