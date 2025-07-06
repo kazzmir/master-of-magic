@@ -168,6 +168,7 @@ type HeroData struct {
     AbilitySet *set.Set[HeroAbility]
     CastingSkill int8
     Spells [4]uint8
+    ExtraByte byte // unknown value
 }
 
 func makeHeroAbilities(abilities uint32) *set.Set[HeroAbility] {
@@ -291,10 +292,12 @@ func loadHeroData(reader io.Reader) (HeroData, error) {
         }
     }
 
-    _, err = lbx.ReadByte(reader) // skip 1 byte
+    // not sure what this is, but the original game puts some data here
+    extraByte, err := lbx.ReadByte(reader)
     if err != nil {
         return HeroData{}, err
     }
+    heroData.ExtraByte = extraByte
 
     return heroData, nil
 }

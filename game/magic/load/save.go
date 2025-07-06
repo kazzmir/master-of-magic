@@ -34,7 +34,7 @@ func writeHeroData(writer io.Writer, heroData *HeroData) error {
         }
     }
 
-    err = writeN[uint8](writer, 0) // empty byte
+    err = writeN[uint8](writer, heroData.ExtraByte)
     if err != nil {
         return err
     }

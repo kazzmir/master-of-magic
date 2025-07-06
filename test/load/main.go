@@ -125,13 +125,26 @@ func compareSaveFile(path string) error {
     inputReader := bufio.NewReader(reader2)
     io.Copy(&inputBytes, inputReader)
 
+    maxLength := min(outputBytes.Len(), inputBytes.Len())
+
+    // log.Printf("Output: %v", outputBytes.Bytes()[:50])
+    // log.Printf("Input:  %v", inputBytes.Bytes()[:50])
+
+    for i := range maxLength {
+        if outputBytes.Bytes()[i] != inputBytes.Bytes()[i] {
+            return fmt.Errorf("save file content mismatch at byte %d: actual %d vs input %d", i, outputBytes.Bytes()[i], inputBytes.Bytes()[i])
+        }
+    }
+
     if outputBytes.Len() != inputBytes.Len() {
         return fmt.Errorf("save file size mismatch: %d vs %d", outputBytes.Len(), inputBytes.Len())
     }
 
+    /*
     if !bytes.Equal(outputBytes.Bytes(), inputBytes.Bytes()) {
         return fmt.Errorf("save file content mismatch")
     }
+    */
 
     return nil
 }
