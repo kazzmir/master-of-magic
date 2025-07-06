@@ -45,6 +45,7 @@ func writeHeroData(writer io.Writer, heroData *HeroData) error {
 // write the save game object to the given writer
 func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
     writer := bufio.NewWriter(writer1)
+    defer writer.Flush()
 
     for player := range saveGame.HeroData {
         for hero := range saveGame.HeroData[player] {

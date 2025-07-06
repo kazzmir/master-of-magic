@@ -4,6 +4,10 @@ import (
     "os"
     "fmt"
     "flag"
+    "bytes"
+    "bufio"
+    "io"
+    "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -93,7 +97,48 @@ func NewEngine(saveGame *load.SaveGame, admin bool) (*Engine, error) {
     }, nil
 }
 
+func compareSaveFile(path string) error {
+    reader, err := os.Open(path)
+    if err != nil {
+        return err
+    }
+    defer reader.Close()
+
+    saveGame, err := load.LoadSaveGame(reader)
+    if err != nil {
+        return err
+    }
+
+    reader2, err := os.Open(path)
+    if err != nil {
+        return err
+    }
+    defer reader2.Close()
+
+    var outputBytes bytes.Buffer
+    err = load.WriteSaveGame(saveGame, &outputBytes)
+    if err != nil {
+        return err
+    }
+
+    var inputBytes bytes.Buffer
+    inputReader := bufio.NewReader(reader2)
+    io.Copy(&inputBytes, inputReader)
+
+    if outputBytes.Len() != inputBytes.Len() {
+        return fmt.Errorf("save file size mismatch: %d vs %d", outputBytes.Len(), inputBytes.Len())
+    }
+
+    if !bytes.Equal(outputBytes.Bytes(), inputBytes.Bytes()) {
+        return fmt.Errorf("save file content mismatch")
+    }
+
+    return nil
+}
+
 func main(){
+
+    log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
     var admin bool
 
@@ -112,6 +157,12 @@ func main(){
 
     if len(positionalArgs) < 1 {
         flag.Usage()
+        return
+    }
+
+    err := compareSaveFile(positionalArgs[0])
+    if err != nil {
+        log.Printf("Error comparing save file: %v", err)
         return
     }
 

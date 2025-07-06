@@ -888,7 +888,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    log.Printf("Vault items: %v", out.VaultItems)
+    // log.Printf("Vault items: %v", out.VaultItems)
 
     // log.Printf("Player offset diplomacy: 0x%x", playerReader.BytesRead)
 
