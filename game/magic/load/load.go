@@ -5,6 +5,7 @@ import (
     "log"
     "fmt"
     "bytes"
+    "bufio"
     "errors"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -167,6 +168,7 @@ type HeroData struct {
     AbilitySet *set.Set[HeroAbility]
     CastingSkill int8
     Spells [4]uint8
+    ExtraByte byte // unknown value
 }
 
 func makeHeroAbilities(abilities uint32) *set.Set[HeroAbility] {
@@ -290,10 +292,12 @@ func loadHeroData(reader io.Reader) (HeroData, error) {
         }
     }
 
-    _, err = lbx.ReadByte(reader) // skip 1 byte
+    // not sure what this is, but the original game puts some data here
+    extraByte, err := lbx.ReadByte(reader)
     if err != nil {
         return HeroData{}, err
     }
+    heroData.ExtraByte = extraByte
 
     return heroData, nil
 }
@@ -602,6 +606,9 @@ type PlayerData struct {
     TargetWizard uint16
     PrimaryRealm uint16
     SecondaryRealm uint16
+
+    Unknown1 uint8
+    Unknown2 []uint8
 }
 
 func loadPlayerData(reader io.Reader) (PlayerData, error) {
@@ -639,7 +646,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    _, err = lbx.ReadByte(playerReader) // skip 1 byte
+    out.Unknown1, err = lbx.ReadByte(playerReader) // skip 1 byte
     if err != nil {
         return PlayerData{}, err
     }
@@ -654,7 +661,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    _, err = lbx.ReadArrayN[uint8](playerReader, 6) // skip 6 bytes
+    out.Unknown2, err = lbx.ReadArrayN[uint8](playerReader, 6) // skip 6 bytes
     if err != nil {
         return PlayerData{}, err
     }
@@ -886,6 +893,8 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
     if err != nil {
         return PlayerData{}, err
     }
+
+    // log.Printf("Vault items: %v", out.VaultItems)
 
     // log.Printf("Player offset diplomacy: 0x%x", playerReader.BytesRead)
 
@@ -2129,7 +2138,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
     var err error
     var saveGame SaveGame
 
-    reader := &ReadMonitor{reader: reader1}
+    reader := &ReadMonitor{reader: bufio.NewReader(reader1)}
 
     var heroData [][]HeroData
     for range NumPlayers {
