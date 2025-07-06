@@ -10,6 +10,26 @@ func writeN[T any](writer io.Writer, value T) error {
     return binary.Write(writer, binary.LittleEndian, value)
 }
 
+func writeSlice[T any](writer io.Writer, data []T) error {
+    for i := range data {
+        err := writeN[T](writer, data[i])
+        if err != nil {
+            return err
+        }
+    }
+    /*
+    for len(data) > 0 {
+        n, err := writer.Write(data)
+        if err != nil {
+            return err
+        }
+        data = data[n:]
+    }
+    */
+
+    return nil
+}
+
 func writeHeroData(writer io.Writer, heroData *HeroData) error {
 
     err := writeN[int16](writer, heroData.Level)
@@ -42,6 +62,118 @@ func writeHeroData(writer io.Writer, heroData *HeroData) error {
     return nil
 }
 
+func writePlayerData(writer io.Writer, data *PlayerData) error {
+    err := writeN[uint8](writer, data.WizardId)
+    if err != nil {
+        return err
+    }
+
+    wizardName := make([]byte, 20)
+    copy(wizardName, []byte(data.WizardName)[:min(len(data.WizardName), 20)])
+
+    err = writeSlice(writer, wizardName)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.CapitalRace)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.BannerId)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.Unknown1)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.Personality)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.Objective)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Unknown2)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.MasteryResearch)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.Fame)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.PowerBase)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.Volcanoes)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.ResearchRatio)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.ManaRatio)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.SkillRatio)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.VolcanoPower)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.SummonX)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.SummonY)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.SummonPlane)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.ResearchSpells)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.AverageUnitCost)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 // write the save game object to the given writer
 func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
     writer := bufio.NewWriter(writer1)
@@ -53,6 +185,53 @@ func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
             if err != nil {
                 return err
             }
+        }
+    }
+
+    err := writeN[int16](writer, saveGame.NumPlayers)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, saveGame.LandSize)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, saveGame.Magic)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, saveGame.Difficulty)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, saveGame.NumCities)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, saveGame.NumUnits)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, saveGame.Turn)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, saveGame.Unit)
+    if err != nil {
+        return err
+    }
+
+    for i := range saveGame.PlayerData {
+        err = writePlayerData(writer, &saveGame.PlayerData[i])
+        if err != nil {
+            return err
         }
     }
 

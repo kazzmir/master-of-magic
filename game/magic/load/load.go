@@ -606,6 +606,9 @@ type PlayerData struct {
     TargetWizard uint16
     PrimaryRealm uint16
     SecondaryRealm uint16
+
+    Unknown1 uint8
+    Unknown2 []uint8
 }
 
 func loadPlayerData(reader io.Reader) (PlayerData, error) {
@@ -643,7 +646,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    _, err = lbx.ReadByte(playerReader) // skip 1 byte
+    out.Unknown1, err = lbx.ReadByte(playerReader) // skip 1 byte
     if err != nil {
         return PlayerData{}, err
     }
@@ -658,7 +661,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    _, err = lbx.ReadArrayN[uint8](playerReader, 6) // skip 6 bytes
+    out.Unknown2, err = lbx.ReadArrayN[uint8](playerReader, 6) // skip 6 bytes
     if err != nil {
         return PlayerData{}, err
     }
