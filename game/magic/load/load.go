@@ -5,6 +5,7 @@ import (
     "log"
     "fmt"
     "bytes"
+    "bufio"
     "errors"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -886,6 +887,8 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
     if err != nil {
         return PlayerData{}, err
     }
+
+    log.Printf("Vault items: %v", out.VaultItems)
 
     // log.Printf("Player offset diplomacy: 0x%x", playerReader.BytesRead)
 
@@ -2129,7 +2132,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
     var err error
     var saveGame SaveGame
 
-    reader := &ReadMonitor{reader: reader1}
+    reader := &ReadMonitor{reader: bufio.NewReader(reader1)}
 
     var heroData [][]HeroData
     for range NumPlayers {
