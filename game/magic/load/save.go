@@ -661,6 +661,73 @@ func writeTerrain(writer io.Writer, terrain *TerrainData) error {
     return nil
 }
 
+func writeLandMass(writer io.Writer, landMasses [][]uint8) error {
+    for y := range WorldHeight {
+        for x := range WorldWidth {
+            err := writeN[uint8](writer, landMasses[x][y])
+            if err != nil {
+                return err
+            }
+        }
+    }
+
+    return nil
+}
+
+func writeNode(writer io.Writer, node *NodeData) error {
+    err := writeN[int8](writer, node.X)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, node.Y)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, node.Plane)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, node.Owner)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, node.Power)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, node.AuraX)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, node.AuraY)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, node.NodeType)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, node.Flags)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, node.Unknown1)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 // write the save game object to the given writer
 func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
     writer := bufio.NewWriter(writer1)
@@ -740,6 +807,23 @@ func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
     err = writeSlice(writer, saveGame.UU_table_2)
     if err != nil {
         return err
+    }
+
+    err = writeLandMass(writer, saveGame.ArcanusLandMasses)
+    if err != nil {
+        return err
+    }
+
+    err = writeLandMass(writer, saveGame.MyrrorLandMasses)
+    if err != nil {
+        return err
+    }
+
+    for i := range saveGame.Nodes {
+        err = writeNode(writer, &saveGame.Nodes[i])
+        if err != nil {
+            return err
+        }
     }
 
     return nil
