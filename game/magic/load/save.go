@@ -875,6 +875,85 @@ func writeLair(writer io.Writer, lair *LairData) error {
     return nil
 }
 
+func writeItem(writer io.Writer, data *ItemData) error {
+    err := writeSlice(writer, data.Name)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.IconIndex)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.Slot)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[byte](writer, data.Type)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.Cost)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[byte](writer, data.Attack)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[byte](writer, data.ToHit)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[byte](writer, data.Defense)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[byte](writer, data.Movement)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[byte](writer, data.Resistance)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[byte](writer, data.SpellSkill)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[byte](writer, data.SpellSave)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[byte](writer, data.Spell)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.Charges)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint32](writer, data.Abilities)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 // write the save game object to the given writer
 func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
     writer := bufio.NewWriter(writer1)
@@ -989,6 +1068,13 @@ func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
 
     for i := range saveGame.Lairs {
         err = writeLair(writer, &saveGame.Lairs[i])
+        if err != nil {
+            return err
+        }
+    }
+
+    for i := range saveGame.Items {
+        err = writeItem(writer, &saveGame.Items[i])
         if err != nil {
             return err
         }
