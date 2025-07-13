@@ -583,6 +583,8 @@ type PlayerData struct {
     RetortCharismatic int8
     RetortArtificer int8
 
+    HeroData []PlayerHeroData
+
     VaultItems []int16
     Diplomacy DiplomacyData
 
@@ -888,6 +890,8 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
             return PlayerData{}, err
         }
     }
+
+    out.HeroData = heroData
 
     _, err = lbx.ReadN[int16](playerReader) // skip 2 bytes
 

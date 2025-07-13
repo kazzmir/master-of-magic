@@ -62,6 +62,37 @@ func writeHeroData(writer io.Writer, heroData *HeroData) error {
     return nil
 }
 
+func writePlayerHeroData(writer io.Writer, heroData *PlayerHeroData) error {
+
+    err := writeN[int16](writer, heroData.Unit)
+    if err != nil {
+        return err
+    }
+
+    heroName := make([]byte, 14)
+    copy(heroName, []byte(heroData.Name)[:min(len(heroData.Name), len(heroName))])
+    err = writeSlice(writer, heroName)
+    if err != nil {
+        return err
+    }
+
+    for _, item := range heroData.Items {
+        err = writeN[int16](writer, item)
+        if err != nil {
+            return err
+        }
+    }
+
+    for _, itemSlot := range heroData.ItemSlot {
+        err = writeN[int16](writer, itemSlot)
+        if err != nil {
+            return err
+        }
+    }
+
+    return nil
+}
+
 func writePlayerData(writer io.Writer, data *PlayerData) error {
     err := writeN[uint8](writer, data.WizardId)
     if err != nil {
@@ -200,6 +231,124 @@ func writePlayerData(writer io.Writer, data *PlayerData) error {
     if err != nil {
         return err
     }
+    
+    err = writeN[uint16](writer, data.SkillLeft)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.NominalSkill)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.TaxRate)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.SpellRanks)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortAlchemy)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortWarlord)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortChaosMastery)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortNatureMastery)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortSorceryMastery)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortInfernalPower)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortDivinePower)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortSageMaster)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortChanneler)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortMyrran)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortArchmage)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortManaFocusing)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortNodeMastery)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortFamous)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortRunemaster)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortConjurer)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortCharismatic)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.RetortArtificer)
+    if err != nil {
+        return err
+    }
+
+    for i := range NumPlayerHeroes {
+        err := writePlayerHeroData(writer, &data.HeroData[i])
+        if err != nil {
+            return err
+        }
+    }
+
 
     return nil
 }
