@@ -648,6 +648,19 @@ func writePlayerData(writer io.Writer, data *PlayerData) error {
     return nil
 }
 
+func writeTerrain(writer io.Writer, terrain *TerrainData) error {
+    for y := range WorldHeight {
+        for x := range WorldWidth {
+            err := writeN[uint16](writer, terrain.Data[x][y])
+            if err != nil {
+                return err
+            }
+        }
+    }
+
+    return nil
+}
+
 // write the save game object to the given writer
 func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
     writer := bufio.NewWriter(writer1)
@@ -707,6 +720,26 @@ func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
         if err != nil {
             return err
         }
+    }
+
+    err = writeTerrain(writer, &saveGame.ArcanusMap)
+    if err != nil {
+        return err
+    }
+
+    err = writeTerrain(writer, &saveGame.MyrrorMap)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, saveGame.UU_table_1)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, saveGame.UU_table_2)
+    if err != nil {
+        return err
     }
 
     return nil
