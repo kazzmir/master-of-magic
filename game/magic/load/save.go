@@ -213,6 +213,25 @@ func writeDiplomacy(writer io.Writer, data *DiplomacyData) error {
     return nil
 }
 
+func writeAstrology(writer io.Writer, data *AstrologyData) error {
+    err := writeN[int16](writer, data.MagicPower)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.SpellResearch)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.ArmyStrength)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 func writePlayerData(writer io.Writer, data *PlayerData) error {
     err := writeN[uint8](writer, data.WizardId)
     if err != nil {
@@ -486,6 +505,146 @@ func writePlayerData(writer io.Writer, data *PlayerData) error {
         return err
     }
 
+    err = writeN[uint16](writer, data.ResearchCostRemaining)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.ManaReserve)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int32](writer, data.SpellCastingSkill)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.ResearchingSpellIndex)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.SpellsList)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.DefeatedWizards)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.GoldReserve)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.Unknown6)
+    if err != nil {
+        return err
+    }
+
+    err = writeAstrology(writer, &data.Astrology)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.Population)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Historian)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.GlobalEnchantments)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.MagicStrategy)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.Unknown7)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Hostility)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.ReevaluateHostilityCountdown)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.ReevaluateMagicStrategyCountdown)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.ReevaluateMagicPowerCountdown)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.PeaceDuration)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.Unknown8)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.Unknown9)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.Unknown10)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.TargetWizard)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.Unknown11)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.Unknown12)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Unknown13)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.PrimaryRealm)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.SecondaryRealm)
+    if err != nil {
+        return err
+    }
+
     return nil
 }
 
@@ -547,10 +706,6 @@ func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
         err = writePlayerData(writer, &saveGame.PlayerData[i])
         if err != nil {
             return err
-        }
-
-        if i == 0 {
-            break
         }
     }
 

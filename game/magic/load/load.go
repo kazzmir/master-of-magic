@@ -614,6 +614,14 @@ type PlayerData struct {
     Unknown3 []uint8
     Unknown4 uint16
     Unknown5 int16
+    Unknown6 uint16
+    Unknown7 uint16
+    Unknown8 uint8
+    Unknown9 uint8
+    Unknown10 uint16
+    Unknown11 uint8
+    Unknown12 uint8
+    Unknown13 []uint8
 }
 
 func loadPlayerData(reader io.Reader) (PlayerData, error) {
@@ -945,7 +953,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    unknown1, err := lbx.ReadN[uint16](playerReader)
+    out.Unknown6, err = lbx.ReadN[uint16](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
@@ -977,7 +985,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    unknown2, err := lbx.ReadN[uint16](playerReader)
+    out.Unknown7, err = lbx.ReadN[uint16](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
@@ -1007,17 +1015,17 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    unknown3, err := lbx.ReadN[uint8](playerReader)
+    out.Unknown8, err = lbx.ReadN[uint8](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
 
-    unknown4, err := lbx.ReadN[uint8](playerReader)
+    out.Unknown9, err = lbx.ReadN[uint8](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
 
-    unknown5, err := lbx.ReadN[uint16](playerReader)
+    out.Unknown10, err = lbx.ReadN[uint16](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
@@ -1029,17 +1037,17 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    unknown6, err := lbx.ReadN[uint8](playerReader)
+    out.Unknown11, err = lbx.ReadN[uint8](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
 
-    unknown7, err := lbx.ReadN[uint8](playerReader)
+    out.Unknown12, err = lbx.ReadN[uint8](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
 
-    unknown8, err := lbx.ReadArrayN[uint8](playerReader, 6)
+    out.Unknown13, err = lbx.ReadArrayN[uint8](playerReader, 6)
     if err != nil {
         return PlayerData{}, err
     }
@@ -1053,15 +1061,6 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
     if err != nil {
         return PlayerData{}, err
     }
-
-    _ = unknown1
-    _ = unknown2
-    _ = unknown3
-    _ = unknown4
-    _ = unknown5
-    _ = unknown6
-    _ = unknown7
-    _ = unknown8
 
     return out, nil
 }
