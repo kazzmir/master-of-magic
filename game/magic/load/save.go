@@ -728,6 +728,153 @@ func writeNode(writer io.Writer, node *NodeData) error {
     return nil
 }
 
+func writeFortress(writer io.Writer, fortress *FortressData) error {
+    err := writeN[int8](writer, fortress.X)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, fortress.Y)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, fortress.Plane)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, fortress.Active)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
+func writeTower(writer io.Writer, tower *TowerData) error {
+    err := writeN[int8](writer, tower.X)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, tower.Y)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, tower.Owner)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, tower.Unknown1)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
+func writeLair(writer io.Writer, lair *LairData) error {
+    err := writeN[int8](writer, lair.X)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, lair.Y)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, lair.Plane)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, lair.Intact)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, lair.Kind)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, lair.Guard1_unit_type)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, lair.Guard1_unit_count)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, lair.Guard2_unit_type)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, lair.Guard2_unit_count)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, lair.Unknown1)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, lair.Gold)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, lair.Mana)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, lair.SpellSpecial)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, lair.Flags)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, lair.ItemCount)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, lair.Unknown2)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, lair.Item1)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, lair.Item2)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, lair.Item3)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 // write the save game object to the given writer
 func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
     writer := bufio.NewWriter(writer1)
@@ -821,6 +968,27 @@ func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
 
     for i := range saveGame.Nodes {
         err = writeNode(writer, &saveGame.Nodes[i])
+        if err != nil {
+            return err
+        }
+    }
+
+    for i := range saveGame.Fortresses {
+        err = writeFortress(writer, &saveGame.Fortresses[i])
+        if err != nil {
+            return err
+        }
+    }
+
+    for i := range saveGame.Towers {
+        err = writeTower(writer, &saveGame.Towers[i])
+        if err != nil {
+            return err
+        }
+    }
+
+    for i := range saveGame.Lairs {
+        err = writeLair(writer, &saveGame.Lairs[i])
         if err != nil {
             return err
         }

@@ -1254,6 +1254,7 @@ type TowerData struct {
     X int8
     Y int8
     Owner int8
+    Unknown1 int8
 }
 
 func loadTowers(reader io.Reader) ([]TowerData, error) {
@@ -1284,6 +1285,11 @@ func loadTowers(reader io.Reader) ([]TowerData, error) {
             return nil, err
         }
 
+        data.Unknown1, err = lbx.ReadN[int8](towerReader) // skip 1 byte
+        if err != nil {
+            return nil, err
+        }
+
         // log.Printf("Tower: x=%v y=%v owner=%v", x, y, owner)
         out = append(out, data)
     }
@@ -1309,6 +1315,9 @@ type LairData struct {
     Item1 int16
     Item2 int16
     Item3 int16
+
+    Unknown1 uint8 // 1 byte, unknown
+    Unknown2 uint8 // 1 byte, unknown
 }
 
 func loadLairs(reader io.Reader) ([]LairData, error) {
@@ -1369,8 +1378,7 @@ func loadLairs(reader io.Reader) ([]LairData, error) {
             return nil, err
         }
 
-        // 1 byte of padding
-        _, err = lbx.ReadByte(lairReader)
+        data.Unknown1, err = lbx.ReadByte(lairReader)
         if err != nil {
             return nil, err
         }
@@ -1400,7 +1408,7 @@ func loadLairs(reader io.Reader) ([]LairData, error) {
             return nil, err
         }
 
-        _, err = lbx.ReadByte(lairReader) // skip 1 byte
+        data.Unknown2, err = lbx.ReadByte(lairReader) // skip 1 byte
         if err != nil {
             return nil, err
         }
