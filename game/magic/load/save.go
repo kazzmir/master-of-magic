@@ -954,6 +954,140 @@ func writeItem(writer io.Writer, data *ItemData) error {
     return nil
 }
 
+func writeCity(writer io.Writer, data *CityData) error {
+    err := writeSlice(writer, data.Name)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.Race)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.X)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.Y)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.Plane)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.Owner)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.Size)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.Population)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.Farmers)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.SoldBuilding)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[byte](writer, data.Unknown1)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.Population10)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.PlayerBits)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.Unknown2)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.Construction)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.NumBuildings)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Buildings)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Enchantments)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.ProductionUnits)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.Production)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.Gold)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.Upkeep)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.ManaUpkeep)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.Research)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int8](writer, data.Food)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.RoadConnections)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 // write the save game object to the given writer
 func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
     writer := bufio.NewWriter(writer1)
@@ -1075,6 +1209,13 @@ func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
 
     for i := range saveGame.Items {
         err = writeItem(writer, &saveGame.Items[i])
+        if err != nil {
+            return err
+        }
+    }
+
+    for i := range saveGame.Cities {
+        err = writeCity(writer, &saveGame.Cities[i])
         if err != nil {
             return err
         }

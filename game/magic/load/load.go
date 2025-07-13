@@ -1575,6 +1575,9 @@ type CityData struct {
     Research int8
     Food int8
     RoadConnections []byte
+
+    Unknown1 byte // 1 byte, unknown
+    Unknown2 byte // 1 byte, unknown
 }
 
 func loadCities(reader io.Reader) ([]CityData, error) {
@@ -1641,7 +1644,10 @@ func loadCities(reader io.Reader) ([]CityData, error) {
             return nil, err
         }
 
-        _, err = lbx.ReadByte(cityReader) // skip 1 byte
+        data.Unknown1, err = lbx.ReadByte(cityReader) // skip 1 byte
+        if err != nil {
+            return nil, err
+        }
 
         data.Population10, err = lbx.ReadN[int16](cityReader)
         if err != nil {
@@ -1653,7 +1659,10 @@ func loadCities(reader io.Reader) ([]CityData, error) {
             return nil, err
         }
 
-        _, err = lbx.ReadByte(cityReader) // skip 1 byte
+        data.Unknown2, err = lbx.ReadByte(cityReader) // skip 1 byte
+        if err != nil {
+            return nil, err
+        }
 
         data.Construction, err = lbx.ReadN[int16](cityReader)
         if err != nil {
