@@ -166,7 +166,37 @@ func writePlayerData(writer io.Writer, data *PlayerData) error {
         return err
     }
 
+    err = writeSlice(writer, data.Unknown3)
+    if err != nil {
+        return err
+    }
+
     err = writeN[uint16](writer, data.AverageUnitCost)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.Unknown4)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.CombatSkillLeft)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.CastingCostRemaining)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.CastingCostOriginal)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, data.CastingSpellIndex)
     if err != nil {
         return err
     }
@@ -232,6 +262,10 @@ func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
         err = writePlayerData(writer, &saveGame.PlayerData[i])
         if err != nil {
             return err
+        }
+
+        if i == 0 {
+            break
         }
     }
 

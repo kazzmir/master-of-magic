@@ -609,6 +609,8 @@ type PlayerData struct {
 
     Unknown1 uint8
     Unknown2 []uint8
+    Unknown3 []uint8
+    Unknown4 uint16
 }
 
 func loadPlayerData(reader io.Reader) (PlayerData, error) {
@@ -727,7 +729,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    _, err = lbx.ReadArrayN[uint8](playerReader, 4) // skip 4 byte
+    out.Unknown3, err = lbx.ReadArrayN[uint8](playerReader, 4) // skip 4 byte
     if err != nil {
         return PlayerData{}, err
     }
@@ -739,7 +741,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    _, err = lbx.ReadN[uint16](playerReader) // skip 2 byte
+    out.Unknown4, err = lbx.ReadN[uint16](playerReader) // skip 2 byte
     if err != nil {
         return PlayerData{}, err
     }
