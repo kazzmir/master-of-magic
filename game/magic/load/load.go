@@ -371,6 +371,13 @@ type DiplomacyData struct {
     TributeSpell []int8
     TributeGold []int16
     WarningProgress []int8
+
+    Unknown1 []int16 // 6 bytes, unknown
+    Unknown2 []int8  // 24 bytes, unknown
+    Unknown3 []int8  // 90 bytes, unknown
+    Unknown4 []int8  // 30 bytes, unknown
+    Unknown5 []int8  // 6 bytes, unknown
+    Unknown6 []int8  // 6 bytes, unknown
 }
 
 func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
@@ -448,7 +455,7 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
         return DiplomacyData{}, err
     }
 
-    unknown1, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    out.Unknown1, err = lbx.ReadArrayN[int16](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
@@ -458,7 +465,7 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
         return DiplomacyData{}, err
     }
 
-    unknown2, err := lbx.ReadArrayN[int8](dataReader, 24)
+    out.Unknown2, err = lbx.ReadArrayN[int8](dataReader, 24)
     if err != nil {
         return DiplomacyData{}, err
     }
@@ -468,7 +475,7 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
         return DiplomacyData{}, err
     }
 
-    unknown3, err := lbx.ReadArrayN[int8](dataReader, 90)
+    out.Unknown3, err = lbx.ReadArrayN[int8](dataReader, 90)
     if err != nil {
         return DiplomacyData{}, err
     }
@@ -478,17 +485,17 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
         return DiplomacyData{}, err
     }
 
-    unknown4, err := lbx.ReadArrayN[int8](dataReader, 30)
+    out.Unknown4, err = lbx.ReadArrayN[int8](dataReader, 30)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    unknown5, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.Unknown5, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    unknown6, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.Unknown6, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
@@ -497,13 +504,6 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
     if err != nil {
         return DiplomacyData{}, err
     }
-
-    _ = unknown1
-    _ = unknown2
-    _ = unknown3
-    _ = unknown4
-    _ = unknown5
-    _ = unknown6
 
     return out, nil
 }
@@ -613,6 +613,7 @@ type PlayerData struct {
     Unknown2 []uint8
     Unknown3 []uint8
     Unknown4 uint16
+    Unknown5 int16
 }
 
 func loadPlayerData(reader io.Reader) (PlayerData, error) {
@@ -893,7 +894,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
 
     out.HeroData = heroData
 
-    _, err = lbx.ReadN[int16](playerReader) // skip 2 bytes
+    out.Unknown5, err = lbx.ReadN[int16](playerReader) // skip 2 bytes
 
     out.VaultItems, err = lbx.ReadArrayN[int16](playerReader, 4)
     if err != nil {

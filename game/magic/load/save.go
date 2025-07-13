@@ -93,6 +93,126 @@ func writePlayerHeroData(writer io.Writer, heroData *PlayerHeroData) error {
     return nil
 }
 
+func writeDiplomacy(writer io.Writer, data *DiplomacyData) error {
+
+    err := writeSlice(writer, data.Contacted)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.TreatyInterest)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.PeaceInterest)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.TradeInterest)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.VisibleRelations)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.DiplomacyStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Strength)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Action)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Spell)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.City)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.DefaultRelations)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.ContactProgress)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.BrokenTreaty)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Unknown1)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.HiddenRelations)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Unknown2)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.TributeSpell)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Unknown3)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.TributeGold)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Unknown4)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Unknown5)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.Unknown6)
+    if err != nil {
+        return err
+    }
+
+    err = writeSlice(writer, data.WarningProgress)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 func writePlayerData(writer io.Writer, data *PlayerData) error {
     err := writeN[uint8](writer, data.WizardId)
     if err != nil {
@@ -349,6 +469,22 @@ func writePlayerData(writer io.Writer, data *PlayerData) error {
         }
     }
 
+    err = writeN[int16](writer, data.Unknown5)
+    if err != nil {
+        return err
+    }
+
+    for _, vaultItem := range data.VaultItems {
+        err = writeN[int16](writer, vaultItem)
+        if err != nil {
+            return err
+        }
+    }
+
+    err = writeDiplomacy(writer, &data.Diplomacy)
+    if err != nil {
+        return err
+    }
 
     return nil
 }
