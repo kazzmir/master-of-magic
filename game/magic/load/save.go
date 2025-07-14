@@ -1519,6 +1519,20 @@ func writeEvents(writer io.Writer, data *EventData) error {
     return nil
 }
 
+func writeHeroNameData(writer io.Writer, data *HeroNameData) error {
+    err := writeSlice(writer, data.Name)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.Experience)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 // write the save game object to the given writer
 func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
     writer := bufio.NewWriter(writer1)
@@ -1707,6 +1721,21 @@ func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
     err = writeN[uint16](writer, saveGame.GrandVizier)
     if err != nil {
         return err
+    }
+
+    for i := range saveGame.PremadeItems {
+        // err = writePremadeItem(writer, saveGame.PremadeItems[i])
+        err = writeN[byte](writer, saveGame.PremadeItems[i])
+        if err != nil {
+            return err
+        }
+    }
+
+    for i := range saveGame.HeroNames {
+        err = writeHeroNameData(writer, &saveGame.HeroNames[i])
+        if err != nil {
+            return err
+        }
     }
 
     return nil
