@@ -1694,5 +1694,20 @@ func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
         return err
     }
 
+    err = writeMapData(writer, saveGame.ArcanusMapSquareFlags)
+    if err != nil {
+        return err
+    }
+
+    err = writeMapData(writer, saveGame.MyrrorMapSquareFlags)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint16](writer, saveGame.GrandVizier)
+    if err != nil {
+        return err
+    }
+
     return nil
 }
