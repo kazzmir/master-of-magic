@@ -1766,6 +1766,8 @@ type UnitData struct {
     RoadTurns int8
     RoadX int8
     RoadY int8
+
+    Unknown1 []byte // 3 bytes of unknown data
 }
 
 func loadUnits(reader io.Reader) ([]UnitData, error) {
@@ -1897,6 +1899,12 @@ func loadUnits(reader io.Reader) ([]UnitData, error) {
         }
 
         data.RoadY, err = lbx.ReadN[int8](unitReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Unknown1 = make([]byte, 3)
+        _, err = io.ReadFull(unitReader, data.Unknown1)
         if err != nil {
             return nil, err
         }
