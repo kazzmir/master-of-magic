@@ -2101,7 +2101,7 @@ func loadEvents(reader io.Reader) (EventData, error) {
     eventData.DepletionPlayer, _ = lbx.ReadN[int16](eventReader)
     eventData.DepletionData, _ = lbx.ReadN[int16](eventReader)
     eventData.MineralsStatus, _ = lbx.ReadN[int16](eventReader)
-    eventData.MineralsData, _ = lbx.ReadN[int16](eventReader)
+    eventData.MineralsData, _ = lbx.ReadN[int16](eventReader) // FIXME: this might be out of order with MineralsPlayer
     eventData.MineralsPlayer, _ = lbx.ReadN[int16](eventReader)
     eventData.PopulationBoomStatus, _ = lbx.ReadN[int16](eventReader)
     eventData.PopulationBoomData, _ = lbx.ReadN[int16](eventReader)

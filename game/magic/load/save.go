@@ -1230,6 +1230,295 @@ func writeMapData[T any](writer io.Writer, data [][]T) error {
     return nil
 }
 
+func writeMovementCostData(writer io.Writer, data *MovementCostData) error {
+    err := writeMapData(writer, data.Moves)
+    if err != nil {
+        return err
+    }
+
+    err = writeMapData(writer, data.Walking)
+    if err != nil {
+        return err
+    }
+
+    err = writeMapData(writer, data.Forester)
+    if err != nil {
+        return err
+    }
+
+    err = writeMapData(writer, data.Mountaineer)
+    if err != nil {
+        return err
+    }
+
+    err = writeMapData(writer, data.Swimming)
+    if err != nil {
+        return err
+    }
+
+    err = writeMapData(writer, data.Sailing)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
+func writeEvents(writer io.Writer, data *EventData) error {
+    err := writeN[int16](writer, data.LastEvent)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.MeteorStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.MeteorPlayer)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.MeteorData)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.GiftStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.GiftPlayer)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.GiftData)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.DisjunctionStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.MarriageStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.MarriagePlayer)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.MarriageNeutralCity)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.MarriagePlayerCity)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.EarthquakeStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.EarthquakePlayer)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.EarthquakeData)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.PirateStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.PiratePlayer)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.PirateData)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.PlagueStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.PlaguePlayer)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.PlagueData)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.PlagueDuration)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.RebellionStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.RebellionPlayer)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.RebellionData)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.DonationStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.DonationPlayer)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.DonationData)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.DepletionStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.DepletionPlayer)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.DepletionData)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.MineralsStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.MineralsData)
+    if err != nil {
+        return err
+    }
+
+    // FIXME: this might be out of order with MineralsData
+    err = writeN[int16](writer, data.MineralsPlayer)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.PopulationBoomStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.PopulationBoomData)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.PopulationBoomPlayer)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.PopulationBoomDuration)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.GoodMoonStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.GoodMoonDuration)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.BadMoonStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.BadMoonDuration)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.ConjunctionChaosStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.ConjunctionChaosDuration)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.ConjunctionNatureStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.ConjunctionNatureDuration)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.ConjunctionSorceryStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.ConjunctionSorceryDuration)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.ManaShortageStatus)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[int16](writer, data.ManaShortageDuration)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 // write the save game object to the given writer
 func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
     writer := bufio.NewWriter(writer1)
@@ -1386,6 +1675,21 @@ func WriteSaveGame(saveGame *SaveGame, writer1 io.Writer) error {
     }
 
     err = writeMapData(writer, saveGame.MyrrorExplored)
+    if err != nil {
+        return err
+    }
+
+    err = writeMovementCostData(writer, &saveGame.ArcanusMovementCost)
+    if err != nil {
+        return err
+    }
+
+    err = writeMovementCostData(writer, &saveGame.MyrrorMovementCost)
+    if err != nil {
+        return err
+    }
+
+    err = writeEvents(writer, &saveGame.Events)
     if err != nil {
         return err
     }
