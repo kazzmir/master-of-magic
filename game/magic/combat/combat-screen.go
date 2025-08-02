@@ -4228,36 +4228,38 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
     if combat.Model.SelectedUnit != nil && isVisible(combat.Model.SelectedUnit) {
-        var path pathfinding.Path
-        ok := false
+        if !combat.IsSelectingSpell() {
+            var path pathfinding.Path
+            ok := false
 
-        if combat.Model.SelectedUnit.Moving {
-            path = combat.Model.SelectedUnit.CurrentPath
-            ok = true
-        } else {
-            path, ok = combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
-            if ok {
-                path = path[1:]
+            if combat.Model.SelectedUnit.Moving {
+                path = combat.Model.SelectedUnit.CurrentPath
+                ok = true
+            } else {
+                path, ok = combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+                if ok {
+                    path = path[1:]
+                }
             }
-        }
 
-        if ok {
-            var options ebiten.DrawImageOptions
-            options.ColorScale.ScaleAlpha(0.8)
-            for i := 0; i < len(path); i++ {
-                tileX, tileY := path[i].X, path[i].Y
+            if ok {
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(0.8)
+                for i := 0; i < len(path); i++ {
+                    tileX, tileY := path[i].X, path[i].Y
 
-                tx, ty := tilePosition(float64(tileX), float64(tileY))
-                // tx += float64(tile0.Bounds().Dx())/2
-                // ty += float64(tile0.Bounds().Dy())/2
-                movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
-                tx -= float64(movementImage.Bounds().Dx())/2
-                ty -= float64(movementImage.Bounds().Dy())/2
+                    tx, ty := tilePosition(float64(tileX), float64(tileY))
+                    // tx += float64(tile0.Bounds().Dx())/2
+                    // ty += float64(tile0.Bounds().Dy())/2
+                    movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
+                    tx -= float64(movementImage.Bounds().Dx())/2
+                    ty -= float64(movementImage.Bounds().Dy())/2
 
-                options.GeoM.Reset()
-                options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
-                options.GeoM.Translate(tx, ty)
-                scale.DrawScaled(screen, movementImage, &options)
+                    options.GeoM.Reset()
+                    options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+                    options.GeoM.Translate(tx, ty)
+                    scale.DrawScaled(screen, movementImage, &options)
+                }
             }
         }
 
