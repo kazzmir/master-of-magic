@@ -261,6 +261,10 @@ type CombatScreen struct {
 
     // if true then the player should select a unit to cast a spell on
     DoSelectUnit bool
+
+    // true while the player is unable to use the main UI buttons (such as while selecting a tile/unit for a spell)
+    ButtonsDisabled bool
+
     // which team to pick a unit from
     // SelectTeam Team
     // invoke this function on the unit that is selected
@@ -1944,6 +1948,10 @@ func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
     return group
 }
 
+func (combat *CombatScreen) IsSelectingSpell() bool {
+    return combat.DoSelectUnit || combat.DoSelectTile
+}
+
 func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     var elements []*uilib.UIElement
 
@@ -2056,30 +2064,48 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     buttonX := float64(144)
     buttonY := float64(168)
 
-    makeButton := func(lbxIndex int, x int, y int, action func()) *uilib.UIElement {
+    makeButton := func(lbxIndex int, buttonDisabledIndex, x int, y int, action func()) *uilib.UIElement {
         buttons, _ := combat.ImageCache.GetImages("compix.lbx", lbxIndex)
+        buttonDisabled, _ := combat.ImageCache.GetImage("compix.lbx", buttonDisabledIndex, 0)
         rect := image.Rect(0, 0, buttons[0].Bounds().Dx(), buttons[0].Bounds().Dy()).Add(image.Point{int(buttonX) + buttons[0].Bounds().Dx() * x, int(buttonY) + buttons[0].Bounds().Dy() * y})
         index := 0
         return &uilib.UIElement{
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
+                if combat.ButtonsDisabled {
+                    return
+                }
+
                 index = 1
             },
             LeftClickRelease: func(element *uilib.UIElement){
+                if combat.ButtonsDisabled {
+                    return
+                }
+
                 action()
                 index = 0
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
-                scale.DrawScaled(screen, buttons[index], &options)
+                if combat.ButtonsDisabled {
+                    scale.DrawScaled(screen, buttonDisabled, &options)
+                } else {
+                    scale.DrawScaled(screen, buttons[index], &options)
+                }
             },
         }
     }
 
     // spell
     spellPage := 0
-    elements = append(elements, makeButton(1, 0, 0, func(){
+    elements = append(elements, makeButton(1, 23, 0, 0, func(){
+        // cannot cast if the player is selecting a unit/tile
+        if combat.IsSelectingSpell() {
+            return
+        }
+
         army := combat.Model.GetArmyForPlayer(player)
 
         defendingCity := combat.Model.Zone.City != nil && army == combat.Model.DefendingArmy
@@ -2194,12 +2220,12 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     }))
 
     // wait
-    elements = append(elements, makeButton(2, 1, 0, func(){
+    elements = append(elements, makeButton(2, 24, 1, 0, func(){
         combat.Model.NextUnit()
     }))
 
     // info
-    elements = append(elements, makeButton(20, 0, 1, func(){
+    elements = append(elements, makeButton(20, 25, 0, 1, func(){
         var group *uilib.UIElementGroup
         remove := func(){
             ui.RemoveGroup(group)
@@ -2209,7 +2235,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     }))
 
     // auto
-    elements = append(elements, makeButton(4, 1, 1, func(){
+    elements = append(elements, makeButton(4, 26, 1, 1, func(){
         if combat.Model.AttackingArmy.Player == player {
             combat.Model.AttackingArmy.Auto = true
         } else {
@@ -2218,7 +2244,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     }))
 
     // flee
-    elements = append(elements, makeButton(21, 0, 2, func(){
+    elements = append(elements, makeButton(21, 27, 0, 2, func(){
         if combat.Model.AttackingArmy.Player == player {
             combat.Model.AttackingArmy.Fled = true
         } else {
@@ -2227,7 +2253,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
     }))
 
     // done
-    elements = append(elements, makeButton(3, 1, 2, func(){
+    elements = append(elements, makeButton(3, 28, 1, 2, func(){
         combat.Model.DoneTurn()
     }))
 
@@ -2529,8 +2555,10 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
 }
 
 func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Team, spell spellbook.Spell, canTarget func(int, int) bool, selectTile func(int, int)) {
+    combat.ButtonsDisabled = true
     combat.DoSelectTile = true
     defer func(){
+        combat.ButtonsDisabled = false
         combat.DoSelectTile = false
     }()
 
@@ -2629,8 +2657,10 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
 }
 
 func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Team, spell spellbook.Spell, selectTarget func (*ArmyUnit), canTarget func (*ArmyUnit) bool, selectTeam Team) {
+    combat.ButtonsDisabled = true
     combat.DoSelectUnit = true
     defer func(){
+        combat.ButtonsDisabled = false
         combat.DoSelectUnit = false
     }()
 
@@ -4198,36 +4228,38 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
     if combat.Model.SelectedUnit != nil && isVisible(combat.Model.SelectedUnit) {
-        var path pathfinding.Path
-        ok := false
+        if !combat.IsSelectingSpell() {
+            var path pathfinding.Path
+            ok := false
 
-        if combat.Model.SelectedUnit.Moving {
-            path = combat.Model.SelectedUnit.CurrentPath
-            ok = true
-        } else {
-            path, ok = combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
-            if ok {
-                path = path[1:]
+            if combat.Model.SelectedUnit.Moving {
+                path = combat.Model.SelectedUnit.CurrentPath
+                ok = true
+            } else {
+                path, ok = combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+                if ok {
+                    path = path[1:]
+                }
             }
-        }
 
-        if ok {
-            var options ebiten.DrawImageOptions
-            options.ColorScale.ScaleAlpha(0.8)
-            for i := 0; i < len(path); i++ {
-                tileX, tileY := path[i].X, path[i].Y
+            if ok {
+                var options ebiten.DrawImageOptions
+                options.ColorScale.ScaleAlpha(0.8)
+                for i := 0; i < len(path); i++ {
+                    tileX, tileY := path[i].X, path[i].Y
 
-                tx, ty := tilePosition(float64(tileX), float64(tileY))
-                // tx += float64(tile0.Bounds().Dx())/2
-                // ty += float64(tile0.Bounds().Dy())/2
-                movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
-                tx -= float64(movementImage.Bounds().Dx())/2
-                ty -= float64(movementImage.Bounds().Dy())/2
+                    tx, ty := tilePosition(float64(tileX), float64(tileY))
+                    // tx += float64(tile0.Bounds().Dx())/2
+                    // ty += float64(tile0.Bounds().Dy())/2
+                    movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
+                    tx -= float64(movementImage.Bounds().Dx())/2
+                    ty -= float64(movementImage.Bounds().Dy())/2
 
-                options.GeoM.Reset()
-                options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
-                options.GeoM.Translate(tx, ty)
-                scale.DrawScaled(screen, movementImage, &options)
+                    options.GeoM.Reset()
+                    options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+                    options.GeoM.Translate(tx, ty)
+                    scale.DrawScaled(screen, movementImage, &options)
+                }
             }
         }
 
