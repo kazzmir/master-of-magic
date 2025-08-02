@@ -2087,13 +2087,11 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 index = 0
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
                 if combat.ButtonsDisabled {
-                    var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
                     scale.DrawScaled(screen, buttonDisabled, &options)
                 } else {
-                    var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
                     scale.DrawScaled(screen, buttons[index], &options)
                 }
             },
