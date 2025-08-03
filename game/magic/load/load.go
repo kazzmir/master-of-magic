@@ -105,6 +105,7 @@ func (heroIndex HeroIndex) GetHero() herolib.HeroType {
 type HeroAbility uint32
 
 const (
+    HeroAbility_NONE HeroAbility = 0x00000000
     HeroAbility_LEADERSHIP HeroAbility = 0x00000001
     HeroAbility_LEADERSHIP2 HeroAbility = 0x00000002
     HeroAbility_LEGENDARY HeroAbility      = 0x00000008
