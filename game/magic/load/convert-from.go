@@ -47,11 +47,13 @@ func CreateSaveGame(game *gamelib.Game) (*SaveGame, error) {
         out.HeroData[i] = makeHeroData(player, &allSpells)
     }
 
+    for i, player := range game.Players {
+        out.PlayerData = append(out.PlayerData, makePlayerData(i, player))
+    }
+
+
     /*
 struct {
-    // first index player, second index hero
-    HeroData [][]HeroData
-
     // indexed by player number
     PlayerData []PlayerData
 
@@ -95,6 +97,106 @@ struct {
 */
 
     return &out, nil
+}
+
+func makePlayerData(id int, player *playerlib.Player) PlayerData {
+
+    return PlayerData{
+        WizardId: uint8(id),
+        WizardName: []byte(player.Wizard.Name),
+        CapitalRace: uint8(toRaceInt(player.Wizard.Race)),
+        BannerId: uint8(player.Wizard.Banner),
+        // FIXME
+        // Personality: uint16(player.Wizard.Personality),
+        // Objective: 0
+        MasteryResearch: uint16(player.SpellOfMasteryCost),
+    }
+
+    /*
+type PlayerData struct {
+    Personality uint16
+    Objective uint16
+    MasteryResearch uint16
+    Fame uint16
+    PowerBase uint16
+    Volcanoes uint16
+    ResearchRatio uint8
+    ManaRatio uint8
+    SkillRatio uint8
+    VolcanoPower uint8
+    SummonX int16
+    SummonY int16
+    SummonPlane int16
+    ResearchSpells []uint16
+    AverageUnitCost uint16
+    CombatSkillLeft uint16
+    CastingCostRemaining uint16
+    CastingCostOriginal uint16
+    CastingSpellIndex uint16
+    SkillLeft uint16
+    NominalSkill uint16
+    TaxRate uint16
+    SpellRanks []int16
+    RetortAlchemy int8
+    RetortWarlord int8
+    RetortChaosMastery int8
+    RetortNatureMastery int8
+    RetortSorceryMastery int8
+    RetortInfernalPower int8
+    RetortDivinePower int8
+    RetortSageMaster int8
+    RetortChanneler int8
+    RetortMyrran int8
+    RetortArchmage int8
+    RetortNodeMastery int8
+    RetortManaFocusing int8
+    RetortFamous int8
+    RetortRunemaster int8
+    RetortConjurer int8
+    RetortCharismatic int8
+    RetortArtificer int8
+
+    HeroData []PlayerHeroData
+
+    VaultItems []int16
+    Diplomacy DiplomacyData
+
+    ResearchCostRemaining uint16
+    ManaReserve uint16
+    SpellCastingSkill int32
+    ResearchingSpellIndex int16
+    SpellsList []uint8
+    DefeatedWizards uint16
+    GoldReserve uint16
+    Astrology AstrologyData
+    Population uint16
+    Historian []uint8
+    GlobalEnchantments []uint8
+    MagicStrategy uint16
+    Hostility []uint16
+    ReevaluateHostilityCountdown uint16
+    ReevaluateMagicStrategyCountdown uint16
+    ReevaluateMagicPowerCountdown uint16
+    PeaceDuration []uint8
+    TargetWizard uint16
+    PrimaryRealm uint16
+    SecondaryRealm uint16
+
+    Unknown1 uint8
+    Unknown2 []uint8
+    Unknown3 []uint8
+    Unknown4 uint16
+    Unknown5 int16
+    Unknown6 uint16
+    Unknown7 uint16
+    Unknown8 uint8
+    Unknown9 uint8
+    Unknown10 uint16
+    Unknown11 uint8
+    Unknown12 uint8
+    Unknown13 []uint8
+}
+*/
 }
 
 func makeAbilityMap() map[data.AbilityType]HeroAbility {

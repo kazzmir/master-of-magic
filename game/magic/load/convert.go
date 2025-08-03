@@ -46,6 +46,27 @@ func fromRaceValue(raceValue int) data.Race {
     return data.RaceNone
 }
 
+func toRaceInt(race data.Race) int {
+    switch race {
+        case data.RaceBarbarian: return 0
+        case data.RaceBeastmen: return 1
+        case data.RaceDarkElf: return 2
+        case data.RaceDraconian: return 3
+        case data.RaceDwarf: return 4
+        case data.RaceGnoll: return 5
+        case data.RaceHalfling: return 6
+        case data.RaceHighElf: return 7
+        case data.RaceHighMen: return 8
+        case data.RaceKlackon: return 9
+        case data.RaceLizard: return 10
+        case data.RaceNomad: return 11
+        case data.RaceOrc: return 12
+        case data.RaceTroll: return 13
+    }
+
+    return 0
+}
+
 func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane data.Plane, cityProvider maplib.CityProvider, players []*playerlib.Player) *maplib.Map {
 
     map_ := maplib.Map{
@@ -816,6 +837,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
 
     player := playerlib.Player{
         Wizard: wizards[playerIndex],
+        SpellOfMasteryCost: int(playerData.MasteryResearch),
         TaxRate: fraction.Make(int(playerData.TaxRate), 2),
         PowerDistribution: playerlib.PowerDistribution{
             Mana: float64(playerData.ManaRatio) / 100,
