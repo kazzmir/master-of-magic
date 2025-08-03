@@ -101,6 +101,20 @@ struct {
 
 func makePlayerData(id int, game *gamelib.Game, player *playerlib.Player) PlayerData {
 
+    summoningCity := player.FindSummoningCity()
+    var summonX int16
+    var summonY int16
+    var summonPlane int16
+    if summoningCity != nil {
+        summonX = int16(summoningCity.X)
+        summonY = int16(summoningCity.Y)
+        if summoningCity.Plane == data.PlaneMyrror {
+            summonPlane = 1 // Myrror
+        } else {
+            summonPlane = 0 // Arcanus
+        }
+    }
+
     return PlayerData{
         WizardId: uint8(id),
         WizardName: []byte(player.Wizard.Name),
@@ -109,6 +123,8 @@ func makePlayerData(id int, game *gamelib.Game, player *playerlib.Player) Player
         // FIXME
         // Personality: uint16(player.Wizard.Personality),
         // Objective: 0
+        // VolcanoPower: 0,
+        // AverageUnitCost: 0,
         MasteryResearch: uint16(player.SpellOfMasteryCost),
         Fame: uint16(player.Fame),
         PowerBase: uint16(game.ComputePower(player)),
@@ -116,16 +132,20 @@ func makePlayerData(id int, game *gamelib.Game, player *playerlib.Player) Player
         ResearchRatio: uint8(player.PowerDistribution.Research * 100),
         ManaRatio: uint8(player.PowerDistribution.Mana * 100),
         SkillRatio: uint8(player.PowerDistribution.Skill * 100),
+        SummonX: summonX,
+        SummonY: summonY,
+        SummonPlane: summonPlane,
+        ResearchSpells: mapSlice(func(spell spellbook.Spell) uint16 {
+            if !spell.Valid() {
+                return 0
+            }
+            return uint16(spell.Index)
+        }, player.ResearchCandidateSpells.Spells...),
+        CombatSkillLeft: uint16(player.RemainingCastingSkill),
     }
 
     /*
 type PlayerData struct {
-    VolcanoPower uint8
-    SummonX int16
-    SummonY int16
-    SummonPlane int16
-    ResearchSpells []uint16
-    AverageUnitCost uint16
     CombatSkillLeft uint16
     CastingCostRemaining uint16
     CastingCostOriginal uint16
