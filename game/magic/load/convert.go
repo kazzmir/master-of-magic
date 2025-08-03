@@ -812,9 +812,6 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     // FIXME: Add remaining infos from playerData
     // Personality
     // Objective
-    // MasteryResearch
-    // PowerBase
-    // Volcanoes
     // VolcanoPower
     // AverageUnitCost
     // CombatSkillLeft
@@ -834,6 +831,10 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     // TargetWizard
     // PrimaryRealm
     // SecondaryRealm
+
+    // doesn't seem necessary to store this since we compute it anyway
+    // PowerBase
+    // Volcanoes
 
     player := playerlib.Player{
         Wizard: wizards[playerIndex],

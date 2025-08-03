@@ -48,7 +48,7 @@ func CreateSaveGame(game *gamelib.Game) (*SaveGame, error) {
     }
 
     for i, player := range game.Players {
-        out.PlayerData = append(out.PlayerData, makePlayerData(i, player))
+        out.PlayerData = append(out.PlayerData, makePlayerData(i, game, player))
     }
 
 
@@ -99,7 +99,7 @@ struct {
     return &out, nil
 }
 
-func makePlayerData(id int, player *playerlib.Player) PlayerData {
+func makePlayerData(id int, game *gamelib.Game, player *playerlib.Player) PlayerData {
 
     return PlayerData{
         WizardId: uint8(id),
@@ -110,19 +110,16 @@ func makePlayerData(id int, player *playerlib.Player) PlayerData {
         // Personality: uint16(player.Wizard.Personality),
         // Objective: 0
         MasteryResearch: uint16(player.SpellOfMasteryCost),
+        Fame: uint16(player.Fame),
+        PowerBase: uint16(game.ComputePower(player)),
+        Volcanoes: uint16(len(game.ArcanusMap.GetCastedVolcanoes(player)) + len(game.MyrrorMap.GetCastedVolcanoes(player))),
+        ResearchRatio: uint8(player.PowerDistribution.Research * 100),
+        ManaRatio: uint8(player.PowerDistribution.Mana * 100),
+        SkillRatio: uint8(player.PowerDistribution.Skill * 100),
     }
 
     /*
 type PlayerData struct {
-    Personality uint16
-    Objective uint16
-    MasteryResearch uint16
-    Fame uint16
-    PowerBase uint16
-    Volcanoes uint16
-    ResearchRatio uint8
-    ManaRatio uint8
-    SkillRatio uint8
     VolcanoPower uint8
     SummonX int16
     SummonY int16
