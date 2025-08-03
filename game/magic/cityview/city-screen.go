@@ -663,6 +663,10 @@ func makeCityScapeElement(cache *lbx.LbxCache, group *uilib.UIElementGroup, city
     return element
 }
 
+func (cityScreen *CityScreen) ResetUI() {
+    cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
+}
+
 func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI {
     ui := &uilib.UI{
         Cache: cityScreen.LbxCache,
@@ -690,7 +694,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     group.AddElement(&uilib.UIElement{
         Rect: image.Rect(20, 3, 20 + int(textSize), 3 + cityScreen.Fonts.BigFont.Height() - 1),
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-            util.DrawRect(screen, scale.ScaleRect(element.Rect), color.RGBA{R: 255, A: 255})
+            // util.DrawRect(screen, scale.ScaleRect(element.Rect), color.RGBA{R: 255, A: 255})
         },
         DoubleLeftClick: func(element *uilib.UIElement) {
             select {

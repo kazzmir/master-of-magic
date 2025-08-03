@@ -4686,6 +4686,18 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
 
     for cityScreen.Update() == cityview.CityScreenStateRunning {
         overworld.Counter += 1
+
+        select {
+            case event := <-cityScreen.Actions:
+                switch event {
+                    case cityview.CityScreenActionChangeName:
+                        yield()
+                        city.Name = game.doInput(yield, "Set Name", city.Name, 80, 100)
+                        cityScreen.ResetUI()
+                }
+            default:
+        }
+
         yield()
     }
 
