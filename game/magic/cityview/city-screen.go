@@ -690,7 +690,6 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     // var elements []*uilib.UIElement
 
     textSize := cityScreen.Fonts.BigFont.MeasureTextWidth(fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name), 1)
-    // cityScreen.Fonts.BigFont.PrintOptions(screen, 20, 3, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
     group.AddElement(&uilib.UIElement{
         Rect: image.Rect(20, 3, 20 + int(textSize), 3 + cityScreen.Fonts.BigFont.Height() - 1),
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
