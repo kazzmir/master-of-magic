@@ -116,6 +116,11 @@ const (
     CityScreenStateDone
 )
 
+type CityScreenActions int
+const (
+    CityScreenActionChangeName CityScreenActions = iota
+)
+
 type CityScreen struct {
     LbxCache *lbx.LbxCache
     ImageCache util.ImageCache
@@ -127,6 +132,8 @@ type CityScreen struct {
 
     Buildings []BuildingSlot
     BuildScreen *BuildScreen
+
+    Actions chan CityScreenActions
 
     // the building that was just built
     // NewBuilding buildinglib.Building
@@ -493,6 +500,7 @@ func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
         Buildings: buildings,
         State: CityScreenStateRunning,
         Player: player,
+        Actions: make(chan CityScreenActions, 1),
     }
 
     cityScreen.UI = cityScreen.MakeUI(newBuilding)
@@ -655,6 +663,10 @@ func makeCityScapeElement(cache *lbx.LbxCache, group *uilib.UIElementGroup, city
     return element
 }
 
+func (cityScreen *CityScreen) ResetUI() {
+    cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
+}
+
 func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI {
     ui := &uilib.UI{
         Cache: cityScreen.LbxCache,
@@ -676,6 +688,20 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     group := uilib.MakeGroup()
     ui.AddGroup(group)
     // var elements []*uilib.UIElement
+
+    textSize := cityScreen.Fonts.BigFont.MeasureTextWidth(fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name), 1)
+    group.AddElement(&uilib.UIElement{
+        Rect: image.Rect(20, 3, 20 + int(textSize), 3 + cityScreen.Fonts.BigFont.Height() - 1),
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+            // util.DrawRect(screen, scale.ScaleRect(element.Rect), color.RGBA{R: 255, A: 255})
+        },
+        DoubleLeftClick: func(element *uilib.UIElement) {
+            select {
+                case cityScreen.Actions <- CityScreenActionChangeName:
+                default:
+            }
+        },
+    })
 
     sellBuilding := func (toSell buildinglib.Building) {
         // FIXME: Check if building is needed for other building
