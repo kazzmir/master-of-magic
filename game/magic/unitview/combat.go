@@ -143,12 +143,18 @@ func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebite
     }
 }
 
-func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, enchantment data.UnitEnchantment, timeCounter uint64, imageCache *util.ImageCache){
+func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, lostCount int, lostTime uint64, enchantment data.UnitEnchantment, timeCounter uint64, imageCache *util.ImageCache){
     // the ground is always 6 pixels above the bottom of the unit image
     groundHeight := float64(6)
 
+    totalCount := count
+
+    if lostTime > 0 {
+        totalCount += lostCount
+    }
+
     geoM := options.GeoM
-    for _, point := range CombatPoints(count) {
+    for i, point := range CombatPoints(totalCount) {
         options.GeoM.Reset()
         options.GeoM.Translate(float64(point.X), float64(point.Y))
         options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
@@ -163,7 +169,20 @@ func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
 
         // options.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
         // options.GeoM.Translate(-13, -22)
-        screen.DrawImage(use, &options)
+
+        // draw the rest of the units in the dying color
+        if i >= count {
+            var dying colorm.ColorM
+            // dying.Scale(0, 0, 0, 0.45)
+            dying.Scale(1, 0, 0, float64(lostTime) / 100)
+            dying.Translate(255, 0, 0, 0)
+            var dyingOptions colorm.DrawImageOptions
+            dyingOptions.GeoM = options.GeoM
+
+            colorm.DrawImage(screen, use, dying, &dyingOptions)
+        } else {
+            screen.DrawImage(use, &options)
+        }
 
         if enchantment != data.UnitEnchantmentNone {
             util.DrawOutline(screen, imageCache, use, options.GeoM, options.ColorScale, timeCounter/10, enchantment.Color())

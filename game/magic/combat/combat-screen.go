@@ -2919,6 +2919,18 @@ func (combat *CombatScreen) UpdateAnimations(){
             unit.Animation.Next()
         }
     }
+
+    for _, unit := range combat.Model.AttackingArmy.units {
+        if unit.LostUnitsTime > 0 {
+            unit.LostUnitsTime -= 1
+        }
+    }
+
+    for _, unit := range combat.Model.DefendingArmy.units {
+        if unit.LostUnitsTime > 0 {
+            unit.LostUnitsTime -= 1
+        }
+    }
 }
 
 func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUnit, x int, y int, merge bool) {
@@ -4380,7 +4392,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                     unitOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xb5, G: 0x5e, B: 0xf3, A: 0xff})
                 }
 
-                unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), use, combat.Counter, &combat.ImageCache)
+                unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, unit.LostUnitsTime, use, combat.Counter, &combat.ImageCache)
 
                 if warpCreature {
                     unitOptions.ColorScale = savedColor

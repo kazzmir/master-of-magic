@@ -553,6 +553,10 @@ type ArmyUnit struct {
 
     Team Team
 
+    // how many units were just lost due to an attack/spell/something that caused damage
+    LostUnits int
+    LostUnitsTime uint64
+
     // height above the ground, negative for partially below ground
     Height int
     // how much alpha to apply to the unit, 1 is invisible, 0 is fully visible
@@ -1685,7 +1689,17 @@ func (unit *ArmyUnit) TakeDamage(damage int, damageType DamageType) int {
         case DamageUndead: unit.UndeadDamage += damage
     }
 
-    return visibleFigures - unit.VisibleFigures()
+    lost := visibleFigures - unit.VisibleFigures()
+
+    if unit.LostUnitsTime == 0 {
+        // length of time (in updates) to show the lost units
+        unit.LostUnitsTime = 100
+        unit.LostUnits = lost
+    } else {
+        unit.LostUnits += lost
+    }
+
+    return lost
 }
 
 func (unit *ArmyUnit) Heal(amount int){

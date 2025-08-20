@@ -389,16 +389,18 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wraith Form"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
-    // attackingArmy := createWarlockArmyN(attackingPlayer, 3)
-    attackingArmy := createArmyN(attackingPlayer, units.HighElfMagician, 4)
+    attackingArmy := createWarlockArmyN(attackingPlayer, 3)
+    // attackingArmy := createArmyN(attackingPlayer, units.HighElfMagician, 4)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
+    /*
     for range 2 {
         attackingArmy.KillUnit(attackingArmy.GetUnits()[0])
     }
 
     attackingArmy.GetUnits()[0].TakeDamage(2, combat.DamageIrreversable)
     attackingArmy.GetUnits()[1].TakeDamage(2, combat.DamageNormal)
+    */
 
     /*
     attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentTrueSight)
