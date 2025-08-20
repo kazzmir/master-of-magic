@@ -90,7 +90,7 @@ func CombatPoints(count int) []image.Point {
 }
 
 // draws the unit semi-transparently in a solid greyish color
-func RenderCombatSemiInvisible(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, timeCounter uint64, imageCache *util.ImageCache) {
+func RenderCombatSemiInvisible(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, lostCount int, lostTime float64, timeCounter uint64, imageCache *util.ImageCache) {
     // the ground is always 6 pixels above the bottom of the unit image
     groundHeight := float64(6)
 
@@ -102,7 +102,13 @@ func RenderCombatSemiInvisible(screen *ebiten.Image, use *ebiten.Image, options 
 
     geoM := options.GeoM
 
-    for _, point := range CombatPoints(count) {
+    var dying colorm.ColorM
+    // dying.Scale(0, 0, 0, 0.45)
+    dying.Scale(1, 0, 0, lostTime)
+    dying.Translate(255, 0, 0, 0)
+    var dyingOptions colorm.DrawImageOptions
+
+    for i, point := range CombatPoints(count + lostCount) {
         greyOptions.GeoM.Reset()
         greyOptions.GeoM.Translate(float64(point.X), float64(point.Y))
         greyOptions.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
@@ -110,12 +116,17 @@ func RenderCombatSemiInvisible(screen *ebiten.Image, use *ebiten.Image, options 
         greyOptions.GeoM.Concat(geoM)
         greyOptions.GeoM.Scale(scale.ScaleAmount, scale.ScaleAmount)
 
-        // screen.DrawImage(use, &options)
-        colorm.DrawImage(screen, use, greyScale, &greyOptions)
+        if i >= count {
+            dyingOptions.GeoM = greyOptions.GeoM
+            colorm.DrawImage(screen, use, dying, &dyingOptions)
+        } else {
+            // screen.DrawImage(use, &options)
+            colorm.DrawImage(screen, use, greyScale, &greyOptions)
+        }
     }
 }
 
-func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, enchantment data.UnitEnchantment, timeCounter uint64, imageCache *util.ImageCache){
+func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebiten.DrawImageOptions, count int, lostCount int, lostTime float64, enchantment data.UnitEnchantment, timeCounter uint64, imageCache *util.ImageCache){
     // the ground is always 6 pixels above the bottom of the unit image
     groundHeight := float64(6)
 
@@ -124,9 +135,15 @@ func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebite
     greyScale.ChangeHSV(0, 0, 1)
     var greyOptions colorm.DrawImageOptions
 
+    var dying colorm.ColorM
+    // dying.Scale(0, 0, 0, 0.45)
+    dying.Scale(1, 0, 0, lostTime)
+    dying.Translate(255, 0, 0, 0)
+    var dyingOptions colorm.DrawImageOptions
+
     geoM := options.GeoM
 
-    for _, point := range CombatPoints(count) {
+    for i, point := range CombatPoints(count + lostCount) {
         greyOptions.GeoM.Reset()
         greyOptions.GeoM.Translate(float64(point.X), float64(point.Y))
         greyOptions.GeoM.Translate(-float64(use.Bounds().Dx() / 2), -float64(use.Bounds().Dy()) + groundHeight)
@@ -135,7 +152,12 @@ func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebite
         greyOptions.GeoM.Scale(scale.ScaleAmount, scale.ScaleAmount)
 
         // screen.DrawImage(use, &options)
-        colorm.DrawImage(screen, use, greyScale, &greyOptions)
+        if i >= count {
+            dyingOptions.GeoM = greyOptions.GeoM
+            colorm.DrawImage(screen, use, dying, &dyingOptions)
+        } else {
+            colorm.DrawImage(screen, use, greyScale, &greyOptions)
+        }
 
         if enchantment != data.UnitEnchantmentNone {
             util.DrawOutline(screen, imageCache, use, greyOptions.GeoM, options.ColorScale, timeCounter/10, enchantment.Color())
@@ -148,6 +170,12 @@ func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
     groundHeight := float64(6)
 
     totalCount := count + lostCount
+
+    var dying colorm.ColorM
+    // dying.Scale(0, 0, 0, 0.45)
+    dying.Scale(1, 0, 0, lostTime)
+    dying.Translate(255, 0, 0, 0)
+    var dyingOptions colorm.DrawImageOptions
 
     geoM := options.GeoM
     for i, point := range CombatPoints(totalCount) {
@@ -168,13 +196,7 @@ func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
 
         // draw the rest of the units in the dying color
         if i >= count {
-            var dying colorm.ColorM
-            // dying.Scale(0, 0, 0, 0.45)
-            dying.Scale(1, 0, 0, lostTime)
-            dying.Translate(255, 0, 0, 0)
-            var dyingOptions colorm.DrawImageOptions
             dyingOptions.GeoM = options.GeoM
-
             colorm.DrawImage(screen, use, dying, &dyingOptions)
         } else {
             screen.DrawImage(use, &options)

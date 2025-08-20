@@ -4362,6 +4362,8 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             vector.DrawFilledCircle(screen, float32(x), float32(y), 2, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
             */
 
+            lostTime := float64(unit.LostUnitsTime) / LostUnitsMax
+
             // _ = index
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
             if unit.IsInvisible() {
@@ -4369,13 +4371,13 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 // any units with illusions immunity
                 canBeSeen := isVisible(unit)
                 if canBeSeen {
-                    unitview.RenderCombatSemiInvisible(screen, unitImage, unitOptions, unit.VisibleFigures(), combat.Counter, &combat.ImageCache)
+                    unitview.RenderCombatSemiInvisible(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, lostTime, combat.Counter, &combat.ImageCache)
                 } else {
                     // if can't be seen then don't render anything at all
                 }
 
             } else if unit.IsAsleep() {
-                unitview.RenderCombatUnitGrey(screen, unitImage, unitOptions, unit.VisibleFigures(), use, combat.Counter, &combat.ImageCache)
+                unitview.RenderCombatUnitGrey(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, lostTime, use, combat.Counter, &combat.ImageCache)
             } else {
                 warpCreature := false
                 for _, curse := range unit.GetCurses() {
