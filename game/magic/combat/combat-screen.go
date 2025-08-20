@@ -2931,6 +2931,19 @@ func (combat *CombatScreen) UpdateAnimations(){
             unit.LostUnitsTime -= 1
         }
     }
+
+    for _, unit := range combat.Model.AttackingArmy.KilledUnits {
+        if unit.LostUnitsTime > 0 {
+            unit.LostUnitsTime -= 1
+        }
+    }
+
+    for _, unit := range combat.Model.DefendingArmy.KilledUnits {
+        if unit.LostUnitsTime > 0 {
+            unit.LostUnitsTime -= 1
+        }
+    }
+
 }
 
 func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUnit, x int, y int, merge bool) {
@@ -4447,6 +4460,23 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
     // sort units in top down order before drawing them
     allUnits := make([]*ArmyUnit, 0, len(combat.Model.DefendingArmy.units) + len(combat.Model.AttackingArmy.units))
+
+    allUnits = append(allUnits, combat.Model.DefendingArmy.units...)
+    allUnits = append(allUnits, combat.Model.AttackingArmy.units...)
+
+    for _, unit := range combat.Model.AttackingArmy.KilledUnits {
+        if unit.LostUnitsTime > 0 {
+            allUnits = append(allUnits, unit)
+        }
+    }
+
+    for _, unit := range combat.Model.DefendingArmy.KilledUnits {
+        if unit.LostUnitsTime > 0 {
+            allUnits = append(allUnits, unit)
+        }
+    }
+
+    /*
     for _, unit := range combat.Model.DefendingArmy.units {
         allUnits = append(allUnits, unit)
     }
@@ -4454,6 +4484,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
     for _, unit := range combat.Model.AttackingArmy.units {
         allUnits = append(allUnits, unit)
     }
+    */
 
     compareUnit := func(unitA *ArmyUnit, unitB *ArmyUnit) int {
         ax, ay := tilePosition(float64(unitA.X), float64(unitA.Y))
