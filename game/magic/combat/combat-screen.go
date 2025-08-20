@@ -147,6 +147,13 @@ const (
     CombatCast
 )
 
+type DeathAnimationType int
+const (
+    DeathAnimationNone DeathAnimationType = iota
+    DeathColorFade
+    DeathAnimationGibs
+)
+
 const (
     LightningBoltSound int = 19
 )
@@ -243,7 +250,8 @@ type CombatScreen struct {
     MouseState MouseState
 
     // creating gibs and be optional
-    EnableGibs bool
+    DeathAnimation DeathAnimationType
+    // EnableGibs bool
     Gibs []*Gib
 
     CameraScale float64
@@ -385,7 +393,8 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Coordinates: coordinates,
         // ScreenToTile: screenToTile,
         WhitePixel: whitePixel,
-        EnableGibs: true, // enable gibs by default
+        // EnableGibs: true, // enable gibs by default
+        DeathAnimation: DeathColorFade,
 
         Model: MakeCombatModel(allSpells, defendingArmy, attackingArmy, landscape, plane, zone, influence, overworldX, overworldY, events),
     }
@@ -1621,7 +1630,7 @@ func (caster *UnitCaster) ComputeEffectiveSpellCost(spell spellbook.Spell, overl
 
 // create gib effects for a unit
 func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
-    if !combat.EnableGibs {
+    if combat.DeathAnimation != DeathAnimationGibs {
         return
     }
 
