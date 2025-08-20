@@ -4252,7 +4252,9 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
     if combat.Model.SelectedUnit != nil && isVisible(combat.Model.SelectedUnit) {
-        if !combat.IsSelectingSpell() {
+        // if the unit is currently selecting a spell, then don't draw the movement path
+        // also don't draw the movement path if the unit can teleport
+        if !combat.IsSelectingSpell() && ! combat.Model.SelectedUnit.CanTeleport(){
             var path pathfinding.Path
             ok := false
 
@@ -4275,6 +4277,8 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                     tx, ty := tilePosition(float64(tileX), float64(tileY))
                     // tx += float64(tile0.Bounds().Dx())/2
                     // ty += float64(tile0.Bounds().Dy())/2
+
+                    // show boots
                     movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
                     tx -= float64(movementImage.Bounds().Dx())/2
                     ty -= float64(movementImage.Bounds().Dy())/2
