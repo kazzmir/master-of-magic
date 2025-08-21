@@ -252,7 +252,6 @@ type CombatScreen struct {
 
     // creating gibs and be optional
     DeathAnimation DeathAnimationType
-    // EnableGibs bool
     Gibs []*Gib
 
     CameraScale float64
@@ -394,7 +393,6 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Coordinates: coordinates,
         // ScreenToTile: screenToTile,
         WhitePixel: whitePixel,
-        // EnableGibs: true, // enable gibs by default
         DeathAnimation: DeathColorFade,
 
         Model: MakeCombatModel(allSpells, defendingArmy, attackingArmy, landscape, plane, zone, influence, overworldX, overworldY, events),
