@@ -25,6 +25,7 @@ import (
 )
 
 const MAX_TURNS = 50
+const LostUnitsMax = 50
 
 type DamageSource int
 const (
@@ -552,6 +553,10 @@ type ArmyUnit struct {
     Model *CombatModel
 
     Team Team
+
+    // how many units were just lost due to an attack/spell/something that caused damage
+    LostUnits int
+    LostUnitsTime int
 
     // height above the ground, negative for partially below ground
     Height int
@@ -1685,7 +1690,17 @@ func (unit *ArmyUnit) TakeDamage(damage int, damageType DamageType) int {
         case DamageUndead: unit.UndeadDamage += damage
     }
 
-    return visibleFigures - unit.VisibleFigures()
+    lost := visibleFigures - unit.VisibleFigures()
+
+    if unit.LostUnitsTime == 0 {
+        // length of time (in updates) to show the lost units
+        unit.LostUnitsTime = LostUnitsMax
+        unit.LostUnits = lost
+    } else {
+        unit.LostUnits += lost
+    }
+
+    return lost
 }
 
 func (unit *ArmyUnit) Heal(amount int){
