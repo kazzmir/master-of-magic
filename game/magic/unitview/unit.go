@@ -53,9 +53,9 @@ func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit
         } else {
             first := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
             if grey {
-                RenderCombatUnitGrey(screen, use, options, unit.GetVisibleCount(), 0, 0, first, counter, imageCache)
+                RenderCombatUnitGrey(screen, use, options, unit.GetVisibleCount(), 0, nil, first, counter, imageCache)
             } else {
-                RenderCombatUnit(screen, use, options, unit.GetVisibleCount(), 0, 0, first, counter, imageCache)
+                RenderCombatUnit(screen, use, options, unit.GetVisibleCount(), 0, nil, first, counter, imageCache)
             }
         }
     }

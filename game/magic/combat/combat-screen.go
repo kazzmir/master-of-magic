@@ -4387,7 +4387,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 }
 
             } else if unit.IsAsleep() {
-                unitview.RenderCombatUnitGrey(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, lostTime, use, combat.Counter, &combat.ImageCache)
+                unitview.RenderCombatUnitGrey(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, &dying, use, combat.Counter, &combat.ImageCache)
             } else {
                 warpCreature := false
                 for _, curse := range unit.GetCurses() {
@@ -4407,7 +4407,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                     unitOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xb5, G: 0x5e, B: 0xf3, A: 0xff})
                 }
 
-                unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, float64(unit.LostUnitsTime) / LostUnitsMax, use, combat.Counter, &combat.ImageCache)
+                unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, &dying, use, combat.Counter, &combat.ImageCache)
 
                 if warpCreature {
                     unitOptions.ColorScale = savedColor
