@@ -157,10 +157,9 @@ func RenderCombatUnitGrey(screen *ebiten.Image, use *ebiten.Image, options ebite
             colorm.DrawImage(screen, use, dying, &dyingOptions)
         } else {
             colorm.DrawImage(screen, use, greyScale, &greyOptions)
-        }
-
-        if enchantment != data.UnitEnchantmentNone {
-            util.DrawOutline(screen, imageCache, use, greyOptions.GeoM, options.ColorScale, timeCounter/10, enchantment.Color())
+            if enchantment != data.UnitEnchantmentNone {
+                util.DrawOutline(screen, imageCache, use, greyOptions.GeoM, options.ColorScale, timeCounter/10, enchantment.Color())
+            }
         }
     }
 }
@@ -200,10 +199,9 @@ func RenderCombatUnit(screen *ebiten.Image, use *ebiten.Image, options ebiten.Dr
             colorm.DrawImage(screen, use, dying, &dyingOptions)
         } else {
             screen.DrawImage(use, &options)
-        }
-
-        if enchantment != data.UnitEnchantmentNone {
-            util.DrawOutline(screen, imageCache, use, options.GeoM, options.ColorScale, timeCounter/10, enchantment.Color())
+            if enchantment != data.UnitEnchantmentNone {
+                util.DrawOutline(screen, imageCache, use, options.GeoM, options.ColorScale, timeCounter/10, enchantment.Color())
+            }
         }
     }
 }
