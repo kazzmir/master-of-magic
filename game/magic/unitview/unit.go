@@ -49,7 +49,7 @@ func RenderUnitViewImage(screen *ebiten.Image, imageCache *util.ImageCache, unit
         RenderCombatTile(screen, imageCache, options)
 
         if unit.IsInvisible() {
-            RenderCombatSemiInvisible(screen, use, options, unit.GetVisibleCount(), 0, 0, counter, imageCache)
+            RenderCombatSemiInvisible(screen, use, options, unit.GetVisibleCount(), 0, nil, counter, imageCache)
         } else {
             first := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
             if grey {

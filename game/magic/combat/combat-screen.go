@@ -35,6 +35,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/vector"
+    "github.com/hajimehoshi/ebiten/v2/colorm"
 )
 
 type CombatState int
@@ -4368,6 +4369,11 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
             lostTime := float64(unit.LostUnitsTime) / LostUnitsMax
 
+            var dying colorm.ColorM
+            // dying.Scale(0, 0, 0, 0.45)
+            dying.Scale(1, 0, 0, lostTime)
+            dying.Translate(255, 0, 0, 0)
+
             // _ = index
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
             if unit.IsInvisible() {
@@ -4375,7 +4381,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 // any units with illusions immunity
                 canBeSeen := isVisible(unit)
                 if canBeSeen {
-                    unitview.RenderCombatSemiInvisible(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, lostTime, combat.Counter, &combat.ImageCache)
+                    unitview.RenderCombatSemiInvisible(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, &dying, combat.Counter, &combat.ImageCache)
                 } else {
                     // if can't be seen then don't render anything at all
                 }
