@@ -7,12 +7,22 @@ import (
     // "github.com/kazzmir/master-of-magic/game/magic/data"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type Engine struct {
 }
 
 func (engine *Engine) Update() error {
+    keys := inpututil.AppendJustPressedKeys(nil)
+
+    for _, key := range keys {
+        switch key {
+            case ebiten.KeyEscape, ebiten.KeyCapsLock:
+                return ebiten.Termination
+        }
+    }
+
     return nil
 }
 
@@ -28,6 +38,8 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
 }
 
 func main() {
+    log.SetFlags(log.Lshortfile | log.Ldate | log.Lmicroseconds)
+
     cache := lbx.AutoCache()
 
     engine := MakeEngine(cache)
