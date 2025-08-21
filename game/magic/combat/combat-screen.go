@@ -35,6 +35,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/vector"
+    "github.com/hajimehoshi/ebiten/v2/colorm"
 )
 
 type CombatState int
@@ -147,6 +148,13 @@ const (
     CombatCast
 )
 
+type DeathAnimationType int
+const (
+    DeathAnimationNone DeathAnimationType = iota
+    DeathColorFade
+    DeathAnimationGibs
+)
+
 const (
     LightningBoltSound int = 19
 )
@@ -243,7 +251,7 @@ type CombatScreen struct {
     MouseState MouseState
 
     // creating gibs and be optional
-    EnableGibs bool
+    DeathAnimation DeathAnimationType
     Gibs []*Gib
 
     CameraScale float64
@@ -385,7 +393,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Coordinates: coordinates,
         // ScreenToTile: screenToTile,
         WhitePixel: whitePixel,
-        EnableGibs: true, // enable gibs by default
+        DeathAnimation: DeathColorFade,
 
         Model: MakeCombatModel(allSpells, defendingArmy, attackingArmy, landscape, plane, zone, influence, overworldX, overworldY, events),
     }
@@ -1621,7 +1629,7 @@ func (caster *UnitCaster) ComputeEffectiveSpellCost(spell spellbook.Spell, overl
 
 // create gib effects for a unit
 func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
-    if !combat.EnableGibs {
+    if combat.DeathAnimation != DeathAnimationGibs {
         return
     }
 
@@ -2910,6 +2918,21 @@ func (combat *CombatScreen) UpdateAnimations(){
             unit.Animation.Next()
         }
     }
+
+    updateLost := func (units []*ArmyUnit) {
+        for _, unit := range units {
+            if unit.LostUnitsTime > 0 {
+                unit.LostUnitsTime -= 1
+            } else {
+                unit.LostUnits = 0
+            }
+        }
+    }
+
+    updateLost(combat.Model.AttackingArmy.units)
+    updateLost(combat.Model.DefendingArmy.units)
+    updateLost(combat.Model.AttackingArmy.KilledUnits)
+    updateLost(combat.Model.DefendingArmy.KilledUnits)
 }
 
 func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUnit, x int, y int, merge bool) {
@@ -4109,6 +4132,14 @@ func (combat *CombatScreen) IsUnitVisible(unit *ArmyUnit) bool {
     return combat.makeIsUnitVisibleFunc()(unit)
 }
 
+func getDyingColor(unit *ArmyUnit) color.RGBA {
+    if unit.GetRealm() == data.MagicNone {
+        return color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff} // red
+    }
+
+    return data.GetMagicColor(unit.GetRealm())
+}
+
 func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
     isVisible := functional.Memoize(combat.makeIsUnitVisibleFunc())
 
@@ -4228,7 +4259,9 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
     if combat.Model.SelectedUnit != nil && isVisible(combat.Model.SelectedUnit) {
-        if !combat.IsSelectingSpell() {
+        // if the unit is currently selecting a spell, then don't draw the movement path
+        // also don't draw the movement path if the unit can teleport
+        if !combat.IsSelectingSpell() && ! combat.Model.SelectedUnit.CanTeleport(){
             var path pathfinding.Path
             ok := false
 
@@ -4251,6 +4284,8 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                     tx, ty := tilePosition(float64(tileX), float64(tileY))
                     // tx += float64(tile0.Bounds().Dx())/2
                     // ty += float64(tile0.Bounds().Dy())/2
+
+                    // show boots
                     movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
                     tx -= float64(movementImage.Bounds().Dx())/2
                     ty -= float64(movementImage.Bounds().Dy())/2
@@ -4338,6 +4373,15 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             vector.DrawFilledCircle(screen, float32(x), float32(y), 2, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
             */
 
+            lostTime := float64(unit.LostUnitsTime) / LostUnitsMax
+
+            var dying colorm.ColorM
+            dyingColor := getDyingColor(unit)
+            r, g, b, _ := dyingColor.RGBA()
+            dying.Scale(0, 0, 0, lostTime)
+            // normalize each color component to [0, 1] range
+            dying.Translate(float64(r)/256/256, float64(g)/256/256, float64(b)/256/256, 0)
+
             // _ = index
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
             if unit.IsInvisible() {
@@ -4345,13 +4389,13 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 // any units with illusions immunity
                 canBeSeen := isVisible(unit)
                 if canBeSeen {
-                    unitview.RenderCombatSemiInvisible(screen, unitImage, unitOptions, unit.VisibleFigures(), combat.Counter, &combat.ImageCache)
+                    unitview.RenderCombatSemiInvisible(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, &dying, combat.Counter, &combat.ImageCache)
                 } else {
                     // if can't be seen then don't render anything at all
                 }
 
             } else if unit.IsAsleep() {
-                unitview.RenderCombatUnitGrey(screen, unitImage, unitOptions, unit.VisibleFigures(), use, combat.Counter, &combat.ImageCache)
+                unitview.RenderCombatUnitGrey(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, &dying, use, combat.Counter, &combat.ImageCache)
             } else {
                 warpCreature := false
                 for _, curse := range unit.GetCurses() {
@@ -4371,7 +4415,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                     unitOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xb5, G: 0x5e, B: 0xf3, A: 0xff})
                 }
 
-                unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), use, combat.Counter, &combat.ImageCache)
+                unitview.RenderCombatUnit(screen, unitImage, unitOptions, unit.VisibleFigures(), unit.LostUnits, &dying, use, combat.Counter, &combat.ImageCache)
 
                 if warpCreature {
                     unitOptions.ColorScale = savedColor
@@ -4426,6 +4470,23 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
     // sort units in top down order before drawing them
     allUnits := make([]*ArmyUnit, 0, len(combat.Model.DefendingArmy.units) + len(combat.Model.AttackingArmy.units))
+
+    allUnits = append(allUnits, combat.Model.DefendingArmy.units...)
+    allUnits = append(allUnits, combat.Model.AttackingArmy.units...)
+
+    for _, unit := range combat.Model.AttackingArmy.KilledUnits {
+        if unit.LostUnitsTime > 0 {
+            allUnits = append(allUnits, unit)
+        }
+    }
+
+    for _, unit := range combat.Model.DefendingArmy.KilledUnits {
+        if unit.LostUnitsTime > 0 {
+            allUnits = append(allUnits, unit)
+        }
+    }
+
+    /*
     for _, unit := range combat.Model.DefendingArmy.units {
         allUnits = append(allUnits, unit)
     }
@@ -4433,6 +4494,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
     for _, unit := range combat.Model.AttackingArmy.units {
         allUnits = append(allUnits, unit)
     }
+    */
 
     compareUnit := func(unitA *ArmyUnit, unitB *ArmyUnit) int {
         ax, ay := tilePosition(float64(unitA.X), float64(unitA.Y))
