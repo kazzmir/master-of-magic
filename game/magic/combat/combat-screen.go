@@ -4134,6 +4134,14 @@ func (combat *CombatScreen) IsUnitVisible(unit *ArmyUnit) bool {
     return combat.makeIsUnitVisibleFunc()(unit)
 }
 
+func getDyingColor(unit *ArmyUnit) color.RGBA {
+    if unit.GetRealm() == data.MagicNone {
+        return color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff} // red
+    }
+
+    return data.GetMagicColor(unit.GetRealm())
+}
+
 func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
     isVisible := functional.Memoize(combat.makeIsUnitVisibleFunc())
 
@@ -4370,9 +4378,11 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             lostTime := float64(unit.LostUnitsTime) / LostUnitsMax
 
             var dying colorm.ColorM
-            // dying.Scale(0, 0, 0, 0.45)
-            dying.Scale(1, 0, 0, lostTime)
-            dying.Translate(255, 0, 0, 0)
+            dyingColor := getDyingColor(unit)
+            r, g, b, _ := dyingColor.RGBA()
+            dying.Scale(0, 0, 0, lostTime)
+            // normalize each color component to [0, 1] range
+            dying.Translate(float64(r)/256/256, float64(g)/256/256, float64(b)/256/256, 0)
 
             // _ = index
             use := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
