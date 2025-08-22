@@ -3,6 +3,7 @@ package main
 import (
     "log"
     "errors"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -59,7 +60,16 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     enemyPlayer := player.MakeAIPlayer(data.BannerRed)
-    enemyPlayer.AddUnit(units.WarBear) 
+
+    count := 0
+    for count < engine.Player.Level + 1 {
+        choice := units.AllUnits[rand.N(len(units.AllUnits))]
+        if choice.Race == data.RaceHero || choice.Name == "Settlers" {
+            continue
+        }
+        enemyPlayer.AddUnit(choice)
+        count += 1
+    }
 
     attackingArmy := combat.Army {
         Player: enemyPlayer,
@@ -107,6 +117,8 @@ func (engine *Engine) Update() error {
                 engine.CombatCoroutine = nil
                 engine.CombatScreen = nil
                 engine.GameMode = GameModeUI
+
+                engine.Player.Level += 1
             }
     }
 
@@ -159,6 +171,8 @@ func main() {
     audio.Initialize()
     mouse.Initialize()
 
+    ebiten.SetWindowSize(1200, 900)
+    ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
     engine := MakeEngine(cache)
 
     err := ebiten.RunGame(engine)

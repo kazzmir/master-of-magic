@@ -11,6 +11,7 @@ import (
 type Player struct {
     Money uint64
     Wizard setup.WizardCustom
+    Level int
     AI bool
 
     Units []units.StackUnit
