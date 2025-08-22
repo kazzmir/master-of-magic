@@ -7,11 +7,13 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/data"
-    "github.com/kazzmir/master-of-magic/game/magic/units"
+    // "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
+
+    "github.com/kazzmir/master-of-magic/game/arena/player"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -33,26 +35,9 @@ const (
     GameModeBattle
 )
 
-type Player struct {
-    Name string
-    Money uint64
-
-    Units []units.StackUnit
-}
-
-func MakePlayer() *Player {
-    return &Player{
-        Name: "Player",
-        Money: 1000,
-        Units: []units.StackUnit{
-            units.MakeOverworldUnitFromUnit(units.LizardSwordsmen, 0, 0, data.PlaneArcanus, data.BannerGreen, &units.NoExperienceInfo{}, &units.NoEnchantments{}),
-        },
-    }
-}
-
 type Engine struct {
     GameMode GameMode
-    Player *Player
+    Player *player.Player
     Cache *lbx.LbxCache
 
     CombatCoroutine *coroutine.Coroutine
@@ -68,7 +53,13 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     }
 
     screen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, engine.Player, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
+
     return func(yield coroutine.YieldFunc) error {
+        for screen.Update(yield) == combat.CombatStateRunning {
+            yield()
+        }
+
+        return CombatDoneErr
     }
 }
 
@@ -128,7 +119,7 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (int, int) {
 func MakeEngine(cache *lbx.LbxCache) *Engine {
     return &Engine{
         GameMode: GameModeUI,
-        Player: MakePlayer(),
+        Player: player.MakePlayer(),
         Cache: cache,
     }
 }

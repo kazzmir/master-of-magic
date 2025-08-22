@@ -47,7 +47,7 @@ func (system *TestSpellSystem) CreateWarpLightningProjectile(target *ArmyUnit) *
 func (system *TestSpellSystem) CreateFlameStrikeProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player *playerlib.Player, unitCaster *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateDispelEvilProjectile(target *ArmyUnit) *Projectile {
@@ -71,7 +71,7 @@ func (system *TestSpellSystem) CreateWebProjectile(target *ArmyUnit) *Projectile
 func (system *TestSpellSystem) CreateBanishProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateDispelMagicProjectile(target *ArmyUnit, caster *playerlib.Player, dispelStrength int) *Projectile {
+func (system *TestSpellSystem) CreateDispelMagicProjectile(target *ArmyUnit, caster ArmyPlayer, dispelStrength int) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateWordOfRecallProjectile(target *ArmyUnit) *Projectile {
