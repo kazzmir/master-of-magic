@@ -47,9 +47,11 @@ var CombatDoneErr = errors.New("combat done")
 
 func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     defendingArmy := combat.Army {
+        Player: engine.Player,
     }
 
     attackingArmy := combat.Army {
+        Player: player.MakePlayer(),
     }
 
     screen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, engine.Player, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
