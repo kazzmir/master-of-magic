@@ -2,10 +2,16 @@ package main
 
 import (
     "log"
+    "errors"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
+    "github.com/kazzmir/master-of-magic/game/magic/audio"
+    "github.com/kazzmir/master-of-magic/game/magic/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/combat"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -47,6 +53,23 @@ func MakePlayer() *Player {
 type Engine struct {
     GameMode GameMode
     Player *Player
+    Cache *lbx.LbxCache
+
+    CombatCoroutine *coroutine.Coroutine
+}
+
+var CombatDoneErr = errors.New("combat done")
+
+func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
+    defendingArmy := combat.Army {
+    }
+
+    attackingArmy := combat.Army {
+    }
+
+    screen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, engine.Player, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
+    return func(yield coroutine.YieldFunc) error {
+    }
 }
 
 func (engine *Engine) Update() error {
@@ -57,6 +80,22 @@ func (engine *Engine) Update() error {
             case ebiten.KeyEscape, ebiten.KeyCapsLock:
                 return ebiten.Termination
         }
+    }
+
+    inputmanager.Update()
+
+    switch engine.GameMode {
+        case GameModeUI:
+            // TODO
+
+            engine.GameMode = GameModeBattle
+            engine.CombatCoroutine = coroutine.MakeCoroutine(engine.MakeBattleFunc())
+        case GameModeBattle:
+            err := engine.CombatCoroutine.Run()
+            if errors.Is(err, CombatDoneErr) {
+                engine.CombatCoroutine = nil
+                engine.GameMode = GameModeUI
+            }
     }
 
     return nil
@@ -90,6 +129,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     return &Engine{
         GameMode: GameModeUI,
         Player: MakePlayer(),
+        Cache: cache,
     }
 }
 
@@ -97,6 +137,9 @@ func main() {
     log.SetFlags(log.Lshortfile | log.Ldate | log.Lmicroseconds)
 
     cache := lbx.AutoCache()
+
+    audio.Initialize()
+    mouse.Initialize()
 
     engine := MakeEngine(cache)
 

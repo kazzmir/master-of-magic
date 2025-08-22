@@ -19,7 +19,6 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/functional"
-    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     globalMouse "github.com/kazzmir/master-of-magic/game/magic/mouse"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
@@ -87,7 +86,7 @@ type CombatEventNextUnit struct {
 }
 
 type CombatEventGlobalSpell struct {
-    Caster *playerlib.Player
+    Caster ArmyPlayer
     Magic data.MagicType
     Name string
 }
@@ -328,8 +327,8 @@ func MakeCombatFonts(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
         return CombatFonts{}
     }
 
-    defendingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(defendingArmy.Player.Wizard.Banner))
-    attackingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(attackingArmy.Player.Wizard.Banner))
+    defendingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(defendingArmy.Player.GetWizard().Banner))
+    attackingWizardFont := font.MakeOptimizedFontWithPalette(fonts[4], makePaletteFromBanner(attackingArmy.Player.GetWizard().Banner))
 
     return CombatFonts{
         DebugFont: loader(fontslib.SmallFont),
@@ -344,7 +343,7 @@ func MakeCombatFonts(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
 }
 
 // player is always the human player
-func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player *playerlib.Player, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int) *CombatScreen {
+func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player ArmyPlayer, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int) *CombatScreen {
     imageCache := util.MakeImageCache(cache)
 
     fonts := MakeCombatFonts(cache, defendingArmy, attackingArmy)
@@ -804,7 +803,7 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Pro
 
 // player will never be nil, but unitCaster might be nil if the player is casting the spell
 // if a hero/unit is casting the spell then unitCaster will be non-nil
-func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player *playerlib.Player, unitCaster *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 6)
     explodeImages := images
 
@@ -1491,7 +1490,7 @@ func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) *Proj
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, recall)
 }
 
-func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit, caster *playerlib.Player, dispelStrength int) *Projectile {
+func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit, caster ArmyPlayer, dispelStrength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 26)
     explodeImages := images
 
@@ -1960,7 +1959,7 @@ func (combat *CombatScreen) IsSelectingSpell() bool {
     return combat.DoSelectUnit || combat.DoSelectTile
 }
 
-func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
+func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
     var elements []*uilib.UIElement
 
     ui := &uilib.UI{
@@ -1973,7 +1972,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
             if combat.Model.AttackingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
-                combat.Fonts.AttackingWizardFont.PrintOptions(screen, 280, 167, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, combat.Model.AttackingArmy.Player.Wizard.Name)
+                combat.Fonts.AttackingWizardFont.PrintOptions(screen, 280, 167, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, combat.Model.AttackingArmy.Player.GetWizard().Name)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(246, 179)
@@ -1992,7 +1991,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             y += combat.Fonts.HudFont.Height() + 2
 
             combat.Fonts.HudFont.PrintOptions(screen, float64(200), float64(y), font.FontOptions{Scale: scale.ScaleAmount}, "Mana:")
-            combat.Fonts.HudFont.PrintOptions(screen, float64(right), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, fmt.Sprintf("%v", humanArmy.Player.Mana))
+            combat.Fonts.HudFont.PrintOptions(screen, float64(right), float64(y), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, fmt.Sprintf("%v", humanArmy.Player.GetMana()))
             y += combat.Fonts.HudFont.Height() + 2
 
             combat.Fonts.HudFont.PrintOptions(screen, float64(200), float64(y), font.FontOptions{Scale: scale.ScaleAmount}, "Range:")
@@ -2000,7 +1999,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
             if combat.Model.DefendingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
-                combat.Fonts.DefendingWizardFont.PrintOptions(screen, 40, 167, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, combat.Model.DefendingArmy.Player.Wizard.Name)
+                combat.Fonts.DefendingWizardFont.PrintOptions(screen, 40, 167, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, combat.Model.DefendingArmy.Player.GetWizard().Name)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(float64(7), float64(179))
@@ -2013,7 +2012,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
 
             if combat.Model.SelectedUnit != nil && combat.IsUnitVisible(combat.Model.SelectedUnit) {
 
-                rightImage, _ := combat.ImageCache.GetImageTransform(combat.Model.SelectedUnit.Unit.GetCombatLbxFile(), combat.Model.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0, player.Wizard.Banner.String(), units.MakeUpdateUnitColorsFunc(player.Wizard.Banner))
+                rightImage, _ := combat.ImageCache.GetImageTransform(combat.Model.SelectedUnit.Unit.GetCombatLbxFile(), combat.Model.SelectedUnit.Unit.GetCombatIndex(units.FacingRight), 0, player.GetWizard().Banner.String(), units.MakeUpdateUnitColorsFunc(player.GetWizard().Banner))
                 options.GeoM.Reset()
                 options.GeoM.Translate(85, 170)
                 scale.DrawScaled(screen, rightImage, &options)
@@ -2125,17 +2124,17 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
             }
 
             // the lower of the mana pool (casting skill) or the wizard's mana divided by the range
-            minimumMana := min(army.ManaPool, int(float64(army.Player.Mana) / army.Range.ToFloat()))
+            minimumMana := min(army.ManaPool, int(float64(army.Player.GetMana()) / army.Range.ToFloat()))
 
-            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.KnownSpells.CombatSpells(defendingCity), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, player, &spellPage, func (spell spellbook.Spell, picked bool){
+            spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.GetKnownSpells().CombatSpells(defendingCity), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, player, &spellPage, func (spell spellbook.Spell, picked bool){
                 if picked {
                     // player mana and skill should go down accordingly
                     combat.Model.InvokeSpell(combat, player, nil, spell, func(){
                         spellCost := player.ComputeEffectiveSpellCost(spell, false)
                         army.Casted = true
                         army.ManaPool -= spellCost
-                        player.Mana -= int(float64(spellCost) * army.Range.ToFloat())
-                        combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.Wizard.Name, spell.Name))
+                        player.UseMana(int(float64(spellCost) * army.Range.ToFloat()))
+                        combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.GetWizard().Name, spell.Name))
                     })
                 }
             })
@@ -2150,7 +2149,7 @@ func (combat *CombatScreen) MakeUI(player *playerlib.Player) *uilib.UI {
                 playerOnly = false
                 selections := []uilib.Selection{
                     uilib.Selection{
-                        Name: player.Wizard.Name,
+                        Name: player.GetWizard().Name,
                         Action: doPlayerSpell,
                     },
                     uilib.Selection{
@@ -2782,7 +2781,7 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
     }
 }
 
-func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster *playerlib.Player, magic data.MagicType, spellName string) {
+func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster ArmyPlayer, magic data.MagicType, spellName string) {
     oldDrawer := combat.Drawer
     defer func(){
         combat.Drawer = oldDrawer
@@ -2795,7 +2794,7 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
 
     maxAlpha := 150
 
-    castDescription := fmt.Sprintf("%v cast %v", caster.Wizard.Name, spellName)
+    castDescription := fmt.Sprintf("%v cast %v", caster.GetWizard().Name, spellName)
 
     text := combat.Fonts.EnchantmentFont.MeasureTextWidth(castDescription, 1)
 
