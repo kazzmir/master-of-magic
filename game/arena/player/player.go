@@ -9,21 +9,36 @@ import (
 )
 
 type Player struct {
-    Name string
     Money uint64
     Wizard setup.WizardCustom
+    AI bool
 
     Units []units.StackUnit
 }
 
-func MakePlayer() *Player {
+func MakePlayer(banner data.BannerType) *Player {
     return &Player{
-        Name: "Player",
         Money: 1000,
-        Units: []units.StackUnit{
-            units.MakeOverworldUnitFromUnit(units.LizardSwordsmen, 0, 0, data.PlaneArcanus, data.BannerGreen, &units.NoExperienceInfo{}, &units.NoEnchantments{}),
+        Wizard: setup.WizardCustom{
+            Name: "Player",
+            Banner: banner,
         },
     }
+}
+
+func MakeAIPlayer(banner data.BannerType) *Player {
+    return &Player{
+        Money: 1000,
+        AI: true,
+        Wizard: setup.WizardCustom{
+            Name: "Enemy",
+            Banner: banner,
+        },
+    }
+}
+
+func (player *Player) AddUnit(unit units.Unit) {
+    player.Units = append(player.Units, units.MakeOverworldUnitFromUnit(unit, 0, 0, data.PlaneArcanus, player.Wizard.Banner, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
 }
 
 func (player *Player) GetKnownSpells() spellbook.Spells {
@@ -62,11 +77,11 @@ func (player *Player) ComputeCastingSkill() int {
 }
 
 func (player *Player) IsHuman() bool {
-    return true
+    return !player.AI
 }
 
 func (player *Player) IsAI() bool {
-    return false
+    return player.AI
 }
 
 func (player *Player) ComputeEffectiveResearchPerTurn(cost float64, spell spellbook.Spell) int {

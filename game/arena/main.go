@@ -7,11 +7,12 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/data"
-    // "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/game/magic/scale"
 
     "github.com/kazzmir/master-of-magic/game/arena/player"
 
@@ -51,9 +52,24 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         Player: engine.Player,
     }
 
-    attackingArmy := combat.Army {
-        Player: player.MakePlayer(),
+    for _, unit := range engine.Player.Units {
+        defendingArmy.AddUnit(unit)
     }
+
+    defendingArmy.LayoutUnits(combat.TeamDefender)
+
+    enemyPlayer := player.MakeAIPlayer(data.BannerRed)
+    enemyPlayer.AddUnit(units.WarBear) 
+
+    attackingArmy := combat.Army {
+        Player: enemyPlayer,
+    }
+
+    for _, unit := range enemyPlayer.Units {
+        attackingArmy.AddUnit(unit)
+    }
+
+    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     screen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, engine.Player, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
     engine.CombatScreen = screen
@@ -102,6 +118,7 @@ func (engine *Engine) DrawUI(screen *ebiten.Image) {
 
 func (engine *Engine) DrawBattle(screen *ebiten.Image) {
     engine.CombatScreen.Draw(screen)
+    mouse.Mouse.Draw(screen)
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image) {
@@ -116,16 +133,20 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (int, int) {
     switch engine.GameMode {
         case GameModeUI: return outsideWidth, outsideHeight
-        case GameModeBattle: return data.ScreenWidth, data.ScreenHeight
+        case GameModeBattle: return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
     }
 
     return outsideWidth, outsideHeight
 }
 
 func MakeEngine(cache *lbx.LbxCache) *Engine {
+    playerObj := player.MakePlayer(data.BannerGreen)
+
+    playerObj.AddUnit(units.LizardSwordsmen)
+
     return &Engine{
         GameMode: GameModeUI,
-        Player: player.MakePlayer(),
+        Player: playerObj,
         Cache: cache,
     }
 }
