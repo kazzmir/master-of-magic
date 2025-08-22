@@ -41,6 +41,7 @@ type Engine struct {
     Cache *lbx.LbxCache
 
     CombatCoroutine *coroutine.Coroutine
+    CombatScreen *combat.CombatScreen
 }
 
 var CombatDoneErr = errors.New("combat done")
@@ -55,6 +56,7 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     }
 
     screen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, engine.Player, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
+    engine.CombatScreen = screen
 
     return func(yield coroutine.YieldFunc) error {
         for screen.Update(yield) == combat.CombatStateRunning {
@@ -87,6 +89,7 @@ func (engine *Engine) Update() error {
             err := engine.CombatCoroutine.Run()
             if errors.Is(err, CombatDoneErr) {
                 engine.CombatCoroutine = nil
+                engine.CombatScreen = nil
                 engine.GameMode = GameModeUI
             }
     }
@@ -98,6 +101,7 @@ func (engine *Engine) DrawUI(screen *ebiten.Image) {
 }
 
 func (engine *Engine) DrawBattle(screen *ebiten.Image) {
+    engine.CombatScreen.Draw(screen)
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image) {
