@@ -189,59 +189,9 @@ func solidImage(r uint8, g uint8, b uint8) *ui_image.NineSlice {
     return ui_image.NewNineSliceColor(color.NRGBA{R: r, G: g, B: b, A: 255})
 }
 
-func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
-    font, err := console.LoadFont()
-    if err != nil {
-        return nil, err
-    }
-
-    face := text.GoTextFace{
-        Source: font,
-        Size: 18,
-    }
-
-    rootContainer := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(4),
-            widget.RowLayoutOpts.Padding(widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
-        )),
-        widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})),
-    )
-
-    newGameButton := widget.NewButton(
-        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(makeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
-        widget.ButtonOpts.Text("New Game", &face, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            select {
-                case engine.Events <- &EventNewGame{}:
-                default:
-            }
-        }),
-    )
-
-    rootContainer.AddChild(newGameButton)
-
-    armyInfo := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(2),
-            widget.RowLayoutOpts.Padding(widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
-        )),
-        widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 48, G: 48, B: 48, A: 255})),
-    )
-
-    armyInfo.AddChild(widget.NewText(
-        widget.TextOpts.Text("Army Info", &face, color.White),
-    ))
-
+func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) *widget.Container {
     unitList := widget.NewList(
-        widget.ListOpts.EntryFontFace(&face),
+        widget.ListOpts.EntryFontFace(face),
         widget.ListOpts.SliderOpts(
             widget.SliderOpts.Images(
                 &widget.SliderTrackImage{
@@ -279,13 +229,89 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
         ),
     )
 
-    for _, unit := range engine.Player.Units {
+    armyInfo := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(2),
+            widget.RowLayoutOpts.Padding(widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
+        )),
+        widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 48, G: 48, B: 48, A: 255})),
+    )
+
+    armyInfo.AddChild(widget.NewText(
+        widget.TextOpts.Text("Army", face, color.White),
+    ))
+
+    for _, unit := range allUnits {
         unitList.AddEntry(unit)
     }
 
     armyInfo.AddChild(unitList)
 
-    rootContainer.AddChild(armyInfo)
+    unitInfoContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+            widget.RowLayoutOpts.Spacing(4),
+            // widget.RowLayoutOpts.Padding(widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
+        )),
+    )
+
+    unitInfoContainer.AddChild(armyInfo)
+
+    unitSpecifics := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(2),
+        )),
+    )
+
+    unitSpecifics.AddChild(widget.NewText(
+        widget.TextOpts.Text("Unit Specifics", face, color.White),
+    ))
+
+    unitInfoContainer.AddChild(unitSpecifics)
+
+    return unitInfoContainer
+}
+
+func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
+    font, err := console.LoadFont()
+    if err != nil {
+        return nil, err
+    }
+
+    face := text.GoTextFace{
+        Source: font,
+        Size: 18,
+    }
+
+    rootContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(4),
+            widget.RowLayoutOpts.Padding(widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
+        )),
+        widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})),
+    )
+
+    newGameButton := widget.NewButton(
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.Text("New Game", &face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            select {
+                case engine.Events <- &EventNewGame{}:
+                default:
+            }
+        }),
+    )
+
+    rootContainer.AddChild(newGameButton)
+    rootContainer.AddChild(makeUnitInfoUI(&face, engine.Player.Units))
 
     ui := &ebitenui.UI{
         Container: rootContainer,
