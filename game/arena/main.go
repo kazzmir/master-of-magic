@@ -125,7 +125,6 @@ func (engine *Engine) Update() error {
     switch engine.GameMode {
         case GameModeUI:
             engine.UI.Update()
-            // TODO
 
             select {
                 case event := <-engine.Events:
@@ -136,11 +135,6 @@ func (engine *Engine) Update() error {
                     }
                 default:
             }
-
-            /*
-            engine.GameMode = GameModeBattle
-            engine.CombatCoroutine = coroutine.MakeCoroutine(engine.MakeBattleFunc())
-            */
         case GameModeBattle:
             err := engine.CombatCoroutine.Run()
             if errors.Is(err, CombatDoneErr) {
@@ -228,6 +222,21 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
     )
 
     rootContainer.AddChild(newGameButton)
+
+    armyInfo := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(2),
+            widget.RowLayoutOpts.Padding(widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
+        )),
+        widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 48, G: 48, B: 48, A: 255})),
+    )
+
+    armyInfo.AddChild(widget.NewText(
+        widget.TextOpts.Text("Army Info", &face, color.White),
+    ))
+
+    rootContainer.AddChild(armyInfo)
 
     ui := &ebitenui.UI{
         Container: rootContainer,
