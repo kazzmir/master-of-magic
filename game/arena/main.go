@@ -44,10 +44,18 @@ const (
     GameModeBattle
 )
 
+type EngineEvents interface {
+}
+
+type EventNewGame struct {
+}
+
 type Engine struct {
     GameMode GameMode
     Player *player.Player
     Cache *lbx.LbxCache
+
+    Events chan EngineEvents
 
     CombatCoroutine *coroutine.Coroutine
     CombatScreen *combat.CombatScreen
@@ -118,6 +126,16 @@ func (engine *Engine) Update() error {
         case GameModeUI:
             engine.UI.Update()
             // TODO
+
+            select {
+                case event := <-engine.Events:
+                    switch event.(type) {
+                        case *EventNewGame:
+                            engine.GameMode = GameModeBattle
+                            engine.CombatCoroutine = coroutine.MakeCoroutine(engine.MakeBattleFunc())
+                    }
+                default:
+            }
 
             /*
             engine.GameMode = GameModeBattle
@@ -201,6 +219,12 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
             Hover: color.White,
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
+        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            select {
+                case engine.Events <- &EventNewGame{}:
+                default:
+            }
+        }),
     )
 
     rootContainer.AddChild(newGameButton)
@@ -221,6 +245,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
         GameMode: GameModeUI,
         Player: playerObj,
         Cache: cache,
+        Events: make(chan EngineEvents, 10),
     }
 
     var err error
