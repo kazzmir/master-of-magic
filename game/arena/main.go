@@ -5,6 +5,7 @@ import (
     "errors"
     "math/rand/v2"
     "image/color"
+    "fmt"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -190,6 +191,11 @@ func solidImage(r uint8, g uint8, b uint8) *ui_image.NineSlice {
 }
 
 func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) *widget.Container {
+
+    currentName := widget.NewText(widget.TextOpts.Text("", face, color.White))
+    currentHealth := widget.NewText(widget.TextOpts.Text("", face, color.White))
+    currentRace := widget.NewText(widget.TextOpts.Text("", face, color.White))
+
     unitList := widget.NewList(
         widget.ListOpts.EntryFontFace(face),
         widget.ListOpts.SliderOpts(
@@ -214,7 +220,14 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) *widget.C
             },
         ),
         widget.ListOpts.EntrySelectedHandler(func (args *widget.ListEntrySelectedEventArgs) {
-            log.Printf("Selected unit: %v", args.Entry)
+            // log.Printf("Selected unit: %v", args.Entry)
+
+            unit := args.Entry.(units.StackUnit)
+
+            currentName.Label = fmt.Sprintf("Name: %v", unit.GetFullName())
+            currentHealth.Label = fmt.Sprintf("HP: %d/%d", unit.GetHitPoints(), unit.GetFullHitPoints())
+            currentRace.Label = fmt.Sprintf("Race: %v", unit.GetRace())
+
         }),
         widget.ListOpts.EntryColor(&widget.ListEntryColor{
             Selected: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -268,6 +281,9 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) *widget.C
     unitSpecifics.AddChild(widget.NewText(
         widget.TextOpts.Text("Unit Specifics", face, color.White),
     ))
+    unitSpecifics.AddChild(currentName)
+    unitSpecifics.AddChild(currentRace)
+    unitSpecifics.AddChild(currentHealth)
 
     unitInfoContainer.AddChild(unitSpecifics)
 
