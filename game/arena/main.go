@@ -185,6 +185,10 @@ func makeButtonImage(baseImage *ui_image.NineSlice) *widget.ButtonImage {
     }
 }
 
+func solidImage(r uint8, g uint8, b uint8) *ui_image.NineSlice {
+    return ui_image.NewNineSliceColor(color.NRGBA{R: r, G: g, B: b, A: 255})
+}
+
 func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
     font, err := console.LoadFont()
     if err != nil {
@@ -235,6 +239,51 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
     armyInfo.AddChild(widget.NewText(
         widget.TextOpts.Text("Army Info", &face, color.White),
     ))
+
+    unitList := widget.NewList(
+        widget.ListOpts.EntryFontFace(&face),
+        widget.ListOpts.SliderOpts(
+            widget.SliderOpts.Images(
+                &widget.SliderTrackImage{
+                    Idle: solidImage(64, 64, 64),
+                    Hover: solidImage(96, 96, 96),
+                },
+                makeButtonImage(solidImage(192, 192, 192)),
+            ),
+        ),
+        widget.ListOpts.HideHorizontalSlider(),
+        widget.ListOpts.ContainerOpts(
+            widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.MinSize(0, 200),
+            ),
+        ),
+        widget.ListOpts.EntryLabelFunc(
+            func (e any) string {
+                unit := e.(units.StackUnit)
+                return unit.GetName()
+            },
+        ),
+        widget.ListOpts.EntrySelectedHandler(func (args *widget.ListEntrySelectedEventArgs) {
+            log.Printf("Selected unit: %v", args.Entry)
+        }),
+        widget.ListOpts.EntryColor(&widget.ListEntryColor{
+            Selected: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            Unselected: color.NRGBA{R: 128, G: 128, B: 128, A: 255},
+        }),
+        widget.ListOpts.ScrollContainerOpts(
+            widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                Idle: solidImage(64, 64, 64),
+                Disabled: solidImage(32, 32, 32),
+                Mask: solidImage(32, 32, 32),
+            }),
+        ),
+    )
+
+    for _, unit := range engine.Player.Units {
+        unitList.AddEntry(unit)
+    }
+
+    armyInfo.AddChild(unitList)
 
     rootContainer.AddChild(armyInfo)
 
