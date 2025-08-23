@@ -190,6 +190,91 @@ func solidImage(r uint8, g uint8, b uint8) *ui_image.NineSlice {
     return ui_image.NewNineSliceColor(color.NRGBA{R: r, G: g, B: b, A: 255})
 }
 
+func makeShopUI(face *text.GoTextFace) *widget.Container {
+    container := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(2),
+            widget.RowLayoutOpts.Padding(widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
+        )),
+    )
+
+    container.AddChild(widget.NewText(
+        widget.TextOpts.Text("Shop", face, color.White),
+    ))
+
+    unitList := widget.NewList(
+        widget.ListOpts.EntryFontFace(face),
+        widget.ListOpts.SliderOpts(
+            widget.SliderOpts.Images(
+                &widget.SliderTrackImage{
+                    Idle: solidImage(64, 64, 64),
+                    Hover: solidImage(96, 96, 96),
+                },
+                makeButtonImage(solidImage(192, 192, 192)),
+            ),
+        ),
+        widget.ListOpts.HideHorizontalSlider(),
+        widget.ListOpts.ContainerOpts(
+            widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    MaxHeight: 400,
+                }),
+                widget.WidgetOpts.MinSize(0, 200),
+            ),
+        ),
+        widget.ListOpts.EntryLabelFunc(
+            func (e any) string {
+                // unit := e.(units.StackUnit)
+                // return unit.GetName()
+                return e.(string)
+            },
+        ),
+        widget.ListOpts.EntrySelectedHandler(func (args *widget.ListEntrySelectedEventArgs) {
+            // log.Printf("Selected unit: %v", args.Entry)
+            // unit := args.Entry.(units.StackUnit)
+        }),
+        widget.ListOpts.EntryColor(&widget.ListEntryColor{
+            Selected: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            Unselected: color.NRGBA{R: 128, G: 128, B: 128, A: 255},
+        }),
+        widget.ListOpts.ScrollContainerOpts(
+            widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                Idle: solidImage(64, 64, 64),
+                Disabled: solidImage(32, 32, 32),
+                Mask: solidImage(32, 32, 32),
+            }),
+        ),
+    )
+
+    container.AddChild(unitList)
+
+    for _, unit := range units.AllUnits {
+        unitList.AddEntry(unit.GetName())
+    }
+
+    container.AddChild(widget.NewButton(
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.Text("Buy Unit", face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            /*
+            select {
+                case engine.Events <- &EventNewGame{}:
+                default:
+            }
+            */
+        }),
+
+    ))
+
+    return container
+}
+
 func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) *widget.Container {
 
     currentName := widget.NewText(widget.TextOpts.Text("", face, color.White))
@@ -328,6 +413,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
 
     rootContainer.AddChild(newGameButton)
     rootContainer.AddChild(makeUnitInfoUI(&face, engine.Player.Units))
+    rootContainer.AddChild(makeShopUI(&face))
 
     ui := &ebitenui.UI{
         Container: rootContainer,
