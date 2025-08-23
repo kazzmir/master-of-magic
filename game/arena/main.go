@@ -190,7 +190,7 @@ func solidImage(r uint8, g uint8, b uint8) *ui_image.NineSlice {
     return ui_image.NewNineSliceColor(color.NRGBA{R: r, G: g, B: b, A: 255})
 }
 
-func makeShopUI(face *text.GoTextFace) *widget.Container {
+func makeShopUI(face *text.GoTextFace, playerObj *player.Player) *widget.Container {
     container := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
@@ -202,6 +202,12 @@ func makeShopUI(face *text.GoTextFace) *widget.Container {
     container.AddChild(widget.NewText(
         widget.TextOpts.Text("Shop", face, color.White),
     ))
+
+    money := widget.NewText(
+        widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
+    )
+
+    container.AddChild(money)
 
     unitList := widget.NewList(
         widget.ListOpts.EntryFontFace(face),
@@ -227,7 +233,9 @@ func makeShopUI(face *text.GoTextFace) *widget.Container {
             func (e any) string {
                 // unit := e.(units.StackUnit)
                 // return unit.GetName()
-                return e.(string)
+                unit := e.(*units.Unit)
+
+                return fmt.Sprintf("%v %v", unit.Race, unit.Name)
             },
         ),
         widget.ListOpts.EntrySelectedHandler(func (args *widget.ListEntrySelectedEventArgs) {
@@ -250,7 +258,7 @@ func makeShopUI(face *text.GoTextFace) *widget.Container {
     container.AddChild(unitList)
 
     for _, unit := range units.AllUnits {
-        unitList.AddEntry(unit.GetName())
+        unitList.AddEntry(&unit)
     }
 
     container.AddChild(widget.NewButton(
@@ -413,7 +421,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
 
     rootContainer.AddChild(newGameButton)
     rootContainer.AddChild(makeUnitInfoUI(&face, engine.Player.Units))
-    rootContainer.AddChild(makeShopUI(&face))
+    rootContainer.AddChild(makeShopUI(&face, engine.Player))
 
     ui := &ebitenui.UI{
         Container: rootContainer,
