@@ -4,6 +4,7 @@ import (
     "log"
     "errors"
     "math/rand/v2"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -14,11 +15,17 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    "github.com/kazzmir/master-of-magic/game/magic/console"
 
     "github.com/kazzmir/master-of-magic/game/arena/player"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
+    "github.com/hajimehoshi/ebiten/v2/text/v2"
+
+    "github.com/ebitenui/ebitenui"
+    "github.com/ebitenui/ebitenui/widget"
+    ui_image "github.com/ebitenui/ebitenui/image"
 )
 
 /*
@@ -44,6 +51,8 @@ type Engine struct {
 
     CombatCoroutine *coroutine.Coroutine
     CombatScreen *combat.CombatScreen
+
+    UI *ebitenui.UI
 }
 
 var CombatDoneErr = errors.New("combat done")
@@ -107,10 +116,13 @@ func (engine *Engine) Update() error {
 
     switch engine.GameMode {
         case GameModeUI:
+            engine.UI.Update()
             // TODO
 
+            /*
             engine.GameMode = GameModeBattle
             engine.CombatCoroutine = coroutine.MakeCoroutine(engine.MakeBattleFunc())
+            */
         case GameModeBattle:
             err := engine.CombatCoroutine.Run()
             if errors.Is(err, CombatDoneErr) {
@@ -126,6 +138,7 @@ func (engine *Engine) Update() error {
 }
 
 func (engine *Engine) DrawUI(screen *ebiten.Image) {
+    engine.UI.Draw(screen)
 }
 
 func (engine *Engine) DrawBattle(screen *ebiten.Image) {
@@ -151,16 +164,71 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (int, int) {
     return outsideWidth, outsideHeight
 }
 
+func makeButtonImage(baseImage *ui_image.NineSlice) *widget.ButtonImage {
+    return &widget.ButtonImage{
+        Idle: baseImage,
+        Hover: baseImage,
+        Pressed: baseImage,
+        Disabled: baseImage,
+    }
+}
+
+func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
+    font, err := console.LoadFont()
+    if err != nil {
+        return nil, err
+    }
+
+    face := text.GoTextFace{
+        Source: font,
+        Size: 18,
+    }
+
+    rootContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(4),
+            widget.RowLayoutOpts.Padding(widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
+        )),
+        widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})),
+    )
+
+    newGameButton := widget.NewButton(
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.Text("New Game", &face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+    )
+
+    rootContainer.AddChild(newGameButton)
+
+    ui := &ebitenui.UI{
+        Container: rootContainer,
+    }
+
+    return ui, nil
+}
+
 func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
     playerObj.AddUnit(units.LizardSwordsmen)
 
-    return &Engine{
+    engine := Engine{
         GameMode: GameModeUI,
         Player: playerObj,
         Cache: cache,
     }
+
+    var err error
+    engine.UI, err = engine.MakeUI()
+    if err != nil {
+        log.Printf("Error creating UI: %v", err)
+    }
+    return &engine
 }
 
 func main() {
