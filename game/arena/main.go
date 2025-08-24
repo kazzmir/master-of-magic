@@ -82,6 +82,9 @@ func getValidChoices(budget uint64) []*units.Unit {
         if choice.Sailing {
             continue
         }
+        if choice.HasAbility(data.AbilityTransport) {
+            continue
+        }
 
         choices = append(choices, choice)
     }
