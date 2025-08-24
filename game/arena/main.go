@@ -260,6 +260,23 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
 
     container.AddChild(money)
 
+    unitName := widget.NewText(
+        widget.TextOpts.Text("Name: ", face, color.White),
+    )
+
+    unitCost := widget.NewText(
+        widget.TextOpts.Text("Cost: ", face, color.White),
+    )
+
+    container2 := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+            widget.RowLayoutOpts.Spacing(4),
+        )),
+    )
+
+    container.AddChild(container2)
+
     unitList := widget.NewList(
         widget.ListOpts.EntryFontFace(face),
         widget.ListOpts.SliderOpts(
@@ -291,7 +308,11 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
         ),
         widget.ListOpts.EntrySelectedHandler(func (args *widget.ListEntrySelectedEventArgs) {
             // log.Printf("Selected unit: %v", args.Entry)
-            // unit := args.Entry.(units.StackUnit)
+            unit := args.Entry.(*units.Unit)
+
+            unitName.Label = fmt.Sprintf("Name: %v", unit.Name)
+            unitCost.Label = fmt.Sprintf("Cost: %d", getUnitCost(unit))
+
         }),
         widget.ListOpts.EntryColor(&widget.ListEntryColor{
             Selected: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -306,13 +327,23 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
         ),
     )
 
-    container.AddChild(unitList)
+    container2.AddChild(unitList)
 
     for _, unit := range getValidChoices(100000) {
         unitList.AddEntry(unit)
     }
 
-    container.AddChild(widget.NewButton(
+    infoContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(4),
+        )),
+    )
+
+    infoContainer.AddChild(unitName)
+    infoContainer.AddChild(unitCost)
+
+    infoContainer.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
         widget.ButtonOpts.Text("Buy Unit", face, &widget.ButtonTextColor{
@@ -335,8 +366,9 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
             }
 
         }),
-
     ))
+
+    container2.AddChild(infoContainer)
 
     return container
 }
