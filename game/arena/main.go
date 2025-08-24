@@ -68,6 +68,27 @@ type Engine struct {
 
 var CombatDoneErr = errors.New("combat done")
 
+func getValidChoices(budget uint64) []*units.Unit {
+    var choices []*units.Unit
+
+    for i := range units.AllUnits {
+        choice := &units.AllUnits[i]
+        if choice.Race == data.RaceHero || choice.Name == "Settlers" {
+            continue
+        }
+        if getUnitCost(choice) > budget {
+            continue
+        }
+        if choice.Sailing {
+            continue
+        }
+
+        choices = append(choices, choice)
+    }
+
+    return choices
+}
+
 func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     defendingArmy := combat.Army {
         Player: engine.Player,
@@ -85,15 +106,16 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     engine.CurrentBattleReward = 0
 
     for budget > 0 {
-        choice := units.AllUnits[rand.N(len(units.AllUnits))]
-        if choice.Race == data.RaceHero || choice.Name == "Settlers" {
-            continue
+        choices := getValidChoices(budget)
+
+        if len(choices) == 0 {
+            break
         }
-        if getUnitCost(&choice) > budget {
-            continue
-        }
-        enemyPlayer.AddUnit(choice)
-        unitCost := getUnitCost(&choice)
+
+        choice := choices[rand.N(len(choices))]
+
+        enemyPlayer.AddUnit(*choice)
+        unitCost := getUnitCost(choice)
         budget -= unitCost
         engine.CurrentBattleReward += unitCost
     }
@@ -504,8 +526,17 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     return &engine
 }
 
+func showCost() {
+    for _, unit := range units.AllUnits {
+        cost := getUnitCost(&unit)
+        log.Printf("Unit %v %v costs %v", unit.Race, unit.Name, cost)
+    }
+}
+
 func main() {
     log.SetFlags(log.Lshortfile | log.Ldate | log.Lmicroseconds)
+
+    showCost()
 
     cache := lbx.AutoCache()
 
