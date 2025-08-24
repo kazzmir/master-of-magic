@@ -512,7 +512,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
     newGameButton := widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
-        widget.ButtonOpts.Text("New Game", &face, &widget.ButtonTextColor{
+        widget.ButtonOpts.Text("Enter Battle", &face, &widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
