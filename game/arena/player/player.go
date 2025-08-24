@@ -19,7 +19,7 @@ type Player struct {
 
 func MakePlayer(banner data.BannerType) *Player {
     return &Player{
-        Money: 1000,
+        Money: 100,
         Wizard: setup.WizardCustom{
             Name: "Player",
             Banner: banner,

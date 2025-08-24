@@ -61,6 +61,7 @@ type Engine struct {
 
     CombatCoroutine *coroutine.Coroutine
     CombatScreen *combat.CombatScreen
+    CurrentBattleReward uint64
 
     UI *ebitenui.UI
 }
@@ -80,6 +81,24 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     enemyPlayer := player.MakeAIPlayer(data.BannerRed)
 
+    budget := uint64(engine.Player.Level) * 100
+    engine.CurrentBattleReward = 0
+
+    for budget > 0 {
+        choice := units.AllUnits[rand.N(len(units.AllUnits))]
+        if choice.Race == data.RaceHero || choice.Name == "Settlers" {
+            continue
+        }
+        if getUnitCost(&choice) > budget {
+            continue
+        }
+        enemyPlayer.AddUnit(choice)
+        unitCost := getUnitCost(&choice)
+        budget -= unitCost
+        engine.CurrentBattleReward += unitCost
+    }
+
+    /*
     for range engine.Player.Level {
         choice := units.AllUnits[rand.N(len(units.AllUnits))]
         if choice.Race == data.RaceHero || choice.Name == "Settlers" {
@@ -87,6 +106,7 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         }
         enemyPlayer.AddUnit(choice)
     }
+    */
 
     attackingArmy := combat.Army {
         Player: enemyPlayer,
@@ -143,6 +163,7 @@ func (engine *Engine) Update() error {
                 engine.GameMode = GameModeUI
 
                 engine.Player.Level += 1
+                engine.Player.Money += engine.CurrentBattleReward
 
                 var aliveUnits []units.StackUnit
                 for _, unit := range engine.Player.Units {
