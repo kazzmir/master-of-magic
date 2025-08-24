@@ -190,7 +190,7 @@ func solidImage(r uint8, g uint8, b uint8) *ui_image.NineSlice {
     return ui_image.NewNineSliceColor(color.NRGBA{R: r, G: g, B: b, A: 255})
 }
 
-func makeShopUI(face *text.GoTextFace, playerObj *player.Player) *widget.Container {
+func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback func(units.StackUnit)) *widget.Container {
     container := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
@@ -270,12 +270,19 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player) *widget.Contain
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            /*
-            select {
-                case engine.Events <- &EventNewGame{}:
-                default:
+            selected := unitList.SelectedEntry()
+
+            unit := selected.(*units.Unit)
+
+            unitCost := getUnitCost(unit)
+            if unitCost <= playerObj.Money {
+                playerObj.Money -= unitCost
+                newUnit := playerObj.AddUnit(*unit)
+                buyCallback(newUnit)
+
+                money.Label = fmt.Sprintf("Money: %d", playerObj.Money)
             }
-            */
+
         }),
 
     ))
@@ -283,7 +290,7 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player) *widget.Contain
     return container
 }
 
-func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) *widget.Container {
+func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) (*widget.Container, func(units.StackUnit)) {
 
     currentName := widget.NewText(widget.TextOpts.Text("", face, color.White))
     currentHealth := widget.NewText(widget.TextOpts.Text("", face, color.White))
@@ -309,7 +316,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) *widget.C
         widget.ListOpts.EntryLabelFunc(
             func (e any) string {
                 unit := e.(units.StackUnit)
-                return unit.GetName()
+                return fmt.Sprintf("%v %v", unit.GetRace(), unit.GetName())
             },
         ),
         widget.ListOpts.EntrySelectedHandler(func (args *widget.ListEntrySelectedEventArgs) {
@@ -352,6 +359,10 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) *widget.C
         unitList.AddEntry(unit)
     }
 
+    buyCallback := func(unit units.StackUnit) {
+        unitList.AddEntry(unit)
+    }
+
     armyInfo.AddChild(unitList)
 
     unitInfoContainer := widget.NewContainer(
@@ -380,7 +391,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) *widget.C
 
     unitInfoContainer.AddChild(unitSpecifics)
 
-    return unitInfoContainer
+    return unitInfoContainer, buyCallback
 }
 
 func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
@@ -420,8 +431,11 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
     )
 
     rootContainer.AddChild(newGameButton)
-    rootContainer.AddChild(makeUnitInfoUI(&face, engine.Player.Units))
-    rootContainer.AddChild(makeShopUI(&face, engine.Player))
+
+    unitInfoUI, buyCallback := makeUnitInfoUI(&face, engine.Player.Units)
+
+    rootContainer.AddChild(unitInfoUI)
+    rootContainer.AddChild(makeShopUI(&face, engine.Player, buyCallback))
 
     ui := &ebitenui.UI{
         Container: rootContainer,

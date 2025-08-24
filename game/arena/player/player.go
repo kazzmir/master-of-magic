@@ -38,8 +38,10 @@ func MakeAIPlayer(banner data.BannerType) *Player {
     }
 }
 
-func (player *Player) AddUnit(unit units.Unit) {
-    player.Units = append(player.Units, units.MakeOverworldUnitFromUnit(unit, 0, 0, data.PlaneArcanus, player.Wizard.Banner, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+func (player *Player) AddUnit(unit units.Unit) units.StackUnit {
+    newUnit := units.MakeOverworldUnitFromUnit(unit, 0, 0, data.PlaneArcanus, player.Wizard.Banner, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    player.Units = append(player.Units, newUnit)
+    return newUnit
 }
 
 func (player *Player) GetKnownSpells() spellbook.Spells {
