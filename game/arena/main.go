@@ -64,6 +64,7 @@ type Engine struct {
     CurrentBattleReward uint64
 
     UI *ebitenui.UI
+    UIUpdates *UIEventUpdate
 }
 
 var CombatDoneErr = errors.New("combat done")
@@ -170,6 +171,7 @@ func (engine *Engine) Update() error {
     switch engine.GameMode {
         case GameModeUI:
             engine.UI.Update()
+            engine.UIUpdates.Update()
 
             select {
                 case event := <-engine.Events:
@@ -204,7 +206,7 @@ func (engine *Engine) Update() error {
                     engine.Player.AddUnit(units.LizardSwordsmen)
                 }
 
-                engine.UI, err = engine.MakeUI()
+                engine.UI, engine.UIUpdates, err = engine.MakeUI()
                 if err != nil {
                     log.Printf("Error creating UI: %v", err)
                 }
@@ -241,7 +243,35 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (int, int) {
     return outsideWidth, outsideHeight
 }
 
-func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback func(units.StackUnit)) *widget.Container {
+type UIEvent interface {
+}
+
+type UIUpdateMoney struct {
+}
+
+type UIEventUpdate struct {
+    Listeners []func(UIEvent)
+    Updates []UIEvent
+}
+
+func (events *UIEventUpdate) Update() {
+    for _, update := range events.Updates {
+        for _, listener := range events.Listeners {
+            listener(update)
+        }
+    }
+    events.Updates = nil
+}
+
+func (events *UIEventUpdate) Add(f func(UIEvent)) {
+    events.Listeners = append(events.Listeners, f)
+}
+
+func (events *UIEventUpdate) AddUpdate(event UIEvent) {
+    events.Updates = append(events.Updates, event)
+}
+
+func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback func(units.StackUnit), uiEvents *UIEventUpdate) *widget.Container {
     container := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
@@ -257,6 +287,13 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
     money := widget.NewText(
         widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
     )
+
+    uiEvents.Add(func (event UIEvent) {
+        switch event.(type) {
+            case *UIUpdateMoney:
+                money.Label = fmt.Sprintf("Money: %d", playerObj.Money)
+        }
+    })
 
     container.AddChild(money)
 
@@ -373,11 +410,18 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
     return container
 }
 
-func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) (*widget.Container, func(units.StackUnit)) {
+func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate) (*widget.Container, func(units.StackUnit)) {
 
     currentName := widget.NewText(widget.TextOpts.Text("", face, color.White))
     currentHealth := widget.NewText(widget.TextOpts.Text("", face, color.White))
     currentRace := widget.NewText(widget.TextOpts.Text("", face, color.White))
+
+    updateHealth := func(unit units.StackUnit) {
+        currentHealth.Label = fmt.Sprintf("HP: %d/%d", unit.GetHealth(), unit.GetMaxHealth())
+    }
+
+    var currentHealTarget units.StackUnit
+    healCost := widget.NewText(widget.TextOpts.Text("", face, color.White))
 
     unitList := widget.NewList(
         widget.ListOpts.EntryFontFace(face),
@@ -408,9 +452,11 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) (*widget.
             unit := args.Entry.(units.StackUnit)
 
             currentName.Label = fmt.Sprintf("Name: %v", unit.GetFullName())
-            currentHealth.Label = fmt.Sprintf("HP: %d/%d", unit.GetHealth(), unit.GetMaxHealth())
+            updateHealth(unit)
             currentRace.Label = fmt.Sprintf("Race: %v", unit.GetRace())
+            currentHealTarget = unit
 
+            healCost.Label = fmt.Sprintf("Heal Cost %d", 20 * currentHealTarget.GetDamage())
         }),
         widget.ListOpts.EntryColor(&widget.ListEntryColor{
             Selected: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -472,6 +518,37 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) (*widget.
     unitSpecifics.AddChild(currentRace)
     unitSpecifics.AddChild(currentHealth)
 
+    healButton := widget.NewButton(
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+        widget.ButtonOpts.Text("Heal Unit", face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            if currentHealTarget == nil {
+                return
+            }
+
+            cost := uint64(20 * currentHealTarget.GetDamage())
+
+            if cost <= playerObj.Money {
+                currentHealTarget.AdjustHealth(currentHealTarget.GetDamage())
+                updateHealth(currentHealTarget)
+                playerObj.Money -= uint64(cost)
+                uiEvents.AddUpdate(&UIUpdateMoney{})
+            }
+        }),
+    )
+
+    healBox := ui.HBox()
+
+    healBox.AddChild(healButton)
+    healBox.AddChild(healCost)
+
+    unitSpecifics.AddChild(healBox)
+
     unitInfoContainer.AddChild(unitSpecifics)
 
     return unitInfoContainer, buyCallback
@@ -489,16 +566,18 @@ func makePlayerInfoUI(face *text.GoTextFace, playerObj *player.Player) *widget.C
     return container
 }
 
-func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
+func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     font, err := console.LoadFont()
     if err != nil {
-        return nil, err
+        return nil, nil, err
     }
 
     face := text.GoTextFace{
         Source: font,
         Size: 18,
     }
+
+    var uiEvents UIEventUpdate
 
     rootContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -529,16 +608,16 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
 
     rootContainer.AddChild(makePlayerInfoUI(&face, engine.Player))
 
-    unitInfoUI, buyCallback := makeUnitInfoUI(&face, engine.Player.Units)
+    unitInfoUI, buyCallback := makeUnitInfoUI(&face, engine.Player.Units, engine.Player, &uiEvents)
 
     rootContainer.AddChild(unitInfoUI)
-    rootContainer.AddChild(makeShopUI(&face, engine.Player, buyCallback))
+    rootContainer.AddChild(makeShopUI(&face, engine.Player, buyCallback, &uiEvents))
 
     ui := &ebitenui.UI{
         Container: rootContainer,
     }
 
-    return ui, nil
+    return ui, &uiEvents, nil
 }
 
 func MakeEngine(cache *lbx.LbxCache) *Engine {
@@ -554,7 +633,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     }
 
     var err error
-    engine.UI, err = engine.MakeUI()
+    engine.UI, engine.UIUpdates, err = engine.MakeUI()
     if err != nil {
         log.Printf("Error creating UI: %v", err)
     }
