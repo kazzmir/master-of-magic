@@ -308,8 +308,8 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
 
     container.AddChild(unitList)
 
-    for _, unit := range units.AllUnits {
-        unitList.AddEntry(&unit)
+    for _, unit := range getValidChoices(100000) {
+        unitList.AddEntry(unit)
     }
 
     container.AddChild(widget.NewButton(
