@@ -19,6 +19,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/console"
 
     "github.com/kazzmir/master-of-magic/game/arena/player"
+    "github.com/kazzmir/master-of-magic/game/arena/ui"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -79,14 +80,12 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     enemyPlayer := player.MakeAIPlayer(data.BannerRed)
 
-    count := 0
-    for count < engine.Player.Level + 1 {
+    for range engine.Player.Level {
         choice := units.AllUnits[rand.N(len(units.AllUnits))]
         if choice.Race == data.RaceHero || choice.Name == "Settlers" {
             continue
         }
         enemyPlayer.AddUnit(choice)
-        count += 1
     }
 
     attackingArmy := combat.Army {
@@ -196,19 +195,6 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (int, int) {
     return outsideWidth, outsideHeight
 }
 
-func makeButtonImage(baseImage *ui_image.NineSlice) *widget.ButtonImage {
-    return &widget.ButtonImage{
-        Idle: baseImage,
-        Hover: baseImage,
-        Pressed: baseImage,
-        Disabled: baseImage,
-    }
-}
-
-func solidImage(r uint8, g uint8, b uint8) *ui_image.NineSlice {
-    return ui_image.NewNineSliceColor(color.NRGBA{R: r, G: g, B: b, A: 255})
-}
-
 func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback func(units.StackUnit)) *widget.Container {
     container := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -233,10 +219,10 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
         widget.ListOpts.SliderOpts(
             widget.SliderOpts.Images(
                 &widget.SliderTrackImage{
-                    Idle: solidImage(64, 64, 64),
-                    Hover: solidImage(96, 96, 96),
+                    Idle: ui.SolidImage(64, 64, 64),
+                    Hover: ui.SolidImage(96, 96, 96),
                 },
-                makeButtonImage(solidImage(192, 192, 192)),
+                ui.MakeButtonImage(ui.SolidImage(192, 192, 192)),
             ),
         ),
         widget.ListOpts.HideHorizontalSlider(),
@@ -267,9 +253,9 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
         }),
         widget.ListOpts.ScrollContainerOpts(
             widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                Idle: solidImage(64, 64, 64),
-                Disabled: solidImage(32, 32, 32),
-                Mask: solidImage(32, 32, 32),
+                Idle: ui.SolidImage(64, 64, 64),
+                Disabled: ui.SolidImage(32, 32, 32),
+                Mask: ui.SolidImage(32, 32, 32),
             }),
         ),
     )
@@ -282,7 +268,7 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
 
     container.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(makeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
         widget.ButtonOpts.Text("Buy Unit", face, &widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
@@ -320,10 +306,10 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) (*widget.
         widget.ListOpts.SliderOpts(
             widget.SliderOpts.Images(
                 &widget.SliderTrackImage{
-                    Idle: solidImage(64, 64, 64),
-                    Hover: solidImage(96, 96, 96),
+                    Idle: ui.SolidImage(64, 64, 64),
+                    Hover: ui.SolidImage(96, 96, 96),
                 },
-                makeButtonImage(solidImage(192, 192, 192)),
+                ui.MakeButtonImage(ui.SolidImage(192, 192, 192)),
             ),
         ),
         widget.ListOpts.HideHorizontalSlider(),
@@ -354,9 +340,9 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) (*widget.
         }),
         widget.ListOpts.ScrollContainerOpts(
             widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                Idle: solidImage(64, 64, 64),
-                Disabled: solidImage(32, 32, 32),
-                Mask: solidImage(32, 32, 32),
+                Idle: ui.SolidImage(64, 64, 64),
+                Disabled: ui.SolidImage(32, 32, 32),
+                Mask: ui.SolidImage(32, 32, 32),
             }),
         ),
     )
@@ -413,6 +399,18 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) (*widget.
     return unitInfoContainer, buyCallback
 }
 
+func makePlayerInfoUI(face *text.GoTextFace, playerObj *player.Player) *widget.Container {
+    container := ui.HBox()
+
+    name := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Name: %v", playerObj.Wizard.Name), face, color.White))
+    container.AddChild(name)
+
+    level := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Level: %d", playerObj.Level), face, color.White))
+    container.AddChild(level)
+
+    return container
+}
+
 func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
     font, err := console.LoadFont()
     if err != nil {
@@ -435,7 +433,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
 
     newGameButton := widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(makeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
         widget.ButtonOpts.Text("New Game", &face, &widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
@@ -450,6 +448,8 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, error) {
     )
 
     rootContainer.AddChild(newGameButton)
+
+    rootContainer.AddChild(makePlayerInfoUI(&face, engine.Player))
 
     unitInfoUI, buyCallback := makeUnitInfoUI(&face, engine.Player.Units)
 

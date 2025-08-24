@@ -24,6 +24,7 @@ func MakePlayer(banner data.BannerType) *Player {
             Name: "Player",
             Banner: banner,
         },
+        Level: 1,
     }
 }
 
