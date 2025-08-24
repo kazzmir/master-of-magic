@@ -144,6 +144,25 @@ func (engine *Engine) Update() error {
                 engine.GameMode = GameModeUI
 
                 engine.Player.Level += 1
+
+                var aliveUnits []units.StackUnit
+                for _, unit := range engine.Player.Units {
+                    if unit.GetHealth() > 0 {
+                        aliveUnits = append(aliveUnits, unit)
+                    }
+                }
+
+                engine.Player.Units = aliveUnits
+                if len(engine.Player.Units) == 0 {
+                    log.Printf("All units lost, starting new game")
+                    engine.Player = player.MakePlayer(data.BannerGreen)
+                    engine.Player.AddUnit(units.LizardSwordsmen)
+                }
+
+                engine.UI, err = engine.MakeUI()
+                if err != nil {
+                    log.Printf("Error creating UI: %v", err)
+                }
             }
     }
 
@@ -325,7 +344,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit) (*widget.
             unit := args.Entry.(units.StackUnit)
 
             currentName.Label = fmt.Sprintf("Name: %v", unit.GetFullName())
-            currentHealth.Label = fmt.Sprintf("HP: %d/%d", unit.GetHitPoints(), unit.GetFullHitPoints())
+            currentHealth.Label = fmt.Sprintf("HP: %d/%d", unit.GetHealth(), unit.GetMaxHealth())
             currentRace.Label = fmt.Sprintf("Race: %v", unit.GetRace())
 
         }),
