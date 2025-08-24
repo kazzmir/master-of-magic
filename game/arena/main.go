@@ -102,7 +102,7 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     enemyPlayer := player.MakeAIPlayer(data.BannerRed)
 
-    budget := uint64(engine.Player.Level) * 100
+    budget := uint64(engine.Player.Level) * 200
     engine.CurrentBattleReward = 0
 
     for budget > 0 {
