@@ -267,6 +267,14 @@ func (events *UIEventUpdate) Add(f func(UIEvent)) {
     events.Listeners = append(events.Listeners, f)
 }
 
+func AddEvent[T UIEvent](events *UIEventUpdate, f func(*T)) {
+    events.Add(func (event UIEvent) {
+        if update, ok := event.(*T); ok {
+            f(update)
+        }
+    })
+}
+
 func (events *UIEventUpdate) AddUpdate(event UIEvent) {
     events.Updates = append(events.Updates, event)
 }
@@ -288,11 +296,8 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
         widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
     )
 
-    uiEvents.Add(func (event UIEvent) {
-        switch event.(type) {
-            case *UIUpdateMoney:
-                money.Label = fmt.Sprintf("Money: %d", playerObj.Money)
-        }
+    AddEvent(uiEvents, func (update *UIUpdateMoney) {
+        money.Label = fmt.Sprintf("Money: %d", playerObj.Money)
     })
 
     container.AddChild(money)
@@ -387,11 +392,8 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
 
     setupFilteredList()
 
-    uiEvents.Add(func (event UIEvent) {
-        switch event.(type) {
-            case *UIUpdateMoney:
-                setupFilteredList()
-        }
+    AddEvent(uiEvents, func (update *UIUpdateMoney) {
+        setupFilteredList()
     })
 
     tabAll := widget.NewTabBookTab("All", widget.ContainerOpts.Layout(widget.NewGridLayout(
