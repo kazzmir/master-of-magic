@@ -3593,9 +3593,9 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         if attacker.HasAbility(data.AbilityThrown) ||
            attacker.HasAbility(data.AbilityFireBreath) ||
            attacker.HasAbility(data.AbilityLightningBreath) {
-            return true
+        } else {
+            return false
         }
-        return false
     }
 
     if attacker.Team == defender.Team && attacker.ConfusionAction != ConfusionActionEnemyControl {
