@@ -387,6 +387,13 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
 
     setupFilteredList()
 
+    uiEvents.Add(func (event UIEvent) {
+        switch event.(type) {
+            case *UIUpdateMoney:
+                setupFilteredList()
+        }
+    })
+
     tabAll := widget.NewTabBookTab("All", widget.ContainerOpts.Layout(widget.NewGridLayout(
         widget.GridLayoutOpts.Columns(1),
         widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
@@ -441,10 +448,7 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
                 playerObj.Money -= unitCost
                 newUnit := playerObj.AddUnit(*selected)
                 buyCallback(newUnit)
-
-                money.Label = fmt.Sprintf("Money: %d", playerObj.Money)
-
-                setupFilteredList()
+                uiEvents.AddUpdate(&UIUpdateMoney{})
             }
 
         }),
