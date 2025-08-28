@@ -314,55 +314,61 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
 
     container.AddChild(container2)
 
-    unitList := widget.NewList(
-        widget.ListOpts.EntryFontFace(face),
-        widget.ListOpts.SliderOpts(
-            widget.SliderOpts.Images(
-                &widget.SliderTrackImage{
-                    Idle: ui.SolidImage(64, 64, 64),
-                    Hover: ui.SolidImage(96, 96, 96),
+    var selected *units.Unit
+
+    makeList := func() *widget.List {
+        return widget.NewList(
+            widget.ListOpts.EntryFontFace(face),
+            widget.ListOpts.SliderOpts(
+                widget.SliderOpts.Images(
+                    &widget.SliderTrackImage{
+                        Idle: ui.SolidImage(64, 64, 64),
+                        Hover: ui.SolidImage(96, 96, 96),
+                    },
+                    ui.MakeButtonImage(ui.SolidImage(192, 192, 192)),
+                ),
+            ),
+            widget.ListOpts.HideHorizontalSlider(),
+            widget.ListOpts.ContainerOpts(
+                widget.ContainerOpts.WidgetOpts(
+                    widget.WidgetOpts.LayoutData(widget.GridLayoutData{
+                        MaxHeight: 500,
+                    }),
+                    widget.WidgetOpts.MinSize(0, 200),
+                ),
+            ),
+            widget.ListOpts.EntryLabelFunc(
+                func (e any) string {
+                    // unit := e.(units.StackUnit)
+                    // return unit.GetName()
+                    unit := e.(*units.Unit)
+
+                    return fmt.Sprintf("%v %v", unit.Race, unit.Name)
                 },
-                ui.MakeButtonImage(ui.SolidImage(192, 192, 192)),
             ),
-        ),
-        widget.ListOpts.HideHorizontalSlider(),
-        widget.ListOpts.ContainerOpts(
-            widget.ContainerOpts.WidgetOpts(
-                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                    MaxHeight: 400,
-                }),
-                widget.WidgetOpts.MinSize(0, 200),
-            ),
-        ),
-        widget.ListOpts.EntryLabelFunc(
-            func (e any) string {
-                // unit := e.(units.StackUnit)
-                // return unit.GetName()
-                unit := e.(*units.Unit)
+            widget.ListOpts.EntrySelectedHandler(func (args *widget.ListEntrySelectedEventArgs) {
+                // log.Printf("Selected unit: %v", args.Entry)
+                unit := args.Entry.(*units.Unit)
 
-                return fmt.Sprintf("%v %v", unit.Race, unit.Name)
-            },
-        ),
-        widget.ListOpts.EntrySelectedHandler(func (args *widget.ListEntrySelectedEventArgs) {
-            // log.Printf("Selected unit: %v", args.Entry)
-            unit := args.Entry.(*units.Unit)
-
-            unitName.Label = fmt.Sprintf("Name: %v", unit.Name)
-            unitCost.Label = fmt.Sprintf("Cost: %d", getUnitCost(unit))
-
-        }),
-        widget.ListOpts.EntryColor(&widget.ListEntryColor{
-            Selected: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-            Unselected: color.NRGBA{R: 128, G: 128, B: 128, A: 255},
-        }),
-        widget.ListOpts.ScrollContainerOpts(
-            widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                Idle: ui.SolidImage(64, 64, 64),
-                Disabled: ui.SolidImage(32, 32, 32),
-                Mask: ui.SolidImage(32, 32, 32),
+                unitName.Label = fmt.Sprintf("Name: %v", unit.Name)
+                unitCost.Label = fmt.Sprintf("Cost: %d", getUnitCost(unit))
+                selected = unit
             }),
-        ),
-    )
+            widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                Selected: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                Unselected: color.NRGBA{R: 128, G: 128, B: 128, A: 255},
+            }),
+            widget.ListOpts.ScrollContainerOpts(
+                widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                    Idle: ui.SolidImage(64, 64, 64),
+                    Disabled: ui.SolidImage(32, 32, 32),
+                    Mask: ui.SolidImage(32, 32, 32),
+                }),
+            ),
+        )
+    }
+
+    unitList := makeList()
 
     // container2.AddChild(unitList)
 
@@ -370,55 +376,7 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
         unitList.AddEntry(unit)
     }
 
-    filteredUnitList := widget.NewList(
-        widget.ListOpts.EntryFontFace(face),
-        widget.ListOpts.SliderOpts(
-            widget.SliderOpts.Images(
-                &widget.SliderTrackImage{
-                    Idle: ui.SolidImage(64, 64, 64),
-                    Hover: ui.SolidImage(96, 96, 96),
-                },
-                ui.MakeButtonImage(ui.SolidImage(192, 192, 192)),
-            ),
-        ),
-        widget.ListOpts.HideHorizontalSlider(),
-        widget.ListOpts.ContainerOpts(
-            widget.ContainerOpts.WidgetOpts(
-                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                    MaxHeight: 400,
-                }),
-                widget.WidgetOpts.MinSize(0, 200),
-            ),
-        ),
-        widget.ListOpts.EntryLabelFunc(
-            func (e any) string {
-                // unit := e.(units.StackUnit)
-                // return unit.GetName()
-                unit := e.(*units.Unit)
-
-                return fmt.Sprintf("%v %v", unit.Race, unit.Name)
-            },
-        ),
-        widget.ListOpts.EntrySelectedHandler(func (args *widget.ListEntrySelectedEventArgs) {
-            // log.Printf("Selected unit: %v", args.Entry)
-            unit := args.Entry.(*units.Unit)
-
-            unitName.Label = fmt.Sprintf("Name: %v", unit.Name)
-            unitCost.Label = fmt.Sprintf("Cost: %d", getUnitCost(unit))
-
-        }),
-        widget.ListOpts.EntryColor(&widget.ListEntryColor{
-            Selected: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-            Unselected: color.NRGBA{R: 128, G: 128, B: 128, A: 255},
-        }),
-        widget.ListOpts.ScrollContainerOpts(
-            widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                Idle: ui.SolidImage(64, 64, 64),
-                Disabled: ui.SolidImage(32, 32, 32),
-                Mask: ui.SolidImage(32, 32, 32),
-            }),
-        ),
-    )
+    filteredUnitList := makeList()
 
     for _, unit := range getValidChoices(playerObj.Money) {
         filteredUnitList.AddEntry(unit)
@@ -426,9 +384,16 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
 
     // container2.AddChild(filteredUnitList)
 
-    tabAll := widget.NewTabBookTab("All", widget.ContainerOpts.Layout(widget.NewAnchorLayout()))
+    tabAll := widget.NewTabBookTab("All", widget.ContainerOpts.Layout(widget.NewGridLayout(
+        widget.GridLayoutOpts.Columns(1),
+        widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
+    )))
     tabAll.AddChild(unitList)
-    tabAffordable := widget.NewTabBookTab("Affordable", widget.ContainerOpts.Layout(widget.NewAnchorLayout()))
+    tabAffordable := widget.NewTabBookTab("Affordable", widget.ContainerOpts.Layout(
+        widget.NewGridLayout(
+        widget.GridLayoutOpts.Columns(1),
+        widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
+    )))
     tabAffordable.AddChild(filteredUnitList)
 
     tabs := widget.NewTabBook(
@@ -439,6 +404,8 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
             Hover: color.White,
             Pressed: color.White,
         }),
+        widget.TabBookOpts.TabButtonSpacing(5),
+        // widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(2)),
         widget.TabBookOpts.Tabs(tabAll, tabAffordable),
     )
 
@@ -463,14 +430,13 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            selected := unitList.SelectedEntry()
-
-            unit := selected.(*units.Unit)
-
-            unitCost := getUnitCost(unit)
+            if selected == nil {
+                return
+            }
+            unitCost := getUnitCost(selected)
             if unitCost <= playerObj.Money {
                 playerObj.Money -= unitCost
-                newUnit := playerObj.AddUnit(*unit)
+                newUnit := playerObj.AddUnit(*selected)
                 buyCallback(newUnit)
 
                 money.Label = fmt.Sprintf("Money: %d", playerObj.Money)
