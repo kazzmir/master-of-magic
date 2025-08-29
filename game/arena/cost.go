@@ -62,7 +62,7 @@ func getUnitCost(unit *units.Unit) uint64 {
             case data.AbilityPathfinding: abilityValue = 1.1
             case data.AbilityPoisonImmunity: abilityValue = 1.3
             case data.AbilityPoisonTouch: abilityValue = 1.7 * ability.Value
-            case data.AbilityRegeneration: abilityValue = 2
+            case data.AbilityRegeneration: abilityValue = 2.5
             case data.AbilityResistanceToAll: abilityValue = 1.9
             case data.AbilityStoningGaze: abilityValue = 1.6 * ability.Value
             case data.AbilityStoningImmunity: abilityValue = 1.5
