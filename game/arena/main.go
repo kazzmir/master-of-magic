@@ -3,6 +3,7 @@ package main
 import (
     "log"
     "errors"
+    "math"
     "math/rand/v2"
     "image/color"
     "fmt"
@@ -106,7 +107,7 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     enemyPlayer := player.MakeAIPlayer(data.BannerRed)
 
-    budget := uint64(engine.Player.Level) * 200
+    budget := uint64(100 * math.Pow(1.8, float64(engine.Player.Level)))
     engine.CurrentBattleReward = 0
 
     for budget > 0 {
@@ -249,6 +250,10 @@ type UIEvent interface {
 type UIUpdateMoney struct {
 }
 
+type UIAddUnit struct {
+    Unit units.StackUnit
+}
+
 type UIEventUpdate struct {
     Listeners []func(UIEvent)
     Updates []UIEvent
@@ -279,7 +284,7 @@ func (events *UIEventUpdate) AddUpdate(event UIEvent) {
     events.Updates = append(events.Updates, event)
 }
 
-func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback func(units.StackUnit), uiEvents *UIEventUpdate) *widget.Container {
+func makeShopUI(face *text.GoTextFace, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
     container := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
@@ -449,7 +454,7 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
             if unitCost <= playerObj.Money {
                 playerObj.Money -= unitCost
                 newUnit := playerObj.AddUnit(*selected)
-                buyCallback(newUnit)
+                uiEvents.AddUpdate(&UIAddUnit{Unit: newUnit})
                 uiEvents.AddUpdate(&UIUpdateMoney{})
             }
 
@@ -461,7 +466,12 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, buyCallback fun
     return container
 }
 
-func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate) (*widget.Container, func(units.StackUnit)) {
+func getHealCost(unit units.StackUnit) int {
+    raw := unit.GetRawUnit()
+    return int(float64(getUnitCost(&raw)) * 0.8 * float64(unit.GetDamage()) / float64(unit.GetMaxHealth()))
+}
+
+func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
 
     currentName := widget.NewText(widget.TextOpts.Text("", face, color.White))
     currentHealth := widget.NewText(widget.TextOpts.Text("", face, color.White))
@@ -469,11 +479,6 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
 
     updateHealth := func(unit units.StackUnit) {
         currentHealth.Label = fmt.Sprintf("HP: %d/%d", unit.GetHealth(), unit.GetMaxHealth())
-    }
-
-    getHealCost := func(unit units.StackUnit) int {
-        raw := unit.GetRawUnit()
-        return int(float64(getUnitCost(&raw)) * 0.8 * float64(unit.GetDamage()) / float64(unit.GetMaxHealth()))
     }
 
     var currentHealTarget units.StackUnit
@@ -544,9 +549,9 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         unitList.AddEntry(unit)
     }
 
-    buyCallback := func(unit units.StackUnit) {
-        unitList.AddEntry(unit)
-    }
+    AddEvent(uiEvents, func (update *UIAddUnit) {
+        unitList.AddEntry(update.Unit)
+    })
 
     armyInfo.AddChild(unitList)
 
@@ -607,7 +612,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
 
     unitInfoContainer.AddChild(unitSpecifics)
 
-    return unitInfoContainer, buyCallback
+    return unitInfoContainer
 }
 
 func makePlayerInfoUI(face *text.GoTextFace, playerObj *player.Player) *widget.Container {
@@ -664,10 +669,10 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     rootContainer.AddChild(makePlayerInfoUI(&face, engine.Player))
 
-    unitInfoUI, buyCallback := makeUnitInfoUI(&face, engine.Player.Units, engine.Player, &uiEvents)
+    unitInfoUI := makeUnitInfoUI(&face, engine.Player.Units, engine.Player, &uiEvents)
 
     rootContainer.AddChild(unitInfoUI)
-    rootContainer.AddChild(makeShopUI(&face, engine.Player, buyCallback, &uiEvents))
+    rootContainer.AddChild(makeShopUI(&face, engine.Player, &uiEvents))
 
     ui := &ebitenui.UI{
         Container: rootContainer,
