@@ -471,6 +471,11 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         currentHealth.Label = fmt.Sprintf("HP: %d/%d", unit.GetHealth(), unit.GetMaxHealth())
     }
 
+    getHealCost := func(unit units.StackUnit) int {
+        raw := unit.GetRawUnit()
+        return int(float64(getUnitCost(&raw)) * 0.8 * float64(unit.GetDamage()) / float64(unit.GetMaxHealth()))
+    }
+
     var currentHealTarget units.StackUnit
     healCost := widget.NewText(widget.TextOpts.Text("", face, color.White))
 
@@ -507,7 +512,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
             currentRace.Label = fmt.Sprintf("Race: %v", unit.GetRace())
             currentHealTarget = unit
 
-            healCost.Label = fmt.Sprintf("Heal Cost %d", 20 * currentHealTarget.GetDamage())
+            healCost.Label = fmt.Sprintf("Heal Cost %d", getHealCost(currentHealTarget))
         }),
         widget.ListOpts.EntryColor(&widget.ListEntryColor{
             Selected: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -582,7 +587,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
                 return
             }
 
-            cost := uint64(20 * currentHealTarget.GetDamage())
+            cost := uint64(getHealCost(currentHealTarget))
 
             if cost <= playerObj.Money {
                 currentHealTarget.AdjustHealth(currentHealTarget.GetDamage())
