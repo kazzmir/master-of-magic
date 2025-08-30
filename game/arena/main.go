@@ -587,7 +587,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
 
     var lastBox *widget.Container
 
-    for _, unit := range allUnits {
+    addUnit := func(unit units.StackUnit) {
         var unitBox *widget.Container
         unitBox = ui.VBox(widget.ContainerOpts.WidgetOpts(
             widget.WidgetOpts.MouseButtonPressedHandler(func(args *widget.WidgetMouseButtonPressedEventArgs) {
@@ -609,6 +609,10 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         }
 
         unitList.AddChild(unitBox)
+    }
+
+    for _, unit := range allUnits {
+        addUnit(unit)
     }
 
     scroller := widget.NewScrollContainer(
@@ -655,60 +659,9 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         slider.Current -= int(math.Round(eventArgs.Y * 8))
     })
 
-    /*
-    unitList := widget.NewList(
-        widget.ListOpts.EntryFontFace(face),
-        widget.ListOpts.SliderOpts(
-            widget.SliderOpts.Images(
-                &widget.SliderTrackImage{
-                    Idle: ui.SolidImage(64, 64, 64),
-                    Hover: ui.SolidImage(96, 96, 96),
-                },
-                ui.MakeButtonImage(ui.SolidImage(192, 192, 192)),
-            ),
-        ),
-        widget.ListOpts.HideHorizontalSlider(),
-        widget.ListOpts.ContainerOpts(
-            widget.ContainerOpts.WidgetOpts(
-                widget.WidgetOpts.MinSize(0, 200),
-            ),
-        ),
-        widget.ListOpts.EntryLabelFunc(
-            func (e any) string {
-                unit := e.(units.StackUnit)
-                return fmt.Sprintf("%v %v", unit.GetRace(), unit.GetName())
-            },
-        ),
-        widget.ListOpts.EntrySelectedHandler(func (args *widget.ListEntrySelectedEventArgs) {
-            // log.Printf("Selected unit: %v", args.Entry)
-
-            unit := args.Entry.(units.StackUnit)
-
-            updateUnitSpecifics(unit)
-        }),
-        widget.ListOpts.EntryColor(&widget.ListEntryColor{
-            Selected: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-            Unselected: color.NRGBA{R: 128, G: 128, B: 128, A: 255},
-        }),
-        widget.ListOpts.ScrollContainerOpts(
-            widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                Idle: ui.SolidImage(64, 64, 64),
-                Disabled: ui.SolidImage(32, 32, 32),
-                Mask: ui.SolidImage(32, 32, 32),
-            }),
-        ),
-    )
-    */
-
-    /*
-    for _, unit := range allUnits {
-        unitList.AddEntry(unit)
-    }
-
     AddEvent(uiEvents, func (update *UIAddUnit) {
-        unitList.AddEntry(update.Unit)
+        addUnit(update.Unit)
     })
-    */
 
     armyInfo := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
