@@ -585,10 +585,18 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         )),
     )
 
+    var lastBox *widget.Container
+
     for _, unit := range allUnits {
-        unitBox := ui.VBox(widget.ContainerOpts.WidgetOpts(
+        var unitBox *widget.Container
+        unitBox = ui.VBox(widget.ContainerOpts.WidgetOpts(
             widget.WidgetOpts.MouseButtonPressedHandler(func(args *widget.WidgetMouseButtonPressedEventArgs) {
                 updateUnitSpecifics(unit)
+                if lastBox != nil {
+                    lastBox.BackgroundImage = nil
+                }
+                unitBox.BackgroundImage = ui.SolidImage(96, 96, 32)
+                lastBox = unitBox
             }),
         ))
         unitBox.AddChild(widget.NewText(
