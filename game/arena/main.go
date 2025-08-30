@@ -586,7 +586,11 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
     )
 
     for _, unit := range allUnits {
-        unitBox := ui.VBox()
+        unitBox := ui.VBox(widget.ContainerOpts.WidgetOpts(
+            widget.WidgetOpts.MouseButtonPressedHandler(func(args *widget.WidgetMouseButtonPressedEventArgs) {
+                updateUnitSpecifics(unit)
+            }),
+        ))
         unitBox.AddChild(widget.NewText(
             widget.TextOpts.Text(fmt.Sprintf("%v %v", unit.GetRace(), unit.GetFullName()), face, color.White)),
         )
@@ -795,8 +799,11 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
-    for range 20 {
+    for range 3 {
         playerObj.AddUnit(units.LizardSwordsmen)
+    }
+    for range 3 {
+        playerObj.AddUnit(units.Warlocks)
     }
 
     engine := Engine{

@@ -30,11 +30,12 @@ func HBox() *widget.Container {
     )
 }
 
-func VBox() *widget.Container {
-    return widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(4),
-        )),
-    )
+func VBox(opts ...widget.ContainerOpt) *widget.Container {
+
+    allArgs := append(opts, widget.ContainerOpts.Layout(widget.NewRowLayout(
+        widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+        widget.RowLayoutOpts.Spacing(4),
+    )))
+
+    return widget.NewContainer(allArgs...)
 }
