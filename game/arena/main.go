@@ -6,6 +6,7 @@ import (
     "math"
     "math/rand/v2"
     "image/color"
+    "image"
     "fmt"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -18,6 +19,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/console"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
 
     "github.com/kazzmir/master-of-magic/game/arena/player"
     "github.com/kazzmir/master-of-magic/game/arena/ui"
@@ -471,7 +473,31 @@ func getHealCost(unit units.StackUnit, amount int) int {
     return int(float64(getUnitCost(&raw)) * 0.8 * float64(amount) / float64(unit.GetMaxHealth()))
 }
 
-func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+func enlargeTransform(factor int) util.ImageTransformFunc {
+    var f util.ImageTransformFunc
+
+    f = func (original *image.Paletted) image.Image {
+        newImage := image.NewPaletted(image.Rect(0, 0, original.Bounds().Dx() * factor, original.Bounds().Dy() * factor), original.Palette)
+
+        for y := 0; y < original.Bounds().Dy(); y++ {
+            for x := 0; x < original.Bounds().Dx(); x++ {
+                colorIndex := original.ColorIndexAt(x, y)
+
+                for dy := 0; dy < factor; dy++ {
+                    for dx := 0; dx < factor; dx++ {
+                        newImage.SetColorIndex(x * factor + dx, y * factor + dy, colorIndex)
+                    }
+                }
+            }
+        }
+
+        return newImage
+    }
+
+    return f 
+}
+
+func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
 
     unitSpecifics := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -547,20 +573,69 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
             }),
         )
 
-        /*
-        healBox := ui.HBox()
-
-        healBox.AddChild(healCost)
-        healBox.AddChild(healSlider)
-        healBox.AddChild(healButton)
-
-        unitSpecifics.AddChild(healBox)
-        */
         unitSpecifics.AddChild(healCost)
         unitSpecifics.AddChild(healSlider)
         unitSpecifics.AddChild(healButton)
     }
 
+    unitList := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewGridLayout(
+            widget.GridLayoutOpts.Columns(1),
+            widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
+        )),
+    )
+
+    for _, unit := range allUnits {
+        unitBox := ui.VBox()
+        unitBox.AddChild(widget.NewText(
+            widget.TextOpts.Text(fmt.Sprintf("%v %v", unit.GetRace(), unit.GetFullName()), face, color.White)),
+        )
+
+        unitImage, err := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, "enlarge", enlargeTransform(2))
+        if err == nil {
+            unitBox.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(unitImage)))
+        }
+
+        unitList.AddChild(unitBox)
+    }
+
+    scroller := widget.NewScrollContainer(
+        widget.ScrollContainerOpts.WidgetOpts(
+            widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                MaxHeight: 400,
+            }),
+        ),
+        widget.ScrollContainerOpts.Content(unitList),
+        widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+            Idle: ui.SolidImage(64, 64, 64),
+            Mask: ui.SolidImage(32, 32, 32),
+        }),
+    )
+
+    slider := widget.NewSlider(
+        widget.SliderOpts.Direction(widget.DirectionVertical),
+        widget.SliderOpts.MinMax(0, 100),
+        widget.SliderOpts.InitialCurrent(0),
+        widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
+            scroller.ScrollTop = float64(args.Slider.Current) / 100
+        }),
+        widget.SliderOpts.WidgetOpts(
+            widget.WidgetOpts.MinSize(10, 400),
+        ),
+        widget.SliderOpts.Images(
+            &widget.SliderTrackImage{
+                Idle: ui.SolidImage(64, 64, 64),
+                Hover: ui.SolidImage(96, 96, 96),
+            },
+            &widget.ButtonImage{
+                Idle: ui.SolidImage(192, 192, 192),
+                Hover: ui.SolidImage(255, 255, 0),
+                Pressed: ui.SolidImage(255, 128, 0),
+            },
+        ),
+    )
+
+    /*
     unitList := widget.NewList(
         widget.ListOpts.EntryFontFace(face),
         widget.ListOpts.SliderOpts(
@@ -603,6 +678,17 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
             }),
         ),
     )
+    */
+
+    /*
+    for _, unit := range allUnits {
+        unitList.AddEntry(unit)
+    }
+
+    AddEvent(uiEvents, func (update *UIAddUnit) {
+        unitList.AddEntry(update.Unit)
+    })
+    */
 
     armyInfo := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -617,15 +703,11 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         widget.TextOpts.Text("Army", face, color.White),
     ))
 
-    for _, unit := range allUnits {
-        unitList.AddEntry(unit)
-    }
+    scrollStuff := ui.HBox()
+    scrollStuff.AddChild(scroller)
+    scrollStuff.AddChild(slider)
 
-    AddEvent(uiEvents, func (update *UIAddUnit) {
-        unitList.AddEntry(update.Unit)
-    })
-
-    armyInfo.AddChild(unitList)
+    armyInfo.AddChild(scrollStuff)
 
     unitInfoContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -696,7 +778,9 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     rootContainer.AddChild(makePlayerInfoUI(&face, engine.Player))
 
-    unitInfoUI := makeUnitInfoUI(&face, engine.Player.Units, engine.Player, &uiEvents)
+    imageCache := util.MakeImageCache(engine.Cache)
+
+    unitInfoUI := makeUnitInfoUI(&face, engine.Player.Units, engine.Player, &uiEvents, &imageCache)
 
     rootContainer.AddChild(unitInfoUI)
     rootContainer.AddChild(makeShopUI(&face, engine.Player, &uiEvents))
@@ -711,7 +795,9 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
-    playerObj.AddUnit(units.LizardSwordsmen)
+    for range 20 {
+        playerObj.AddUnit(units.LizardSwordsmen)
+    }
 
     engine := Engine{
         GameMode: GameModeUI,
