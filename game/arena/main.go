@@ -473,16 +473,65 @@ func getHealCost(unit units.StackUnit) int {
 
 func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
 
-    currentName := widget.NewText(widget.TextOpts.Text("", face, color.White))
-    currentHealth := widget.NewText(widget.TextOpts.Text("", face, color.White))
-    currentRace := widget.NewText(widget.TextOpts.Text("", face, color.White))
+    unitSpecifics := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(2),
+        )),
+    )
 
+    unitSpecifics.AddChild(widget.NewText(
+        widget.TextOpts.Text("Unit Specifics", face, color.White),
+    ))
+
+    var updateUnitSpecifics func(unit units.StackUnit)
+
+    updateUnitSpecifics = func(unit units.StackUnit) {
+        currentName := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Name: %v", unit.GetFullName()), face, color.White))
+        currentHealth := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("HP: %d/%d", unit.GetHealth(), unit.GetMaxHealth()), face, color.White))
+        currentRace := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Race: %v", unit.GetRace()), face, color.White))
+
+        unitSpecifics.RemoveChildren()
+        unitSpecifics.AddChild(currentName)
+        unitSpecifics.AddChild(currentHealth)
+        unitSpecifics.AddChild(currentRace)
+
+        // var currentHealTarget units.StackUnit
+        healCost := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Heal Cost %d", getHealCost(unit)), face, color.White))
+
+        healButton := widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+            widget.ButtonOpts.Text("Heal Unit", face, &widget.ButtonTextColor{
+                Idle: color.White,
+                Hover: color.White,
+                Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                cost := uint64(getHealCost(unit))
+
+                if cost <= playerObj.Money {
+                    unit.AdjustHealth(unit.GetDamage())
+                    updateUnitSpecifics(unit)
+                    playerObj.Money -= uint64(cost)
+                    uiEvents.AddUpdate(&UIUpdateMoney{})
+                }
+            }),
+        )
+
+        healBox := ui.HBox()
+
+        healBox.AddChild(healButton)
+        healBox.AddChild(healCost)
+
+        unitSpecifics.AddChild(healBox)
+    }
+
+    /*
     updateHealth := func(unit units.StackUnit) {
         currentHealth.Label = fmt.Sprintf("HP: %d/%d", unit.GetHealth(), unit.GetMaxHealth())
     }
-
-    var currentHealTarget units.StackUnit
-    healCost := widget.NewText(widget.TextOpts.Text("", face, color.White))
+    */
 
     unitList := widget.NewList(
         widget.ListOpts.EntryFontFace(face),
@@ -512,12 +561,10 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
 
             unit := args.Entry.(units.StackUnit)
 
-            currentName.Label = fmt.Sprintf("Name: %v", unit.GetFullName())
-            updateHealth(unit)
-            currentRace.Label = fmt.Sprintf("Race: %v", unit.GetRace())
+            updateUnitSpecifics(unit)
+            /*
             currentHealTarget = unit
-
-            healCost.Label = fmt.Sprintf("Heal Cost %d", getHealCost(currentHealTarget))
+            */
         }),
         widget.ListOpts.EntryColor(&widget.ListEntryColor{
             Selected: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -564,51 +611,6 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
     )
 
     unitInfoContainer.AddChild(armyInfo)
-
-    unitSpecifics := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(2),
-        )),
-    )
-
-    unitSpecifics.AddChild(widget.NewText(
-        widget.TextOpts.Text("Unit Specifics", face, color.White),
-    ))
-    unitSpecifics.AddChild(currentName)
-    unitSpecifics.AddChild(currentRace)
-    unitSpecifics.AddChild(currentHealth)
-
-    healButton := widget.NewButton(
-        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
-        widget.ButtonOpts.Text("Heal Unit", face, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            if currentHealTarget == nil {
-                return
-            }
-
-            cost := uint64(getHealCost(currentHealTarget))
-
-            if cost <= playerObj.Money {
-                currentHealTarget.AdjustHealth(currentHealTarget.GetDamage())
-                updateHealth(currentHealTarget)
-                playerObj.Money -= uint64(cost)
-                uiEvents.AddUpdate(&UIUpdateMoney{})
-            }
-        }),
-    )
-
-    healBox := ui.HBox()
-
-    healBox.AddChild(healButton)
-    healBox.AddChild(healCost)
-
-    unitSpecifics.AddChild(healBox)
 
     unitInfoContainer.AddChild(unitSpecifics)
 
