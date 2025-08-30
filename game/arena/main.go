@@ -511,9 +511,9 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         widget.TextOpts.Text("Unit Specifics", face, color.White),
     ))
 
-    var updateUnitSpecifics func(unit units.StackUnit)
+    var updateUnitSpecifics func(unit units.StackUnit, setup func())
 
-    updateUnitSpecifics = func(unit units.StackUnit) {
+    updateUnitSpecifics = func(unit units.StackUnit, setup func()) {
         currentName := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Name: %v", unit.GetFullName()), face, color.White))
         currentHealth := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("HP: %d/%d", unit.GetHealth(), unit.GetMaxHealth()), face, color.White))
         currentRace := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Race: %v", unit.GetRace()), face, color.White))
@@ -567,9 +567,10 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
 
                 if cost <= playerObj.Money {
                     unit.AdjustHealth(healSlider.Current)
-                    updateUnitSpecifics(unit)
+                    updateUnitSpecifics(unit, setup)
                     playerObj.Money -= uint64(cost)
                     uiEvents.AddUpdate(&UIUpdateMoney{})
+                    setup()
                 }
             }),
         )
@@ -590,9 +591,10 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
 
     addUnit := func(unit units.StackUnit) {
         var unitBox *widget.Container
+        var setup func()
         unitBox = ui.VBox(widget.ContainerOpts.WidgetOpts(
             widget.WidgetOpts.MouseButtonPressedHandler(func(args *widget.WidgetMouseButtonPressedEventArgs) {
-                updateUnitSpecifics(unit)
+                updateUnitSpecifics(unit, setup)
                 if lastBox != nil {
                     lastBox.BackgroundImage = nil
                 }
@@ -600,40 +602,47 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
                 lastBox = unitBox
             }),
         ))
-        unitBox.AddChild(widget.NewText(
-            widget.TextOpts.Text(fmt.Sprintf("%v %v", unit.GetRace(), unit.GetFullName()), face, color.White)),
-        )
 
-        unitImage, err := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, "enlarge", enlargeTransform(2))
-        if err == nil {
+        setup = func(){
+            unitBox.RemoveChildren()
+            unitBox.AddChild(widget.NewText(
+                widget.TextOpts.Text(fmt.Sprintf("%v %v", unit.GetRace(), unit.GetFullName()), face, color.White)),
+            )
 
-            box1 := ui.HBox()
-            box1.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(unitImage)))
+            unitImage, err := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, "enlarge", enlargeTransform(2))
+            if err == nil {
 
-            highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
-            mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
-            lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+                box1 := ui.HBox()
+                box1.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(unitImage)))
 
-            healthColor := highHealth
-            percent := float32(unit.GetHealth()) / float32(unit.GetMaxHealth())
+                highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
+                mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
+                lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
 
-            if percent < 0.33 {
-                healthColor = lowHealth
-            } else if percent < 0.66 {
-                healthColor = mediumHealth
+                healthColor := highHealth
+                percent := float32(unit.GetHealth()) / float32(unit.GetMaxHealth())
+
+                if percent < 0.33 {
+                    healthColor = lowHealth
+                } else if percent < 0.66 {
+                    healthColor = mediumHealth
+                }
+
+                healthImage := ebiten.NewImage(80, 20)
+                length := float32(healthImage.Bounds().Dx()) * percent
+                if length < 1 {
+                    length = 1
+                }
+
+                vector.DrawFilledRect(healthImage, 0, 10, float32(healthImage.Bounds().Dx()), 4, color.RGBA{R: 0, G: 0, B: 0, A: 255}, true)
+                vector.DrawFilledRect(healthImage, 0, 10, length, 4, healthColor, true)
+                box1.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(healthImage)))
+
+                unitBox.AddChild(box1)
             }
-
-            healthImage := ebiten.NewImage(80, 20)
-            length := float32(healthImage.Bounds().Dx()) * percent
-            if length < 1 {
-                length = 1
-            }
-
-            vector.DrawFilledRect(healthImage, 0, 10, length, 4, healthColor, true)
-            box1.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(healthImage)))
-
-            unitBox.AddChild(box1)
         }
+
+        setup()
 
         unitList.AddChild(unitBox)
     }
@@ -796,6 +805,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
     playerObj.AddUnit(units.LizardSwordsmen)
+    // v.AdjustHealth(-20)
 
     /*
     for range 5 {
