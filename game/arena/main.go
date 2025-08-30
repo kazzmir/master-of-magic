@@ -27,6 +27,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
     "github.com/hajimehoshi/ebiten/v2/text/v2"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 
     "github.com/ebitenui/ebitenui"
     "github.com/ebitenui/ebitenui/widget"
@@ -605,7 +606,33 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
 
         unitImage, err := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, "enlarge", enlargeTransform(2))
         if err == nil {
-            unitBox.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(unitImage)))
+
+            box1 := ui.HBox()
+            box1.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(unitImage)))
+
+            highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
+            mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
+            lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+
+            healthColor := highHealth
+            percent := float32(unit.GetHealth()) / float32(unit.GetMaxHealth())
+
+            if percent < 0.33 {
+                healthColor = lowHealth
+            } else if percent < 0.66 {
+                healthColor = mediumHealth
+            }
+
+            healthImage := ebiten.NewImage(80, 20)
+            length := float32(healthImage.Bounds().Dx()) * percent
+            if length < 1 {
+                length = 1
+            }
+
+            vector.DrawFilledRect(healthImage, 0, 10, length, 4, healthColor, true)
+            box1.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(healthImage)))
+
+            unitBox.AddChild(box1)
         }
 
         unitList.AddChild(unitBox)
@@ -768,12 +795,16 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
+    playerObj.AddUnit(units.LizardSwordsmen)
+
+    /*
     for range 5 {
         playerObj.AddUnit(units.LizardSwordsmen)
     }
     for range 5 {
         playerObj.AddUnit(units.Warlocks)
     }
+    */
 
     engine := Engine{
         GameMode: GameModeUI,
