@@ -631,6 +631,9 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
             scroller.ScrollTop = float64(args.Slider.Current) / 100
         }),
+        widget.SliderOpts.PageSizeFunc(func() int {
+            return 20
+        }),
         widget.SliderOpts.WidgetOpts(
             widget.WidgetOpts.MinSize(10, 400),
         ),
@@ -646,6 +649,11 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
             },
         ),
     )
+
+    scroller.GetWidget().ScrolledEvent.AddHandler(func (args any) {
+        eventArgs := args.(*widget.WidgetScrolledEventArgs)
+        slider.Current -= int(math.Round(eventArgs.Y * 8))
+    })
 
     /*
     unitList := widget.NewList(
@@ -807,10 +815,10 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
-    for range 3 {
+    for range 5 {
         playerObj.AddUnit(units.LizardSwordsmen)
     }
-    for range 3 {
+    for range 5 {
         playerObj.AddUnit(units.Warlocks)
     }
 
