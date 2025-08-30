@@ -466,9 +466,9 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, uiEvents *UIEve
     return container
 }
 
-func getHealCost(unit units.StackUnit) int {
+func getHealCost(unit units.StackUnit, amount int) int {
     raw := unit.GetRawUnit()
-    return int(float64(getUnitCost(&raw)) * 0.8 * float64(unit.GetDamage()) / float64(unit.GetMaxHealth()))
+    return int(float64(getUnitCost(&raw)) * 0.8 * float64(amount) / float64(unit.GetMaxHealth()))
 }
 
 func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
@@ -497,7 +497,35 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         unitSpecifics.AddChild(currentRace)
 
         // var currentHealTarget units.StackUnit
-        healCost := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Heal Cost %d", getHealCost(unit)), face, color.White))
+        healCost := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Heal %d hp for %d gold", unit.GetDamage(), getHealCost(unit, unit.GetDamage())), face, color.White))
+
+        healSlider := widget.NewSlider(
+            widget.SliderOpts.Direction(widget.DirectionHorizontal),
+            widget.SliderOpts.MinMax(0, unit.GetDamage()),
+            widget.SliderOpts.InitialCurrent(unit.GetDamage()),
+            widget.SliderOpts.WidgetOpts(
+                widget.WidgetOpts.MinSize(200, 10),
+            ),
+            widget.SliderOpts.Images(
+                &widget.SliderTrackImage{
+                    Idle: ui.SolidImage(64, 64, 64),
+                    Hover: ui.SolidImage(96, 96, 96),
+                },
+                &widget.ButtonImage{
+                    Idle: ui.SolidImage(192, 192, 192),
+                    Hover: ui.SolidImage(255, 255, 0),
+                    Pressed: ui.SolidImage(255, 128, 0),
+                },
+            ),
+            widget.SliderOpts.FixedHandleSize(6),
+            widget.SliderOpts.TrackOffset(0),
+            widget.SliderOpts.PageSizeFunc(func() int {
+                return 3
+            }),
+            widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
+                healCost.Label = fmt.Sprintf("Heal %d hp for %d gold", args.Slider.Current, getHealCost(unit, args.Slider.Current))
+            }),
+        )
 
         healButton := widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
@@ -508,10 +536,10 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
                 Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
             widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-                cost := uint64(getHealCost(unit))
+                cost := uint64(getHealCost(unit, healSlider.Current))
 
                 if cost <= playerObj.Money {
-                    unit.AdjustHealth(unit.GetDamage())
+                    unit.AdjustHealth(healSlider.Current)
                     updateUnitSpecifics(unit)
                     playerObj.Money -= uint64(cost)
                     uiEvents.AddUpdate(&UIUpdateMoney{})
@@ -519,19 +547,19 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
             }),
         )
 
+        /*
         healBox := ui.HBox()
 
-        healBox.AddChild(healButton)
         healBox.AddChild(healCost)
+        healBox.AddChild(healSlider)
+        healBox.AddChild(healButton)
 
         unitSpecifics.AddChild(healBox)
+        */
+        unitSpecifics.AddChild(healCost)
+        unitSpecifics.AddChild(healSlider)
+        unitSpecifics.AddChild(healButton)
     }
-
-    /*
-    updateHealth := func(unit units.StackUnit) {
-        currentHealth.Label = fmt.Sprintf("HP: %d/%d", unit.GetHealth(), unit.GetMaxHealth())
-    }
-    */
 
     unitList := widget.NewList(
         widget.ListOpts.EntryFontFace(face),
@@ -562,9 +590,6 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
             unit := args.Entry.(units.StackUnit)
 
             updateUnitSpecifics(unit)
-            /*
-            currentHealTarget = unit
-            */
         }),
         widget.ListOpts.EntryColor(&widget.ListEntryColor{
             Selected: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
