@@ -522,6 +522,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         unitSpecifics.AddChild(currentName)
         unitSpecifics.AddChild(currentHealth)
         unitSpecifics.AddChild(currentRace)
+        unitSpecifics.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Experience: %d (%v)", unit.GetExperience(), unit.GetExperienceLevel().Name()), face, color.White)))
 
         // var currentHealTarget units.StackUnit
         healCost := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Heal %d hp for %d gold", unit.GetDamage(), getHealCost(unit, unit.GetDamage())), face, color.White))
