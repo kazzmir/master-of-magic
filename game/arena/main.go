@@ -618,7 +618,25 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
             if err == nil {
 
                 box1 := ui.HBox()
-                box1.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(unitImage)))
+                box2 := ui.VBox()
+                box1.AddChild(box2)
+                box2.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(unitImage)))
+
+                badges := ebiten.NewImage(40, 20)
+                badges.Fill(color.RGBA{})
+
+                badgeInfo := units.GetExperienceBadge(unit)
+
+                var badgeOptions ebiten.DrawImageOptions
+
+                badgeOptions.GeoM.Translate(1, 1)
+                for range badgeInfo.Count {
+                    pic, _ := imageCache.GetImage("main.lbx", badgeInfo.Badge.IconLbxIndex(), 0)
+                    scale.DrawScaled(badges, pic, &badgeOptions)
+                    badgeOptions.GeoM.Translate(4, 0)
+                }
+
+                box2.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(badges)))
 
                 highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
                 mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
@@ -806,10 +824,21 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     return ui, &uiEvents, nil
 }
 
+func test1(playerObj *player.Player) {
+    playerObj.AddUnit(units.LizardSwordsmen)
+}
+
+func test2(playerObj *player.Player) {
+    v := playerObj.AddUnit(units.LizardSwordsmen)
+    v.AddExperience(100)
+}
+
 func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
-    playerObj.AddUnit(units.LizardSwordsmen)
+    // test1(playerObj)
+    test2(playerObj)
+
     // v.AdjustHealth(-20)
 
     /*
