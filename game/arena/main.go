@@ -208,6 +208,10 @@ func (engine *Engine) Update() error {
                     log.Printf("All units lost, starting new game")
                     engine.Player = player.MakePlayer(data.BannerGreen)
                     engine.Player.AddUnit(units.LizardSwordsmen)
+                } else {
+                    for _, unit := range engine.Player.Units {
+                        unit.AddExperience(20)
+                    }
                 }
 
                 engine.UI, engine.UIUpdates, err = engine.MakeUI()
