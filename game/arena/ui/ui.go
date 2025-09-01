@@ -35,6 +35,7 @@ func VBox(opts ...widget.ContainerOpt) *widget.Container {
     allArgs := append(opts, widget.ContainerOpts.Layout(widget.NewRowLayout(
         widget.RowLayoutOpts.Direction(widget.DirectionVertical),
         widget.RowLayoutOpts.Spacing(4),
+        widget.RowLayoutOpts.Padding(widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
     )))
 
     return widget.NewContainer(allArgs...)

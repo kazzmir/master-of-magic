@@ -392,7 +392,10 @@ func (iconList *UnitIconList) AddUnit(unit *units.Unit) {
 
     unitImage, err := iconList.imageCache.GetImageTransform(unit.GetCombatLbxFile(), unit.GetCombatIndex(units.FacingRight), 0, "enlarge", enlargeTransform(2))
     if err == nil {
-        unitBox.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(unitImage)))
+        box1 := ui.HBox()
+        box1.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(unitImage)))
+        box1.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Cost %d", getUnitCost(unit)), iconList.face, color.White)))
+        unitBox.AddChild(box1)
     }
 
     iconList.unitList.AddChild(unitBox)
@@ -443,60 +446,6 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
     container.AddChild(container2)
 
     var selected *units.Unit
-
-    /*
-    makeList := func() *widget.List {
-        return widget.NewList(
-            widget.ListOpts.EntryFontFace(face),
-            widget.ListOpts.SliderOpts(
-                widget.SliderOpts.Images(
-                    &widget.SliderTrackImage{
-                        Idle: ui.SolidImage(64, 64, 64),
-                        Hover: ui.SolidImage(96, 96, 96),
-                    },
-                    ui.MakeButtonImage(ui.SolidImage(192, 192, 192)),
-                ),
-            ),
-            widget.ListOpts.HideHorizontalSlider(),
-            widget.ListOpts.ContainerOpts(
-                widget.ContainerOpts.WidgetOpts(
-                    widget.WidgetOpts.LayoutData(widget.GridLayoutData{
-                        MaxHeight: 500,
-                    }),
-                    widget.WidgetOpts.MinSize(0, 200),
-                ),
-            ),
-            widget.ListOpts.EntryLabelFunc(
-                func (e any) string {
-                    // unit := e.(units.StackUnit)
-                    // return unit.GetName()
-                    unit := e.(*units.Unit)
-
-                    return fmt.Sprintf("%v %v", unit.Race, unit.Name)
-                },
-            ),
-            widget.ListOpts.EntrySelectedHandler(func (args *widget.ListEntrySelectedEventArgs) {
-                // log.Printf("Selected unit: %v", args.Entry)
-                unit := args.Entry.(*units.Unit)
-
-                unitName.Label = fmt.Sprintf("Name: %v", unit.Name)
-                unitCost.Label = fmt.Sprintf("Cost: %d", getUnitCost(unit))
-                selected = unit
-            }),
-            widget.ListOpts.EntryColor(&widget.ListEntryColor{
-                Selected: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-                Unselected: color.NRGBA{R: 128, G: 128, B: 128, A: 255},
-            }),
-            widget.ListOpts.ScrollContainerOpts(
-                widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                    Idle: ui.SolidImage(64, 64, 64),
-                    Disabled: ui.SolidImage(32, 32, 32),
-                    Mask: ui.SolidImage(32, 32, 32),
-                }),
-            ),
-        )
-    }
-    */
 
     unitList := MakeUnitIconList(imageCache, face, func(unit *units.Unit) {
         unitName.Label = fmt.Sprintf("Name: %v", unit.Name)
@@ -718,8 +667,8 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
 
     unitList := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
-            widget.GridLayoutOpts.Columns(1),
-            widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
+            widget.GridLayoutOpts.Columns(2),
+            widget.GridLayoutOpts.Stretch([]bool{true, true}, []bool{false, false}),
         )),
     )
 
@@ -970,23 +919,21 @@ func test3(playerObj *player.Player) {
     playerObj.Money = 30
 }
 
-
-func MakeEngine(cache *lbx.LbxCache) *Engine {
-    playerObj := player.MakePlayer(data.BannerGreen)
-
-    test1(playerObj)
-    // test3(playerObj)
-
-    // v.AdjustHealth(-20)
-
-    /*
+func test4(playerObj *player.Player) {
     for range 5 {
         playerObj.AddUnit(units.LizardSwordsmen)
     }
     for range 5 {
         playerObj.AddUnit(units.Warlocks)
     }
-    */
+}
+
+func MakeEngine(cache *lbx.LbxCache) *Engine {
+    playerObj := player.MakePlayer(data.BannerGreen)
+
+    // test1(playerObj)
+    // test3(playerObj)
+    test4(playerObj)
 
     engine := Engine{
         GameMode: GameModeUI,
@@ -1020,7 +967,7 @@ func main() {
     audio.Initialize()
     mouse.Initialize()
 
-    ebiten.SetWindowSize(1200, 900)
+    ebiten.SetWindowSize(1200, 1000)
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
     engine := MakeEngine(cache)
 
