@@ -387,6 +387,9 @@ func MakeUnitIconList(imageCache *util.ImageCache, face *text.GoTextFace, select
 
     sortButtons := ui.HBox()
 
+    // only change how we sort if the same button is pressed twice in a row
+    lastSort := 0
+
     sortButtons.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
@@ -396,7 +399,10 @@ func MakeUnitIconList(imageCache *util.ImageCache, face *text.GoTextFace, select
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            iconList.SortNameDirection = iconList.SortNameDirection.Next()
+            if lastSort == 0 {
+                iconList.SortNameDirection = iconList.SortNameDirection.Next()
+            }
+            lastSort = 0
             iconList.SortByName()
         }),
     ))
@@ -410,7 +416,10 @@ func MakeUnitIconList(imageCache *util.ImageCache, face *text.GoTextFace, select
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            iconList.SortCostDirection = iconList.SortCostDirection.Next()
+            if lastSort == 1 {
+                iconList.SortCostDirection = iconList.SortCostDirection.Next()
+            }
+            lastSort = 1
             iconList.SortByCost()
         }),
     ))
