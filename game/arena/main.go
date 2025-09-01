@@ -321,7 +321,7 @@ type UnitIconList struct {
     SortCostDirection SortDirection
 }
 
-func MakeUnitIconList(imageCache *util.ImageCache, face *text.GoTextFace, selectedUnit func(*units.Unit)) *UnitIconList {
+func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.GoTextFace, selectedUnit func(*units.Unit)) *UnitIconList {
     var iconList UnitIconList
 
     iconList.imageCache = imageCache
@@ -390,9 +390,19 @@ func MakeUnitIconList(imageCache *util.ImageCache, face *text.GoTextFace, select
     // only change how we sort if the same button is pressed twice in a row
     lastSort := 0
 
+    baseImage := ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255})
     sortButtons.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        // widget.ButtonOpts.ToggleMode(),
+        // widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.Image(&widget.ButtonImage{
+            Idle: baseImage,
+            Hover: baseImage,
+            Pressed: baseImage,
+            Disabled: baseImage,
+            // PressedHover: ui_image.NewNineSliceColor(color.NRGBA{R: 255, G: 64, B: 32, A: 255}),
+        }),
+
         widget.ButtonOpts.Text("Sort by Name", face, &widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
@@ -424,6 +434,7 @@ func MakeUnitIconList(imageCache *util.ImageCache, face *text.GoTextFace, select
         }),
     ))
 
+    box.AddChild(widget.NewText(widget.TextOpts.Text(description, face, color.White)))
 
     box.AddChild(sortButtons)
     box.AddChild(scrollStuff)
@@ -560,7 +571,7 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
 
     var selected *units.Unit
 
-    unitList := MakeUnitIconList(imageCache, face, func(unit *units.Unit) {
+    unitList := MakeUnitIconList("All Units", imageCache, face, func(unit *units.Unit) {
         unitName.Label = fmt.Sprintf("Name: %v", unit.Name)
         unitCost.Label = fmt.Sprintf("Cost: %d", getUnitCost(unit))
         selected = unit
@@ -574,7 +585,7 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
 
     unitList.SortByName()
 
-    filteredUnitList := MakeUnitIconList(imageCache, face, func(unit *units.Unit) {
+    filteredUnitList := MakeUnitIconList("Affordable Units", imageCache, face, func(unit *units.Unit) {
         unitName.Label = fmt.Sprintf("Name: %v", unit.Name)
         unitCost.Label = fmt.Sprintf("Cost: %d", getUnitCost(unit))
         selected = unit
@@ -1084,7 +1095,7 @@ func main() {
     audio.Initialize()
     mouse.Initialize()
 
-    ebiten.SetWindowSize(1200, 1000)
+    ebiten.SetWindowSize(1200, 1050)
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
     engine := MakeEngine(cache)
 
