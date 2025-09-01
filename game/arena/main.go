@@ -568,12 +568,22 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
                 Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
             widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-                cost := uint64(getHealCost(unit, healSlider.Current))
+                updated := false
 
-                if cost <= playerObj.Money {
-                    unit.AdjustHealth(healSlider.Current)
+                healCost := uint64(getHealCost(unit, 1))
+
+                for range healSlider.Current {
+                    if healCost > playerObj.Money || unit.GetHealth() >= unit.GetMaxHealth() {
+                        break
+                    }
+
+                    unit.AdjustHealth(1)
+                    playerObj.Money -= healCost
+                    updated = true
+                }
+
+                if updated {
                     updateUnitSpecifics(unit, setup)
-                    playerObj.Money -= uint64(cost)
                     uiEvents.AddUpdate(&UIUpdateMoney{})
                     setup()
                 }
@@ -833,11 +843,18 @@ func test2(playerObj *player.Player) {
     v.AddExperience(100)
 }
 
+func test3(playerObj *player.Player) {
+    v := playerObj.AddUnit(units.LizardSwordsmen)
+    v.AdjustHealth(-10)
+    playerObj.Money = 30
+}
+
+
 func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
     // test1(playerObj)
-    test2(playerObj)
+    test3(playerObj)
 
     // v.AdjustHealth(-20)
 
