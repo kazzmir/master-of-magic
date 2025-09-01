@@ -291,7 +291,118 @@ func (events *UIEventUpdate) AddUpdate(event UIEvent) {
     events.Updates = append(events.Updates, event)
 }
 
-func makeShopUI(face *text.GoTextFace, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+type UnitIconList struct {
+    unitList *widget.Container
+    container *widget.Container
+    face *text.GoTextFace
+    lastBox *widget.Container
+    SelectedUnit func(unit *units.Unit)
+    imageCache *util.ImageCache
+}
+
+func MakeUnitIconList(imageCache *util.ImageCache, face *text.GoTextFace, selectedUnit func(*units.Unit)) *UnitIconList {
+    var iconList UnitIconList
+
+    iconList.imageCache = imageCache
+    iconList.SelectedUnit = selectedUnit
+    iconList.face = face
+
+    iconList.unitList = widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewGridLayout(
+            widget.GridLayoutOpts.Columns(3),
+            widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{false, false, false}),
+        )),
+    )
+
+    scroller := widget.NewScrollContainer(
+        widget.ScrollContainerOpts.WidgetOpts(
+            widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                MaxHeight: 400,
+            }),
+        ),
+        widget.ScrollContainerOpts.Content(iconList.unitList),
+        widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+            Idle: ui.SolidImage(64, 64, 64),
+            Mask: ui.SolidImage(32, 32, 32),
+        }),
+    )
+
+    slider := widget.NewSlider(
+        widget.SliderOpts.Direction(widget.DirectionVertical),
+        widget.SliderOpts.MinMax(0, 100),
+        widget.SliderOpts.InitialCurrent(0),
+        widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
+            scroller.ScrollTop = float64(args.Slider.Current) / 100
+        }),
+        widget.SliderOpts.PageSizeFunc(func() int {
+            return 20
+        }),
+        widget.SliderOpts.WidgetOpts(
+            widget.WidgetOpts.MinSize(10, 400),
+        ),
+        widget.SliderOpts.Images(
+            &widget.SliderTrackImage{
+                Idle: ui.SolidImage(64, 64, 64),
+                Hover: ui.SolidImage(96, 96, 96),
+            },
+            &widget.ButtonImage{
+                Idle: ui.SolidImage(192, 192, 192),
+                Hover: ui.SolidImage(255, 255, 0),
+                Pressed: ui.SolidImage(255, 128, 0),
+            },
+        ),
+    )
+
+    scroller.GetWidget().ScrolledEvent.AddHandler(func (args any) {
+        eventArgs := args.(*widget.WidgetScrolledEventArgs)
+        slider.Current -= int(math.Round(eventArgs.Y * 8))
+    })
+
+    scrollStuff := ui.HBox()
+    scrollStuff.AddChild(scroller)
+    scrollStuff.AddChild(slider)
+
+    iconList.container = scrollStuff
+
+    return &iconList
+}
+
+func (iconList *UnitIconList) Clear() {
+    iconList.unitList.RemoveChildren()
+    iconList.lastBox = nil
+}
+
+func (iconList *UnitIconList) AddUnit(unit *units.Unit) {
+    var unitBox *widget.Container
+
+    unitBox = ui.VBox(widget.ContainerOpts.WidgetOpts(
+        widget.WidgetOpts.MouseButtonPressedHandler(func(args *widget.WidgetMouseButtonPressedEventArgs) {
+            iconList.SelectedUnit(unit)
+            if iconList.lastBox != nil {
+                iconList.lastBox.BackgroundImage = nil
+            }
+            unitBox.BackgroundImage = ui.SolidImage(96, 96, 32)
+            iconList.lastBox = unitBox
+        }),
+    ))
+
+    unitBox.AddChild(widget.NewText(
+        widget.TextOpts.Text(fmt.Sprintf("%v %v", unit.Race, unit.Name), iconList.face, color.White)),
+    )
+
+    unitImage, err := iconList.imageCache.GetImageTransform(unit.GetCombatLbxFile(), unit.GetCombatIndex(units.FacingRight), 0, "enlarge", enlargeTransform(2))
+    if err == nil {
+        unitBox.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(unitImage)))
+    }
+
+    iconList.unitList.AddChild(unitBox)
+}
+
+func (iconList *UnitIconList) GetWidget() *widget.Container {
+    return iconList.container
+}
+
+func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
     container := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
@@ -333,6 +444,7 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, uiEvents *UIEve
 
     var selected *units.Unit
 
+    /*
     makeList := func() *widget.List {
         return widget.NewList(
             widget.ListOpts.EntryFontFace(face),
@@ -384,21 +496,30 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, uiEvents *UIEve
             ),
         )
     }
+    */
 
-    unitList := makeList()
+    unitList := MakeUnitIconList(imageCache, face, func(unit *units.Unit) {
+        unitName.Label = fmt.Sprintf("Name: %v", unit.Name)
+        unitCost.Label = fmt.Sprintf("Cost: %d", getUnitCost(unit))
+        selected = unit
+    })
 
     // container2.AddChild(unitList)
 
     for _, unit := range getValidChoices(100000) {
-        unitList.AddEntry(unit)
+        unitList.AddUnit(unit)
     }
 
-    filteredUnitList := makeList()
+    filteredUnitList := MakeUnitIconList(imageCache, face, func(unit *units.Unit) {
+        unitName.Label = fmt.Sprintf("Name: %v", unit.Name)
+        unitCost.Label = fmt.Sprintf("Cost: %d", getUnitCost(unit))
+        selected = unit
+    })
 
     setupFilteredList := func() {
-        filteredUnitList.SetEntries(nil)
+        filteredUnitList.Clear()
         for _, unit := range getValidChoices(playerObj.Money) {
-            filteredUnitList.AddEntry(unit)
+            filteredUnitList.AddUnit(unit)
         }
     }
 
@@ -412,13 +533,13 @@ func makeShopUI(face *text.GoTextFace, playerObj *player.Player, uiEvents *UIEve
         widget.GridLayoutOpts.Columns(1),
         widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
     )))
-    tabAll.AddChild(unitList)
+    tabAll.AddChild(unitList.GetWidget())
     tabAffordable := widget.NewTabBookTab("Affordable", widget.ContainerOpts.Layout(
         widget.NewGridLayout(
         widget.GridLayoutOpts.Columns(1),
         widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
     )))
-    tabAffordable.AddChild(filteredUnitList)
+    tabAffordable.AddChild(filteredUnitList.GetWidget())
 
     tabs := widget.NewTabBook(
         widget.TabBookOpts.TabButtonImage(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
@@ -825,7 +946,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     unitInfoUI := makeUnitInfoUI(&face, engine.Player.Units, engine.Player, &uiEvents, &imageCache)
 
     rootContainer.AddChild(unitInfoUI)
-    rootContainer.AddChild(makeShopUI(&face, engine.Player, &uiEvents))
+    rootContainer.AddChild(makeShopUI(&face, &imageCache, engine.Player, &uiEvents))
 
     ui := &ebitenui.UI{
         Container: rootContainer,
@@ -853,8 +974,8 @@ func test3(playerObj *player.Player) {
 func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
-    // test1(playerObj)
-    test3(playerObj)
+    test1(playerObj)
+    // test3(playerObj)
 
     // v.AdjustHealth(-20)
 
