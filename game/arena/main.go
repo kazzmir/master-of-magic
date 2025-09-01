@@ -293,6 +293,21 @@ func (events *UIEventUpdate) AddUpdate(event UIEvent) {
     events.Updates = append(events.Updates, event)
 }
 
+type SortDirection int
+
+const (
+    SortDirectionAscending SortDirection = iota
+    SortDirectionDescending
+)
+
+func (sort SortDirection) Next() SortDirection {
+    switch sort {
+        case SortDirectionAscending: return SortDirectionDescending
+        case SortDirectionDescending: return SortDirectionAscending
+    }
+    return SortDirectionAscending
+}
+
 type UnitIconList struct {
     unitList *widget.Container
     container *widget.Container
@@ -301,6 +316,9 @@ type UnitIconList struct {
     SelectedUnit func(unit *units.Unit)
     imageCache *util.ImageCache
     units []*units.Unit
+
+    SortNameDirection SortDirection
+    SortCostDirection SortDirection
 }
 
 func MakeUnitIconList(imageCache *util.ImageCache, face *text.GoTextFace, selectedUnit func(*units.Unit)) *UnitIconList {
@@ -378,6 +396,7 @@ func MakeUnitIconList(imageCache *util.ImageCache, face *text.GoTextFace, select
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            iconList.SortNameDirection = iconList.SortNameDirection.Next()
             iconList.SortByName()
         }),
     ))
@@ -391,6 +410,7 @@ func MakeUnitIconList(imageCache *util.ImageCache, face *text.GoTextFace, select
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            iconList.SortCostDirection = iconList.SortCostDirection.Next()
             iconList.SortByCost()
         }),
     ))
@@ -410,9 +430,20 @@ func (iconList *UnitIconList) Clear() {
 }
 
 func (iconList *UnitIconList) SortByName() {
-    slices.SortFunc(iconList.units, func(a, b *units.Unit) int {
-        return cmp.Compare(fmt.Sprintf("%v %v", a.Race, a.Name), fmt.Sprintf("%v %v", b.Race, b.Name))
-    })
+    var sortFunc func(a, b *units.Unit) int
+
+    switch iconList.SortNameDirection {
+        case SortDirectionAscending:
+            sortFunc = func(a, b *units.Unit) int {
+                return cmp.Compare(fmt.Sprintf("%v %v", a.Race, a.Name), fmt.Sprintf("%v %v", b.Race, b.Name))
+            }
+        case SortDirectionDescending:
+            sortFunc = func(a, b *units.Unit) int {
+                return cmp.Compare(fmt.Sprintf("%v %v", b.Race, b.Name), fmt.Sprintf("%v %v", a.Race, a.Name))
+            }
+    }
+
+    slices.SortFunc(iconList.units, sortFunc)
 
     iconList.Clear()
     for _, unit := range iconList.units {
@@ -421,9 +452,20 @@ func (iconList *UnitIconList) SortByName() {
 }
 
 func (iconList *UnitIconList) SortByCost() {
-    slices.SortFunc(iconList.units, func(a, b *units.Unit) int {
-        return cmp.Compare(getUnitCost(a), getUnitCost(b))
-    })
+    var sortFunc func(a, b *units.Unit) int
+
+    switch iconList.SortCostDirection {
+        case SortDirectionAscending:
+            sortFunc = func(a, b *units.Unit) int {
+                return cmp.Compare(getUnitCost(a), getUnitCost(b))
+            }
+        case SortDirectionDescending:
+            sortFunc = func(a, b *units.Unit) int {
+                return cmp.Compare(getUnitCost(b), getUnitCost(a))
+            }
+    }
+
+    slices.SortFunc(iconList.units, sortFunc)
     iconList.Clear()
     for _, unit := range iconList.units {
         iconList.addUI(unit)
@@ -521,6 +563,8 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
         unitList.AddUnit(unit)
     }
 
+    unitList.SortByName()
+
     filteredUnitList := MakeUnitIconList(imageCache, face, func(unit *units.Unit) {
         unitName.Label = fmt.Sprintf("Name: %v", unit.Name)
         unitCost.Label = fmt.Sprintf("Cost: %d", getUnitCost(unit))
@@ -532,6 +576,8 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
         for _, unit := range getValidChoices(playerObj.Money) {
             filteredUnitList.AddUnit(unit)
         }
+
+        filteredUnitList.SortByName()
     }
 
     setupFilteredList()
