@@ -8,6 +8,8 @@ import (
     "image/color"
     "image"
     "fmt"
+    "slices"
+    "cmp"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -298,6 +300,7 @@ type UnitIconList struct {
     lastBox *widget.Container
     SelectedUnit func(unit *units.Unit)
     imageCache *util.ImageCache
+    units []*units.Unit
 }
 
 func MakeUnitIconList(imageCache *util.ImageCache, face *text.GoTextFace, selectedUnit func(*units.Unit)) *UnitIconList {
@@ -362,7 +365,41 @@ func MakeUnitIconList(imageCache *util.ImageCache, face *text.GoTextFace, select
     scrollStuff.AddChild(scroller)
     scrollStuff.AddChild(slider)
 
-    iconList.container = scrollStuff
+    box := ui.VBox()
+
+    sortButtons := ui.HBox()
+
+    sortButtons.AddChild(widget.NewButton(
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.Text("Sort by Name", face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            iconList.SortByName()
+        }),
+    ))
+
+    sortButtons.AddChild(widget.NewButton(
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.Text("Sort by Cost", face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            iconList.SortByCost()
+        }),
+    ))
+
+
+    box.AddChild(sortButtons)
+    box.AddChild(scrollStuff)
+
+    iconList.container = box
 
     return &iconList
 }
@@ -372,9 +409,29 @@ func (iconList *UnitIconList) Clear() {
     iconList.lastBox = nil
 }
 
-func (iconList *UnitIconList) AddUnit(unit *units.Unit) {
-    var unitBox *widget.Container
+func (iconList *UnitIconList) SortByName() {
+    slices.SortFunc(iconList.units, func(a, b *units.Unit) int {
+        return cmp.Compare(fmt.Sprintf("%v %v", a.Race, a.Name), fmt.Sprintf("%v %v", b.Race, b.Name))
+    })
 
+    iconList.Clear()
+    for _, unit := range iconList.units {
+        iconList.addUI(unit)
+    }
+}
+
+func (iconList *UnitIconList) SortByCost() {
+    slices.SortFunc(iconList.units, func(a, b *units.Unit) int {
+        return cmp.Compare(getUnitCost(a), getUnitCost(b))
+    })
+    iconList.Clear()
+    for _, unit := range iconList.units {
+        iconList.addUI(unit)
+    }
+}
+
+func (iconList *UnitIconList) addUI(unit *units.Unit) {
+    var unitBox *widget.Container
     unitBox = ui.VBox(widget.ContainerOpts.WidgetOpts(
         widget.WidgetOpts.MouseButtonPressedHandler(func(args *widget.WidgetMouseButtonPressedEventArgs) {
             iconList.SelectedUnit(unit)
@@ -399,6 +456,11 @@ func (iconList *UnitIconList) AddUnit(unit *units.Unit) {
     }
 
     iconList.unitList.AddChild(unitBox)
+}
+
+func (iconList *UnitIconList) AddUnit(unit *units.Unit) {
+    iconList.units = append(iconList.units, unit)
+    iconList.addUI(unit)
 }
 
 func (iconList *UnitIconList) GetWidget() *widget.Container {
