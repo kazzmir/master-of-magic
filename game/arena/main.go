@@ -845,16 +845,21 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
     addUnit := func(unit units.StackUnit) {
         var unitBox *widget.Container
         var setup func()
+
+        border := ui.BorderedImage(color.RGBA{R: 128, G: 128, B: 128, A: 255}, 1)
+
         unitBox = ui.VBox(widget.ContainerOpts.WidgetOpts(
             widget.WidgetOpts.MouseButtonPressedHandler(func(args *widget.WidgetMouseButtonPressedEventArgs) {
                 updateUnitSpecifics(unit, setup)
                 if lastBox != nil {
-                    lastBox.BackgroundImage = nil
+                    lastBox.BackgroundImage = border
                 }
                 unitBox.BackgroundImage = ui.SolidImage(96, 96, 32)
                 lastBox = unitBox
             }),
-        ))
+            ),
+            widget.ContainerOpts.BackgroundImage(border),
+        )
 
         setup = func(){
             unitBox.RemoveChildren()
