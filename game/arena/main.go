@@ -790,7 +790,6 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj 
         data.UnitEnchantmentInvisibility,
         data.UnitEnchantmentMagicImmunity,
         data.UnitEnchantmentSpellLock,
-        data.UnitEnchantmentWindWalking,
         data.UnitEnchantmentEldritchWeapon,
         data.UnitEnchantmentFlameBlade,
         data.UnitEnchantmentBerserk,

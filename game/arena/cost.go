@@ -95,7 +95,7 @@ func getEnchantmentCost(enchantment data.UnitEnchantment) int {
     switch enchantment {
         case data.UnitEnchantmentGiantStrength: return 100
         case data.UnitEnchantmentLionHeart: return 200
-        case data.UnitEnchantmentHaste: return 300
+        case data.UnitEnchantmentHaste: return 700
         case data.UnitEnchantmentImmolation: return 200
         case data.UnitEnchantmentResistElements: return 100
         case data.UnitEnchantmentResistMagic: return 200
@@ -112,20 +112,19 @@ func getEnchantmentCost(enchantment data.UnitEnchantment) int {
         case data.UnitEnchantmentEndurance: return 100
         case data.UnitEnchantmentHeroism: return 200
         case data.UnitEnchantmentHolyArmor: return 100
-        case data.UnitEnchantmentHolyWeapon: return 100
-        case data.UnitEnchantmentInvulnerability: return 100
+        case data.UnitEnchantmentHolyWeapon: return 200
+        case data.UnitEnchantmentInvulnerability: return 1000
         case data.UnitEnchantmentIronSkin: return 100
-        case data.UnitEnchantmentRegeneration: return 100
+        case data.UnitEnchantmentRegeneration: return 1000
         case data.UnitEnchantmentStoneSkin: return 100
-        case data.UnitEnchantmentGuardianWind: return 100
-        case data.UnitEnchantmentInvisibility: return 100
+        case data.UnitEnchantmentGuardianWind: return 300
+        case data.UnitEnchantmentInvisibility: return 500
         case data.UnitEnchantmentMagicImmunity: return 500
-        case data.UnitEnchantmentSpellLock: return 100
-        case data.UnitEnchantmentWindWalking: return 100
+        case data.UnitEnchantmentSpellLock: return 300
         case data.UnitEnchantmentEldritchWeapon: return 100
         case data.UnitEnchantmentFlameBlade: return 150
-        case data.UnitEnchantmentBerserk: return 150
-        case data.UnitEnchantmentBlackChannels: return 200
+        case data.UnitEnchantmentBerserk: return 200
+        case data.UnitEnchantmentBlackChannels: return 400
         case data.UnitEnchantmentWraithForm: return 300
     }
 
