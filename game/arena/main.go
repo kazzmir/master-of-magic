@@ -259,13 +259,26 @@ type UIEvent interface {
 type UIUpdateMoney struct {
 }
 
+type UIUpdateUnit struct {
+    Unit units.StackUnit
+}
+
 type UIAddUnit struct {
     Unit units.StackUnit
 }
 
 type UIEventUpdate struct {
-    Listeners []func(UIEvent)
+    Listeners map[uint64]func(UIEvent)
     Updates []UIEvent
+    counter uint64
+}
+
+func MakeUIEventUpdate() *UIEventUpdate {
+    return &UIEventUpdate{
+        Listeners: make(map[uint64]func(UIEvent)),
+        Updates: nil,
+        counter: 0,
+    }
 }
 
 func (events *UIEventUpdate) Update() {
@@ -277,12 +290,19 @@ func (events *UIEventUpdate) Update() {
     events.Updates = nil
 }
 
-func (events *UIEventUpdate) Add(f func(UIEvent)) {
-    events.Listeners = append(events.Listeners, f)
+func (events *UIEventUpdate) Remove(id uint64){
+    delete(events.Listeners, id)
 }
 
-func AddEvent[T UIEvent](events *UIEventUpdate, f func(*T)) {
-    events.Add(func (event UIEvent) {
+// returns the id of the listener
+func (events *UIEventUpdate) Add(f func(UIEvent)) uint64 {
+    events.Listeners[events.counter] = f
+    events.counter += 1
+    return events.counter - 1
+}
+
+func AddEvent[T UIEvent](events *UIEventUpdate, f func(*T)) uint64 {
+    return events.Add(func (event UIEvent) {
         if update, ok := event.(*T); ok {
             f(update)
         }
@@ -740,6 +760,133 @@ func enlargeTransform(factor int) util.ImageTransformFunc {
     return f 
 }
 
+func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+    enchantments := []data.UnitEnchantment{
+        data.UnitEnchantmentGiantStrength,
+        data.UnitEnchantmentLionHeart,
+        data.UnitEnchantmentHaste,
+        data.UnitEnchantmentImmolation,
+        data.UnitEnchantmentResistElements,
+        data.UnitEnchantmentResistMagic,
+        data.UnitEnchantmentElementalArmor,
+        data.UnitEnchantmentBless,
+        data.UnitEnchantmentRighteousness,
+        data.UnitEnchantmentCloakOfFear,
+        data.UnitEnchantmentTrueSight,
+        data.UnitEnchantmentPathFinding,
+        data.UnitEnchantmentFlight,
+        data.UnitEnchantmentChaosChannelsDemonWings,
+        data.UnitEnchantmentChaosChannelsDemonSkin,
+        data.UnitEnchantmentChaosChannelsFireBreath,
+        data.UnitEnchantmentEndurance,
+        data.UnitEnchantmentHeroism,
+        data.UnitEnchantmentHolyArmor,
+        data.UnitEnchantmentHolyWeapon,
+        data.UnitEnchantmentInvulnerability,
+        data.UnitEnchantmentIronSkin,
+        data.UnitEnchantmentRegeneration,
+        data.UnitEnchantmentStoneSkin,
+        data.UnitEnchantmentGuardianWind,
+        data.UnitEnchantmentInvisibility,
+        data.UnitEnchantmentMagicImmunity,
+        data.UnitEnchantmentSpellLock,
+        data.UnitEnchantmentWindWalking,
+        data.UnitEnchantmentEldritchWeapon,
+        data.UnitEnchantmentFlameBlade,
+        data.UnitEnchantmentBerserk,
+        data.UnitEnchantmentBlackChannels,
+        data.UnitEnchantmentWraithForm,
+    }
+
+    enchantmentList := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewGridLayout(
+            widget.GridLayoutOpts.Columns(2),
+        )),
+    )
+
+    containerSize := 250
+
+    scroller := widget.NewScrollContainer(
+        widget.ScrollContainerOpts.WidgetOpts(
+            widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                MaxHeight: containerSize,
+            }),
+        ),
+        widget.ScrollContainerOpts.Content(enchantmentList),
+        widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+            Idle: ui.SolidImage(64, 64, 64),
+            Mask: ui.SolidImage(32, 32, 32),
+        }),
+    )
+
+    slider := widget.NewSlider(
+        widget.SliderOpts.Direction(widget.DirectionVertical),
+        widget.SliderOpts.MinMax(0, 100),
+        widget.SliderOpts.InitialCurrent(0),
+        widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
+            scroller.ScrollTop = float64(args.Slider.Current) / 100
+        }),
+        widget.SliderOpts.PageSizeFunc(func() int {
+            return 20
+        }),
+        widget.SliderOpts.WidgetOpts(
+            widget.WidgetOpts.MinSize(10, containerSize),
+        ),
+        widget.SliderOpts.Images(
+            &widget.SliderTrackImage{
+                Idle: ui.SolidImage(64, 64, 64),
+                Hover: ui.SolidImage(96, 96, 96),
+            },
+            &widget.ButtonImage{
+                Idle: ui.SolidImage(192, 192, 192),
+                Hover: ui.SolidImage(255, 255, 0),
+                Pressed: ui.SolidImage(255, 128, 0),
+            },
+        ),
+    )
+
+    scroller.GetWidget().ScrolledEvent.AddHandler(func (args any) {
+        eventArgs := args.(*widget.WidgetScrolledEventArgs)
+        slider.Current -= int(math.Round(eventArgs.Y * 8))
+    })
+
+    for _, enchantment := range enchantments {
+        box := ui.VBox()
+        name := ui.CenteredText(enchantment.Name(), face, color.White)
+        box.AddChild(name)
+        cost := ui.CenteredText(fmt.Sprintf("Cost %d", getEnchantmentCost(enchantment)), face, color.White)
+        box.AddChild(cost)
+        remove := func(){}
+        enchantButton := widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+            widget.ButtonOpts.Text("Enchant", face, &widget.ButtonTextColor{
+                Idle: color.White,
+                Hover: color.White,
+                Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                cost := uint64(getEnchantmentCost(enchantment))
+                if cost <= playerObj.Money && !unit.HasEnchantment(enchantment) {
+                    playerObj.Money -= cost
+                    unit.AddEnchantment(enchantment)
+                    remove()
+                    uiEvents.AddUpdate(&UIUpdateMoney{})
+                    uiEvents.AddUpdate(&UIUpdateUnit{Unit: unit})
+                }
+            }),
+        )
+        box.AddChild(enchantButton)
+        remove = enchantmentList.AddChild(box)
+    }
+
+    container := ui.HBox()
+    container.AddChild(scroller)
+    container.AddChild(slider)
+
+    return container
+}
+
 func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
 
     unitSpecifics := widget.NewContainer(
@@ -755,11 +902,15 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
 
     var updateUnitSpecifics func(unit units.StackUnit, setup func())
 
+    removeUnit := func() {
+    }
+
     updateUnitSpecifics = func(unit units.StackUnit, setup func()) {
         currentName := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Name: %v", unit.GetFullName()), face, color.White))
         currentHealth := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("HP: %d/%d", unit.GetHealth(), unit.GetMaxHealth()), face, color.White))
         currentRace := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Race: %v", unit.GetRace()), face, color.White))
 
+        removeUnit()
         unitSpecifics.RemoveChildren()
         unitSpecifics.AddChild(currentName)
         unitSpecifics.AddChild(currentHealth)
@@ -865,8 +1016,35 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
             enchantments.AddEntry(enchantment.Name())
         }
 
-        unitSpecifics.AddChild(widget.NewText(widget.TextOpts.Text("Enchantments:", face, color.RGBA{R: 255, G: 255, B: 0, A: 255})))
-        unitSpecifics.AddChild(enchantments)
+        newEvent := func (update *UIUpdateUnit) {
+            if update.Unit == unit {
+                enchantments.SetEntries(nil)
+                for _, enchantment := range unit.GetEnchantments() {
+                    enchantments.AddEntry(enchantment.Name())
+                }
+            }
+        }
+
+        removeId := AddEvent(uiEvents, newEvent)
+
+        removeUnit = func() {
+            uiEvents.Remove(removeId)
+        }
+
+        enchantmentsBoxes := ui.HBox()
+
+        showEnchantments := ui.VBox()
+
+        showEnchantments.AddChild(widget.NewText(widget.TextOpts.Text("Enchantments", face, color.RGBA{R: 255, G: 255, B: 0, A: 255})))
+        showEnchantments.AddChild(enchantments)
+
+        enchantmentsBoxes.AddChild(showEnchantments)
+
+        buyEnchantments := makeBuyEnchantments(unit, face, playerObj, uiEvents)
+
+        enchantmentsBoxes.AddChild(buyEnchantments)
+
+        unitSpecifics.AddChild(enchantmentsBoxes)
     }
 
     unitList := widget.NewContainer(
@@ -1072,7 +1250,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
         Size: 18,
     }
 
-    var uiEvents UIEventUpdate
+    uiEvents := MakeUIEventUpdate()
 
     rootContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -1105,16 +1283,16 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     imageCache := util.MakeImageCache(engine.Cache)
 
-    unitInfoUI := makeUnitInfoUI(&face, engine.Player.Units, engine.Player, &uiEvents, &imageCache)
+    unitInfoUI := makeUnitInfoUI(&face, engine.Player.Units, engine.Player, uiEvents, &imageCache)
 
     rootContainer.AddChild(unitInfoUI)
-    rootContainer.AddChild(makeShopUI(&face, &imageCache, engine.Player, &uiEvents))
+    rootContainer.AddChild(makeShopUI(&face, &imageCache, engine.Player, uiEvents))
 
     ui := &ebitenui.UI{
         Container: rootContainer,
     }
 
-    return ui, &uiEvents, nil
+    return ui, uiEvents, nil
 }
 
 func test1(playerObj *player.Player) {
@@ -1139,6 +1317,7 @@ func test4(playerObj *player.Player) {
     for range 5 {
         playerObj.AddUnit(units.Warlocks)
     }
+    playerObj.Money = 3000
 }
 
 func MakeEngine(cache *lbx.LbxCache) *Engine {

@@ -90,3 +90,44 @@ func getUnitCost(unit *units.Unit) uint64 {
     }
     return uint64(cost)
 }
+
+func getEnchantmentCost(enchantment data.UnitEnchantment) int {
+    switch enchantment {
+        case data.UnitEnchantmentGiantStrength: return 100
+        case data.UnitEnchantmentLionHeart: return 200
+        case data.UnitEnchantmentHaste: return 300
+        case data.UnitEnchantmentImmolation: return 200
+        case data.UnitEnchantmentResistElements: return 100
+        case data.UnitEnchantmentResistMagic: return 200
+        case data.UnitEnchantmentElementalArmor: return 200
+        case data.UnitEnchantmentBless: return 150
+        case data.UnitEnchantmentRighteousness: return 300
+        case data.UnitEnchantmentCloakOfFear: return 200
+        case data.UnitEnchantmentTrueSight: return 150
+        case data.UnitEnchantmentPathFinding: return 100
+        case data.UnitEnchantmentFlight: return 300
+        case data.UnitEnchantmentChaosChannelsDemonWings: return 200
+        case data.UnitEnchantmentChaosChannelsDemonSkin: return 200
+        case data.UnitEnchantmentChaosChannelsFireBreath: return 200
+        case data.UnitEnchantmentEndurance: return 100
+        case data.UnitEnchantmentHeroism: return 200
+        case data.UnitEnchantmentHolyArmor: return 100
+        case data.UnitEnchantmentHolyWeapon: return 100
+        case data.UnitEnchantmentInvulnerability: return 100
+        case data.UnitEnchantmentIronSkin: return 100
+        case data.UnitEnchantmentRegeneration: return 100
+        case data.UnitEnchantmentStoneSkin: return 100
+        case data.UnitEnchantmentGuardianWind: return 100
+        case data.UnitEnchantmentInvisibility: return 100
+        case data.UnitEnchantmentMagicImmunity: return 500
+        case data.UnitEnchantmentSpellLock: return 100
+        case data.UnitEnchantmentWindWalking: return 100
+        case data.UnitEnchantmentEldritchWeapon: return 100
+        case data.UnitEnchantmentFlameBlade: return 150
+        case data.UnitEnchantmentBerserk: return 150
+        case data.UnitEnchantmentBlackChannels: return 200
+        case data.UnitEnchantmentWraithForm: return 300
+    }
+
+    return 0
+}
