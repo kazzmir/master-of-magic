@@ -798,9 +798,13 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj 
         data.UnitEnchantmentWraithForm,
     }
 
+    slices.SortFunc(enchantments, func(a, b data.UnitEnchantment) int {
+        return cmp.Compare(a.Name(), b.Name())
+    })
+
     enchantmentList := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
-            widget.GridLayoutOpts.Columns(2),
+            widget.GridLayoutOpts.Columns(3),
         )),
     )
 
@@ -814,7 +818,7 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj 
         ),
         widget.ScrollContainerOpts.Content(enchantmentList),
         widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-            Idle: ui.SolidImage(64, 64, 64),
+            Idle: ui.SolidImage(32, 32, 32),
             Mask: ui.SolidImage(32, 32, 32),
         }),
     )
@@ -851,8 +855,11 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj 
     })
 
     for _, enchantment := range enchantments {
-        box := ui.VBox()
-        name := ui.CenteredText(enchantment.Name(), face, color.White)
+        border := ui.BorderedImage(color.RGBA{R: 128, G: 128, B: 128, A: 255}, 1)
+        box := ui.VBox(
+            widget.ContainerOpts.BackgroundImage(border),
+        )
+        name := ui.CenteredText(enchantment.Name(), face, enchantment.Color())
         box.AddChild(name)
         cost := ui.CenteredText(fmt.Sprintf("Cost %d", getEnchantmentCost(enchantment)), face, color.White)
         box.AddChild(cost)
@@ -860,6 +867,9 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj 
         enchantButton := widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+            widget.ButtonOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                Position: widget.RowLayoutPositionCenter,
+            })),
             widget.ButtonOpts.Text("Enchant", face, &widget.ButtonTextColor{
                 Idle: color.White,
                 Hover: color.White,
