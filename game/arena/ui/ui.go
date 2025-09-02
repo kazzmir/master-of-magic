@@ -4,6 +4,7 @@ import (
     "image/color"
 
     // "github.com/ebitenui/ebitenui"
+    "github.com/hajimehoshi/ebiten/v2/text/v2"
     "github.com/ebitenui/ebitenui/widget"
     ui_image "github.com/ebitenui/ebitenui/image"
 )
@@ -39,4 +40,17 @@ func VBox(opts ...widget.ContainerOpt) *widget.Container {
     )))
 
     return widget.NewContainer(allArgs...)
+}
+
+func CenteredText(textStr string, face *text.GoTextFace, textColor color.Color) *widget.Text {
+    return widget.NewText(
+        widget.TextOpts.Text(textStr, face, textColor),
+        widget.TextOpts.Position(widget.TextPositionCenter, widget.TextPositionStart),
+        widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            Stretch: true,
+        })))
+}
+
+func BorderedImage(borderColor color.RGBA, borderSize int) *ui_image.NineSlice {
+    return ui_image.NewBorderedNineSliceColor(color.RGBA{}, borderColor, borderSize)
 }

@@ -313,7 +313,7 @@ type UnitIconList struct {
     container *widget.Container
     face *text.GoTextFace
     lastBox *widget.Container
-    SelectedUnit func(unit *units.Unit)
+    buyUnit func(unit *units.Unit)
     imageCache *util.ImageCache
     units []*units.Unit
 
@@ -321,16 +321,16 @@ type UnitIconList struct {
     SortCostDirection SortDirection
 }
 
-func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.GoTextFace, selectedUnit func(*units.Unit)) *UnitIconList {
+func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.GoTextFace, buyUnit func(*units.Unit)) *UnitIconList {
     var iconList UnitIconList
 
     iconList.imageCache = imageCache
-    iconList.SelectedUnit = selectedUnit
+    iconList.buyUnit = buyUnit
     iconList.face = face
 
     iconList.unitList = widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
-            widget.GridLayoutOpts.Columns(3),
+            widget.GridLayoutOpts.Columns(4),
             widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{false, false, false}),
         )),
     )
@@ -444,6 +444,10 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
     return &iconList
 }
 
+func (iconList *UnitIconList) Reset() {
+    iconList.units = nil
+}
+
 func (iconList *UnitIconList) Clear() {
     iconList.unitList.RemoveChildren()
     iconList.lastBox = nil
@@ -494,28 +498,53 @@ func (iconList *UnitIconList) SortByCost() {
 
 func (iconList *UnitIconList) addUI(unit *units.Unit) {
     var unitBox *widget.Container
-    unitBox = ui.VBox(widget.ContainerOpts.WidgetOpts(
+    unitBox = ui.VBox(
+        widget.ContainerOpts.BackgroundImage(ui.BorderedImage(color.RGBA{R: 128, G: 128, B: 128, A: 255}, 1)),
+
+        /*
+        widget.ContainerOpts.WidgetOpts(
         widget.WidgetOpts.MouseButtonPressedHandler(func(args *widget.WidgetMouseButtonPressedEventArgs) {
-            iconList.SelectedUnit(unit)
             if iconList.lastBox != nil {
                 iconList.lastBox.BackgroundImage = nil
             }
             unitBox.BackgroundImage = ui.SolidImage(96, 96, 32)
             iconList.lastBox = unitBox
         }),
-    ))
-
-    unitBox.AddChild(widget.NewText(
-        widget.TextOpts.Text(fmt.Sprintf("%v %v", unit.Race, unit.Name), iconList.face, color.White)),
     )
+        */
+    )
+
+    unitBox.AddChild(ui.CenteredText(unit.Race.String(), iconList.face, color.White))
+    unitBox.AddChild(ui.CenteredText(unit.Name, iconList.face, color.White))
 
     unitImage, err := iconList.imageCache.GetImageTransform(unit.GetCombatLbxFile(), unit.GetCombatIndex(units.FacingRight), 0, "enlarge", enlargeTransform(2))
     if err == nil {
-        box1 := ui.HBox()
-        box1.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(unitImage)))
-        box1.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Cost %d", getUnitCost(unit)), iconList.face, color.White)))
-        unitBox.AddChild(box1)
+        unitBox.AddChild(widget.NewGraphic(
+            widget.GraphicOpts.Image(unitImage),
+            widget.GraphicOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                Position: widget.RowLayoutPositionCenter,
+            })),
+        ))
     }
+
+    unitBox.AddChild(ui.CenteredText(fmt.Sprintf("Cost %d", getUnitCost(unit)), iconList.face, color.White))
+
+    unitBox.AddChild(widget.NewButton(
+        widget.ButtonOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            Position: widget.RowLayoutPositionCenter,
+        })),
+
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.Text("Buy Unit", iconList.face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            iconList.buyUnit(unit)
+        }),
+    ))
 
     iconList.unitList.AddChild(unitBox)
 }
@@ -540,6 +569,10 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
 
     container.AddChild(widget.NewText(
         widget.TextOpts.Text("Shop", face, color.White),
+        widget.TextOpts.Position(widget.TextPositionCenter, widget.TextPositionStart),
+        widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            Stretch: true,
+        })),
     ))
 
     money := widget.NewText(
@@ -552,6 +585,7 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
 
     container.AddChild(money)
 
+    /*
     unitName := widget.NewText(
         widget.TextOpts.Text("Name: ", face, color.White),
     )
@@ -559,6 +593,7 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
     unitCost := widget.NewText(
         widget.TextOpts.Text("Cost: ", face, color.White),
     )
+    */
 
     container2 := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -569,13 +604,19 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
 
     container.AddChild(container2)
 
-    var selected *units.Unit
+    // var selected *units.Unit
 
-    unitList := MakeUnitIconList("All Units", imageCache, face, func(unit *units.Unit) {
-        unitName.Label = fmt.Sprintf("Name: %v", unit.Name)
-        unitCost.Label = fmt.Sprintf("Cost: %d", getUnitCost(unit))
-        selected = unit
-    })
+    buyUnit := func(unit *units.Unit) {
+        unitCost := getUnitCost(unit)
+        if unitCost <= playerObj.Money {
+            playerObj.Money -= unitCost
+            newUnit := playerObj.AddUnit(*unit)
+            uiEvents.AddUpdate(&UIAddUnit{Unit: newUnit})
+            uiEvents.AddUpdate(&UIUpdateMoney{})
+        }
+    }
+
+    unitList := MakeUnitIconList("All Units", imageCache, face, buyUnit)
 
     // container2.AddChild(unitList)
 
@@ -585,14 +626,11 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
 
     unitList.SortByName()
 
-    filteredUnitList := MakeUnitIconList("Affordable Units", imageCache, face, func(unit *units.Unit) {
-        unitName.Label = fmt.Sprintf("Name: %v", unit.Name)
-        unitCost.Label = fmt.Sprintf("Cost: %d", getUnitCost(unit))
-        selected = unit
-    })
+    filteredUnitList := MakeUnitIconList("Affordable Units", imageCache, face, buyUnit)
 
     setupFilteredList := func() {
         filteredUnitList.Clear()
+        filteredUnitList.Reset()
         for _, unit := range getValidChoices(playerObj.Money) {
             filteredUnitList.AddUnit(unit)
         }
@@ -633,6 +671,7 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
 
     container2.AddChild(tabs)
 
+    /*
     infoContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
@@ -667,6 +706,7 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
     ))
 
     container2.AddChild(infoContainer)
+    */
 
     return container
 }
@@ -941,6 +981,10 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
 
     armyInfo.AddChild(widget.NewText(
         widget.TextOpts.Text("Army", face, color.White),
+        widget.TextOpts.Position(widget.TextPositionCenter, widget.TextPositionStart),
+        widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            Stretch: true,
+        })),
     ))
 
     scrollStuff := ui.HBox()
