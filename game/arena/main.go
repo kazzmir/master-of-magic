@@ -831,6 +831,42 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         unitSpecifics.AddChild(healCost)
         unitSpecifics.AddChild(healSlider)
         unitSpecifics.AddChild(healButton)
+
+        enchantments := widget.NewList(
+            widget.ListOpts.ScrollContainerOpts(
+                widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                    Idle: ui.SolidImage(64, 64, 64),
+                    Disabled: ui.SolidImage(32, 32, 32),
+                    Mask: ui.SolidImage(32, 32, 32),
+                }),
+            ),
+            widget.ListOpts.SliderOpts(
+                widget.SliderOpts.Images(&widget.SliderTrackImage{
+                    Idle: ui.SolidImage(64, 64, 64),
+                    Hover: ui.SolidImage(96, 96, 96),
+                }, ui.MakeButtonImage(ui.SolidImage(192, 192, 192))),
+            ),
+            widget.ListOpts.HideHorizontalSlider(),
+            widget.ListOpts.EntryFontFace(face),
+            widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                Selected: color.White,
+                Unselected: color.White,
+            }),
+            widget.ListOpts.EntryLabelFunc(func (data any) string {
+                return data.(string)
+            }),
+            widget.ListOpts.EntryTextPadding(widget.NewInsetsSimple(2)),
+            widget.ListOpts.EntryTextPosition(widget.TextPositionCenter, widget.TextPositionCenter),
+            widget.ListOpts.EntrySelectedHandler(func (args *widget.ListEntrySelectedEventArgs) {
+            }),
+        )
+
+        for _, enchantment := range unit.GetEnchantments() {
+            enchantments.AddEntry(enchantment.Name())
+        }
+
+        unitSpecifics.AddChild(widget.NewText(widget.TextOpts.Text("Enchantments:", face, color.RGBA{R: 255, G: 255, B: 0, A: 255})))
+        unitSpecifics.AddChild(enchantments)
     }
 
     unitList := widget.NewContainer(
