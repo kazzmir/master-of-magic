@@ -22,13 +22,13 @@ func SolidImage(r uint8, g uint8, b uint8) *ui_image.NineSlice {
     return ui_image.NewNineSliceColor(color.NRGBA{R: r, G: g, B: b, A: 255})
 }
 
-func HBox() *widget.Container {
-    return widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-            widget.RowLayoutOpts.Spacing(4),
-        )),
-    )
+func HBox(opts... widget.ContainerOpt) *widget.Container {
+    all := append(opts, widget.ContainerOpts.Layout(widget.NewRowLayout(
+        widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+        widget.RowLayoutOpts.Spacing(4),
+    )))
+
+    return widget.NewContainer(all...)
 }
 
 func VBox(opts ...widget.ContainerOpt) *widget.Container {

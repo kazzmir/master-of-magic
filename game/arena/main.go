@@ -547,7 +547,11 @@ func (iconList *UnitIconList) addUI(unit *units.Unit) {
         ))
     }
 
-    unitBox.AddChild(ui.CenteredText(fmt.Sprintf("Cost %d", getUnitCost(unit)), iconList.face, color.White))
+    // unitBox.AddChild(ui.CenteredText(fmt.Sprintf("Cost %d", getUnitCost(unit)), iconList.face, color.White))
+    money := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", getUnitCost(unit)), iconList.face, color.White))
+    unitBox.AddChild(makeMoneyText(money, iconList.imageCache, widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+        Position: widget.RowLayoutPositionCenter,
+    }))))
 
     unitBox.AddChild(widget.NewButton(
         widget.ButtonOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
@@ -578,16 +582,54 @@ func (iconList *UnitIconList) GetWidget() *widget.Container {
     return iconList.container
 }
 
+func makeGraphicText(text *widget.Text, image *ebiten.Image, opts... widget.ContainerOpt) *widget.Container {
+    box := ui.HBox(opts...)
+    box.AddChild(widget.NewGraphic(
+        widget.GraphicOpts.Image(image),
+        widget.GraphicOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            Position: widget.RowLayoutPositionCenter,
+        })),
+    ))
+
+    box.AddChild(text)
+    return box
+}
+
+func makeMoneyText(text *widget.Text, imageCache *util.ImageCache, opts... widget.ContainerOpt) *widget.Container {
+    goldImage, err := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
+    if err == nil {
+        return makeGraphicText(text, goldImage, opts...)
+    } else {
+        return ui.HBox()
+    }
+}
+
+func combineHorizontalElements(elements... widget.PreferredSizeLocateableWidget) *widget.Container {
+    box := ui.HBox()
+    box.AddChild(elements...)
+    return box
+}
+
 func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
     container := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewGridLayout(
+            widget.GridLayoutOpts.Columns(2),
+            widget.GridLayoutOpts.DefaultStretch(false, false),
+            // widget.GridLayoutOpts.Stretch([]bool{false, false}, []bool{false, false}),
+        )),
+        /*
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
             widget.RowLayoutOpts.Spacing(2),
             widget.RowLayoutOpts.Padding(widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
         )),
+        */
+        widget.ContainerOpts.BackgroundImage(ui.BorderedImage(color.RGBA{R: 0xc1, G: 0x80, B: 0x1a, A: 255}, 1)),
     )
 
-    container.AddChild(widget.NewText(
+    armyShop := ui.VBox()
+
+    armyShop.AddChild(widget.NewText(
         widget.TextOpts.Text("Shop", face, color.White),
         widget.TextOpts.Position(widget.TextPositionCenter, widget.TextPositionStart),
         widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
@@ -595,25 +637,17 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
         })),
     ))
 
+
     money := widget.NewText(
-        widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
+        // widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
+        widget.TextOpts.Text(fmt.Sprintf("%d", playerObj.Money), face, color.White),
     )
 
     AddEvent(uiEvents, func (update *UIUpdateMoney) {
         money.Label = fmt.Sprintf("Money: %d", playerObj.Money)
     })
 
-    container.AddChild(money)
-
-    /*
-    unitName := widget.NewText(
-        widget.TextOpts.Text("Name: ", face, color.White),
-    )
-
-    unitCost := widget.NewText(
-        widget.TextOpts.Text("Cost: ", face, color.White),
-    )
-    */
+    armyShop.AddChild(makeMoneyText(money, imageCache))
 
     container2 := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -622,9 +656,7 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
         )),
     )
 
-    container.AddChild(container2)
-
-    // var selected *units.Unit
+    armyShop.AddChild(container2)
 
     buyUnit := func(unit *units.Unit) {
         unitCost := getUnitCost(unit)
@@ -637,8 +669,6 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
     }
 
     unitList := MakeUnitIconList("All Units", imageCache, face, buyUnit)
-
-    // container2.AddChild(unitList)
 
     for _, unit := range getValidChoices(100000) {
         unitList.AddUnit(unit)
@@ -691,42 +721,11 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
 
     container2.AddChild(tabs)
 
-    /*
-    infoContainer := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(4),
-        )),
-    )
+    container.AddChild(armyShop)
 
-    infoContainer.AddChild(unitName)
-    infoContainer.AddChild(unitCost)
-
-    infoContainer.AddChild(widget.NewButton(
-        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
-        widget.ButtonOpts.Text("Buy Unit", face, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            if selected == nil {
-                return
-            }
-            unitCost := getUnitCost(selected)
-            if unitCost <= playerObj.Money {
-                playerObj.Money -= unitCost
-                newUnit := playerObj.AddUnit(*selected)
-                uiEvents.AddUpdate(&UIAddUnit{Unit: newUnit})
-                uiEvents.AddUpdate(&UIUpdateMoney{})
-            }
-
-        }),
-    ))
-
-    container2.AddChild(infoContainer)
-    */
+    magicShop := ui.VBox()
+    magicShop.AddChild(widget.NewText(widget.TextOpts.Text("Magic Shop", face, color.White)))
+    container.AddChild(magicShop)
 
     return container
 }
@@ -760,7 +759,7 @@ func enlargeTransform(factor int) util.ImageTransformFunc {
     return f 
 }
 
-func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
     enchantments := []data.UnitEnchantment{
         data.UnitEnchantmentGiantStrength,
         data.UnitEnchantmentLionHeart,
@@ -860,8 +859,12 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj 
         )
         name := ui.CenteredText(enchantment.Name(), face, enchantment.Color())
         box.AddChild(name)
-        cost := ui.CenteredText(fmt.Sprintf("Cost %d", getEnchantmentCost(enchantment)), face, color.White)
-        box.AddChild(cost)
+        money := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", getEnchantmentCost(enchantment)), face, color.White))
+
+        box.AddChild(makeMoneyText(money, imageCache, widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            Position: widget.RowLayoutPositionCenter,
+        }))))
+
         remove := func(){}
         enchantButton := widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
@@ -927,7 +930,30 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         unitSpecifics.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Experience: %d (%v)", unit.GetExperience(), unit.GetExperienceLevel().Name()), face, color.White)))
 
         // var currentHealTarget units.StackUnit
-        healCost := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Heal %d hp for %d gold", unit.GetDamage(), getHealCost(unit, unit.GetDamage())), face, color.White))
+
+        makeHealCost := func(amount int) *widget.Container {
+            gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
+            heart, _ := imageCache.GetImageTransform("unitview.lbx", 23, 0, "enlarge", enlargeTransform(2))
+            healText := widget.NewText(widget.TextOpts.Text("Heal", face, color.White))
+            heartText := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", amount), face, color.White))
+            forText := widget.NewText(widget.TextOpts.Text("for", face, color.White))
+            goldText := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", getHealCost(unit, amount)), face, color.White))
+
+            centered := widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                Position: widget.RowLayoutPositionCenter,
+            })
+
+            makeIcon := func(image *ebiten.Image) *widget.Graphic {
+                return widget.NewGraphic(widget.GraphicOpts.Image(image), widget.GraphicOpts.WidgetOpts(centered))
+            }
+
+            return combineHorizontalElements(healText, makeIcon(heart), heartText, forText, makeIcon(gold), goldText)
+        }
+
+        healContainer := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout()))
+        healContainer.AddChild(makeHealCost(unit.GetDamage()))
+
+        // healCost := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Heal %d hp for %d gold", unit.GetDamage(), getHealCost(unit, unit.GetDamage())), face, color.White))
 
         healSlider := widget.NewSlider(
             widget.SliderOpts.Direction(widget.DirectionHorizontal),
@@ -953,7 +979,9 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
                 return 3
             }),
             widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
-                healCost.Label = fmt.Sprintf("Heal %d hp for %d gold", args.Slider.Current, getHealCost(unit, args.Slider.Current))
+                healContainer.RemoveChildren()
+                healContainer.AddChild(makeHealCost(args.Slider.Current))
+                // healCost.Label = fmt.Sprintf("Heal %d hp for %d gold", args.Slider.Current, getHealCost(unit, args.Slider.Current))
             }),
         )
 
@@ -988,7 +1016,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
             }),
         )
 
-        unitSpecifics.AddChild(healCost)
+        unitSpecifics.AddChild(healContainer)
         unitSpecifics.AddChild(healSlider)
         unitSpecifics.AddChild(healButton)
 
@@ -1049,7 +1077,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
 
         enchantmentsBoxes.AddChild(showEnchantments)
 
-        buyEnchantments := makeBuyEnchantments(unit, face, playerObj, uiEvents)
+        buyEnchantments := makeBuyEnchantments(unit, face, playerObj, uiEvents, imageCache)
 
         enchantmentsBoxes.AddChild(buyEnchantments)
 
@@ -1059,7 +1087,8 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
     unitList := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(2),
-            widget.GridLayoutOpts.Stretch([]bool{true, true}, []bool{false, false}),
+            widget.GridLayoutOpts.DefaultStretch(false, false),
+            // widget.GridLayoutOpts.Stretch([]bool{true, true}, []bool{false, false}),
         )),
     )
 
@@ -1333,8 +1362,8 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
     // test1(playerObj)
-    // test3(playerObj)
-    test4(playerObj)
+    test3(playerObj)
+    // test4(playerObj)
 
     engine := Engine{
         GameMode: GameModeUI,
