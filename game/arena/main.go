@@ -610,6 +610,71 @@ func combineHorizontalElements(elements... widget.PreferredSizeLocateableWidget)
     return box
 }
 
+func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache) *widget.Container {
+    shop := ui.VBox()
+    shop.AddChild(widget.NewText(widget.TextOpts.Text("Magic Shop", face, color.White)))
+
+    books := ui.HBox()
+    shop.AddChild(books)
+
+    lifeBook, _ := imageCache.GetImageTransform("newgame.lbx", 24, 0, "enlarge", enlargeTransform(2))
+    sorceryBook, _ := imageCache.GetImageTransform("newgame.lbx", 27, 0, "enlarge", enlargeTransform(2))
+    natureBook, _ := imageCache.GetImageTransform("newgame.lbx", 30, 0, "enlarge", enlargeTransform(2))
+    deathBook, _ := imageCache.GetImageTransform("newgame.lbx", 33, 0, "enlarge", enlargeTransform(2))
+    chaosBook, _ := imageCache.GetImageTransform("newgame.lbx", 36, 0, "enlarge", enlargeTransform(2))
+
+    centered := widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+        Position: widget.RowLayoutPositionCenter,
+    })
+
+    for _, magic := range []data.MagicType{data.LifeMagic, data.SorceryMagic, data.NatureMagic, data.DeathMagic, data.ChaosMagic} {
+        buy := ui.VBox()
+
+        var bookImage *ebiten.Image
+        switch magic {
+            case data.LifeMagic: bookImage = lifeBook
+            case data.SorceryMagic: bookImage = sorceryBook
+            case data.NatureMagic: bookImage = natureBook
+            case data.DeathMagic: bookImage = deathBook
+            case data.ChaosMagic: bookImage = chaosBook
+        }
+
+        graphic := widget.NewGraphic(widget.GraphicOpts.Image(bookImage), widget.GraphicOpts.WidgetOpts(centered))
+        buy.AddChild(graphic)
+        buy.AddChild(ui.CenteredText(magic.String(), face, color.White))
+
+        makeIcon := func(image *ebiten.Image) *widget.Graphic {
+            return widget.NewGraphic(widget.GraphicOpts.Image(image), widget.GraphicOpts.WidgetOpts(centered))
+        }
+
+        cost := 100
+
+        gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
+        costUI := combineHorizontalElements(makeIcon(gold), widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", cost), face, color.White), widget.TextOpts.WidgetOpts(centered)))
+
+        buy.AddChild(costUI)
+
+        buyButton := widget.NewButton(
+            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.WidgetOpts(centered),
+            widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+            widget.ButtonOpts.Text("Buy", face, &widget.ButtonTextColor{
+                Idle: color.White,
+                Hover: color.White,
+                Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            }),
+        )
+
+        buy.AddChild(buyButton)
+
+        books.AddChild(buy)
+    }
+
+    return shop
+}
+
 func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
     container := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
@@ -723,8 +788,7 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
 
     container.AddChild(armyShop)
 
-    magicShop := ui.VBox()
-    magicShop.AddChild(widget.NewText(widget.TextOpts.Text("Magic Shop", face, color.White)))
+    magicShop := makeMagicShop(face, imageCache)
     container.AddChild(magicShop)
 
     return container
@@ -802,7 +866,7 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj 
 
     enchantmentList := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
-            widget.GridLayoutOpts.Columns(3),
+            widget.GridLayoutOpts.Columns(2),
         )),
     )
 
