@@ -630,10 +630,12 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, playerObj
         Position: widget.RowLayoutPositionCenter,
     })
 
+    allMagic := []data.MagicType{data.LifeMagic, data.SorceryMagic, data.NatureMagic, data.DeathMagic, data.ChaosMagic}
+
     setupMagic := func() {
         books.RemoveChildren()
 
-        for _, magic := range []data.MagicType{data.LifeMagic, data.SorceryMagic, data.NatureMagic, data.DeathMagic, data.ChaosMagic} {
+        for _, magic := range allMagic {
             if playerObj.GetWizard().MagicLevel(magic) >= 11 {
                 continue
             }
@@ -718,8 +720,33 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, playerObj
     manaBox := ui.HBox()
     manaBox.AddChild(widget.NewText(widget.TextOpts.Text("Mana", face, color.White)))
     manaBox.AddChild(makeManaBuyButton(10), makeManaBuyButton(50), makeManaBuyButton(100))
-
     shop.AddChild(manaBox)
+
+    var tabs []*widget.TabBookTab
+
+    for _, magic := range allMagic {
+        tab := widget.NewTabBookTab(magic.String(), widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+        )))
+
+        tab.AddChild(ui.CenteredText(fmt.Sprintf("%v Spells", magic), face, color.White))
+        tabs = append(tabs, tab)
+    }
+
+    spellsTabs := widget.NewTabBook(
+        widget.TabBookOpts.TabButtonImage(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+        widget.TabBookOpts.TabButtonText(face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Disabled: color.NRGBA{R: 32, G: 32, B: 32, A: 255},
+            Hover: color.White,
+            Pressed: color.White,
+        }),
+        widget.TabBookOpts.TabButtonSpacing(5),
+        // widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(2)),
+        widget.TabBookOpts.Tabs(tabs...),
+    )
+
+    shop.AddChild(spellsTabs)
 
     return shop
 }
