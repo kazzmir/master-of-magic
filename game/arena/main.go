@@ -259,6 +259,9 @@ type UIEvent interface {
 type UIUpdateMoney struct {
 }
 
+type UIUpdateMana struct {
+}
+
 type UIUpdateUnit struct {
     Unit units.StackUnit
 }
@@ -610,7 +613,7 @@ func combineHorizontalElements(elements... widget.PreferredSizeLocateableWidget)
     return box
 }
 
-func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache) *widget.Container {
+func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
     shop := ui.VBox()
     shop.AddChild(widget.NewText(widget.TextOpts.Text("Magic Shop", face, color.White)))
 
@@ -627,50 +630,96 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache) *widget.C
         Position: widget.RowLayoutPositionCenter,
     })
 
-    for _, magic := range []data.MagicType{data.LifeMagic, data.SorceryMagic, data.NatureMagic, data.DeathMagic, data.ChaosMagic} {
-        buy := ui.VBox()
+    setupMagic := func() {
+        books.RemoveChildren()
 
-        var bookImage *ebiten.Image
-        switch magic {
-            case data.LifeMagic: bookImage = lifeBook
-            case data.SorceryMagic: bookImage = sorceryBook
-            case data.NatureMagic: bookImage = natureBook
-            case data.DeathMagic: bookImage = deathBook
-            case data.ChaosMagic: bookImage = chaosBook
+        for _, magic := range []data.MagicType{data.LifeMagic, data.SorceryMagic, data.NatureMagic, data.DeathMagic, data.ChaosMagic} {
+            if playerObj.GetWizard().MagicLevel(magic) >= 11 {
+                continue
+            }
+
+            buy := ui.VBox()
+
+            var bookImage *ebiten.Image
+            switch magic {
+                case data.LifeMagic: bookImage = lifeBook
+                case data.SorceryMagic: bookImage = sorceryBook
+                case data.NatureMagic: bookImage = natureBook
+                case data.DeathMagic: bookImage = deathBook
+                case data.ChaosMagic: bookImage = chaosBook
+            }
+
+            graphic := widget.NewGraphic(widget.GraphicOpts.Image(bookImage), widget.GraphicOpts.WidgetOpts(centered))
+            buy.AddChild(graphic)
+            buy.AddChild(ui.CenteredText(magic.String(), face, color.White))
+
+            makeIcon := func(image *ebiten.Image) *widget.Graphic {
+                return widget.NewGraphic(widget.GraphicOpts.Image(image), widget.GraphicOpts.WidgetOpts(centered))
+            }
+
+            cost := uint64(math.Pow(10, 2.5 + float64(playerObj.GetWizard().MagicLevel(magic)) / 10))
+
+            gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
+            costUI := combineHorizontalElements(makeIcon(gold), widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", cost), face, color.White), widget.TextOpts.WidgetOpts(centered)))
+
+            buy.AddChild(costUI)
+
+            buyButton := widget.NewButton(
+                widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.WidgetOpts(centered),
+                widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+                widget.ButtonOpts.Text("Buy", face, &widget.ButtonTextColor{
+                    Idle: color.White,
+                    Hover: color.White,
+                    Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                    if playerObj.Money >= cost {
+                        playerObj.Money -= cost
+                        uiEvents.AddUpdate(&UIUpdateMoney{})
+                        playerObj.GetWizard().AddMagicLevel(magic, 1)
+                    }
+                }),
+            )
+
+            buy.AddChild(buyButton)
+
+            books.AddChild(buy)
         }
+    }
 
-        graphic := widget.NewGraphic(widget.GraphicOpts.Image(bookImage), widget.GraphicOpts.WidgetOpts(centered))
-        buy.AddChild(graphic)
-        buy.AddChild(ui.CenteredText(magic.String(), face, color.White))
+    setupMagic()
 
-        makeIcon := func(image *ebiten.Image) *widget.Graphic {
-            return widget.NewGraphic(widget.GraphicOpts.Image(image), widget.GraphicOpts.WidgetOpts(centered))
-        }
+    AddEvent(uiEvents, func (update *UIUpdateMoney) {
+        setupMagic()
+    })
 
-        cost := 100
-
-        gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
-        costUI := combineHorizontalElements(makeIcon(gold), widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", cost), face, color.White), widget.TextOpts.WidgetOpts(centered)))
-
-        buy.AddChild(costUI)
-
-        buyButton := widget.NewButton(
+    makeManaBuyButton := func(amount int) *widget.Button {
+        return widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.WidgetOpts(centered),
             widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
-            widget.ButtonOpts.Text("Buy", face, &widget.ButtonTextColor{
+            widget.ButtonOpts.Text(fmt.Sprintf("Buy %d", amount), face, &widget.ButtonTextColor{
                 Idle: color.White,
                 Hover: color.White,
                 Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
             widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                if playerObj.Money >= uint64(amount) {
+                    playerObj.Money -= uint64(amount)
+                    playerObj.Mana += amount
+                    uiEvents.AddUpdate(&UIUpdateMana{})
+                    uiEvents.AddUpdate(&UIUpdateMoney{})
+                }
             }),
         )
-
-        buy.AddChild(buyButton)
-
-        books.AddChild(buy)
     }
+
+    manaBox := ui.HBox()
+    manaBox.AddChild(widget.NewText(widget.TextOpts.Text("Mana", face, color.White)))
+    manaBox.AddChild(makeManaBuyButton(10), makeManaBuyButton(50), makeManaBuyButton(100))
+
+    shop.AddChild(manaBox)
 
     return shop
 }
@@ -705,7 +754,7 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
 
     money := widget.NewText(
         // widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
-        widget.TextOpts.Text(fmt.Sprintf("%d", playerObj.Money), face, color.White),
+        widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
     )
 
     AddEvent(uiEvents, func (update *UIUpdateMoney) {
@@ -788,7 +837,7 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
 
     container.AddChild(armyShop)
 
-    magicShop := makeMagicShop(face, imageCache)
+    magicShop := makeMagicShop(face, imageCache, playerObj, uiEvents)
     container.AddChild(magicShop)
 
     return container
@@ -1329,7 +1378,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
     return unitInfoContainer
 }
 
-func makePlayerInfoUI(face *text.GoTextFace, playerObj *player.Player) *widget.Container {
+func makePlayerInfoUI(face *text.GoTextFace, playerObj *player.Player, events *UIEventUpdate) *widget.Container {
     container := ui.HBox()
 
     name := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Name: %v", playerObj.Wizard.Name), face, color.White))
@@ -1337,6 +1386,13 @@ func makePlayerInfoUI(face *text.GoTextFace, playerObj *player.Player) *widget.C
 
     level := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Level: %d", playerObj.Level), face, color.White))
     container.AddChild(level)
+
+    mana := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Mana: %d", playerObj.Mana), face, color.White))
+    container.AddChild(mana)
+
+    AddEvent(events, func (update *UIUpdateMana) {
+        mana.Label = fmt.Sprintf("Mana: %d", playerObj.Mana)
+    })
 
     return container
 }
@@ -1381,7 +1437,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     rootContainer.AddChild(newGameButton)
 
-    rootContainer.AddChild(makePlayerInfoUI(&face, engine.Player))
+    rootContainer.AddChild(makePlayerInfoUI(&face, engine.Player, uiEvents))
 
     imageCache := util.MakeImageCache(engine.Cache)
 
@@ -1409,7 +1465,7 @@ func test2(playerObj *player.Player) {
 func test3(playerObj *player.Player) {
     v := playerObj.AddUnit(units.LizardSwordsmen)
     v.AdjustHealth(-10)
-    playerObj.Money = 30
+    playerObj.Money = 3000
 }
 
 func test4(playerObj *player.Player) {

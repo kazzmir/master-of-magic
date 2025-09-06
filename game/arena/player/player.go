@@ -13,6 +13,7 @@ type Player struct {
     Wizard setup.WizardCustom
     Level int
     AI bool
+    Mana int
 
     Units []units.StackUnit
 }
@@ -70,14 +71,15 @@ func (player *Player) HasEnchantment(data.Enchantment) bool {
 }
 
 func (player *Player) GetMana() int {
-    return 0
+    return player.Mana
 }
 
 func (player *Player) UseMana(mana int) {
+    player.Mana -= mana
 }
 
 func (player *Player) ComputeCastingSkill() int {
-    return 0
+    return player.Level * 10
 }
 
 func (player *Player) IsHuman() bool {
@@ -95,5 +97,3 @@ func (player *Player) ComputeEffectiveResearchPerTurn(cost float64, spell spellb
 func (player *Player) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {
     return spellbook.ComputeSpellCost(&player.Wizard, spell, overland, false)
 }
-
-
