@@ -8,6 +8,8 @@ require (
 	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b
 )
 
+replace github.com/ebitenui/ebitenui => /home/jon/tmp/ebitenui-kazzmir
+
 require (
 	github.com/ebitengine/gomobile v0.0.0-20250329061421-6d0a8e981e4c // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
