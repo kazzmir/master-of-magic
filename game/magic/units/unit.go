@@ -1875,7 +1875,7 @@ var Cockatrices Unit = Unit{
     Defense: 3,
     Resistance: 7,
     HitPoints: 3,
-    Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityToHit, 10), data.MakeAbilityValue(data.AbilityStoningTouch, -3)},
+    Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityToHit, 10), data.MakeAbilityValue(data.AbilityStoningTouch, 3)},
     Race: data.RaceFantastic,
     CastingCost: 275,
 }
@@ -1896,7 +1896,7 @@ var Basilisk Unit = Unit{
     Defense: 4,
     Resistance: 7,
     HitPoints: 30,
-    Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityToHit, 10), data.MakeAbilityValue(data.AbilityStoningGaze, -1)},
+    Abilities: []data.Ability{data.MakeAbilityValue(data.AbilityToHit, 10), data.MakeAbilityValue(data.AbilityStoningGaze, 1)},
     Race: data.RaceFantastic,
     CastingCost: 325,
 }
@@ -2005,7 +2005,7 @@ var Gorgon Unit = Unit{
     HitPoints: 9,
     Abilities: []data.Ability{
         data.MakeAbilityValue(data.AbilityToHit, 20),
-        data.MakeAbilityValue(data.AbilityStoningGaze, -2),
+        data.MakeAbilityValue(data.AbilityStoningGaze, 2),
     },
     Race: data.RaceFantastic,
     CastingCost: 600,
@@ -5183,7 +5183,7 @@ var KlackonSettlers Unit = Unit{
     HitPoints: 20,
     AttackSound: AttackSoundNormal,
     MovementSound: MovementSoundShuffle,
-    Abilities: []data.Ability{data.MakeAbility(data.AbilityConstruction)},
+    Abilities: []data.Ability{data.MakeAbility(data.AbilityCreateOutpost)},
     Race: data.RaceKlackon,
 }
 

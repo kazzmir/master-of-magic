@@ -18,7 +18,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
-    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
+    // playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -98,6 +99,22 @@ func oppositeTeam(a Team) Team {
         return TeamDefender
     }
     return TeamAttacker
+}
+
+type ArmyPlayer interface {
+    spellbook.SpellCaster
+
+    GetKnownSpells() spellbook.Spells
+    GetWizard() *setup.WizardCustom
+    FindFortressCity() *citylib.City
+    MakeExperienceInfo() units.ExperienceInfo
+    MakeUnitEnchantmentProvider() units.GlobalEnchantmentProvider
+    HasEnchantment(data.Enchantment) bool
+    GetMana() int
+    UseMana(int)
+    ComputeCastingSkill() int
+    IsHuman() bool
+    IsAI() bool
 }
 
 type TileAlignment int
@@ -1769,7 +1786,7 @@ func ApplyDamage(unit UnitDamage, damage int, damageType units.Damage, source Da
     return taken, lost
 }
 
-func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playerlib.Player) {
+func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player ArmyPlayer) {
     unit.CastingSkill = 0
     unit.SpellCharges = make(map[spellbook.Spell]int)
     for _, ability := range unit.Unit.GetAbilities() {
@@ -1804,7 +1821,7 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player *playe
     }
 
     if unit.Unit.IsHero() {
-        unit.Spells.AddAllSpells(player.KnownSpells)
+        unit.Spells.AddAllSpells(player.GetKnownSpells())
         unit.SpellCharges = unit.Unit.GetSpellChargeSpells()
     } else {
         if unit.GetRealm() != data.MagicNone {
@@ -1928,7 +1945,7 @@ func (unit *ArmyUnit) VisibleFigures() int {
 }
 
 type Army struct {
-    Player *playerlib.Player
+    Player ArmyPlayer
     ManaPool int
     Range fraction.Fraction
     // when counter magic is cast, this field tracks how much 'counter magic' strength is available to dispel
@@ -2192,10 +2209,10 @@ func ComputeRoll(strength int, chance int) int {
 // <=15 -> 2
 // <=20 -> 2.5
 // >20 or other plane -> 3.0
-func computeRangeToFortress(plane data.Plane, x int, y int, player *playerlib.Player) fraction.Fraction {
+func computeRangeToFortress(plane data.Plane, x int, y int, player ArmyPlayer) fraction.Fraction {
     // channeler menas the maximum range is 1.0
     minRange := fraction.FromInt(3)
-    if player.Wizard.RetortEnabled(data.RetortChanneler) {
+    if player.GetWizard().RetortEnabled(data.RetortChanneler) {
         minRange = fraction.FromInt(1)
     }
 
@@ -2216,8 +2233,8 @@ func computeRangeToFortress(plane data.Plane, x int, y int, player *playerlib.Pl
 }
 
 func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int, overworldY int) {
-    model.AttackingArmy.ManaPool = min(model.AttackingArmy.Player.Mana, model.AttackingArmy.Player.ComputeCastingSkill())
-    model.DefendingArmy.ManaPool = min(model.DefendingArmy.Player.Mana, model.DefendingArmy.Player.ComputeCastingSkill())
+    model.AttackingArmy.ManaPool = min(model.AttackingArmy.Player.GetMana(), model.AttackingArmy.Player.ComputeCastingSkill())
+    model.DefendingArmy.ManaPool = min(model.DefendingArmy.Player.GetMana(), model.DefendingArmy.Player.ComputeCastingSkill())
 
     model.DefendingArmy.Range = computeRangeToFortress(model.Plane, overworldX, overworldY, model.DefendingArmy.Player)
     model.AttackingArmy.Range = computeRangeToFortress(model.Plane, overworldX, overworldY, model.AttackingArmy.Player)
@@ -2336,7 +2353,7 @@ func (model *CombatModel) NextTurn() {
 
     if model.IsEnchantmentActive(data.CombatEnchantmentManaLeak, TeamAttacker) {
         model.DefendingArmy.ManaPool = max(0, model.DefendingArmy.ManaPool - 5)
-        model.DefendingArmy.Player.Mana = max(0, model.DefendingArmy.Player.Mana - 5)
+        model.DefendingArmy.Player.UseMana(5)
         defenderLeakMana = true
     }
 
@@ -2380,7 +2397,7 @@ func (model *CombatModel) NextTurn() {
 
     if model.IsEnchantmentActive(data.CombatEnchantmentManaLeak, TeamDefender) {
         model.AttackingArmy.ManaPool = max(0, model.AttackingArmy.ManaPool - 5)
-        model.AttackingArmy.Player.Mana = max(0, model.AttackingArmy.Player.Mana - 5)
+        model.AttackingArmy.Player.UseMana(5)
         attackerLeakMana = true
     }
 
@@ -2621,7 +2638,7 @@ func (model *CombatModel) GetObserver() CombatObserver {
 
 // do a dispel roll on all enchantments owned by the other player
 // presumption: disenchantStrength should already have the runemaster bonus applied
-func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *playerlib.Player, disenchantStrength int) {
+func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster ArmyPlayer, disenchantStrength int) {
     targetArmy := model.GetOppositeArmyForPlayer(caster)
 
     // enemy combat enchantments
@@ -2629,7 +2646,7 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
     for _, enchantment := range targetArmy.Enchantments {
         spell := allSpells.FindByName(enchantment.SpellName())
         cost := spell.Cost(false)
-        dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &targetArmy.Player.Wizard)
+        dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, targetArmy.Player.GetWizard())
         if spellbook.RollDispelChance(dispellChance) {
             removedEnchantments = append(removedEnchantments, enchantment)
         }
@@ -2656,7 +2673,7 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster *p
 }
 
 // only removes enchantments (not curses)
-func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
+func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *ArmyUnit, owner ArmyPlayer, disenchantStrength int) {
     var removedEnchantments []data.UnitEnchantment
 
     choices := append(unit.Unit.GetEnchantments(), unit.Enchantments...)
@@ -2674,7 +2691,7 @@ func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *Arm
         if enchantment == data.UnitEnchantmentSpellLock {
             cost = 150
         }
-        dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
+        dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, owner.GetWizard())
         if spellbook.RollDispelChance(dispellChance) {
             removedEnchantments = append(removedEnchantments, enchantment)
         }
@@ -2685,12 +2702,12 @@ func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *Arm
     }
 }
 
-func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, unit *ArmyUnit, owner *playerlib.Player, disenchantStrength int) {
+func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, unit *ArmyUnit, owner ArmyPlayer, disenchantStrength int) {
     var removedEnchantments []data.UnitEnchantment
     for _, enchantment := range unit.GetCurses() {
         spell := allSpells.FindByName(enchantment.SpellName())
         cost := spell.Cost(false)
-        dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, &owner.Wizard)
+        dispellChance := spellbook.ComputeDispelChance(disenchantStrength, cost, spell.Magic, owner.GetWizard())
         if spellbook.RollDispelChance(dispellChance) {
             removedEnchantments = append(removedEnchantments, enchantment)
         }
@@ -2754,7 +2771,7 @@ func (model *CombatModel) AddGlobalEnchantment(enchantment data.CombatEnchantmen
     model.GlobalEnchantments = append(model.GlobalEnchantments, enchantment)
 }
 
-func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment) bool {
+func (model *CombatModel) AddEnchantment(player ArmyPlayer, enchantment data.CombatEnchantment) bool {
     if slices.Contains(model.GlobalEnchantments, enchantment) {
         return false
     }
@@ -2766,7 +2783,7 @@ func (model *CombatModel) AddEnchantment(player *playerlib.Player, enchantment d
     }
 }
 
-func (model *CombatModel) summonUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing, summoned bool) *ArmyUnit {
+func (model *CombatModel) summonUnit(player ArmyPlayer, x int, y int, unit units.Unit, facing units.Facing, summoned bool) *ArmyUnit {
     newUnit := model.addNewUnit(player, x, y, unit, facing, summoned)
     // this offset is chosen somewhat arbitrarily. maybe there is a better way to compute it, possibly based on the unit's image size?
     newUnit.SetHeight(-18)
@@ -2776,9 +2793,9 @@ func (model *CombatModel) summonUnit(player *playerlib.Player, x int, y int, uni
     return newUnit
 }
 
-func (model *CombatModel) addNewUnit(player *playerlib.Player, x int, y int, unit units.Unit, facing units.Facing, summoned bool) *ArmyUnit {
+func (model *CombatModel) addNewUnit(player ArmyPlayer, x int, y int, unit units.Unit, facing units.Facing, summoned bool) *ArmyUnit {
     newUnit := ArmyUnit{
-        Unit: units.MakeOverworldUnitFromUnit(unit, 0, 0, model.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()),
+        Unit: units.MakeOverworldUnitFromUnit(unit, 0, 0, model.Plane, player.GetWizard().Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()),
         Facing: facing,
         Moving: false,
         X: x,
@@ -2828,7 +2845,7 @@ const (
     MapSideMiddle
 )
 
-func (model *CombatModel) GetSideForPlayer(player *playerlib.Player) MapSide {
+func (model *CombatModel) GetSideForPlayer(player ArmyPlayer) MapSide {
     if player == model.DefendingArmy.Player {
         return MapSideDefender
     }
@@ -3576,9 +3593,9 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         if attacker.HasAbility(data.AbilityThrown) ||
            attacker.HasAbility(data.AbilityFireBreath) ||
            attacker.HasAbility(data.AbilityLightningBreath) {
-            return true
+        } else {
+            return false
         }
-        return false
     }
 
     if attacker.Team == defender.Team && attacker.ConfusionAction != ConfusionActionEnemyControl {
@@ -3925,7 +3942,7 @@ func (model *CombatModel) IsAdjacentToEnemy(unit *ArmyUnit) bool {
     return false
 }
 
-func (model *CombatModel) GetArmyForPlayer(player *playerlib.Player) *Army {
+func (model *CombatModel) GetArmyForPlayer(player ArmyPlayer) *Army {
     if model.DefendingArmy.Player == player {
         return model.DefendingArmy
     }
@@ -3933,7 +3950,7 @@ func (model *CombatModel) GetArmyForPlayer(player *playerlib.Player) *Army {
     return model.AttackingArmy
 }
 
-func (model *CombatModel) GetOppositeArmyForPlayer(player *playerlib.Player) *Army {
+func (model *CombatModel) GetOppositeArmyForPlayer(player ArmyPlayer) *Army {
     if model.DefendingArmy.Player == player {
         return model.AttackingArmy
     }
@@ -4112,12 +4129,12 @@ func (model *CombatModel) InsideMagicNode() bool {
 }
 
 // returns true if the spell should be dispelled (due to counter magic, magic nodes, etc)
-func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.Player) bool {
+func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster ArmyPlayer) bool {
     // FIXME: what should come first, counter magic or node dispel?
-    if model.InsideMagicNode() && !caster.Wizard.RetortEnabled(data.RetortNodeMastery) {
+    if model.InsideMagicNode() && !caster.GetWizard().RetortEnabled(data.RetortNodeMastery) {
         nodeMagic := model.Zone.GetMagic()
         if spell.Magic != nodeMagic {
-            chance := spellbook.ComputeDispelChance(50, spell.Cost(false), spell.Magic, &caster.Wizard)
+            chance := spellbook.ComputeDispelChance(50, spell.Cost(false), spell.Magic, caster.GetWizard())
             if spellbook.RollDispelChance(chance) {
                 return true
             }
@@ -4127,7 +4144,7 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster *playerlib.P
     opposite := model.GetOppositeArmyForPlayer(caster)
     if opposite.CounterMagic > 0 {
         // FIXME: should runemaster add to the counter magic dispel strength?
-        chance := spellbook.ComputeDispelChance(opposite.CounterMagic, spell.Cost(false), spell.Magic, &caster.Wizard)
+        chance := spellbook.ComputeDispelChance(opposite.CounterMagic, spell.Cost(false), spell.Magic, caster.GetWizard())
         opposite.CounterMagic = max(0, opposite.CounterMagic - 5)
 
         if opposite.CounterMagic == 0 {
@@ -4161,7 +4178,7 @@ func (model *CombatModel) ApplyPossession(target *ArmyUnit){
 
 /* let the user select a target, then cast the spell on that target
  */
-func (model *CombatModel) DoTargetUnitSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
+func (model *CombatModel) DoTargetUnitSpell(player ArmyPlayer, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     teamAttacked := TeamAttacker
 
     selecter := TeamAttacker
@@ -4199,7 +4216,7 @@ func (model *CombatModel) DoTargetUnitSpell(player *playerlib.Player, spell spel
     }
 }
 
-func (model *CombatModel) DoTargetTileSpell(player *playerlib.Player, spell spellbook.Spell, canTarget func(int, int) bool, onTarget func(int, int)){
+func (model *CombatModel) DoTargetTileSpell(player ArmyPlayer, spell spellbook.Spell, canTarget func(int, int) bool, onTarget func(int, int)){
     selecter := TeamAttacker
     if player == model.DefendingArmy.Player {
         selecter = TeamDefender
@@ -4220,7 +4237,7 @@ func (model *CombatModel) DoTargetTileSpell(player *playerlib.Player, spell spel
 
 /* create projectiles on all units immediately, no targeting required
  */
-func (model *CombatModel) DoAllUnitsSpell(player *playerlib.Player, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
+func (model *CombatModel) DoAllUnitsSpell(player ArmyPlayer, spell spellbook.Spell, targetKind Targeting, onTarget func(*ArmyUnit), canTarget func(*ArmyUnit) bool) {
     var units []*ArmyUnit
 
     if player == model.DefendingArmy.Player && targetKind == TargetEnemy {
@@ -4254,7 +4271,7 @@ type SpellSystem interface {
     CreateLightningBoltProjectile(target *ArmyUnit, cost int) *Projectile
     CreateWarpLightningProjectile(target *ArmyUnit) *Projectile
     CreateFlameStrikeProjectile(target *ArmyUnit) *Projectile
-    CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player *playerlib.Player, unitCaster *ArmyUnit) *Projectile
+    CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile
     CreateDispelEvilProjectile(target *ArmyUnit) *Projectile
     CreateHealingProjectile(target *ArmyUnit) *Projectile
     CreateHolyWordProjectile(target *ArmyUnit) *Projectile
@@ -4262,7 +4279,7 @@ type SpellSystem interface {
     CreateCracksCallProjectile(target *ArmyUnit) *Projectile
     CreateWebProjectile(target *ArmyUnit) *Projectile
     CreateBanishProjectile(target *ArmyUnit, reduceResistance int) *Projectile
-    CreateDispelMagicProjectile(target *ArmyUnit, caster *playerlib.Player, dispelStrength int) *Projectile
+    CreateDispelMagicProjectile(target *ArmyUnit, caster ArmyPlayer, dispelStrength int) *Projectile
     CreateWordOfRecallProjectile(target *ArmyUnit) *Projectile
     CreateDisintegrateProjectile(target *ArmyUnit) *Projectile
     CreateDisruptProjectile(x int, y int) *Projectile
@@ -4314,7 +4331,7 @@ type SpellSystem interface {
 }
 
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
-func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib.Player, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func()){
+func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func()){
 
     if model.CheckDispel(spell, player) {
         model.Events <- &CombatEventMessage{
@@ -4503,7 +4520,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             model.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
                 disenchantStrength := spell.Cost(false) * 3
 
-                if player.Wizard.RetortEnabled(data.RetortRunemaster) {
+                if player.GetWizard().RetortEnabled(data.RetortRunemaster) {
                     disenchantStrength *= 2
                 }
 
@@ -4514,7 +4531,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
             model.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
                 disenchantStrength := spell.Cost(false)
 
-                if player.Wizard.RetortEnabled(data.RetortRunemaster) {
+                if player.GetWizard().RetortEnabled(data.RetortRunemaster) {
                     disenchantStrength *= 2
                 }
 
@@ -4625,7 +4642,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
                 disenchantStrength = spell.Cost(false) * 3
             }
 
-            if player.Wizard.RetortEnabled(data.RetortRunemaster) {
+            if player.GetWizard().RetortEnabled(data.RetortRunemaster) {
                 disenchantStrength *= 2
             }
 
@@ -5380,7 +5397,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player *playerlib
     }
 }
 
-func (model *CombatModel) DoSummoningSpell(spellSystem SpellSystem, player *playerlib.Player, spell spellbook.Spell, onTarget func(int, int)){
+func (model *CombatModel) DoSummoningSpell(spellSystem SpellSystem, player ArmyPlayer, spell spellbook.Spell, onTarget func(int, int)){
 
     side := model.GetSideForPlayer(player)
 
@@ -5396,7 +5413,7 @@ func (model *CombatModel) DoSummoningSpell(spellSystem SpellSystem, player *play
     })
 }
 
-func (model *CombatModel) CastEnchantment(player *playerlib.Player, enchantment data.CombatEnchantment, castedCallback func()){
+func (model *CombatModel) CastEnchantment(player ArmyPlayer, enchantment data.CombatEnchantment, castedCallback func()){
     if model.AddEnchantment(player, enchantment) {
         model.Events <- &CombatEventGlobalSpell{
             Caster: player,
