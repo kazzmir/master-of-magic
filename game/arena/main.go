@@ -210,7 +210,7 @@ func (engine *Engine) Update() error {
                 if len(engine.Player.Units) == 0 {
                     log.Printf("All units lost, starting new game")
                     engine.Player = player.MakePlayer(data.BannerGreen)
-                    engine.Player.AddUnit(units.LizardSwordsmen)
+                    // engine.Player.AddUnit(units.LizardSwordsmen)
                 } else {
                     for _, unit := range engine.Player.Units {
                         unit.AddExperience(20)
@@ -1720,6 +1720,9 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+            if len(engine.Player.Units) == 0 {
+                return
+            }
             select {
                 case engine.Events <- &EventNewGame{}:
                 default:
@@ -1774,7 +1777,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
     // test1(playerObj)
-    test3(playerObj)
+    // test3(playerObj)
     // test4(playerObj)
 
     engine := Engine{
