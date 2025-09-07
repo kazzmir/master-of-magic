@@ -735,6 +735,60 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
 
     var tabs []*widget.TabBookTab
 
+    // how many spells of each rarity type the player can currently buy
+    getCommonSpells := func(books int) int {
+        if books >= 5 {
+            return 10
+        }
+
+        if books <= 0 {
+            return 0
+        }
+
+        return books * 2
+    }
+
+    getUncommonSpells := func(books int) int {
+        books = books - 3
+
+        if books >= 5 {
+            return 10
+        }
+
+        if books <= 0 {
+            return 0
+        }
+
+        return books * 2
+    }
+
+    getRareSpells := func(books int) int {
+        books = books - 6
+
+        if books >= 5 {
+            return 10
+        }
+
+        if books <= 0 {
+            return 0
+        }
+
+        return books * 2
+    }
+
+    getVeryRareSpells := func(books int) int {
+        books = books - 9
+        if books >= 5 {
+            return 10
+        }
+
+        if books <= 0 {
+            return 0
+        }
+
+        return books
+    }
+
     for _, magic := range allMagic {
         tab := widget.NewTabBookTab(magic.String(), widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
@@ -751,10 +805,32 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
             )),
         )
 
+        commonCount := 0
+        uncommonCount := 0
+        rareCount := 0
+        veryRareCount := 0
+
         for _, spell := range allSpells.GetSpellsByMagic(magic).Spells {
 
             if !spell.Eligibility.CanCastInCombat(false) {
                 continue
+            }
+
+            var rarityCount int
+
+            switch spell.Rarity {
+                case spellbook.SpellRarityCommon:
+                    commonCount += 1
+                    rarityCount = commonCount
+                case spellbook.SpellRarityUncommon:
+                    uncommonCount += 1
+                    rarityCount = uncommonCount
+                case spellbook.SpellRarityRare:
+                    rareCount += 1
+                    rarityCount = rareCount
+                case spellbook.SpellRarityVeryRare:
+                    veryRareCount += 1
+                    rarityCount = veryRareCount
             }
 
             border := ui.BorderedImage(color.RGBA{R: 128, G: 128, B: 128, A: 255}, 1)
@@ -777,19 +853,38 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
 
                     box.AddChild(makeMoneyText(ui.CenteredText(fmt.Sprintf("%d", cost), face, color.White), imageCache, widget.ContainerOpts.WidgetOpts(centered)))
 
+                    buttonImage := ui.SolidImage(64, 32, 32)
+                    buyTextColor := color.NRGBA{R: 255, G: 255, B: 0, A: 255}
+                    buyTextIdle := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+
+                    var canBuy bool
+
+                    switch spell.Rarity {
+                        case spellbook.SpellRarityCommon: canBuy = rarityCount <= getCommonSpells(playerObj.GetWizard().MagicLevel(magic))
+                        case spellbook.SpellRarityUncommon: canBuy = rarityCount <= getUncommonSpells(playerObj.GetWizard().MagicLevel(magic))
+                        case spellbook.SpellRarityRare: canBuy = rarityCount <= getRareSpells(playerObj.GetWizard().MagicLevel(magic))
+                        case spellbook.SpellRarityVeryRare: canBuy = rarityCount <= getVeryRareSpells(playerObj.GetWizard().MagicLevel(magic))
+                    }
+
+                    if !canBuy {
+                        buttonImage = ui.SolidImage(32, 16, 16)
+                        buyTextColor = color.NRGBA{R: 128, G: 128, B: 128, A: 255}
+                        buyTextIdle = color.NRGBA{R: 128, G: 128, B: 128, A: 255}
+                    }
+
                     buy := widget.NewButton(
                         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-                        widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+                        widget.ButtonOpts.Image(ui.MakeButtonImage(buttonImage)),
                         widget.ButtonOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
                             Position: widget.RowLayoutPositionCenter,
                         })),
                         widget.ButtonOpts.Text("Buy", face, &widget.ButtonTextColor{
-                            Idle: color.White,
+                            Idle: buyTextIdle,
                             Hover: color.White,
-                            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                            Pressed: buyTextColor,
                         }),
                         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-                            if cost <= playerObj.Money {
+                            if canBuy && cost <= playerObj.Money {
                                 playerObj.Money -= cost
                                 playerObj.KnownSpells.AddSpell(spell)
                                 uiEvents.AddUpdate(&UIUpdateMoney{})
@@ -803,6 +898,10 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
             }
 
             setupBox()
+
+            AddEvent(uiEvents, func (update *UIUpdateMagicBooks) {
+                setupBox()
+            })
 
             spellList.AddChild(box)
         }
@@ -1658,7 +1757,7 @@ func test2(playerObj *player.Player) {
 func test3(playerObj *player.Player) {
     v := playerObj.AddUnit(units.LizardSwordsmen)
     v.AdjustHealth(-10)
-    playerObj.Money = 3000
+    playerObj.Money = 30000
 }
 
 func test4(playerObj *player.Player) {
