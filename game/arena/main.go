@@ -259,6 +259,9 @@ type UIEvent interface {
 type UIUpdateMoney struct {
 }
 
+type UIUpdateMagicBooks struct {
+}
+
 type UIUpdateMana struct {
 }
 
@@ -679,6 +682,7 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, playerObj
                     if playerObj.Money >= cost {
                         playerObj.Money -= cost
                         uiEvents.AddUpdate(&UIUpdateMoney{})
+                        uiEvents.AddUpdate(&UIUpdateMagicBooks{})
                         playerObj.GetWizard().AddMagicLevel(magic, 1)
                     }
                 }),
@@ -1405,7 +1409,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
     return unitInfoContainer
 }
 
-func makePlayerInfoUI(face *text.GoTextFace, playerObj *player.Player, events *UIEventUpdate) *widget.Container {
+func makePlayerInfoUI(face *text.GoTextFace, playerObj *player.Player, events *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
     container := ui.HBox()
 
     name := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Name: %v", playerObj.Wizard.Name), face, color.White))
@@ -1417,8 +1421,50 @@ func makePlayerInfoUI(face *text.GoTextFace, playerObj *player.Player, events *U
     mana := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Mana: %d", playerObj.Mana), face, color.White))
     container.AddChild(mana)
 
+    books := ui.HBox()
+    container.AddChild(books)
+
+    lifeBook, _ := imageCache.GetImageTransform("newgame.lbx", 24, 0, "enlarge", enlargeTransform(2))
+    sorceryBook, _ := imageCache.GetImageTransform("newgame.lbx", 27, 0, "enlarge", enlargeTransform(2))
+    natureBook, _ := imageCache.GetImageTransform("newgame.lbx", 30, 0, "enlarge", enlargeTransform(2))
+    deathBook, _ := imageCache.GetImageTransform("newgame.lbx", 33, 0, "enlarge", enlargeTransform(2))
+    chaosBook, _ := imageCache.GetImageTransform("newgame.lbx", 36, 0, "enlarge", enlargeTransform(2))
+
+    setupBooks := func() {
+        books.RemoveChildren()
+
+        for _, book := range playerObj.GetWizard().Books {
+            count := book.Count
+            var bookImage *ebiten.Image
+            switch book.Magic {
+                case data.LifeMagic: bookImage = lifeBook
+                case data.SorceryMagic: bookImage = sorceryBook
+                case data.NatureMagic: bookImage = natureBook
+                case data.DeathMagic: bookImage = deathBook
+                case data.ChaosMagic: bookImage = chaosBook
+            }
+
+            for range count {
+                books.AddChild(widget.NewGraphic(
+                    widget.GraphicOpts.Image(bookImage),
+                    widget.GraphicOpts.WidgetOpts(
+                        widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                            Position: widget.RowLayoutPositionCenter,
+                        }),
+                    ),
+                ))
+            }
+        }
+    }
+
+    setupBooks()
+
     AddEvent(events, func (update *UIUpdateMana) {
         mana.Label = fmt.Sprintf("Mana: %d", playerObj.Mana)
+    })
+
+    AddEvent(events, func (update *UIUpdateMagicBooks) {
+        setupBooks()
     })
 
     return container
@@ -1462,11 +1508,11 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
         }),
     )
 
+    imageCache := util.MakeImageCache(engine.Cache)
+
     rootContainer.AddChild(newGameButton)
 
-    rootContainer.AddChild(makePlayerInfoUI(&face, engine.Player, uiEvents))
-
-    imageCache := util.MakeImageCache(engine.Cache)
+    rootContainer.AddChild(makePlayerInfoUI(&face, engine.Player, uiEvents, &imageCache))
 
     unitInfoUI := makeUnitInfoUI(&face, engine.Player.Units, engine.Player, uiEvents, &imageCache)
 
