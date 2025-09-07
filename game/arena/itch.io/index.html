@@ -1,0 +1,27 @@
+<html>
+<head>
+    <script src="go1.24.0-wasm.js"></script>
+    <script>
+    function run(){
+        (async () => {
+            const path = `arena.wasm`
+            const response = await fetch(path)
+            if (response.ok){
+                const src = await response.arrayBuffer()
+                const go = new Go()
+                const result = await WebAssembly.instantiate(src, go.importObject)
+                // go.argv = 
+                // go.env =
+                go.run(result.instance)
+            } else {
+                const pre = document.createElement('pre')
+                pre.innerText = await response.text()
+                document.body.appendChild(pre)
+            }
+        })()
+    }
+    </script>
+</head>
+<body onload="run()">
+</body>
+</html>
