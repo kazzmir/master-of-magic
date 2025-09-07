@@ -752,8 +752,58 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
         )
 
         for _, spell := range allSpells.GetSpellsByMagic(magic).Spells {
-            box := ui.VBox()
-            box.AddChild(ui.CenteredText(spell.Name, face, color.White))
+
+            if !spell.Eligibility.CanCastInCombat(false) {
+                continue
+            }
+
+            border := ui.BorderedImage(color.RGBA{R: 128, G: 128, B: 128, A: 255}, 1)
+            box := ui.VBox(
+                widget.ContainerOpts.BackgroundImage(border),
+            )
+
+            var setupBox func()
+
+            setupBox = func() {
+                box.RemoveChildren()
+                box.AddChild(ui.CenteredText(spell.Name, face, color.White))
+
+                if playerObj.KnownSpells.Contains(spell) {
+                    learned := ui.CenteredText("Learned", face, color.RGBA{R: 0, G: 255, B: 0, A: 255})
+                    box.AddChild(learned)
+                } else {
+
+                    cost := uint64(spell.ResearchCost)
+
+                    box.AddChild(makeMoneyText(ui.CenteredText(fmt.Sprintf("%d", cost), face, color.White), imageCache, widget.ContainerOpts.WidgetOpts(centered)))
+
+                    buy := widget.NewButton(
+                        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                        widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+                        widget.ButtonOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                            Position: widget.RowLayoutPositionCenter,
+                        })),
+                        widget.ButtonOpts.Text("Buy", face, &widget.ButtonTextColor{
+                            Idle: color.White,
+                            Hover: color.White,
+                            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                        }),
+                        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                            if cost <= playerObj.Money {
+                                playerObj.Money -= cost
+                                playerObj.KnownSpells.AddSpell(spell)
+                                uiEvents.AddUpdate(&UIUpdateMoney{})
+                                setupBox()
+                            }
+                        }),
+                    )
+
+                    box.AddChild(buy)
+                }
+            }
+
+            setupBox()
+
             spellList.AddChild(box)
         }
 

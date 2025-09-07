@@ -6,6 +6,9 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
+
+    "image"
 )
 
 type Player struct {
@@ -14,6 +17,8 @@ type Player struct {
     Level int
     AI bool
     Mana int
+
+    KnownSpells spellbook.Spells
 
     Units []units.StackUnit
 }
@@ -47,15 +52,52 @@ func (player *Player) AddUnit(unit units.Unit) units.StackUnit {
 }
 
 func (player *Player) GetKnownSpells() spellbook.Spells {
-    return spellbook.Spells{}
+    return player.KnownSpells
 }
 
 func (player *Player) GetWizard() *setup.WizardCustom {
     return &player.Wizard
 }
 
-func (player *Player) FindFortressCity() *citylib.City {
+// need this to compute tile distance so that in combat the range of spell costs can be computed
+type BasicCatchmentProvider struct {
+}
+
+func (provider *BasicCatchmentProvider) GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile {
     return nil
+}
+
+func (provider *BasicCatchmentProvider) GetGoldBonus(x int, y int) int {
+    return 0
+}
+
+func (provider *BasicCatchmentProvider) OnShore(x int, y int) bool {
+    return false
+}
+
+func (provider *BasicCatchmentProvider) ByRiver(x int, y int) bool {
+    return false
+}
+
+func abs(a int) int {
+    if a < 0 {
+        return -a
+    }
+    return a
+}
+
+func (provider *BasicCatchmentProvider) TileDistance(x1 int, y1 int, x2 int, y2 int) int {
+    return abs(x1 - x2) + abs(y1 - y2)
+}
+
+func (player *Player) FindFortressCity() *citylib.City {
+    return &citylib.City{
+        Plane: data.PlaneArcanus,
+        // just far enough away to have range be 1 for magic
+        X: 5,
+        Y: 0,
+        CatchmentProvider: &BasicCatchmentProvider{},
+    }
 }
 
 func (player *Player) MakeExperienceInfo() units.ExperienceInfo {
