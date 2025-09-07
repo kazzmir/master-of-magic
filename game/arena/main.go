@@ -22,6 +22,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/console"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
 
     "github.com/kazzmir/master-of-magic/game/arena/player"
     "github.com/kazzmir/master-of-magic/game/arena/ui"
@@ -616,7 +617,7 @@ func combineHorizontalElements(elements... widget.PreferredSizeLocateableWidget)
     return box
 }
 
-func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
     shop := ui.VBox()
     shop.AddChild(widget.NewText(widget.TextOpts.Text("Magic Shop", face, color.White)))
 
@@ -632,6 +633,12 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, playerObj
     centered := widget.WidgetOpts.LayoutData(widget.RowLayoutData{
         Position: widget.RowLayoutPositionCenter,
     })
+
+    allSpells, err := spellbook.ReadSpellsFromCache(lbxCache)
+    if err != nil {
+        log.Printf("Error reading spells from cache: %v", err)
+        return shop
+    }
 
     allMagic := []data.MagicType{data.LifeMagic, data.SorceryMagic, data.NatureMagic, data.DeathMagic, data.ChaosMagic}
 
@@ -730,11 +737,74 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, playerObj
 
     for _, magic := range allMagic {
         tab := widget.NewTabBookTab(magic.String(), widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
         )))
 
         tab.AddChild(ui.CenteredText(fmt.Sprintf("%v Spells", magic), face, color.White))
         tabs = append(tabs, tab)
+
+        containerSize := 300
+
+        spellList := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewGridLayout(
+                widget.GridLayoutOpts.Columns(2),
+            )),
+        )
+
+        for _, spell := range allSpells.GetSpellsByMagic(magic).Spells {
+            box := ui.VBox()
+            box.AddChild(ui.CenteredText(spell.Name, face, color.White))
+            spellList.AddChild(box)
+        }
+
+        scroller := widget.NewScrollContainer(
+            widget.ScrollContainerOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    MaxHeight: containerSize,
+                }),
+            ),
+            widget.ScrollContainerOpts.Content(spellList),
+            widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                Idle: ui.SolidImage(32, 32, 32),
+                Mask: ui.SolidImage(32, 32, 32),
+            }),
+        )
+
+        slider := widget.NewSlider(
+            widget.SliderOpts.Direction(widget.DirectionVertical),
+            widget.SliderOpts.MinMax(0, 100),
+            widget.SliderOpts.InitialCurrent(0),
+            widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
+                scroller.ScrollTop = float64(args.Slider.Current) / 100
+            }),
+            widget.SliderOpts.PageSizeFunc(func() int {
+                return 20
+            }),
+            widget.SliderOpts.WidgetOpts(
+                widget.WidgetOpts.MinSize(10, containerSize),
+            ),
+            widget.SliderOpts.Images(
+                &widget.SliderTrackImage{
+                    Idle: ui.SolidImage(64, 64, 64),
+                    Hover: ui.SolidImage(96, 96, 96),
+                },
+                &widget.ButtonImage{
+                    Idle: ui.SolidImage(192, 192, 192),
+                    Hover: ui.SolidImage(255, 255, 0),
+                    Pressed: ui.SolidImage(255, 128, 0),
+                },
+            ),
+        )
+
+        scroller.GetWidget().ScrolledEvent.AddHandler(func (args any) {
+            eventArgs := args.(*widget.WidgetScrolledEventArgs)
+            slider.Current -= int(math.Round(eventArgs.Y * 8))
+        })
+
+        both := ui.HBox()
+        both.AddChild(scroller)
+        both.AddChild(slider)
+        tab.AddChild(both)
     }
 
     spellsTabs := widget.NewTabBook(
@@ -755,7 +825,7 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, playerObj
     return shop
 }
 
-func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
     container := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(2),
@@ -868,7 +938,7 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, playerObj *p
 
     container.AddChild(armyShop)
 
-    magicShop := makeMagicShop(face, imageCache, playerObj, uiEvents)
+    magicShop := makeMagicShop(face, imageCache, lbxCache, playerObj, uiEvents)
     container.AddChild(magicShop)
 
     return container
@@ -1517,7 +1587,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     unitInfoUI := makeUnitInfoUI(&face, engine.Player.Units, engine.Player, uiEvents, &imageCache)
 
     rootContainer.AddChild(unitInfoUI)
-    rootContainer.AddChild(makeShopUI(&face, &imageCache, engine.Player, uiEvents))
+    rootContainer.AddChild(makeShopUI(&face, &imageCache, engine.Cache, engine.Player, uiEvents))
 
     ui := &ebitenui.UI{
         Container: rootContainer,
