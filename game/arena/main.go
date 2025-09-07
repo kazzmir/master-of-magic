@@ -23,6 +23,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/console"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
 
     "github.com/kazzmir/master-of-magic/game/arena/player"
     "github.com/kazzmir/master-of-magic/game/arena/ui"
@@ -65,6 +66,7 @@ type Engine struct {
     Cache *lbx.LbxCache
 
     Events chan EngineEvents
+    Music *musiclib.Music
 
     CombatCoroutine *coroutine.Coroutine
     CombatScreen *combat.CombatScreen
@@ -98,6 +100,10 @@ func getValidChoices(budget uint64) []*units.Unit {
     }
 
     return choices
+}
+
+func randomChoose[T any](choices ...T) T {
+    return choices[rand.N(len(choices))]
 }
 
 func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
@@ -155,6 +161,9 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     engine.CombatScreen = screen
 
     return func(yield coroutine.YieldFunc) error {
+        engine.Music.PushSong(randomChoose(musiclib.SongCombat1, musiclib.SongCombat2))
+        defer engine.Music.PopSong()
+
         for screen.Update(yield) == combat.CombatStateRunning {
             yield()
         }
@@ -1780,11 +1789,14 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     // test3(playerObj)
     // test4(playerObj)
 
+    music := musiclib.MakeMusic(cache)
+
     engine := Engine{
         GameMode: GameModeUI,
         Player: playerObj,
         Cache: cache,
         Events: make(chan EngineEvents, 10),
+        Music: music,
     }
 
     var err error
@@ -1793,6 +1805,10 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
         log.Printf("Error creating UI: %v", err)
     }
     return &engine
+}
+
+func (engine *Engine) Shutdown() {
+    engine.Music.Stop()
 }
 
 func showCost() {
@@ -1820,4 +1836,6 @@ func main() {
     if err != nil {
         log.Printf("Error: %v", err)
     }
+
+    engine.Shutdown()
 }
