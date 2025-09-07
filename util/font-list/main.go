@@ -96,8 +96,8 @@ func makeNineRoundedButtonImage(width int, height int, border int, col color.Col
     }
 }
 
-func padding(n int) widget.Insets {
-    return widget.Insets{Top: n, Bottom: n, Left: n, Right: n}
+func padding(n int) *widget.Insets {
+    return &widget.Insets{Top: n, Bottom: n, Left: n, Right: n}
 }
 
 func makeRoundedButtonImage(width int, height int, border int, col color.Color) *ebiten.Image {
@@ -121,7 +121,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
             widget.RowLayoutOpts.Spacing(12),
-            widget.RowLayoutOpts.Padding(widget.Insets{Top: 10, Left: 10, Right: 10}),
+            widget.RowLayoutOpts.Padding(&widget.Insets{Top: 10, Left: 10, Right: 10}),
         )),
         widget.ContainerOpts.BackgroundImage(backgroundImage),
         // widget.ContainerOpts.BackgroundImage(backgroundImageNine),
@@ -149,12 +149,12 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     updateTextFont := func (name string) {
         textArea.RemoveChildren()
 
-        graphic := widget.NewGraphic()
+        graphic := widget.NewGraphic(widget.GraphicOpts.Image(ebiten.NewImage(1, 1)))
         surface := ebiten.NewImage(700, 200)
 
         surface2 := ebiten.NewImage(700, 200)
         surface2.Fill(color.White)
-        graphic2 := widget.NewGraphic()
+        graphic2 := widget.NewGraphic(widget.GraphicOpts.Image(ebiten.NewImage(1, 1)))
 
         font := makeFont(name)
         if font != nil {
@@ -171,7 +171,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     }
 
     fontList := widget.NewList(
-        widget.ListOpts.EntryFontFace(face),
+        widget.ListOpts.EntryFontFace(&face),
 
         widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
             widget.WidgetOpts.LayoutData(widget.RowLayoutData{
@@ -180,14 +180,13 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.WidgetOpts.MinSize(0, 850),
         )),
 
-        widget.ListOpts.SliderOpts(
-            widget.SliderOpts.Images(&widget.SliderTrackImage{
-                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
-                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
-                },
-                makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
-            ),
-        ),
+        widget.ListOpts.SliderParams(&widget.SliderParams{
+            TrackImage: &widget.SliderTrackImage{
+                Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+            },
+            HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+        }),
 
         widget.ListOpts.HideHorizontalSlider(),
 
@@ -209,14 +208,16 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
         }),
 
-        widget.ListOpts.ScrollContainerOpts(
-            widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+        widget.ListOpts.ScrollContainerImage(
+            &widget.ScrollContainerImage{
                 Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
                 Disabled: fakeImage,
                 Mask: fakeImage,
-            }),
+            },
         ),
     )
+
+    fontList.Validate()
 
     for _, name := range slices.SortedFunc(slices.Values(fonts.GetFontList()), cmp.Compare) {
         fontList.AddEntry(name)

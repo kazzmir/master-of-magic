@@ -2755,7 +2755,7 @@ func (model *CombatModel) IsEnchantmentActive(enchantment data.CombatEnchantment
 }
 
 func (model *CombatModel) AddLogEvent(text string) {
-    log.Printf(text)
+    log.Print(text)
     model.Log = append(model.Log, CombatLogEvent{
         Turn: model.CurrentTurn,
         Text: text,
