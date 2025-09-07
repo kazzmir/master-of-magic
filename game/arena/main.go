@@ -338,7 +338,7 @@ func (sort SortDirection) Next() SortDirection {
 type UnitIconList struct {
     unitList *widget.Container
     container *widget.Container
-    face *text.GoTextFace
+    face *text.Face
     lastBox *widget.Container
     buyUnit func(unit *units.Unit)
     imageCache *util.ImageCache
@@ -348,7 +348,7 @@ type UnitIconList struct {
     SortCostDirection SortDirection
 }
 
-func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.GoTextFace, buyUnit func(*units.Unit)) *UnitIconList {
+func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.Face, buyUnit func(*units.Unit)) *UnitIconList {
     var iconList UnitIconList
 
     iconList.imageCache = imageCache
@@ -419,7 +419,7 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
 
     baseImage := ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255})
     sortButtons.AddChild(widget.NewButton(
-        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         // widget.ButtonOpts.ToggleMode(),
         // widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
         widget.ButtonOpts.Image(&widget.ButtonImage{
@@ -445,7 +445,7 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
     ))
 
     sortButtons.AddChild(widget.NewButton(
-        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
         widget.ButtonOpts.Text("Sort by Cost", face, &widget.ButtonTextColor{
             Idle: color.White,
@@ -565,7 +565,7 @@ func (iconList *UnitIconList) addUI(unit *units.Unit) {
             Position: widget.RowLayoutPositionCenter,
         })),
 
-        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
         widget.ButtonOpts.Text("Buy Unit", iconList.face, &widget.ButtonTextColor{
             Idle: color.White,
@@ -617,7 +617,7 @@ func combineHorizontalElements(elements... widget.PreferredSizeLocateableWidget)
     return box
 }
 
-func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
     shop := ui.VBox()
     shop.AddChild(widget.NewText(widget.TextOpts.Text("Magic Shop", face, color.White)))
 
@@ -677,7 +677,7 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
             buy.AddChild(costUI)
 
             buyButton := widget.NewButton(
-                widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
                 widget.ButtonOpts.WidgetOpts(centered),
                 widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
                 widget.ButtonOpts.Text("Buy", face, &widget.ButtonTextColor{
@@ -709,7 +709,7 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
 
     makeManaBuyButton := func(amount int) *widget.Button {
         return widget.NewButton(
-            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.WidgetOpts(centered),
             widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
             widget.ButtonOpts.Text(fmt.Sprintf("Buy %d", amount), face, &widget.ButtonTextColor{
@@ -873,7 +873,7 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
                     }
 
                     buy := widget.NewButton(
-                        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
                         widget.ButtonOpts.Image(ui.MakeButtonImage(buttonImage)),
                         widget.ButtonOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
                             Position: widget.RowLayoutPositionCenter,
@@ -974,7 +974,7 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
     return shop
 }
 
-func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
     container := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(2),
@@ -1122,7 +1122,7 @@ func enlargeTransform(factor int) util.ImageTransformFunc {
     return f 
 }
 
-func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
+func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
     enchantments := []data.UnitEnchantment{
         data.UnitEnchantmentGiantStrength,
         data.UnitEnchantmentLionHeart,
@@ -1230,7 +1230,7 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj 
 
         remove := func(){}
         enchantButton := widget.NewButton(
-            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
             widget.ButtonOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
                 Position: widget.RowLayoutPositionCenter,
@@ -1262,7 +1262,7 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj 
     return container
 }
 
-func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
+func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
 
     unitSpecifics := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -1349,7 +1349,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         )
 
         healButton := widget.NewButton(
-            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
             widget.ButtonOpts.Text("Heal Unit", face, &widget.ButtonTextColor{
                 Idle: color.White,
@@ -1384,19 +1384,18 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         unitSpecifics.AddChild(healButton)
 
         enchantments := widget.NewList(
-            widget.ListOpts.ScrollContainerOpts(
-                widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                    Idle: ui.SolidImage(64, 64, 64),
-                    Disabled: ui.SolidImage(32, 32, 32),
-                    Mask: ui.SolidImage(32, 32, 32),
-                }),
-            ),
-            widget.ListOpts.SliderOpts(
-                widget.SliderOpts.Images(&widget.SliderTrackImage{
+            widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
+                Idle: ui.SolidImage(64, 64, 64),
+                Disabled: ui.SolidImage(32, 32, 32),
+                Mask: ui.SolidImage(32, 32, 32),
+            }),
+            widget.ListOpts.SliderParams(&widget.SliderParams{
+                TrackImage: &widget.SliderTrackImage{
                     Idle: ui.SolidImage(64, 64, 64),
                     Hover: ui.SolidImage(96, 96, 96),
-                }, ui.MakeButtonImage(ui.SolidImage(192, 192, 192))),
-            ),
+                },
+                HandleImage: ui.MakeButtonImage(ui.SolidImage(192, 192, 192)),
+            }),
             widget.ListOpts.HideHorizontalSlider(),
             widget.ListOpts.EntryFontFace(face),
             widget.ListOpts.EntryColor(&widget.ListEntryColor{
@@ -1467,9 +1466,9 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
             widget.WidgetOpts.MouseButtonPressedHandler(func(args *widget.WidgetMouseButtonPressedEventArgs) {
                 updateUnitSpecifics(unit, setup)
                 if lastBox != nil {
-                    lastBox.BackgroundImage = border
+                    lastBox.SetBackgroundImage(border)
                 }
-                unitBox.BackgroundImage = ui.SolidImage(96, 96, 32)
+                unitBox.SetBackgroundImage(ui.SolidImage(96, 96, 32))
                 lastBox = unitBox
             }),
             ),
@@ -1594,7 +1593,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
             widget.RowLayoutOpts.Spacing(2),
-            widget.RowLayoutOpts.Padding(widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
+            widget.RowLayoutOpts.Padding(&widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
         )),
         widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 48, G: 48, B: 48, A: 255})),
     )
@@ -1628,7 +1627,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
     return unitInfoContainer
 }
 
-func makePlayerInfoUI(face *text.GoTextFace, playerObj *player.Player, events *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
+func makePlayerInfoUI(face *text.Face, playerObj *player.Player, events *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
     container := ui.HBox()
 
     name := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Name: %v", playerObj.Wizard.Name), face, color.White))
@@ -1700,21 +1699,23 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
         Size: 18,
     }
 
+    var face1 text.Face = &face
+
     uiEvents := MakeUIEventUpdate()
 
     rootContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
             widget.RowLayoutOpts.Spacing(4),
-            widget.RowLayoutOpts.Padding(widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
+            widget.RowLayoutOpts.Padding(&widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
         )),
         widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})),
     )
 
     newGameButton := widget.NewButton(
-        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
-        widget.ButtonOpts.Text("Enter Battle", &face, &widget.ButtonTextColor{
+        widget.ButtonOpts.Text("Enter Battle", &face1, &widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -1734,12 +1735,12 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     rootContainer.AddChild(newGameButton)
 
-    rootContainer.AddChild(makePlayerInfoUI(&face, engine.Player, uiEvents, &imageCache))
+    rootContainer.AddChild(makePlayerInfoUI(&face1, engine.Player, uiEvents, &imageCache))
 
-    unitInfoUI := makeUnitInfoUI(&face, engine.Player.Units, engine.Player, uiEvents, &imageCache)
+    unitInfoUI := makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache)
 
     rootContainer.AddChild(unitInfoUI)
-    rootContainer.AddChild(makeShopUI(&face, &imageCache, engine.Cache, engine.Player, uiEvents))
+    rootContainer.AddChild(makeShopUI(&face1, &imageCache, engine.Cache, engine.Player, uiEvents))
 
     ui := &ebitenui.UI{
         Container: rootContainer,
