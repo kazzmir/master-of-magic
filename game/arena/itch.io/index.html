@@ -4,7 +4,7 @@
     <script>
     function run(){
         (async () => {
-            const path = `combat-simulator.wasm`
+            const path = `arena.wasm`
             const response = await fetch(path)
             if (response.ok){
                 const src = await response.arrayBuffer()
