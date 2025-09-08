@@ -185,9 +185,13 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         lastState := screen.Update(yield)
         if lastState == combat.CombatStateAttackerWin {
             endScreen = combat.MakeCombatEndScreen(engine.Cache, screen, combat.CombatEndScreenResultLose, 0, 0, 0, 0)
+            engine.Music.PushSong(musiclib.SongYouLose)
         } else if lastState == combat.CombatStateDefenderWin {
             endScreen = combat.MakeCombatEndScreen(engine.Cache, screen, combat.CombatEndScreenResultWin, 0, 0, 0, 0)
+            engine.Music.PushSong(musiclib.SongYouWin)
         }
+
+        defer engine.Music.PopSong()
 
         engine.PushDrawer(func(screen *ebiten.Image) {
             endScreen.Draw(screen)
@@ -1838,6 +1842,8 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     }
 
     engine.PushDrawer(engine.DefaultDraw)
+
+    engine.Music.PushSongs(musiclib.SongBackground1, musiclib.SongBackground2, musiclib.SongBackground3)
 
     var err error
     engine.UI, engine.UIUpdates, err = engine.MakeUI()
