@@ -149,6 +149,8 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         engine.CurrentBattleReward += unitCost
     }
 
+    engine.CurrentBattleReward = (engine.CurrentBattleReward * 3) / 2
+
     /*
     for range engine.Player.Level {
         choice := units.AllUnits[rand.N(len(units.AllUnits))]
@@ -720,7 +722,7 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
                 return widget.NewGraphic(widget.GraphicOpts.Image(image), widget.GraphicOpts.WidgetOpts(centered))
             }
 
-            cost := uint64(math.Pow(10, 2.5 + float64(playerObj.GetWizard().MagicLevel(magic)) / 10))
+            cost := uint64(math.Pow(10, 2.2 + float64(playerObj.GetWizard().MagicLevel(magic)) / 10))
 
             gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
             costUI := combineHorizontalElements(makeIcon(gold), widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", cost), face, color.White), widget.TextOpts.WidgetOpts(centered)))
@@ -828,6 +830,10 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
     }
 
     getVeryRareSpells := func(books int) int {
+        if books >= 11 {
+            return 10
+        }
+
         books = books - 9
         if books >= 5 {
             return 10
@@ -1811,7 +1817,8 @@ func test2(playerObj *player.Player) {
 func test3(playerObj *player.Player) {
     v := playerObj.AddUnit(units.LizardSwordsmen)
     v.AdjustHealth(-10)
-    playerObj.Money = 30000
+    playerObj.Money = 300000
+    playerObj.Level = 10
 }
 
 func test4(playerObj *player.Player) {

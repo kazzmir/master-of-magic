@@ -2046,6 +2046,11 @@ func (army *Army) LayoutUnits(team Team){
     cx := x
     cy := y
 
+    columns := int(math.Round(math.Log(float64(len(army.units))) * 2))
+    if columns < 5 {
+        columns = 5
+    }
+
     row := 0
     for _, unit := range army.units {
         unit.X = cx
@@ -2054,7 +2059,7 @@ func (army *Army) LayoutUnits(team Team){
 
         cx += 1
         row += 1
-        if row >= 5 {
+        if row >= columns {
             row = 0
             cx = x
             cy += 1
