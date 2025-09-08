@@ -25,7 +25,7 @@ const (
 type CombatEndScreenResult int
 const (
     CombatEndScreenResultWin CombatEndScreenResult = iota
-    CombatEndScreenResultLoose
+    CombatEndScreenResultLose
     CombatEndScreenResultRetreat
 )
 
@@ -119,7 +119,7 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             } else if end.Fame < 0 {
                 extraText = fmt.Sprintf("You lost %v fame", -end.Fame)
             }
-        case end.Result == CombatEndScreenResultLoose && end.Fame > 0:
+        case end.Result == CombatEndScreenResultLose && end.Fame > 0:
             extraText = fmt.Sprintf("You lost %v fame", end.Fame)
         case end.Result == CombatEndScreenResultRetreat && end.UnitsLost == 1 && end.Fame == 0:
             extraText = "You lost 1 unit while fleeing"
@@ -145,7 +145,7 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
     switch end.Result {
         case CombatEndScreenResultWin:
             pic, _ = end.ImageCache.GetImage("scroll.lbx", 10, 0)
-        case CombatEndScreenResultLoose, CombatEndScreenResultRetreat:
+        case CombatEndScreenResultLose, CombatEndScreenResultRetreat:
             pic, _ = end.ImageCache.GetImage("scroll.lbx", 11, 0)
     }
 
@@ -184,7 +184,7 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
             switch end.Result {
                 case CombatEndScreenResultWin:
                     titleFont.PrintOptions(screen, titleX, titleY, fontOptions, "You are triumphant")
-                case CombatEndScreenResultLoose:
+                case CombatEndScreenResultLose:
                     titleFont.PrintOptions(screen, titleX, titleY, fontOptions, "You have been defeated")
                 case CombatEndScreenResultRetreat:
                     titleFont.PrintOptions(screen, titleX, titleY, fontOptions, "Your forces have retreated")

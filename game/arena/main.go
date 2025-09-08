@@ -68,6 +68,8 @@ type Engine struct {
     Events chan EngineEvents
     Music *musiclib.Music
 
+    Drawers []func(screen *ebiten.Image)
+
     CombatCoroutine *coroutine.Coroutine
     CombatScreen *combat.CombatScreen
     CurrentBattleReward uint64
@@ -104,6 +106,16 @@ func getValidChoices(budget uint64) []*units.Unit {
 
 func randomChoose[T any](choices ...T) T {
     return choices[rand.N(len(choices))]
+}
+
+func (engine *Engine) PushDrawer(drawer func(screen *ebiten.Image)) {
+    engine.Drawers = append(engine.Drawers, drawer)
+}
+
+func (engine *Engine) PopDrawer() {
+    if len(engine.Drawers) > 0 {
+        engine.Drawers = engine.Drawers[:len(engine.Drawers)-1]
+    }
 }
 
 func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
@@ -165,6 +177,29 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         defer engine.Music.PopSong()
 
         for screen.Update(yield) == combat.CombatStateRunning {
+            yield()
+        }
+
+        var endScreen *combat.CombatEndScreen
+
+        lastState := screen.Update(yield)
+        if lastState == combat.CombatStateAttackerWin {
+            endScreen = combat.MakeCombatEndScreen(engine.Cache, screen, combat.CombatEndScreenResultLose, 0, 0, 0, 0)
+            engine.Music.PushSong(musiclib.SongYouLose)
+        } else if lastState == combat.CombatStateDefenderWin {
+            endScreen = combat.MakeCombatEndScreen(engine.Cache, screen, combat.CombatEndScreenResultWin, 0, 0, 0, 0)
+            engine.Music.PushSong(musiclib.SongYouWin)
+        }
+
+        defer engine.Music.PopSong()
+
+        engine.PushDrawer(func(screen *ebiten.Image) {
+            endScreen.Draw(screen)
+        })
+
+        defer engine.PopDrawer()
+
+        for endScreen.Update() == combat.CombatEndScreenRunning {
             yield()
         }
 
@@ -246,6 +281,13 @@ func (engine *Engine) DrawBattle(screen *ebiten.Image) {
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image) {
+    if len(engine.Drawers) > 0 {
+        last := engine.Drawers[len(engine.Drawers)-1]
+        last(screen)
+    }
+}
+
+func (engine *Engine) DefaultDraw(screen *ebiten.Image) {
     switch engine.GameMode {
         case GameModeUI:
             engine.DrawUI(screen)
@@ -1798,6 +1840,10 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
         Events: make(chan EngineEvents, 10),
         Music: music,
     }
+
+    engine.PushDrawer(engine.DefaultDraw)
+
+    engine.Music.PushSongs(musiclib.SongBackground1, musiclib.SongBackground2, musiclib.SongBackground3)
 
     var err error
     engine.UI, engine.UIUpdates, err = engine.MakeUI()
