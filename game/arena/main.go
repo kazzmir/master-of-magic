@@ -171,7 +171,9 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    screen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, engine.Player, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
+    landscape := randomChoose(combat.CombatLandscapeGrass, combat.CombatLandscapeDesert, combat.CombatLandscapeMountain, combat.CombatLandscapeTundra)
+
+    screen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, engine.Player, landscape, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
     engine.CombatScreen = screen
 
     return func(yield coroutine.YieldFunc) error {
