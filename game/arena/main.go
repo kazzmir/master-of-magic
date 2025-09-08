@@ -171,7 +171,9 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    screen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, engine.Player, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
+    landscape := randomChoose(combat.CombatLandscapeGrass, combat.CombatLandscapeDesert, combat.CombatLandscapeMountain, combat.CombatLandscapeTundra)
+
+    screen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, engine.Player, landscape, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
     engine.CombatScreen = screen
 
     return func(yield coroutine.YieldFunc) error {
@@ -1760,10 +1762,10 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     uiEvents := MakeUIEventUpdate()
 
     rootContainer := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(4),
-            widget.RowLayoutOpts.Padding(widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
+        widget.ContainerOpts.Layout(widget.NewGridLayout(
+            widget.GridLayoutOpts.Columns(2),
+            widget.GridLayoutOpts.DefaultStretch(true, true),
+            // widget.GridLayoutOpts.Stretch([]bool{true, true}, []bool{true, true}),
         )),
         widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})),
     )
@@ -1771,6 +1773,12 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     newGameButton := widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.WidgetOpts(
+            widget.WidgetOpts.LayoutData(widget.GridLayoutData{
+                MaxWidth: 100,
+                MaxHeight: 30,
+            }),
+        ),
         widget.ButtonOpts.Text("Enter Battle", &face, &widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
@@ -1790,13 +1798,16 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     imageCache := util.MakeImageCache(engine.Cache)
 
     rootContainer.AddChild(newGameButton)
+    // rootContainer.AddChild(widget.NewContainer())
 
     rootContainer.AddChild(makePlayerInfoUI(&face, engine.Player, uiEvents, &imageCache))
 
     unitInfoUI := makeUnitInfoUI(&face, engine.Player.Units, engine.Player, uiEvents, &imageCache)
 
     rootContainer.AddChild(unitInfoUI)
+    rootContainer.AddChild(widget.NewContainer())
     rootContainer.AddChild(makeShopUI(&face, &imageCache, engine.Cache, engine.Player, uiEvents))
+    rootContainer.AddChild(widget.NewContainer())
 
     ui := &ebitenui.UI{
         Container: rootContainer,
@@ -1835,7 +1846,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
     // test1(playerObj)
-    // test3(playerObj)
+    test3(playerObj)
     // test4(playerObj)
 
     music := musiclib.MakeMusic(cache)
