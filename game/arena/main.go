@@ -131,6 +131,8 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     enemyPlayer := player.MakeAIPlayer(data.BannerRed)
 
+    engine.Player.Mana = engine.Player.OriginalMana
+
     budget := uint64(100 * math.Pow(1.8, float64(engine.Player.Level)))
     engine.CurrentBattleReward = 0
 
@@ -758,24 +760,25 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
 
     setupMagic()
 
-    AddEvent(uiEvents, func (update *UIUpdateMoney) {
-        setupMagic()
-    })
-
     makeManaBuyButton := func(amount int) *widget.Button {
+        var manaCost uint64
+        for i := range amount {
+            manaCost += computeManaCost(playerObj.OriginalMana + i + 1)
+        }
+
         return widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.WidgetOpts(centered),
             widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
-            widget.ButtonOpts.Text(fmt.Sprintf("Buy %d", amount), face, &widget.ButtonTextColor{
+            widget.ButtonOpts.Text(fmt.Sprintf("Buy %d for %d", amount, manaCost), face, &widget.ButtonTextColor{
                 Idle: color.White,
                 Hover: color.White,
                 Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
             widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-                if playerObj.Money >= uint64(amount) {
-                    playerObj.Money -= uint64(amount)
-                    playerObj.Mana += amount
+                if playerObj.Money >= uint64(manaCost) {
+                    playerObj.Money -= uint64(manaCost)
+                    playerObj.OriginalMana += amount
                     uiEvents.AddUpdate(&UIUpdateMana{})
                     uiEvents.AddUpdate(&UIUpdateMoney{})
                 }
@@ -784,8 +787,20 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
     }
 
     manaBox := ui.HBox()
-    manaBox.AddChild(widget.NewText(widget.TextOpts.Text("Mana", face, color.White)))
-    manaBox.AddChild(makeManaBuyButton(10), makeManaBuyButton(50), makeManaBuyButton(100))
+
+    setupMana := func() {
+        manaBox.RemoveChildren()
+        manaBox.AddChild(widget.NewText(widget.TextOpts.Text("Mana", face, color.White)))
+        manaBox.AddChild(makeManaBuyButton(1), makeManaBuyButton(5))
+    }
+
+    setupMana()
+
+    AddEvent(uiEvents, func (update *UIUpdateMoney) {
+        setupMagic()
+        setupMana()
+    })
+
     shop.AddChild(manaBox)
 
     var tabs []*widget.TabBookTab
@@ -1696,7 +1711,7 @@ func makePlayerInfoUI(face *text.GoTextFace, playerObj *player.Player, events *U
     level := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Level: %d", playerObj.Level), face, color.White))
     container.AddChild(level)
 
-    mana := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Mana: %d", playerObj.Mana), face, color.White))
+    mana := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Mana: %d", playerObj.OriginalMana), face, color.White))
     container.AddChild(mana)
 
     books := ui.HBox()
@@ -1738,7 +1753,7 @@ func makePlayerInfoUI(face *text.GoTextFace, playerObj *player.Player, events *U
     setupBooks()
 
     AddEvent(events, func (update *UIUpdateMana) {
-        mana.Label = fmt.Sprintf("Mana: %d", playerObj.Mana)
+        mana.Label = fmt.Sprintf("Mana: %d", playerObj.OriginalMana)
     })
 
     AddEvent(events, func (update *UIUpdateMagicBooks) {

@@ -130,3 +130,19 @@ func getEnchantmentCost(enchantment data.UnitEnchantment) int {
 
     return 0
 }
+
+/*
+ * f(0) = 0
+ * f(n) = f(n-1) + base * (1 + 0.1 * n)
+ */
+func computeManaCost(amount int) uint64 {
+    var total float64 = 0
+
+    baseCost := 2.0
+
+    for i := range amount {
+        total = total + baseCost * (1 + 0.1 * float64(i))
+    }
+
+    return uint64(total)
+}
