@@ -17,6 +17,7 @@ type Player struct {
     Level int
     AI bool
     Mana int
+    OriginalMana int
 
     KnownSpells spellbook.Spells
 
@@ -121,7 +122,7 @@ func (player *Player) UseMana(mana int) {
 }
 
 func (player *Player) ComputeCastingSkill() int {
-    return player.Level * 10
+    return player.OriginalMana
 }
 
 func (player *Player) IsHuman() bool {
