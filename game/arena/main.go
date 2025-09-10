@@ -405,6 +405,12 @@ type UnitIconList struct {
     SortCostDirection SortDirection
 }
 
+func standardButtonImage() *widget.ButtonImage {
+    body := color.NRGBA{R: 64, G: 32, B: 32, A: 255}
+    border := color.NRGBA{R: 32, G: 16, B: 16, A: 255}
+    return ui.MakeButtonImage(ui_image.NewBorderedNineSliceColor(body, border, 1))
+}
+
 func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.GoTextFace, buyUnit func(*units.Unit)) *UnitIconList {
     var iconList UnitIconList
 
@@ -474,11 +480,12 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
     // only change how we sort if the same button is pressed twice in a row
     lastSort := 0
 
-    baseImage := ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255})
+    // baseImage := ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255})
     sortButtons.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         // widget.ButtonOpts.ToggleMode(),
-        // widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.Image(standardButtonImage()),
+        /*
         widget.ButtonOpts.Image(&widget.ButtonImage{
             Idle: baseImage,
             Hover: baseImage,
@@ -486,6 +493,7 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
             Disabled: baseImage,
             // PressedHover: ui_image.NewNineSliceColor(color.NRGBA{R: 255, G: 64, B: 32, A: 255}),
         }),
+        */
 
         widget.ButtonOpts.Text("Sort by Name", face, &widget.ButtonTextColor{
             Idle: color.White,
@@ -503,7 +511,7 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
 
     sortButtons.AddChild(widget.NewButton(
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.Image(standardButtonImage()),
         widget.ButtonOpts.Text("Sort by Cost", face, &widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
@@ -623,7 +631,7 @@ func (iconList *UnitIconList) addUI(unit *units.Unit) {
         })),
 
         widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.Image(standardButtonImage()),
         widget.ButtonOpts.Text("Buy Unit", iconList.face, &widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
@@ -736,7 +744,7 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
             buyButton := widget.NewButton(
                 widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
                 widget.ButtonOpts.WidgetOpts(centered),
-                widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+                widget.ButtonOpts.Image(standardButtonImage()),
                 widget.ButtonOpts.Text("Buy", face, &widget.ButtonTextColor{
                     Idle: color.White,
                     Hover: color.White,
@@ -769,7 +777,7 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
         return widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.WidgetOpts(centered),
-            widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+            widget.ButtonOpts.Image(standardButtonImage()),
             widget.ButtonOpts.Text(fmt.Sprintf("Buy %d for %d", amount, manaCost), face, &widget.ButtonTextColor{
                 Idle: color.White,
                 Hover: color.White,
@@ -1031,7 +1039,7 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
     }
 
     spellsTabs := widget.NewTabBook(
-        widget.TabBookOpts.TabButtonImage(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+        widget.TabBookOpts.TabButtonImage(standardButtonImage()),
         widget.TabBookOpts.TabButtonText(face, &widget.ButtonTextColor{
             Idle: color.White,
             Disabled: color.NRGBA{R: 32, G: 32, B: 32, A: 255},
@@ -1053,6 +1061,8 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache *lb
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(2),
             widget.GridLayoutOpts.DefaultStretch(false, false),
+            widget.GridLayoutOpts.Padding(widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
+            widget.GridLayoutOpts.Spacing(20, 0),
             // widget.GridLayoutOpts.Stretch([]bool{false, false}, []bool{false, false}),
         )),
         /*
@@ -1145,14 +1155,15 @@ func makeShopUI(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache *lb
     tabAffordable.AddChild(filteredUnitList.GetWidget())
 
     tabs := widget.NewTabBook(
-        widget.TabBookOpts.TabButtonImage(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+        widget.TabBookOpts.TabButtonImage(standardButtonImage()),
         widget.TabBookOpts.TabButtonText(face, &widget.ButtonTextColor{
             Idle: color.White,
             Disabled: color.NRGBA{R: 32, G: 32, B: 32, A: 255},
             Hover: color.White,
             Pressed: color.White,
         }),
-        widget.TabBookOpts.TabButtonSpacing(5),
+        widget.TabBookOpts.TabButtonOpts(widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 10, Right: 10})),
+        widget.TabBookOpts.TabButtonSpacing(10),
         // widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(2)),
         widget.TabBookOpts.Tabs(tabAll, tabAffordable),
     )
@@ -1305,7 +1316,7 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj 
         remove := func(){}
         enchantButton := widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-            widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+            widget.ButtonOpts.Image(standardButtonImage()),
             widget.ButtonOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
                 Position: widget.RowLayoutPositionCenter,
             })),
@@ -1424,7 +1435,7 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
 
         healButton := widget.NewButton(
             widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-            widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
+            widget.ButtonOpts.Image(standardButtonImage()),
             widget.ButtonOpts.Text("Heal Unit", face, &widget.ButtonTextColor{
                 Idle: color.White,
                 Hover: color.White,
@@ -1786,8 +1797,8 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     )
 
     newGameButton := widget.NewButton(
-        widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(ui.MakeButtonImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255}))),
+        widget.ButtonOpts.TextPadding(widget.Insets{Top: 4, Bottom: 4, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(standardButtonImage()),
         widget.ButtonOpts.Text("Enter Battle", &face, &widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
