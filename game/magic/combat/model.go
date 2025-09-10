@@ -2049,8 +2049,8 @@ func (army *Army) LayoutUnits(team Team){
     cy := y
 
     columns := int(math.Round(math.Log(float64(len(army.units))) * 2))
-    if columns < 5 {
-        columns = 5
+    if columns < 4 {
+        columns = 4
     }
 
     row := 0
@@ -2305,8 +2305,8 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
     switch team {
         case TeamAttacker:
             for i := 0; i < len(model.AttackingArmy.units); i++ {
-                model.TurnAttacker = (model.TurnAttacker + 1) % len(model.AttackingArmy.units)
                 unit := model.AttackingArmy.units[model.TurnAttacker]
+                model.TurnAttacker = (model.TurnAttacker + 1) % len(model.AttackingArmy.units)
 
                 if unit.IsAsleep() || unit.ConfusionAction == ConfusionActionDoNothing {
                     unit.LastTurn = model.CurrentTurn
@@ -2327,8 +2327,8 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
             return nil
         case TeamDefender:
             for i := 0; i < len(model.DefendingArmy.units); i++ {
-                model.TurnDefender = (model.TurnDefender + 1) % len(model.DefendingArmy.units)
                 unit := model.DefendingArmy.units[model.TurnDefender]
+                model.TurnDefender = (model.TurnDefender + 1) % len(model.DefendingArmy.units)
 
                 if unit.IsAsleep() || unit.ConfusionAction == ConfusionActionDoNothing {
                     unit.LastTurn = model.CurrentTurn
