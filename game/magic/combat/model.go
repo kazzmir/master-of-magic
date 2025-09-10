@@ -2033,13 +2033,15 @@ func (army *Army) AddArmyUnit(unit *ArmyUnit){
 
 func (army *Army) LayoutUnits(team Team){
     x := TownCenterX - 2
-    y := 10
+    y := 11
+    rowDirection := -1
 
     facing := units.FacingDownRight
 
     if team == TeamAttacker {
         x = TownCenterX - 2
         y = 17
+        rowDirection = 1
         facing = units.FacingUpLeft
     }
 
@@ -2062,7 +2064,7 @@ func (army *Army) LayoutUnits(team Team){
         if row >= columns {
             row = 0
             cx = x
-            cy += 1
+            cy += rowDirection
         }
     }
 }
