@@ -2032,20 +2032,20 @@ func (army *Army) AddArmyUnit(unit *ArmyUnit){
 }
 
 func (army *Army) LayoutUnits(team Team){
-    x := TownCenterX - 2
+    x := TownCenterX - 1
     y := 11
     rowDirection := -1
 
     facing := units.FacingDownRight
 
     if team == TeamAttacker {
-        x = TownCenterX - 2
+        x = TownCenterX - 1
         y = 17
         rowDirection = 1
         facing = units.FacingUpLeft
     }
 
-    cx := x
+    // cx := x
     cy := y
 
     columns := int(math.Round(math.Log(float64(len(army.units))) * 2))
@@ -2054,16 +2054,22 @@ func (army *Army) LayoutUnits(team Team){
     }
 
     row := 0
+    offsetX := 0
+
     for _, unit := range army.units {
-        unit.X = cx
+        unit.X = x + offsetX
         unit.Y = cy
         unit.Facing = facing
 
-        cx += 1
+        offsetX = -offsetX
+        if offsetX >= 0 {
+            offsetX += 1
+        }
+
         row += 1
         if row >= columns {
             row = 0
-            cx = x
+            offsetX = 0
             cy += rowDirection
         }
     }
@@ -2304,8 +2310,8 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
 
     switch team {
         case TeamAttacker:
-            for i := 0; i < len(model.AttackingArmy.units); i++ {
-                unit := model.AttackingArmy.units[model.TurnAttacker]
+            for range model.AttackingArmy.units {
+                unit := model.AttackingArmy.units[model.TurnAttacker % len(model.AttackingArmy.units)]
                 model.TurnAttacker = (model.TurnAttacker + 1) % len(model.AttackingArmy.units)
 
                 if unit.IsAsleep() || unit.ConfusionAction == ConfusionActionDoNothing {
@@ -2326,8 +2332,8 @@ func (model *CombatModel) ChooseNextUnit(team Team) *ArmyUnit {
             }
             return nil
         case TeamDefender:
-            for i := 0; i < len(model.DefendingArmy.units); i++ {
-                unit := model.DefendingArmy.units[model.TurnDefender]
+            for range model.DefendingArmy.units {
+                unit := model.DefendingArmy.units[model.TurnDefender % len(model.DefendingArmy.units)]
                 model.TurnDefender = (model.TurnDefender + 1) % len(model.DefendingArmy.units)
 
                 if unit.IsAsleep() || unit.ConfusionAction == ConfusionActionDoNothing {
