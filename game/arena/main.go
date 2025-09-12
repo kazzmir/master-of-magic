@@ -1244,6 +1244,9 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj 
         data.UnitEnchantmentWraithForm,
     }
 
+    // remove any enchantments the unit already has
+    enchantments = slices.DeleteFunc(enchantments, unit.HasEnchantment)
+
     slices.SortFunc(enchantments, func(a, b data.UnitEnchantment) int {
         return cmp.Compare(a.Name(), b.Name())
     })
@@ -1300,45 +1303,100 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj 
         slider.Current -= int(math.Round(eventArgs.Y * 8))
     })
 
-    for _, enchantment := range enchantments {
-        border := ui.BorderedImage(color.RGBA{R: 128, G: 128, B: 128, A: 255}, 1)
-        box := ui.VBox(
-            widget.ContainerOpts.BackgroundImage(border),
-        )
-        name := ui.CenteredText(enchantment.Name(), face, enchantment.Color())
-        box.AddChild(name)
-        money := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", getEnchantmentCost(enchantment)), face, color.White))
+    lifeBook, _ := imageCache.GetImageTransform("newgame.lbx", 24, 0, "enlarge", enlargeTransform(2))
+    sorceryBook, _ := imageCache.GetImageTransform("newgame.lbx", 27, 0, "enlarge", enlargeTransform(2))
+    natureBook, _ := imageCache.GetImageTransform("newgame.lbx", 30, 0, "enlarge", enlargeTransform(2))
+    deathBook, _ := imageCache.GetImageTransform("newgame.lbx", 33, 0, "enlarge", enlargeTransform(2))
+    chaosBook, _ := imageCache.GetImageTransform("newgame.lbx", 36, 0, "enlarge", enlargeTransform(2))
 
-        box.AddChild(makeMoneyText(money, imageCache, widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-            Position: widget.RowLayoutPositionCenter,
-        }))))
+    setupEnchantments := func() {
+        for _, enchantment := range enchantments {
+            border := ui.BorderedImage(color.RGBA{R: 128, G: 128, B: 128, A: 255}, 1)
+            box := ui.VBox(
+                widget.ContainerOpts.BackgroundImage(border),
+            )
+            name := ui.CenteredText(enchantment.Name(), face, enchantment.Color())
+            box.AddChild(name)
 
-        remove := func(){}
-        enchantButton := widget.NewButton(
-            widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-            widget.ButtonOpts.Image(standardButtonImage()),
-            widget.ButtonOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            books := ui.HBox(widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
                 Position: widget.RowLayoutPositionCenter,
-            })),
-            widget.ButtonOpts.Text("Enchant", face, &widget.ButtonTextColor{
-                Idle: color.White,
-                Hover: color.White,
-                Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-            }),
-            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-                cost := uint64(getEnchantmentCost(enchantment))
-                if cost <= playerObj.Money && !unit.HasEnchantment(enchantment) {
-                    playerObj.Money -= cost
-                    unit.AddEnchantment(enchantment)
-                    remove()
-                    uiEvents.AddUpdate(&UIUpdateMoney{})
-                    uiEvents.AddUpdate(&UIUpdateUnit{Unit: unit})
+            })))
+
+            requirements := getEnchantmentRequirements(enchantment)
+            var use *ebiten.Image
+            switch requirements.Magic {
+                case data.LifeMagic: use = lifeBook
+                case data.SorceryMagic: use = sorceryBook
+                case data.NatureMagic: use = natureBook
+                case data.DeathMagic: use = deathBook
+                case data.ChaosMagic: use = chaosBook
+            }
+
+            final := ebiten.NewImage(use.Bounds().Dx() * requirements.Count, use.Bounds().Dy())
+
+            for x := range requirements.Count {
+                var ops ebiten.DrawImageOptions
+                ops.GeoM.Translate(float64(x * use.Bounds().Dx()), 0)
+
+                if x >= playerObj.GetWizard().MagicLevel(requirements.Magic) {
+                    ops.ColorScale.ScaleWithColor(color.NRGBA{R: 90, G: 90, B: 90, A: 255})
                 }
-            }),
-        )
-        box.AddChild(enchantButton)
-        remove = enchantmentList.AddChild(box)
+
+                final.DrawImage(use, &ops)
+            }
+
+            books.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(final), widget.GraphicOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                Position: widget.RowLayoutPositionCenter,
+            }))))
+
+            box.AddChild(books)
+
+            money := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", getEnchantmentCost(enchantment)), face, color.White))
+
+            box.AddChild(makeMoneyText(money, imageCache, widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                Position: widget.RowLayoutPositionCenter,
+            }))))
+
+            enchantTextColor := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+            canBuy := playerObj.GetWizard().MagicLevel(requirements.Magic) >= requirements.Count
+            if !canBuy {
+                enchantTextColor = color.NRGBA{R: 128, G: 128, B: 128, A: 255}
+            }
+
+            remove := func(){}
+            enchantButton := widget.NewButton(
+                widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(standardButtonImage()),
+                widget.ButtonOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    Position: widget.RowLayoutPositionCenter,
+                })),
+                widget.ButtonOpts.Text("Enchant", face, &widget.ButtonTextColor{
+                    Idle: enchantTextColor,
+                    Hover: enchantTextColor,
+                    Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                    cost := uint64(getEnchantmentCost(enchantment))
+                    if canBuy && cost <= playerObj.Money && !unit.HasEnchantment(enchantment) {
+                        playerObj.Money -= cost
+                        unit.AddEnchantment(enchantment)
+                        remove()
+                        uiEvents.AddUpdate(&UIUpdateMoney{})
+                        uiEvents.AddUpdate(&UIUpdateUnit{Unit: unit})
+                    }
+                }),
+            )
+            box.AddChild(enchantButton)
+            remove = enchantmentList.AddChild(box)
+        }
     }
+
+    setupEnchantments()
+
+    AddEvent(uiEvents, func (update *UIUpdateMagicBooks) {
+        enchantmentList.RemoveChildren()
+        setupEnchantments()
+    })
 
     container := ui.HBox()
     container.AddChild(scroller)

@@ -91,6 +91,66 @@ func getUnitCost(unit *units.Unit) uint64 {
     return uint64(cost)
 }
 
+func getEnchantmentRequirements(enchantment data.UnitEnchantment) data.WizardBook {
+    life := func(n int) data.WizardBook {
+        return data.WizardBook{Magic: data.LifeMagic, Count: n}
+    }
+
+    nature := func(n int) data.WizardBook {
+        return data.WizardBook{Magic: data.NatureMagic, Count: n}
+    }
+
+    sorcery := func(n int) data.WizardBook {
+        return data.WizardBook{Magic: data.SorceryMagic, Count: n}
+    }
+
+    death := func(n int) data.WizardBook {
+        return data.WizardBook{Magic: data.DeathMagic, Count: n}
+    }
+
+    chaos := func(n int) data.WizardBook {
+        return data.WizardBook{Magic: data.ChaosMagic, Count: n}
+    }
+
+    switch enchantment {
+        case data.UnitEnchantmentGiantStrength: return nature(1)
+        case data.UnitEnchantmentLionHeart: return life(2)
+        case data.UnitEnchantmentHaste: return sorcery(7)
+        case data.UnitEnchantmentImmolation: return chaos(4)
+        case data.UnitEnchantmentResistElements: return nature(1)
+        case data.UnitEnchantmentResistMagic: return sorcery(2)
+        case data.UnitEnchantmentElementalArmor: return nature(3)
+        case data.UnitEnchantmentBless: return life(2)
+        case data.UnitEnchantmentRighteousness: return life(5)
+        case data.UnitEnchantmentCloakOfFear: return death(4)
+        case data.UnitEnchantmentTrueSight: return sorcery(4)
+        case data.UnitEnchantmentPathFinding: return nature(1)
+        case data.UnitEnchantmentFlight: return sorcery(5)
+        case data.UnitEnchantmentChaosChannelsDemonWings: return chaos(4)
+        case data.UnitEnchantmentChaosChannelsDemonSkin: return chaos(4)
+        case data.UnitEnchantmentChaosChannelsFireBreath: return chaos(4)
+        case data.UnitEnchantmentEndurance: return life(2)
+        case data.UnitEnchantmentHeroism: return life(3)
+        case data.UnitEnchantmentHolyArmor: return life(3)
+        case data.UnitEnchantmentHolyWeapon: return life(3)
+        case data.UnitEnchantmentInvulnerability: return life(8)
+        case data.UnitEnchantmentIronSkin: return nature(5)
+        case data.UnitEnchantmentRegeneration: return nature(7)
+        case data.UnitEnchantmentStoneSkin: return nature(2)
+        case data.UnitEnchantmentGuardianWind: return sorcery(5)
+        case data.UnitEnchantmentInvisibility: return sorcery(7)
+        case data.UnitEnchantmentMagicImmunity: return sorcery(9)
+        case data.UnitEnchantmentSpellLock: return sorcery(6)
+        case data.UnitEnchantmentEldritchWeapon: return chaos(2)
+        case data.UnitEnchantmentFlameBlade: return chaos(3)
+        case data.UnitEnchantmentBerserk: return death(4)
+        case data.UnitEnchantmentBlackChannels: return death(5)
+        case data.UnitEnchantmentWraithForm: return death(6)
+    }
+
+    return data.WizardBook{}
+}
+
 func getEnchantmentCost(enchantment data.UnitEnchantment) int {
     switch enchantment {
         case data.UnitEnchantmentGiantStrength: return 100
