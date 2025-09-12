@@ -237,6 +237,9 @@ type CombatScreen struct {
     WhitePixel *ebiten.Image
     UI *uilib.UI
 
+    Quit context.Context
+    Cancel context.CancelFunc
+
     Fonts CombatFonts
 
     DrawRoad bool
@@ -377,9 +380,13 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         allSpells = spellbook.Spells{}
     }
 
+    quit, cancel := context.WithCancel(context.Background())
+
     combat := &CombatScreen{
         Events: events,
         Cache: cache,
+        Quit: quit,
+        Cancel: cancel,
         Counter: 1000, // start at a high number so that existing wall of fire/darkness does not show as being newly cast
         AudioCache: audio.MakeAudioCache(cache),
         ImageCache: imageCache,
@@ -2999,7 +3006,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     mover.MoveX = float64(mover.X)
     mover.MoveY = float64(mover.Y)
 
-    quit, cancel := context.WithCancel(context.Background())
+    quit, cancel := context.WithCancel(combat.Quit)
     defer cancel()
 
     sound, err := combat.AudioCache.GetSound(mover.Unit.GetMovementSound().LbxIndex())
