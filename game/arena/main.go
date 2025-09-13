@@ -621,9 +621,17 @@ func (iconList *UnitIconList) addUI(unit *units.Unit) {
 
     heart, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 23, 0, "enlarge", enlargeTransform(2))
 
+    meleeImage, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 13, 0, "enlarge", enlargeTransform(2))
+    rangeMagicImage, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 14, 0, "enlarge", enlargeTransform(2))
+    rangeBowImage, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 18, 0, "enlarge", enlargeTransform(2))
+    rangeBoulderImage, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 19, 0, "enlarge", enlargeTransform(2))
+    defenseImage, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 22, 0, "enlarge", enlargeTransform(2))
+
     walkingImage, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 24, 0, "enlarge", enlargeTransform(2))
     flyingImage, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 25, 0, "enlarge", enlargeTransform(2))
     swimmingImage, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 26, 0, "enlarge", enlargeTransform(2))
+
+    resistanceImage, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 27, 0, "enlarge", enlargeTransform(2))
 
     unitImage, err := iconList.imageCache.GetImageTransform(unit.GetCombatLbxFile(), unit.GetCombatIndex(units.FacingRight), 0, "enlarge", enlargeTransform(2))
     if err == nil {
@@ -666,6 +674,26 @@ func (iconList *UnitIconList) addUI(unit *units.Unit) {
             moveImage = swimmingImage
         }
         stats.AddChild(combineHorizontalElements(makeIcon(moveImage), makeText(fmt.Sprintf("%d", moves))))
+
+        stats.AddChild(combineHorizontalElements(makeIcon(defenseImage), makeText(fmt.Sprintf("%d", unit.GetDefense()))))
+        stats.AddChild(combineHorizontalElements(makeIcon(meleeImage), makeText(fmt.Sprintf("%d", unit.GetMeleeAttackPower()))))
+
+        if unit.GetRangedAttackPower() > 0 {
+            var rangedImage *ebiten.Image
+            switch unit.GetRangedAttackDamageType() {
+                case units.DamageNone:
+                case units.DamageRangedMagical:
+                    rangedImage = rangeMagicImage
+                case units.DamageRangedPhysical:
+                    rangedImage = rangeBowImage
+                case units.DamageRangedBoulder:
+                    rangedImage = rangeBoulderImage
+            }
+
+            stats.AddChild(combineHorizontalElements(makeIcon(rangedImage), makeText(fmt.Sprintf("%d", unit.GetRangedAttackPower()))))
+        }
+
+        stats.AddChild(combineHorizontalElements(makeIcon(resistanceImage), makeText(fmt.Sprintf("%d", unit.GetResistance()))))
     }
 
     // unitBox.AddChild(ui.CenteredText(fmt.Sprintf("Cost %d", getUnitCost(unit)), iconList.face, color.White))
