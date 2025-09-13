@@ -85,7 +85,7 @@ func getValidChoices(budget uint64) []*units.Unit {
 
     for i := range units.AllUnits {
         choice := &units.AllUnits[i]
-        if choice.Race == data.RaceHero || choice.Name == "Settlers" {
+        if choice.Race == data.RaceHero || choice.IsSettlers() {
             continue
         }
         if getUnitCost(choice) > budget {
@@ -118,6 +118,46 @@ func (engine *Engine) PopDrawer() {
     }
 }
 
+func setupAISpells(enemyPlayer *player.Player, lbxCache *lbx.LbxCache, budget uint64) (uint64, uint64) {
+    var totalCosts uint64
+
+    allSpells, err := spellbook.ReadSpellsFromCache(lbxCache)
+    if err != nil {
+        return budget, 0
+    }
+
+    doSpell := func(counter *int, numSpells func(int) int, spell spellbook.Spell){
+        if *counter < numSpells(enemyPlayer.GetWizard().MagicLevel(spell.Magic)) && budget >= uint64(spell.ResearchCost) {
+            enemyPlayer.KnownSpells.AddSpell(spell)
+            budget -= uint64(spell.ResearchCost)
+            totalCosts += uint64(spell.ResearchCost)
+            *counter += 1
+        }
+    }
+
+    commonCount := 0
+    uncommonCount := 0
+    rareCount := 0
+    veryRareCount := 0
+
+    for _, spell := range allSpells.Spells {
+        if !spell.Eligibility.CanCastInCombat(false) {
+            continue
+        }
+
+        if rand.N(10) > 5 {
+            switch spell.Rarity {
+                case spellbook.SpellRarityCommon: doSpell(&commonCount, getCommonSpells, spell)
+                case spellbook.SpellRarityUncommon: doSpell(&uncommonCount, getUncommonSpells, spell)
+                case spellbook.SpellRarityRare: doSpell(&rareCount, getRareSpells, spell)
+                case spellbook.SpellRarityVeryRare: doSpell(&veryRareCount, getVeryRareSpells, spell)
+            }
+        }
+    }
+
+    return budget, totalCosts
+}
+
 func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     defendingArmy := combat.Army {
         Player: engine.Player,
@@ -130,11 +170,25 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     enemyPlayer := player.MakeAIPlayer(data.BannerRed)
+    enemyPlayer.Mana = engine.Player.Level * 10 + rand.N(15) - 7
+    enemyPlayer.OriginalMana = enemyPlayer.Mana
 
     engine.Player.Mana = engine.Player.OriginalMana
 
+    for _, magic := range []data.MagicType{data.LifeMagic, data.SorceryMagic, data.NatureMagic, data.DeathMagic, data.ChaosMagic} {
+        enemyPlayer.GetWizard().AddMagicLevel(magic, rand.N(12))
+    }
+
     budget := uint64(100 * math.Pow(1.8, float64(engine.Player.Level)))
-    engine.CurrentBattleReward = 0
+
+    var spellCosts uint64
+
+    budget, spellCosts = setupAISpells(enemyPlayer, engine.Cache, budget)
+
+    log.Printf("Enemy magic: %v", enemyPlayer.GetWizard().Books)
+    log.Printf("Enemy spells: %v", enemyPlayer.GetKnownSpells().Spells)
+
+    engine.CurrentBattleReward = spellCosts
 
     for budget > 0 {
         choices := getValidChoices(budget)
@@ -896,64 +950,6 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
     shop.AddChild(manaBox)
 
     var tabs []*widget.TabBookTab
-
-    // how many spells of each rarity type the player can currently buy
-    getCommonSpells := func(books int) int {
-        if books >= 5 {
-            return 10
-        }
-
-        if books <= 0 {
-            return 0
-        }
-
-        return books * 2
-    }
-
-    getUncommonSpells := func(books int) int {
-        books = books - 3
-
-        if books >= 5 {
-            return 10
-        }
-
-        if books <= 0 {
-            return 0
-        }
-
-        return books * 2
-    }
-
-    getRareSpells := func(books int) int {
-        books = books - 6
-
-        if books >= 5 {
-            return 10
-        }
-
-        if books <= 0 {
-            return 0
-        }
-
-        return books * 2
-    }
-
-    getVeryRareSpells := func(books int) int {
-        if books >= 11 {
-            return 10
-        }
-
-        books = books - 9
-        if books >= 5 {
-            return 10
-        }
-
-        if books <= 0 {
-            return 0
-        }
-
-        return books
-    }
 
     for _, magic := range allMagic {
         tab := widget.NewTabBookTab(magic.String(), widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -2005,7 +2001,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
     // test1(playerObj)
-    // test3(playerObj)
+    test3(playerObj)
     // test4(playerObj)
 
     music := musiclib.MakeMusic(cache)
