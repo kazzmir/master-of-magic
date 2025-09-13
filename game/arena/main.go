@@ -311,6 +311,16 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (int, int) {
     return outsideWidth, outsideHeight
 }
 
+func resizeImage(old *ebiten.Image, amount float64) *ebiten.Image {
+    width, height := old.Bounds().Dx(), old.Bounds().Dy()
+    newW, newH := int(float64(width) * amount), int(float64(height) * amount)
+    newImage := ebiten.NewImage(newW, newH)
+    op := &ebiten.DrawImageOptions{}
+    op.GeoM.Scale(float64(newW)/float64(width), float64(newH)/float64(height))
+    newImage.DrawImage(old, op)
+    return newImage
+}
+
 type UIEvent interface {
 }
 
@@ -609,14 +619,53 @@ func (iconList *UnitIconList) addUI(unit *units.Unit) {
     unitBox.AddChild(ui.CenteredText(unit.Race.String(), iconList.face, color.White))
     unitBox.AddChild(ui.CenteredText(unit.Name, iconList.face, color.White))
 
+    heart, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 23, 0, "enlarge", enlargeTransform(2))
+
+    walkingImage, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 24, 0, "enlarge", enlargeTransform(2))
+    flyingImage, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 25, 0, "enlarge", enlargeTransform(2))
+    swimmingImage, _ := iconList.imageCache.GetImageTransform("unitview.lbx", 26, 0, "enlarge", enlargeTransform(2))
+
     unitImage, err := iconList.imageCache.GetImageTransform(unit.GetCombatLbxFile(), unit.GetCombatIndex(units.FacingRight), 0, "enlarge", enlargeTransform(2))
     if err == nil {
-        unitBox.AddChild(widget.NewGraphic(
+        unitDetails := ui.HBox(widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            Position: widget.RowLayoutPositionCenter,
+        })))
+        unitBox.AddChild(unitDetails)
+
+        unitDetails.AddChild(widget.NewGraphic(
             widget.GraphicOpts.Image(unitImage),
+            /*
             widget.GraphicOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                Position: widget.RowLayoutPositionCenter,
+                Position: widget.RowLayoutPositionStart,
             })),
+            */
         ))
+
+        stats := ui.VBox()
+        unitDetails.AddChild(stats)
+
+        centered := widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            Position: widget.RowLayoutPositionCenter,
+        })
+
+        makeIcon := func(image *ebiten.Image) *widget.Graphic {
+            return widget.NewGraphic(widget.GraphicOpts.Image(resizeImage(image, 0.80)), widget.GraphicOpts.WidgetOpts(centered))
+        }
+
+        makeText := func(text string) *widget.Text {
+            return widget.NewText(widget.TextOpts.Text(text, iconList.face, color.White))
+        }
+
+        stats.AddChild(combineHorizontalElements(makeIcon(heart), makeText(fmt.Sprintf("%d", unit.GetHitPoints()))))
+
+        moves := unit.GetMovementSpeed()
+        moveImage := walkingImage
+        if unit.Flying {
+            moveImage = flyingImage
+        } else if unit.Swimming {
+            moveImage = swimmingImage
+        }
+        stats.AddChild(combineHorizontalElements(makeIcon(moveImage), makeText(fmt.Sprintf("%d", moves))))
     }
 
     // unitBox.AddChild(ui.CenteredText(fmt.Sprintf("Cost %d", getUnitCost(unit)), iconList.face, color.White))
