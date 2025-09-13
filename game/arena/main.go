@@ -197,7 +197,33 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
             break
         }
 
-        choice := choices[rand.N(len(choices))]
+        slices.SortFunc(choices, func(a, b *units.Unit) int {
+            return cmp.Compare(getUnitCost(b), getUnitCost(a))
+        })
+
+        weight := rand.N(100)
+        var choice *units.Unit
+        var start, end int
+        // choose from first 1/3rd of array if weight < 70
+        if weight < 70 {
+            start = 0
+            end = len(choices) / 3
+        } else if weight < 90 {
+            // choose from 2nd 1/3rd of array
+            start = len(choices) / 3
+            end = 2 * len(choices) / 3
+        } else {
+            // choose from last 1/3rd of array
+            start = 2 * len(choices) / 3
+            end = len(choices)
+        }
+
+        if end <= start {
+            end = start + 1
+        }
+
+        sub := choices[start:end]
+        choice = sub[rand.N(len(sub))]
 
         enemyPlayer.AddUnit(*choice)
         unitCost := getUnitCost(choice)
@@ -206,16 +232,6 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     }
 
     engine.CurrentBattleReward = (engine.CurrentBattleReward * 3) / 2
-
-    /*
-    for range engine.Player.Level {
-        choice := units.AllUnits[rand.N(len(units.AllUnits))]
-        if choice.Race == data.RaceHero || choice.Name == "Settlers" {
-            continue
-        }
-        enemyPlayer.AddUnit(choice)
-    }
-    */
 
     attackingArmy := combat.Army {
         Player: enemyPlayer,
