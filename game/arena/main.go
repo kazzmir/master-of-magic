@@ -818,7 +818,7 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
                 return widget.NewGraphic(widget.GraphicOpts.Image(image), widget.GraphicOpts.WidgetOpts(centered))
             }
 
-            cost := uint64(math.Pow(10, 2.2 + float64(playerObj.GetWizard().MagicLevel(magic)) / 10))
+            cost := uint64(math.Pow(10, 2.1 + float64(playerObj.GetWizard().MagicLevel(magic)) / 10))
 
             gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
             costUI := combineHorizontalElements(makeIcon(gold), widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", cost), face, color.White), widget.TextOpts.WidgetOpts(centered)))

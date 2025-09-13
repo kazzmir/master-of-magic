@@ -15,6 +15,595 @@ func getUnitCost(unit *units.Unit) uint64 {
         return 500000
     }
 
+    if unit.Equals(units.LizardSpearmen) {
+        return 100
+    }
+
+    if unit.Equals(units.LizardSwordsmen) {
+        return 150
+    }
+
+    if unit.Equals(units.LizardHalberdiers) {
+        return 200
+    }
+
+    if unit.Equals(units.LizardJavelineers) {
+        return 200
+    }
+
+    if unit.Equals(units.LizardShamans) {
+        return 300
+    }
+
+    if unit.Equals(units.DragonTurtle) {
+        return 400
+    }
+
+    if unit.Equals(units.NomadSpearmen) {
+        return 100
+    }
+
+    if unit.Equals(units.NomadSwordsmen) {
+        return 150
+    }
+
+    if unit.Equals(units.NomadBowmen) {
+        return 200
+    }
+
+    if unit.Equals(units.NomadPriest) {
+        return 300
+    }
+
+    if unit.Equals(units.NomadHorsebowemen) {
+        return 300
+    }
+
+    if unit.Equals(units.NomadPikemen) {
+        return 250
+    }
+
+    if unit.Equals(units.NomadRangers) {
+        return 300
+    }
+
+    if unit.Equals(units.Griffin) {
+        return 450
+    }
+
+    if unit.Equals(units.OrcSpearmen) {
+        return 100
+    }
+
+    if unit.Equals(units.OrcSwordsmen) {
+        return 150
+    }
+
+    if unit.Equals(units.OrcHalberdiers) {
+        return 200
+    }
+
+    if unit.Equals(units.OrcBowmen) {
+        return 200
+    }
+
+    if unit.Equals(units.OrcCavalry) {
+        return 300
+    }
+
+    if unit.Equals(units.OrcShamans) {
+        return 300
+    }
+
+    if unit.Equals(units.OrcMagicians) {
+        return 500
+    }
+
+    if unit.Equals(units.OrcEngineers) {
+        return 50
+    }
+
+    if unit.Equals(units.WyvernRiders) {
+        return 500
+    }
+
+    if unit.Equals(units.TrollSpearmen) {
+        return 200
+    }
+
+    if unit.Equals(units.TrollSwordsmen) {
+        return 400
+    }
+
+    if unit.Equals(units.TrollHalberdiers) {
+        return 600
+    }
+
+    if unit.Equals(units.TrollShamans) {
+        return 800
+    }
+
+    if unit.Equals(units.WarTrolls) {
+        return 1000
+    }
+
+    if unit.Equals(units.WarMammoths) {
+        return 800
+    }
+
+    if unit.Equals(units.MagicSpirit) {
+        return 200
+    }
+
+    if unit.Equals(units.HellHounds) {
+        return 500
+    }
+
+    if unit.Equals(units.Gargoyle) {
+        return 600
+    }
+
+    if unit.Equals(units.FireGiant) {
+        return 1000
+    }
+
+    if unit.Equals(units.FireElemental) {
+        return 800
+    }
+
+    if unit.Equals(units.ChaosSpawn) {
+        return 1200
+    }
+
+    if unit.Equals(units.Chimeras) {
+        return 1300
+    }
+
+    if unit.Equals(units.DoomBat) {
+        return 1100
+    }
+
+    if unit.Equals(units.Efreet) {
+        return 1000
+    }
+
+    if unit.Equals(units.Hydra) {
+        return 9000
+    }
+
+    if unit.Equals(units.GreatDrake) {
+        return 12000
+    }
+
+    if unit.Equals(units.Skeleton) {
+        return 120
+    }
+
+    if unit.Equals(units.Ghoul) {
+        return 120
+    }
+
+    if unit.Equals(units.NightStalker) {
+        return 200
+    }
+
+    if unit.Equals(units.WereWolf) {
+        return 500
+    }
+
+    if unit.Equals(units.Demon) {
+        return 700
+    }
+
+    if unit.Equals(units.Wraith) {
+        return 1300
+    }
+
+    if unit.Equals(units.ShadowDemons) {
+        return 1200
+    }
+
+    if unit.Equals(units.DeathKnights) {
+        return 2500
+    }
+
+    if unit.Equals(units.DemonLord) {
+        return 9000
+    }
+
+    if unit.Equals(units.Zombie) {
+        return 300
+    }
+
+    if unit.Equals(units.Unicorn) {
+        return 900
+    }
+
+    if unit.Equals(units.GuardianSpirit) {
+        return 600
+    }
+
+    if unit.Equals(units.Angel) {
+        return 1200
+    }
+
+    if unit.Equals(units.ArchAngel) {
+        return 2000
+    }
+
+    if unit.Equals(units.WarBear) {
+        return 450
+    }
+
+    if unit.Equals(units.Sprites) {
+        return 500
+    }
+
+    if unit.Equals(units.Cockatrices) {
+        return 900
+    }
+
+    if unit.Equals(units.Basilisk) {
+        return 1300
+    }
+
+    if unit.Equals(units.GiantSpiders) {
+        return 450
+    }
+
+    if unit.Equals(units.StoneGiant) {
+        return 1200
+    }
+
+    if unit.Equals(units.Colossus) {
+        return 2000
+    }
+
+    if unit.Equals(units.Gorgon) {
+        return 1800
+    }
+
+    if unit.Equals(units.EarthElemental) {
+        return 1800
+    }
+
+    if unit.Equals(units.Behemoth) {
+        return 2500
+    }
+
+    if unit.Equals(units.GreatWyrm) {
+        return 10000
+    }
+
+    if unit.Equals(units.FloatingIsland) {
+        return 1000
+    }
+
+    if unit.Equals(units.PhantomBeast) {
+        return 900
+    }
+
+    if unit.Equals(units.PhantomWarrior) {
+        return 500
+    }
+
+    if unit.Equals(units.StormGiant) {
+        return 2000
+    }
+
+    if unit.Equals(units.AirElemental) {
+        return 1100
+    }
+
+    if unit.Equals(units.Djinn) {
+        return 1600
+    }
+
+    if unit.Equals(units.SkyDrake) {
+        return 12000
+    }
+
+    if unit.Equals(units.Nagas) {
+        return 900
+    }
+
+    if unit.Equals(units.Catapult) {
+        return 800
+    }
+
+    if unit.Equals(units.BarbarianSpearmen) {
+        return 100
+    }
+
+    if unit.Equals(units.BarbarianSwordsmen) {
+        return 150
+    }
+
+    if unit.Equals(units.BarbarianBowmen) {
+        return 200
+    }
+
+    if unit.Equals(units.BarbarianCavalry) {
+        return 350
+    }
+
+    if unit.Equals(units.BarbarianShaman) {
+        return 400
+    }
+
+    if unit.Equals(units.Berserkers) {
+        return 500
+    }
+
+    if unit.Equals(units.BeastmenSpearmen) {
+        return 100
+    }
+
+    if unit.Equals(units.BeastmenSwordsmen) {
+        return 150
+    }
+
+    if unit.Equals(units.BeastmenHalberdiers) {
+        return 200
+    }
+
+    if unit.Equals(units.BeastmenBowmen) {
+        return 300
+    }
+
+    if unit.Equals(units.BeastmenPriest) {
+        return 400
+    }
+
+    if unit.Equals(units.BeastmenMagician) {
+        return 700
+    }
+
+    if unit.Equals(units.BeastmenEngineer) {
+        return 50
+    }
+
+    if unit.Equals(units.Centaur) {
+        return 400
+    }
+
+    if unit.Equals(units.Manticore) {
+        return 800
+    }
+
+    if unit.Equals(units.Minotaur) {
+        return 800
+    }
+
+    if unit.Equals(units.DarkElfSpearmen) {
+        return 200
+    }
+
+    if unit.Equals(units.DarkElfSwordsmen) {
+        return 300
+    }
+
+    if unit.Equals(units.DarkElfHalberdiers) {
+        return 400
+    }
+
+    if unit.Equals(units.DarkElfCavalry) {
+        return 500
+    }
+
+    if unit.Equals(units.DarkElfPriests) {
+        return 500
+    }
+
+    if unit.Equals(units.Nightblades) {
+        return 500
+    }
+
+    if unit.Equals(units.Warlocks) {
+        return 1200
+    }
+
+    if unit.Equals(units.Nightmares) {
+        return 900
+    }
+
+    if unit.Equals(units.DraconianSpearmen) {
+        return 200
+    }
+
+    if unit.Equals(units.DraconianSwordsmen) {
+        return 300
+    }
+
+    if unit.Equals(units.DraconianHalberdiers) {
+        return 400
+    }
+
+    if unit.Equals(units.DraconianBowmen) {
+        return 400
+    }
+
+    if unit.Equals(units.DraconianShaman) {
+        return 400
+    }
+
+    if unit.Equals(units.DraconianMagician) {
+        return 800
+    }
+
+    if unit.Equals(units.DoomDrake) {
+        return 900
+    }
+
+    if unit.Equals(units.AirShip) {
+        return 1500
+    }
+
+    if unit.Equals(units.DwarfSwordsmen) {
+        return 150
+    }
+
+    if unit.Equals(units.DwarfHalberdiers) {
+        return 200
+    }
+
+    if unit.Equals(units.DwarfEngineer) {
+        return 50
+    }
+
+    if unit.Equals(units.Hammerhands) {
+        return 600
+    }
+
+    if unit.Equals(units.SteamCannon) {
+        return 600
+    }
+
+    if unit.Equals(units.Golem) {
+        return 800
+    }
+
+    if unit.Equals(units.GnollSpearmen) {
+        return 100
+    }
+
+    if unit.Equals(units.GnollSwordsmen) {
+        return 150
+    }
+
+    if unit.Equals(units.GnollHalberdiers) {
+        return 200
+    }
+
+    if unit.Equals(units.GnollBowmen) {
+        return 250
+    }
+
+    if unit.Equals(units.WolfRiders) {
+        return 300
+    }
+
+    if unit.Equals(units.HalflingSpearmen) {
+        return 100
+    }
+
+    if unit.Equals(units.HalflingSwordsmen) {
+        return 150
+    }
+
+    if unit.Equals(units.HalflingBowmen) {
+        return 200
+    }
+
+    if unit.Equals(units.HalflingShamans) {
+        return 300
+    }
+
+    if unit.Equals(units.Slingers) {
+        return 450
+    }
+
+    if unit.Equals(units.HighElfSpearmen) {
+        return 100
+    }
+
+    if unit.Equals(units.HighElfSwordsmen) {
+        return 150
+    }
+
+    if unit.Equals(units.HighElfHalberdiers) {
+        return 200
+    }
+
+    if unit.Equals(units.HighElfCavalry) {
+        return 300
+    }
+
+    if unit.Equals(units.HighElfMagician) {
+        return 500
+    }
+
+    if unit.Equals(units.Longbowmen) {
+        return 400
+    }
+
+    if unit.Equals(units.ElvenLord) {
+        return 600
+    }
+
+    if unit.Equals(units.Pegasai) {
+        return 600
+    }
+
+    if unit.Equals(units.HighMenEngineer) {
+        return 50
+    }
+
+    if unit.Equals(units.HighMenSpearmen) {
+        return 100
+    }
+
+    if unit.Equals(units.HighMenSwordsmen) {
+        return 150
+    }
+
+    if unit.Equals(units.HighMenBowmen) {
+        return 200
+    }
+
+    if unit.Equals(units.HighMenCavalry) {
+        return 250
+    }
+
+    if unit.Equals(units.HighMenPriest) {
+        return 300
+    }
+
+    if unit.Equals(units.HighMenMagician) {
+        return 600
+    }
+
+    if unit.Equals(units.HighMenPikemen) {
+        return 400
+    }
+
+    if unit.Equals(units.Paladin) {
+        return 700
+    }
+
+    if unit.Equals(units.KlackonSpearmen) {
+        return 100
+    }
+
+    if unit.Equals(units.KlackonSwordsmen) {
+        return 150
+    }
+
+    if unit.Equals(units.KlackonHalberdiers) {
+        return 250
+    }
+
+    if unit.Equals(units.KlackonEngineer) {
+        return 50
+    }
+
+    if unit.Equals(units.StagBeetle) {
+        return 600
+    }
+
+    return 1
+}
+
+func getUnitCost2(unit *units.Unit) uint64 {
+    // Settlers always cost 10
+    if unit.IsSettlers() {
+        return 10
+    }
+
+    if unit.Race == data.RaceHero {
+        return 500000
+    }
+
     // Base cost: health, attack, defense, abilities
     health := unit.GetHitPoints() * unit.GetCount() / 2
     melee := unit.GetMeleeAttackPower() * unit.GetCount()
