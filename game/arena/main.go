@@ -638,6 +638,7 @@ func (iconList *UnitIconList) addUI(unit *units.Unit) {
         unitDetails := ui.HBox(widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
             Position: widget.RowLayoutPositionCenter,
         })))
+
         unitBox.AddChild(unitDetails)
 
         unitDetails.AddChild(widget.NewGraphic(
@@ -649,7 +650,13 @@ func (iconList *UnitIconList) addUI(unit *units.Unit) {
             */
         ))
 
-        stats := ui.VBox()
+        stats := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewGridLayout(
+                widget.GridLayoutOpts.Columns(2),
+                widget.GridLayoutOpts.Spacing(4, 2),
+            )),
+        )
+
         unitDetails.AddChild(stats)
 
         centered := widget.WidgetOpts.LayoutData(widget.RowLayoutData{
@@ -657,7 +664,7 @@ func (iconList *UnitIconList) addUI(unit *units.Unit) {
         })
 
         makeIcon := func(image *ebiten.Image) *widget.Graphic {
-            return widget.NewGraphic(widget.GraphicOpts.Image(resizeImage(image, 0.80)), widget.GraphicOpts.WidgetOpts(centered))
+            return widget.NewGraphic(widget.GraphicOpts.Image(resizeImage(image, 0.90)), widget.GraphicOpts.WidgetOpts(centered))
         }
 
         makeText := func(text string) *widget.Text {
