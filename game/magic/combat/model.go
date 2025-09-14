@@ -3466,6 +3466,10 @@ func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     hasRangedAttacks := attacker.RangedAttacks > 0
     hasCastingAttacks := attacker.GetRangedAttackDamageType() == units.DamageRangedMagical && attacker.CastingSkill >= 3
 
+    if attacker.GetRangedAttackDamageType() == units.DamageRangedMagical && defender.HasAbility(data.AbilityMagicImmunity) {
+        return false
+    }
+
     if !hasRangedAttacks && !hasCastingAttacks {
         return false
     }
@@ -3485,8 +3489,6 @@ func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     if defender.IsInvisible() && !attacker.HasAbility(data.AbilityIllusionsImmunity) {
         return false
     }
-
-    // FIXME: check if defender has invisible, and attacker doesn't have illusions immunity
 
     if model.InsideWallOfDarkness(defender.X, defender.Y) && !model.InsideWallOfDarkness(attacker.X, attacker.Y) {
         // attacker can't target a defender inside a wall of darkness, unless the attacker has True Sight or Illusions Immunity
