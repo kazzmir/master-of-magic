@@ -2136,12 +2136,14 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
             spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.GetKnownSpells().CombatSpells(defendingCity), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, player, &spellPage, func (spell spellbook.Spell, picked bool){
                 if picked {
                     // player mana and skill should go down accordingly
-                    combat.Model.InvokeSpell(combat, player, nil, spell, func(){
+                    combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), nil, spell, func(success bool){
                         spellCost := player.ComputeEffectiveSpellCost(spell, false)
                         army.Casted = true
                         army.ManaPool -= spellCost
                         player.UseMana(int(float64(spellCost) * army.Range.ToFloat()))
-                        combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.GetWizard().Name, spell.Name))
+                        if success {
+                            combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.GetWizard().Name, spell.Name))
+                        }
                     })
                 }
             })
@@ -2168,7 +2170,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                             // spell casting range for a unit is always 1
 
                             doCast := func(spell spellbook.Spell){
-                                combat.Model.InvokeSpell(combat, player, caster, spell, func(){
+                                combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), caster, spell, func(success bool){
                                     charge, hasCharge := caster.SpellCharges[spell]
                                     if hasCharge && charge > 0 {
                                         caster.SpellCharges[spell] -= 1
@@ -2177,7 +2179,9 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                                         caster.CastingSkill -= float32(spell.Cost(false))
                                     }
                                     caster.Casted = true
-                                    combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
+                                    if success {
+                                        combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
+                                    }
                                     caster.MovesLeft = fraction.FromInt(0)
                                     select {
                                         case combat.Events <- &CombatEventNextUnit{}:
@@ -2647,13 +2651,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
             combat.MouseState = CombatCast
 
             if inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
-                sound, err := combat.AudioCache.GetSound(spell.Sound)
-                if err == nil {
-                    sound.Play()
-                } else {
-                    log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-                }
-
+                combat.PlaySound(spell)
                 selectTile(combat.MouseTileX, combat.MouseTileY)
                 yield()
                 break
@@ -2667,6 +2665,15 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
         if yield() != nil {
             return
         }
+    }
+}
+
+func (combat *CombatScreen) PlaySound(spell spellbook.Spell) {
+    sound, err := combat.AudioCache.GetSound(spell.Sound)
+    if err == nil {
+        sound.Play()
+    } else {
+        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
     }
 }
 
@@ -2760,6 +2767,8 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
             if unit != nil && canTargetMemo(unit) && inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
                 if selectTeam == TeamEither || unit.Team == selectTeam {
+
+                    combat.PlaySound(spell)
 
                     sound, err := combat.AudioCache.GetSound(spell.Sound)
                     if err == nil {
@@ -2892,7 +2901,7 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         combat.UI.AddElement(uilib.MakeErrorElement(combat.UI, combat.Cache, &combat.ImageCache, use.Message, func(){ yield() }))
                     case *CombatEventCreateLightningBolt:
                         bolt := event.(*CombatEventCreateLightningBolt)
-                        combat.CreateLightningBoltProjectile(bolt.Target, bolt.Strength)
+                        combat.Model.AddProjectile(combat.CreateLightningBoltProjectile(bolt.Target, bolt.Strength))
                         sounds.Insert(LightningBoltSound)
                     case *CombatEventSummonUnit:
                         summon := event.(*CombatEventSummonUnit)
@@ -3202,8 +3211,10 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         otherArmy = combat.Model.GetArmy(aiUnit)
     }
 
+    // FIXME: cast a spell if the unit has mana (caster ability)
+
     // try a ranged attack first
-    if aiUnit.RangedAttacks > 0 {
+    if aiUnit.CanRangeAttack() {
         candidates := slices.Clone(otherArmy.units)
         slices.SortFunc(candidates, func (a *ArmyUnit, b *ArmyUnit) int {
             return cmp.Compare(computeTileDistance(aiUnit.X, aiUnit.Y, a.X, a.Y), computeTileDistance(aiUnit.X, aiUnit.Y, b.X, b.Y))
@@ -3522,6 +3533,12 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     if combat.Model.SelectedUnit != nil && combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
         aiUnit := combat.Model.SelectedUnit
+
+        aiArmy := combat.Model.GetArmy(aiUnit)
+        casted := combat.Model.doAiCast(combat, aiArmy)
+        if casted {
+            combat.doProjectiles(yield)
+        }
 
         // keep making choices until the unit runs out of moves
         for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) && aiUnit.GetHealth() > 0 {

@@ -85,7 +85,7 @@ func getValidChoices(budget uint64) []*units.Unit {
 
     for i := range units.AllUnits {
         choice := &units.AllUnits[i]
-        if choice.Race == data.RaceHero || choice.Name == "Settlers" {
+        if choice.Race == data.RaceHero || choice.IsSettlers() {
             continue
         }
         if getUnitCost(choice) > budget {
@@ -108,6 +108,44 @@ func randomChoose[T any](choices ...T) T {
     return choices[rand.N(len(choices))]
 }
 
+func getValidUnitEnchantments() []data.UnitEnchantment {
+    return []data.UnitEnchantment{
+        data.UnitEnchantmentGiantStrength,
+        data.UnitEnchantmentLionHeart,
+        data.UnitEnchantmentHaste,
+        data.UnitEnchantmentImmolation,
+        data.UnitEnchantmentResistElements,
+        data.UnitEnchantmentResistMagic,
+        data.UnitEnchantmentElementalArmor,
+        data.UnitEnchantmentBless,
+        data.UnitEnchantmentRighteousness,
+        data.UnitEnchantmentCloakOfFear,
+        data.UnitEnchantmentTrueSight,
+        data.UnitEnchantmentPathFinding,
+        data.UnitEnchantmentFlight,
+        data.UnitEnchantmentChaosChannelsDemonWings,
+        data.UnitEnchantmentChaosChannelsDemonSkin,
+        data.UnitEnchantmentChaosChannelsFireBreath,
+        data.UnitEnchantmentEndurance,
+        data.UnitEnchantmentHeroism,
+        data.UnitEnchantmentHolyArmor,
+        data.UnitEnchantmentHolyWeapon,
+        data.UnitEnchantmentInvulnerability,
+        data.UnitEnchantmentIronSkin,
+        data.UnitEnchantmentRegeneration,
+        data.UnitEnchantmentStoneSkin,
+        data.UnitEnchantmentGuardianWind,
+        data.UnitEnchantmentInvisibility,
+        data.UnitEnchantmentMagicImmunity,
+        data.UnitEnchantmentSpellLock,
+        data.UnitEnchantmentEldritchWeapon,
+        data.UnitEnchantmentFlameBlade,
+        data.UnitEnchantmentBerserk,
+        data.UnitEnchantmentBlackChannels,
+        data.UnitEnchantmentWraithForm,
+    }
+}
+
 func (engine *Engine) PushDrawer(drawer func(screen *ebiten.Image)) {
     engine.Drawers = append(engine.Drawers, drawer)
 }
@@ -116,6 +154,88 @@ func (engine *Engine) PopDrawer() {
     if len(engine.Drawers) > 0 {
         engine.Drawers = engine.Drawers[:len(engine.Drawers)-1]
     }
+}
+
+func setupAISpells(enemyPlayer *player.Player, lbxCache *lbx.LbxCache, budget uint64) uint64 {
+    var totalCosts uint64
+
+    allSpells, err := spellbook.ReadSpellsFromCache(lbxCache)
+    if err != nil {
+        return 0
+    }
+
+    doSpell := func(counter *int, numSpells func(int) int, spell spellbook.Spell){
+        if *counter < numSpells(enemyPlayer.GetWizard().MagicLevel(spell.Magic)) && budget >= uint64(spell.ResearchCost) {
+            enemyPlayer.KnownSpells.AddSpell(spell)
+            budget -= uint64(spell.ResearchCost)
+            totalCosts += uint64(spell.ResearchCost)
+            *counter += 1
+        }
+    }
+
+    commonCount := 0
+    uncommonCount := 0
+    rareCount := 0
+    veryRareCount := 0
+
+    for _, spell := range allSpells.Spells {
+        if !spell.Eligibility.CanCastInCombat(false) {
+            continue
+        }
+
+        if rand.N(10) > 5 {
+            switch spell.Rarity {
+                case spellbook.SpellRarityCommon: doSpell(&commonCount, getCommonSpells, spell)
+                case spellbook.SpellRarityUncommon: doSpell(&uncommonCount, getUncommonSpells, spell)
+                case spellbook.SpellRarityRare: doSpell(&rareCount, getRareSpells, spell)
+                case spellbook.SpellRarityVeryRare: doSpell(&veryRareCount, getVeryRareSpells, spell)
+            }
+        }
+    }
+
+    return totalCosts
+}
+
+// returns the new budget and how much was spent on enchantments
+func tryAddEnchantments(unit units.StackUnit, playerObj *player.Player, budget uint64) (uint64, uint64) {
+    enchantments := getValidUnitEnchantments()
+
+    numEnchantments := rand.N(3)
+    used := 0
+    var totalCost uint64
+
+    for {
+        if used >= numEnchantments {
+            break
+        }
+
+        if len(enchantments) == 0 {
+            break
+        }
+
+        choice := enchantments[rand.N(len(enchantments))]
+
+        // log.Printf("Considering adding enchantment %v to unit %v. budget=%v cost=%v %v/%v", choice, unit.GetFullName(), budget, totalCost, used, numEnchantments)
+
+        requirements := getEnchantmentRequirements(choice)
+        cost := uint64(getEnchantmentCost(choice))
+
+        if playerObj.GetWizard().MagicLevel(requirements.Magic) < requirements.Count || cost > budget {
+
+            enchantments = slices.DeleteFunc(enchantments, func(e data.UnitEnchantment) bool {
+                return e == choice
+            })
+
+            continue
+        }
+
+        unit.AddEnchantment(choice)
+        used += 1
+        budget -= cost
+        totalCost += cost
+    }
+
+    return budget, totalCost
 }
 
 func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
@@ -131,10 +251,39 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     enemyPlayer := player.MakeAIPlayer(data.BannerRed)
 
+    enemyPlayer.Mana = engine.Player.Level * 10 + rand.N(15) - 7
+    enemyPlayer.OriginalMana = enemyPlayer.Mana
+
     engine.Player.Mana = engine.Player.OriginalMana
 
+    booksMax := min(12, engine.Player.Level * 2)
+
+    for _, magic := range []data.MagicType{data.LifeMagic, data.SorceryMagic, data.NatureMagic, data.DeathMagic, data.ChaosMagic} {
+        enemyPlayer.GetWizard().AddMagicLevel(magic, rand.N(booksMax))
+    }
+
     budget := uint64(100 * math.Pow(1.8, float64(engine.Player.Level)))
-    engine.CurrentBattleReward = 0
+
+    var spellCosts uint64
+
+    log.Printf("Starting budget: %v level=%v", budget, engine.Player.Level)
+
+    spellCosts = setupAISpells(enemyPlayer, engine.Cache, budget / 2)
+
+    budget -= spellCosts
+
+    log.Printf("Enemy magic: %v", enemyPlayer.GetWizard().Books)
+    log.Printf("Enemy spells: %v", enemyPlayer.GetKnownSpells().Spells)
+    log.Printf("Enemy mana: %v", enemyPlayer.Mana)
+
+    engine.CurrentBattleReward = spellCosts
+
+    // at least have 200 to buy units
+    if budget < 200 {
+        budget = 200
+    }
+
+    // log.Printf("Budget after spells: %v", budget)
 
     for budget > 0 {
         choices := getValidChoices(budget)
@@ -143,25 +292,56 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
             break
         }
 
-        choice := choices[rand.N(len(choices))]
+        slices.SortFunc(choices, func(a, b *units.Unit) int {
+            return cmp.Compare(getUnitCost(b), getUnitCost(a))
+        })
 
-        enemyPlayer.AddUnit(*choice)
+        weight := rand.N(100)
+        var choice *units.Unit
+        var start, end int
+        // choose from first 1/3rd of array if weight < 70
+        if weight < 70 {
+            start = 0
+            end = len(choices) / 3
+        } else if weight < 90 {
+            // choose from 2nd 1/3rd of array
+            start = len(choices) / 3
+            end = 2 * len(choices) / 3
+        } else {
+            // choose from last 1/3rd of array
+            start = 2 * len(choices) / 3
+            end = len(choices)
+        }
+
+        if end <= start {
+            end = start + 1
+        }
+
+        sub := choices[start:end]
+
+        if len(sub) == 0 {
+            sub = choices
+        }
+
+        choice = sub[rand.N(len(sub))]
+
+        addedUnit := enemyPlayer.AddUnit(*choice)
+
         unitCost := getUnitCost(choice)
         budget -= unitCost
+
+        var enchantmentCost uint64
+        budget, enchantmentCost = tryAddEnchantments(addedUnit, enemyPlayer, budget)
+
+        engine.CurrentBattleReward += enchantmentCost
         engine.CurrentBattleReward += unitCost
+
+        if budget > 10000000 {
+            panic("budget overflow")
+        }
     }
 
     engine.CurrentBattleReward = (engine.CurrentBattleReward * 3) / 2
-
-    /*
-    for range engine.Player.Level {
-        choice := units.AllUnits[rand.N(len(units.AllUnits))]
-        if choice.Race == data.RaceHero || choice.Name == "Settlers" {
-            continue
-        }
-        enemyPlayer.AddUnit(choice)
-    }
-    */
 
     attackingArmy := combat.Army {
         Player: enemyPlayer,
@@ -897,64 +1077,6 @@ func makeMagicShop(face *text.GoTextFace, imageCache *util.ImageCache, lbxCache 
 
     var tabs []*widget.TabBookTab
 
-    // how many spells of each rarity type the player can currently buy
-    getCommonSpells := func(books int) int {
-        if books >= 5 {
-            return 10
-        }
-
-        if books <= 0 {
-            return 0
-        }
-
-        return books * 2
-    }
-
-    getUncommonSpells := func(books int) int {
-        books = books - 3
-
-        if books >= 5 {
-            return 10
-        }
-
-        if books <= 0 {
-            return 0
-        }
-
-        return books * 2
-    }
-
-    getRareSpells := func(books int) int {
-        books = books - 6
-
-        if books >= 5 {
-            return 10
-        }
-
-        if books <= 0 {
-            return 0
-        }
-
-        return books * 2
-    }
-
-    getVeryRareSpells := func(books int) int {
-        if books >= 11 {
-            return 10
-        }
-
-        books = books - 9
-        if books >= 5 {
-            return 10
-        }
-
-        if books <= 0 {
-            return 0
-        }
-
-        return books
-    }
-
     for _, magic := range allMagic {
         tab := widget.NewTabBookTab(magic.String(), widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
@@ -1292,44 +1414,8 @@ func enlargeTransform(factor int) util.ImageTransformFunc {
 }
 
 func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
-    enchantments := []data.UnitEnchantment{
-        data.UnitEnchantmentGiantStrength,
-        data.UnitEnchantmentLionHeart,
-        data.UnitEnchantmentHaste,
-        data.UnitEnchantmentImmolation,
-        data.UnitEnchantmentResistElements,
-        data.UnitEnchantmentResistMagic,
-        data.UnitEnchantmentElementalArmor,
-        data.UnitEnchantmentBless,
-        data.UnitEnchantmentRighteousness,
-        data.UnitEnchantmentCloakOfFear,
-        data.UnitEnchantmentTrueSight,
-        data.UnitEnchantmentPathFinding,
-        data.UnitEnchantmentFlight,
-        data.UnitEnchantmentChaosChannelsDemonWings,
-        data.UnitEnchantmentChaosChannelsDemonSkin,
-        data.UnitEnchantmentChaosChannelsFireBreath,
-        data.UnitEnchantmentEndurance,
-        data.UnitEnchantmentHeroism,
-        data.UnitEnchantmentHolyArmor,
-        data.UnitEnchantmentHolyWeapon,
-        data.UnitEnchantmentInvulnerability,
-        data.UnitEnchantmentIronSkin,
-        data.UnitEnchantmentRegeneration,
-        data.UnitEnchantmentStoneSkin,
-        data.UnitEnchantmentGuardianWind,
-        data.UnitEnchantmentInvisibility,
-        data.UnitEnchantmentMagicImmunity,
-        data.UnitEnchantmentSpellLock,
-        data.UnitEnchantmentEldritchWeapon,
-        data.UnitEnchantmentFlameBlade,
-        data.UnitEnchantmentBerserk,
-        data.UnitEnchantmentBlackChannels,
-        data.UnitEnchantmentWraithForm,
-    }
-
     // remove any enchantments the unit already has
-    enchantments = slices.DeleteFunc(enchantments, unit.HasEnchantment)
+    enchantments := slices.DeleteFunc(getValidUnitEnchantments(), unit.HasEnchantment)
 
     slices.SortFunc(enchantments, func(a, b data.UnitEnchantment) int {
         return cmp.Compare(a.Name(), b.Name())
@@ -1617,6 +1703,13 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
                     Disabled: ui.SolidImage(32, 32, 32),
                     Mask: ui.SolidImage(32, 32, 32),
                 }),
+            ),
+            widget.ListOpts.ContainerOpts(
+                widget.ContainerOpts.WidgetOpts(
+                    widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                        MaxHeight: 230,
+                    }),
+                ),
             ),
             widget.ListOpts.SliderOpts(
                 widget.SliderOpts.Images(&widget.SliderTrackImage{
@@ -1988,7 +2081,7 @@ func test3(playerObj *player.Player) {
     v := playerObj.AddUnit(units.LizardSwordsmen)
     v.AdjustHealth(-10)
     playerObj.Money = 300000
-    playerObj.Level = 10
+    playerObj.Level = 4
 }
 
 func test4(playerObj *player.Player) {

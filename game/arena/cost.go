@@ -795,3 +795,61 @@ func computeManaCost(amount int) uint64 {
 
     return uint64(total)
 }
+
+// how many spells of each rarity type the player can currently buy
+func getCommonSpells(books int) int {
+    if books >= 5 {
+        return 10
+    }
+
+    if books <= 0 {
+        return 0
+    }
+
+    return books * 2
+}
+
+func getUncommonSpells(books int) int {
+    books = books - 3
+
+    if books >= 5 {
+        return 10
+    }
+
+    if books <= 0 {
+        return 0
+    }
+
+    return books * 2
+}
+
+func getRareSpells(books int) int {
+    books = books - 6
+
+    if books >= 5 {
+        return 10
+    }
+
+    if books <= 0 {
+        return 0
+    }
+
+    return books * 2
+}
+
+func getVeryRareSpells(books int) int {
+    if books >= 11 {
+        return 10
+    }
+
+    books = books - 9
+    if books >= 5 {
+        return 10
+    }
+
+    if books <= 0 {
+        return 0
+    }
+
+    return books
+}

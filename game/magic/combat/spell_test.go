@@ -15,6 +15,9 @@ type TestSpellSystem struct {
     createFireballProjectile func(target *ArmyUnit, cost int) *Projectile
 }
 
+func (system *TestSpellSystem) PlaySound(spell spellbook.Spell) {
+}
+
 func (system *TestSpellSystem) CreateFireballProjectile(target *ArmyUnit, cost int) *Projectile {
     if system.createFireballProjectile != nil {
         return system.createFireballProjectile(target, cost)
@@ -257,8 +260,9 @@ func TestFireballSpell(test *testing.T){
         Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
+    // events are only produced if the player is human
     attackingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, true, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackerUnit := units.LizardSpearmen
@@ -303,7 +307,7 @@ func TestFireballSpell(test *testing.T){
         },
     }
 
-    combat.InvokeSpell(spellObject, attackingArmy.Player, nil, fireball, func(){
+    combat.InvokeSpell(spellObject, attackingArmy, nil, fireball, func(success bool){
         casted = true
     })
 
