@@ -260,8 +260,9 @@ func TestFireballSpell(test *testing.T){
         Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
+    // events are only produced if the player is human
     attackingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, true, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackerUnit := units.LizardSpearmen
