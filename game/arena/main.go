@@ -108,6 +108,44 @@ func randomChoose[T any](choices ...T) T {
     return choices[rand.N(len(choices))]
 }
 
+func getValidUnitEnchantments() []data.UnitEnchantment {
+    return []data.UnitEnchantment{
+        data.UnitEnchantmentGiantStrength,
+        data.UnitEnchantmentLionHeart,
+        data.UnitEnchantmentHaste,
+        data.UnitEnchantmentImmolation,
+        data.UnitEnchantmentResistElements,
+        data.UnitEnchantmentResistMagic,
+        data.UnitEnchantmentElementalArmor,
+        data.UnitEnchantmentBless,
+        data.UnitEnchantmentRighteousness,
+        data.UnitEnchantmentCloakOfFear,
+        data.UnitEnchantmentTrueSight,
+        data.UnitEnchantmentPathFinding,
+        data.UnitEnchantmentFlight,
+        data.UnitEnchantmentChaosChannelsDemonWings,
+        data.UnitEnchantmentChaosChannelsDemonSkin,
+        data.UnitEnchantmentChaosChannelsFireBreath,
+        data.UnitEnchantmentEndurance,
+        data.UnitEnchantmentHeroism,
+        data.UnitEnchantmentHolyArmor,
+        data.UnitEnchantmentHolyWeapon,
+        data.UnitEnchantmentInvulnerability,
+        data.UnitEnchantmentIronSkin,
+        data.UnitEnchantmentRegeneration,
+        data.UnitEnchantmentStoneSkin,
+        data.UnitEnchantmentGuardianWind,
+        data.UnitEnchantmentInvisibility,
+        data.UnitEnchantmentMagicImmunity,
+        data.UnitEnchantmentSpellLock,
+        data.UnitEnchantmentEldritchWeapon,
+        data.UnitEnchantmentFlameBlade,
+        data.UnitEnchantmentBerserk,
+        data.UnitEnchantmentBlackChannels,
+        data.UnitEnchantmentWraithForm,
+    }
+}
+
 func (engine *Engine) PushDrawer(drawer func(screen *ebiten.Image)) {
     engine.Drawers = append(engine.Drawers, drawer)
 }
@@ -156,6 +194,48 @@ func setupAISpells(enemyPlayer *player.Player, lbxCache *lbx.LbxCache, budget ui
     }
 
     return budget, totalCosts
+}
+
+// returns the new budget and how much was spent on enchantments
+func tryAddEnchantments(unit units.StackUnit, playerObj *player.Player, budget uint64) (uint64, uint64) {
+    enchantments := getValidUnitEnchantments()
+
+    numEnchantments := rand.N(3)
+    used := 0
+    var totalCost uint64
+
+    for {
+        if used >= numEnchantments {
+            break
+        }
+
+        if len(enchantments) == 0 {
+            break
+        }
+
+        choice := enchantments[rand.N(len(enchantments))]
+
+        // log.Printf("Considering adding enchantment %v to unit %v. budget=%v cost=%v %v/%v", choice, unit.GetFullName(), budget, totalCost, used, numEnchantments)
+
+        requirements := getEnchantmentRequirements(choice)
+        cost := uint64(getEnchantmentCost(choice))
+
+        if playerObj.GetWizard().MagicLevel(requirements.Magic) < requirements.Count || cost > budget {
+
+            enchantments = slices.DeleteFunc(enchantments, func(e data.UnitEnchantment) bool {
+                return e == choice
+            })
+
+            continue
+        }
+
+        unit.AddEnchantment(choice)
+        used += 1
+        budget -= cost
+        totalCost += cost
+    }
+
+    return budget, totalCost
 }
 
 func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
@@ -223,12 +303,27 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         }
 
         sub := choices[start:end]
+
+        if len(sub) == 0 {
+            break
+        }
+
         choice = sub[rand.N(len(sub))]
 
-        enemyPlayer.AddUnit(*choice)
+        addedUnit := enemyPlayer.AddUnit(*choice)
+
         unitCost := getUnitCost(choice)
         budget -= unitCost
+
+        var enchantmentCost uint64
+        budget, enchantmentCost = tryAddEnchantments(addedUnit, enemyPlayer, budget)
+
+        engine.CurrentBattleReward += enchantmentCost
         engine.CurrentBattleReward += unitCost
+
+        if budget > 10000000 {
+            panic("budget overflow")
+        }
     }
 
     engine.CurrentBattleReward = (engine.CurrentBattleReward * 3) / 2
@@ -1304,44 +1399,8 @@ func enlargeTransform(factor int) util.ImageTransformFunc {
 }
 
 func makeBuyEnchantments(unit units.StackUnit, face *text.GoTextFace, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
-    enchantments := []data.UnitEnchantment{
-        data.UnitEnchantmentGiantStrength,
-        data.UnitEnchantmentLionHeart,
-        data.UnitEnchantmentHaste,
-        data.UnitEnchantmentImmolation,
-        data.UnitEnchantmentResistElements,
-        data.UnitEnchantmentResistMagic,
-        data.UnitEnchantmentElementalArmor,
-        data.UnitEnchantmentBless,
-        data.UnitEnchantmentRighteousness,
-        data.UnitEnchantmentCloakOfFear,
-        data.UnitEnchantmentTrueSight,
-        data.UnitEnchantmentPathFinding,
-        data.UnitEnchantmentFlight,
-        data.UnitEnchantmentChaosChannelsDemonWings,
-        data.UnitEnchantmentChaosChannelsDemonSkin,
-        data.UnitEnchantmentChaosChannelsFireBreath,
-        data.UnitEnchantmentEndurance,
-        data.UnitEnchantmentHeroism,
-        data.UnitEnchantmentHolyArmor,
-        data.UnitEnchantmentHolyWeapon,
-        data.UnitEnchantmentInvulnerability,
-        data.UnitEnchantmentIronSkin,
-        data.UnitEnchantmentRegeneration,
-        data.UnitEnchantmentStoneSkin,
-        data.UnitEnchantmentGuardianWind,
-        data.UnitEnchantmentInvisibility,
-        data.UnitEnchantmentMagicImmunity,
-        data.UnitEnchantmentSpellLock,
-        data.UnitEnchantmentEldritchWeapon,
-        data.UnitEnchantmentFlameBlade,
-        data.UnitEnchantmentBerserk,
-        data.UnitEnchantmentBlackChannels,
-        data.UnitEnchantmentWraithForm,
-    }
-
     // remove any enchantments the unit already has
-    enchantments = slices.DeleteFunc(enchantments, unit.HasEnchantment)
+    enchantments := slices.DeleteFunc(getValidUnitEnchantments(), unit.HasEnchantment)
 
     slices.SortFunc(enchantments, func(a, b data.UnitEnchantment) int {
         return cmp.Compare(a.Name(), b.Name())
