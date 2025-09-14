@@ -2897,7 +2897,7 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         combat.UI.AddElement(uilib.MakeErrorElement(combat.UI, combat.Cache, &combat.ImageCache, use.Message, func(){ yield() }))
                     case *CombatEventCreateLightningBolt:
                         bolt := event.(*CombatEventCreateLightningBolt)
-                        combat.CreateLightningBoltProjectile(bolt.Target, bolt.Strength)
+                        combat.Model.AddProjectile(combat.CreateLightningBoltProjectile(bolt.Target, bolt.Strength))
                         sounds.Insert(LightningBoltSound)
                     case *CombatEventSummonUnit:
                         summon := event.(*CombatEventSummonUnit)
