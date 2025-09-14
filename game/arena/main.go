@@ -256,8 +256,10 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     engine.Player.Mana = engine.Player.OriginalMana
 
+    booksMax := min(12, 3 + engine.Player.Level * 3)
+
     for _, magic := range []data.MagicType{data.LifeMagic, data.SorceryMagic, data.NatureMagic, data.DeathMagic, data.ChaosMagic} {
-        enemyPlayer.GetWizard().AddMagicLevel(magic, rand.N(12))
+        enemyPlayer.GetWizard().AddMagicLevel(magic, rand.N(booksMax))
     }
 
     budget := uint64(100 * math.Pow(1.8, float64(engine.Player.Level)))
@@ -1701,6 +1703,13 @@ func makeUnitInfoUI(face *text.GoTextFace, allUnits []units.StackUnit, playerObj
                     Disabled: ui.SolidImage(32, 32, 32),
                     Mask: ui.SolidImage(32, 32, 32),
                 }),
+            ),
+            widget.ListOpts.ContainerOpts(
+                widget.ContainerOpts.WidgetOpts(
+                    widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                        MaxHeight: 230,
+                    }),
+                ),
             ),
             widget.ListOpts.SliderOpts(
                 widget.SliderOpts.Images(&widget.SliderTrackImage{
