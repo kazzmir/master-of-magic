@@ -4435,13 +4435,13 @@ type SpellSystem interface {
 }
 
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
-func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func()){
+func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func(bool)){
 
     if model.CheckDispel(spell, player) {
         model.Events <- &CombatEventMessage{
             Message: fmt.Sprintf("%v fizzled", spell.Name),
         }
-        castedCallback()
+        castedCallback(false)
         return
     }
 
@@ -4497,17 +4497,17 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Fireball":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateFireballProjectile(target, spell.Cost(false) / 3))
-                castedCallback()
+                castedCallback(true)
             }, targetNotImmune)
         case "Ice Bolt":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateIceBoltProjectile(target, spell.Cost(false)))
-                castedCallback()
+                castedCallback(true)
             }, targetAny)
         case "Star Fires":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateStarFiresProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 realm := target.Unit.GetRealm()
                 if target.Unit.GetRace() == data.RaceFantastic && (realm == data.ChaosMagic || realm == data.DeathMagic) {
@@ -4519,42 +4519,42 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Psionic Blast":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2))
-                castedCallback()
+                castedCallback(true)
             }, targetAny)
         case "Doom Bolt":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateDoomBoltProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, doomBoltTarget)
         case "Fire Bolt":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateFireBoltProjectile(target, spell.Cost(false)))
-                castedCallback()
+                castedCallback(true)
             }, fireBoltTarget)
         case "Lightning Bolt":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateLightningBoltProjectile(target, spell.Cost(false) - 5))
-                castedCallback()
+                castedCallback(true)
             }, targetNotImmune)
         case "Warp Lightning":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWarpLightningProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, warpLightningTarget)
         case "Flame Strike":
             model.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateFlameStrikeProjectile(target))
             }, targetAny)
-            castedCallback()
+            castedCallback(true)
         case "Life Drain":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5, player, unitCaster))
-                castedCallback()
+                castedCallback(true)
             }, targetNotImmune)
         case "Dispel Evil":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.Unit.GetRace() == data.RaceFantastic &&
                    (target.Unit.GetRealm() == data.ChaosMagic || target.Unit.GetRealm() == data.DeathMagic) {
@@ -4566,28 +4566,28 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Healing":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateHealingProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, healingTarget)
         case "Holy Word":
             model.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateHolyWordProjectile(target))
             }, targetFantastic)
-            castedCallback()
+            castedCallback(true)
         case "Recall Hero":
             // FIXME:  check planar seal and summoning circle?
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateRecallHeroProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, targetHero)
         case "Mass Healing":
             model.DoAllUnitsSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateHealingProjectile(target))
             }, targetNonDeath)
-            castedCallback()
+            castedCallback(true)
         case "Cracks Call":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateCracksCallProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.IsFlying() {
                     return false
@@ -4606,19 +4606,19 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Earth to Mud":
             model.DoTargetTileSpell(player, spell, func (x int, y int) bool { return true}, func (x int, y int){
                 model.CreateEarthToMud(x, y)
-                castedCallback()
+                castedCallback(true)
             })
         case "Web":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWebProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 return !target.HasAbility(data.AbilityNonCorporeal)
             })
         case "Banish":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15))
-                castedCallback()
+                castedCallback(true)
             }, targetFantastic)
         case "Dispel Magic True":
             model.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
@@ -4629,7 +4629,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
                 }
 
                 model.AddProjectile(spellSystem.CreateDispelMagicProjectile(target, player, disenchantStrength))
-                castedCallback()
+                castedCallback(true)
             }, targetAny)
         case "Dispel Magic":
             model.DoTargetUnitSpell(player, spell, TargetEither, func(target *ArmyUnit){
@@ -4640,13 +4640,13 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
                 }
 
                 model.AddProjectile(spellSystem.CreateDispelMagicProjectile(target, player, disenchantStrength))
-                castedCallback()
+                castedCallback(true)
             }, targetAny)
         case "Word of Recall":
             // FIXME: check planar seal and summoning circle?
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWordOfRecallProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.Summoned {
                     return false
@@ -4657,12 +4657,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Disintegrate":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateDisintegrateProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, disintegrateTarget)
         case "Disrupt":
             model.DoTargetTileSpell(player, spell, model.ContainsWall, func (x int, y int){
                 model.AddProjectile(spellSystem.CreateDisruptProjectile(x, y))
-                castedCallback()
+                castedCallback(true)
             })
         case "Magic Vortex":
             // FIXME: should this also take walls into account?
@@ -4672,12 +4672,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
 
             model.DoTargetTileSpell(player, spell, unoccupied, func (x int, y int){
                 model.OtherUnits = append(model.OtherUnits, spellSystem.CreateMagicVortex(x, y))
-                castedCallback()
+                castedCallback(true)
             })
         case "Warp Wood":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWarpWoodProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.IsMagicImmune(spell.Magic) {
                     return false
@@ -4693,48 +4693,48 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
             model.DoAllUnitsSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateDeathSpellProjectile(target))
             }, targetNotImmune)
-            castedCallback()
+            castedCallback(true)
         case "Word of Death":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWordOfDeathProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, targetNotImmune)
         case "Phantom Warriors":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
                 model.summonUnit(player, x, y, units.PhantomWarrior, units.FacingDown, true)
-                castedCallback()
+                castedCallback(true)
             })
         case "Phantom Beast":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
                 model.summonUnit(player, x, y, units.PhantomBeast, units.FacingDown, true)
-                castedCallback()
+                castedCallback(true)
             })
         case "Summon Demons":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
                 model.summonUnit(player, x, y, units.Demon, units.FacingDown, true)
-                castedCallback()
+                castedCallback(true)
             })
         case "Earth Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
                 model.summonUnit(player, x, y, units.EarthElemental, units.FacingDown, true)
-                castedCallback()
+                castedCallback(true)
             })
         case "Air Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
                 model.summonUnit(player, x, y, units.AirElemental, units.FacingDown, true)
-                castedCallback()
+                castedCallback(true)
             })
         case "Fire Elemental":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
                 model.summonUnit(player, x, y, units.FireElemental, units.FacingDown, true)
-                castedCallback()
+                castedCallback(true)
             })
         case "Summon Demon":
             x, y, err := model.FindEmptyTile(MapSideMiddle)
             if err == nil {
                 spellSystem.CreateSummoningCircle(x, y)
                 model.summonUnit(player, x, y, units.Demon, units.FacingDown, true)
-                castedCallback()
+                castedCallback(true)
             }
         case "Disenchant Area", "Disenchant True":
             // show some animation and play sound
@@ -4757,7 +4757,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
 
             model.DoDisenchantArea(spellSystem.GetAllSpells(), player, disenchantStrength)
 
-            castedCallback()
+            castedCallback(true)
 
         case "High Prayer":
             model.CastEnchantment(player, data.CombatEnchantmentHighPrayer, castedCallback)
@@ -4815,7 +4815,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
 
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateCreatureBindingProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, selectable)
 
         case "Mind Storm":
@@ -4833,18 +4833,18 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
 
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateMindStormProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, selectable)
 
         case "Bless":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateBlessProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, targetAny)
         case "Weakness":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWeaknessProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasCurse(data.UnitCurseWeakness) {
                     return false
@@ -4863,7 +4863,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "CurseBlackSleep":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateBlackSleepProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasCurse(data.UnitCurseBlackSleep) {
                     return false
@@ -4886,7 +4886,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Vertigo":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateVertigoProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasCurse(data.UnitCurseVertigo) {
                     return false
@@ -4901,7 +4901,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Shatter":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateShatterProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.GetRace() == data.RaceFantastic {
                     return false
@@ -4920,12 +4920,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Warp Creature":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWarpCreatureProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, warpCreatureTarget)
         case "Confusion":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateConfusionProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasAbility(data.AbilityIllusionsImmunity) || target.IsMagicImmune(spell.Magic) {
                     return false
@@ -4940,7 +4940,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Possession":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreatePossessionProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.Unit.IsHero() || target.GetRace() == data.RaceFantastic {
                     return false
@@ -4955,7 +4955,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Petrify":
             model.DoTargetUnitSpell(player, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreatePetrifyProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.IsMagicImmune(spell.Magic) || target.HasAbility(data.AbilityStoningImmunity) {
                     return false
@@ -5014,7 +5014,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
                 }
             }
 
-            castedCallback()
+            castedCallback(true)
         case "Raise Dead":
             army := model.GetArmyForPlayer(player)
             failed := true
@@ -5025,7 +5025,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
                     killedUnit.Model = model
                     army.RaiseDeadUnit(killedUnit, x, y)
                     model.Tiles[y][x].Unit = killedUnit
-                    castedCallback()
+                    castedCallback(true)
                 })
 
             }
@@ -5118,14 +5118,14 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
                 if len(allKilledUnits) == 1 {
                     raised := allKilledUnits[0]
                     doAnimateDead(raised)
-                    castedCallback()
+                    castedCallback(true)
                 } else {
                     model.Events <- &CombatSelectTargets{
                         Title: "Select a unit to Animate",
                         Targets: allKilledUnits,
                         Select: func (target *ArmyUnit){
                             doAnimateDead(target)
-                            castedCallback()
+                            castedCallback(true)
                         },
                     }
                 }
@@ -5138,7 +5138,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Heroism":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateHeroismProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.GetRace() == data.RaceFantastic {
                     return false
@@ -5162,7 +5162,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Holy Armor":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateHolyArmorProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.GetRace() == data.RaceFantastic {
                     return false
@@ -5181,7 +5181,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Holy Weapon":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateHolyWeaponProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.GetRace() == data.RaceFantastic {
                     return false
@@ -5200,7 +5200,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Invulnerability":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateInvulnerabilityProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.GetRealm() == data.DeathMagic {
                     return false
@@ -5215,7 +5215,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Lionheart":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateLionHeartProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.GetRealm() == data.DeathMagic {
                     return false
@@ -5230,7 +5230,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Righteousness":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateRighteousnessProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.GetRealm() == data.DeathMagic {
                     return false
@@ -5245,7 +5245,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "True Sight":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateTrueSightProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.GetRealm() == data.DeathMagic {
                     return false
@@ -5260,7 +5260,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Elemental Armor":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateElementalArmorProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentElementalArmor) {
                     return false
@@ -5271,7 +5271,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Giant Strength":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateGiantStrengthProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentGiantStrength) {
                     return false
@@ -5282,7 +5282,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Iron Skin":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateIronSkinProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 // if a target has stone skin they cannot also have iron skin
                 if target.HasEnchantment(data.UnitEnchantmentIronSkin) || target.HasEnchantment(data.UnitEnchantmentStoneSkin) {
@@ -5294,7 +5294,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Regeneration":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateRegenerationProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasAbility(data.AbilityRegeneration){
                     return false
@@ -5305,7 +5305,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Resist Elements":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateResistElementsProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentResistElements) {
                     return false
@@ -5316,7 +5316,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Stone Skin":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateStoneSkinProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 // if a target has iron skin they cannot also have stone skin
                 if target.HasEnchantment(data.UnitEnchantmentIronSkin) || target.HasEnchantment(data.UnitEnchantmentStoneSkin) {
@@ -5328,7 +5328,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Flight":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateFlightProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 // we could check if the unit has the flight ability, but the Flight spell also grants
                 // 3 movement, so its still worthwhile to cast Flight on a unit that has less than 3 movement speed
@@ -5341,7 +5341,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Guardian Wind":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateGuardianWindProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentGuardianWind) {
                     return false
@@ -5352,7 +5352,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Haste":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateHasteProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentHaste) {
                     return false
@@ -5363,7 +5363,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Invisiblity":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateInvisibilityProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentInvisibility) {
                     return false
@@ -5374,7 +5374,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Magic Immunity":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateMagicImmunityProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasAbility(data.AbilityMagicImmunity) {
                     return false
@@ -5385,7 +5385,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Resist Magic":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateResistMagicProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentResistMagic) {
                     return false
@@ -5396,7 +5396,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Spell Lock":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateSpellLockProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentSpellLock) {
                     return false
@@ -5407,7 +5407,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Eldritch Weapon":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateEldritchWeaponProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.GetRace() == data.RaceFantastic {
                     return false
@@ -5422,7 +5422,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Flame Blade":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateFlameBladeProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.GetRace() == data.RaceFantastic {
                     return false
@@ -5437,7 +5437,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Immolation":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateImmolationProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasAbility(data.AbilityImmolation) {
                     return false
@@ -5448,7 +5448,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Berserk":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateBerserkProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentBerserk) {
                     return false
@@ -5463,7 +5463,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Cloak of Fear":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateCloakOfFearProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentCloakOfFear) {
                     return false
@@ -5478,7 +5478,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Wraith Form":
             model.DoTargetUnitSpell(player, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWraithFormProjectile(target))
-                castedCallback()
+                castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentWraithForm) {
                     return false
@@ -5581,15 +5581,17 @@ func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) bool {
                 }
 
                 // try to cast this spell
-                model.InvokeSpell(spellSystem, army.Player, nil, spell, func(){
-                    log.Printf("AI cast %v with strength %v", spell.Name, spell.Cost(false))
+                model.InvokeSpell(spellSystem, army.Player, nil, spell, func(success bool){
                     army.ManaPool -= spellCost
                     army.Player.UseMana(spellCost)
                     army.Casted = true
 
                     casted = true
 
-                    spellSystem.PlaySound(spell)
+                    if success {
+                        log.Printf("AI cast %v with strength %v", spell.Name, spell.Cost(false))
+                        spellSystem.PlaySound(spell)
+                    }
                 })
             }
 
@@ -5618,14 +5620,14 @@ func (model *CombatModel) DoSummoningSpell(spellSystem SpellSystem, player ArmyP
     })
 }
 
-func (model *CombatModel) CastEnchantment(player ArmyPlayer, enchantment data.CombatEnchantment, castedCallback func()){
+func (model *CombatModel) CastEnchantment(player ArmyPlayer, enchantment data.CombatEnchantment, castedCallback func(bool)){
     if model.AddEnchantment(player, enchantment) {
         model.Events <- &CombatEventGlobalSpell{
             Caster: player,
             Magic: enchantment.Magic(),
             Name: enchantment.Name(),
         }
-        castedCallback()
+        castedCallback(true)
     } else {
         model.Events <- &CombatEventMessage{
             Message: "That combat enchantment is already in effect",

@@ -307,7 +307,7 @@ func TestFireballSpell(test *testing.T){
         },
     }
 
-    combat.InvokeSpell(spellObject, attackingArmy.Player, nil, fireball, func(){
+    combat.InvokeSpell(spellObject, attackingArmy.Player, nil, fireball, func(success bool){
         casted = true
     })
 

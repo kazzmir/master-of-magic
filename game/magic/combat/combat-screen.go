@@ -2136,12 +2136,14 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
             spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.GetKnownSpells().CombatSpells(defendingCity), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, player, &spellPage, func (spell spellbook.Spell, picked bool){
                 if picked {
                     // player mana and skill should go down accordingly
-                    combat.Model.InvokeSpell(combat, player, nil, spell, func(){
+                    combat.Model.InvokeSpell(combat, player, nil, spell, func(success bool){
                         spellCost := player.ComputeEffectiveSpellCost(spell, false)
                         army.Casted = true
                         army.ManaPool -= spellCost
                         player.UseMana(int(float64(spellCost) * army.Range.ToFloat()))
-                        combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.GetWizard().Name, spell.Name))
+                        if success {
+                            combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.GetWizard().Name, spell.Name))
+                        }
                     })
                 }
             })
@@ -2168,7 +2170,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                             // spell casting range for a unit is always 1
 
                             doCast := func(spell spellbook.Spell){
-                                combat.Model.InvokeSpell(combat, player, caster, spell, func(){
+                                combat.Model.InvokeSpell(combat, player, caster, spell, func(success bool){
                                     charge, hasCharge := caster.SpellCharges[spell]
                                     if hasCharge && charge > 0 {
                                         caster.SpellCharges[spell] -= 1
@@ -2177,7 +2179,9 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                                         caster.CastingSkill -= float32(spell.Cost(false))
                                     }
                                     caster.Casted = true
-                                    combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
+                                    if success {
+                                        combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
+                                    }
                                     caster.MovesLeft = fraction.FromInt(0)
                                     select {
                                         case combat.Events <- &CombatEventNextUnit{}:
