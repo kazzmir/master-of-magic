@@ -4283,7 +4283,7 @@ func (model *CombatModel) DoAITargetUnitSpell(player ArmyPlayer, spell spellbook
 
     for _, i := range rand.Perm(len(units)) {
         unit := units[i]
-        if canTarget(unit) {
+        if model.shouldAITargetUnit(unit, spell) && canTarget(unit) {
             onTarget(unit)
             return
         }
@@ -5498,14 +5498,43 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
     }
 }
 
+func (model *CombatModel) shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spell) bool {
+    switch spell.Name {
+        case "Healing":
+            return unit.GetHealth() > 0 && float64(unit.GetHealth()) < float64(unit.GetMaxHealth()) * 4 / 5
+    }
+
+    return true
+}
+
+// take the current situation into consideration when deciding whether to cast a spell
+func (model *CombatModel) shouldAICastSpell(army *Army, spell spellbook.Spell) bool {
+    switch spell.Name {
+        case "Healing":
+            for _, unit := range army.units {
+                log.Printf("Consider unit %v health %v/%v", unit.Unit.GetName(), unit.GetHealth(), unit.GetMaxHealth())
+                if model.shouldAITargetUnit(unit, spell) {
+                    return true
+                }
+            }
+
+            return false
+    }
+
+    return true
+}
+
 func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) {
     if army.Casted {
         return
     }
 
     tryCast := 40
+
+    // if casting in a magic zone, decrease the chance of casting a spell because
+    // most likely we will just waste mana
     if model.Zone.GetMagic() != data.MagicNone {
-        tryCast = 20
+        tryCast = 10
     }
 
     if rand.N(100) > tryCast {
@@ -5523,28 +5552,32 @@ func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) {
 
         minimumMana := min(army.ManaPool, int(float64(army.Player.GetMana()) / army.Range.ToFloat()))
         if minimumMana >= spellCost {
-            if spell.IsVariableCost() {
-                extraStrength := spell.Cost(false) * 4
-                for spellCost + extraStrength > minimumMana {
-                    extraStrength -= 1
+
+            if model.shouldAICastSpell(army, spell) {
+
+                if spell.IsVariableCost() {
+                    extraStrength := spell.Cost(false) * 4
+                    for spellCost + extraStrength > minimumMana {
+                        extraStrength -= 1
+                    }
+
+                    if extraStrength > 0 {
+                        use := rand.N(extraStrength + 1)
+                        spellCost += use
+                        spell.OverrideCost = use
+                    }
                 }
 
-                if extraStrength > 0 {
-                    use := rand.N(extraStrength + 1)
-                    spellCost += use
-                    spell.OverrideCost = use
-                }
+                // try to cast this spell
+                log.Printf("AI attempting to cast %v with strength %v", spell.Name, spell.Cost(false))
+                model.InvokeSpell(spellSystem, army.Player, nil, spell, func(){
+                    army.ManaPool -= spellCost
+                    army.Player.UseMana(spellCost)
+                    army.Casted = true
+
+                    spellSystem.PlaySound(spell)
+                })
             }
-
-            // try to cast this spell
-            log.Printf("AI attempting to cast %v with strength %v", spell.Name, spell.Cost(false))
-            model.InvokeSpell(spellSystem, army.Player, nil, spell, func(){
-                army.ManaPool -= spellCost
-                army.Player.UseMana(spellCost)
-                army.Casted = true
-
-                spellSystem.PlaySound(spell)
-            })
 
             if army.Casted {
                 break

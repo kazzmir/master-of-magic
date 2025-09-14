@@ -767,7 +767,7 @@ func makeScenario9(cache *lbx.LbxCache) *combat.CombatScreen {
     }
 
     // defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Earth To Mud"))
-    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Call Lightning"))
+    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Healing"))
     defendingPlayer.CastingSkillPower = 10000
     defendingPlayer.Mana = 10000
 
