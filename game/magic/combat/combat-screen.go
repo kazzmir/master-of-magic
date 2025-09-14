@@ -3529,7 +3529,10 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         aiUnit := combat.Model.SelectedUnit
 
         aiArmy := combat.Model.GetArmy(aiUnit)
-        combat.Model.doAiCast(combat, aiArmy)
+        casted := combat.Model.doAiCast(combat, aiArmy)
+        if casted {
+            combat.doProjectiles(yield)
+        }
 
         // keep making choices until the unit runs out of moves
         for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) && aiUnit.GetHealth() > 0 {

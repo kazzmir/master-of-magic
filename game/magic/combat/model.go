@@ -5526,9 +5526,9 @@ func (model *CombatModel) shouldAICastSpell(army *Army, spell spellbook.Spell) b
     return true
 }
 
-func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) {
+func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) bool {
     if army.Casted {
-        return
+        return false
     }
 
     tryCast := 40
@@ -5540,8 +5540,10 @@ func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) {
     }
 
     if rand.N(100) > tryCast {
-        return
+        return false
     }
+
+    casted := false
 
     knownSpells := army.Player.GetKnownSpells()
     for _, i := range rand.Perm(len(knownSpells.Spells)) {
@@ -5577,6 +5579,8 @@ func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) {
                     army.Player.UseMana(spellCost)
                     army.Casted = true
 
+                    casted = true
+
                     spellSystem.PlaySound(spell)
                 })
             }
@@ -5586,6 +5590,8 @@ func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) {
             }
         }
     }
+
+    return casted
 }
 
 func (model *CombatModel) DoSummoningSpell(spellSystem SpellSystem, player ArmyPlayer, spell spellbook.Spell, onTarget func(int, int)){
