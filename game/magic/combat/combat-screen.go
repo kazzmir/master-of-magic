@@ -3204,7 +3204,30 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
     }
 }
 
-func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
+type AIUnitActionsInterface interface {
+    RangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
+    MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
+    MoveUnit(unit *ArmyUnit, path pathfinding.Path)
+}
+
+type AIUnitActions struct {
+    yield coroutine.YieldFunc
+    combat *CombatScreen
+}
+
+func (actions AIUnitActions) RangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+    actions.combat.doRangeAttack(actions.yield, attacker, defender)
+}
+
+func (actions AIUnitActions) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+    actions.combat.doMelee(actions.yield, attacker, defender)
+}
+
+func (actions AIUnitActions) MoveUnit(unit *ArmyUnit, path pathfinding.Path) {
+    actions.combat.doMoveUnit(actions.yield, unit, path)
+}
+
+func (combat *CombatScreen) doAI(aiActions AIUnitActionsInterface, aiUnit *ArmyUnit) {
     // aiArmy := combat.GetArmy(combat.SelectedUnit)
     otherArmy := combat.Model.GetOtherArmy(aiUnit)
     if aiUnit.ConfusionAction == ConfusionActionEnemyControl {
@@ -3222,7 +3245,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
 
         for _, candidate := range candidates {
            if combat.withinArrowRange(aiUnit, candidate) && combat.Model.canRangeAttack(aiUnit, candidate) {
-               combat.doRangeAttack(yield, aiUnit, candidate)
+               aiActions.RangeAttack(aiUnit, candidate)
                return
            }
         }
@@ -3230,7 +3253,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
 
     for _, unit := range otherArmy.units {
         if combat.withinMeleeRange(aiUnit, unit) && combat.Model.canMeleeAttack(aiUnit, unit) {
-            combat.doMelee(yield, aiUnit, unit)
+            aiActions.MeleeAttack(aiUnit, unit)
             return
         }
     }
@@ -3305,7 +3328,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
 
         // a path of length 2 contains the position of the aiUnit and the position of the enemy, so they are right next to each other
         if len(path) == 2 && combat.Model.canMeleeAttack(aiUnit, closestEnemy) {
-            combat.doMelee(yield, aiUnit, closestEnemy)
+            aiActions.MeleeAttack(aiUnit, closestEnemy)
             return
         } else if len(path) > 2 {
             // ignore path[0], thats where we are now. also ignore the last element, since we can't move onto the enemy
@@ -3325,7 +3348,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
             }
 
             if lastIndex >= 1 && lastIndex <= len(path) {
-                combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
+                aiActions.MoveUnit(aiUnit, path[1:lastIndex])
                 return
             }
         }
@@ -3338,7 +3361,7 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         if gateX != -1 && gateY != -1 {
             path, ok := combat.Model.computePath(aiUnit.X, aiUnit.Y, gateX, gateY, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
             if ok && len(path) > 1 && aiUnit.CanFollowPath(path) {
-                combat.doMoveUnit(yield, aiUnit, path[1:])
+                aiActions.MoveUnit(aiUnit, path[1:])
                 return
             }
         }
@@ -3542,7 +3565,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
         // keep making choices until the unit runs out of moves
         for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) && aiUnit.GetHealth() > 0 {
-            combat.doAI(yield, aiUnit)
+            combat.doAI(&AIUnitActions{yield: yield, combat: combat}, aiUnit)
         }
         aiUnit.LastTurn = combat.Model.CurrentTurn
         combat.Model.NextUnit()
