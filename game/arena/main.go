@@ -256,7 +256,7 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     engine.Player.Mana = engine.Player.OriginalMana
 
-    booksMax := min(12, 3 + engine.Player.Level * 3)
+    booksMax := min(12, engine.Player.Level * 2)
 
     for _, magic := range []data.MagicType{data.LifeMagic, data.SorceryMagic, data.NatureMagic, data.DeathMagic, data.ChaosMagic} {
         enemyPlayer.GetWizard().AddMagicLevel(magic, rand.N(booksMax))
@@ -2098,7 +2098,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
     // test1(playerObj)
-    test3(playerObj)
+    // test3(playerObj)
     // test4(playerObj)
 
     music := musiclib.MakeMusic(cache)
