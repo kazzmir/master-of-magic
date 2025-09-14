@@ -649,6 +649,14 @@ func (unit *ArmyUnit) GetCastingSkill() float32 {
     return unit.CastingSkill
 }
 
+func (unit *ArmyUnit) CanRangeAttack() bool {
+    if unit.GetRangedAttackDamageType() == units.DamageRangedMagical && unit.CastingSkill >= 3 {
+        return true
+    }
+
+    return unit.RangedAttacks > 0
+}
+
 func (unit *ArmyUnit) UseRangeAttack() {
     if unit.GetRangedAttackDamageType() == units.DamageRangedMagical && unit.CastingSkill >= 3 {
         unit.CastingSkill = max(0, unit.CastingSkill - 3)

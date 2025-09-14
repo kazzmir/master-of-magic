@@ -3207,8 +3207,10 @@ func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
         otherArmy = combat.Model.GetArmy(aiUnit)
     }
 
+    // FIXME: cast a spell if the unit has mana (caster ability)
+
     // try a ranged attack first
-    if aiUnit.RangedAttacks > 0 {
+    if aiUnit.CanRangeAttack() {
         candidates := slices.Clone(otherArmy.units)
         slices.SortFunc(candidates, func (a *ArmyUnit, b *ArmyUnit) int {
             return cmp.Compare(computeTileDistance(aiUnit.X, aiUnit.Y, a.X, a.Y), computeTileDistance(aiUnit.X, aiUnit.Y, b.X, b.Y))
