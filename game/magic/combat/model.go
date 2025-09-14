@@ -1786,6 +1786,25 @@ func ApplyDamage(unit UnitDamage, damage int, damageType units.Damage, source Da
     return taken, lost
 }
 
+func makeSummonDemonSpell() spellbook.Spell {
+    return spellbook.Spell{
+        Name: "Summon Demons",
+        Index: 1000,
+        AiGroup: 0,
+        AiValue: 0,
+        SpellType: 0, // what is this
+        Section: spellbook.SectionSummoning,
+        Realm: 4,
+        Eligibility: spellbook.EligibilityCombatOnly,
+        CastCost: 20,
+        ResearchCost: 100,
+        Sound: 107,
+        Summoned: 193, // needed??
+        Magic: data.DeathMagic,
+        Rarity: spellbook.SpellRarityVeryRare,
+    }
+}
+
 func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player ArmyPlayer) {
     unit.CastingSkill = 0
     unit.SpellCharges = make(map[spellbook.Spell]int)
@@ -1805,6 +1824,9 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player ArmyPl
             case data.AbilityWebSpell:
                 web := allSpells.FindByName("Web")
                 unit.SpellCharges[web] = int(ability.Value)
+            case data.AbilitySummonDemons:
+                summonDemons := makeSummonDemonSpell()
+                unit.SpellCharges[summonDemons] = int(ability.Value)
             case data.AbilityCaster:
                 unit.CastingSkill = ability.Value
         }
@@ -4618,6 +4640,11 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
         case "Phantom Beast":
             model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
                 model.summonUnit(player, x, y, units.PhantomBeast, units.FacingDown, true)
+                castedCallback()
+            })
+        case "Summon Demons":
+            model.DoSummoningSpell(spellSystem, player, spell, func(x int, y int){
+                model.summonUnit(player, x, y, units.Demon, units.FacingDown, true)
                 castedCallback()
             })
         case "Earth Elemental":
