@@ -2314,6 +2314,25 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
     }
 }
 
+func (model *CombatModel) withinMeleeRange(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    xDiff := math.Abs(float64(attacker.X - defender.X))
+    yDiff := math.Abs(float64(attacker.Y - defender.Y))
+
+    return xDiff <= 1 && yDiff <= 1
+}
+
+func (model *CombatModel) withinArrowRange(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    /*
+    xDiff := math.Abs(float64(attacker.X - defender.X))
+    yDiff := math.Abs(float64(attacker.Y - defender.Y))
+
+    return xDiff <= 1 && yDiff <= 1
+    */
+    // FIXME: what is the actual range distance?
+    return true
+}
+
+
 func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
     movesNeeded := fraction.Fraction{}
 
