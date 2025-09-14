@@ -2053,16 +2053,23 @@ func (army *Army) AddArmyUnit(unit *ArmyUnit){
     army.units = append(army.units, unit)
 }
 
+func StartingLocation(team Team) (int, int) {
+    switch team {
+        case TeamDefender: return TownCenterX, 11
+        case TeamAttacker: return TownCenterX, 17
+    }
+
+    return 0, 0
+}
+
 func (army *Army) LayoutUnits(team Team){
-    x := TownCenterX - 1
-    y := 11
+    x, y := StartingLocation(team)
+    x -= 1
     rowDirection := -1
 
     facing := units.FacingDownRight
 
     if team == TeamAttacker {
-        x = TownCenterX - 1
-        y = 17
         rowDirection = 1
         facing = units.FacingUpLeft
     }
@@ -2265,6 +2272,14 @@ func computeRangeToFortress(plane data.Plane, x int, y int, player ArmyPlayer) f
         case distance <= 20: return fraction.Make(5, 2).Min(minRange)
         default: return fraction.Make(3, 1).Min(minRange)
     }
+}
+
+func (model *CombatModel) MaxWidth() int {
+    return len(model.Tiles[0])
+}
+
+func (model *CombatModel) MaxHeight() int {
+    return len(model.Tiles)
 }
 
 func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int, overworldY int) {
@@ -4253,22 +4268,43 @@ func (model *CombatModel) DoTargetUnitSpell(player ArmyPlayer, spell spellbook.S
     }
 }
 
+func (model *CombatModel) DoAITargetTileSpell(player ArmyPlayer, spell spellbook.Spell, selecter Team, canTarget func(int, int) bool, onTarget func(int, int)){
+    x, y := StartingLocation(selecter)
+    for _, dx := range rand.Perm(10) {
+        for _, dy := range rand.Perm(10) {
+            tx := x + dx - 5
+            ty := y + dy - 5
+
+            if tx >= 0 && tx < model.MaxWidth() && ty >= 0 && ty < model.MaxHeight() {
+                if canTarget(tx, ty) {
+                    onTarget(tx, ty)
+                    return
+                }
+            }
+        }
+    }
+}
+
 func (model *CombatModel) DoTargetTileSpell(player ArmyPlayer, spell spellbook.Spell, canTarget func(int, int) bool, onTarget func(int, int)){
     selecter := TeamAttacker
     if player == model.DefendingArmy.Player {
         selecter = TeamDefender
     }
 
-    event := &CombatEventSelectTile{
-        Selecter: selecter,
-        Spell: spell,
-        SelectTile: onTarget,
-        CanTarget: canTarget,
-    }
+    if player.IsAI() {
+        model.DoAITargetTileSpell(player, spell, selecter, canTarget, onTarget)
+    } else {
+        event := &CombatEventSelectTile{
+            Selecter: selecter,
+            Spell: spell,
+            SelectTile: onTarget,
+            CanTarget: canTarget,
+        }
 
-    select {
-        case model.Events <- event:
-        default:
+        select {
+            case model.Events <- event:
+            default:
+        }
     }
 }
 
@@ -4365,6 +4401,7 @@ type SpellSystem interface {
     CreateWraithFormProjectile(target *ArmyUnit) *Projectile
 
     GetAllSpells() spellbook.Spells
+    PlaySound(spell spellbook.Spell)
 }
 
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
@@ -5436,6 +5473,48 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, player ArmyPlayer
 
         default:
             log.Printf("Unhandled spell %v", spell.Name)
+    }
+}
+
+func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) {
+    if army.Casted {
+        return
+    }
+
+    tryCast := 40
+    if model.Zone.GetMagic() != data.MagicNone {
+        tryCast = 20
+    }
+
+    if rand.N(100) > tryCast {
+        return
+    }
+
+    knownSpells := army.Player.GetKnownSpells()
+    for _, i := range rand.Perm(len(knownSpells.Spells)) {
+        spell := knownSpells.Spells[i]
+
+        // FIXME: if the spell allows the caster to add mana to it (e.g. fireball) then
+        // add some random amount of mana to the spell here
+
+        spellCost := army.Player.ComputeEffectiveSpellCost(spell, false)
+
+        minimumMana := min(army.ManaPool, int(float64(army.Player.GetMana()) / army.Range.ToFloat()))
+        if minimumMana >= spellCost {
+            // try to cast this spell
+            log.Printf("AI attempting to cast %v", spell.Name)
+            model.InvokeSpell(spellSystem, army.Player, nil, spell, func(){
+                army.ManaPool -= spellCost
+                army.Player.UseMana(spellCost)
+                army.Casted = true
+
+                spellSystem.PlaySound(spell)
+            })
+
+            if army.Casted {
+                break
+            }
+        }
     }
 }
 

@@ -15,6 +15,9 @@ type TestSpellSystem struct {
     createFireballProjectile func(target *ArmyUnit, cost int) *Projectile
 }
 
+func (system *TestSpellSystem) PlaySound(spell spellbook.Spell) {
+}
+
 func (system *TestSpellSystem) CreateFireballProjectile(target *ArmyUnit, cost int) *Projectile {
     if system.createFireballProjectile != nil {
         return system.createFireballProjectile(target, cost)

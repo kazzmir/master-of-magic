@@ -2670,6 +2670,13 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
     }
 }
 
+func (combat *CombatScreen) PlaySound(spell spellbook.Spell) {
+    sound, err := combat.AudioCache.GetSound(spell.Sound)
+    if err == nil {
+        sound.Play()
+    }
+}
+
 func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Team, spell spellbook.Spell, selectTarget func (*ArmyUnit), canTarget func (*ArmyUnit) bool, selectTeam Team) {
     combat.ButtonsDisabled = true
     combat.DoSelectUnit = true
@@ -3522,6 +3529,9 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     if combat.Model.SelectedUnit != nil && combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
         aiUnit := combat.Model.SelectedUnit
+
+        aiArmy := combat.Model.GetArmy(aiUnit)
+        combat.Model.doAiCast(combat, aiArmy)
 
         // keep making choices until the unit runs out of moves
         for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) && aiUnit.GetHealth() > 0 {
