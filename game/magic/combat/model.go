@@ -5523,8 +5523,21 @@ func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) {
 
         minimumMana := min(army.ManaPool, int(float64(army.Player.GetMana()) / army.Range.ToFloat()))
         if minimumMana >= spellCost {
+            if spell.IsVariableCost() {
+                extraStrength := spell.Cost(false) * 4
+                for spellCost + extraStrength > minimumMana {
+                    extraStrength -= 1
+                }
+
+                if extraStrength > 0 {
+                    use := rand.N(extraStrength + 1)
+                    spellCost += use
+                    spell.OverrideCost = use
+                }
+            }
+
             // try to cast this spell
-            log.Printf("AI attempting to cast %v", spell.Name)
+            log.Printf("AI attempting to cast %v with strength %v", spell.Name, spell.Cost(false))
             model.InvokeSpell(spellSystem, army.Player, nil, spell, func(){
                 army.ManaPool -= spellCost
                 army.Player.UseMana(spellCost)
