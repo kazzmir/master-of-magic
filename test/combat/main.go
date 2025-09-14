@@ -766,7 +766,8 @@ func makeScenario9(cache *lbx.LbxCache) *combat.CombatScreen {
         allSpells = spellbook.Spells{}
     }
 
-    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Earth To Mud"))
+    // defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Earth To Mud"))
+    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Phantom Beast"))
     defendingPlayer.CastingSkillPower = 10000
     defendingPlayer.Mana = 10000
 

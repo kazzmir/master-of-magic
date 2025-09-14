@@ -4252,19 +4252,41 @@ func (model *CombatModel) DoTargetUnitSpell(player ArmyPlayer, spell spellbook.S
         teamAttacked = TeamEither
     }
 
-    // log.Printf("Create sound for spell %v: %v", spell.Name, spell.Sound)
+    if player.IsAI() {
+        model.DoAITargetUnitSpell(player, spell, selecter, teamAttacked, canTarget, onTarget)
+    } else {
+        event := &CombatEventSelectUnit{
+            Selecter: selecter,
+            Spell: spell,
+            SelectTeam: teamAttacked,
+            CanTarget: canTarget,
+            SelectTarget: onTarget,
+        }
 
-    event := &CombatEventSelectUnit{
-        Selecter: selecter,
-        Spell: spell,
-        SelectTeam: teamAttacked,
-        CanTarget: canTarget,
-        SelectTarget: onTarget,
+        select {
+            case model.Events <- event:
+            default:
+        }
+    }
+}
+
+func (model *CombatModel) DoAITargetUnitSpell(player ArmyPlayer, spell spellbook.Spell, selecter Team, selectTeam Team, canTarget func(*ArmyUnit) bool, onTarget func(*ArmyUnit)){
+    var units []*ArmyUnit
+    if selectTeam == TeamAttacker {
+        units = model.AttackingArmy.units
+    } else if selectTeam == TeamDefender {
+        units = model.DefendingArmy.units
+    } else if selectTeam == TeamEither {
+        units = append(units, model.AttackingArmy.units...)
+        units = append(units, model.DefendingArmy.units...)
     }
 
-    select {
-        case model.Events <- event:
-        default:
+    for _, i := range rand.Perm(len(units)) {
+        unit := units[i]
+        if canTarget(unit) {
+            onTarget(unit)
+            return
+        }
     }
 }
 

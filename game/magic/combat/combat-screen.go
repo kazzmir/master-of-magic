@@ -2647,13 +2647,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
             combat.MouseState = CombatCast
 
             if inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
-                sound, err := combat.AudioCache.GetSound(spell.Sound)
-                if err == nil {
-                    sound.Play()
-                } else {
-                    log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-                }
-
+                combat.PlaySound(spell)
                 selectTile(combat.MouseTileX, combat.MouseTileY)
                 yield()
                 break
@@ -2674,6 +2668,8 @@ func (combat *CombatScreen) PlaySound(spell spellbook.Spell) {
     sound, err := combat.AudioCache.GetSound(spell.Sound)
     if err == nil {
         sound.Play()
+    } else {
+        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
     }
 }
 
@@ -2767,6 +2763,8 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
             if unit != nil && canTargetMemo(unit) && inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
                 if selectTeam == TeamEither || unit.Team == selectTeam {
+
+                    combat.PlaySound(spell)
 
                     sound, err := combat.AudioCache.GetSound(spell.Sound)
                     if err == nil {
