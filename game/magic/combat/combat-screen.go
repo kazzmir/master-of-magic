@@ -2136,7 +2136,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
             spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.GetKnownSpells().CombatSpells(defendingCity), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, player, &spellPage, func (spell spellbook.Spell, picked bool){
                 if picked {
                     // player mana and skill should go down accordingly
-                    combat.Model.InvokeSpell(combat, player, nil, spell, func(success bool){
+                    combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), nil, spell, func(success bool){
                         spellCost := player.ComputeEffectiveSpellCost(spell, false)
                         army.Casted = true
                         army.ManaPool -= spellCost
@@ -2170,7 +2170,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                             // spell casting range for a unit is always 1
 
                             doCast := func(spell spellbook.Spell){
-                                combat.Model.InvokeSpell(combat, player, caster, spell, func(success bool){
+                                combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), caster, spell, func(success bool){
                                     charge, hasCharge := caster.SpellCharges[spell]
                                     if hasCharge && charge > 0 {
                                         caster.SpellCharges[spell] -= 1
