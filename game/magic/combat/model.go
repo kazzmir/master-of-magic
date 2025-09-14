@@ -5502,6 +5502,9 @@ func (model *CombatModel) shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spe
     switch spell.Name {
         case "Healing":
             return unit.GetHealth() > 0 && float64(unit.GetHealth()) < float64(unit.GetMaxHealth()) * 4 / 5
+        case "Word of Recall":
+            // FIXME: figure out when its a good idea for AI to cast this
+            return false
     }
 
     return true
@@ -5510,10 +5513,9 @@ func (model *CombatModel) shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spe
 // take the current situation into consideration when deciding whether to cast a spell
 func (model *CombatModel) shouldAICastSpell(army *Army, spell spellbook.Spell) bool {
     switch spell.Name {
-        case "Healing":
+        case "Mass Healing":
             for _, unit := range army.units {
-                log.Printf("Consider unit %v health %v/%v", unit.Unit.GetName(), unit.GetHealth(), unit.GetMaxHealth())
-                if model.shouldAITargetUnit(unit, spell) {
+                if unit.GetHealth() > 0 && float64(unit.GetHealth()) < float64(unit.GetMaxHealth()) * 4 / 5 {
                     return true
                 }
             }
@@ -5569,8 +5571,8 @@ func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) {
                 }
 
                 // try to cast this spell
-                log.Printf("AI attempting to cast %v with strength %v", spell.Name, spell.Cost(false))
                 model.InvokeSpell(spellSystem, army.Player, nil, spell, func(){
+                    log.Printf("AI cast %v with strength %v", spell.Name, spell.Cost(false))
                     army.ManaPool -= spellCost
                     army.Player.UseMana(spellCost)
                     army.Casted = true
