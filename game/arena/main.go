@@ -156,12 +156,12 @@ func (engine *Engine) PopDrawer() {
     }
 }
 
-func setupAISpells(enemyPlayer *player.Player, lbxCache *lbx.LbxCache, budget uint64) (uint64, uint64) {
+func setupAISpells(enemyPlayer *player.Player, lbxCache *lbx.LbxCache, budget uint64) uint64 {
     var totalCosts uint64
 
     allSpells, err := spellbook.ReadSpellsFromCache(lbxCache)
     if err != nil {
-        return budget, 0
+        return 0
     }
 
     doSpell := func(counter *int, numSpells func(int) int, spell spellbook.Spell){
@@ -193,7 +193,7 @@ func setupAISpells(enemyPlayer *player.Player, lbxCache *lbx.LbxCache, budget ui
         }
     }
 
-    return budget, totalCosts
+    return totalCosts
 }
 
 // returns the new budget and how much was spent on enchantments
@@ -264,10 +264,15 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     var spellCosts uint64
 
-    budget, spellCosts = setupAISpells(enemyPlayer, engine.Cache, budget)
+    log.Printf("Starting budget: %v level=%v", budget, engine.Player.Level)
+
+    spellCosts = setupAISpells(enemyPlayer, engine.Cache, budget / 2)
+
+    budget -= spellCosts
 
     log.Printf("Enemy magic: %v", enemyPlayer.GetWizard().Books)
     log.Printf("Enemy spells: %v", enemyPlayer.GetKnownSpells().Spells)
+    log.Printf("Enemy mana: %v", enemyPlayer.Mana)
 
     engine.CurrentBattleReward = spellCosts
 
@@ -275,6 +280,8 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     if budget < 200 {
         budget = 200
     }
+
+    // log.Printf("Budget after spells: %v", budget)
 
     for budget > 0 {
         choices := getValidChoices(budget)
@@ -2065,7 +2072,7 @@ func test3(playerObj *player.Player) {
     v := playerObj.AddUnit(units.LizardSwordsmen)
     v.AdjustHealth(-10)
     playerObj.Money = 300000
-    playerObj.Level = 10
+    playerObj.Level = 4
 }
 
 func test4(playerObj *player.Player) {
@@ -2082,7 +2089,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
     // test1(playerObj)
-    // test3(playerObj)
+    test3(playerObj)
     // test4(playerObj)
 
     music := musiclib.MakeMusic(cache)
