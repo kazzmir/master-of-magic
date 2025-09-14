@@ -5609,7 +5609,7 @@ func (model *CombatModel) DoSummoningSpell(spellSystem SpellSystem, player ArmyP
     side := model.GetSideForPlayer(player)
 
     allowed := func (x int, y int) bool {
-        return model.IsOnSide(x, y, side)
+        return model.GetUnit(x, y) == nil && model.IsOnSide(x, y, side)
     }
 
     // FIXME: pass in a canTarget function that only allows summoning on an empty tile on the casting wizards side of the battlefield
