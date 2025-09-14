@@ -250,6 +250,7 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     enemyPlayer := player.MakeAIPlayer(data.BannerRed)
+
     enemyPlayer.Mana = engine.Player.Level * 10 + rand.N(15) - 7
     enemyPlayer.OriginalMana = enemyPlayer.Mana
 
@@ -269,6 +270,11 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     log.Printf("Enemy spells: %v", enemyPlayer.GetKnownSpells().Spells)
 
     engine.CurrentBattleReward = spellCosts
+
+    // at least have 200 to buy units
+    if budget < 200 {
+        budget = 200
+    }
 
     for budget > 0 {
         choices := getValidChoices(budget)
@@ -305,7 +311,7 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         sub := choices[start:end]
 
         if len(sub) == 0 {
-            break
+            sub = choices
         }
 
         choice = sub[rand.N(len(sub))]
@@ -2076,7 +2082,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
     // test1(playerObj)
-    test3(playerObj)
+    // test3(playerObj)
     // test4(playerObj)
 
     music := musiclib.MakeMusic(cache)
