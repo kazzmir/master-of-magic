@@ -5574,9 +5574,15 @@ func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) bool {
 
     casted := false
 
+    defendingCity := model.Zone.City != nil && model.GetTeamForArmy(army) == TeamDefender
+
     knownSpells := army.Player.GetKnownSpells()
     for _, i := range rand.Perm(len(knownSpells.Spells)) {
         spell := knownSpells.Spells[i]
+
+        if !spell.Eligibility.CanCastInCombat(defendingCity) {
+            continue
+        }
 
         // FIXME: if the spell allows the caster to add mana to it (e.g. fireball) then
         // add some random amount of mana to the spell here
