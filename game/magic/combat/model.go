@@ -2282,6 +2282,10 @@ func computeRangeToFortress(plane data.Plane, x int, y int, player ArmyPlayer) f
     }
 }
 
+func (model *CombatModel) IsInsideMap(x int, y int) bool {
+    return x >= 0 && y >= 0 && y < model.MaxHeight() && x < model.MaxWidth()
+}
+
 func (model *CombatModel) MaxWidth() int {
     return len(model.Tiles[0])
 }
@@ -2313,6 +2317,25 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
         model.Tiles[unit.Y][unit.X].Unit = unit
     }
 }
+
+func (model *CombatModel) withinMeleeRange(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    xDiff := math.Abs(float64(attacker.X - defender.X))
+    yDiff := math.Abs(float64(attacker.Y - defender.Y))
+
+    return xDiff <= 1 && yDiff <= 1
+}
+
+func (model *CombatModel) withinArrowRange(attacker *ArmyUnit, defender *ArmyUnit) bool {
+    /*
+    xDiff := math.Abs(float64(attacker.X - defender.X))
+    yDiff := math.Abs(float64(attacker.Y - defender.Y))
+
+    return xDiff <= 1 && yDiff <= 1
+    */
+    // FIXME: what is the actual range distance?
+    return true
+}
+
 
 func computeMoves(x1 int, y1 int, x2 int, y2 int) fraction.Fraction {
     movesNeeded := fraction.Fraction{}
@@ -5551,9 +5574,15 @@ func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) bool {
 
     casted := false
 
+    defendingCity := model.Zone.City != nil && model.GetTeamForArmy(army) == TeamDefender
+
     knownSpells := army.Player.GetKnownSpells()
     for _, i := range rand.Perm(len(knownSpells.Spells)) {
         spell := knownSpells.Spells[i]
+
+        if !spell.Eligibility.CanCastInCombat(defendingCity) {
+            continue
+        }
 
         // FIXME: if the spell allows the caster to add mana to it (e.g. fireball) then
         // add some random amount of mana to the spell here

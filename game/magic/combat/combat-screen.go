@@ -2398,24 +2398,6 @@ func faceTowards(x1 int, y1 int, x2 int, y2 int) units.Facing {
     return computeFacing(useAngle)
 }
 
-func (combat *CombatScreen) withinMeleeRange(attacker *ArmyUnit, defender *ArmyUnit) bool {
-    xDiff := math.Abs(float64(attacker.X - defender.X))
-    yDiff := math.Abs(float64(attacker.Y - defender.Y))
-
-    return xDiff <= 1 && yDiff <= 1
-}
-
-func (combat *CombatScreen) withinArrowRange(attacker *ArmyUnit, defender *ArmyUnit) bool {
-    /*
-    xDiff := math.Abs(float64(attacker.X - defender.X))
-    yDiff := math.Abs(float64(attacker.Y - defender.Y))
-
-    return xDiff <= 1 && yDiff <= 1
-    */
-    // FIXME: what is the actual range distance?
-    return true
-}
-
 func distanceInRange(x1 float64, y1 float64, x2 float64, y2 float64, r float64) bool {
     xDiff := x2 - x1
     yDiff := y2 - y1
@@ -3204,149 +3186,27 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
     }
 }
 
-func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
-    // aiArmy := combat.GetArmy(combat.SelectedUnit)
-    otherArmy := combat.Model.GetOtherArmy(aiUnit)
-    if aiUnit.ConfusionAction == ConfusionActionEnemyControl {
-        otherArmy = combat.Model.GetArmy(aiUnit)
-    }
-
-    // FIXME: cast a spell if the unit has mana (caster ability)
-
-    // try a ranged attack first
-    if aiUnit.CanRangeAttack() {
-        candidates := slices.Clone(otherArmy.units)
-        slices.SortFunc(candidates, func (a *ArmyUnit, b *ArmyUnit) int {
-            return cmp.Compare(computeTileDistance(aiUnit.X, aiUnit.Y, a.X, a.Y), computeTileDistance(aiUnit.X, aiUnit.Y, b.X, b.Y))
-        })
-
-        for _, candidate := range candidates {
-           if combat.withinArrowRange(aiUnit, candidate) && combat.Model.canRangeAttack(aiUnit, candidate) {
-               combat.doRangeAttack(yield, aiUnit, candidate)
-               return
-           }
-        }
-    }
-
-    for _, unit := range otherArmy.units {
-        if combat.withinMeleeRange(aiUnit, unit) && combat.Model.canMeleeAttack(aiUnit, unit) {
-            combat.doMelee(yield, aiUnit, unit)
-            return
-        }
-    }
-
-    aiUnit.Paths = make(map[image.Point]pathfinding.Path)
-
-    // if the selected unit has ranged attacks, then try to use that
-    // otherwise, if in melee range of some enemy then attack them
-    // otherwise walk towards the enemy
-
-    paths := make(map[*ArmyUnit]pathfinding.Path)
-
-    getPath := func (unit *ArmyUnit) pathfinding.Path {
-        path, found := paths[unit]
-        if !found {
-            combat.Model.Tiles[unit.Y][unit.X].Unit = nil
-            var ok bool
-            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
-            combat.Model.Tiles[unit.Y][unit.X].Unit = unit
-            if ok {
-                paths[unit] = path
-            } else {
-                paths[unit] = nil
-            }
-        }
-
-        return path
-    }
-
-    filterReachable := func (units []*ArmyUnit) []*ArmyUnit {
-        var out []*ArmyUnit
-
-        aiInWall := combat.Model.InsideAnyWall(aiUnit.X, aiUnit.Y)
-
-        for _, unit := range units {
-            // skip enemies that we can't melee anyway
-            if !combat.Model.canMeleeAttack(aiUnit, unit) {
-                continue
-            }
-
-            enemyInWall := combat.Model.InsideAnyWall(unit.X, unit.Y)
-
-            // if the unit is inside a wall (fire/darkness/brick) but the target is outside, then don't move
-            if aiUnit.Team == TeamDefender && aiInWall && !enemyInWall {
-                continue
-            }
-
-            path := getPath(unit)
-            if len(path) > 0 {
-                out = append(out, unit)
-            }
-        }
-        return out
-    }
-
-    // should filter by enemies that we can attack, so non-flyers do not move toward flyers
-    candidates := filterReachable(slices.Clone(otherArmy.units))
-
-    slices.SortFunc(candidates, func (a *ArmyUnit, b *ArmyUnit) int {
-        aPath := getPath(a)
-        bPath := getPath(b)
-
-        return cmp.Compare(len(aPath), len(bPath))
-    })
-
-
-    // find a path to some enemy
-    for _, closestEnemy := range candidates {
-        // pretend that there is no unit at the tile. this is a sin of the highest order
-
-        path := getPath(closestEnemy)
-
-        // a path of length 2 contains the position of the aiUnit and the position of the enemy, so they are right next to each other
-        if len(path) == 2 && combat.Model.canMeleeAttack(aiUnit, closestEnemy) {
-            combat.doMelee(yield, aiUnit, closestEnemy)
-            return
-        } else if len(path) > 2 {
-            // ignore path[0], thats where we are now. also ignore the last element, since we can't move onto the enemy
-
-            last := path[len(path)-1]
-            if last.X == closestEnemy.X && last.Y == closestEnemy.Y {
-                path = path[:len(path)-1]
-            }
-
-            lastIndex := 0
-            for lastIndex < len(path) {
-                lastIndex += 1
-                if !aiUnit.CanFollowPath(path[0:lastIndex]) {
-                    lastIndex -= 1
-                    break
-                }
-            }
-
-            if lastIndex >= 1 && lastIndex <= len(path) {
-                combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
-                return
-            }
-        }
-    }
-
-    // no enemy to move towards, then possibly move towards gate
-    if aiUnit.Team == TeamDefender && combat.Model.InsideCityWall(aiUnit.X, aiUnit.Y) {
-        // if inside a city wall, then move towards the gate
-        gateX, gateY := combat.Model.GetCityGateCoordinates()
-        if gateX != -1 && gateY != -1 {
-            path, ok := combat.Model.computePath(aiUnit.X, aiUnit.Y, gateX, gateY, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
-            if ok && len(path) > 1 && aiUnit.CanFollowPath(path) {
-                combat.doMoveUnit(yield, aiUnit, path[1:])
-                return
-            }
-        }
-    }
-
-    // didn't make a choice, just exhaust moves left
-    aiUnit.MovesLeft = fraction.FromInt(0)
+type AIUnitActions struct {
+    yield coroutine.YieldFunc
+    combat *CombatScreen
 }
+
+func (actions AIUnitActions) Teleport(mover *ArmyUnit, x int, y int, merge bool) {
+    actions.combat.doTeleport(actions.yield, mover, x, y, merge)
+}
+
+func (actions AIUnitActions) RangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+    actions.combat.doRangeAttack(actions.yield, attacker, defender)
+}
+
+func (actions AIUnitActions) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+    actions.combat.doMelee(actions.yield, attacker, defender)
+}
+
+func (actions AIUnitActions) MoveUnit(unit *ArmyUnit, path pathfinding.Path) {
+    actions.combat.doMoveUnit(actions.yield, unit, path)
+}
+
 
 func (combat *CombatScreen) UpdateMouseState() {
     switch combat.MouseState {
@@ -3542,7 +3402,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
         // keep making choices until the unit runs out of moves
         for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) && aiUnit.GetHealth() > 0 {
-            combat.doAI(yield, aiUnit)
+            doAI(combat.Model, &AIUnitActions{yield: yield, combat: combat}, aiUnit)
         }
         aiUnit.LastTurn = combat.Model.CurrentTurn
         combat.Model.NextUnit()
@@ -3564,9 +3424,9 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         } else {
             newState := CombatNotOk
             // prioritize range attack over melee
-            if combat.Model.canRangeAttack(combat.Model.SelectedUnit, who) && combat.withinArrowRange(combat.Model.SelectedUnit, who) {
+            if combat.Model.canRangeAttack(combat.Model.SelectedUnit, who) && combat.Model.withinArrowRange(combat.Model.SelectedUnit, who) {
                 newState = CombatRangeAttackOk
-            } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who) && combat.withinMeleeRange(combat.Model.SelectedUnit, who) {
+            } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who) && combat.Model.withinMeleeRange(combat.Model.SelectedUnit, who) {
                 newState = CombatMeleeAttackOk
             }
 
@@ -3599,10 +3459,10 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            attacker := combat.Model.SelectedUnit
 
            // try a ranged attack first
-           if defender != nil && combat.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
+           if defender != nil && combat.Model.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
                combat.doRangeAttack(yield, attacker, defender)
            // then fall back to melee
-           } else if defender != nil && combat.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){
+           } else if defender != nil && combat.Model.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){
                combat.doMelee(yield, attacker, defender)
                attacker.Paths = make(map[image.Point]pathfinding.Path)
            }
