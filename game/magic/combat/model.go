@@ -2306,7 +2306,9 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
         unit.Team = TeamDefender
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
         unit.InitializeSpells(allSpells, model.DefendingArmy.Player)
-        model.Tiles[unit.Y][unit.X].Unit = unit
+        if model.IsInsideMap(unit.X, unit.Y) {
+            model.Tiles[unit.Y][unit.X].Unit = unit
+        }
     }
 
     for _, unit := range model.AttackingArmy.units {
@@ -2314,7 +2316,9 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
         unit.Team = TeamAttacker
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
         unit.InitializeSpells(allSpells, model.AttackingArmy.Player)
-        model.Tiles[unit.Y][unit.X].Unit = unit
+        if model.IsInsideMap(unit.X, unit.Y) {
+            model.Tiles[unit.Y][unit.X].Unit = unit
+        }
     }
 }
 
