@@ -712,7 +712,7 @@ func getEnchantmentRequirements(enchantment data.UnitEnchantment) data.WizardBoo
         case data.UnitEnchantmentBless: return life(2)
         case data.UnitEnchantmentRighteousness: return life(5)
         case data.UnitEnchantmentCloakOfFear: return death(4)
-        case data.UnitEnchantmentTrueSight: return sorcery(4)
+        case data.UnitEnchantmentTrueSight: return life(4)
         case data.UnitEnchantmentPathFinding: return nature(1)
         case data.UnitEnchantmentFlight: return sorcery(5)
         case data.UnitEnchantmentChaosChannelsDemonWings: return chaos(4)
