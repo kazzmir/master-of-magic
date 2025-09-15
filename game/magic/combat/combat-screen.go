@@ -2413,6 +2413,7 @@ func distanceAboveRange(x1 float64, y1 float64, x2 float64, y2 float64, r float6
 func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
     for combat.Model.UpdateProjectiles(combat.Counter) {
         combat.Counter += 1
+        combat.ProcessInput()
         combat.UpdateAnimations()
         combat.UpdateGibs()
         if yield() != nil {
@@ -2622,6 +2623,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
         }
 
         combat.UI.StandardUpdate()
+        combat.ProcessInput()
         mouseX, mouseY := inputmanager.MousePosition()
         tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
         combat.MouseTileX = int(math.Round(tileX))
@@ -2731,6 +2733,7 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
         }
 
         combat.UI.StandardUpdate()
+        combat.ProcessInput()
         mouseX, mouseY := inputmanager.MousePosition()
         tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
         combat.MouseTileX = int(math.Round(tileX))
@@ -2947,6 +2950,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             combat.Counter += 1
             combat.UpdateAnimations()
             combat.UpdateGibs()
+            combat.ProcessInput()
             mover.SetHeight(-i/mergeSpeed)
             yield()
         }
@@ -2955,6 +2959,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             combat.Counter += 1
             combat.UpdateAnimations()
             combat.UpdateGibs()
+            combat.ProcessInput()
             mover.SetFade(float32(i)/float32(mergeCount))
             yield()
         }
@@ -2971,6 +2976,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             combat.Counter += 1
             combat.UpdateAnimations()
             combat.UpdateGibs()
+            combat.ProcessInput()
             mover.SetHeight(-(mergeCount/mergeSpeed - i/mergeSpeed))
             yield()
         }
@@ -2980,6 +2986,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             combat.Counter += 1
             combat.UpdateAnimations()
             combat.UpdateGibs()
+            combat.ProcessInput()
             mover.SetFade(float32(mergeCount - i)/float32(mergeCount))
             yield()
         }
@@ -3047,6 +3054,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         for !reached {
             combat.UpdateAnimations()
             combat.UpdateGibs()
+            combat.ProcessInput()
             combat.Counter += 1
 
             mouseX, mouseY := inputmanager.MousePosition()
@@ -3173,6 +3181,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
         combat.Counter += 1
         combat.UpdateAnimations()
         combat.UpdateGibs()
+        combat.ProcessInput()
         combat.ProcessEvents(yield)
 
         // delay the actual melee computation to give time for the sound to play
@@ -3259,6 +3268,46 @@ func (combat *CombatScreen) UpdateGibs() {
     combat.Gibs = keepGibs
 }
 
+func (combat *CombatScreen) ProcessInput() {
+    var keys []ebiten.Key
+    keys = inpututil.AppendPressedKeys(keys)
+    for _, key := range keys {
+        speed := 0.8
+        switch key {
+            case ebiten.KeyDown:
+                combat.Coordinates.Translate(0, -speed)
+            case ebiten.KeyUp:
+                combat.Coordinates.Translate(0, speed)
+            case ebiten.KeyLeft:
+                combat.Coordinates.Translate(speed, 0)
+            case ebiten.KeyRight:
+                combat.Coordinates.Translate(-speed, 0)
+            case ebiten.KeyEqual:
+                if combat.CameraScale < 3 {
+                    combat.CameraScale *= 1 + 0.01
+                    combat.Coordinates.Scale(1.01, 1.01)
+                }
+            case ebiten.KeyMinus:
+                if combat.CameraScale > 0.5 {
+                    combat.CameraScale *= 1.0 - 0.01
+                    combat.Coordinates.Scale(0.99, 0.99)
+                }
+            case ebiten.KeySpace:
+                normalized := 1 / combat.CameraScale
+                combat.CameraScale *= normalized
+                combat.Coordinates.Scale(normalized, normalized)
+        }
+    }
+
+    // FIXME: handle right-click drag to move the camera
+
+    _, wheelY := inputmanager.Wheel()
+
+    wheelScale := 1 + float64(wheelY) / 10
+    combat.CameraScale *= wheelScale
+    combat.Coordinates.Scale(wheelScale, wheelScale)
+}
+
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     if combat.Model.CurrentTurn >= MAX_TURNS {
         combat.Model.AddLogEvent("Combat exceeded maximum number of turns, defender wins")
@@ -3308,43 +3357,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     // hudY := data.ScreenHeightOriginal - hudImage.Bounds().Dy()
     hudY := (data.ScreenHeight - hudImage.Bounds().Dy())
 
-    var keys []ebiten.Key
-    keys = inpututil.AppendPressedKeys(keys)
-    for _, key := range keys {
-        speed := 0.8
-        switch key {
-            case ebiten.KeyDown:
-                combat.Coordinates.Translate(0, -speed)
-            case ebiten.KeyUp:
-                combat.Coordinates.Translate(0, speed)
-            case ebiten.KeyLeft:
-                combat.Coordinates.Translate(speed, 0)
-            case ebiten.KeyRight:
-                combat.Coordinates.Translate(-speed, 0)
-            case ebiten.KeyEqual:
-                if combat.CameraScale < 3 {
-                    combat.CameraScale *= 1 + 0.01
-                    combat.Coordinates.Scale(1.01, 1.01)
-                }
-            case ebiten.KeyMinus:
-                if combat.CameraScale > 0.5 {
-                    combat.CameraScale *= 1.0 - 0.01
-                    combat.Coordinates.Scale(0.99, 0.99)
-                }
-            case ebiten.KeySpace:
-                normalized := 1 / combat.CameraScale
-                combat.CameraScale *= normalized
-                combat.Coordinates.Scale(normalized, normalized)
-        }
-    }
-
-    // FIXME: handle right-click drag to move the camera
-
-    _, wheelY := inputmanager.Wheel()
-
-    wheelScale := 1 + float64(wheelY) / 10
-    combat.CameraScale *= wheelScale
-    combat.Coordinates.Scale(wheelScale, wheelScale)
+    combat.ProcessInput()
 
     combat.ProcessEvents(yield)
 
