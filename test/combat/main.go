@@ -768,7 +768,7 @@ func makeScenario9(cache *lbx.LbxCache) *combat.CombatScreen {
         }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    defendingArmy := createSettlerArmy(defendingPlayer, 3)
+    defendingArmy := createSettlerArmy(defendingPlayer, 9)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -778,7 +778,7 @@ func makeScenario9(cache *lbx.LbxCache) *combat.CombatScreen {
     }
 
     // defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Earth To Mud"))
-    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Healing"))
+    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Entangle"))
     defendingPlayer.CastingSkillPower = 10000
     defendingPlayer.Mana = 10000
 
@@ -796,8 +796,9 @@ func makeScenario9(cache *lbx.LbxCache) *combat.CombatScreen {
 
     attackingArmy := &combat.Army{Player: attackingPlayer}
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Unicorn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
-    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.ArchAngel, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
-    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Djinn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+    // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.ArchAngel, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+    // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Djinn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSwordsmen, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatWyrm, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
