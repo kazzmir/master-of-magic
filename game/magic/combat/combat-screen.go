@@ -2741,6 +2741,8 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
 
         combat.MouseState = CombatCast
 
+        combat.Model.HighlightedUnit = combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
+
         if mouseY >= scale.Scale(hudY) {
             combat.MouseState = CombatClickHud
         } else {
