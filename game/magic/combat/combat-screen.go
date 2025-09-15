@@ -2824,6 +2824,7 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
 
     for counter < counterMax {
         combat.Counter += 1
+        combat.ProcessInput()
         counter += 1
         value.A = interpolate(counter)
         yield()

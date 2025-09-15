@@ -5656,8 +5656,10 @@ func (model *CombatModel) CastEnchantment(army *Army, enchantment data.CombatEnc
         }
         castedCallback(true)
     } else {
-        model.Events <- &CombatEventMessage{
-            Message: "That combat enchantment is already in effect",
+        if !army.IsAI() {
+            model.Events <- &CombatEventMessage{
+                Message: "That combat enchantment is already in effect",
+            }
         }
     }
 }
