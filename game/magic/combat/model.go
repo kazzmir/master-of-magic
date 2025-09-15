@@ -2282,6 +2282,10 @@ func computeRangeToFortress(plane data.Plane, x int, y int, player ArmyPlayer) f
     }
 }
 
+func (model *CombatModel) IsInsideMap(x int, y int) bool {
+    return x >= 0 && y >= 0 && y < model.MaxHeight() && x < model.MaxWidth()
+}
+
 func (model *CombatModel) MaxWidth() int {
     return len(model.Tiles[0])
 }

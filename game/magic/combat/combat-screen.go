@@ -3191,6 +3191,10 @@ type AIUnitActions struct {
     combat *CombatScreen
 }
 
+func (actions AIUnitActions) Teleport(mover *ArmyUnit, x int, y int, merge bool) {
+    actions.combat.doTeleport(actions.yield, mover, x, y, merge)
+}
+
 func (actions AIUnitActions) RangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
     actions.combat.doRangeAttack(actions.yield, attacker, defender)
 }

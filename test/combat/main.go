@@ -814,7 +814,7 @@ func makeScenario10(cache *lbx.LbxCache) *combat.CombatScreen {
         }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    defendingArmy := createGreatWyrmArmy(defendingPlayer, 3)
+    defendingArmy := createGreatWyrmArmy(defendingPlayer, 1)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     attackingPlayer := player.MakePlayer(setup.WizardCustom{

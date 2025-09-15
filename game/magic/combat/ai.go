@@ -1,11 +1,14 @@
 package combat
 
 import (
+    "math/rand/v2"
     "slices"
     "cmp"
     "image"
+    // "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -13,6 +16,7 @@ type AIUnitActionsInterface interface {
     RangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     MoveUnit(unit *ArmyUnit, path pathfinding.Path)
+    Teleport(unit *ArmyUnit, x, y int, merge bool)
 }
 
 func doAI(model *CombatModel, aiActions AIUnitActionsInterface, aiUnit *ArmyUnit) {
@@ -23,6 +27,10 @@ func doAI(model *CombatModel, aiActions AIUnitActionsInterface, aiUnit *ArmyUnit
     }
 
     // FIXME: cast a spell if the unit has mana (caster ability)
+
+    // if the selected unit has ranged attacks, then try to use that
+    // otherwise, if in melee range of some enemy then attack them
+    // otherwise walk towards the enemy
 
     // try a ranged attack first
     if aiUnit.CanRangeAttack() {
@@ -46,11 +54,92 @@ func doAI(model *CombatModel, aiActions AIUnitActionsInterface, aiUnit *ArmyUnit
         }
     }
 
-    aiUnit.Paths = make(map[image.Point]pathfinding.Path)
+    moved := false
+    if aiUnit.CanTeleport() {
+        moved = doAIMovementTeleport(model, aiActions, aiUnit, otherArmy)
+    } else {
+        moved = doAIMovementPathfinding(model, aiActions, aiUnit, otherArmy)
+    }
 
-    // if the selected unit has ranged attacks, then try to use that
-    // otherwise, if in melee range of some enemy then attack them
-    // otherwise walk towards the enemy
+    if !moved {
+        // didn't make a choice, just exhaust moves left
+        aiUnit.MovesLeft = fraction.FromInt(0)
+    }
+}
+
+func doAIMovementTeleport(model *CombatModel, aiActions AIUnitActionsInterface, aiUnit *ArmyUnit, otherArmy *Army) bool {
+    // get a list of units that we can melee attack
+    var filterCanAttack []*ArmyUnit
+    for _, unit := range otherArmy.units {
+        // if this is a confused unit, don't self attack
+        if unit == aiUnit {
+            continue
+        }
+
+        if model.canMeleeAttack(aiUnit, unit) {
+            filterCanAttack = append(filterCanAttack, unit)
+        }
+    }
+
+    // nothing to attack, so no where to go
+    if len(filterCanAttack) == 0 {
+        return false
+    }
+
+    abs := func (x int) int {
+        if x < 0 {
+            return -x
+        }
+        return x
+    }
+
+    teleportDistance := 10
+
+    hasMerge := aiUnit.HasAbility(data.AbilityMerging)
+
+    for _, index := range rand.Perm(len(filterCanAttack)) {
+        unit := filterCanAttack[index]
+
+        for dx := -1; dx <= 1; dx++ {
+            for dy := -1; dy <= 1; dy++ {
+                if dx == 0 && dy == 0 {
+                    continue
+                }
+
+                cx := unit.X + dx
+                cy := unit.Y + dy
+
+                if model.IsInsideMap(cx, cy) {
+                    if model.ContainsWallTower(cx, cy) {
+                        continue
+                    }
+
+                    // don't teleport into or out of clouds
+                    if !aiUnit.IsFlying() && model.IsCloudTile(cx, cy) != model.IsCloudTile(aiUnit.X, aiUnit.Y) {
+                        continue
+                    }
+
+                    if model.GetUnit(cx, cy) != nil {
+                        continue
+                    }
+
+                    distance := abs(cx - unit.X) + abs(cy - unit.Y)
+                    if distance <= teleportDistance {
+                        aiActions.Teleport(aiUnit, cx, cy, hasMerge)
+                        return true
+                    }
+                }
+            }
+        }
+    }
+
+    // couldn't find a unit to teleport next to
+
+    return false
+}
+
+func doAIMovementPathfinding(model *CombatModel, aiActions AIUnitActionsInterface, aiUnit *ArmyUnit, otherArmy *Army) bool {
+    aiUnit.Paths = make(map[image.Point]pathfinding.Path)
 
     paths := make(map[*ArmyUnit]pathfinding.Path)
 
@@ -117,7 +206,7 @@ func doAI(model *CombatModel, aiActions AIUnitActionsInterface, aiUnit *ArmyUnit
         // a path of length 2 contains the position of the aiUnit and the position of the enemy, so they are right next to each other
         if len(path) == 2 && model.canMeleeAttack(aiUnit, closestEnemy) {
             aiActions.MeleeAttack(aiUnit, closestEnemy)
-            return
+            return true
         } else if len(path) > 2 {
             // ignore path[0], thats where we are now. also ignore the last element, since we can't move onto the enemy
 
@@ -137,7 +226,7 @@ func doAI(model *CombatModel, aiActions AIUnitActionsInterface, aiUnit *ArmyUnit
 
             if lastIndex >= 1 && lastIndex <= len(path) {
                 aiActions.MoveUnit(aiUnit, path[1:lastIndex])
-                return
+                return true
             }
         }
     }
@@ -150,11 +239,10 @@ func doAI(model *CombatModel, aiActions AIUnitActionsInterface, aiUnit *ArmyUnit
             path, ok := model.computePath(aiUnit.X, aiUnit.Y, gateX, gateY, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
             if ok && len(path) > 1 && aiUnit.CanFollowPath(path) {
                 aiActions.MoveUnit(aiUnit, path[1:])
-                return
+                return true
             }
         }
     }
 
-    // didn't make a choice, just exhaust moves left
-    aiUnit.MovesLeft = fraction.FromInt(0)
+    return false
 }
