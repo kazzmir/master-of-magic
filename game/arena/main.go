@@ -197,10 +197,10 @@ func setupAISpells(enemyPlayer *player.Player, lbxCache *lbx.LbxCache, budget ui
 }
 
 // returns the new budget and how much was spent on enchantments
-func tryAddEnchantments(unit units.StackUnit, playerObj *player.Player, budget uint64) (uint64, uint64) {
+func tryAddEnchantments(unit units.StackUnit, playerObj *player.Player, budget uint64) uint64 {
     enchantments := getValidUnitEnchantments()
 
-    numEnchantments := rand.N(3)
+    numEnchantments := rand.N(2 * playerObj.Level)
     used := 0
     var totalCost uint64
 
@@ -230,12 +230,17 @@ func tryAddEnchantments(unit units.StackUnit, playerObj *player.Player, budget u
         }
 
         unit.AddEnchantment(choice)
+
+        enchantments = slices.DeleteFunc(enchantments, func(e data.UnitEnchantment) bool {
+            return e == choice
+        })
+
         used += 1
         budget -= cost
         totalCost += cost
     }
 
-    return budget, totalCost
+    return totalCost
 }
 
 func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
@@ -251,6 +256,7 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     enemyPlayer := player.MakeAIPlayer(data.BannerRed)
 
+    enemyPlayer.Level = engine.Player.Level
     enemyPlayer.Mana = engine.Player.Level * 10 + rand.N(15) - 7
     enemyPlayer.OriginalMana = enemyPlayer.Mana
 
@@ -331,7 +337,9 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         budget -= unitCost
 
         var enchantmentCost uint64
-        budget, enchantmentCost = tryAddEnchantments(addedUnit, enemyPlayer, budget)
+        enchantmentCost = tryAddEnchantments(addedUnit, enemyPlayer, budget / 2)
+
+        budget -= enchantmentCost
 
         engine.CurrentBattleReward += enchantmentCost
         engine.CurrentBattleReward += unitCost
@@ -2081,7 +2089,7 @@ func test3(playerObj *player.Player) {
     v := playerObj.AddUnit(units.LizardSwordsmen)
     v.AdjustHealth(-10)
     playerObj.Money = 300000
-    playerObj.Level = 4
+    playerObj.Level = 8
 }
 
 func test4(playerObj *player.Player) {
