@@ -97,9 +97,37 @@ func doAIMovementTeleport(model *CombatModel, aiActions AIUnitActionsInterface, 
 
     hasMerge := aiUnit.HasAbility(data.AbilityMerging)
 
+    validSquare := func (x int, y int) bool {
+        if model.IsInsideMap(x, y) {
+            distance := abs(x - aiUnit.X) + abs(y - aiUnit.Y)
+            if distance > teleportDistance {
+                return false
+            }
+
+            if model.ContainsWallTower(x, y) {
+                return false
+            }
+
+            // don't teleport into or out of clouds
+            if !aiUnit.IsFlying() && model.IsCloudTile(x, y) != model.IsCloudTile(aiUnit.X, aiUnit.Y) {
+                return false
+            }
+
+            if model.GetUnit(x, y) != nil {
+                return false
+            }
+
+            // log.Printf("considering teleporting to %d,%d (distance %d)", x, y, distance)
+            return true
+        }
+
+        return false
+    }
+
     for _, index := range rand.Perm(len(filterCanAttack)) {
         unit := filterCanAttack[index]
 
+        // try all 8 squares around the unit
         for dx := -1; dx <= 1; dx++ {
             for dy := -1; dy <= 1; dy++ {
                 if dx == 0 && dy == 0 {
@@ -109,27 +137,41 @@ func doAIMovementTeleport(model *CombatModel, aiActions AIUnitActionsInterface, 
                 cx := unit.X + dx
                 cy := unit.Y + dy
 
-                if model.IsInsideMap(cx, cy) {
-                    if model.ContainsWallTower(cx, cy) {
-                        continue
-                    }
-
-                    // don't teleport into or out of clouds
-                    if !aiUnit.IsFlying() && model.IsCloudTile(cx, cy) != model.IsCloudTile(aiUnit.X, aiUnit.Y) {
-                        continue
-                    }
-
-                    if model.GetUnit(cx, cy) != nil {
-                        continue
-                    }
-
-                    distance := abs(cx - unit.X) + abs(cy - unit.Y)
-                    if distance <= teleportDistance {
-                        aiActions.Teleport(aiUnit, cx, cy, hasMerge)
-                        return true
-                    }
+                if validSquare(cx, cy) {
+                    aiActions.Teleport(aiUnit, cx, cy, hasMerge)
+                    return true
                 }
             }
+        }
+    }
+
+    for _, unit := range filterCanAttack {
+        shortestDistance := 100000
+        var bestX, bestY int
+        found := false
+
+        for dx := -teleportDistance; dx <= teleportDistance; dx++ {
+            for dy := -teleportDistance; dy <= teleportDistance; dy++ {
+                if dx == 0 && dy == 0 {
+                    continue
+                }
+
+                cx := aiUnit.X + dx
+                cy := aiUnit.Y + dy
+
+                distance := abs(cx - unit.X) + abs(cy - unit.Y)
+                if distance < shortestDistance && validSquare(cx, cy) {
+                    shortestDistance = distance
+                    bestX = cx
+                    bestY = cy
+                    found = true
+                }
+            }
+        }
+
+        if found {
+            aiActions.Teleport(aiUnit, bestX, bestY, hasMerge)
+            return true
         }
     }
 

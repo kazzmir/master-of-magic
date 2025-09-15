@@ -817,6 +817,8 @@ func makeScenario10(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingArmy := createGreatWyrmArmy(defendingPlayer, 1)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
+    defendingArmy.GetUnits()[0].Y -= 7
+
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerRed,
