@@ -1085,9 +1085,35 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
 
     var tabs []*widget.TabBookTab
 
+    getMagicIcon := func(magic data.MagicType) *widget.GraphicImage {
+        makeIcon := func(img *ebiten.Image) *widget.GraphicImage {
+            return &widget.GraphicImage{
+                Idle: img,
+                Disabled: img,
+            }
+        }
+
+        index := -1
+        switch magic {
+            case data.LifeMagic: index = 7
+            case data.SorceryMagic: index = 5
+            case data.NatureMagic: index = 4
+            case data.DeathMagic: index = 8
+            case data.ChaosMagic: index = 6
+        }
+
+        if index > 0 {
+            icon, _ := imageCache.GetImageTransform("spells.lbx", index, 0, "enlarge", enlargeTransform(2))
+            return makeIcon(icon)
+        }
+
+        return nil
+    }
+
     for _, magic := range allMagic {
         tab := widget.NewTabBookTab(
             widget.TabBookTabOpts.Label(magic.String()),
+            widget.TabBookTabOpts.Image(getMagicIcon(magic)),
             widget.TabBookTabOpts.ContainerOpts(
             widget.ContainerOpts.Layout(widget.NewRowLayout(
                 widget.RowLayoutOpts.Direction(widget.DirectionVertical),
