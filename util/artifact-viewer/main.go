@@ -229,8 +229,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         }),
     )
 
-    artifactList.Validate()
-
     for _, artifact := range slices.SortedFunc(slices.Values(engine.Artifacts), func (a artifact.Artifact, b artifact.Artifact) int {
         return cmp.Compare(a.Name, b.Name)
     }) {

@@ -217,8 +217,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         ),
     )
 
-    fontList.Validate()
-
     for _, name := range slices.SortedFunc(slices.Values(fonts.GetFontList()), cmp.Compare) {
         fontList.AddEntry(name)
     }

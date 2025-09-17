@@ -984,8 +984,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ListOpts.AllowReselect(),
         )
 
-        unitList.Validate()
-
         space := widget.NewGraphic(widget.GraphicOpts.Image(ebiten.NewImage(60, 30)))
 
         raceRow := makeRow(5, space, unitGraphic, unitList)
@@ -1107,14 +1105,12 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     }
 
     defendingArmyList := makeArmyList()
-    defendingArmyList.Validate()
     defendingArmyName := widget.NewText(
         widget.TextOpts.Text("Defending Army", &face, color.NRGBA{R: 255, G: 0, B: 0, A: 255}),
     )
 
     attackingArmyCount := widget.NewText(widget.TextOpts.Text("0", &face, color.NRGBA{R: 255, G: 255, B: 255, A: 255}))
     attackingArmyList := makeArmyList()
-    attackingArmyList.Validate()
     attackingArmyName := widget.NewText(
         widget.TextOpts.Text("Attacking Army", &face, color.NRGBA{R: 255, G: 255, B: 255, A: 255}),
     )
