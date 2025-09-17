@@ -4005,7 +4005,7 @@ var DraconianBowmen Unit = Unit{
     MovementSpeed: 2,
     MeleeAttackPower: 1,
     RangedAttackPower: 1,
-    RangedAttacks: 1,
+    RangedAttacks: 8,
     RangedAttackDamageType: DamageRangedPhysical,
     Defense: 2,
     Resistance: 6,

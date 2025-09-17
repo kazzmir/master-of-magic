@@ -237,6 +237,9 @@ type CombatScreen struct {
     WhitePixel *ebiten.Image
     UI *uilib.UI
 
+    Quit context.Context
+    Cancel context.CancelFunc
+
     Fonts CombatFonts
 
     DrawRoad bool
@@ -377,9 +380,13 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         allSpells = spellbook.Spells{}
     }
 
+    quit, cancel := context.WithCancel(context.Background())
+
     combat := &CombatScreen{
         Events: events,
         Cache: cache,
+        Quit: quit,
+        Cancel: cancel,
         Counter: 1000, // start at a high number so that existing wall of fire/darkness does not show as being newly cast
         AudioCache: audio.MakeAudioCache(cache),
         ImageCache: imageCache,
@@ -2129,12 +2136,14 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
             spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.GetKnownSpells().CombatSpells(defendingCity), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, player, &spellPage, func (spell spellbook.Spell, picked bool){
                 if picked {
                     // player mana and skill should go down accordingly
-                    combat.Model.InvokeSpell(combat, player, nil, spell, func(){
+                    combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), nil, spell, func(success bool){
                         spellCost := player.ComputeEffectiveSpellCost(spell, false)
                         army.Casted = true
                         army.ManaPool -= spellCost
                         player.UseMana(int(float64(spellCost) * army.Range.ToFloat()))
-                        combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.GetWizard().Name, spell.Name))
+                        if success {
+                            combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.GetWizard().Name, spell.Name))
+                        }
                     })
                 }
             })
@@ -2161,7 +2170,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                             // spell casting range for a unit is always 1
 
                             doCast := func(spell spellbook.Spell){
-                                combat.Model.InvokeSpell(combat, player, caster, spell, func(){
+                                combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), caster, spell, func(success bool){
                                     charge, hasCharge := caster.SpellCharges[spell]
                                     if hasCharge && charge > 0 {
                                         caster.SpellCharges[spell] -= 1
@@ -2170,7 +2179,9 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                                         caster.CastingSkill -= float32(spell.Cost(false))
                                     }
                                     caster.Casted = true
-                                    combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
+                                    if success {
+                                        combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
+                                    }
                                     caster.MovesLeft = fraction.FromInt(0)
                                     select {
                                         case combat.Events <- &CombatEventNextUnit{}:
@@ -2387,24 +2398,6 @@ func faceTowards(x1 int, y1 int, x2 int, y2 int) units.Facing {
     return computeFacing(useAngle)
 }
 
-func (combat *CombatScreen) withinMeleeRange(attacker *ArmyUnit, defender *ArmyUnit) bool {
-    xDiff := math.Abs(float64(attacker.X - defender.X))
-    yDiff := math.Abs(float64(attacker.Y - defender.Y))
-
-    return xDiff <= 1 && yDiff <= 1
-}
-
-func (combat *CombatScreen) withinArrowRange(attacker *ArmyUnit, defender *ArmyUnit) bool {
-    /*
-    xDiff := math.Abs(float64(attacker.X - defender.X))
-    yDiff := math.Abs(float64(attacker.Y - defender.Y))
-
-    return xDiff <= 1 && yDiff <= 1
-    */
-    // FIXME: what is the actual range distance?
-    return true
-}
-
 func distanceInRange(x1 float64, y1 float64, x2 float64, y2 float64, r float64) bool {
     xDiff := x2 - x1
     yDiff := y2 - y1
@@ -2420,6 +2413,7 @@ func distanceAboveRange(x1 float64, y1 float64, x2 float64, y2 float64, r float6
 func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
     for combat.Model.UpdateProjectiles(combat.Counter) {
         combat.Counter += 1
+        combat.ProcessInput()
         combat.UpdateAnimations()
         combat.UpdateGibs()
         if yield() != nil {
@@ -2629,6 +2623,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
         }
 
         combat.UI.StandardUpdate()
+        combat.ProcessInput()
         mouseX, mouseY := inputmanager.MousePosition()
         tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
         combat.MouseTileX = int(math.Round(tileX))
@@ -2640,13 +2635,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
             combat.MouseState = CombatCast
 
             if inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
-                sound, err := combat.AudioCache.GetSound(spell.Sound)
-                if err == nil {
-                    sound.Play()
-                } else {
-                    log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-                }
-
+                combat.PlaySound(spell)
                 selectTile(combat.MouseTileX, combat.MouseTileY)
                 yield()
                 break
@@ -2660,6 +2649,15 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
         if yield() != nil {
             return
         }
+    }
+}
+
+func (combat *CombatScreen) PlaySound(spell spellbook.Spell) {
+    sound, err := combat.AudioCache.GetSound(spell.Sound)
+    if err == nil {
+        sound.Play()
+    } else {
+        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
     }
 }
 
@@ -2735,12 +2733,15 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
         }
 
         combat.UI.StandardUpdate()
+        combat.ProcessInput()
         mouseX, mouseY := inputmanager.MousePosition()
         tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
         combat.MouseTileX = int(math.Round(tileX))
         combat.MouseTileY = int(math.Round(tileY))
 
         combat.MouseState = CombatCast
+
+        combat.Model.HighlightedUnit = combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
 
         if mouseY >= scale.Scale(hudY) {
             combat.MouseState = CombatClickHud
@@ -2753,6 +2754,8 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
             if unit != nil && canTargetMemo(unit) && inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
                 if selectTeam == TeamEither || unit.Team == selectTeam {
+
+                    combat.PlaySound(spell)
 
                     sound, err := combat.AudioCache.GetSound(spell.Sound)
                     if err == nil {
@@ -2823,6 +2826,7 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
 
     for counter < counterMax {
         combat.Counter += 1
+        combat.ProcessInput()
         counter += 1
         value.A = interpolate(counter)
         yield()
@@ -2885,7 +2889,7 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                         combat.UI.AddElement(uilib.MakeErrorElement(combat.UI, combat.Cache, &combat.ImageCache, use.Message, func(){ yield() }))
                     case *CombatEventCreateLightningBolt:
                         bolt := event.(*CombatEventCreateLightningBolt)
-                        combat.CreateLightningBoltProjectile(bolt.Target, bolt.Strength)
+                        combat.Model.AddProjectile(combat.CreateLightningBoltProjectile(bolt.Target, bolt.Strength))
                         sounds.Insert(LightningBoltSound)
                     case *CombatEventSummonUnit:
                         summon := event.(*CombatEventSummonUnit)
@@ -2949,6 +2953,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             combat.Counter += 1
             combat.UpdateAnimations()
             combat.UpdateGibs()
+            combat.ProcessInput()
             mover.SetHeight(-i/mergeSpeed)
             yield()
         }
@@ -2957,6 +2962,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             combat.Counter += 1
             combat.UpdateAnimations()
             combat.UpdateGibs()
+            combat.ProcessInput()
             mover.SetFade(float32(i)/float32(mergeCount))
             yield()
         }
@@ -2973,6 +2979,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             combat.Counter += 1
             combat.UpdateAnimations()
             combat.UpdateGibs()
+            combat.ProcessInput()
             mover.SetHeight(-(mergeCount/mergeSpeed - i/mergeSpeed))
             yield()
         }
@@ -2982,6 +2989,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             combat.Counter += 1
             combat.UpdateAnimations()
             combat.UpdateGibs()
+            combat.ProcessInput()
             mover.SetFade(float32(mergeCount - i)/float32(mergeCount))
             yield()
         }
@@ -2999,7 +3007,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     mover.MoveX = float64(mover.X)
     mover.MoveY = float64(mover.Y)
 
-    quit, cancel := context.WithCancel(context.Background())
+    quit, cancel := context.WithCancel(combat.Quit)
     defer cancel()
 
     sound, err := combat.AudioCache.GetSound(mover.Unit.GetMovementSound().LbxIndex())
@@ -3049,6 +3057,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         for !reached {
             combat.UpdateAnimations()
             combat.UpdateGibs()
+            combat.ProcessInput()
             combat.Counter += 1
 
             mouseX, mouseY := inputmanager.MousePosition()
@@ -3175,6 +3184,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
         combat.Counter += 1
         combat.UpdateAnimations()
         combat.UpdateGibs()
+        combat.ProcessInput()
         combat.ProcessEvents(yield)
 
         // delay the actual melee computation to give time for the sound to play
@@ -3188,147 +3198,27 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
     }
 }
 
-func (combat *CombatScreen) doAI(yield coroutine.YieldFunc, aiUnit *ArmyUnit) {
-    // aiArmy := combat.GetArmy(combat.SelectedUnit)
-    otherArmy := combat.Model.GetOtherArmy(aiUnit)
-    if aiUnit.ConfusionAction == ConfusionActionEnemyControl {
-        otherArmy = combat.Model.GetArmy(aiUnit)
-    }
-
-    // try a ranged attack first
-    if aiUnit.RangedAttacks > 0 {
-        candidates := slices.Clone(otherArmy.units)
-        slices.SortFunc(candidates, func (a *ArmyUnit, b *ArmyUnit) int {
-            return cmp.Compare(computeTileDistance(aiUnit.X, aiUnit.Y, a.X, a.Y), computeTileDistance(aiUnit.X, aiUnit.Y, b.X, b.Y))
-        })
-
-        for _, candidate := range candidates {
-           if combat.withinArrowRange(aiUnit, candidate) && combat.Model.canRangeAttack(aiUnit, candidate) {
-               combat.doRangeAttack(yield, aiUnit, candidate)
-               return
-           }
-        }
-    }
-
-    for _, unit := range otherArmy.units {
-        if combat.withinMeleeRange(aiUnit, unit) && combat.Model.canMeleeAttack(aiUnit, unit) {
-            combat.doMelee(yield, aiUnit, unit)
-            return
-        }
-    }
-
-    aiUnit.Paths = make(map[image.Point]pathfinding.Path)
-
-    // if the selected unit has ranged attacks, then try to use that
-    // otherwise, if in melee range of some enemy then attack them
-    // otherwise walk towards the enemy
-
-    paths := make(map[*ArmyUnit]pathfinding.Path)
-
-    getPath := func (unit *ArmyUnit) pathfinding.Path {
-        path, found := paths[unit]
-        if !found {
-            combat.Model.Tiles[unit.Y][unit.X].Unit = nil
-            var ok bool
-            path, ok = combat.Model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
-            combat.Model.Tiles[unit.Y][unit.X].Unit = unit
-            if ok {
-                paths[unit] = path
-            } else {
-                paths[unit] = nil
-            }
-        }
-
-        return path
-    }
-
-    filterReachable := func (units []*ArmyUnit) []*ArmyUnit {
-        var out []*ArmyUnit
-
-        aiInWall := combat.Model.InsideAnyWall(aiUnit.X, aiUnit.Y)
-
-        for _, unit := range units {
-            // skip enemies that we can't melee anyway
-            if !combat.Model.canMeleeAttack(aiUnit, unit) {
-                continue
-            }
-
-            enemyInWall := combat.Model.InsideAnyWall(unit.X, unit.Y)
-
-            // if the unit is inside a wall (fire/darkness/brick) but the target is outside, then don't move
-            if aiUnit.Team == TeamDefender && aiInWall && !enemyInWall {
-                continue
-            }
-
-            path := getPath(unit)
-            if len(path) > 0 {
-                out = append(out, unit)
-            }
-        }
-        return out
-    }
-
-    // should filter by enemies that we can attack, so non-flyers do not move toward flyers
-    candidates := filterReachable(slices.Clone(otherArmy.units))
-
-    slices.SortFunc(candidates, func (a *ArmyUnit, b *ArmyUnit) int {
-        aPath := getPath(a)
-        bPath := getPath(b)
-
-        return cmp.Compare(len(aPath), len(bPath))
-    })
-
-
-    // find a path to some enemy
-    for _, closestEnemy := range candidates {
-        // pretend that there is no unit at the tile. this is a sin of the highest order
-
-        path := getPath(closestEnemy)
-
-        // a path of length 2 contains the position of the aiUnit and the position of the enemy, so they are right next to each other
-        if len(path) == 2 && combat.Model.canMeleeAttack(aiUnit, closestEnemy) {
-            combat.doMelee(yield, aiUnit, closestEnemy)
-            return
-        } else if len(path) > 2 {
-            // ignore path[0], thats where we are now. also ignore the last element, since we can't move onto the enemy
-
-            last := path[len(path)-1]
-            if last.X == closestEnemy.X && last.Y == closestEnemy.Y {
-                path = path[:len(path)-1]
-            }
-
-            lastIndex := 0
-            for lastIndex < len(path) {
-                lastIndex += 1
-                if !aiUnit.CanFollowPath(path[0:lastIndex]) {
-                    lastIndex -= 1
-                    break
-                }
-            }
-
-            if lastIndex >= 1 && lastIndex <= len(path) {
-                combat.doMoveUnit(yield, aiUnit, path[1:lastIndex])
-                return
-            }
-        }
-    }
-
-    // no enemy to move towards, then possibly move towards gate
-    if aiUnit.Team == TeamDefender && combat.Model.InsideCityWall(aiUnit.X, aiUnit.Y) {
-        // if inside a city wall, then move towards the gate
-        gateX, gateY := combat.Model.GetCityGateCoordinates()
-        if gateX != -1 && gateY != -1 {
-            path, ok := combat.Model.computePath(aiUnit.X, aiUnit.Y, gateX, gateY, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
-            if ok && len(path) > 1 && aiUnit.CanFollowPath(path) {
-                combat.doMoveUnit(yield, aiUnit, path[1:])
-                return
-            }
-        }
-    }
-
-    // didn't make a choice, just exhaust moves left
-    aiUnit.MovesLeft = fraction.FromInt(0)
+type AIUnitActions struct {
+    yield coroutine.YieldFunc
+    combat *CombatScreen
 }
+
+func (actions AIUnitActions) Teleport(mover *ArmyUnit, x int, y int, merge bool) {
+    actions.combat.doTeleport(actions.yield, mover, x, y, merge)
+}
+
+func (actions AIUnitActions) RangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+    actions.combat.doRangeAttack(actions.yield, attacker, defender)
+}
+
+func (actions AIUnitActions) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+    actions.combat.doMelee(actions.yield, attacker, defender)
+}
+
+func (actions AIUnitActions) MoveUnit(unit *ArmyUnit, path pathfinding.Path) {
+    actions.combat.doMoveUnit(actions.yield, unit, path)
+}
+
 
 func (combat *CombatScreen) UpdateMouseState() {
     switch combat.MouseState {
@@ -3381,6 +3271,46 @@ func (combat *CombatScreen) UpdateGibs() {
     combat.Gibs = keepGibs
 }
 
+func (combat *CombatScreen) ProcessInput() {
+    var keys []ebiten.Key
+    keys = inpututil.AppendPressedKeys(keys)
+    for _, key := range keys {
+        speed := 0.8
+        switch key {
+            case ebiten.KeyDown:
+                combat.Coordinates.Translate(0, -speed)
+            case ebiten.KeyUp:
+                combat.Coordinates.Translate(0, speed)
+            case ebiten.KeyLeft:
+                combat.Coordinates.Translate(speed, 0)
+            case ebiten.KeyRight:
+                combat.Coordinates.Translate(-speed, 0)
+            case ebiten.KeyEqual:
+                if combat.CameraScale < 3 {
+                    combat.CameraScale *= 1 + 0.01
+                    combat.Coordinates.Scale(1.01, 1.01)
+                }
+            case ebiten.KeyMinus:
+                if combat.CameraScale > 0.5 {
+                    combat.CameraScale *= 1.0 - 0.01
+                    combat.Coordinates.Scale(0.99, 0.99)
+                }
+            case ebiten.KeySpace:
+                normalized := 1 / combat.CameraScale
+                combat.CameraScale *= normalized
+                combat.Coordinates.Scale(normalized, normalized)
+        }
+    }
+
+    // FIXME: handle right-click drag to move the camera
+
+    _, wheelY := inputmanager.Wheel()
+
+    wheelScale := 1 + float64(wheelY) / 10
+    combat.CameraScale *= wheelScale
+    combat.Coordinates.Scale(wheelScale, wheelScale)
+}
+
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     if combat.Model.CurrentTurn >= MAX_TURNS {
         combat.Model.AddLogEvent("Combat exceeded maximum number of turns, defender wins")
@@ -3430,43 +3360,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     // hudY := data.ScreenHeightOriginal - hudImage.Bounds().Dy()
     hudY := (data.ScreenHeight - hudImage.Bounds().Dy())
 
-    var keys []ebiten.Key
-    keys = inpututil.AppendPressedKeys(keys)
-    for _, key := range keys {
-        speed := 0.8
-        switch key {
-            case ebiten.KeyDown:
-                combat.Coordinates.Translate(0, -speed)
-            case ebiten.KeyUp:
-                combat.Coordinates.Translate(0, speed)
-            case ebiten.KeyLeft:
-                combat.Coordinates.Translate(speed, 0)
-            case ebiten.KeyRight:
-                combat.Coordinates.Translate(-speed, 0)
-            case ebiten.KeyEqual:
-                if combat.CameraScale < 3 {
-                    combat.CameraScale *= 1 + 0.01
-                    combat.Coordinates.Scale(1.01, 1.01)
-                }
-            case ebiten.KeyMinus:
-                if combat.CameraScale > 0.5 {
-                    combat.CameraScale *= 1.0 - 0.01
-                    combat.Coordinates.Scale(0.99, 0.99)
-                }
-            case ebiten.KeySpace:
-                normalized := 1 / combat.CameraScale
-                combat.CameraScale *= normalized
-                combat.Coordinates.Scale(normalized, normalized)
-        }
-    }
-
-    // FIXME: handle right-click drag to move the camera
-
-    _, wheelY := inputmanager.Wheel()
-
-    wheelScale := 1 + float64(wheelY) / 10
-    combat.CameraScale *= wheelScale
-    combat.Coordinates.Scale(wheelScale, wheelScale)
+    combat.ProcessInput()
 
     combat.ProcessEvents(yield)
 
@@ -3516,9 +3410,15 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     if combat.Model.SelectedUnit != nil && combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
         aiUnit := combat.Model.SelectedUnit
 
+        aiArmy := combat.Model.GetArmy(aiUnit)
+        casted := combat.Model.doAiCast(combat, aiArmy)
+        if casted {
+            combat.doProjectiles(yield)
+        }
+
         // keep making choices until the unit runs out of moves
-        for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) {
-            combat.doAI(yield, aiUnit)
+        for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) && aiUnit.GetHealth() > 0 {
+            doAI(combat.Model, &AIUnitActions{yield: yield, combat: combat}, aiUnit)
         }
         aiUnit.LastTurn = combat.Model.CurrentTurn
         combat.Model.NextUnit()
@@ -3540,9 +3440,9 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         } else {
             newState := CombatNotOk
             // prioritize range attack over melee
-            if combat.Model.canRangeAttack(combat.Model.SelectedUnit, who) && combat.withinArrowRange(combat.Model.SelectedUnit, who) {
+            if combat.Model.canRangeAttack(combat.Model.SelectedUnit, who) && combat.Model.withinArrowRange(combat.Model.SelectedUnit, who) {
                 newState = CombatRangeAttackOk
-            } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who) && combat.withinMeleeRange(combat.Model.SelectedUnit, who) {
+            } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who) && combat.Model.withinMeleeRange(combat.Model.SelectedUnit, who) {
                 newState = CombatMeleeAttackOk
             }
 
@@ -3575,10 +3475,10 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            attacker := combat.Model.SelectedUnit
 
            // try a ranged attack first
-           if defender != nil && combat.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
+           if defender != nil && combat.Model.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
                combat.doRangeAttack(yield, attacker, defender)
            // then fall back to melee
-           } else if defender != nil && combat.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){
+           } else if defender != nil && combat.Model.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){
                combat.doMelee(yield, attacker, defender)
                attacker.Paths = make(map[image.Point]pathfinding.Path)
            }

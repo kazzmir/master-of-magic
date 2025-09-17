@@ -343,6 +343,7 @@ func (engine *Engine) Update() error {
             inputmanager.Update()
             err := engine.Coroutine.Run()
             if errors.Is(err, CombatDoneErr) {
+                engine.Combat.Cancel()
                 engine.Combat = nil
                 engine.Coroutine = nil
                 engine.Mode = EngineModeMenu
@@ -576,6 +577,7 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
             }),
             */
             widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                engine.Combat.Cancel()
                 engine.Mode = EngineModeMenu
             }),
         ),
