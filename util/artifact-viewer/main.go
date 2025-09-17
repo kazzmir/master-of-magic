@@ -92,8 +92,8 @@ func makeNineRoundedButtonImage(width int, height int, border int, col color.Col
     }
 }
 
-func padding(n int) widget.Insets {
-    return widget.Insets{Top: n, Bottom: n, Left: n, Right: n}
+func padding(n int) *widget.Insets {
+    return &widget.Insets{Top: n, Bottom: n, Left: n, Right: n}
 }
 
 func makeRoundedButtonImage(width int, height int, border int, col color.Color) *ebiten.Image {
@@ -163,10 +163,10 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         }
 
         itemInfo.RemoveChildren()
-        itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(useArtifact.Name, face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
-        itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Cost: %v", useArtifact.Cost), face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
+        itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(useArtifact.Name, &face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
+        itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Cost: %v", useArtifact.Cost), &face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
 
-        graphic := widget.NewGraphic()
+        graphic := widget.NewGraphic(widget.GraphicOpts.Image(ebiten.NewImage(1, 1)))
         itemImage, err := imageCache.GetImageTransform("items.lbx", useArtifact.Image, 0, "enlarge", enlargeTransform(4))
 
         if err == nil {
@@ -176,16 +176,16 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         }
 
         itemInfo.AddChild(graphic)
-        itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Type: %v", useArtifact.Type), face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
+        itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Type: %v", useArtifact.Type), &face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
         for _, power := range useArtifact.Powers {
-            itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(power.Name, face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
+            itemInfo.AddChild(widget.NewText(widget.TextOpts.Text(power.Name, &face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
         }
     }
 
     fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})
 
     artifactList := widget.NewList(
-        widget.ListOpts.EntryFontFace(face),
+        widget.ListOpts.EntryFontFace(&face),
 
         widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
             widget.WidgetOpts.LayoutData(widget.RowLayoutData{
@@ -194,14 +194,13 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.WidgetOpts.MinSize(0, 850),
         )),
 
-        widget.ListOpts.SliderOpts(
-            widget.SliderOpts.Images(&widget.SliderTrackImage{
-                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
-                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
-                },
-                makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
-            ),
-        ),
+        widget.ListOpts.SliderParams(&widget.SliderParams{
+            TrackImage: &widget.SliderTrackImage{
+                Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+            },
+            HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+        }),
 
         widget.ListOpts.HideHorizontalSlider(),
 
@@ -223,13 +222,11 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
         }),
 
-        widget.ListOpts.ScrollContainerOpts(
-            widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
-                Disabled: fakeImage,
-                Mask: fakeImage,
-            }),
-        ),
+        widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
+            Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+            Disabled: fakeImage,
+            Mask: fakeImage,
+        }),
     )
 
     for _, artifact := range slices.SortedFunc(slices.Values(engine.Artifacts), func (a artifact.Artifact, b artifact.Artifact) int {
@@ -238,7 +235,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         artifactList.AddEntry(artifact.Name)
     }
 
-    itemInfo.AddChild(widget.NewText(widget.TextOpts.Text("Item", face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
+    itemInfo.AddChild(widget.NewText(widget.TextOpts.Text("Item", &face, color.NRGBA{R: 255, G: 255, B: 255, A: 255})))
 
     rootContainer.AddChild(artifactList)
     rootContainer.AddChild(itemInfo)
