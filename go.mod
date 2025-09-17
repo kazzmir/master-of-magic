@@ -3,12 +3,12 @@ module github.com/kazzmir/master-of-magic
 go 1.24.0
 
 require (
-	github.com/ebitenui/ebitenui v0.7.1
+	github.com/ebitenui/ebitenui v0.7.2-0.20250915014605-fc6859e61c94
 	github.com/hajimehoshi/ebiten/v2 v2.8.8
 	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b
 )
 
-replace github.com/ebitenui/ebitenui => /home/jon/tmp/ebitenui-kazzmir
+// replace github.com/ebitenui/ebitenui => /home/jon/tmp/ebitenui-kazzmir
 
 require (
 	github.com/ebitengine/gomobile v0.0.0-20250329061421-6d0a8e981e4c // indirect

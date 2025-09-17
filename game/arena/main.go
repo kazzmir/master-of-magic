@@ -609,7 +609,7 @@ func standardButtonImage() *widget.ButtonImage {
     return ui.MakeButtonImage(ui_image.NewBorderedNineSliceColor(body, border, 1))
 }
 
-func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.GoTextFace, buyUnit func(*units.Unit)) *UnitIconList {
+func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.Face, buyUnit func(*units.Unit)) *UnitIconList {
     var iconList UnitIconList
 
     iconList.imageCache = imageCache
@@ -1086,9 +1086,13 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
     var tabs []*widget.TabBookTab
 
     for _, magic := range allMagic {
-        tab := widget.NewTabBookTab(magic.String(), widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-        )))
+        tab := widget.NewTabBookTab(
+            widget.TabBookTabOpts.Label(magic.String()),
+            widget.TabBookTabOpts.ContainerOpts(
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            ))),
+        )
 
         tab.AddChild(ui.CenteredText(fmt.Sprintf("%v Spells", magic), face, color.White))
         tabs = append(tabs, tab)
@@ -1275,7 +1279,7 @@ func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxC
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(2),
             widget.GridLayoutOpts.DefaultStretch(false, false),
-            widget.GridLayoutOpts.Padding(widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
+            widget.GridLayoutOpts.Padding(&widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
             widget.GridLayoutOpts.Spacing(20, 0),
             // widget.GridLayoutOpts.Stretch([]bool{false, false}, []bool{false, false}),
         )),
@@ -1356,16 +1360,20 @@ func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxC
         setupFilteredList()
     })
 
-    tabAll := widget.NewTabBookTab("All", widget.ContainerOpts.Layout(widget.NewGridLayout(
+    tabAll := widget.NewTabBookTab(
+        widget.TabBookTabOpts.Label("All"),
+        widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(widget.NewGridLayout(
         widget.GridLayoutOpts.Columns(1),
         widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
-    )))
+    ))))
     tabAll.AddChild(unitList.GetWidget())
-    tabAffordable := widget.NewTabBookTab("Affordable", widget.ContainerOpts.Layout(
+    tabAffordable := widget.NewTabBookTab(
+        widget.TabBookTabOpts.Label("Affordable"),
+        widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(
         widget.NewGridLayout(
         widget.GridLayoutOpts.Columns(1),
         widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
-    )))
+    ))))
     tabAffordable.AddChild(filteredUnitList.GetWidget())
 
     tabs := widget.NewTabBook(
@@ -1376,7 +1384,7 @@ func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxC
             Hover: color.White,
             Pressed: color.White,
         }),
-        widget.TabBookOpts.TabButtonOpts(widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 10, Right: 10})),
+        widget.TabBookOpts.TabButtonTextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 10, Right: 10}),
         widget.TabBookOpts.TabButtonSpacing(10),
         // widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(2)),
         widget.TabBookOpts.Tabs(tabAll, tabAffordable),
@@ -1500,14 +1508,6 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
                 Position: widget.RowLayoutPositionCenter,
             })))
 
-            remove := func(){}
-            enchantButton := widget.NewButton(
-                widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-                widget.ButtonOpts.Image(ui.MakeButtonImage(ui.SolidImage(64, 32, 32))),
-                widget.ButtonOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                    Position: widget.RowLayoutPositionCenter,
-                })))
-
             requirements := getEnchantmentRequirements(enchantment)
             var use *ebiten.Image
             switch requirements.Magic {
@@ -1551,7 +1551,7 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
 
             remove := func(){}
             enchantButton := widget.NewButton(
-                widget.ButtonOpts.TextPadding(widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
                 widget.ButtonOpts.Image(standardButtonImage()),
                 widget.ButtonOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
                     Position: widget.RowLayoutPositionCenter,
