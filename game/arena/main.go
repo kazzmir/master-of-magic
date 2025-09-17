@@ -112,7 +112,6 @@ func getValidUnitEnchantments() []data.UnitEnchantment {
     return []data.UnitEnchantment{
         data.UnitEnchantmentGiantStrength,
         data.UnitEnchantmentLionHeart,
-        data.UnitEnchantmentHaste,
         data.UnitEnchantmentImmolation,
         data.UnitEnchantmentResistElements,
         data.UnitEnchantmentResistMagic,
@@ -140,7 +139,6 @@ func getValidUnitEnchantments() []data.UnitEnchantment {
         data.UnitEnchantmentSpellLock,
         data.UnitEnchantmentEldritchWeapon,
         data.UnitEnchantmentFlameBlade,
-        data.UnitEnchantmentBerserk,
         data.UnitEnchantmentBlackChannels,
         data.UnitEnchantmentWraithForm,
     }
