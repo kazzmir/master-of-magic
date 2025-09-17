@@ -196,7 +196,7 @@ func getUnitCost(unit *units.Unit) uint64 {
     }
 
     if unit.Equals(units.Wraith) {
-        return 1300
+        return 2500
     }
 
     if unit.Equals(units.ShadowDemons) {
@@ -204,7 +204,7 @@ func getUnitCost(unit *units.Unit) uint64 {
     }
 
     if unit.Equals(units.DeathKnights) {
-        return 2500
+        return 4000
     }
 
     if unit.Equals(units.DemonLord) {
