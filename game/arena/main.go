@@ -1645,6 +1645,59 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         unitSpecifics.AddChild(currentRace)
         unitSpecifics.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Experience: %d (%v)", unit.GetExperience(), unit.GetExperienceLevel().Name()), face, color.White)))
 
+        if unit.GetRace() != data.RaceFantastic {
+
+            var makeMeleeBox func() *widget.Container
+
+            makeMeleeBox = func() *widget.Container {
+                meleeBox := ui.HBox()
+                meleeIcon, _ := imageCache.GetImageTransform("unitview.lbx", 13, 0, "enlarge", enlargeTransform(2))
+
+                switch unit.GetWeaponBonus() {
+                    case data.WeaponMagic:
+                        meleeIcon, _ = imageCache.GetImageTransform("unitview.lbx", 16, 0, "enlarge", enlargeTransform(2))
+                    case data.WeaponMythril:
+                        meleeIcon, _ = imageCache.GetImageTransform("unitview.lbx", 15, 0, "enlarge", enlargeTransform(2))
+                    case data.WeaponAdamantium:
+                        meleeIcon, _ = imageCache.GetImageTransform("unitview.lbx", 17, 0, "enlarge", enlargeTransform(2))
+                }
+
+                meleeBox.AddChild(combineHorizontalElements(
+                    widget.NewText(widget.TextOpts.Text("Melee:", face, color.White)),
+                    widget.NewGraphic(widget.GraphicOpts.Image(meleeIcon)),
+                ))
+
+                if unit.GetWeaponBonus() != data.WeaponAdamantium {
+                    meleeBox.AddChild(widget.NewButton(
+                        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                        widget.ButtonOpts.Image(standardButtonImage()),
+                        widget.ButtonOpts.Text("Upgrade", face, &widget.ButtonTextColor{
+                            Idle: color.White,
+                            Hover: color.White,
+                            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                        }),
+                        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                            switch unit.GetWeaponBonus() {
+                                case data.WeaponNone:
+                                    unit.SetWeaponBonus(data.WeaponMagic)
+                                case data.WeaponMagic:
+                                    unit.SetWeaponBonus(data.WeaponMythril)
+                                case data.WeaponMythril:
+                                    unit.SetWeaponBonus(data.WeaponAdamantium)
+                            }
+
+                            newMeleeBox := makeMeleeBox()
+                            unitSpecifics.ReplaceChild(meleeBox, newMeleeBox)
+                        }),
+                    ))
+                }
+
+                return meleeBox
+            }
+
+            unitSpecifics.AddChild(makeMeleeBox())
+        }
+
         // var currentHealTarget units.StackUnit
 
         makeHealCost := func(amount int) *widget.Container {
