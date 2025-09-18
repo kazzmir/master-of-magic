@@ -241,6 +241,37 @@ func tryAddEnchantments(unit units.StackUnit, playerObj *player.Player, budget u
     return totalCost
 }
 
+func tryUpgradeUnit(unit units.StackUnit, budget uint64) uint64 {
+    upgradeCost := uint64(0)
+
+    if unit.GetRace() == data.RaceFantastic {
+        return upgradeCost
+    }
+
+    for unit.GetWeaponBonus() != data.WeaponAdamantium {
+
+        cost := getWeaponUpgradeCost(unit.GetWeaponBonus())
+
+        if cost > budget || rand.N(100) > 60 {
+            break
+        }
+
+        switch unit.GetWeaponBonus() {
+            case data.WeaponNone:
+                unit.SetWeaponBonus(data.WeaponMagic)
+            case data.WeaponMagic:
+                unit.SetWeaponBonus(data.WeaponMythril)
+            case data.WeaponMythril:
+                unit.SetWeaponBonus(data.WeaponAdamantium)
+        }
+
+        budget -= cost
+        upgradeCost += cost
+    }
+
+    return upgradeCost
+}
+
 func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     defendingArmy := combat.Army {
         Player: engine.Player,
@@ -339,8 +370,13 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
         budget -= enchantmentCost
 
+        upgradeCost := tryUpgradeUnit(addedUnit, budget / 2)
+
+        budget -= upgradeCost
+
         engine.CurrentBattleReward += enchantmentCost
         engine.CurrentBattleReward += unitCost
+        engine.CurrentBattleReward += upgradeCost
 
         if budget > 10000000 {
             panic("budget overflow")
@@ -1656,15 +1692,11 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                 meleeBox := ui.HBox()
                 meleeIcon, _ := imageCache.GetImageTransform("unitview.lbx", 13, 0, "enlarge", enlargeTransform(2))
 
-                var upgradeCost uint64 = 100
-
                 switch unit.GetWeaponBonus() {
                     case data.WeaponMagic:
                         meleeIcon, _ = imageCache.GetImageTransform("unitview.lbx", 16, 0, "enlarge", enlargeTransform(2))
-                        upgradeCost = 300
                     case data.WeaponMythril:
                         meleeIcon, _ = imageCache.GetImageTransform("unitview.lbx", 15, 0, "enlarge", enlargeTransform(2))
-                        upgradeCost = 600
                     case data.WeaponAdamantium:
                         meleeIcon, _ = imageCache.GetImageTransform("unitview.lbx", 17, 0, "enlarge", enlargeTransform(2))
                 }
@@ -1675,6 +1707,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                 ))
 
                 if unit.GetWeaponBonus() != data.WeaponAdamantium {
+                    upgradeCost := getWeaponUpgradeCost(unit.GetWeaponBonus())
                     meleeBox.AddChild(widget.NewButton(
                         widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
                         widget.ButtonOpts.Image(standardButtonImage()),

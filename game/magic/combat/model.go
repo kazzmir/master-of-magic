@@ -4465,8 +4465,10 @@ type SpellSystem interface {
 func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func(bool)){
 
     if model.CheckDispel(spell, army.Player) {
-        model.Events <- &CombatEventMessage{
-            Message: fmt.Sprintf("%v fizzled", spell.Name),
+        if !army.IsAI() {
+            model.Events <- &CombatEventMessage{
+                Message: fmt.Sprintf("%v fizzled", spell.Name),
+            }
         }
         castedCallback(false)
         return
@@ -5089,8 +5091,10 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }
 
             if failed {
-                model.Events <- &CombatEventMessage{
-                    Message: "There are no available units to revive.",
+                if !army.IsAI() {
+                    model.Events <- &CombatEventMessage{
+                        Message: "There are no available units to revive.",
+                    }
                 }
             }
         case "Animate Dead":
@@ -5155,8 +5159,10 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                     }
                 }
             } else {
-                model.Events <- &CombatEventMessage{
-                    Message: "There are no available units to raise.",
+                if !army.IsAI() {
+                    model.Events <- &CombatEventMessage{
+                        Message: "There are no available units to raise.",
+                    }
                 }
             }
 

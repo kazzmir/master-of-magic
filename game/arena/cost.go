@@ -853,3 +853,16 @@ func getVeryRareSpells(books int) int {
 
     return books
 }
+
+// upgrade from bonus to the next one, e.g. none -> magic, magic -> mythril, mythril -> adamantium
+func getWeaponUpgradeCost(bonus data.WeaponBonus) uint64 {
+    switch bonus {
+        case data.WeaponNone: return 100
+        case data.WeaponMagic: return 300
+        case data.WeaponMythril: return 600
+        // adamantium cannot be upgraded
+        case data.WeaponAdamantium: return 1000
+    }
+
+    return 100
+}
