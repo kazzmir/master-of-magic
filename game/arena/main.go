@@ -1647,17 +1647,26 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
         if unit.GetRace() != data.RaceFantastic {
 
+            gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
+            moneyImage := &widget.GraphicImage{
+                Idle: gold,
+                Disabled: gold,
+            }
             var makeMeleeBox func() *widget.Container
 
             makeMeleeBox = func() *widget.Container {
                 meleeBox := ui.HBox()
                 meleeIcon, _ := imageCache.GetImageTransform("unitview.lbx", 13, 0, "enlarge", enlargeTransform(2))
 
+                var upgradeCost uint64 = 100
+
                 switch unit.GetWeaponBonus() {
                     case data.WeaponMagic:
                         meleeIcon, _ = imageCache.GetImageTransform("unitview.lbx", 16, 0, "enlarge", enlargeTransform(2))
+                        upgradeCost = 300
                     case data.WeaponMythril:
                         meleeIcon, _ = imageCache.GetImageTransform("unitview.lbx", 15, 0, "enlarge", enlargeTransform(2))
+                        upgradeCost = 600
                     case data.WeaponAdamantium:
                         meleeIcon, _ = imageCache.GetImageTransform("unitview.lbx", 17, 0, "enlarge", enlargeTransform(2))
                 }
@@ -1671,12 +1680,16 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                     meleeBox.AddChild(widget.NewButton(
                         widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
                         widget.ButtonOpts.Image(standardButtonImage()),
-                        widget.ButtonOpts.Text("Upgrade", face, &widget.ButtonTextColor{
+                        widget.ButtonOpts.TextAndImage(fmt.Sprintf("Upgrade %v", upgradeCost), face, moneyImage, &widget.ButtonTextColor{
                             Idle: color.White,
                             Hover: color.White,
                             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
                         }),
                         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                            if upgradeCost > playerObj.Money {
+                                return
+                            }
+
                             switch unit.GetWeaponBonus() {
                                 case data.WeaponNone:
                                     unit.SetWeaponBonus(data.WeaponMagic)
@@ -1688,6 +1701,8 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
                             newMeleeBox := makeMeleeBox()
                             unitSpecifics.ReplaceChild(meleeBox, newMeleeBox)
+                            playerObj.Money -= upgradeCost
+                            uiEvents.AddUpdate(&UIUpdateMoney{})
                         }),
                     ))
                 }
@@ -2193,7 +2208,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
     // test1(playerObj)
-    // test3(playerObj)
+    test3(playerObj)
     // test4(playerObj)
 
     music := musiclib.MakeMusic(cache)
