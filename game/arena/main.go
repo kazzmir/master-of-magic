@@ -1643,7 +1643,73 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         unitSpecifics.AddChild(currentName)
         unitSpecifics.AddChild(currentHealth)
         unitSpecifics.AddChild(currentRace)
-        unitSpecifics.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Experience: %d (%v)", unit.GetExperience(), unit.GetExperienceLevel().Name()), face, color.White)))
+        if unit.GetRace() != data.RaceFantastic {
+            unitSpecifics.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Experience: %d (%v)", unit.GetExperience(), unit.GetExperienceLevel().Name()), face, color.White)))
+            gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
+            moneyImage := &widget.GraphicImage{
+                Idle: gold,
+                Disabled: gold,
+            }
+            var makeMeleeBox func() *widget.Container
+
+            makeMeleeBox = func() *widget.Container {
+                meleeBox := ui.HBox()
+                meleeIcon, _ := imageCache.GetImageTransform("unitview.lbx", 13, 0, "enlarge", enlargeTransform(2))
+
+                var upgradeCost uint64 = 100
+
+                switch unit.GetWeaponBonus() {
+                    case data.WeaponMagic:
+                        meleeIcon, _ = imageCache.GetImageTransform("unitview.lbx", 16, 0, "enlarge", enlargeTransform(2))
+                        upgradeCost = 300
+                    case data.WeaponMythril:
+                        meleeIcon, _ = imageCache.GetImageTransform("unitview.lbx", 15, 0, "enlarge", enlargeTransform(2))
+                        upgradeCost = 600
+                    case data.WeaponAdamantium:
+                        meleeIcon, _ = imageCache.GetImageTransform("unitview.lbx", 17, 0, "enlarge", enlargeTransform(2))
+                }
+
+                meleeBox.AddChild(combineHorizontalElements(
+                    widget.NewText(widget.TextOpts.Text("Melee:", face, color.White)),
+                    widget.NewGraphic(widget.GraphicOpts.Image(meleeIcon)),
+                ))
+
+                if unit.GetWeaponBonus() != data.WeaponAdamantium {
+                    meleeBox.AddChild(widget.NewButton(
+                        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                        widget.ButtonOpts.Image(standardButtonImage()),
+                        widget.ButtonOpts.TextAndImage(fmt.Sprintf("Upgrade %v", upgradeCost), face, moneyImage, &widget.ButtonTextColor{
+                            Idle: color.White,
+                            Hover: color.White,
+                            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                        }),
+                        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                            if upgradeCost > playerObj.Money {
+                                return
+                            }
+
+                            switch unit.GetWeaponBonus() {
+                                case data.WeaponNone:
+                                    unit.SetWeaponBonus(data.WeaponMagic)
+                                case data.WeaponMagic:
+                                    unit.SetWeaponBonus(data.WeaponMythril)
+                                case data.WeaponMythril:
+                                    unit.SetWeaponBonus(data.WeaponAdamantium)
+                            }
+
+                            newMeleeBox := makeMeleeBox()
+                            unitSpecifics.ReplaceChild(meleeBox, newMeleeBox)
+                            playerObj.Money -= upgradeCost
+                            uiEvents.AddUpdate(&UIUpdateMoney{})
+                        }),
+                    ))
+                }
+
+                return meleeBox
+            }
+
+            unitSpecifics.AddChild(makeMeleeBox())
+        }
 
         // var currentHealTarget units.StackUnit
 
