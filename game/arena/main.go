@@ -1645,10 +1645,6 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         unitSpecifics.AddChild(currentRace)
         if unit.GetRace() != data.RaceFantastic {
             unitSpecifics.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Experience: %d (%v)", unit.GetExperience(), unit.GetExperienceLevel().Name()), face, color.White)))
-        }
-
-        if unit.GetRace() != data.RaceFantastic {
-
             gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
             moneyImage := &widget.GraphicImage{
                 Idle: gold,
