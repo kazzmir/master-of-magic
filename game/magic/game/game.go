@@ -5405,7 +5405,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     // Show end screen
     if !strategicCombat {
-        result := combat.CombatEndScreenResultLoose
+        result := combat.CombatEndScreenResultLose
         humanAttacker := attacker.IsHuman()
         fame := defenderFame
 

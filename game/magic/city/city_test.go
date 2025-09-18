@@ -474,7 +474,7 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
 
-    if city.ComputePower() != 1 {
+    if city.ComputePower() != 2 {
         // 1 shrine
         test.Errorf("City ComputePower is not correct: %v", city.ComputePower())
     }
@@ -506,7 +506,7 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
 
-    if city.ComputePower() != 1 {
+    if city.ComputePower() != 2 {
         // 1 shrine
         test.Errorf("City ComputePower is not correct: %v", city.ComputePower())
     }
@@ -541,7 +541,7 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
 
-    if city.ComputePower() != 1 {
+    if city.ComputePower() != 2 {
         // 1 shrine
         test.Errorf("City ComputePower is not correct: %v", city.ComputePower())
     }
@@ -574,7 +574,7 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
 
-    if city.ComputePower() != 1 {
+    if city.ComputePower() != 2 {
         // 1 shrine
         test.Errorf("City ComputePower is not correct: %v", city.ComputePower())
     }

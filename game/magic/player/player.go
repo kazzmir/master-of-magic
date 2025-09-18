@@ -593,6 +593,13 @@ func (player *Player) MakeUnitEnchantmentProvider() units.GlobalEnchantmentProvi
     }
 }
 
+func (player *Player) UseMana(mana int) {
+    player.Mana -= mana
+    if player.Mana < 0 {
+        player.Mana = 0
+    }
+}
+
 /* returns true if the hero was actually added to the player
  */
 func (player *Player) AddHero(hero *herolib.Hero, city *citylib.City) bool {
@@ -678,6 +685,18 @@ func (experience *playerExperience) HasWarlord() bool {
 
 func (experience *playerExperience) Crusade() bool {
     return experience.Player.GlobalEnchantments.Contains(data.EnchantmentCrusade)
+}
+
+func (player *Player) GetKnownSpells() spellbook.Spells {
+    return player.KnownSpells
+}
+
+func (player *Player) GetMana() int {
+    return player.Mana
+}
+
+func (player *Player) GetWizard() *setup.WizardCustom {
+    return &player.Wizard
 }
 
 func (player *Player) MakeExperienceInfo() units.ExperienceInfo {

@@ -15,6 +15,9 @@ type TestSpellSystem struct {
     createFireballProjectile func(target *ArmyUnit, cost int) *Projectile
 }
 
+func (system *TestSpellSystem) PlaySound(spell spellbook.Spell) {
+}
+
 func (system *TestSpellSystem) CreateFireballProjectile(target *ArmyUnit, cost int) *Projectile {
     if system.createFireballProjectile != nil {
         return system.createFireballProjectile(target, cost)
@@ -47,7 +50,7 @@ func (system *TestSpellSystem) CreateWarpLightningProjectile(target *ArmyUnit) *
 func (system *TestSpellSystem) CreateFlameStrikeProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player *playerlib.Player, unitCaster *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateDispelEvilProjectile(target *ArmyUnit) *Projectile {
@@ -71,7 +74,7 @@ func (system *TestSpellSystem) CreateWebProjectile(target *ArmyUnit) *Projectile
 func (system *TestSpellSystem) CreateBanishProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateDispelMagicProjectile(target *ArmyUnit, caster *playerlib.Player, dispelStrength int) *Projectile {
+func (system *TestSpellSystem) CreateDispelMagicProjectile(target *ArmyUnit, caster ArmyPlayer, dispelStrength int) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateWordOfRecallProjectile(target *ArmyUnit) *Projectile {
@@ -257,8 +260,9 @@ func TestFireballSpell(test *testing.T){
         Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
+    // events are only produced if the player is human
     attackingArmy := &Army{
-        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, true, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
     attackerUnit := units.LizardSpearmen
@@ -303,7 +307,7 @@ func TestFireballSpell(test *testing.T){
         },
     }
 
-    combat.InvokeSpell(spellObject, attackingArmy.Player, nil, fireball, func(){
+    combat.InvokeSpell(spellObject, attackingArmy, nil, fireball, func(success bool){
         casted = true
     })
 

@@ -56,8 +56,8 @@ func (level *NormalExperienceLevel) ToInt() int {
     return int(*level)
 }
 
-func (level *NormalExperienceLevel) Name() string {
-    switch *level {
+func (level NormalExperienceLevel) Name() string {
+    switch level {
         case ExperienceRecruit: return "Recruit"
         case ExperienceRegular: return "Regular"
         case ExperienceVeteran: return "Veteran"
