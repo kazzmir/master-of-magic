@@ -872,6 +872,18 @@ func (game *Game) SuggestCityName(race data.Race) (string) {
     return chooseCityName(existingNames, choices)
 }
 
+func (game *Game) AllUnits() []units.StackUnit{
+    var out []units.StackUnit
+
+    for _, player := range game.Players {
+        for _, unit := range player.Units {
+            out = append(out, unit)
+        }
+    }
+
+    return out
+}
+
 func (game *Game) AllCities() []*citylib.City {
     var out []*citylib.City
 
