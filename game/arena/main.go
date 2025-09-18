@@ -1643,7 +1643,9 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         unitSpecifics.AddChild(currentName)
         unitSpecifics.AddChild(currentHealth)
         unitSpecifics.AddChild(currentRace)
-        unitSpecifics.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Experience: %d (%v)", unit.GetExperience(), unit.GetExperienceLevel().Name()), face, color.White)))
+        if unit.GetRace() != data.RaceFantastic {
+            unitSpecifics.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Experience: %d (%v)", unit.GetExperience(), unit.GetExperienceLevel().Name()), face, color.White)))
+        }
 
         if unit.GetRace() != data.RaceFantastic {
 
@@ -2208,7 +2210,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     playerObj := player.MakePlayer(data.BannerGreen)
 
     // test1(playerObj)
-    test3(playerObj)
+    // test3(playerObj)
     // test4(playerObj)
 
     music := musiclib.MakeMusic(cache)
