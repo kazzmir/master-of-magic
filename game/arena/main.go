@@ -1334,25 +1334,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
     return shop
 }
 
-func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
-    container := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewGridLayout(
-            widget.GridLayoutOpts.Columns(2),
-            widget.GridLayoutOpts.DefaultStretch(false, false),
-            widget.GridLayoutOpts.Padding(&widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
-            widget.GridLayoutOpts.Spacing(20, 0),
-            // widget.GridLayoutOpts.Stretch([]bool{false, false}, []bool{false, false}),
-        )),
-        /*
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(2),
-            widget.RowLayoutOpts.Padding(widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
-        )),
-        */
-        widget.ContainerOpts.BackgroundImage(ui.BorderedImage(color.RGBA{R: 0xc1, G: 0x80, B: 0x1a, A: 255}, 1)),
-    )
-
+func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
     armyShop := ui.VBox()
 
     armyShop.AddChild(widget.NewText(
@@ -1362,7 +1344,6 @@ func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxC
             Stretch: true,
         })),
     ))
-
 
     money := widget.NewText(
         // widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
@@ -1452,7 +1433,29 @@ func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxC
 
     container2.AddChild(tabs)
 
-    container.AddChild(armyShop)
+    return armyShop
+}
+
+func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+    container := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewGridLayout(
+            widget.GridLayoutOpts.Columns(2),
+            widget.GridLayoutOpts.DefaultStretch(true, true),
+            widget.GridLayoutOpts.Padding(&widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
+            widget.GridLayoutOpts.Spacing(20, 0),
+            // widget.GridLayoutOpts.Stretch([]bool{false, false}, []bool{false, false}),
+        )),
+        /*
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(2),
+            widget.RowLayoutOpts.Padding(widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
+        )),
+        */
+        widget.ContainerOpts.BackgroundImage(ui.BorderedImage(color.RGBA{R: 0xc1, G: 0x80, B: 0x1a, A: 255}, 2)),
+    )
+
+    container.AddChild(makeArmyShop(face, imageCache, playerObj, uiEvents))
 
     magicShop := makeMagicShop(face, imageCache, lbxCache, playerObj, uiEvents)
     container.AddChild(magicShop)
@@ -2164,10 +2167,17 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     uiEvents := MakeUIEventUpdate()
 
     rootContainer := widget.NewContainer(
+        /*
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
             widget.RowLayoutOpts.Spacing(4),
             widget.RowLayoutOpts.Padding(&widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
+        )),
+        */
+        widget.ContainerOpts.Layout(widget.NewGridLayout(
+            widget.GridLayoutOpts.Columns(1),
+            widget.GridLayoutOpts.DefaultStretch(true, false),
+            widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{false, false, true}),
         )),
         widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})),
     )
@@ -2193,13 +2203,19 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     imageCache := util.MakeImageCache(engine.Cache)
 
-    rootContainer.AddChild(newGameButton)
+    row1 := ui.VBox()
+    row1.AddChild(newGameButton)
 
-    rootContainer.AddChild(makePlayerInfoUI(&face1, engine.Player, uiEvents, &imageCache))
+    row1.AddChild(makePlayerInfoUI(&face1, engine.Player, uiEvents, &imageCache))
 
     unitInfoUI := makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache)
 
-    rootContainer.AddChild(unitInfoUI)
+    rootContainer.AddChild(row1)
+
+    row2 := ui.VBox()
+
+    row2.AddChild(unitInfoUI)
+    rootContainer.AddChild(row2)
     rootContainer.AddChild(makeShopUI(&face1, &imageCache, engine.Cache, engine.Player, uiEvents))
 
     ui := &ebitenui.UI{
