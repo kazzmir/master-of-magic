@@ -745,7 +745,7 @@ func (city *City) PowerDarkRituals() float64 {
     power := 0.0
 
     if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
-        power := city.PowerShrine()
+        power += city.PowerShrine()
         power += city.PowerTemple()
         power += city.PowerParthenon()
         power += city.PowerCathedral()
