@@ -258,6 +258,8 @@ type CombatScreen struct {
 
     CameraScale float64
 
+    HighlightCurrentUnit bool
+
     Counter uint64
 
     MouseTileX int
@@ -3272,6 +3274,7 @@ func (combat *CombatScreen) UpdateGibs() {
 }
 
 func (combat *CombatScreen) ProcessInput() {
+    combat.HighlightCurrentUnit = false
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)
     for _, key := range keys {
@@ -3299,6 +3302,8 @@ func (combat *CombatScreen) ProcessInput() {
                 normalized := 1 / combat.CameraScale
                 combat.CameraScale *= normalized
                 combat.Coordinates.Scale(normalized, normalized)
+            case ebiten.KeyTab:
+                combat.HighlightCurrentUnit = true
         }
     }
 
