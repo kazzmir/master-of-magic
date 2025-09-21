@@ -4046,28 +4046,12 @@ func getDyingColor(unit *ArmyUnit) color.RGBA {
     return data.GetMagicColor(unit.GetRealm())
 }
 
-func (combat *CombatScreen) ShowExtraHighlight(screen *ebiten.Image, unit *ArmyUnit, camera *ebiten.GeoM){
-    var options ebiten.DrawImageOptions
-    tx, ty := camera.Apply(float64(unit.X), float64(unit.Y))
-    options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
-    options.GeoM.Translate(tx, ty)
-
-    tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
-    options.GeoM = scale.ScaleGeom(options.GeoM)
-
-    // left
-    x1, y1 := options.GeoM.Apply(float64(-tile0.Bounds().Dx()) / 2, 0)
-    // vector.DrawFilledCircle(screen, float32(x1), float32(y1), float32(2), color.RGBA{R: 255, G: 255, B: 255, A: 255}, true)
-
-    // top
-    // x2, y2 := options.GeoM.Apply(0, float64(-tile0.Bounds().Dy()) / 2)
-    // vector.DrawFilledCircle(screen, float32(x2), float32(y2), float32(2), color.RGBA{R: 255, G: 255, B: 0, A: 255}, true)
-
-    // right
-    x3, y3 := options.GeoM.Apply(float64(tile0.Bounds().Dx()) / 2, 0)
-
-    // bottom
-    x4, y4 := options.GeoM.Apply(0, float64(tile0.Bounds().Dy()) / 2)
+func (combat *CombatScreen) ShowExtraHighlight(screen *ebiten.Image, unit *ArmyUnit, getTilePoints func(int, int) ([]image.Point)) {
+    points := getTilePoints(unit.X, unit.Y)
+    p1 := points[0]
+    // p2 := points[1]
+    p3 := points[2]
+    p4 := points[3]
 
     // draw quad with bottom two points (x3,y3) and (x4,y4), and top two points (x3, 0) and (x4, 0)
 
@@ -4108,8 +4092,8 @@ func (combat *CombatScreen) ShowExtraHighlight(screen *ebiten.Image, unit *ArmyU
     }
 
     basePhase := combat.Counter
-    drawQuad(float32(x3), float32(y3), float32(x4), float32(y4), float32(x4), float32(0), float32(x3), float32(0), color.RGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase)})
-    drawQuad(float32(x1), float32(y1), float32(x4), float32(y4), float32(x4), float32(0), float32(x1), float32(0), color.RGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase + 30)})
+    drawQuad(float32(p3.X), float32(p3.Y), float32(p4.X), float32(p4.Y), float32(p4.X), float32(0), float32(p3.X), float32(0), color.RGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase)})
+    drawQuad(float32(p1.X), float32(p1.Y), float32(p4.X), float32(p4.Y), float32(p4.X), float32(0), float32(p1.X), float32(0), color.RGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase + 30)})
 }
 
 func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
@@ -4534,7 +4518,35 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
     }
 
     if combat.ExtraHighlightedUnit != nil {
-        combat.ShowExtraHighlight(screen, combat.ExtraHighlightedUnit, &useMatrix)
+        getTilePoints := func(x int, y int) ([]image.Point){
+            var geom ebiten.GeoM
+            tx, ty := useMatrix.Apply(float64(x), float64(y))
+            geom.Scale(combat.CameraScale, combat.CameraScale)
+            geom.Translate(tx, ty)
+
+            geom = scale.ScaleGeom(geom)
+
+            // left
+            x1, y1 := geom.Apply(float64(-tile0.Bounds().Dx()) / 2, 0)
+
+            // top
+            x2, y2 := geom.Apply(0, float64(-tile0.Bounds().Dy()) / 2)
+
+            // right
+            x3, y3 := geom.Apply(float64(tile0.Bounds().Dx()) / 2, 0)
+
+            // bottom
+            x4, y4 := geom.Apply(0, float64(tile0.Bounds().Dy()) / 2)
+
+            return []image.Point{
+                image.Point{X: int(x1), Y: int(y1)},
+                image.Point{X: int(x2), Y: int(y2)},
+                image.Point{X: int(x3), Y: int(y3)},
+                image.Point{X: int(x4), Y: int(y4)},
+            }
+        }
+
+        combat.ShowExtraHighlight(screen, combat.ExtraHighlightedUnit, getTilePoints)
     }
 
     combat.UI.Draw(combat.UI, screen)
