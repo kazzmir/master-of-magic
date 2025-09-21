@@ -258,6 +258,8 @@ type CombatScreen struct {
 
     CameraScale float64
 
+    ExtraHighlightedUnit *ArmyUnit
+
     Counter uint64
 
     MouseTileX int
@@ -3272,6 +3274,7 @@ func (combat *CombatScreen) UpdateGibs() {
 }
 
 func (combat *CombatScreen) ProcessInput() {
+    combat.ExtraHighlightedUnit = nil
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)
     for _, key := range keys {
@@ -3299,6 +3302,10 @@ func (combat *CombatScreen) ProcessInput() {
                 normalized := 1 / combat.CameraScale
                 combat.CameraScale *= normalized
                 combat.Coordinates.Scale(normalized, normalized)
+            case ebiten.KeyTab:
+                if combat.Model.SelectedUnit != nil && !combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
+                    combat.ExtraHighlightedUnit = combat.Model.SelectedUnit
+                }
         }
     }
 
@@ -4039,6 +4046,56 @@ func getDyingColor(unit *ArmyUnit) color.RGBA {
     return data.GetMagicColor(unit.GetRealm())
 }
 
+func (combat *CombatScreen) ShowExtraHighlight(screen *ebiten.Image, unit *ArmyUnit, getTilePoints func(int, int) ([]image.Point)) {
+    points := getTilePoints(unit.X, unit.Y)
+    p1 := points[0]
+    // p2 := points[1]
+    p3 := points[2]
+    p4 := points[3]
+
+    // draw quad with bottom two points (x3,y3) and (x4,y4), and top two points (x3, 0) and (x4, 0)
+
+    drawQuad := func(x1, y1, x2, y2, x3, y3, x4, y4 float32, col color.RGBA) {
+        var path vector.Path
+        path.MoveTo(x1, y1)
+        path.LineTo(x2, y2)
+        path.LineTo(x3, y3)
+        path.LineTo(x4, y4)
+        path.Close()
+        vertices, indices := path.AppendVerticesAndIndicesForFilling(nil, nil)
+
+        for i := range vertices {
+            vertices[i].ColorR = float32(col.R) / 255
+            vertices[i].ColorG = float32(col.G) / 255
+            vertices[i].ColorB = float32(col.B) / 255
+            vertices[i].ColorA = float32(col.A) / 255
+        }
+
+        screen.DrawTriangles(vertices, indices, combat.WhitePixel, nil)
+    }
+
+    getAlpha := func(phase uint64) uint8 {
+        angle := float64(phase) * (math.Pi / 180)
+
+        var rangeMin float64 = 64
+        var rangeMax float64 = 180
+
+        alpha := math.Sin(angle * 2) * (rangeMax - rangeMin) / 2 + (rangeMin + rangeMax) / 2
+        if alpha < rangeMin {
+            alpha = rangeMin
+        }
+        if alpha > rangeMax {
+            alpha = rangeMax
+        }
+
+        return uint8(alpha)
+    }
+
+    basePhase := combat.Counter
+    drawQuad(float32(p3.X), float32(p3.Y), float32(p4.X), float32(p4.Y), float32(p4.X), float32(0), float32(p3.X), float32(0), color.RGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase)})
+    drawQuad(float32(p1.X), float32(p1.Y), float32(p4.X), float32(p4.Y), float32(p4.X), float32(0), float32(p1.X), float32(0), color.RGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase + 30)})
+}
+
 func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
     isVisible := functional.Memoize(combat.makeIsUnitVisibleFunc())
 
@@ -4458,6 +4515,38 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
         gibOptions.GeoM.Translate(tx, ty)
 
         scale.DrawScaled(screen, gib.Image, &gibOptions)
+    }
+
+    if combat.ExtraHighlightedUnit != nil {
+        getTilePoints := func(x int, y int) ([]image.Point){
+            var geom ebiten.GeoM
+            tx, ty := useMatrix.Apply(float64(x), float64(y))
+            geom.Scale(combat.CameraScale, combat.CameraScale)
+            geom.Translate(tx, ty)
+
+            geom = scale.ScaleGeom(geom)
+
+            // left
+            x1, y1 := geom.Apply(float64(-tile0.Bounds().Dx()) / 2, 0)
+
+            // top
+            x2, y2 := geom.Apply(0, float64(-tile0.Bounds().Dy()) / 2)
+
+            // right
+            x3, y3 := geom.Apply(float64(tile0.Bounds().Dx()) / 2, 0)
+
+            // bottom
+            x4, y4 := geom.Apply(0, float64(tile0.Bounds().Dy()) / 2)
+
+            return []image.Point{
+                image.Point{X: int(x1), Y: int(y1)},
+                image.Point{X: int(x2), Y: int(y2)},
+                image.Point{X: int(x3), Y: int(y3)},
+                image.Point{X: int(x4), Y: int(y4)},
+            }
+        }
+
+        combat.ShowExtraHighlight(screen, combat.ExtraHighlightedUnit, getTilePoints)
     }
 
     combat.UI.Draw(combat.UI, screen)
