@@ -653,33 +653,16 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
     iconList.unitList = widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(4),
-            // widget.GridLayoutOpts.Stretch([]bool{true, true, true, true}, []bool{false, false, false, false}),
+            widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{false, false, false}),
         )),
     )
-
-    /*
-    iconList.unitList = widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-        )),
-    )
-    */
-
-    /*
-    for range 120 {
-        iconList.unitList.AddChild(widget.NewText(widget.TextOpts.Text("Placeholder", face, color.White)))
-    }
-    */
 
     scroller := widget.NewScrollContainer(
-        /*
         widget.ScrollContainerOpts.WidgetOpts(
             widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                // Stretch: true,
-                // MaxHeight: 100,
+                MaxHeight: 400,
             }),
         ),
-        */
         widget.ScrollContainerOpts.Content(iconList.unitList),
         widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
             Idle: ui.SolidImage(64, 64, 64),
@@ -688,17 +671,17 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
     )
 
     slider := widget.NewSlider(
-        widget.SliderOpts.Orientation(widget.DirectionVertical),
+        widget.SliderOpts.Direction(widget.DirectionVertical),
         widget.SliderOpts.MinMax(0, 100),
         widget.SliderOpts.InitialCurrent(0),
         widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
             scroller.ScrollTop = float64(args.Slider.Current) / 100
         }),
         widget.SliderOpts.PageSizeFunc(func() int {
-            return 10
+            return 20
         }),
         widget.SliderOpts.WidgetOpts(
-            widget.WidgetOpts.MinSize(10, 100),
+            widget.WidgetOpts.MinSize(10, 400),
         ),
         widget.SliderOpts.Images(
             &widget.SliderTrackImage{
@@ -715,34 +698,14 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
 
     scroller.GetWidget().ScrolledEvent.AddHandler(func (args any) {
         eventArgs := args.(*widget.WidgetScrolledEventArgs)
-        slider.Current -= int(math.Round(eventArgs.Y * 2))
+        slider.Current -= int(math.Round(eventArgs.Y * 8))
     })
 
-    /*
-    scrollStuff := ui.HBox(widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-            Stretch: true,
-        })),
-    )
-    */
-
-    scrollStuff := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewGridLayout(
-            widget.GridLayoutOpts.Columns(2),
-            widget.GridLayoutOpts.Stretch([]bool{false, false}, []bool{true}),
-        )),
-    )
-
+    scrollStuff := ui.HBox()
     scrollStuff.AddChild(scroller)
     scrollStuff.AddChild(slider)
 
-    // box := ui.VBox()
-    box := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewGridLayout(
-            widget.GridLayoutOpts.Columns(1),
-            widget.GridLayoutOpts.Stretch([]bool{false, false, true}, []bool{false, false, true}),
-        )),
-        // widget.ContainerOpts.BackgroundImage(ui.BorderedImage(color.RGBA{R: 255, G: 255, B: 0, A: 255}, 1)),
-    )
+    box := ui.VBox()
 
     sortButtons := ui.HBox()
 
@@ -1026,11 +989,7 @@ func combineHorizontalElements(elements... widget.PreferredSizeLocateableWidget)
 }
 
 func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
-    shop := ui.VBox(widget.ContainerOpts.WidgetOpts(
-        widget.WidgetOpts.LayoutData(widget.GridLayoutData{
-            HorizontalPosition: widget.GridLayoutPositionEnd,
-        }),
-    ))
+    shop := ui.VBox()
     shop.AddChild(widget.NewText(widget.TextOpts.Text("Magic Shop", face, color.White)))
 
     books := ui.HBox()
@@ -1321,7 +1280,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
         )
 
         slider := widget.NewSlider(
-            widget.SliderOpts.Orientation(widget.DirectionVertical),
+            widget.SliderOpts.Direction(widget.DirectionVertical),
             widget.SliderOpts.MinMax(0, 100),
             widget.SliderOpts.InitialCurrent(0),
             widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
@@ -1375,14 +1334,26 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
     return shop
 }
 
-func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
-    // armyShop := ui.VBox()
-    armyShop := widget.NewContainer(
+func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+    container := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
-            widget.GridLayoutOpts.Columns(1),
-            widget.GridLayoutOpts.Stretch([]bool{false, false, true}, []bool{false, false, true}),
+            widget.GridLayoutOpts.Columns(2),
+            widget.GridLayoutOpts.DefaultStretch(false, false),
+            widget.GridLayoutOpts.Padding(&widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
+            widget.GridLayoutOpts.Spacing(20, 0),
+            // widget.GridLayoutOpts.Stretch([]bool{false, false}, []bool{false, false}),
         )),
+        /*
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(2),
+            widget.RowLayoutOpts.Padding(widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
+        )),
+        */
+        widget.ContainerOpts.BackgroundImage(ui.BorderedImage(color.RGBA{R: 0xc1, G: 0x80, B: 0x1a, A: 255}, 1)),
     )
+
+    armyShop := ui.VBox()
 
     armyShop.AddChild(widget.NewText(
         widget.TextOpts.Text("Shop", face, color.White),
@@ -1391,6 +1362,7 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
             Stretch: true,
         })),
     ))
+
 
     money := widget.NewText(
         // widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
@@ -1404,18 +1376,13 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
     armyShop.AddChild(makeMoneyText(money, imageCache))
 
     container2 := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewGridLayout(
-            widget.GridLayoutOpts.Columns(1),
-            widget.GridLayoutOpts.DefaultStretch(true, true),
-            /*
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
             widget.RowLayoutOpts.Spacing(4),
-            */
         )),
     )
-    _ = container2
 
-    // armyShop.AddChild(container2)
+    armyShop.AddChild(container2)
 
     buyUnit := func(unit *units.Unit) {
         unitCost := getUnitCost(unit)
@@ -1455,23 +1422,18 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
 
     tabAll := widget.NewTabBookTab(
         widget.TabBookTabOpts.Label("All"),
-        widget.TabBookTabOpts.ContainerOpts(
-            widget.ContainerOpts.Layout(widget.NewGridLayout(
-                widget.GridLayoutOpts.Columns(1),
-                widget.GridLayoutOpts.Stretch([]bool{true}, []bool{true}),
-            )),
-            // widget.ContainerOpts.BackgroundImage(ui.BorderedImage(color.RGBA{R: 0xff, A: 255}, 1)),
-        ),
-    )
+        widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(widget.NewGridLayout(
+        widget.GridLayoutOpts.Columns(1),
+        widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
+    ))))
     tabAll.AddChild(unitList.GetWidget())
     tabAffordable := widget.NewTabBookTab(
         widget.TabBookTabOpts.Label("Affordable"),
         widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(
         widget.NewGridLayout(
-            widget.GridLayoutOpts.Columns(1),
-            widget.GridLayoutOpts.Stretch([]bool{true}, []bool{true}),
-        ))),
-    )
+        widget.GridLayoutOpts.Columns(1),
+        widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
+    ))))
     tabAffordable.AddChild(filteredUnitList.GetWidget())
 
     tabs := widget.NewTabBook(
@@ -1488,36 +1450,9 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
         widget.TabBookOpts.Tabs(tabAll, tabAffordable),
     )
 
-    // container2.AddChild(unitList.GetWidget())
-    // _ = tabs
-    armyShop.AddChild(tabs)
-    // armyShop.AddChild(unitList.GetWidget())
-    // container2.AddChild(tabs)
+    container2.AddChild(tabs)
 
-    return armyShop
-    // return unitList.GetWidget()
-}
-
-func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
-    container := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewGridLayout(
-            widget.GridLayoutOpts.Columns(2),
-            widget.GridLayoutOpts.DefaultStretch(true, true),
-            widget.GridLayoutOpts.Padding(&widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
-            widget.GridLayoutOpts.Spacing(20, 0),
-            // widget.GridLayoutOpts.Stretch([]bool{false, false}, []bool{false, false}),
-        )),
-        /*
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(2),
-            widget.RowLayoutOpts.Padding(widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
-        )),
-        */
-        widget.ContainerOpts.BackgroundImage(ui.BorderedImage(color.RGBA{R: 0xc1, G: 0x80, B: 0x1a, A: 255}, 2)),
-    )
-
-    container.AddChild(makeArmyShop(face, imageCache, playerObj, uiEvents))
+    container.AddChild(armyShop)
 
     magicShop := makeMagicShop(face, imageCache, lbxCache, playerObj, uiEvents)
     container.AddChild(magicShop)
@@ -1836,7 +1771,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         // healCost := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Heal %d hp for %d gold", unit.GetDamage(), getHealCost(unit, unit.GetDamage())), face, color.White))
 
         healSlider := widget.NewSlider(
-            widget.SliderOpts.Orientation(widget.DirectionHorizontal),
+            widget.SliderOpts.Direction(widget.DirectionHorizontal),
             widget.SliderOpts.MinMax(0, unit.GetDamage()),
             widget.SliderOpts.InitialCurrent(unit.GetDamage()),
             widget.SliderOpts.WidgetOpts(
@@ -2080,7 +2015,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
     )
 
     slider := widget.NewSlider(
-        widget.SliderOpts.Orientation(widget.DirectionVertical),
+        widget.SliderOpts.Direction(widget.DirectionVertical),
         widget.SliderOpts.MinMax(0, 100),
         widget.SliderOpts.InitialCurrent(0),
         widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
@@ -2229,17 +2164,10 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     uiEvents := MakeUIEventUpdate()
 
     rootContainer := widget.NewContainer(
-        /*
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
             widget.RowLayoutOpts.Spacing(4),
             widget.RowLayoutOpts.Padding(&widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
-        )),
-        */
-        widget.ContainerOpts.Layout(widget.NewGridLayout(
-            widget.GridLayoutOpts.Columns(1),
-            widget.GridLayoutOpts.DefaultStretch(true, false),
-            widget.GridLayoutOpts.Stretch([]bool{true, true, true, true}, []bool{false, false, true, false}),
         )),
         widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})),
     )
@@ -2265,19 +2193,13 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     imageCache := util.MakeImageCache(engine.Cache)
 
-    row1 := ui.VBox()
-    row1.AddChild(newGameButton)
+    rootContainer.AddChild(newGameButton)
 
-    row1.AddChild(makePlayerInfoUI(&face1, engine.Player, uiEvents, &imageCache))
+    rootContainer.AddChild(makePlayerInfoUI(&face1, engine.Player, uiEvents, &imageCache))
 
     unitInfoUI := makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache)
 
-    rootContainer.AddChild(row1)
-
-    row2 := ui.VBox()
-
-    row2.AddChild(unitInfoUI)
-    rootContainer.AddChild(row2)
+    rootContainer.AddChild(unitInfoUI)
     rootContainer.AddChild(makeShopUI(&face1, &imageCache, engine.Cache, engine.Player, uiEvents))
 
     ui := &ebitenui.UI{
