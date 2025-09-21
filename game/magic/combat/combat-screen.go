@@ -258,7 +258,7 @@ type CombatScreen struct {
 
     CameraScale float64
 
-    HighlightCurrentUnit bool
+    ExtraHighlightedUnit *ArmyUnit
 
     Counter uint64
 
@@ -3274,7 +3274,7 @@ func (combat *CombatScreen) UpdateGibs() {
 }
 
 func (combat *CombatScreen) ProcessInput() {
-    combat.HighlightCurrentUnit = false
+    combat.ExtraHighlightedUnit = nil
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)
     for _, key := range keys {
@@ -3303,7 +3303,9 @@ func (combat *CombatScreen) ProcessInput() {
                 combat.CameraScale *= normalized
                 combat.Coordinates.Scale(normalized, normalized)
             case ebiten.KeyTab:
-                combat.HighlightCurrentUnit = true
+                if combat.Model.SelectedUnit != nil && !combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
+                    combat.ExtraHighlightedUnit = combat.Model.SelectedUnit
+                }
         }
     }
 
@@ -4044,6 +4046,72 @@ func getDyingColor(unit *ArmyUnit) color.RGBA {
     return data.GetMagicColor(unit.GetRealm())
 }
 
+func (combat *CombatScreen) ShowExtraHighlight(screen *ebiten.Image, unit *ArmyUnit, camera *ebiten.GeoM){
+    var options ebiten.DrawImageOptions
+    tx, ty := camera.Apply(float64(unit.X), float64(unit.Y))
+    options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
+    options.GeoM.Translate(tx, ty)
+
+    tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
+    options.GeoM = scale.ScaleGeom(options.GeoM)
+
+    // left
+    x1, y1 := options.GeoM.Apply(float64(-tile0.Bounds().Dx()) / 2, 0)
+    // vector.DrawFilledCircle(screen, float32(x1), float32(y1), float32(2), color.RGBA{R: 255, G: 255, B: 255, A: 255}, true)
+
+    // top
+    // x2, y2 := options.GeoM.Apply(0, float64(-tile0.Bounds().Dy()) / 2)
+    // vector.DrawFilledCircle(screen, float32(x2), float32(y2), float32(2), color.RGBA{R: 255, G: 255, B: 0, A: 255}, true)
+
+    // right
+    x3, y3 := options.GeoM.Apply(float64(tile0.Bounds().Dx()) / 2, 0)
+
+    // bottom
+    x4, y4 := options.GeoM.Apply(0, float64(tile0.Bounds().Dy()) / 2)
+
+    // draw quad with bottom two points (x3,y3) and (x4,y4), and top two points (x3, 0) and (x4, 0)
+
+    drawQuad := func(x1, y1, x2, y2, x3, y3, x4, y4 float32, col color.RGBA) {
+        var path vector.Path
+        path.MoveTo(x1, y1)
+        path.LineTo(x2, y2)
+        path.LineTo(x3, y3)
+        path.LineTo(x4, y4)
+        path.Close()
+        vertices, indices := path.AppendVerticesAndIndicesForFilling(nil, nil)
+
+        for i := range vertices {
+            vertices[i].ColorR = float32(col.R) / 255
+            vertices[i].ColorG = float32(col.G) / 255
+            vertices[i].ColorB = float32(col.B) / 255
+            vertices[i].ColorA = float32(col.A) / 255
+        }
+
+        screen.DrawTriangles(vertices, indices, combat.WhitePixel, nil)
+    }
+
+    getAlpha := func(phase uint64) uint8 {
+        angle := float64(phase) * (math.Pi / 180)
+
+        var rangeMin float64 = 64
+        var rangeMax float64 = 180
+
+        alpha := math.Sin(angle * 2) * (rangeMax - rangeMin) / 2 + (rangeMin + rangeMax) / 2
+        if alpha < rangeMin {
+            alpha = rangeMin
+        }
+        if alpha > rangeMax {
+            alpha = rangeMax
+        }
+
+        return uint8(alpha)
+    }
+
+    basePhase := combat.Counter
+    drawQuad(float32(x3), float32(y3), float32(x4), float32(y4), float32(x4), float32(0), float32(x3), float32(0), color.RGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase)})
+    drawQuad(float32(x1), float32(y1), float32(x4), float32(y4), float32(x4), float32(0), float32(x1), float32(0), color.RGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase + 30)})
+}
+
 func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
     isVisible := functional.Memoize(combat.makeIsUnitVisibleFunc())
 
@@ -4463,6 +4531,10 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
         gibOptions.GeoM.Translate(tx, ty)
 
         scale.DrawScaled(screen, gib.Image, &gibOptions)
+    }
+
+    if combat.ExtraHighlightedUnit != nil {
+        combat.ShowExtraHighlight(screen, combat.ExtraHighlightedUnit, &useMatrix)
     }
 
     combat.UI.Draw(combat.UI, screen)
