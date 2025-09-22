@@ -2228,6 +2228,11 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     var face1 text.Face = &face
 
+    var face2 text.Face = &text.GoTextFace{
+        Source: font,
+        Size: 20,
+    }
+
     uiEvents := MakeUIEventUpdate()
 
     rootContainer := widget.NewContainer(
@@ -2240,9 +2245,14 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     )
 
     newGameButton := widget.NewButton(
+        widget.ButtonOpts.WidgetOpts(
+            widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                Position: widget.RowLayoutPositionCenter,
+            }),
+        ),
         widget.ButtonOpts.TextPadding(&widget.Insets{Top: 4, Bottom: 4, Left: 5, Right: 5}),
         widget.ButtonOpts.Image(standardButtonImage()),
-        widget.ButtonOpts.Text("Enter Battle", &face1, &widget.ButtonTextColor{
+        widget.ButtonOpts.Text("Enter Battle", &face2, &widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
