@@ -51,6 +51,7 @@ type GameMode int
 
 const (
     GameModeUI GameMode = iota
+    GameModeNewGameUI
     GameModeBattle
 )
 
@@ -58,6 +59,10 @@ type EngineEvents interface {
 }
 
 type EventNewGame struct {
+    Level int
+}
+
+type EventEnterBattle struct {
 }
 
 type Engine struct {
@@ -75,6 +80,7 @@ type Engine struct {
     CurrentBattleReward uint64
 
     UI *ebitenui.UI
+    NewGameUI *ebitenui.UI
     UIUpdates *UIEventUpdate
 }
 
@@ -448,6 +454,18 @@ func (engine *Engine) Update() error {
     inputmanager.Update()
 
     switch engine.GameMode {
+        case GameModeNewGameUI:
+            engine.NewGameUI.Update()
+
+            select {
+                case event := <-engine.Events:
+                    switch event.(type) {
+                        case *EventNewGame:
+                            engine.GameMode = GameModeUI
+                    }
+                default:
+            }
+
         case GameModeUI:
             engine.UI.Update()
             engine.UIUpdates.Update()
@@ -455,7 +473,7 @@ func (engine *Engine) Update() error {
             select {
                 case event := <-engine.Events:
                     switch event.(type) {
-                        case *EventNewGame:
+                        case *EventEnterBattle:
                             engine.GameMode = GameModeBattle
                             engine.CombatCoroutine = coroutine.MakeCoroutine(engine.MakeBattleFunc())
                     }
@@ -468,7 +486,6 @@ func (engine *Engine) Update() error {
 
                 engine.CombatCoroutine = nil
                 engine.CombatScreen = nil
-                engine.GameMode = GameModeUI
 
                 engine.Player.Level += 1
                 engine.Player.Money += engine.CurrentBattleReward
@@ -496,6 +513,8 @@ func (engine *Engine) Update() error {
                 if err != nil {
                     log.Printf("Error creating UI: %v", err)
                 }
+
+                engine.GameMode = GameModeNewGameUI
             }
     }
 
@@ -520,6 +539,10 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 
 func (engine *Engine) DefaultDraw(screen *ebiten.Image) {
     switch engine.GameMode {
+        case GameModeNewGameUI:
+            engine.DrawUI(screen)
+            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.NRGBA{R: 0, G: 0, B: 0, A: 100}, true)
+            engine.NewGameUI.Draw(screen)
         case GameModeUI:
             engine.DrawUI(screen)
         case GameModeBattle:
@@ -2215,6 +2238,78 @@ func makePlayerInfoUI(face *text.Face, playerObj *player.Player, events *UIEvent
     return container
 }
 
+func (engine *Engine) MakeNewGameUI() (*ebitenui.UI, error) {
+    rootContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewAnchorLayout(
+        ),
+    ))
+
+    font, err := console.LoadFont()
+    if err != nil {
+        return nil, err
+    }
+
+    face := text.GoTextFace{
+        Source: font,
+        Size: 18,
+    }
+
+    var face1 text.Face = &face
+
+    type Difficulty struct {
+        Name string
+        Level int
+    }
+
+    difficulties := []Difficulty{
+        Difficulty{"Easy", 1},
+        Difficulty{"Normal", 2},
+        Difficulty{"Hard", 3},
+        Difficulty{"Impossible", 4},
+    }
+
+    buttons := ui.VBox(
+        widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}, 1)),
+        widget.ContainerOpts.WidgetOpts(
+            widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+                HorizontalPosition: widget.AnchorLayoutPositionCenter,
+                VerticalPosition: widget.AnchorLayoutPositionCenter,
+            }),
+        ),
+    )
+
+    for _, difficulty := range difficulties {
+        buttons.AddChild(widget.NewButton(
+            widget.ButtonOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    Position: widget.RowLayoutPositionCenter,
+                }),
+            ),
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 4, Bottom: 4, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(standardButtonImage()),
+            widget.ButtonOpts.Text(fmt.Sprintf("Start %v Mode", difficulty.Name), &face1, &widget.ButtonTextColor{
+                Idle: color.White,
+                Hover: color.White,
+                Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                select {
+                    case engine.Events <- &EventNewGame{Level: difficulty.Level}:
+                    default:
+                }
+            }),
+        ))
+    }
+
+    rootContainer.AddChild(buttons)
+
+    ui := &ebitenui.UI{
+        Container: rootContainer,
+    }
+
+    return ui, nil
+}
+
 func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     font, err := console.LoadFont()
     if err != nil {
@@ -2262,7 +2357,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
                 return
             }
             select {
-                case engine.Events <- &EventNewGame{}:
+                case engine.Events <- &EventEnterBattle{}:
                 default:
             }
         }),
@@ -2322,7 +2417,7 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     music := musiclib.MakeMusic(cache)
 
     engine := Engine{
-        GameMode: GameModeUI,
+        GameMode: GameModeNewGameUI,
         Player: playerObj,
         Cache: cache,
         Events: make(chan EngineEvents, 10),
@@ -2338,6 +2433,9 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     if err != nil {
         log.Printf("Error creating UI: %v", err)
     }
+
+    engine.NewGameUI, err = engine.MakeNewGameUI()
+
     return &engine
 }
 
