@@ -464,6 +464,8 @@ func (engine *Engine) Update() error {
         case GameModeBattle:
             err := engine.CombatCoroutine.Run()
             if errors.Is(err, CombatDoneErr) {
+                lastState := engine.CombatScreen.Model.FinishState
+
                 engine.CombatCoroutine = nil
                 engine.CombatScreen = nil
                 engine.GameMode = GameModeUI
@@ -479,7 +481,8 @@ func (engine *Engine) Update() error {
                 }
 
                 engine.Player.Units = aliveUnits
-                if len(engine.Player.Units) == 0 {
+                // FIXME: check combat state, not if there are any units left
+                if lastState != combat.CombatStateDefenderWin {
                     log.Printf("All units lost, starting new game")
                     engine.Player = player.MakePlayer(data.BannerGreen)
                     // engine.Player.AddUnit(units.LizardSwordsmen)
