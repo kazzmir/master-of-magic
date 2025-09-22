@@ -431,7 +431,7 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         case DifficultyEasy: engine.CurrentBattleReward = engine.CurrentBattleReward * 2
         case DifficultyNormal: engine.CurrentBattleReward = (engine.CurrentBattleReward * 3) / 2
         case DifficultyHard: engine.CurrentBattleReward = (engine.CurrentBattleReward * 5) / 4
-        case DifficultyImpossible: engine.CurrentBattleReward = engine.CurrentBattleReward
+        case DifficultyImpossible: engine.CurrentBattleReward = (engine.CurrentBattleReward * 9) / 10
     }
 
     attackingArmy := combat.Army {
