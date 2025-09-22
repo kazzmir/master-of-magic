@@ -586,7 +586,7 @@ func (engine *Engine) DefaultDraw(screen *ebiten.Image) {
     switch engine.GameMode {
         case GameModeNewGameUI:
             engine.DrawUI(screen)
-            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.NRGBA{R: 0, G: 0, B: 0, A: 100}, true)
+            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, true)
             engine.NewGameUI.Draw(screen)
         case GameModeUI:
             engine.DrawUI(screen)
@@ -2296,7 +2296,7 @@ func (engine *Engine) MakeNewGameUI() (*ebitenui.UI, error) {
 
     face := text.GoTextFace{
         Source: font,
-        Size: 18,
+        Size: 24,
     }
 
     var face1 text.Face = &face
