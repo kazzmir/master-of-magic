@@ -59,10 +59,29 @@ type EngineEvents interface {
 }
 
 type EventNewGame struct {
-    Level int
+    Level Difficulty
 }
 
 type EventEnterBattle struct {
+}
+
+type Difficulty int
+const (
+    DifficultyEasy Difficulty = iota
+    DifficultyNormal
+    DifficultyHard
+    DifficultyImpossible
+)
+
+func (d Difficulty) String() string {
+    switch d {
+        case DifficultyEasy: return "Easy"
+        case DifficultyNormal: return "Normal"
+        case DifficultyHard: return "Hard"
+        case DifficultyImpossible: return "Impossible"
+    }
+
+    return "?"
 }
 
 type Engine struct {
@@ -75,6 +94,7 @@ type Engine struct {
 
     Drawers []func(screen *ebiten.Image)
 
+    Difficulty Difficulty
     CombatCoroutine *coroutine.Coroutine
     CombatScreen *combat.CombatScreen
     CurrentBattleReward uint64
@@ -303,7 +323,25 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         enemyPlayer.GetWizard().AddMagicLevel(magic, rand.N(booksMax))
     }
 
-    budget := uint64(100 * math.Pow(1.8, float64(engine.Player.Level)))
+    var baseBudget float64 = 100
+    var baseExponent float64 = 1.8
+
+    switch engine.Difficulty {
+        case DifficultyEasy:
+            baseBudget = 80
+            baseExponent = 1.5
+        case DifficultyNormal:
+            baseBudget = 100
+            baseExponent = 1.8
+        case DifficultyHard:
+            baseBudget = 120
+            baseExponent = 1.95
+        case DifficultyImpossible:
+            baseBudget = 150
+            baseExponent = 2.1
+    }
+
+    budget := uint64(baseBudget * math.Pow(baseExponent, float64(engine.Player.Level)))
 
     var spellCosts uint64
 
@@ -319,9 +357,9 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     engine.CurrentBattleReward = spellCosts
 
-    // at least have 200 to buy units
-    if budget < 200 {
-        budget = 200
+    // at least have some amount to buy units
+    if budget < 80 {
+        budget = 80
     }
 
     // log.Printf("Budget after spells: %v", budget)
@@ -389,7 +427,12 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         }
     }
 
-    engine.CurrentBattleReward = (engine.CurrentBattleReward * 3) / 2
+    switch engine.Difficulty {
+        case DifficultyEasy: engine.CurrentBattleReward = engine.CurrentBattleReward * 2
+        case DifficultyNormal: engine.CurrentBattleReward = (engine.CurrentBattleReward * 3) / 2
+        case DifficultyHard: engine.CurrentBattleReward = (engine.CurrentBattleReward * 5) / 4
+        case DifficultyImpossible: engine.CurrentBattleReward = engine.CurrentBattleReward
+    }
 
     attackingArmy := combat.Army {
         Player: enemyPlayer,
@@ -417,7 +460,7 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         var endScreen *combat.CombatEndScreen
 
         lastState := screen.Update(yield)
-        if lastState == combat.CombatStateAttackerWin {
+        if lastState == combat.CombatStateAttackerWin || lastState == combat.CombatStateDefenderFlee {
             endScreen = combat.MakeCombatEndScreen(engine.Cache, screen, combat.CombatEndScreenResultLose, 0, 0, 0, 0)
             engine.Music.PushSong(musiclib.SongYouLose)
         } else if lastState == combat.CombatStateDefenderWin {
@@ -459,9 +502,10 @@ func (engine *Engine) Update() error {
 
             select {
                 case event := <-engine.Events:
-                    switch event.(type) {
+                    switch use := event.(type) {
                         case *EventNewGame:
                             engine.GameMode = GameModeUI
+                            engine.Difficulty = use.Level
                     }
                 default:
             }
@@ -501,12 +545,14 @@ func (engine *Engine) Update() error {
                 // FIXME: check combat state, not if there are any units left
                 if lastState != combat.CombatStateDefenderWin {
                     log.Printf("All units lost, starting new game")
+                    engine.GameMode = GameModeNewGameUI
                     engine.Player = player.MakePlayer(data.BannerGreen)
                     // engine.Player.AddUnit(units.LizardSwordsmen)
                 } else {
                     for _, unit := range engine.Player.Units {
                         unit.AddExperience(20)
                     }
+                    engine.GameMode = GameModeUI
                 }
 
                 engine.UI, engine.UIUpdates, err = engine.MakeUI()
@@ -514,7 +560,6 @@ func (engine *Engine) Update() error {
                     log.Printf("Error creating UI: %v", err)
                 }
 
-                engine.GameMode = GameModeNewGameUI
             }
     }
 
@@ -2256,18 +2301,6 @@ func (engine *Engine) MakeNewGameUI() (*ebitenui.UI, error) {
 
     var face1 text.Face = &face
 
-    type Difficulty struct {
-        Name string
-        Level int
-    }
-
-    difficulties := []Difficulty{
-        Difficulty{"Easy", 1},
-        Difficulty{"Normal", 2},
-        Difficulty{"Hard", 3},
-        Difficulty{"Impossible", 4},
-    }
-
     buttons := ui.VBox(
         widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}, 1)),
         widget.ContainerOpts.WidgetOpts(
@@ -2278,7 +2311,7 @@ func (engine *Engine) MakeNewGameUI() (*ebitenui.UI, error) {
         ),
     )
 
-    for _, difficulty := range difficulties {
+    for _, difficulty := range []Difficulty{DifficultyEasy, DifficultyNormal, DifficultyHard, DifficultyImpossible} {
         buttons.AddChild(widget.NewButton(
             widget.ButtonOpts.WidgetOpts(
                 widget.WidgetOpts.LayoutData(widget.RowLayoutData{
@@ -2287,14 +2320,14 @@ func (engine *Engine) MakeNewGameUI() (*ebitenui.UI, error) {
             ),
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 4, Bottom: 4, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(standardButtonImage()),
-            widget.ButtonOpts.Text(fmt.Sprintf("Start %v Mode", difficulty.Name), &face1, &widget.ButtonTextColor{
+            widget.ButtonOpts.Text(fmt.Sprintf("Start %v Mode", difficulty), &face1, &widget.ButtonTextColor{
                 Idle: color.White,
                 Hover: color.White,
                 Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
             widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
                 select {
-                    case engine.Events <- &EventNewGame{Level: difficulty.Level}:
+                    case engine.Events <- &EventNewGame{Level: difficulty}:
                     default:
                 }
             }),
