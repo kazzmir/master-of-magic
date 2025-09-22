@@ -1229,6 +1229,70 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
                         case spellbook.SpellRarityVeryRare: canBuy = rarityCount <= getVeryRareSpells(playerObj.GetWizard().MagicLevel(magic))
                     }
 
+                    booksNeeded := 0
+                    needed:
+                    for {
+                        switch spell.Rarity {
+                            case spellbook.SpellRarityCommon:
+                                if rarityCount <= getCommonSpells(booksNeeded) {
+                                    break needed
+                                }
+                            case spellbook.SpellRarityUncommon:
+                                if rarityCount <= getUncommonSpells(booksNeeded) {
+                                    break needed
+                                }
+                            case spellbook.SpellRarityRare:
+                                if rarityCount <= getRareSpells(booksNeeded) {
+                                    break needed
+                                }
+                            case spellbook.SpellRarityVeryRare:
+                                if rarityCount <= getVeryRareSpells(booksNeeded) {
+                                    break needed
+                                }
+                        }
+
+                        booksNeeded += 1
+                    }
+
+                    if booksNeeded > 0 {
+                        var use *ebiten.Image
+                        switch magic {
+                            case data.LifeMagic: use = lifeBook
+                            case data.SorceryMagic: use = sorceryBook
+                            case data.NatureMagic: use = natureBook
+                            case data.DeathMagic: use = deathBook
+                            case data.ChaosMagic: use = chaosBook
+                        }
+
+                        final := ebiten.NewImage(use.Bounds().Dx() * booksNeeded, use.Bounds().Dy())
+
+                        for x := range booksNeeded {
+                            var ops ebiten.DrawImageOptions
+                            ops.GeoM.Translate(float64(x * use.Bounds().Dx()), 0)
+
+                            if x >= playerObj.GetWizard().MagicLevel(magic) {
+                                ops.ColorScale.ScaleWithColor(color.NRGBA{R: 90, G: 90, B: 90, A: 255})
+                            }
+
+                            final.DrawImage(use, &ops)
+                        }
+
+                        books := ui.HBox(
+                            widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                                Position: widget.RowLayoutPositionCenter,
+                            })),
+                        )
+
+                        books.AddChild(widget.NewGraphic(
+                            widget.GraphicOpts.Image(final),
+                            widget.GraphicOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                                Position: widget.RowLayoutPositionCenter,
+                            })),
+                        ))
+
+                        box.AddChild(books)
+                    }
+
                     if !canBuy {
                         buttonImage = ui.SolidImage(32, 16, 16)
                         buyTextColor = color.NRGBA{R: 128, G: 128, B: 128, A: 255}
