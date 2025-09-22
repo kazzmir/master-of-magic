@@ -4125,7 +4125,7 @@ func DoStrategicCombat(attackingArmy *Army, defendingArmy *Army) (CombatState, i
 }
 
 func (model *CombatModel) flee(army *Army) {
-    for _, unit := range army.units {
+    for _, unit := range slices.Clone(army.units) {
         // FIXME: units unable to move always die
 
         // heroes have a 25% chance to die, normal units 50%
