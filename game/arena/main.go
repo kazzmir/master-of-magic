@@ -428,8 +428,8 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     }
 
     switch engine.Difficulty {
-        case DifficultyEasy: engine.CurrentBattleReward = engine.CurrentBattleReward * 2
-        case DifficultyNormal: engine.CurrentBattleReward = (engine.CurrentBattleReward * 3) / 2
+        case DifficultyEasy: engine.CurrentBattleReward = engine.CurrentBattleReward * 2 + 200
+        case DifficultyNormal: engine.CurrentBattleReward = (engine.CurrentBattleReward * 3) / 2 + 100
         case DifficultyHard: engine.CurrentBattleReward = (engine.CurrentBattleReward * 5) / 4
         case DifficultyImpossible: engine.CurrentBattleReward = (engine.CurrentBattleReward * 9) / 10
     }
@@ -506,6 +506,18 @@ func (engine *Engine) Update() error {
                         case *EventNewGame:
                             engine.GameMode = GameModeUI
                             engine.Difficulty = use.Level
+                            engine.Player = player.MakePlayer(data.BannerGreen)
+
+                            if engine.Difficulty == DifficultyEasy {
+                                engine.Player.Money = 500
+                            }
+
+                            var err error
+                            engine.UI, engine.UIUpdates, err = engine.MakeUI()
+                            if err != nil {
+                                log.Printf("Error creating UI: %v", err)
+                            }
+
                     }
                 default:
             }
