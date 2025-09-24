@@ -754,7 +754,7 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
     )
 
     slider := widget.NewSlider(
-        widget.SliderOpts.Direction(widget.DirectionVertical),
+        widget.SliderOpts.Orientation(widget.DirectionVertical),
         widget.SliderOpts.MinMax(0, 100),
         widget.SliderOpts.InitialCurrent(0),
         widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
@@ -1427,7 +1427,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
         )
 
         slider := widget.NewSlider(
-            widget.SliderOpts.Direction(widget.DirectionVertical),
+            widget.SliderOpts.Orientation(widget.DirectionVertical),
             widget.SliderOpts.MinMax(0, 100),
             widget.SliderOpts.InitialCurrent(0),
             widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
@@ -1481,25 +1481,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
     return shop
 }
 
-func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
-    container := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewGridLayout(
-            widget.GridLayoutOpts.Columns(2),
-            widget.GridLayoutOpts.DefaultStretch(false, false),
-            widget.GridLayoutOpts.Padding(&widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
-            widget.GridLayoutOpts.Spacing(20, 0),
-            // widget.GridLayoutOpts.Stretch([]bool{false, false}, []bool{false, false}),
-        )),
-        /*
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(2),
-            widget.RowLayoutOpts.Padding(widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
-        )),
-        */
-        widget.ContainerOpts.BackgroundImage(ui.BorderedImage(color.RGBA{R: 0xc1, G: 0x80, B: 0x1a, A: 255}, 1)),
-    )
-
+func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
     armyShop := ui.VBox()
 
     armyShop.AddChild(widget.NewText(
@@ -1598,6 +1580,30 @@ func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxC
     )
 
     container2.AddChild(tabs)
+
+    return armyShop
+}
+
+func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+    container := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewGridLayout(
+            widget.GridLayoutOpts.Columns(2),
+            widget.GridLayoutOpts.DefaultStretch(false, false),
+            widget.GridLayoutOpts.Padding(&widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
+            widget.GridLayoutOpts.Spacing(20, 0),
+            // widget.GridLayoutOpts.Stretch([]bool{false, false}, []bool{false, false}),
+        )),
+        /*
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(2),
+            widget.RowLayoutOpts.Padding(widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
+        )),
+        */
+        widget.ContainerOpts.BackgroundImage(ui.BorderedImage(color.RGBA{R: 0xc1, G: 0x80, B: 0x1a, A: 255}, 1)),
+    )
+
+    armyShop := makeArmyShop(face, imageCache, playerObj, uiEvents)
 
     container.AddChild(armyShop)
 
@@ -1918,7 +1924,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         // healCost := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Heal %d hp for %d gold", unit.GetDamage(), getHealCost(unit, unit.GetDamage())), face, color.White))
 
         healSlider := widget.NewSlider(
-            widget.SliderOpts.Direction(widget.DirectionHorizontal),
+            widget.SliderOpts.Orientation(widget.DirectionHorizontal),
             widget.SliderOpts.MinMax(0, unit.GetDamage()),
             widget.SliderOpts.InitialCurrent(unit.GetDamage()),
             widget.SliderOpts.WidgetOpts(
@@ -2162,7 +2168,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
     )
 
     slider := widget.NewSlider(
-        widget.SliderOpts.Direction(widget.DirectionVertical),
+        widget.SliderOpts.Orientation(widget.DirectionVertical),
         widget.SliderOpts.MinMax(0, 100),
         widget.SliderOpts.InitialCurrent(0),
         widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
