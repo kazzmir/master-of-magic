@@ -507,6 +507,7 @@ func (engine *Engine) Update() error {
                             engine.GameMode = GameModeUI
                             engine.Difficulty = use.Level
                             engine.Player = player.MakePlayer(data.BannerGreen)
+                            test3(engine.Player)
 
                             if engine.Difficulty == DifficultyEasy {
                                 engine.Player.Money = 500
@@ -1804,6 +1805,14 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
     return container
 }
 
+func sum[T any](items []T, f func(T) int) int {
+    total := 0
+    for _, item := range items {
+        total += f(item)
+    }
+    return total
+}
+
 func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
 
     unitContainer := ui.HBox()
@@ -1845,22 +1854,36 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         currentHealth := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("HP: %d/%d", unit.GetHealth(), unit.GetMaxHealth()), face, color.White))
         currentRace := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Race: %v", unit.GetRace()), face, color.White))
 
-        sellCost := 100
-        newRemoveButton := widget.NewButton(
-            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-            widget.ButtonOpts.Image(standardButtonImage()),
-            widget.ButtonOpts.TextAndImage(fmt.Sprintf("Sell for %v", sellCost), face, moneyImage, &widget.ButtonTextColor{
-                Idle: color.White,
-                Hover: color.White,
-                Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-            }),
-            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-                log.Printf("Selling unit %v", unit.GetFullName())
-                updateUnitSpecifics(nil, func(){})
-            }),
-        )
+        rawUnit := unit.GetRawUnit()
+        var removeButton *widget.Button
 
-        unitContainer.AddChild(newRemoveButton)
+        makeRemoveButton := func() *widget.Button {
+            sellCost := getUnitCost(&rawUnit) + uint64(sum(unit.GetEnchantments(), getEnchantmentCost))
+            sellCost = (sellCost * 3) / 4
+            return widget.NewButton(
+                widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(standardButtonImage()),
+                widget.ButtonOpts.TextAndImage(fmt.Sprintf("Sell for %v", sellCost), face, moneyImage, &widget.ButtonTextColor{
+                    Idle: color.White,
+                    Hover: color.White,
+                    Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                    log.Printf("Selling unit %v", unit.GetFullName())
+                    updateUnitSpecifics(nil, func(){})
+                }),
+            )
+        }
+
+        removeButton = makeRemoveButton()
+
+        updateSellCost := func() {
+            newButton := makeRemoveButton()
+            unitContainer.ReplaceChild(removeButton, newButton)
+            removeButton = newButton
+        }
+
+        unitContainer.AddChild(removeButton)
 
         unitSpecifics.RemoveChildren()
         unitSpecifics.AddChild(currentName)
@@ -2063,6 +2086,8 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                 for _, enchantment := range unit.GetEnchantments() {
                     enchantments.AddEntry(enchantment.Name())
                 }
+
+                updateSellCost()
             }
         }
 
