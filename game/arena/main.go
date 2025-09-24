@@ -647,6 +647,10 @@ type UIAddUnit struct {
     Unit units.StackUnit
 }
 
+type UIRemoveUnit struct {
+    Unit units.StackUnit
+}
+
 type UIEventUpdate struct {
     Listeners map[uint64]func(UIEvent)
     Updates []UIEvent
@@ -1870,7 +1874,12 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                 }),
                 widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
                     log.Printf("Selling unit %v", unit.GetFullName())
+                    playerObj.Money += sellCost
+                    playerObj.RemoveUnit(unit)
                     updateUnitSpecifics(nil, func(){})
+
+                    uiEvents.AddUpdate(&UIUpdateMoney{})
+                    uiEvents.AddUpdate(&UIRemoveUnit{Unit: unit})
                 }),
             )
         }
@@ -2123,6 +2132,8 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
     var lastBox *widget.Container
 
+    unitMap := make(map[units.StackUnit]*widget.Container)
+
     addUnit := func(unit units.StackUnit) {
         var unitBox *widget.Container
         var setup func()
@@ -2202,6 +2213,16 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         setup()
 
         unitList.AddChild(unitBox)
+
+        unitMap[unit] = unitBox
+    }
+
+    removeUnitUI := func(unit units.StackUnit) {
+        box, ok := unitMap[unit]
+        if ok {
+            unitList.RemoveChild(box)
+            delete(unitMap, unit)
+        }
     }
 
     for _, unit := range allUnits {
@@ -2254,6 +2275,10 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
     AddEvent(uiEvents, func (update *UIAddUnit) {
         addUnit(update.Unit)
+    })
+
+    AddEvent(uiEvents, func (update *UIRemoveUnit) {
+        removeUnitUI(update.Unit)
     })
 
     armyInfo := widget.NewContainer(

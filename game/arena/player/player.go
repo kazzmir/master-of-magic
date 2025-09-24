@@ -1,14 +1,15 @@
 package player
 
 import (
+    "slices"
+    "image"
+
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
-
-    "image"
 )
 
 type Player struct {
@@ -44,6 +45,12 @@ func MakeAIPlayer(banner data.BannerType) *Player {
             Banner: banner,
         },
     }
+}
+
+func (player *Player) RemoveUnit(unit units.StackUnit) {
+    player.Units = slices.DeleteFunc(player.Units, func(u units.StackUnit) bool {
+        return u == unit
+    })
 }
 
 func (player *Player) AddUnit(unit units.Unit) units.StackUnit {
