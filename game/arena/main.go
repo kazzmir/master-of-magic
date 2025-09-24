@@ -507,7 +507,7 @@ func (engine *Engine) Update() error {
                             engine.GameMode = GameModeUI
                             engine.Difficulty = use.Level
                             engine.Player = player.MakePlayer(data.BannerGreen)
-                            test3(engine.Player)
+                            // test3(engine.Player)
 
                             if engine.Difficulty == DifficultyEasy {
                                 engine.Player.Money = 500
