@@ -1867,7 +1867,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
             return widget.NewButton(
                 widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
                 widget.ButtonOpts.Image(standardButtonImage()),
-                widget.ButtonOpts.TextAndImage(fmt.Sprintf("Sell for %v", sellCost), face, moneyImage, &widget.ButtonTextColor{
+                widget.ButtonOpts.TextAndImage(fmt.Sprintf("Sell %v for %v", unit.GetFullName(), sellCost), face, moneyImage, &widget.ButtonTextColor{
                     Idle: color.White,
                     Hover: color.White,
                     Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
