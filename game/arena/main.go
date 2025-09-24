@@ -1806,39 +1806,68 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
 
 func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
 
-    unitSpecifics := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(2),
-        )),
-    )
-
-    unitSpecifics.AddChild(widget.NewText(
-        widget.TextOpts.Text("Unit Specifics", face, color.White),
-    ))
+    unitContainer := ui.HBox()
 
     var updateUnitSpecifics func(unit units.StackUnit, setup func())
 
     removeUnit := func() {
     }
 
+    gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
+    moneyImage := &widget.GraphicImage{
+        Idle: gold,
+        Disabled: gold,
+    }
+
     updateUnitSpecifics = func(unit units.StackUnit, setup func()) {
+        unitContainer.RemoveChildren()
+
+        removeUnit()
+
+        if unit == nil {
+            return
+        }
+
+        unitSpecifics := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+                widget.RowLayoutOpts.Spacing(2),
+            )),
+        )
+
+        unitContainer.AddChild(unitSpecifics)
+
+        unitSpecifics.AddChild(widget.NewText(
+            widget.TextOpts.Text("Unit Specifics", face, color.White),
+        ))
+
         currentName := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Name: %v", unit.GetFullName()), face, color.White))
         currentHealth := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("HP: %d/%d", unit.GetHealth(), unit.GetMaxHealth()), face, color.White))
         currentRace := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Race: %v", unit.GetRace()), face, color.White))
 
-        removeUnit()
+        sellCost := 100
+        newRemoveButton := widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(standardButtonImage()),
+            widget.ButtonOpts.TextAndImage(fmt.Sprintf("Sell for %v", sellCost), face, moneyImage, &widget.ButtonTextColor{
+                Idle: color.White,
+                Hover: color.White,
+                Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                log.Printf("Selling unit %v", unit.GetFullName())
+                updateUnitSpecifics(nil, func(){})
+            }),
+        )
+
+        unitContainer.AddChild(newRemoveButton)
+
         unitSpecifics.RemoveChildren()
         unitSpecifics.AddChild(currentName)
         unitSpecifics.AddChild(currentHealth)
         unitSpecifics.AddChild(currentRace)
         if unit.GetRace() != data.RaceFantastic {
             unitSpecifics.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Experience: %d (%v)", unit.GetExperience(), unit.GetExperienceLevel().Name()), face, color.White)))
-            gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
-            moneyImage := &widget.GraphicImage{
-                Idle: gold,
-                Disabled: gold,
-            }
             var makeMeleeBox func() *widget.Container
 
             makeMeleeBox = func() *widget.Container {
@@ -2235,7 +2264,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
     unitInfoContainer.AddChild(armyInfo)
 
-    unitInfoContainer.AddChild(unitSpecifics)
+    unitInfoContainer.AddChild(unitContainer)
 
     return unitInfoContainer
 }
