@@ -5148,7 +5148,7 @@ var KlackonEngineer Unit = Unit{
     Index: 117,
     CombatLbxFile: "figures8.lbx",
     CombatIndex: 96,
-    Name: "Engineer",
+    Name: "Engineers",
     RequiredBuildings: []building.Building{building.BuildingBuildersHall},
     ProductionCost: 80,
     ProductionCostReduction: true,
