@@ -555,7 +555,6 @@ func (engine *Engine) Update() error {
                 }
 
                 engine.Player.Units = aliveUnits
-                // FIXME: check combat state, not if there are any units left
                 if lastState != combat.CombatStateDefenderWin {
                     log.Printf("All units lost, starting new game")
                     engine.GameMode = GameModeNewGameUI
@@ -1076,6 +1075,16 @@ func combineHorizontalElements(elements... widget.PreferredSizeLocateableWidget)
     return box
 }
 
+func combineHorizontalElementsCentered(elements... widget.PreferredSizeLocateableWidget) *widget.Container {
+    box := ui.HBox(widget.ContainerOpts.WidgetOpts(
+        widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            Position: widget.RowLayoutPositionCenter,
+        }),
+    ))
+    box.AddChild(elements...)
+    return box
+}
+
 func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
     shop := ui.VBox()
     shop.AddChild(widget.NewText(widget.TextOpts.Text("Magic Shop", face, color.White)))
@@ -1088,6 +1097,8 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
     natureBook, _ := imageCache.GetImageTransform("newgame.lbx", 30, 0, "enlarge", enlargeTransform(2))
     deathBook, _ := imageCache.GetImageTransform("newgame.lbx", 33, 0, "enlarge", enlargeTransform(2))
     chaosBook, _ := imageCache.GetImageTransform("newgame.lbx", 36, 0, "enlarge", enlargeTransform(2))
+
+    manaImage, _ := imageCache.GetImageTransform("backgrnd.lbx", 43, 0, "enlarge", enlargeTransform(2))
 
     centered := widget.WidgetOpts.LayoutData(widget.RowLayoutData{
         Position: widget.RowLayoutPositionCenter,
@@ -1290,7 +1301,9 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
 
             setupBox = func() {
                 box.RemoveChildren()
-                box.AddChild(ui.CenteredText(spell.Name, face, color.White))
+
+                manaAmount := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", playerObj.ComputeEffectiveSpellCost(spell, false)), face, color.White))
+                box.AddChild(combineHorizontalElementsCentered(ui.CenteredText(spell.Name, face, color.White), widget.NewGraphic(widget.GraphicOpts.Image(manaImage), widget.GraphicOpts.WidgetOpts(centered)), manaAmount))
 
                 if playerObj.KnownSpells.Contains(spell) {
                     learned := ui.CenteredText("Learned", face, color.RGBA{R: 0, G: 255, B: 0, A: 255})
@@ -1476,7 +1489,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
             Hover: color.White,
             Pressed: color.White,
         }),
-        widget.TabBookOpts.TabButtonSpacing(5),
+        widget.TabBookOpts.TabButtonSpacing(8),
         // widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(2)),
         widget.TabBookOpts.Tabs(tabs...),
     )
@@ -2469,7 +2482,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
         widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})),
     )
 
-    newGameButton := widget.NewButton(
+    enterBattleButton := widget.NewButton(
         widget.ButtonOpts.WidgetOpts(
             widget.WidgetOpts.LayoutData(widget.RowLayoutData{
                 Position: widget.RowLayoutPositionCenter,
@@ -2495,7 +2508,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     imageCache := util.MakeImageCache(engine.Cache)
 
-    rootContainer.AddChild(newGameButton)
+    rootContainer.AddChild(enterBattleButton)
 
     rootContainer.AddChild(makePlayerInfoUI(&face1, engine.Player, uiEvents, &imageCache))
 
