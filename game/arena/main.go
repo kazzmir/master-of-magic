@@ -1489,7 +1489,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
             Hover: color.White,
             Pressed: color.White,
         }),
-        widget.TabBookOpts.TabButtonSpacing(5),
+        widget.TabBookOpts.TabButtonSpacing(8),
         // widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(2)),
         widget.TabBookOpts.Tabs(tabs...),
     )
