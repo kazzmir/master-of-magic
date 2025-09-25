@@ -2482,7 +2482,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
         widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})),
     )
 
-    newGameButton := widget.NewButton(
+    enterBattleButton := widget.NewButton(
         widget.ButtonOpts.WidgetOpts(
             widget.WidgetOpts.LayoutData(widget.RowLayoutData{
                 Position: widget.RowLayoutPositionCenter,
@@ -2508,7 +2508,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     imageCache := util.MakeImageCache(engine.Cache)
 
-    rootContainer.AddChild(newGameButton)
+    rootContainer.AddChild(enterBattleButton)
 
     rootContainer.AddChild(makePlayerInfoUI(&face1, engine.Player, uiEvents, &imageCache))
 
