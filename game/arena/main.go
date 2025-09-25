@@ -555,7 +555,6 @@ func (engine *Engine) Update() error {
                 }
 
                 engine.Player.Units = aliveUnits
-                // FIXME: check combat state, not if there are any units left
                 if lastState != combat.CombatStateDefenderWin {
                     log.Printf("All units lost, starting new game")
                     engine.GameMode = GameModeNewGameUI
