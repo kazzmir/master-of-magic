@@ -845,7 +845,7 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
         }),
     ))
 
-    box.AddChild(widget.NewText(widget.TextOpts.Text(description, face, color.White)))
+    // box.AddChild(widget.NewText(widget.TextOpts.Text(description, face, color.White)))
 
     box.AddChild(sortButtons)
     box.AddChild(scrollStuff)
@@ -1510,7 +1510,6 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
         })),
     ))
 
-
     money := widget.NewText(
         // widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
         widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
@@ -1524,7 +1523,7 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
 
     container2 := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
             widget.RowLayoutOpts.Spacing(4),
         )),
     )
@@ -1567,6 +1566,7 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
         setupFilteredList()
     })
 
+    /*
     tabAll := widget.NewTabBookTab(
         widget.TabBookTabOpts.Label("All"),
         widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(widget.NewGridLayout(
@@ -1598,6 +1598,55 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
     )
 
     container2.AddChild(tabs)
+    */
+
+    allButton := widget.NewButton(
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(standardButtonImage()),
+        widget.ButtonOpts.Text("All Units", face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+    )
+
+    affordableButton := widget.NewButton(
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(standardButtonImage()),
+        widget.ButtonOpts.Text("Affordable Units", face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+    )
+
+    buttons := ui.HBox()
+    buttons.AddChild(allButton, affordableButton)
+
+    lists := []*widget.Container{unitList.GetWidget(), filteredUnitList.GetWidget()}
+    active := 0
+
+    listContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+        )),
+    )
+
+    widget.NewRadioGroup(
+        widget.RadioGroupOpts.Elements(allButton, affordableButton),
+        widget.RadioGroupOpts.InitialElement(allButton),
+        widget.RadioGroupOpts.ChangedHandler(func(args *widget.RadioGroupChangedEventArgs) {
+            active = (active + 1) % len(lists)
+            listContainer.RemoveChildren()
+            listContainer.AddChild(lists[active])
+        }),
+    )
+
+    container2.AddChild(buttons)
+
+    listContainer.AddChild(unitList.GetWidget())
+
+    container2.AddChild(listContainer)
 
     return armyShop
 }
