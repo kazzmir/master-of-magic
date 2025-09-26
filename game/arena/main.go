@@ -1623,9 +1623,6 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
     buttons := ui.HBox()
     buttons.AddChild(allButton, affordableButton)
 
-    lists := []*widget.Container{unitList.GetWidget(), filteredUnitList.GetWidget()}
-    active := 0
-
     listContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
             widget.RowLayoutOpts.Direction(widget.DirectionVertical),
@@ -1636,9 +1633,12 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
         widget.RadioGroupOpts.Elements(allButton, affordableButton),
         widget.RadioGroupOpts.InitialElement(allButton),
         widget.RadioGroupOpts.ChangedHandler(func(args *widget.RadioGroupChangedEventArgs) {
-            active = (active + 1) % len(lists)
             listContainer.RemoveChildren()
-            listContainer.AddChild(lists[active])
+            if args.Active == allButton {
+                listContainer.AddChild(unitList.GetWidget())
+            } else {
+                listContainer.AddChild(filteredUnitList.GetWidget())
+            }
         }),
     )
 
