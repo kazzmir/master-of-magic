@@ -816,6 +816,8 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
     var currentSortNameButton *widget.Button
     var currentSortCostButton *widget.Button
 
+    // swap the button for the given sort kind to the one based on the current direction
+    // the other sort kind is set to the button without an arrow
     updateSortButton := func(sortKind int) {
         var newButton *widget.Button
         switch sortKind {
