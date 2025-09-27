@@ -796,8 +796,11 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
 
     sortButtons := ui.HBox()
 
+    const SortByName = 0
+    const SortByCost = 1
+
     // only change how we sort if the same button is pressed twice in a row
-    lastSort := 0
+    lastSort := SortByName
 
     // baseImage := ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255})
     sortButtons.AddChild(widget.NewButton(
@@ -820,10 +823,10 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            if lastSort == 0 {
+            if lastSort == SortByName {
                 iconList.SortNameDirection = iconList.SortNameDirection.Next()
             }
-            lastSort = 0
+            lastSort = SortByName
             iconList.SortByName()
         }),
     ))
@@ -833,99 +836,56 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
 
     var currentSortButton *widget.Button
 
-    var sortUp *widget.Button
-    var sortDown *widget.Button
+    var sortCostUp *widget.Button
+    var sortCostDown *widget.Button
 
     updateSortButton := func() {
         switch iconList.SortCostDirection {
             case SortDirectionAscending:
-                sortButtons.ReplaceChild(currentSortButton, sortUp)
-                currentSortButton = sortUp
+                sortButtons.ReplaceChild(currentSortButton, sortCostUp)
+                currentSortButton = sortCostUp
             case SortDirectionDescending:
-                sortButtons.ReplaceChild(currentSortButton, sortDown)
-                currentSortButton = sortDown
+                sortButtons.ReplaceChild(currentSortButton, sortCostDown)
+                currentSortButton = sortCostDown
         }
     }
 
-    // FIXME: make a function to produce these three buttons
-    sortNone := widget.NewButton(
-        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(standardButtonImage()),
-        widget.ButtonOpts.Text("Sort by Cost", face, &widget.ButtonTextColor{
+    makeSortButton := func(image *ebiten.Image) *widget.Button {
+        opts := []widget.ButtonOpt{
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(standardButtonImage()),
+            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                if lastSort == SortByCost {
+                    iconList.SortCostDirection = iconList.SortCostDirection.Next()
+                }
+                lastSort = SortByCost
+                iconList.SortByCost()
+                updateSortButton()
+            }),
+        }
+
+        buttonColor := widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            if lastSort == 1 {
-                iconList.SortCostDirection = iconList.SortCostDirection.Next()
-            }
-            lastSort = 1
-            iconList.SortByCost()
-            updateSortButton()
-        }),
-    )
+        }
 
-    sortUp = widget.NewButton(
-        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(standardButtonImage()),
-        widget.ButtonOpts.TextAndImage("Sort by Cost", face, &widget.GraphicImage{Idle: upArrow, Disabled: upArrow}, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            if lastSort == 1 {
-                iconList.SortCostDirection = iconList.SortCostDirection.Next()
-            }
-            lastSort = 1
-            iconList.SortByCost()
-            updateSortButton()
-        }),
-    )
+        if image != nil {
+            opts = append(opts, widget.ButtonOpts.TextAndImage("Sort by Cost", face, &widget.GraphicImage{Idle: image, Disabled: image}, &buttonColor))
+        } else {
+            opts = append(opts, widget.ButtonOpts.Text("Sort by Cost", face, &buttonColor))
+        }
 
-    sortDown = widget.NewButton(
-        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(standardButtonImage()),
-        widget.ButtonOpts.TextAndImage("Sort by Cost", face, &widget.GraphicImage{Idle: downArrow, Disabled: downArrow}, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            if lastSort == 1 {
-                iconList.SortCostDirection = iconList.SortCostDirection.Next()
-            }
-            lastSort = 1
-            iconList.SortByCost()
-            updateSortButton()
-        }),
-    )
+        return widget.NewButton(opts...)
+    }
 
-    currentSortButton = sortNone
+    sortCostNone := makeSortButton(nil)
+    sortCostUp = makeSortButton(upArrow)
+    sortCostDown = makeSortButton(downArrow)
+
+    currentSortButton = sortCostNone
 
     sortButtons.AddChild(currentSortButton)
-
-    /*
-    sortButtons.AddChild(widget.NewButton(
-        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(standardButtonImage()),
-        widget.ButtonOpts.Text("Sort by Cost", face, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            if lastSort == 1 {
-                iconList.SortCostDirection = iconList.SortCostDirection.Next()
-            }
-            lastSort = 1
-            iconList.SortByCost()
-        }),
-    ))
-    */
-
-    // box.AddChild(widget.NewText(widget.TextOpts.Text(description, face, color.White)))
 
     box.AddChild(sortButtons)
     box.AddChild(scrollStuff)
