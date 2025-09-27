@@ -1631,40 +1631,6 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
         setupFilteredList()
     })
 
-    /*
-    tabAll := widget.NewTabBookTab(
-        widget.TabBookTabOpts.Label("All"),
-        widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(widget.NewGridLayout(
-        widget.GridLayoutOpts.Columns(1),
-        widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
-    ))))
-    tabAll.AddChild(unitList.GetWidget())
-    tabAffordable := widget.NewTabBookTab(
-        widget.TabBookTabOpts.Label("Affordable"),
-        widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(
-        widget.NewGridLayout(
-        widget.GridLayoutOpts.Columns(1),
-        widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
-    ))))
-    tabAffordable.AddChild(filteredUnitList.GetWidget())
-
-    tabs := widget.NewTabBook(
-        widget.TabBookOpts.TabButtonImage(standardButtonImage()),
-        widget.TabBookOpts.TabButtonText(face, &widget.ButtonTextColor{
-            Idle: color.White,
-            Disabled: color.NRGBA{R: 32, G: 32, B: 32, A: 255},
-            Hover: color.White,
-            Pressed: color.White,
-        }),
-        widget.TabBookOpts.TabButtonTextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 10, Right: 10}),
-        widget.TabBookOpts.TabButtonSpacing(10),
-        // widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(2)),
-        widget.TabBookOpts.Tabs(tabAll, tabAffordable),
-    )
-
-    container2.AddChild(tabs)
-    */
-
     allButton := widget.NewButton(
         widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
         widget.ButtonOpts.Image(standardButtonImage()),
