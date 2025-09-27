@@ -84,6 +84,17 @@ func (d Difficulty) String() string {
     return "?"
 }
 
+type PlaySound struct {
+    Maker audio.MakePlayerFunc
+}
+
+func (play *PlaySound) Play() {
+    if play.Maker != nil {
+        sound := play.Maker()
+        sound.Play()
+    }
+}
+
 type Engine struct {
     GameMode GameMode
     Player *player.Player
@@ -98,6 +109,8 @@ type Engine struct {
     CombatCoroutine *coroutine.Coroutine
     CombatScreen *combat.CombatScreen
     CurrentBattleReward uint64
+
+    LeftClickSound *PlaySound
 
     UI *ebitenui.UI
     NewGameUI *ebitenui.UI
@@ -730,7 +743,7 @@ func standardButtonImage() *widget.ButtonImage {
     return ui.MakeButtonImage(ui_image.NewBorderedNineSliceColor(body, border, 1))
 }
 
-func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.Face, buyUnit func(*units.Unit)) *UnitIconList {
+func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.Face, buyUnit func(*units.Unit), playSound *PlaySound) *UnitIconList {
     var iconList UnitIconList
 
     iconList.imageCache = imageCache
@@ -856,6 +869,7 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(standardButtonImage()),
             widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                playSound.Play()
                 clicked()
             }),
         }
@@ -1564,7 +1578,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
     return shop
 }
 
-func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate, playSound *PlaySound) *widget.Container {
     armyShop := ui.VBox()
 
     armyShop.AddChild(widget.NewText(
@@ -1605,7 +1619,7 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
         }
     }
 
-    unitList := MakeUnitIconList("All Units", imageCache, face, buyUnit)
+    unitList := MakeUnitIconList("All Units", imageCache, face, buyUnit, playSound)
 
     for _, unit := range getValidChoices(100000) {
         unitList.AddUnit(unit)
@@ -1613,7 +1627,7 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
 
     unitList.SortByName()
 
-    filteredUnitList := MakeUnitIconList("Affordable Units", imageCache, face, buyUnit)
+    filteredUnitList := MakeUnitIconList("Affordable Units", imageCache, face, buyUnit, playSound)
 
     setupFilteredList := func() {
         filteredUnitList.Clear()
@@ -1660,10 +1674,17 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
         )),
     )
 
+    first := true
+
     widget.NewRadioGroup(
         widget.RadioGroupOpts.Elements(allButton, affordableButton),
         widget.RadioGroupOpts.InitialElement(allButton),
         widget.RadioGroupOpts.ChangedHandler(func(args *widget.RadioGroupChangedEventArgs) {
+            // the handler is called when the radio group is created, so don't play sound the first time
+            if !first {
+                playSound.Play()
+            }
+            first = false
             listContainer.RemoveChildren()
             if args.Active == allButton {
                 listContainer.AddChild(unitList.GetWidget())
@@ -1682,7 +1703,7 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
     return armyShop
 }
 
-func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate, playSound *PlaySound) *widget.Container {
     container := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(2),
@@ -1701,7 +1722,7 @@ func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxC
         widget.ContainerOpts.BackgroundImage(ui.BorderedImage(color.RGBA{R: 0xc1, G: 0x80, B: 0x1a, A: 255}, 1)),
     )
 
-    armyShop := makeArmyShop(face, imageCache, playerObj, uiEvents)
+    armyShop := makeArmyShop(face, imageCache, playerObj, uiEvents, playSound)
 
     container.AddChild(armyShop)
 
@@ -2595,7 +2616,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     unitInfoUI := makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache)
 
     rootContainer.AddChild(unitInfoUI)
-    rootContainer.AddChild(makeShopUI(&face1, &imageCache, engine.Cache, engine.Player, uiEvents))
+    rootContainer.AddChild(makeShopUI(&face1, &imageCache, engine.Cache, engine.Player, uiEvents, engine.LeftClickSound))
 
     ui := &ebitenui.UI{
         Container: rootContainer,
@@ -2639,19 +2660,25 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
 
     music := musiclib.MakeMusic(cache)
 
+    clickMaker, err := audio.LoadSoundMaker(cache, audio.SoundClick)
+    if err != nil {
+        log.Printf("Error loading click sound: %v", err)
+        clickMaker = nil
+    }
+
     engine := Engine{
         GameMode: GameModeNewGameUI,
         Player: playerObj,
         Cache: cache,
         Events: make(chan EngineEvents, 10),
         Music: music,
+        LeftClickSound: &PlaySound{Maker: clickMaker},
     }
 
     engine.PushDrawer(engine.DefaultDraw)
 
     engine.Music.PushSongs(musiclib.SongBackground1, musiclib.SongBackground2, musiclib.SongBackground3)
 
-    var err error
     engine.UI, engine.UIUpdates, err = engine.MakeUI()
     if err != nil {
         log.Printf("Error creating UI: %v", err)

@@ -433,7 +433,7 @@ func (ui *UI) FocusElement(element *UIElement, text string){
 func (ui *UI) PlayStandardSound() {
     if ui.StandardSoundMaker == nil && ui.Cache != nil {
         ui.StandardSoundSetup.Do(func(){
-            maker, err := audio.LoadSoundMaker(ui.Cache, 2)
+            maker, err := audio.LoadSoundMaker(ui.Cache, audio.SoundClick)
             if err != nil {
                 log.Printf("Unable to load ui sound: %v", err)
                 return
