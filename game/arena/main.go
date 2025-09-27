@@ -849,17 +849,12 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
         }
     }
 
-    makeSortNameButton := func(image *ebiten.Image) *widget.Button {
+    makeSortButton := func(text string, image *ebiten.Image, clicked func()) *widget.Button {
         opts := []widget.ButtonOpt{
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(standardButtonImage()),
             widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-                if lastSort == SortByName {
-                    iconList.SortNameDirection = iconList.SortNameDirection.Next()
-                }
-                lastSort = SortByName
-                iconList.SortByName()
-                updateSortButton(SortByName)
+                clicked()
             }),
         }
 
@@ -870,62 +865,34 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
         }
 
         if image != nil {
-            opts = append(opts, widget.ButtonOpts.TextAndImage("Sort by Name", face, &widget.GraphicImage{Idle: image, Disabled: image}, &buttonColor))
+            opts = append(opts, widget.ButtonOpts.TextAndImage(text, face, &widget.GraphicImage{Idle: image, Disabled: image}, &buttonColor))
         } else {
-            opts = append(opts, widget.ButtonOpts.Text("Sort by Name", face, &buttonColor))
+            opts = append(opts, widget.ButtonOpts.Text(text, face, &buttonColor))
         }
 
         return widget.NewButton(opts...)
     }
 
-    // baseImage := ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255})
-    /*
-    sortButtons.AddChild(widget.NewButton(
-        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        // widget.ButtonOpts.ToggleMode(),
-        widget.ButtonOpts.Image(standardButtonImage()),
-        widget.ButtonOpts.Text("Sort by Name", face, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+    makeSortNameButton := func(image *ebiten.Image) *widget.Button {
+        return makeSortButton("Sort by Name", image, func() {
             if lastSort == SortByName {
                 iconList.SortNameDirection = iconList.SortNameDirection.Next()
             }
             lastSort = SortByName
             iconList.SortByName()
-        }),
-    ))
-    */
+            updateSortButton(SortByName)
+        })
+    }
 
     makeSortCostButton := func(image *ebiten.Image) *widget.Button {
-        opts := []widget.ButtonOpt{
-            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-            widget.ButtonOpts.Image(standardButtonImage()),
-            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-                if lastSort == SortByCost {
-                    iconList.SortCostDirection = iconList.SortCostDirection.Next()
-                }
-                lastSort = SortByCost
-                iconList.SortByCost()
-                updateSortButton(SortByCost)
-            }),
-        }
-
-        buttonColor := widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }
-
-        if image != nil {
-            opts = append(opts, widget.ButtonOpts.TextAndImage("Sort by Cost", face, &widget.GraphicImage{Idle: image, Disabled: image}, &buttonColor))
-        } else {
-            opts = append(opts, widget.ButtonOpts.Text("Sort by Cost", face, &buttonColor))
-        }
-
-        return widget.NewButton(opts...)
+        return makeSortButton("Sort by Cost", image, func() {
+            if lastSort == SortByCost {
+                iconList.SortCostDirection = iconList.SortCostDirection.Next()
+            }
+            lastSort = SortByCost
+            iconList.SortByCost()
+            updateSortButton(SortByCost)
+        })
     }
 
     sortNameNone = makeSortNameButton(nil)
