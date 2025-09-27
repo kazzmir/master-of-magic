@@ -794,58 +794,123 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
 
     box := ui.VBox()
 
+    upArrow, _ := imageCache.GetImageTransform("resource.lbx", 32, 0, "enlarge", enlargeTransform(2))
+    downArrow, _ := imageCache.GetImageTransform("resource.lbx", 33, 0, "enlarge", enlargeTransform(2))
+
     sortButtons := ui.HBox()
 
+    const SortByName = 0
+    const SortByCost = 1
+
     // only change how we sort if the same button is pressed twice in a row
-    lastSort := 0
+    lastSort := SortByName
 
-    // baseImage := ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255})
-    sortButtons.AddChild(widget.NewButton(
-        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        // widget.ButtonOpts.ToggleMode(),
-        widget.ButtonOpts.Image(standardButtonImage()),
-        /*
-        widget.ButtonOpts.Image(&widget.ButtonImage{
-            Idle: baseImage,
-            Hover: baseImage,
-            Pressed: baseImage,
-            Disabled: baseImage,
-            // PressedHover: ui_image.NewNineSliceColor(color.NRGBA{R: 255, G: 64, B: 32, A: 255}),
-        }),
-        */
+    var sortNameNone *widget.Button
+    var sortNameUp *widget.Button
+    var sortNameDown *widget.Button
 
-        widget.ButtonOpts.Text("Sort by Name", face, &widget.ButtonTextColor{
+    var sortCostNone *widget.Button
+    var sortCostUp *widget.Button
+    var sortCostDown *widget.Button
+
+    var currentSortNameButton *widget.Button
+    var currentSortCostButton *widget.Button
+
+    // swap the button for the given sort kind to the one based on the current direction
+    // the other sort kind is set to the button without an arrow
+    updateSortButton := func(sortKind int) {
+        var newButton *widget.Button
+        switch sortKind {
+            case SortByName:
+                switch iconList.SortNameDirection {
+                    case SortDirectionAscending: newButton = sortNameUp
+                    case SortDirectionDescending: newButton = sortNameDown
+                    default:
+                        panic("sort button error")
+                }
+
+                sortButtons.ReplaceChild(currentSortNameButton, newButton)
+                currentSortNameButton = newButton
+
+                sortButtons.ReplaceChild(currentSortCostButton, sortCostNone)
+                currentSortCostButton = sortCostNone
+
+            case SortByCost:
+                switch iconList.SortCostDirection {
+                    case SortDirectionAscending: newButton = sortCostUp
+                    case SortDirectionDescending: newButton = sortCostDown
+                    default:
+                        panic("sort button error")
+                }
+
+                sortButtons.ReplaceChild(currentSortCostButton, newButton)
+                currentSortCostButton = newButton
+
+                sortButtons.ReplaceChild(currentSortNameButton, sortNameNone)
+                currentSortNameButton = sortNameNone
+        }
+    }
+
+    makeSortButton := func(text string, image *ebiten.Image, clicked func()) *widget.Button {
+        opts := []widget.ButtonOpt{
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(standardButtonImage()),
+            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                clicked()
+            }),
+        }
+
+        buttonColor := widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            if lastSort == 0 {
+        }
+
+        if image != nil {
+            opts = append(opts, widget.ButtonOpts.TextAndImage(text, face, &widget.GraphicImage{Idle: image, Disabled: image}, &buttonColor))
+        } else {
+            opts = append(opts, widget.ButtonOpts.Text(text, face, &buttonColor))
+        }
+
+        return widget.NewButton(opts...)
+    }
+
+    makeSortNameButton := func(image *ebiten.Image) *widget.Button {
+        return makeSortButton("Sort by Name", image, func() {
+            if lastSort == SortByName {
                 iconList.SortNameDirection = iconList.SortNameDirection.Next()
             }
-            lastSort = 0
+            lastSort = SortByName
             iconList.SortByName()
-        }),
-    ))
+            updateSortButton(SortByName)
+        })
+    }
 
-    sortButtons.AddChild(widget.NewButton(
-        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(standardButtonImage()),
-        widget.ButtonOpts.Text("Sort by Cost", face, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            if lastSort == 1 {
+    makeSortCostButton := func(image *ebiten.Image) *widget.Button {
+        return makeSortButton("Sort by Cost", image, func() {
+            if lastSort == SortByCost {
                 iconList.SortCostDirection = iconList.SortCostDirection.Next()
             }
-            lastSort = 1
+            lastSort = SortByCost
             iconList.SortByCost()
-        }),
-    ))
+            updateSortButton(SortByCost)
+        })
+    }
 
-    box.AddChild(widget.NewText(widget.TextOpts.Text(description, face, color.White)))
+    sortNameNone = makeSortNameButton(nil)
+    sortNameUp = makeSortNameButton(upArrow)
+    sortNameDown = makeSortNameButton(downArrow)
+
+    currentSortNameButton = sortNameNone
+
+    sortCostNone = makeSortCostButton(nil)
+    sortCostUp = makeSortCostButton(upArrow)
+    sortCostDown = makeSortCostButton(downArrow)
+
+    currentSortCostButton = sortCostNone
+
+    sortButtons.AddChild(currentSortNameButton)
+    sortButtons.AddChild(currentSortCostButton)
 
     box.AddChild(sortButtons)
     box.AddChild(scrollStuff)
@@ -1510,7 +1575,6 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
         })),
     ))
 
-
     money := widget.NewText(
         // widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
         widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
@@ -1524,7 +1588,7 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
 
     container2 := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
             widget.RowLayoutOpts.Spacing(4),
         )),
     )
@@ -1567,37 +1631,53 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
         setupFilteredList()
     })
 
-    tabAll := widget.NewTabBookTab(
-        widget.TabBookTabOpts.Label("All"),
-        widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(widget.NewGridLayout(
-        widget.GridLayoutOpts.Columns(1),
-        widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
-    ))))
-    tabAll.AddChild(unitList.GetWidget())
-    tabAffordable := widget.NewTabBookTab(
-        widget.TabBookTabOpts.Label("Affordable"),
-        widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(
-        widget.NewGridLayout(
-        widget.GridLayoutOpts.Columns(1),
-        widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
-    ))))
-    tabAffordable.AddChild(filteredUnitList.GetWidget())
-
-    tabs := widget.NewTabBook(
-        widget.TabBookOpts.TabButtonImage(standardButtonImage()),
-        widget.TabBookOpts.TabButtonText(face, &widget.ButtonTextColor{
+    allButton := widget.NewButton(
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(standardButtonImage()),
+        widget.ButtonOpts.Text("All Units", face, &widget.ButtonTextColor{
             Idle: color.White,
-            Disabled: color.NRGBA{R: 32, G: 32, B: 32, A: 255},
             Hover: color.White,
-            Pressed: color.White,
+            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
         }),
-        widget.TabBookOpts.TabButtonTextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 10, Right: 10}),
-        widget.TabBookOpts.TabButtonSpacing(10),
-        // widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(2)),
-        widget.TabBookOpts.Tabs(tabAll, tabAffordable),
     )
 
-    container2.AddChild(tabs)
+    affordableButton := widget.NewButton(
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(standardButtonImage()),
+        widget.ButtonOpts.Text("Affordable Units", face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+    )
+
+    buttons := ui.HBox()
+    buttons.AddChild(allButton, affordableButton)
+
+    listContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+        )),
+    )
+
+    widget.NewRadioGroup(
+        widget.RadioGroupOpts.Elements(allButton, affordableButton),
+        widget.RadioGroupOpts.InitialElement(allButton),
+        widget.RadioGroupOpts.ChangedHandler(func(args *widget.RadioGroupChangedEventArgs) {
+            listContainer.RemoveChildren()
+            if args.Active == allButton {
+                listContainer.AddChild(unitList.GetWidget())
+            } else {
+                listContainer.AddChild(filteredUnitList.GetWidget())
+            }
+        }),
+    )
+
+    container2.AddChild(buttons)
+
+    listContainer.AddChild(unitList.GetWidget())
+
+    container2.AddChild(listContainer)
 
     return armyShop
 }
