@@ -84,6 +84,17 @@ func (d Difficulty) String() string {
     return "?"
 }
 
+type PlaySound struct {
+    Maker audio.MakePlayerFunc
+}
+
+func (play *PlaySound) Play() {
+    if play.Maker != nil {
+        sound := play.Maker()
+        sound.Play()
+    }
+}
+
 type Engine struct {
     GameMode GameMode
     Player *player.Player
@@ -98,6 +109,8 @@ type Engine struct {
     CombatCoroutine *coroutine.Coroutine
     CombatScreen *combat.CombatScreen
     CurrentBattleReward uint64
+
+    LeftClickSound *PlaySound
 
     UI *ebitenui.UI
     NewGameUI *ebitenui.UI
@@ -719,6 +732,7 @@ type UnitIconList struct {
     buyUnit func(unit *units.Unit)
     imageCache *util.ImageCache
     units []*units.Unit
+    playSound *PlaySound
 
     SortNameDirection SortDirection
     SortCostDirection SortDirection
@@ -730,12 +744,13 @@ func standardButtonImage() *widget.ButtonImage {
     return ui.MakeButtonImage(ui_image.NewBorderedNineSliceColor(body, border, 1))
 }
 
-func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.Face, buyUnit func(*units.Unit)) *UnitIconList {
+func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.Face, buyUnit func(*units.Unit), playSound *PlaySound) *UnitIconList {
     var iconList UnitIconList
 
     iconList.imageCache = imageCache
     iconList.buyUnit = buyUnit
     iconList.face = face
+    iconList.playSound = playSound
 
     iconList.unitList = widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
@@ -856,6 +871,7 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(standardButtonImage()),
             widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                playSound.Play()
                 clicked()
             }),
         }
@@ -1097,6 +1113,7 @@ func (iconList *UnitIconList) addUI(unit *units.Unit) {
         }),
         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
             iconList.buyUnit(unit)
+            iconList.playSound.Play()
         }),
     ))
 
@@ -1150,7 +1167,7 @@ func combineHorizontalElementsCentered(elements... widget.PreferredSizeLocateabl
     return box
 }
 
-func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate, playSound *PlaySound) *widget.Container {
     shop := ui.VBox()
     shop.AddChild(widget.NewText(widget.TextOpts.Text("Magic Shop", face, color.White)))
 
@@ -1222,6 +1239,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
                 }),
                 widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
                     if playerObj.Money >= cost {
+                        playSound.Play()
                         playerObj.Money -= cost
                         uiEvents.AddUpdate(&UIUpdateMoney{})
                         uiEvents.AddUpdate(&UIUpdateMagicBooks{})
@@ -1255,6 +1273,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
             }),
             widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
                 if playerObj.Money >= uint64(manaCost) {
+                    playSound.Play()
                     playerObj.Money -= uint64(manaCost)
                     playerObj.OriginalMana += amount
                     uiEvents.AddUpdate(&UIUpdateMana{})
@@ -1475,6 +1494,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
                         }),
                         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
                             if canBuy && cost <= playerObj.Money {
+                                playSound.Play()
                                 playerObj.Money -= cost
                                 playerObj.KnownSpells.AddSpell(spell)
                                 uiEvents.AddUpdate(&UIUpdateMoney{})
@@ -1564,7 +1584,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
     return shop
 }
 
-func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate, playSound *PlaySound) *widget.Container {
     armyShop := ui.VBox()
 
     armyShop.AddChild(widget.NewText(
@@ -1605,7 +1625,7 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
         }
     }
 
-    unitList := MakeUnitIconList("All Units", imageCache, face, buyUnit)
+    unitList := MakeUnitIconList("All Units", imageCache, face, buyUnit, playSound)
 
     for _, unit := range getValidChoices(100000) {
         unitList.AddUnit(unit)
@@ -1613,7 +1633,7 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
 
     unitList.SortByName()
 
-    filteredUnitList := MakeUnitIconList("Affordable Units", imageCache, face, buyUnit)
+    filteredUnitList := MakeUnitIconList("Affordable Units", imageCache, face, buyUnit, playSound)
 
     setupFilteredList := func() {
         filteredUnitList.Clear()
@@ -1660,10 +1680,17 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
         )),
     )
 
+    first := true
+
     widget.NewRadioGroup(
         widget.RadioGroupOpts.Elements(allButton, affordableButton),
         widget.RadioGroupOpts.InitialElement(allButton),
         widget.RadioGroupOpts.ChangedHandler(func(args *widget.RadioGroupChangedEventArgs) {
+            // the handler is called when the radio group is created, so don't play sound the first time
+            if !first {
+                playSound.Play()
+            }
+            first = false
             listContainer.RemoveChildren()
             if args.Active == allButton {
                 listContainer.AddChild(unitList.GetWidget())
@@ -1682,7 +1709,7 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
     return armyShop
 }
 
-func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate, playSound *PlaySound) *widget.Container {
     container := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(2),
@@ -1701,11 +1728,11 @@ func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxC
         widget.ContainerOpts.BackgroundImage(ui.BorderedImage(color.RGBA{R: 0xc1, G: 0x80, B: 0x1a, A: 255}, 1)),
     )
 
-    armyShop := makeArmyShop(face, imageCache, playerObj, uiEvents)
+    armyShop := makeArmyShop(face, imageCache, playerObj, uiEvents, playSound)
 
     container.AddChild(armyShop)
 
-    magicShop := makeMagicShop(face, imageCache, lbxCache, playerObj, uiEvents)
+    magicShop := makeMagicShop(face, imageCache, lbxCache, playerObj, uiEvents, playSound)
     container.AddChild(magicShop)
 
     return container
@@ -1740,7 +1767,7 @@ func enlargeTransform(factor int) util.ImageTransformFunc {
     return f 
 }
 
-func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
+func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache, playSound *PlaySound) *widget.Container {
     // remove any enchantments the unit already has
     enchantments := slices.DeleteFunc(getValidUnitEnchantments(), unit.HasEnchantment)
 
@@ -1875,6 +1902,7 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
                 widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
                     cost := uint64(getEnchantmentCost(enchantment))
                     if canBuy && cost <= playerObj.Money && !unit.HasEnchantment(enchantment) {
+                        playSound.Play()
                         playerObj.Money -= cost
                         unit.AddEnchantment(enchantment)
                         remove()
@@ -1910,7 +1938,7 @@ func sum[T any](items []T, f func(T) int) int {
     return total
 }
 
-func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
+func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache, playSound *PlaySound) *widget.Container {
 
     unitContainer := ui.HBox()
 
@@ -1967,6 +1995,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                 }),
                 widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
                     log.Printf("Selling unit %v", unit.GetFullName())
+                    playSound.Play()
                     playerObj.Money += sellCost
                     playerObj.RemoveUnit(unit)
                     updateUnitSpecifics(nil, func(){})
@@ -2027,6 +2056,8 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                             if upgradeCost > playerObj.Money {
                                 return
                             }
+
+                            playSound.Play()
 
                             switch unit.GetWeaponBonus() {
                                 case data.WeaponNone:
@@ -2116,6 +2147,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                 Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
             widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                playSound.Play()
                 updated := false
 
                 healCost := uint64(getHealCost(unit, 1))
@@ -2208,7 +2240,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
         enchantmentsBoxes.AddChild(showEnchantments)
 
-        buyEnchantments := makeBuyEnchantments(unit, face, playerObj, uiEvents, imageCache)
+        buyEnchantments := makeBuyEnchantments(unit, face, playerObj, uiEvents, imageCache, playSound)
 
         enchantmentsBoxes.AddChild(buyEnchantments)
 
@@ -2516,6 +2548,7 @@ func (engine *Engine) MakeNewGameUI() (*ebitenui.UI, error) {
                 Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
             widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                engine.LeftClickSound.Play()
                 select {
                     case engine.Events <- &EventNewGame{Level: difficulty}:
                     default:
@@ -2579,6 +2612,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
             if len(engine.Player.Units) == 0 {
                 return
             }
+            engine.LeftClickSound.Play()
             select {
                 case engine.Events <- &EventEnterBattle{}:
                 default:
@@ -2592,10 +2626,10 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     rootContainer.AddChild(makePlayerInfoUI(&face1, engine.Player, uiEvents, &imageCache))
 
-    unitInfoUI := makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache)
+    unitInfoUI := makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache, engine.LeftClickSound)
 
     rootContainer.AddChild(unitInfoUI)
-    rootContainer.AddChild(makeShopUI(&face1, &imageCache, engine.Cache, engine.Player, uiEvents))
+    rootContainer.AddChild(makeShopUI(&face1, &imageCache, engine.Cache, engine.Player, uiEvents, engine.LeftClickSound))
 
     ui := &ebitenui.UI{
         Container: rootContainer,
@@ -2639,19 +2673,25 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
 
     music := musiclib.MakeMusic(cache)
 
+    clickMaker, err := audio.LoadSoundMaker(cache, audio.SoundClick)
+    if err != nil {
+        log.Printf("Error loading click sound: %v", err)
+        clickMaker = nil
+    }
+
     engine := Engine{
         GameMode: GameModeNewGameUI,
         Player: playerObj,
         Cache: cache,
         Events: make(chan EngineEvents, 10),
         Music: music,
+        LeftClickSound: &PlaySound{Maker: clickMaker},
     }
 
     engine.PushDrawer(engine.DefaultDraw)
 
     engine.Music.PushSongs(musiclib.SongBackground1, musiclib.SongBackground2, musiclib.SongBackground3)
 
-    var err error
     engine.UI, engine.UIUpdates, err = engine.MakeUI()
     if err != nil {
         log.Printf("Error creating UI: %v", err)
