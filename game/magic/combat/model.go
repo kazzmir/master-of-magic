@@ -2189,6 +2189,8 @@ type CombatModel struct {
 
     Cleanups []func()
 
+    FinishState CombatState
+
     // track how many units were killed on each side, so experience
     // can be given out after combat ends
     DefeatedDefenders int
@@ -4123,7 +4125,7 @@ func DoStrategicCombat(attackingArmy *Army, defendingArmy *Army) (CombatState, i
 }
 
 func (model *CombatModel) flee(army *Army) {
-    for _, unit := range army.units {
+    for _, unit := range slices.Clone(army.units) {
         // FIXME: units unable to move always die
 
         // heroes have a 25% chance to die, normal units 50%
@@ -4147,6 +4149,7 @@ func (model *CombatModel) flee(army *Army) {
 
 // called when the battle ends
 func (model *CombatModel) FinishCombat(state CombatState) {
+    model.FinishState = state
     // kill all units that are bound or possessed, or summoned units
     // also regenerate units with the regeneration ability
     killUnits := func(army *Army, team Team) {

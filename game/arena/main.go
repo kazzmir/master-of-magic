@@ -51,6 +51,7 @@ type GameMode int
 
 const (
     GameModeUI GameMode = iota
+    GameModeNewGameUI
     GameModeBattle
 )
 
@@ -58,6 +59,40 @@ type EngineEvents interface {
 }
 
 type EventNewGame struct {
+    Level Difficulty
+}
+
+type EventEnterBattle struct {
+}
+
+type Difficulty int
+const (
+    DifficultyEasy Difficulty = iota
+    DifficultyNormal
+    DifficultyHard
+    DifficultyImpossible
+)
+
+func (d Difficulty) String() string {
+    switch d {
+        case DifficultyEasy: return "Easy"
+        case DifficultyNormal: return "Normal"
+        case DifficultyHard: return "Hard"
+        case DifficultyImpossible: return "Impossible"
+    }
+
+    return "?"
+}
+
+type PlaySound struct {
+    Maker audio.MakePlayerFunc
+}
+
+func (play *PlaySound) Play() {
+    if play.Maker != nil {
+        sound := play.Maker()
+        sound.Play()
+    }
 }
 
 type Engine struct {
@@ -70,11 +105,15 @@ type Engine struct {
 
     Drawers []func(screen *ebiten.Image)
 
+    Difficulty Difficulty
     CombatCoroutine *coroutine.Coroutine
     CombatScreen *combat.CombatScreen
     CurrentBattleReward uint64
 
+    LeftClickSound *PlaySound
+
     UI *ebitenui.UI
+    NewGameUI *ebitenui.UI
     UIUpdates *UIEventUpdate
 }
 
@@ -297,7 +336,25 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         enemyPlayer.GetWizard().AddMagicLevel(magic, rand.N(booksMax))
     }
 
-    budget := uint64(100 * math.Pow(1.8, float64(engine.Player.Level)))
+    var baseBudget float64 = 100
+    var baseExponent float64 = 1.8
+
+    switch engine.Difficulty {
+        case DifficultyEasy:
+            baseBudget = 80
+            baseExponent = 1.5
+        case DifficultyNormal:
+            baseBudget = 100
+            baseExponent = 1.8
+        case DifficultyHard:
+            baseBudget = 120
+            baseExponent = 1.95
+        case DifficultyImpossible:
+            baseBudget = 150
+            baseExponent = 2.1
+    }
+
+    budget := uint64(baseBudget * math.Pow(baseExponent, float64(engine.Player.Level)))
 
     var spellCosts uint64
 
@@ -313,9 +370,9 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     engine.CurrentBattleReward = spellCosts
 
-    // at least have 200 to buy units
-    if budget < 200 {
-        budget = 200
+    // at least have some amount to buy units
+    if budget < 80 {
+        budget = 80
     }
 
     // log.Printf("Budget after spells: %v", budget)
@@ -383,7 +440,12 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         }
     }
 
-    engine.CurrentBattleReward = (engine.CurrentBattleReward * 3) / 2
+    switch engine.Difficulty {
+        case DifficultyEasy: engine.CurrentBattleReward = engine.CurrentBattleReward * 2 + 200
+        case DifficultyNormal: engine.CurrentBattleReward = (engine.CurrentBattleReward * 3) / 2 + 100
+        case DifficultyHard: engine.CurrentBattleReward = (engine.CurrentBattleReward * 5) / 4
+        case DifficultyImpossible: engine.CurrentBattleReward = (engine.CurrentBattleReward * 9) / 10
+    }
 
     attackingArmy := combat.Army {
         Player: enemyPlayer,
@@ -411,7 +473,7 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         var endScreen *combat.CombatEndScreen
 
         lastState := screen.Update(yield)
-        if lastState == combat.CombatStateAttackerWin {
+        if lastState == combat.CombatStateAttackerWin || lastState == combat.CombatStateDefenderFlee {
             endScreen = combat.MakeCombatEndScreen(engine.Cache, screen, combat.CombatEndScreenResultLose, 0, 0, 0, 0)
             engine.Music.PushSong(musiclib.SongYouLose)
         } else if lastState == combat.CombatStateDefenderWin {
@@ -448,6 +510,32 @@ func (engine *Engine) Update() error {
     inputmanager.Update()
 
     switch engine.GameMode {
+        case GameModeNewGameUI:
+            engine.NewGameUI.Update()
+
+            select {
+                case event := <-engine.Events:
+                    switch use := event.(type) {
+                        case *EventNewGame:
+                            engine.GameMode = GameModeUI
+                            engine.Difficulty = use.Level
+                            engine.Player = player.MakePlayer(data.BannerGreen)
+                            // test3(engine.Player)
+
+                            if engine.Difficulty == DifficultyEasy {
+                                engine.Player.Money = 500
+                            }
+
+                            var err error
+                            engine.UI, engine.UIUpdates, err = engine.MakeUI()
+                            if err != nil {
+                                log.Printf("Error creating UI: %v", err)
+                            }
+
+                    }
+                default:
+            }
+
         case GameModeUI:
             engine.UI.Update()
             engine.UIUpdates.Update()
@@ -455,7 +543,7 @@ func (engine *Engine) Update() error {
             select {
                 case event := <-engine.Events:
                     switch event.(type) {
-                        case *EventNewGame:
+                        case *EventEnterBattle:
                             engine.GameMode = GameModeBattle
                             engine.CombatCoroutine = coroutine.MakeCoroutine(engine.MakeBattleFunc())
                     }
@@ -464,9 +552,10 @@ func (engine *Engine) Update() error {
         case GameModeBattle:
             err := engine.CombatCoroutine.Run()
             if errors.Is(err, CombatDoneErr) {
+                lastState := engine.CombatScreen.Model.FinishState
+
                 engine.CombatCoroutine = nil
                 engine.CombatScreen = nil
-                engine.GameMode = GameModeUI
 
                 engine.Player.Level += 1
                 engine.Player.Money += engine.CurrentBattleReward
@@ -479,20 +568,23 @@ func (engine *Engine) Update() error {
                 }
 
                 engine.Player.Units = aliveUnits
-                if len(engine.Player.Units) == 0 {
+                if lastState != combat.CombatStateDefenderWin {
                     log.Printf("All units lost, starting new game")
+                    engine.GameMode = GameModeNewGameUI
                     engine.Player = player.MakePlayer(data.BannerGreen)
                     // engine.Player.AddUnit(units.LizardSwordsmen)
                 } else {
                     for _, unit := range engine.Player.Units {
                         unit.AddExperience(20)
                     }
+                    engine.GameMode = GameModeUI
                 }
 
                 engine.UI, engine.UIUpdates, err = engine.MakeUI()
                 if err != nil {
                     log.Printf("Error creating UI: %v", err)
                 }
+
             }
     }
 
@@ -517,6 +609,10 @@ func (engine *Engine) Draw(screen *ebiten.Image) {
 
 func (engine *Engine) DefaultDraw(screen *ebiten.Image) {
     switch engine.GameMode {
+        case GameModeNewGameUI:
+            engine.DrawUI(screen)
+            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, true)
+            engine.NewGameUI.Draw(screen)
         case GameModeUI:
             engine.DrawUI(screen)
         case GameModeBattle:
@@ -560,6 +656,10 @@ type UIUpdateUnit struct {
 }
 
 type UIAddUnit struct {
+    Unit units.StackUnit
+}
+
+type UIRemoveUnit struct {
     Unit units.StackUnit
 }
 
@@ -632,6 +732,7 @@ type UnitIconList struct {
     buyUnit func(unit *units.Unit)
     imageCache *util.ImageCache
     units []*units.Unit
+    playSound *PlaySound
 
     SortNameDirection SortDirection
     SortCostDirection SortDirection
@@ -643,12 +744,13 @@ func standardButtonImage() *widget.ButtonImage {
     return ui.MakeButtonImage(ui_image.NewBorderedNineSliceColor(body, border, 1))
 }
 
-func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.Face, buyUnit func(*units.Unit)) *UnitIconList {
+func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.Face, buyUnit func(*units.Unit), playSound *PlaySound) *UnitIconList {
     var iconList UnitIconList
 
     iconList.imageCache = imageCache
     iconList.buyUnit = buyUnit
     iconList.face = face
+    iconList.playSound = playSound
 
     iconList.unitList = widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
@@ -671,7 +773,7 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
     )
 
     slider := widget.NewSlider(
-        widget.SliderOpts.Direction(widget.DirectionVertical),
+        widget.SliderOpts.Orientation(widget.DirectionVertical),
         widget.SliderOpts.MinMax(0, 100),
         widget.SliderOpts.InitialCurrent(0),
         widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
@@ -707,58 +809,124 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
 
     box := ui.VBox()
 
+    upArrow, _ := imageCache.GetImageTransform("resource.lbx", 32, 0, "enlarge", enlargeTransform(2))
+    downArrow, _ := imageCache.GetImageTransform("resource.lbx", 33, 0, "enlarge", enlargeTransform(2))
+
     sortButtons := ui.HBox()
 
+    const SortByName = 0
+    const SortByCost = 1
+
     // only change how we sort if the same button is pressed twice in a row
-    lastSort := 0
+    lastSort := SortByName
 
-    // baseImage := ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 32, B: 32, A: 255})
-    sortButtons.AddChild(widget.NewButton(
-        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        // widget.ButtonOpts.ToggleMode(),
-        widget.ButtonOpts.Image(standardButtonImage()),
-        /*
-        widget.ButtonOpts.Image(&widget.ButtonImage{
-            Idle: baseImage,
-            Hover: baseImage,
-            Pressed: baseImage,
-            Disabled: baseImage,
-            // PressedHover: ui_image.NewNineSliceColor(color.NRGBA{R: 255, G: 64, B: 32, A: 255}),
-        }),
-        */
+    var sortNameNone *widget.Button
+    var sortNameUp *widget.Button
+    var sortNameDown *widget.Button
 
-        widget.ButtonOpts.Text("Sort by Name", face, &widget.ButtonTextColor{
+    var sortCostNone *widget.Button
+    var sortCostUp *widget.Button
+    var sortCostDown *widget.Button
+
+    var currentSortNameButton *widget.Button
+    var currentSortCostButton *widget.Button
+
+    // swap the button for the given sort kind to the one based on the current direction
+    // the other sort kind is set to the button without an arrow
+    updateSortButton := func(sortKind int) {
+        var newButton *widget.Button
+        switch sortKind {
+            case SortByName:
+                switch iconList.SortNameDirection {
+                    case SortDirectionAscending: newButton = sortNameUp
+                    case SortDirectionDescending: newButton = sortNameDown
+                    default:
+                        panic("sort button error")
+                }
+
+                sortButtons.ReplaceChild(currentSortNameButton, newButton)
+                currentSortNameButton = newButton
+
+                sortButtons.ReplaceChild(currentSortCostButton, sortCostNone)
+                currentSortCostButton = sortCostNone
+
+            case SortByCost:
+                switch iconList.SortCostDirection {
+                    case SortDirectionAscending: newButton = sortCostUp
+                    case SortDirectionDescending: newButton = sortCostDown
+                    default:
+                        panic("sort button error")
+                }
+
+                sortButtons.ReplaceChild(currentSortCostButton, newButton)
+                currentSortCostButton = newButton
+
+                sortButtons.ReplaceChild(currentSortNameButton, sortNameNone)
+                currentSortNameButton = sortNameNone
+        }
+    }
+
+    makeSortButton := func(text string, image *ebiten.Image, clicked func()) *widget.Button {
+        opts := []widget.ButtonOpt{
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(standardButtonImage()),
+            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                playSound.Play()
+                clicked()
+            }),
+        }
+
+        buttonColor := widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            if lastSort == 0 {
+        }
+
+        if image != nil {
+            opts = append(opts, widget.ButtonOpts.TextAndImage(text, face, &widget.GraphicImage{Idle: image, Disabled: image}, &buttonColor))
+        } else {
+            opts = append(opts, widget.ButtonOpts.Text(text, face, &buttonColor))
+        }
+
+        return widget.NewButton(opts...)
+    }
+
+    makeSortNameButton := func(image *ebiten.Image) *widget.Button {
+        return makeSortButton("Sort by Name", image, func() {
+            if lastSort == SortByName {
                 iconList.SortNameDirection = iconList.SortNameDirection.Next()
             }
-            lastSort = 0
+            lastSort = SortByName
             iconList.SortByName()
-        }),
-    ))
+            updateSortButton(SortByName)
+        })
+    }
 
-    sortButtons.AddChild(widget.NewButton(
-        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(standardButtonImage()),
-        widget.ButtonOpts.Text("Sort by Cost", face, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-            if lastSort == 1 {
+    makeSortCostButton := func(image *ebiten.Image) *widget.Button {
+        return makeSortButton("Sort by Cost", image, func() {
+            if lastSort == SortByCost {
                 iconList.SortCostDirection = iconList.SortCostDirection.Next()
             }
-            lastSort = 1
+            lastSort = SortByCost
             iconList.SortByCost()
-        }),
-    ))
+            updateSortButton(SortByCost)
+        })
+    }
 
-    box.AddChild(widget.NewText(widget.TextOpts.Text(description, face, color.White)))
+    sortNameNone = makeSortNameButton(nil)
+    sortNameUp = makeSortNameButton(upArrow)
+    sortNameDown = makeSortNameButton(downArrow)
+
+    currentSortNameButton = sortNameNone
+
+    sortCostNone = makeSortCostButton(nil)
+    sortCostUp = makeSortCostButton(upArrow)
+    sortCostDown = makeSortCostButton(downArrow)
+
+    currentSortCostButton = sortCostNone
+
+    sortButtons.AddChild(currentSortNameButton)
+    sortButtons.AddChild(currentSortCostButton)
 
     box.AddChild(sortButtons)
     box.AddChild(scrollStuff)
@@ -945,6 +1113,7 @@ func (iconList *UnitIconList) addUI(unit *units.Unit) {
         }),
         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
             iconList.buyUnit(unit)
+            iconList.playSound.Play()
         }),
     ))
 
@@ -988,7 +1157,17 @@ func combineHorizontalElements(elements... widget.PreferredSizeLocateableWidget)
     return box
 }
 
-func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+func combineHorizontalElementsCentered(elements... widget.PreferredSizeLocateableWidget) *widget.Container {
+    box := ui.HBox(widget.ContainerOpts.WidgetOpts(
+        widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            Position: widget.RowLayoutPositionCenter,
+        }),
+    ))
+    box.AddChild(elements...)
+    return box
+}
+
+func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate, playSound *PlaySound) *widget.Container {
     shop := ui.VBox()
     shop.AddChild(widget.NewText(widget.TextOpts.Text("Magic Shop", face, color.White)))
 
@@ -1000,6 +1179,8 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
     natureBook, _ := imageCache.GetImageTransform("newgame.lbx", 30, 0, "enlarge", enlargeTransform(2))
     deathBook, _ := imageCache.GetImageTransform("newgame.lbx", 33, 0, "enlarge", enlargeTransform(2))
     chaosBook, _ := imageCache.GetImageTransform("newgame.lbx", 36, 0, "enlarge", enlargeTransform(2))
+
+    manaImage, _ := imageCache.GetImageTransform("backgrnd.lbx", 43, 0, "enlarge", enlargeTransform(2))
 
     centered := widget.WidgetOpts.LayoutData(widget.RowLayoutData{
         Position: widget.RowLayoutPositionCenter,
@@ -1058,6 +1239,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
                 }),
                 widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
                     if playerObj.Money >= cost {
+                        playSound.Play()
                         playerObj.Money -= cost
                         uiEvents.AddUpdate(&UIUpdateMoney{})
                         uiEvents.AddUpdate(&UIUpdateMagicBooks{})
@@ -1091,6 +1273,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
             }),
             widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
                 if playerObj.Money >= uint64(manaCost) {
+                    playSound.Play()
                     playerObj.Money -= uint64(manaCost)
                     playerObj.OriginalMana += amount
                     uiEvents.AddUpdate(&UIUpdateMana{})
@@ -1202,7 +1385,9 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
 
             setupBox = func() {
                 box.RemoveChildren()
-                box.AddChild(ui.CenteredText(spell.Name, face, color.White))
+
+                manaAmount := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", playerObj.ComputeEffectiveSpellCost(spell, false)), face, color.White))
+                box.AddChild(combineHorizontalElementsCentered(ui.CenteredText(spell.Name, face, color.White), widget.NewGraphic(widget.GraphicOpts.Image(manaImage), widget.GraphicOpts.WidgetOpts(centered)), manaAmount))
 
                 if playerObj.KnownSpells.Contains(spell) {
                     learned := ui.CenteredText("Learned", face, color.RGBA{R: 0, G: 255, B: 0, A: 255})
@@ -1226,6 +1411,70 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
                         case spellbook.SpellRarityVeryRare: canBuy = rarityCount <= getVeryRareSpells(playerObj.GetWizard().MagicLevel(magic))
                     }
 
+                    booksNeeded := 0
+                    needed:
+                    for {
+                        switch spell.Rarity {
+                            case spellbook.SpellRarityCommon:
+                                if rarityCount <= getCommonSpells(booksNeeded) {
+                                    break needed
+                                }
+                            case spellbook.SpellRarityUncommon:
+                                if rarityCount <= getUncommonSpells(booksNeeded) {
+                                    break needed
+                                }
+                            case spellbook.SpellRarityRare:
+                                if rarityCount <= getRareSpells(booksNeeded) {
+                                    break needed
+                                }
+                            case spellbook.SpellRarityVeryRare:
+                                if rarityCount <= getVeryRareSpells(booksNeeded) {
+                                    break needed
+                                }
+                        }
+
+                        booksNeeded += 1
+                    }
+
+                    if booksNeeded > 0 {
+                        var use *ebiten.Image
+                        switch magic {
+                            case data.LifeMagic: use = lifeBook
+                            case data.SorceryMagic: use = sorceryBook
+                            case data.NatureMagic: use = natureBook
+                            case data.DeathMagic: use = deathBook
+                            case data.ChaosMagic: use = chaosBook
+                        }
+
+                        final := ebiten.NewImage(use.Bounds().Dx() * booksNeeded, use.Bounds().Dy())
+
+                        for x := range booksNeeded {
+                            var ops ebiten.DrawImageOptions
+                            ops.GeoM.Translate(float64(x * use.Bounds().Dx()), 0)
+
+                            if x >= playerObj.GetWizard().MagicLevel(magic) {
+                                ops.ColorScale.ScaleWithColor(color.NRGBA{R: 90, G: 90, B: 90, A: 255})
+                            }
+
+                            final.DrawImage(use, &ops)
+                        }
+
+                        books := ui.HBox(
+                            widget.ContainerOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                                Position: widget.RowLayoutPositionCenter,
+                            })),
+                        )
+
+                        books.AddChild(widget.NewGraphic(
+                            widget.GraphicOpts.Image(final),
+                            widget.GraphicOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                                Position: widget.RowLayoutPositionCenter,
+                            })),
+                        ))
+
+                        box.AddChild(books)
+                    }
+
                     if !canBuy {
                         buttonImage = ui.SolidImage(32, 16, 16)
                         buyTextColor = color.NRGBA{R: 128, G: 128, B: 128, A: 255}
@@ -1245,6 +1494,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
                         }),
                         widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
                             if canBuy && cost <= playerObj.Money {
+                                playSound.Play()
                                 playerObj.Money -= cost
                                 playerObj.KnownSpells.AddSpell(spell)
                                 uiEvents.AddUpdate(&UIUpdateMoney{})
@@ -1280,7 +1530,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
         )
 
         slider := widget.NewSlider(
-            widget.SliderOpts.Direction(widget.DirectionVertical),
+            widget.SliderOpts.Orientation(widget.DirectionVertical),
             widget.SliderOpts.MinMax(0, 100),
             widget.SliderOpts.InitialCurrent(0),
             widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
@@ -1324,7 +1574,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
             Hover: color.White,
             Pressed: color.White,
         }),
-        widget.TabBookOpts.TabButtonSpacing(5),
+        widget.TabBookOpts.TabButtonSpacing(8),
         // widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(2)),
         widget.TabBookOpts.Tabs(tabs...),
     )
@@ -1334,7 +1584,132 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
     return shop
 }
 
-func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate) *widget.Container {
+func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate, playSound *PlaySound) *widget.Container {
+    armyShop := ui.VBox()
+
+    armyShop.AddChild(widget.NewText(
+        widget.TextOpts.Text("Shop", face, color.White),
+        widget.TextOpts.Position(widget.TextPositionCenter, widget.TextPositionStart),
+        widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            Stretch: true,
+        })),
+    ))
+
+    money := widget.NewText(
+        // widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
+        widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
+    )
+
+    AddEvent(uiEvents, func (update *UIUpdateMoney) {
+        money.Label = fmt.Sprintf("Money: %d", playerObj.Money)
+    })
+
+    armyShop.AddChild(makeMoneyText(money, imageCache))
+
+    container2 := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(4),
+        )),
+    )
+
+    armyShop.AddChild(container2)
+
+    buyUnit := func(unit *units.Unit) {
+        unitCost := getUnitCost(unit)
+        if unitCost <= playerObj.Money {
+            playerObj.Money -= unitCost
+            newUnit := playerObj.AddUnit(*unit)
+            uiEvents.AddUpdate(&UIAddUnit{Unit: newUnit})
+            uiEvents.AddUpdate(&UIUpdateMoney{})
+        }
+    }
+
+    unitList := MakeUnitIconList("All Units", imageCache, face, buyUnit, playSound)
+
+    for _, unit := range getValidChoices(100000) {
+        unitList.AddUnit(unit)
+    }
+
+    unitList.SortByName()
+
+    filteredUnitList := MakeUnitIconList("Affordable Units", imageCache, face, buyUnit, playSound)
+
+    setupFilteredList := func() {
+        filteredUnitList.Clear()
+        filteredUnitList.Reset()
+        for _, unit := range getValidChoices(playerObj.Money) {
+            filteredUnitList.AddUnit(unit)
+        }
+
+        filteredUnitList.SortByName()
+    }
+
+    setupFilteredList()
+
+    AddEvent(uiEvents, func (update *UIUpdateMoney) {
+        setupFilteredList()
+    })
+
+    allButton := widget.NewButton(
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(standardButtonImage()),
+        widget.ButtonOpts.Text("All Units", face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+    )
+
+    affordableButton := widget.NewButton(
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(standardButtonImage()),
+        widget.ButtonOpts.Text("Affordable Units", face, &widget.ButtonTextColor{
+            Idle: color.White,
+            Hover: color.White,
+            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+        }),
+    )
+
+    buttons := ui.HBox()
+    buttons.AddChild(allButton, affordableButton)
+
+    listContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+        )),
+    )
+
+    first := true
+
+    widget.NewRadioGroup(
+        widget.RadioGroupOpts.Elements(allButton, affordableButton),
+        widget.RadioGroupOpts.InitialElement(allButton),
+        widget.RadioGroupOpts.ChangedHandler(func(args *widget.RadioGroupChangedEventArgs) {
+            // the handler is called when the radio group is created, so don't play sound the first time
+            if !first {
+                playSound.Play()
+            }
+            first = false
+            listContainer.RemoveChildren()
+            if args.Active == allButton {
+                listContainer.AddChild(unitList.GetWidget())
+            } else {
+                listContainer.AddChild(filteredUnitList.GetWidget())
+            }
+        }),
+    )
+
+    container2.AddChild(buttons)
+
+    listContainer.AddChild(unitList.GetWidget())
+
+    container2.AddChild(listContainer)
+
+    return armyShop
+}
+
+func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate, playSound *PlaySound) *widget.Container {
     container := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(2),
@@ -1353,108 +1728,11 @@ func makeShopUI(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxC
         widget.ContainerOpts.BackgroundImage(ui.BorderedImage(color.RGBA{R: 0xc1, G: 0x80, B: 0x1a, A: 255}, 1)),
     )
 
-    armyShop := ui.VBox()
-
-    armyShop.AddChild(widget.NewText(
-        widget.TextOpts.Text("Shop", face, color.White),
-        widget.TextOpts.Position(widget.TextPositionCenter, widget.TextPositionStart),
-        widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-            Stretch: true,
-        })),
-    ))
-
-
-    money := widget.NewText(
-        // widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
-        widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),
-    )
-
-    AddEvent(uiEvents, func (update *UIUpdateMoney) {
-        money.Label = fmt.Sprintf("Money: %d", playerObj.Money)
-    })
-
-    armyShop.AddChild(makeMoneyText(money, imageCache))
-
-    container2 := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-            widget.RowLayoutOpts.Spacing(4),
-        )),
-    )
-
-    armyShop.AddChild(container2)
-
-    buyUnit := func(unit *units.Unit) {
-        unitCost := getUnitCost(unit)
-        if unitCost <= playerObj.Money {
-            playerObj.Money -= unitCost
-            newUnit := playerObj.AddUnit(*unit)
-            uiEvents.AddUpdate(&UIAddUnit{Unit: newUnit})
-            uiEvents.AddUpdate(&UIUpdateMoney{})
-        }
-    }
-
-    unitList := MakeUnitIconList("All Units", imageCache, face, buyUnit)
-
-    for _, unit := range getValidChoices(100000) {
-        unitList.AddUnit(unit)
-    }
-
-    unitList.SortByName()
-
-    filteredUnitList := MakeUnitIconList("Affordable Units", imageCache, face, buyUnit)
-
-    setupFilteredList := func() {
-        filteredUnitList.Clear()
-        filteredUnitList.Reset()
-        for _, unit := range getValidChoices(playerObj.Money) {
-            filteredUnitList.AddUnit(unit)
-        }
-
-        filteredUnitList.SortByName()
-    }
-
-    setupFilteredList()
-
-    AddEvent(uiEvents, func (update *UIUpdateMoney) {
-        setupFilteredList()
-    })
-
-    tabAll := widget.NewTabBookTab(
-        widget.TabBookTabOpts.Label("All"),
-        widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(widget.NewGridLayout(
-        widget.GridLayoutOpts.Columns(1),
-        widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
-    ))))
-    tabAll.AddChild(unitList.GetWidget())
-    tabAffordable := widget.NewTabBookTab(
-        widget.TabBookTabOpts.Label("Affordable"),
-        widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(
-        widget.NewGridLayout(
-        widget.GridLayoutOpts.Columns(1),
-        widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false}),
-    ))))
-    tabAffordable.AddChild(filteredUnitList.GetWidget())
-
-    tabs := widget.NewTabBook(
-        widget.TabBookOpts.TabButtonImage(standardButtonImage()),
-        widget.TabBookOpts.TabButtonText(face, &widget.ButtonTextColor{
-            Idle: color.White,
-            Disabled: color.NRGBA{R: 32, G: 32, B: 32, A: 255},
-            Hover: color.White,
-            Pressed: color.White,
-        }),
-        widget.TabBookOpts.TabButtonTextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 10, Right: 10}),
-        widget.TabBookOpts.TabButtonSpacing(10),
-        // widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(2)),
-        widget.TabBookOpts.Tabs(tabAll, tabAffordable),
-    )
-
-    container2.AddChild(tabs)
+    armyShop := makeArmyShop(face, imageCache, playerObj, uiEvents, playSound)
 
     container.AddChild(armyShop)
 
-    magicShop := makeMagicShop(face, imageCache, lbxCache, playerObj, uiEvents)
+    magicShop := makeMagicShop(face, imageCache, lbxCache, playerObj, uiEvents, playSound)
     container.AddChild(magicShop)
 
     return container
@@ -1489,7 +1767,7 @@ func enlargeTransform(factor int) util.ImageTransformFunc {
     return f 
 }
 
-func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
+func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache, playSound *PlaySound) *widget.Container {
     // remove any enchantments the unit already has
     enchantments := slices.DeleteFunc(getValidUnitEnchantments(), unit.HasEnchantment)
 
@@ -1624,6 +1902,7 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
                 widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
                     cost := uint64(getEnchantmentCost(enchantment))
                     if canBuy && cost <= playerObj.Money && !unit.HasEnchantment(enchantment) {
+                        playSound.Play()
                         playerObj.Money -= cost
                         unit.AddEnchantment(enchantment)
                         remove()
@@ -1651,41 +1930,98 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
     return container
 }
 
-func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
+func sum[T any](items []T, f func(T) int) int {
+    total := 0
+    for _, item := range items {
+        total += f(item)
+    }
+    return total
+}
 
-    unitSpecifics := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(2),
-        )),
-    )
+func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache, playSound *PlaySound) *widget.Container {
 
-    unitSpecifics.AddChild(widget.NewText(
-        widget.TextOpts.Text("Unit Specifics", face, color.White),
-    ))
+    unitContainer := ui.HBox()
 
     var updateUnitSpecifics func(unit units.StackUnit, setup func())
 
     removeUnit := func() {
     }
 
+    gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
+    moneyImage := &widget.GraphicImage{
+        Idle: gold,
+        Disabled: gold,
+    }
+
     updateUnitSpecifics = func(unit units.StackUnit, setup func()) {
+        unitContainer.RemoveChildren()
+
+        removeUnit()
+
+        if unit == nil {
+            return
+        }
+
+        unitSpecifics := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+                widget.RowLayoutOpts.Spacing(2),
+            )),
+        )
+
+        unitContainer.AddChild(unitSpecifics)
+
+        unitSpecifics.AddChild(widget.NewText(
+            widget.TextOpts.Text("Unit Specifics", face, color.White),
+        ))
+
         currentName := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Name: %v", unit.GetFullName()), face, color.White))
         currentHealth := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("HP: %d/%d", unit.GetHealth(), unit.GetMaxHealth()), face, color.White))
         currentRace := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Race: %v", unit.GetRace()), face, color.White))
 
-        removeUnit()
+        rawUnit := unit.GetRawUnit()
+        var removeButton *widget.Button
+
+        makeRemoveButton := func() *widget.Button {
+            sellCost := getUnitCost(&rawUnit) + uint64(sum(unit.GetEnchantments(), getEnchantmentCost))
+            sellCost = (sellCost * 3) / 4
+            return widget.NewButton(
+                widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(standardButtonImage()),
+                widget.ButtonOpts.TextAndImage(fmt.Sprintf("Sell %v for %v", unit.GetFullName(), sellCost), face, moneyImage, &widget.ButtonTextColor{
+                    Idle: color.White,
+                    Hover: color.White,
+                    Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                    log.Printf("Selling unit %v", unit.GetFullName())
+                    playSound.Play()
+                    playerObj.Money += sellCost
+                    playerObj.RemoveUnit(unit)
+                    updateUnitSpecifics(nil, func(){})
+
+                    uiEvents.AddUpdate(&UIUpdateMoney{})
+                    uiEvents.AddUpdate(&UIRemoveUnit{Unit: unit})
+                }),
+            )
+        }
+
+        removeButton = makeRemoveButton()
+
+        updateSellCost := func() {
+            newButton := makeRemoveButton()
+            unitContainer.ReplaceChild(removeButton, newButton)
+            removeButton = newButton
+        }
+
+        unitContainer.AddChild(removeButton)
+
         unitSpecifics.RemoveChildren()
         unitSpecifics.AddChild(currentName)
         unitSpecifics.AddChild(currentHealth)
         unitSpecifics.AddChild(currentRace)
         if unit.GetRace() != data.RaceFantastic {
             unitSpecifics.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Experience: %d (%v)", unit.GetExperience(), unit.GetExperienceLevel().Name()), face, color.White)))
-            gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
-            moneyImage := &widget.GraphicImage{
-                Idle: gold,
-                Disabled: gold,
-            }
             var makeMeleeBox func() *widget.Container
 
             makeMeleeBox = func() *widget.Container {
@@ -1720,6 +2056,8 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                             if upgradeCost > playerObj.Money {
                                 return
                             }
+
+                            playSound.Play()
 
                             switch unit.GetWeaponBonus() {
                                 case data.WeaponNone:
@@ -1771,7 +2109,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         // healCost := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Heal %d hp for %d gold", unit.GetDamage(), getHealCost(unit, unit.GetDamage())), face, color.White))
 
         healSlider := widget.NewSlider(
-            widget.SliderOpts.Direction(widget.DirectionHorizontal),
+            widget.SliderOpts.Orientation(widget.DirectionHorizontal),
             widget.SliderOpts.MinMax(0, unit.GetDamage()),
             widget.SliderOpts.InitialCurrent(unit.GetDamage()),
             widget.SliderOpts.WidgetOpts(
@@ -1809,6 +2147,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                 Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
             }),
             widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                playSound.Play()
                 updated := false
 
                 healCost := uint64(getHealCost(unit, 1))
@@ -1881,6 +2220,8 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                 for _, enchantment := range unit.GetEnchantments() {
                     enchantments.AddEntry(enchantment.Name())
                 }
+
+                updateSellCost()
             }
         }
 
@@ -1899,7 +2240,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
         enchantmentsBoxes.AddChild(showEnchantments)
 
-        buyEnchantments := makeBuyEnchantments(unit, face, playerObj, uiEvents, imageCache)
+        buyEnchantments := makeBuyEnchantments(unit, face, playerObj, uiEvents, imageCache, playSound)
 
         enchantmentsBoxes.AddChild(buyEnchantments)
 
@@ -1915,6 +2256,8 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
     )
 
     var lastBox *widget.Container
+
+    unitMap := make(map[units.StackUnit]*widget.Container)
 
     addUnit := func(unit units.StackUnit) {
         var unitBox *widget.Container
@@ -1995,6 +2338,16 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         setup()
 
         unitList.AddChild(unitBox)
+
+        unitMap[unit] = unitBox
+    }
+
+    removeUnitUI := func(unit units.StackUnit) {
+        box, ok := unitMap[unit]
+        if ok {
+            unitList.RemoveChild(box)
+            delete(unitMap, unit)
+        }
     }
 
     for _, unit := range allUnits {
@@ -2015,7 +2368,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
     )
 
     slider := widget.NewSlider(
-        widget.SliderOpts.Direction(widget.DirectionVertical),
+        widget.SliderOpts.Orientation(widget.DirectionVertical),
         widget.SliderOpts.MinMax(0, 100),
         widget.SliderOpts.InitialCurrent(0),
         widget.SliderOpts.ChangedHandler(func (args *widget.SliderChangedEventArgs) {
@@ -2047,6 +2400,10 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
     AddEvent(uiEvents, func (update *UIAddUnit) {
         addUnit(update.Unit)
+    })
+
+    AddEvent(uiEvents, func (update *UIRemoveUnit) {
+        removeUnitUI(update.Unit)
     })
 
     armyInfo := widget.NewContainer(
@@ -2082,7 +2439,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
     unitInfoContainer.AddChild(armyInfo)
 
-    unitInfoContainer.AddChild(unitSpecifics)
+    unitInfoContainer.AddChild(unitContainer)
 
     return unitInfoContainer
 }
@@ -2148,6 +2505,67 @@ func makePlayerInfoUI(face *text.Face, playerObj *player.Player, events *UIEvent
     return container
 }
 
+func (engine *Engine) MakeNewGameUI() (*ebitenui.UI, error) {
+    rootContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewAnchorLayout(
+        ),
+    ))
+
+    font, err := console.LoadFont()
+    if err != nil {
+        return nil, err
+    }
+
+    face := text.GoTextFace{
+        Source: font,
+        Size: 24,
+    }
+
+    var face1 text.Face = &face
+
+    buttons := ui.VBox(
+        widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}, 1)),
+        widget.ContainerOpts.WidgetOpts(
+            widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+                HorizontalPosition: widget.AnchorLayoutPositionCenter,
+                VerticalPosition: widget.AnchorLayoutPositionCenter,
+            }),
+        ),
+    )
+
+    for _, difficulty := range []Difficulty{DifficultyEasy, DifficultyNormal, DifficultyHard, DifficultyImpossible} {
+        buttons.AddChild(widget.NewButton(
+            widget.ButtonOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    Position: widget.RowLayoutPositionCenter,
+                }),
+            ),
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 4, Bottom: 4, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(standardButtonImage()),
+            widget.ButtonOpts.Text(fmt.Sprintf("Start %v Mode", difficulty), &face1, &widget.ButtonTextColor{
+                Idle: color.White,
+                Hover: color.White,
+                Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                engine.LeftClickSound.Play()
+                select {
+                    case engine.Events <- &EventNewGame{Level: difficulty}:
+                    default:
+                }
+            }),
+        ))
+    }
+
+    rootContainer.AddChild(buttons)
+
+    ui := &ebitenui.UI{
+        Container: rootContainer,
+    }
+
+    return ui, nil
+}
+
 func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     font, err := console.LoadFont()
     if err != nil {
@@ -2161,6 +2579,11 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     var face1 text.Face = &face
 
+    var face2 text.Face = &text.GoTextFace{
+        Source: font,
+        Size: 20,
+    }
+
     uiEvents := MakeUIEventUpdate()
 
     rootContainer := widget.NewContainer(
@@ -2172,10 +2595,15 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
         widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})),
     )
 
-    newGameButton := widget.NewButton(
+    enterBattleButton := widget.NewButton(
+        widget.ButtonOpts.WidgetOpts(
+            widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                Position: widget.RowLayoutPositionCenter,
+            }),
+        ),
         widget.ButtonOpts.TextPadding(&widget.Insets{Top: 4, Bottom: 4, Left: 5, Right: 5}),
         widget.ButtonOpts.Image(standardButtonImage()),
-        widget.ButtonOpts.Text("Enter Battle", &face1, &widget.ButtonTextColor{
+        widget.ButtonOpts.Text("Enter Battle", &face2, &widget.ButtonTextColor{
             Idle: color.White,
             Hover: color.White,
             Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
@@ -2184,8 +2612,9 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
             if len(engine.Player.Units) == 0 {
                 return
             }
+            engine.LeftClickSound.Play()
             select {
-                case engine.Events <- &EventNewGame{}:
+                case engine.Events <- &EventEnterBattle{}:
                 default:
             }
         }),
@@ -2193,14 +2622,14 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     imageCache := util.MakeImageCache(engine.Cache)
 
-    rootContainer.AddChild(newGameButton)
+    rootContainer.AddChild(enterBattleButton)
 
     rootContainer.AddChild(makePlayerInfoUI(&face1, engine.Player, uiEvents, &imageCache))
 
-    unitInfoUI := makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache)
+    unitInfoUI := makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache, engine.LeftClickSound)
 
     rootContainer.AddChild(unitInfoUI)
-    rootContainer.AddChild(makeShopUI(&face1, &imageCache, engine.Cache, engine.Player, uiEvents))
+    rootContainer.AddChild(makeShopUI(&face1, &imageCache, engine.Cache, engine.Player, uiEvents, engine.LeftClickSound))
 
     ui := &ebitenui.UI{
         Container: rootContainer,
@@ -2244,23 +2673,32 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
 
     music := musiclib.MakeMusic(cache)
 
+    clickMaker, err := audio.LoadSoundMaker(cache, audio.SoundClick)
+    if err != nil {
+        log.Printf("Error loading click sound: %v", err)
+        clickMaker = nil
+    }
+
     engine := Engine{
-        GameMode: GameModeUI,
+        GameMode: GameModeNewGameUI,
         Player: playerObj,
         Cache: cache,
         Events: make(chan EngineEvents, 10),
         Music: music,
+        LeftClickSound: &PlaySound{Maker: clickMaker},
     }
 
     engine.PushDrawer(engine.DefaultDraw)
 
     engine.Music.PushSongs(musiclib.SongBackground1, musiclib.SongBackground2, musiclib.SongBackground3)
 
-    var err error
     engine.UI, engine.UIUpdates, err = engine.MakeUI()
     if err != nil {
         log.Printf("Error creating UI: %v", err)
     }
+
+    engine.NewGameUI, err = engine.MakeNewGameUI()
+
     return &engine
 }
 

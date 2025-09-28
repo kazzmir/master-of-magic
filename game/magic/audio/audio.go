@@ -14,6 +14,9 @@ import (
 var Context *audiolib.Context
 const SampleRate = 44100
 
+// from soundfx.lbx
+const SoundClick = 2
+
 type MakePlayerFunc func () (*audiolib.Player)
 
 func Initialize(){
