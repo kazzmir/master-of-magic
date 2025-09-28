@@ -259,6 +259,7 @@ type CombatScreen struct {
     CameraScale float64
 
     ExtraHighlightedUnit *ArmyUnit
+    ShowInfo bool
 
     Counter uint64
 
@@ -3275,6 +3276,7 @@ func (combat *CombatScreen) UpdateGibs() {
 
 func (combat *CombatScreen) ProcessInput() {
     combat.ExtraHighlightedUnit = nil
+    combat.ShowInfo = false
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)
     for _, key := range keys {
@@ -3306,6 +3308,8 @@ func (combat *CombatScreen) ProcessInput() {
                 if combat.Model.SelectedUnit != nil && !combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
                     combat.ExtraHighlightedUnit = combat.Model.SelectedUnit
                 }
+            case ebiten.KeyShift:
+                combat.ShowInfo = true
         }
     }
 
