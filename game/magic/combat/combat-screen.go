@@ -2072,7 +2072,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                 scale.DrawScaled(screen, movementImage, &options)
                 combat.Fonts.HudFont.PrintOptions(screen, 130, 190, font.FontOptions{Justify: font.FontJustifyRight, Scale: scale.ScaleAmount}, fmt.Sprintf("%v", combat.Model.SelectedUnit.MovesLeft.ToFloat()))
 
-                combat.DrawHealthBar(screen, 123, 197, combat.Model.SelectedUnit)
+                combat.DrawHealthBar(screen, 123, 197, 255, combat.Model.SelectedUnit)
             }
 
             ui.StandardDraw(screen)
@@ -3314,7 +3314,7 @@ func (combat *CombatScreen) ProcessInput() {
         }
     }
 
-    infoStep := 9
+    infoStep := 13
 
     if combat.ShowInfo > 0 {
         if combat.ShowInfoLevel < combat.ShowInfo {
@@ -3572,11 +3572,11 @@ func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y i
         return uint8(out)
     }
 
-    lineColor := util.PremultiplyAlpha(color.RGBA{
+    lineColor := color.NRGBA{
         R: lerp(minColor.R, maxColor.R),
         G: lerp(minColor.G, maxColor.G),
         B: lerp(minColor.B, maxColor.B),
-        A: 190})
+        A: 190}
 
 
     rFloat := float32(lineColor.R) / 255
@@ -3609,8 +3609,8 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     y1 := 5
     width := 65
     height := 45
-    vector.DrawFilledRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), color.RGBA{R: 0, G: 0, B: 0, A: 100}, false)
-    vector.StrokeRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), float32(scale.Scale(1)), util.PremultiplyAlpha(color.RGBA{R: 0x27, G: 0x4e, B: 0xdc, A: 100}), false)
+    vector.DrawFilledRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), color.NRGBA{R: 0, G: 0, B: 0, A: 100}, false)
+    vector.StrokeRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), float32(scale.Scale(1)), color.NRGBA{R: 0x27, G: 0x4e, B: 0xdc, A: 100}, false)
     combat.Fonts.InfoFont.PrintOptions(screen, float64(x1 + 35), float64(y1 + 2), font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v", unit.Unit.GetName()))
 
     meleeImage, _ := combat.ImageCache.GetImage("compix.lbx", 61, 0)
@@ -3681,7 +3681,7 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
 
     combat.Fonts.InfoFont.PrintOptions(screen, float64(x1 + 14), float64(y1 + 37), font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, "Hits")
 
-    combat.DrawHealthBar(screen, x1 + 25, y1 + 40, unit)
+    combat.DrawHealthBar(screen, x1 + 25, y1 + 40, 255, unit)
 
     // draw experience badge
     badge := units.GetExperienceBadge(unit)
@@ -3699,13 +3699,13 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
 // mostly green if healthy (>66% health)
 // yellow if between 33% to 66% health
 // otherwise red
-func (combat *CombatScreen) DrawHealthBar(screen *ebiten.Image, x int, y int, unit *ArmyUnit){
-    highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
-    mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
-    lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+func (combat *CombatScreen) DrawHealthBar(screen *ebiten.Image, x int, y int, alpha uint8, unit *ArmyUnit){
+    highHealth := color.NRGBA{R: 0, G: 0xff, B: 0, A: alpha}
+    mediumHealth := color.NRGBA{R: 0xff, G: 0xff, B: 0, A: alpha}
+    lowHealth := color.NRGBA{R: 0xff, G: 0, B: 0, A: alpha}
     healthWidth := 15
 
-    vector.StrokeLine(screen, float32(scale.Scale(x)), float32(scale.Scale(y)), float32(scale.Scale(x + healthWidth)), float32(scale.Scale(y)), float32(scale.Scale(1)), color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
+    vector.StrokeLine(screen, float32(scale.Scale(x)), float32(scale.Scale(y)), float32(scale.Scale(x + healthWidth)), float32(scale.Scale(y)), float32(scale.Scale(1)), color.NRGBA{R: 0, G: 0, B: 0, A: alpha}, false)
 
     healthPercent := float64(unit.GetHealth()) / float64(unit.GetMaxHealth())
     healthLength := float64(healthWidth) * healthPercent
@@ -4123,15 +4123,31 @@ func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
 
     var alpha uint8 = uint8(180 * combat.ShowInfoLevel / 100)
 
+    var fontOptions ebiten.DrawImageOptions
+    fontOptions.ColorScale.ScaleAlpha(float32(alpha) / 255)
+
     vector.DrawFilledRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), color.NRGBA{R: 0xd7, G: 0xac, B: 0x5a, A: alpha}, false)
-    vector.StrokeRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), 2, color.NRGBA{R: 0, G: 0, B: 0, A: alpha}, true)
+    vector.StrokeRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2-x1)), float32(scale.Scale(y2-y1)), 2, color.NRGBA{R: 0, G: 0, B: 0, A: alpha}, true)
 
     lineX := (x1 + x2) / 2
     vector.StrokeLine(subScreen, float32(scale.Scale(lineX)), float32(scale.Scale(y1)), float32(scale.Scale(lineX)), float32(scale.Scale(y2)), 2, color.RGBA{R: 0, G: 0, B: 0, A: alpha}, false)
 
-    combat.Fonts.AttackingWizardFont.PrintOptions(subScreen, float64(x1 + 80), float64(y1 + 10), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, combat.Model.AttackingArmy.Player.GetWizard().Name)
+    combat.Fonts.AttackingWizardFont.PrintOptions(
+        subScreen,
+        float64(x1 + 80),
+        float64(y1 + 10),
+        font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &fontOptions},
+        combat.Model.AttackingArmy.Player.GetWizard().Name,
+    )
+
     defendX := lineX + 60
-    combat.Fonts.DefendingWizardFont.PrintOptions(subScreen, float64(defendX), float64(y1 + 10), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, combat.Model.DefendingArmy.Player.GetWizard().Name)
+    combat.Fonts.DefendingWizardFont.PrintOptions(
+        subScreen,
+        float64(defendX),
+        float64(y1 + 10),
+        font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &fontOptions},
+        combat.Model.DefendingArmy.Player.GetWizard().Name,
+    )
 
     showUnits := func(startX int, army *Army) {
         startY := y1 + 10 + 20
@@ -4141,9 +4157,9 @@ func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
             unitX := startX + (i % 3) * 49
             unitY := startY + (i / 3) * unitFont.Height() * 5
 
-            unitFont.PrintOptions(subScreen, float64(unitX), float64(unitY), font.FontOptions{Scale: scale.ScaleAmount}, unit.Unit.GetName())
+            unitFont.PrintOptions(subScreen, float64(unitX), float64(unitY), font.FontOptions{Scale: scale.ScaleAmount, Options: &fontOptions}, unit.Unit.GetName())
             unitY += unitFont.Height()
-            unitFont.PrintOptions(subScreen, float64(unitX), float64(unitY), font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("%v/%v HP", unit.GetHealth(), unit.GetMaxHealth()))
+            unitFont.PrintOptions(subScreen, float64(unitX), float64(unitY), font.FontOptions{Scale: scale.ScaleAmount, Options: &fontOptions}, fmt.Sprintf("%v/%v HP", unit.GetHealth(), unit.GetMaxHealth()))
             unitY += unitFont.Height()
             banner := unit.Unit.GetBanner()
             unitImage, err := combat.ImageCache.GetImageTransform(unit.Unit.GetLbxFile(), unit.Unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
@@ -4158,7 +4174,7 @@ func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
                     break
                 }
 
-                combat.DrawHealthBar(subScreen, unitX + unitImage.Bounds().Dx() + 2, unitY + unitImage.Bounds().Dy() / 2, unit)
+                combat.DrawHealthBar(subScreen, unitX + unitImage.Bounds().Dx() + 2, unitY + unitImage.Bounds().Dy() / 2, alpha, unit)
                 unitY += unitImage.Bounds().Dy() + 2
             }
 
