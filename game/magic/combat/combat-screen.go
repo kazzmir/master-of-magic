@@ -4100,7 +4100,21 @@ func (combat *CombatScreen) ShowExtraHighlight(screen *ebiten.Image, unit *ArmyU
     drawQuad(float32(p1.X), float32(p1.Y), float32(p4.X), float32(p4.Y), float32(p4.X), float32(0), float32(p1.X), float32(0), color.RGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase + 30)})
 }
 
-func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
+func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
+
+    x1 := 10
+    y1 := 10
+    x2 := data.ScreenWidth - 20
+    y2 := data.ScreenHeight - 20
+
+    var alpha uint8 = 180
+
+    vector.DrawFilledRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), color.RGBA{R: 0xd7, G: 0xac, B: 0x5a, A: alpha}, false)
+    vector.StrokeRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), 2, color.RGBA{R: 0, G: 0, B: 0, A: alpha}, true)
+
+}
+
+func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
     isVisible := functional.Memoize(combat.makeIsUnitVisibleFunc())
 
     animationIndex := combat.Counter / 8
@@ -4573,5 +4587,9 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             options.GeoM.Translate(projectile.X, projectile.Y)
             scale.DrawScaled(screen, frame, &options)
         }
+    }
+
+    if combat.ShowInfo {
+        combat.ShowCombatInfo(screen)
     }
 }
