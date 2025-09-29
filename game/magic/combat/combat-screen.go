@@ -4112,6 +4112,17 @@ func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
     vector.DrawFilledRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), color.RGBA{R: 0xd7, G: 0xac, B: 0x5a, A: alpha}, false)
     vector.StrokeRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), 2, color.RGBA{R: 0, G: 0, B: 0, A: alpha}, true)
 
+    combat.Fonts.AttackingWizardFont.PrintOptions(screen, float64(x1 + 80), float64(y1 + 10), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, combat.Model.AttackingArmy.Player.GetWizard().Name)
+
+    unitY := y1 + 10 + 20
+    unitX := x1 + 10
+
+    unitFont := combat.Fonts.HudFont
+    for _, unit := range combat.Model.AttackingArmy.units {
+        unitFont.PrintOptions(screen, float64(unitX), float64(unitY), font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("%v %v %v/%v HP", unit.GetRace(), unit.Unit.GetFullName(), unit.GetHealth(), unit.GetMaxHealth()))
+        unitY += unitFont.Height()
+    }
+
 }
 
 func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
