@@ -259,7 +259,8 @@ type CombatScreen struct {
     CameraScale float64
 
     ExtraHighlightedUnit *ArmyUnit
-    ShowInfo bool
+    ShowInfo int
+    ShowInfoLevel int
 
     Counter uint64
 
@@ -3276,7 +3277,7 @@ func (combat *CombatScreen) UpdateGibs() {
 
 func (combat *CombatScreen) ProcessInput() {
     combat.ExtraHighlightedUnit = nil
-    combat.ShowInfo = false
+    combat.ShowInfo = 0
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)
     for _, key := range keys {
@@ -3309,8 +3310,19 @@ func (combat *CombatScreen) ProcessInput() {
                     combat.ExtraHighlightedUnit = combat.Model.SelectedUnit
                 }
             case ebiten.KeyShift:
-                combat.ShowInfo = true
+                combat.ShowInfo = 100
         }
+    }
+
+    infoStep := 9
+
+    if combat.ShowInfo > 0 {
+        if combat.ShowInfoLevel < combat.ShowInfo {
+            combat.ShowInfoLevel += infoStep
+            combat.ShowInfoLevel = min(combat.ShowInfoLevel, combat.ShowInfo)
+        }
+    } else {
+        combat.ShowInfoLevel = max(0, combat.ShowInfoLevel - infoStep)
     }
 
     // FIXME: handle right-click drag to move the camera
@@ -4109,10 +4121,10 @@ func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
 
     subScreen := screen.SubImage(image.Rect(scale.Scale(x1), scale.Scale(y1), scale.Scale(x2), scale.Scale(y2))).(*ebiten.Image)
 
-    var alpha uint8 = 180
+    var alpha uint8 = uint8(180 * combat.ShowInfoLevel / 100)
 
-    vector.DrawFilledRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), color.RGBA{R: 0xd7, G: 0xac, B: 0x5a, A: alpha}, false)
-    vector.StrokeRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), 2, color.RGBA{R: 0, G: 0, B: 0, A: alpha}, true)
+    vector.DrawFilledRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), color.NRGBA{R: 0xd7, G: 0xac, B: 0x5a, A: alpha}, false)
+    vector.StrokeRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), 2, color.NRGBA{R: 0, G: 0, B: 0, A: alpha}, true)
 
     lineX := (x1 + x2) / 2
     vector.StrokeLine(subScreen, float32(scale.Scale(lineX)), float32(scale.Scale(y1)), float32(scale.Scale(lineX)), float32(scale.Scale(y2)), 2, color.RGBA{R: 0, G: 0, B: 0, A: alpha}, false)
@@ -4138,6 +4150,7 @@ func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
             if err == nil {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(unitX), float64(unitY))
+                options.ColorScale.ScaleAlpha(float32(alpha) / 255)
                 scale.DrawScaled(subScreen, unitImage, &options)
 
                 for _, enchantment := range unit.GetEnchantments() {
@@ -4632,7 +4645,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         }
     }
 
-    if combat.ShowInfo {
+    if combat.ShowInfoLevel > 0 {
         combat.ShowCombatInfo(screen)
     }
 }
