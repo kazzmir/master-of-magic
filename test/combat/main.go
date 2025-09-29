@@ -768,7 +768,7 @@ func makeScenario9(cache *lbx.LbxCache) *combat.CombatScreen {
         }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
-    defendingArmy := createSettlerArmy(defendingPlayer, 9)
+    defendingArmy := createSettlerArmy(defendingPlayer, 20)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
