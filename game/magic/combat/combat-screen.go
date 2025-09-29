@@ -4102,9 +4102,9 @@ func (combat *CombatScreen) ShowExtraHighlight(screen *ebiten.Image, unit *ArmyU
 
 func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
 
-    x1 := 5
+    x1 := 2
     y1 := 10
-    x2 := data.ScreenWidth - 5
+    x2 := data.ScreenWidth - 2
     y2 := data.ScreenHeight - 20
 
     subScreen := screen.SubImage(image.Rect(scale.Scale(x1), scale.Scale(y1), scale.Scale(x2), scale.Scale(y2))).(*ebiten.Image)
@@ -4114,8 +4114,11 @@ func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
     vector.DrawFilledRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), color.RGBA{R: 0xd7, G: 0xac, B: 0x5a, A: alpha}, false)
     vector.StrokeRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), 2, color.RGBA{R: 0, G: 0, B: 0, A: alpha}, true)
 
+    lineX := (x1 + x2) / 2
+    vector.StrokeLine(subScreen, float32(scale.Scale(lineX)), float32(scale.Scale(y1)), float32(scale.Scale(lineX)), float32(scale.Scale(y2)), 2, color.RGBA{R: 0, G: 0, B: 0, A: alpha}, false)
+
     combat.Fonts.AttackingWizardFont.PrintOptions(subScreen, float64(x1 + 80), float64(y1 + 10), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, combat.Model.AttackingArmy.Player.GetWizard().Name)
-    defendX := x1 + 214
+    defendX := lineX + 60
     combat.Fonts.DefendingWizardFont.PrintOptions(subScreen, float64(defendX), float64(y1 + 10), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, combat.Model.DefendingArmy.Player.GetWizard().Name)
 
     showUnits := func(startX int, army *Army) {
@@ -4150,7 +4153,7 @@ func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
     }
 
     showUnits(x1 + 5, combat.Model.AttackingArmy)
-    showUnits(x1 + defendX - 63, combat.Model.DefendingArmy)
+    showUnits(x1 + defendX - 57, combat.Model.DefendingArmy)
 
 }
 
