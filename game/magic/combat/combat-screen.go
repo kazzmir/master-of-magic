@@ -259,7 +259,6 @@ type CombatScreen struct {
     CameraScale float64
 
     ExtraHighlightedUnit *ArmyUnit
-    ShowInfo int
     ShowInfoLevel int
 
     Counter uint64
@@ -3277,9 +3276,9 @@ func (combat *CombatScreen) UpdateGibs() {
 
 func (combat *CombatScreen) ProcessInput() {
     combat.ExtraHighlightedUnit = nil
-    combat.ShowInfo = 0
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)
+    showInfo := 0
     for _, key := range keys {
         speed := 0.8
         switch key {
@@ -3310,16 +3309,16 @@ func (combat *CombatScreen) ProcessInput() {
                     combat.ExtraHighlightedUnit = combat.Model.SelectedUnit
                 }
             case ebiten.KeyShift:
-                combat.ShowInfo = 100
+                showInfo = 100
         }
     }
 
     infoStep := 13
 
-    if combat.ShowInfo > 0 {
-        if combat.ShowInfoLevel < combat.ShowInfo {
+    if showInfo > 0 {
+        if combat.ShowInfoLevel < showInfo {
             combat.ShowInfoLevel += infoStep
-            combat.ShowInfoLevel = min(combat.ShowInfoLevel, combat.ShowInfo)
+            combat.ShowInfoLevel = min(combat.ShowInfoLevel, showInfo)
         }
     } else {
         combat.ShowInfoLevel = max(0, combat.ShowInfoLevel - infoStep)
