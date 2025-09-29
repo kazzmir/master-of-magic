@@ -4102,9 +4102,9 @@ func (combat *CombatScreen) ShowExtraHighlight(screen *ebiten.Image, unit *ArmyU
 
 func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
 
-    x1 := 10
+    x1 := 5
     y1 := 10
-    x2 := data.ScreenWidth - 20
+    x2 := data.ScreenWidth - 5
     y2 := data.ScreenHeight - 20
 
     subScreen := screen.SubImage(image.Rect(scale.Scale(x1), scale.Scale(y1), scale.Scale(x2), scale.Scale(y2))).(*ebiten.Image)
@@ -4114,19 +4114,19 @@ func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
     vector.DrawFilledRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), color.RGBA{R: 0xd7, G: 0xac, B: 0x5a, A: alpha}, false)
     vector.StrokeRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), 2, color.RGBA{R: 0, G: 0, B: 0, A: alpha}, true)
 
-    combat.Fonts.AttackingWizardFont.PrintOptions(subScreen, float64(x1 + 80), float64(y1 + 10), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, combat.Model.AttackingArmy.Player.GetWizard().Name)
-    defendX := x1 + 210
-    combat.Fonts.DefendingWizardFont.PrintOptions(subScreen, float64(defendX), float64(y1 + 10), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, combat.Model.DefendingArmy.Player.GetWizard().Name)
+    combat.Fonts.AttackingWizardFont.PrintOptions(subScreen, float64(x1 + 80), float64(y1 + 10), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, combat.Model.AttackingArmy.Player.GetWizard().Name)
+    defendX := x1 + 214
+    combat.Fonts.DefendingWizardFont.PrintOptions(subScreen, float64(defendX), float64(y1 + 10), font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, combat.Model.DefendingArmy.Player.GetWizard().Name)
 
     showUnits := func(startX int, army *Army) {
         startY := y1 + 10 + 20
         unitFont := combat.Fonts.HudFont
         for i, unit := range army.units {
 
-            unitX := startX + (i % 3) * 45
+            unitX := startX + (i % 3) * 49
             unitY := startY + (i / 3) * unitFont.Height() * 5
 
-            unitFont.PrintOptions(subScreen, float64(unitX), float64(unitY), font.FontOptions{Scale: scale.ScaleAmount}, unit.Unit.GetFullName())
+            unitFont.PrintOptions(subScreen, float64(unitX), float64(unitY), font.FontOptions{Scale: scale.ScaleAmount}, unit.Unit.GetName())
             unitY += unitFont.Height()
             unitFont.PrintOptions(subScreen, float64(unitX), float64(unitY), font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("%v/%v HP", unit.GetHealth(), unit.GetMaxHealth()))
             unitY += unitFont.Height()
@@ -4149,8 +4149,8 @@ func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
         }
     }
 
-    showUnits(x1 + 10, combat.Model.AttackingArmy)
-    showUnits(x1 + defendX - 60, combat.Model.DefendingArmy)
+    showUnits(x1 + 5, combat.Model.AttackingArmy)
+    showUnits(x1 + defendX - 63, combat.Model.DefendingArmy)
 
 }
 
