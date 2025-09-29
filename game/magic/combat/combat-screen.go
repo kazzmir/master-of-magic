@@ -259,6 +259,7 @@ type CombatScreen struct {
     CameraScale float64
 
     ExtraHighlightedUnit *ArmyUnit
+    ShowInfoLevel int
 
     Counter uint64
 
@@ -2070,7 +2071,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                 scale.DrawScaled(screen, movementImage, &options)
                 combat.Fonts.HudFont.PrintOptions(screen, 130, 190, font.FontOptions{Justify: font.FontJustifyRight, Scale: scale.ScaleAmount}, fmt.Sprintf("%v", combat.Model.SelectedUnit.MovesLeft.ToFloat()))
 
-                combat.DrawHealthBar(screen, 123, 197, combat.Model.SelectedUnit)
+                combat.DrawHealthBar(screen, 123, 197, 255, combat.Model.SelectedUnit)
             }
 
             ui.StandardDraw(screen)
@@ -3277,6 +3278,7 @@ func (combat *CombatScreen) ProcessInput() {
     combat.ExtraHighlightedUnit = nil
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)
+    showInfo := 0
     for _, key := range keys {
         speed := 0.8
         switch key {
@@ -3306,7 +3308,20 @@ func (combat *CombatScreen) ProcessInput() {
                 if combat.Model.SelectedUnit != nil && !combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
                     combat.ExtraHighlightedUnit = combat.Model.SelectedUnit
                 }
+            case ebiten.KeyShift:
+                showInfo = 100
         }
+    }
+
+    infoStep := 13
+
+    if showInfo > 0 {
+        if combat.ShowInfoLevel < showInfo {
+            combat.ShowInfoLevel += infoStep
+            combat.ShowInfoLevel = min(combat.ShowInfoLevel, showInfo)
+        }
+    } else {
+        combat.ShowInfoLevel = max(0, combat.ShowInfoLevel - infoStep)
     }
 
     // FIXME: handle right-click drag to move the camera
@@ -3556,11 +3571,11 @@ func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y i
         return uint8(out)
     }
 
-    lineColor := util.PremultiplyAlpha(color.RGBA{
+    lineColor := color.NRGBA{
         R: lerp(minColor.R, maxColor.R),
         G: lerp(minColor.G, maxColor.G),
         B: lerp(minColor.B, maxColor.B),
-        A: 190})
+        A: 190}
 
 
     rFloat := float32(lineColor.R) / 255
@@ -3593,8 +3608,8 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     y1 := 5
     width := 65
     height := 45
-    vector.DrawFilledRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), color.RGBA{R: 0, G: 0, B: 0, A: 100}, false)
-    vector.StrokeRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), float32(scale.Scale(1)), util.PremultiplyAlpha(color.RGBA{R: 0x27, G: 0x4e, B: 0xdc, A: 100}), false)
+    vector.DrawFilledRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), color.NRGBA{R: 0, G: 0, B: 0, A: 100}, false)
+    vector.StrokeRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), float32(scale.Scale(1)), color.NRGBA{R: 0x27, G: 0x4e, B: 0xdc, A: 100}, false)
     combat.Fonts.InfoFont.PrintOptions(screen, float64(x1 + 35), float64(y1 + 2), font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v", unit.Unit.GetName()))
 
     meleeImage, _ := combat.ImageCache.GetImage("compix.lbx", 61, 0)
@@ -3665,7 +3680,7 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
 
     combat.Fonts.InfoFont.PrintOptions(screen, float64(x1 + 14), float64(y1 + 37), font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, "Hits")
 
-    combat.DrawHealthBar(screen, x1 + 25, y1 + 40, unit)
+    combat.DrawHealthBar(screen, x1 + 25, y1 + 40, 255, unit)
 
     // draw experience badge
     badge := units.GetExperienceBadge(unit)
@@ -3683,13 +3698,13 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
 // mostly green if healthy (>66% health)
 // yellow if between 33% to 66% health
 // otherwise red
-func (combat *CombatScreen) DrawHealthBar(screen *ebiten.Image, x int, y int, unit *ArmyUnit){
-    highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
-    mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
-    lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+func (combat *CombatScreen) DrawHealthBar(screen *ebiten.Image, x int, y int, alpha uint8, unit *ArmyUnit){
+    highHealth := color.NRGBA{R: 0, G: 0xff, B: 0, A: alpha}
+    mediumHealth := color.NRGBA{R: 0xff, G: 0xff, B: 0, A: alpha}
+    lowHealth := color.NRGBA{R: 0xff, G: 0, B: 0, A: alpha}
     healthWidth := 15
 
-    vector.StrokeLine(screen, float32(scale.Scale(x)), float32(scale.Scale(y)), float32(scale.Scale(x + healthWidth)), float32(scale.Scale(y)), float32(scale.Scale(1)), color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
+    vector.StrokeLine(screen, float32(scale.Scale(x)), float32(scale.Scale(y)), float32(scale.Scale(x + healthWidth)), float32(scale.Scale(y)), float32(scale.Scale(1)), color.NRGBA{R: 0, G: 0, B: 0, A: alpha}, false)
 
     healthPercent := float64(unit.GetHealth()) / float64(unit.GetMaxHealth())
     healthLength := float64(healthWidth) * healthPercent
@@ -4096,7 +4111,81 @@ func (combat *CombatScreen) ShowExtraHighlight(screen *ebiten.Image, unit *ArmyU
     drawQuad(float32(p1.X), float32(p1.Y), float32(p4.X), float32(p4.Y), float32(p4.X), float32(0), float32(p1.X), float32(0), color.RGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase + 30)})
 }
 
-func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
+func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
+
+    x1 := 2
+    y1 := 10
+    x2 := data.ScreenWidth - 2
+    y2 := data.ScreenHeight - 20
+
+    subScreen := screen.SubImage(image.Rect(scale.Scale(x1), scale.Scale(y1), scale.Scale(x2), scale.Scale(y2))).(*ebiten.Image)
+
+    var alpha uint8 = uint8(180 * combat.ShowInfoLevel / 100)
+
+    var fontOptions ebiten.DrawImageOptions
+    fontOptions.ColorScale.ScaleAlpha(float32(alpha) / 255)
+
+    vector.DrawFilledRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), color.NRGBA{R: 0xd7, G: 0xac, B: 0x5a, A: alpha}, false)
+    vector.StrokeRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2-x1)), float32(scale.Scale(y2-y1)), 2, color.NRGBA{R: 0, G: 0, B: 0, A: alpha}, true)
+
+    lineX := (x1 + x2) / 2
+    vector.StrokeLine(subScreen, float32(scale.Scale(lineX)), float32(scale.Scale(y1)), float32(scale.Scale(lineX)), float32(scale.Scale(y2)), 2, color.RGBA{R: 0, G: 0, B: 0, A: alpha}, false)
+
+    combat.Fonts.AttackingWizardFont.PrintOptions(
+        subScreen,
+        float64(x1 + 80),
+        float64(y1 + 10),
+        font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &fontOptions},
+        combat.Model.AttackingArmy.Player.GetWizard().Name,
+    )
+
+    defendX := lineX + 60
+    combat.Fonts.DefendingWizardFont.PrintOptions(
+        subScreen,
+        float64(defendX),
+        float64(y1 + 10),
+        font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &fontOptions},
+        combat.Model.DefendingArmy.Player.GetWizard().Name,
+    )
+
+    showUnits := func(startX int, army *Army) {
+        startY := y1 + 10 + 20
+        unitFont := combat.Fonts.HudFont
+        for i, unit := range army.units {
+
+            unitX := startX + (i % 3) * 49
+            unitY := startY + (i / 3) * unitFont.Height() * 5
+
+            unitFont.PrintOptions(subScreen, float64(unitX), float64(unitY), font.FontOptions{Scale: scale.ScaleAmount, Options: &fontOptions}, unit.Unit.GetName())
+            unitY += unitFont.Height()
+            unitFont.PrintOptions(subScreen, float64(unitX), float64(unitY), font.FontOptions{Scale: scale.ScaleAmount, Options: &fontOptions}, fmt.Sprintf("%v/%v HP", unit.GetHealth(), unit.GetMaxHealth()))
+            unitY += unitFont.Height()
+            banner := unit.Unit.GetBanner()
+            unitImage, err := combat.ImageCache.GetImageTransform(unit.Unit.GetLbxFile(), unit.Unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
+            if err == nil {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(unitX), float64(unitY))
+                options.ColorScale.ScaleAlpha(float32(alpha) / 255)
+                scale.DrawScaled(subScreen, unitImage, &options)
+
+                for _, enchantment := range unit.GetEnchantments() {
+                    util.DrawOutline(subScreen, &combat.ImageCache, unitImage, scale.ScaleGeom(options.GeoM), options.ColorScale, combat.Counter/8, enchantment.Color())
+                    break
+                }
+
+                combat.DrawHealthBar(subScreen, unitX + unitImage.Bounds().Dx() + 2, unitY + unitImage.Bounds().Dy() / 2, alpha, unit)
+                unitY += unitImage.Bounds().Dy() + 2
+            }
+
+        }
+    }
+
+    showUnits(x1 + 5, combat.Model.AttackingArmy)
+    showUnits(x1 + defendX - 57, combat.Model.DefendingArmy)
+
+}
+
+func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
     isVisible := functional.Memoize(combat.makeIsUnitVisibleFunc())
 
     animationIndex := combat.Counter / 8
@@ -4569,5 +4658,9 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             options.GeoM.Translate(projectile.X, projectile.Y)
             scale.DrawScaled(screen, frame, &options)
         }
+    }
+
+    if combat.ShowInfoLevel > 0 {
+        combat.ShowCombatInfo(screen)
     }
 }
