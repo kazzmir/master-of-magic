@@ -4327,7 +4327,16 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
             if ok {
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(0.8)
-                for i := 0; i < len(path); i++ {
+
+                moves := combat.Model.SelectedUnit.MovesLeft
+
+                lastX := combat.Model.SelectedUnit.X
+                lastY := combat.Model.SelectedUnit.Y
+
+                movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
+                showBad := false
+
+                for i := range path {
                     tileX, tileY := path[i].X, path[i].Y
 
                     tx, ty := tilePosition(float64(tileX), float64(tileY))
@@ -4335,14 +4344,21 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
                     // ty += float64(tile0.Bounds().Dy())/2
 
                     // show boots
-                    movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
                     tx -= float64(movementImage.Bounds().Dx())/2
                     ty -= float64(movementImage.Bounds().Dy())/2
 
                     options.GeoM.Reset()
                     options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
                     options.GeoM.Translate(tx, ty)
+
+                    if !showBad && moves.LessThanEqual(fraction.FromInt(0)) {
+                        showBad = true
+                        options.ColorScale.Scale(0.1, 0.1, 0.1, 1)
+                    }
+
                     scale.DrawScaled(screen, movementImage, &options)
+
+                    moves = moves.Subtract(pathCost(image.Pt(lastX, lastY), image.Pt(tileX, tileY)))
                 }
             }
         }
