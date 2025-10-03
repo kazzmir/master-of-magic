@@ -1419,7 +1419,7 @@ func (unit *ArmyUnit) CanTraverseWall() bool {
     return unit.IsFlying() || unit.HasAbility(data.AbilityMerging) || unit.HasAbility(data.AbilityTeleporting)
 }
 
-func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
+func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path, infiniteMovement bool) bool {
     movesLeft := unit.MovesLeft
 
     /*
@@ -1434,10 +1434,12 @@ func (unit *ArmyUnit) CanFollowPath(path pathfinding.Path) bool {
     */
 
     for i := 1; i < len(path); i++ {
-        if movesLeft.GreaterThan(fraction.FromInt(0)) {
-            movesLeft = movesLeft.Subtract(pathCost(path[i-1], path[i]))
-        } else {
-            return false
+        if !infiniteMovement {
+            if movesLeft.GreaterThan(fraction.FromInt(0)) {
+                movesLeft = movesLeft.Subtract(pathCost(path[i-1], path[i]))
+            } else {
+                return false
+            }
         }
     }
 
@@ -2662,10 +2664,15 @@ func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTravers
 /* return a valid path that the given unit can take to reach tile position x, y
  * this caches the path such that the next call to FindPath() will return the same path without computing it
  */
-func (model *CombatModel) FindPath(unit *ArmyUnit, x int, y int) (pathfinding.Path, bool) {
+func (model *CombatModel) FindPath(unit *ArmyUnit, x int, y int, infiniteMovement bool) (pathfinding.Path, bool) {
     end := image.Pt(x, y)
     path, ok := unit.Paths[end]
     if ok {
+        canMove := unit.CanFollowPath(path, infiniteMovement)
+        if !canMove {
+            return nil, false
+        }
+
         return path, len(path) > 0
     }
 
@@ -2676,12 +2683,20 @@ func (model *CombatModel) FindPath(unit *ArmyUnit, x int, y int) (pathfinding.Pa
         return nil, false
     }
 
-    canMove := unit.CanFollowPath(path)
+    canMove := unit.CanFollowPath(path, infiniteMovement)
 
+    unit.Paths[end] = path
+
+    /*
     if canMove {
         unit.Paths[end] = path
     } else {
         unit.Paths[end] = nil
+    }
+    */
+
+    if !canMove {
+        return nil, false
     }
 
     return path, canMove
@@ -2709,13 +2724,13 @@ func (model *CombatModel) GetUnit(x int, y int) *ArmyUnit {
     return nil
 }
 
-func (model *CombatModel) CanMoveTo(unit *ArmyUnit, x int, y int) bool {
+func (model *CombatModel) CanMoveTo(unit *ArmyUnit, x int, y int, infiniteMovement bool) bool {
 
     if unit.CanTeleport() {
         return distance(float64(unit.X), float64(unit.Y), float64(x), float64(y)) <= 10
     }
 
-    _, ok := model.FindPath(unit, x, y)
+    _, ok := model.FindPath(unit, x, y, infiniteMovement)
     return ok
 }
 

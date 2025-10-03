@@ -257,6 +257,7 @@ type CombatScreen struct {
     Gibs []*Gib
 
     CameraScale float64
+    ExtraControl bool
 
     ExtraHighlightedUnit *ArmyUnit
     ShowInfoLevel int
@@ -3037,7 +3038,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     }
 
     // FIXME: move some of this code into model.go
-    for len(path) > 0 {
+    for len(path) > 0 && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {
         mover.CurrentPath = path
         targetX, targetY := path[0].X, path[0].Y
 
@@ -3057,7 +3058,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         speed := float64(0.04)
 
         reached := false
-        for !reached {
+        for !reached && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {
             combat.UpdateAnimations()
             combat.UpdateGibs()
             combat.ProcessInput()
@@ -3279,6 +3280,7 @@ func (combat *CombatScreen) ProcessInput() {
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)
     showInfo := 0
+    combat.ExtraControl = false
     for _, key := range keys {
         speed := 0.8
         switch key {
@@ -3310,6 +3312,8 @@ func (combat *CombatScreen) ProcessInput() {
                 }
             case ebiten.KeyShift:
                 showInfo = 100
+            case ebiten.KeyControl:
+                combat.ExtraControl = true
         }
     }
 
@@ -3409,8 +3413,8 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
             moved := false
             for _, index := range rand.Perm(len(points)) {
                 point := points[index]
-                if combat.TileIsEmpty(point.X, point.Y) && combat.Model.CanMoveTo(confusedUnit, point.X, point.Y) {
-                    path, _ := combat.Model.FindPath(confusedUnit, point.X, point.Y)
+                if combat.TileIsEmpty(point.X, point.Y) && combat.Model.CanMoveTo(confusedUnit, point.X, point.Y, false) {
+                    path, _ := combat.Model.FindPath(confusedUnit, point.X, point.Y, false)
                     path = path[1:]
                     combat.doMoveUnit(yield, confusedUnit, path)
                     moved = true
@@ -3454,7 +3458,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     } else if combat.Model.SelectedUnit != nil {
         who := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
         if who == nil {
-            if combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY) {
+            if combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl) {
                 combat.MouseState = CombatMoveOk
             } else {
                 combat.MouseState = CombatNotOk
@@ -3483,11 +3487,11 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
        inputmanager.LeftClick() &&
        mouseY < scale.Scale(hudY) {
 
-        if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
+        if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl) {
             if combat.Model.SelectedUnit.CanTeleport() {
                 combat.doTeleport(yield, combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.Model.SelectedUnit.HasAbility(data.AbilityMerging))
             } else {
-                path, _ := combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+                path, _ := combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl)
                 path = path[1:]
                 combat.doMoveUnit(yield, combat.Model.SelectedUnit, path)
             }
@@ -4314,7 +4318,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
                 path = combat.Model.SelectedUnit.CurrentPath
                 ok = true
             } else {
-                path, ok = combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+                path, ok = combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl)
                 if ok {
                     path = path[1:]
                 }
