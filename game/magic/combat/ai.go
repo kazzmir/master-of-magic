@@ -5,7 +5,7 @@ import (
     "slices"
     "cmp"
     "image"
-    // "log"
+    "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -19,14 +19,37 @@ type AIUnitActionsInterface interface {
     Teleport(unit *ArmyUnit, x, y int, merge bool)
 }
 
-func doAI(model *CombatModel, aiActions AIUnitActionsInterface, aiUnit *ArmyUnit) {
+func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsInterface, aiUnit *ArmyUnit) {
     // aiArmy := combat.GetArmy(combat.SelectedUnit)
+    army := model.GetArmy(aiUnit)
     otherArmy := model.GetOtherArmy(aiUnit)
     if aiUnit.ConfusionAction == ConfusionActionEnemyControl {
         otherArmy = model.GetArmy(aiUnit)
     }
 
-    // FIXME: cast a spell if the unit has mana (caster ability)
+    if aiUnit.CanCast() && rand.N(100) < 20 {
+        for spell, charges := range aiUnit.SpellCharges {
+            if charges > 0 {
+                casted := false
+                // try to cast this spell
+                model.InvokeSpell(spellSystem, army, nil, spell, func(success bool){
+                    casted = true
+
+                    if success {
+                        log.Printf("AI cast %v with strength %v", spell.Name, spell.Cost(false))
+                        spellSystem.PlaySound(spell)
+                    }
+                })
+
+                if casted {
+                    aiUnit.MovesLeft = fraction.FromInt(0)
+                    return
+                }
+            }
+        }
+
+        // FIXME: cast a spell if the unit has mana (caster ability)
+    }
 
     // if the selected unit has ranged attacks, then try to use that
     // otherwise, if in melee range of some enemy then attack them
