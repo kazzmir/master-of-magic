@@ -25,6 +25,48 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
+func fromRaceValue(raceValue int) data.Race {
+    switch raceValue {
+        case 0: return data.RaceBarbarian
+        case 1: return data.RaceBeastmen
+        case 2: return data.RaceDarkElf
+        case 3: return data.RaceDraconian
+        case 4: return data.RaceDwarf
+        case 5: return data.RaceGnoll
+        case 6: return data.RaceHalfling
+        case 7: return data.RaceHighElf
+        case 8: return data.RaceHighMen
+        case 9: return data.RaceKlackon
+        case 10: return data.RaceLizard
+        case 11: return data.RaceNomad
+        case 12: return data.RaceOrc
+        case 13: return data.RaceTroll
+    }
+
+    return data.RaceNone
+}
+
+func toRaceInt(race data.Race) int {
+    switch race {
+        case data.RaceBarbarian: return 0
+        case data.RaceBeastmen: return 1
+        case data.RaceDarkElf: return 2
+        case data.RaceDraconian: return 3
+        case data.RaceDwarf: return 4
+        case data.RaceGnoll: return 5
+        case data.RaceHalfling: return 6
+        case data.RaceHighElf: return 7
+        case data.RaceHighMen: return 8
+        case data.RaceKlackon: return 9
+        case data.RaceLizard: return 10
+        case data.RaceNomad: return 11
+        case data.RaceOrc: return 12
+        case data.RaceTroll: return 13
+    }
+
+    return 0
+}
+
 func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane data.Plane, cityProvider maplib.CityProvider, players []*playerlib.Player) *maplib.Map {
 
     map_ := maplib.Map{
@@ -263,23 +305,7 @@ func (saveGame *SaveGame) convertWizard(playerIndex int) setup.WizardCustom {
         books = append(books, data.WizardBook{Magic: data.DeathMagic, Count: int(playerData.SpellRanks[4])})
     }
 
-    var race data.Race
-    switch playerData.CapitalRace {
-        case 0: race = data.RaceBarbarian
-        case 1: race = data.RaceBeastmen
-        case 2: race = data.RaceDarkElf
-        case 3: race = data.RaceDraconian
-        case 4: race = data.RaceDwarf
-        case 5: race = data.RaceGnoll
-        case 6: race = data.RaceHalfling
-        case 7: race = data.RaceHighElf
-        case 8: race = data.RaceHighMen
-        case 9: race = data.RaceKlackon
-        case 10: race = data.RaceLizard
-        case 11: race = data.RaceNomad
-        case 12: race = data.RaceOrc
-        case 13: race = data.RaceTroll
-    }
+    race := fromRaceValue(int(playerData.CapitalRace))
 
     var banner data.BannerType
     switch playerData.BannerId {
@@ -615,7 +641,7 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
         197: units.Nagas,
     }
 
-    for index := 0; index < int(saveGame.NumCities); index++ {
+    for index := range int(saveGame.NumCities) {
         cityData := saveGame.Cities[index]
 
         if int(cityData.Owner) != playerIndex {
@@ -624,23 +650,7 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
 
         plane := data.Plane(cityData.Plane)
 
-        var race data.Race
-        switch cityData.Race {
-            case 0: race = data.RaceBarbarian
-            case 1: race = data.RaceBeastmen
-            case 2: race = data.RaceDarkElf
-            case 3: race = data.RaceDraconian
-            case 4: race = data.RaceDwarf
-            case 5: race = data.RaceGnoll
-            case 6: race = data.RaceHalfling
-            case 7: race = data.RaceHighElf
-            case 8: race = data.RaceHighMen
-            case 9: race = data.RaceKlackon
-            case 10: race = data.RaceLizard
-            case 11: race = data.RaceNomad
-            case 12: race = data.RaceOrc
-            case 13: race = data.RaceTroll
-        }
+        race := fromRaceValue(int(cityData.Race))
 
         buildings := set.MakeSet[buildinglib.Building]()
         for index, building := range buildingMap {
@@ -802,9 +812,6 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     // FIXME: Add remaining infos from playerData
     // Personality
     // Objective
-    // MasteryResearch
-    // PowerBase
-    // Volcanoes
     // VolcanoPower
     // AverageUnitCost
     // CombatSkillLeft
@@ -825,8 +832,13 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     // PrimaryRealm
     // SecondaryRealm
 
+    // doesn't seem necessary to store this since we compute it anyway
+    // PowerBase
+    // Volcanoes
+
     player := playerlib.Player{
         Wizard: wizards[playerIndex],
+        SpellOfMasteryCost: int(playerData.MasteryResearch),
         TaxRate: fraction.Make(int(playerData.TaxRate), 2),
         PowerDistribution: playerlib.PowerDistribution{
             Mana: float64(playerData.ManaRatio) / 100,
