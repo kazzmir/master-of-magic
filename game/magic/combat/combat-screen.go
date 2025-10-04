@@ -131,10 +131,17 @@ type CombatEventMakeGibs struct {
     Count int
 }
 
+type CombatDoSingleAuto struct {
+}
+
 // FIXME: kind of ugly to need a specific event like this for one projectile type
 type CombatEventCreateLightningBolt struct {
     Target *ArmyUnit
     Strength int
+}
+
+type CombatUpdates struct {
+    SingleAuto bool
 }
 
 type MouseState int
@@ -2258,6 +2265,11 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
     // auto
     elements = append(elements, makeButton(4, 26, 1, 1, func(){
+        if combat.ExtraControl {
+            combat.Events <- &CombatDoSingleAuto{}
+            return
+        }
+
         if combat.Model.AttackingArmy.Player == player {
             combat.Model.AttackingArmy.Auto = true
         } else {
@@ -2853,7 +2865,9 @@ func (combat *CombatScreen) ShowSummon(yield coroutine.YieldFunc, unit *ArmyUnit
     }
 }
 
-func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
+func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) CombatUpdates {
+
+    var updates CombatUpdates
 
     sounds := set.MakeSet[int]()
     defer func(){
@@ -2912,9 +2926,12 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                     case *CombatPlaySound:
                         use := event.(*CombatPlaySound)
                         sounds.Insert(use.Sound)
+
+                    case *CombatDoSingleAuto:
+                        updates.SingleAuto = true
                 }
             default:
-                return
+                return updates
         }
     }
 }
@@ -3189,7 +3206,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
         combat.UpdateAnimations()
         combat.UpdateGibs()
         combat.ProcessInput()
-        combat.ProcessEvents(yield)
+        combat.ProcessEvents(yield) // ignore return
 
         // delay the actual melee computation to give time for the sound to play
         if i == 20 {
@@ -3388,7 +3405,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     combat.ProcessInput()
 
-    combat.ProcessEvents(yield)
+    updates := combat.ProcessEvents(yield)
 
     if len(combat.Model.Projectiles) > 0 {
         combat.doProjectiles(yield)
@@ -3433,7 +3450,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         return CombatStateRunning
     }
 
-    if combat.Model.SelectedUnit != nil && combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
+    if combat.Model.SelectedUnit != nil && (combat.Model.IsAIControlled(combat.Model.SelectedUnit) || updates.SingleAuto) {
         aiUnit := combat.Model.SelectedUnit
 
         aiArmy := combat.Model.GetArmy(aiUnit)
