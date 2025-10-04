@@ -3477,7 +3477,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
         // keep making choices until the unit runs out of moves
         for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) && aiUnit.GetHealth() > 0 {
-            doAI(combat.Model, &AIUnitActions{yield: yield, combat: combat}, aiUnit)
+            doAI(combat.Model, combat, &AIUnitActions{yield: yield, combat: combat}, aiUnit)
         }
 
         aiUnit.LastTurn = combat.Model.CurrentTurn
