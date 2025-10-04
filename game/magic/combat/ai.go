@@ -35,6 +35,8 @@ func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsIn
                 model.InvokeSpell(spellSystem, army, nil, spell, func(success bool){
                     casted = true
 
+                    aiUnit.SpellCharges[spell] -= 1
+
                     if success {
                         log.Printf("AI unit %v cast %v with strength %v", aiUnit.Unit.GetName(), spell.Name, spell.Cost(false))
                         spellSystem.PlaySound(spell)
@@ -49,6 +51,8 @@ func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsIn
         }
 
         // FIXME: cast a spell if the unit has mana (caster ability)
+        // this can be a little tricky because typically the unit has a choice between a ranged magical attack
+        // and casting a spell, but sometimes the spells might not be as good
     }
 
     // if the selected unit has ranged attacks, then try to use that
