@@ -36,7 +36,7 @@ func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsIn
                     casted = true
 
                     if success {
-                        log.Printf("AI cast %v with strength %v", spell.Name, spell.Cost(false))
+                        log.Printf("AI unit %v cast %v with strength %v", aiUnit.Unit.GetName(), spell.Name, spell.Cost(false))
                         spellSystem.PlaySound(spell)
                     }
                 })
