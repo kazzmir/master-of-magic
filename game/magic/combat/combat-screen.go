@@ -2094,6 +2094,8 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
         buttonDisabled, _ := combat.ImageCache.GetImage("compix.lbx", buttonDisabledIndex, 0)
         rect := image.Rect(0, 0, buttons[0].Bounds().Dx(), buttons[0].Bounds().Dy()).Add(image.Point{int(buttonX) + buttons[0].Bounds().Dx() * x, int(buttonY) + buttons[0].Bounds().Dy() * y})
         index := 0
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
         return &uilib.UIElement{
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
@@ -2112,8 +2114,6 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                 index = 0
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
                 if combat.ButtonsDisabled {
                     scale.DrawScaled(screen, buttonDisabled, &options)
                 } else {
@@ -3454,15 +3454,20 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         aiUnit := combat.Model.SelectedUnit
 
         aiArmy := combat.Model.GetArmy(aiUnit)
-        casted := combat.Model.doAiCast(combat, aiArmy)
-        if casted {
-            combat.doProjectiles(yield)
+
+        // don't let a single auto unit cast wizard spells
+        if combat.Model.IsAIControlled(aiUnit) {
+            casted := combat.Model.doAiCast(combat, aiArmy)
+            if casted {
+                combat.doProjectiles(yield)
+            }
         }
 
         // keep making choices until the unit runs out of moves
         for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) && aiUnit.GetHealth() > 0 {
             doAI(combat.Model, &AIUnitActions{yield: yield, combat: combat}, aiUnit)
         }
+
         aiUnit.LastTurn = combat.Model.CurrentTurn
         combat.Model.NextUnit()
         return CombatStateRunning
