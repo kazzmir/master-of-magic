@@ -23,15 +23,20 @@ func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsIn
     // aiArmy := combat.GetArmy(combat.SelectedUnit)
     army := model.GetArmy(aiUnit)
     otherArmy := model.GetOtherArmy(aiUnit)
+
+    isConfused := false
     if aiUnit.ConfusionAction == ConfusionActionEnemyControl {
         otherArmy = model.GetArmy(aiUnit)
+        isConfused = true
     }
 
-    if aiUnit.CanCast() && rand.N(100) < 20 {
+    // for now, disallow confused enemies from casting spells
+    if !isConfused && aiUnit.CanCast() && rand.N(100) < 20 {
         for spell, charges := range aiUnit.SpellCharges {
             if charges > 0 {
                 casted := false
                 // try to cast this spell
+                // FIXME: what to do if the unit is confused?
                 model.InvokeSpell(spellSystem, army, nil, spell, func(success bool){
                     casted = true
 
