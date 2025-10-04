@@ -260,7 +260,7 @@ func doAIMovementPathfinding(model *CombatModel, aiActions AIUnitActionsInterfac
             lastIndex := 0
             for lastIndex < len(path) {
                 lastIndex += 1
-                if !aiUnit.CanFollowPath(path[0:lastIndex]) {
+                if !aiUnit.CanFollowPath(path[0:lastIndex], false) {
                     lastIndex -= 1
                     break
                 }
@@ -279,7 +279,7 @@ func doAIMovementPathfinding(model *CombatModel, aiActions AIUnitActionsInterfac
         gateX, gateY := model.GetCityGateCoordinates()
         if gateX != -1 && gateY != -1 {
             path, ok := model.computePath(aiUnit.X, aiUnit.Y, gateX, gateY, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
-            if ok && len(path) > 1 && aiUnit.CanFollowPath(path) {
+            if ok && len(path) > 1 && aiUnit.CanFollowPath(path, false) {
                 aiActions.MoveUnit(aiUnit, path[1:])
                 return true
             }
