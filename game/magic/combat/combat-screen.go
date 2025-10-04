@@ -2089,13 +2089,14 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
     buttonX := float64(144)
     buttonY := float64(168)
 
-    makeButton := func(lbxIndex int, buttonDisabledIndex, x int, y int, action func()) *uilib.UIElement {
+    makeButton2 := func(lbxIndex int, buttonDisabledIndex, x int, y int, action func(), alterColor func(*colorm.ColorM)) *uilib.UIElement {
         buttons, _ := combat.ImageCache.GetImages("compix.lbx", lbxIndex)
         buttonDisabled, _ := combat.ImageCache.GetImage("compix.lbx", buttonDisabledIndex, 0)
         rect := image.Rect(0, 0, buttons[0].Bounds().Dx(), buttons[0].Bounds().Dy()).Add(image.Point{int(buttonX) + buttons[0].Bounds().Dx() * x, int(buttonY) + buttons[0].Bounds().Dy() * y})
         index := 0
-        var options ebiten.DrawImageOptions
+        var options colorm.DrawImageOptions
         options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+        options.GeoM = scale.ScaleGeom(options.GeoM)
         return &uilib.UIElement{
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
@@ -2114,13 +2115,19 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                 index = 0
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var extraColor colorm.ColorM
+                alterColor(&extraColor)
                 if combat.ButtonsDisabled {
-                    scale.DrawScaled(screen, buttonDisabled, &options)
+                    colorm.DrawImage(screen, buttonDisabled, extraColor, &options)
                 } else {
-                    scale.DrawScaled(screen, buttons[index], &options)
+                    colorm.DrawImage(screen, buttons[index], extraColor, &options)
                 }
             },
         }
+    }
+
+    makeButton := func(lbxIndex int, buttonDisabledIndex, x int, y int, action func()) *uilib.UIElement {
+        return makeButton2(lbxIndex, buttonDisabledIndex, x, y, action, func(_ *colorm.ColorM){})
     }
 
     // spell
@@ -2264,7 +2271,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
     }))
 
     // auto
-    elements = append(elements, makeButton(4, 26, 1, 1, func(){
+    elements = append(elements, makeButton2(4, 26, 1, 1, func(){
         if combat.ExtraControl {
             combat.Events <- &CombatDoSingleAuto{}
             return
@@ -2274,6 +2281,11 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
             combat.Model.AttackingArmy.Auto = true
         } else {
             combat.Model.DefendingArmy.Auto = true
+        }
+    }, func(color *colorm.ColorM){
+        if combat.ExtraControl {
+            color.Translate(0, 0, 0.9, 0)
+            color.Scale(0.9, 0.9, 1, 1)
         }
     }))
 
