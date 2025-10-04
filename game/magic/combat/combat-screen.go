@@ -232,6 +232,13 @@ type Gib struct {
     Image *ebiten.Image
 }
 
+type DamageIndicator struct {
+    X int
+    Y int
+    Damage int // the damage to show
+    Life int // how many more frames to show this indicator, counts down to 0
+}
+
 type CombatDrawFunc func(*ebiten.Image)
 
 type CombatScreen struct {
@@ -268,6 +275,8 @@ type CombatScreen struct {
 
     ExtraHighlightedUnit *ArmyUnit
     ShowInfoLevel int
+
+    DamageIndicators []DamageIndicator
 
     Counter uint64
 
@@ -3222,13 +3231,27 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 
         // delay the actual melee computation to give time for the sound to play
         if i == 20 {
-            combat.Model.meleeAttack(combat.Model.SelectedUnit, defender)
+            attackerDamage, defenderDamage := combat.Model.meleeAttack(attacker, defender)
+
+            combat.AddDamageIndicator(defender, attackerDamage)
+            combat.AddDamageIndicator(attacker, defenderDamage)
         }
 
         if yield() != nil {
             return
         }
     }
+}
+
+func (combat *CombatScreen) AddDamageIndicator(unit *ArmyUnit, damage int) {
+    indicator := DamageIndicator{
+        X: unit.X,
+        Y: unit.Y,
+        Damage: damage,
+        Life: 30,
+    }
+
+    combat.DamageIndicators = append(combat.DamageIndicators, indicator)
 }
 
 type AIUnitActions struct {
@@ -3366,6 +3389,19 @@ func (combat *CombatScreen) ProcessInput() {
     combat.Coordinates.Scale(wheelScale, wheelScale)
 }
 
+func (combat *CombatScreen) UpdateDamageIndicators() {
+    var keepIndicators []DamageIndicator
+
+    for _, indicator := range combat.DamageIndicators {
+        indicator.Life -= 1
+        if indicator.Life > 0 {
+            keepIndicators = append(keepIndicators, indicator)
+        }
+    }
+
+    combat.DamageIndicators = keepIndicators
+}
+
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     if combat.Model.CurrentTurn >= MAX_TURNS {
         combat.Model.AddLogEvent("Combat exceeded maximum number of turns, defender wins")
@@ -3409,6 +3445,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     combat.MouseTileX = int(math.Round(tileX))
     combat.MouseTileY = int(math.Round(tileY))
 
+    combat.UpdateDamageIndicators()
     combat.UpdateAnimations()
     combat.UpdateGibs()
 
@@ -4693,6 +4730,11 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
     }
 
     combat.UI.Draw(combat.UI, screen)
+
+    for _, indicator := range combat.DamageIndicators {
+        tx, ty := tilePosition(float64(indicator.X), float64(indicator.Y))
+        combat.Fonts.InfoFont.PrintOptions(screen, tx, ty, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("%d", indicator.Damage))
+    }
 
     if combat.Model.HighlightedUnit != nil && isVisible(combat.Model.HighlightedUnit) {
         combat.ShowUnitInfo(screen, combat.Model.HighlightedUnit)
