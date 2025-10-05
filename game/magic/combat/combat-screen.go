@@ -237,6 +237,7 @@ type DamageIndicator struct {
     Y int
     Damage int // the damage to show
     Life int // how many more frames to show this indicator, counts down to 0
+    Count int
 }
 
 type CombatDrawFunc func(*ebiten.Image)
@@ -2451,6 +2452,7 @@ func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
     for combat.Model.UpdateProjectiles(combat.Counter) {
         combat.Counter += 1
         combat.ProcessInput()
+        combat.UpdateDamageIndicators()
         combat.UpdateAnimations()
         combat.UpdateGibs()
         if yield() != nil {
@@ -2995,6 +2997,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             combat.Counter += 1
             combat.UpdateAnimations()
             combat.UpdateGibs()
+            combat.UpdateDamageIndicators()
             combat.ProcessInput()
             mover.SetHeight(-i/mergeSpeed)
             yield()
@@ -3003,6 +3006,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
         for i := range mergeCount {
             combat.Counter += 1
             combat.UpdateAnimations()
+            combat.UpdateDamageIndicators()
             combat.UpdateGibs()
             combat.ProcessInput()
             mover.SetFade(float32(i)/float32(mergeCount))
@@ -3020,6 +3024,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
         for i := range mergeCount {
             combat.Counter += 1
             combat.UpdateAnimations()
+            combat.UpdateDamageIndicators()
             combat.UpdateGibs()
             combat.ProcessInput()
             mover.SetHeight(-(mergeCount/mergeSpeed - i/mergeSpeed))
@@ -3030,6 +3035,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
         for i := range mergeCount {
             combat.Counter += 1
             combat.UpdateAnimations()
+            combat.UpdateDamageIndicators()
             combat.UpdateGibs()
             combat.ProcessInput()
             mover.SetFade(float32(mergeCount - i)/float32(mergeCount))
@@ -3098,6 +3104,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         reached := false
         for !reached && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {
             combat.UpdateAnimations()
+            combat.UpdateDamageIndicators()
             combat.UpdateGibs()
             combat.ProcessInput()
             combat.Counter += 1
@@ -3226,6 +3233,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
         combat.Counter += 1
         combat.UpdateAnimations()
         combat.UpdateGibs()
+        combat.UpdateDamageIndicators()
         combat.ProcessInput()
         combat.ProcessEvents(yield) // ignore return
 
@@ -3248,7 +3256,7 @@ func (combat *CombatScreen) AddDamageIndicator(unit *ArmyUnit, damage int) {
         X: unit.X,
         Y: unit.Y,
         Damage: damage,
-        Life: 30,
+        Life: 50,
     }
 
     combat.DamageIndicators = append(combat.DamageIndicators, indicator)
@@ -3394,6 +3402,7 @@ func (combat *CombatScreen) UpdateDamageIndicators() {
 
     for _, indicator := range combat.DamageIndicators {
         indicator.Life -= 1
+        indicator.Count += 1
         if indicator.Life > 0 {
             keepIndicators = append(keepIndicators, indicator)
         }
@@ -4733,7 +4742,20 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
 
     for _, indicator := range combat.DamageIndicators {
         tx, ty := tilePosition(float64(indicator.X), float64(indicator.Y))
-        combat.Fonts.InfoFont.PrintOptions(screen, tx, ty, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, fmt.Sprintf("%d", indicator.Damage))
+        ty -= 5
+        ty -= float64(indicator.Count) / 5
+        var options ebiten.DrawImageOptions
+        if indicator.Life < 10 {
+            options.ColorScale.ScaleAlpha(float32(indicator.Life) / 10)
+        }
+        if indicator.Damage > 8 {
+            options.ColorScale.Scale(1, 0.5, 0.5, 1)
+        } else if indicator.Damage > 3 {
+            options.ColorScale.Scale(1, 0.75, 0.75, 1)
+        } else {
+            options.ColorScale.Scale(1.5, 1.5, 1.5, 1)
+        }
+        combat.Fonts.InfoFont.PrintOptions(screen, tx, ty, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options}, fmt.Sprintf("%d", indicator.Damage))
     }
 
     if combat.Model.HighlightedUnit != nil && isVisible(combat.Model.HighlightedUnit) {
