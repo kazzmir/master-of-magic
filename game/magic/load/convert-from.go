@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
 func CreateSaveGame(game *gamelib.Game) (*SaveGame, error) {
@@ -115,6 +116,21 @@ func makePlayerData(id int, game *gamelib.Game, player *playerlib.Player) Player
         }
     }
 
+    createSpellRanks := func(player *playerlib.Player) []int16 {
+        ranks := make([]int16, 5)
+        for i, magic := range []data.MagicType{data.NatureMagic, data.SorceryMagic, data.ChaosMagic, data.LifeMagic, data.DeathMagic} {
+            ranks[i] = int16(player.Wizard.MagicLevel(magic))
+        }
+        return ranks
+    }
+
+    boolToInt := func(b bool) int8 {
+        if b {
+            return 1
+        }
+        return 0
+    }
+
     return PlayerData{
         WizardId: uint8(id),
         WizardName: []byte(player.Wizard.Name),
@@ -145,32 +161,32 @@ func makePlayerData(id int, game *gamelib.Game, player *playerlib.Player) Player
         CastingCostRemaining: uint16(max(0, player.ComputeEffectiveSpellCost(player.CastingSpell, true) - player.CastingSpellProgress)),
         CastingCostOriginal: uint16(player.ComputeEffectiveSpellCost(player.CastingSpell, true)),
         CastingSpellIndex: uint16(player.CastingSpell.Index),
+        NominalSkill: uint16(player.ComputeCastingSkill()),
+        SkillLeft: uint16(player.RemainingCastingSkill),
+        TaxRate: uint16(player.TaxRate.Multiply(fraction.FromInt(2)).ToInt()),
+        SpellRanks: createSpellRanks(player),
+        RetortAlchemy: boolToInt(player.Wizard.RetortEnabled(data.RetortAlchemy)),
+        RetortWarlord: boolToInt(player.Wizard.RetortEnabled(data.RetortWarlord)),
+        RetortChaosMastery: boolToInt(player.Wizard.RetortEnabled(data.RetortChaosMastery)),
+        RetortNatureMastery: boolToInt(player.Wizard.RetortEnabled(data.RetortNatureMastery)),
+        RetortSorceryMastery: boolToInt(player.Wizard.RetortEnabled(data.RetortSorceryMastery)),
+        RetortInfernalPower: boolToInt(player.Wizard.RetortEnabled(data.RetortInfernalPower)),
+        RetortDivinePower: boolToInt(player.Wizard.RetortEnabled(data.RetortDivinePower)),
+        RetortSageMaster: boolToInt(player.Wizard.RetortEnabled(data.RetortSageMaster)),
+        RetortChanneler: boolToInt(player.Wizard.RetortEnabled(data.RetortChanneler)),
+        RetortMyrran: boolToInt(player.Wizard.RetortEnabled(data.RetortMyrran)),
+        RetortArchmage: boolToInt(player.Wizard.RetortEnabled(data.RetortArchmage)),
+        RetortNodeMastery: boolToInt(player.Wizard.RetortEnabled(data.RetortNodeMastery)),
+        RetortManaFocusing: boolToInt(player.Wizard.RetortEnabled(data.RetortManaFocusing)),
+        RetortFamous: boolToInt(player.Wizard.RetortEnabled(data.RetortFamous)),
+        RetortRunemaster: boolToInt(player.Wizard.RetortEnabled(data.RetortRunemaster)),
+        RetortConjurer: boolToInt(player.Wizard.RetortEnabled(data.RetortConjurer)),
+        RetortCharismatic: boolToInt(player.Wizard.RetortEnabled(data.RetortCharismatic)),
+        RetortArtificer: boolToInt(player.Wizard.RetortEnabled(data.RetortArtificer)),
     }
 
     /*
 type PlayerData struct {
-    SkillLeft uint16
-    NominalSkill uint16
-    TaxRate uint16
-    SpellRanks []int16
-    RetortAlchemy int8
-    RetortWarlord int8
-    RetortChaosMastery int8
-    RetortNatureMastery int8
-    RetortSorceryMastery int8
-    RetortInfernalPower int8
-    RetortDivinePower int8
-    RetortSageMaster int8
-    RetortChanneler int8
-    RetortMyrran int8
-    RetortArchmage int8
-    RetortNodeMastery int8
-    RetortManaFocusing int8
-    RetortFamous int8
-    RetortRunemaster int8
-    RetortConjurer int8
-    RetortCharismatic int8
-    RetortArtificer int8
 
     HeroData []PlayerHeroData
 
