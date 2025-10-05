@@ -4783,7 +4783,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         } else {
             options.ColorScale.Scale(1.5, 1.5, 1.5, 1)
         }
-        combat.Fonts.InfoFont.PrintOptions(screen, tx, ty, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options}, fmt.Sprintf("%d", indicator.Damage))
+        combat.Fonts.InfoFont.PrintOptions(screen, tx, ty, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options, DropShadow: true}, fmt.Sprintf("%d", indicator.Damage))
     }
 
     if combat.Model.HighlightedUnit != nil && isVisible(combat.Model.HighlightedUnit) {
