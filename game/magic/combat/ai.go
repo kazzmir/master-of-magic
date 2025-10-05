@@ -5,7 +5,7 @@ import (
     "slices"
     "cmp"
     "image"
-    // "log"
+    "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -19,14 +19,46 @@ type AIUnitActionsInterface interface {
     Teleport(unit *ArmyUnit, x, y int, merge bool)
 }
 
-func doAI(model *CombatModel, aiActions AIUnitActionsInterface, aiUnit *ArmyUnit) {
+func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsInterface, aiUnit *ArmyUnit) {
     // aiArmy := combat.GetArmy(combat.SelectedUnit)
+    army := model.GetArmy(aiUnit)
     otherArmy := model.GetOtherArmy(aiUnit)
+
+    isConfused := false
     if aiUnit.ConfusionAction == ConfusionActionEnemyControl {
         otherArmy = model.GetArmy(aiUnit)
+        isConfused = true
     }
 
-    // FIXME: cast a spell if the unit has mana (caster ability)
+    // for now, disallow confused enemies from casting spells
+    if !isConfused && aiUnit.CanCast() && rand.N(100) < 20 {
+        for spell, charges := range aiUnit.SpellCharges {
+            if charges > 0 {
+                casted := false
+                // try to cast this spell
+                // FIXME: what to do if the unit is confused?
+                model.InvokeSpell(spellSystem, army, nil, spell, func(success bool){
+                    casted = true
+
+                    aiUnit.SpellCharges[spell] -= 1
+
+                    if success {
+                        log.Printf("AI unit %v cast %v with strength %v", aiUnit.Unit.GetName(), spell.Name, spell.Cost(false))
+                        spellSystem.PlaySound(spell)
+                    }
+                })
+
+                if casted {
+                    aiUnit.MovesLeft = fraction.FromInt(0)
+                    return
+                }
+            }
+        }
+
+        // FIXME: cast a spell if the unit has mana (caster ability)
+        // this can be a little tricky because typically the unit has a choice between a ranged magical attack
+        // and casting a spell, but sometimes the spells might not be as good
+    }
 
     // if the selected unit has ranged attacks, then try to use that
     // otherwise, if in melee range of some enemy then attack them
@@ -260,7 +292,7 @@ func doAIMovementPathfinding(model *CombatModel, aiActions AIUnitActionsInterfac
             lastIndex := 0
             for lastIndex < len(path) {
                 lastIndex += 1
-                if !aiUnit.CanFollowPath(path[0:lastIndex]) {
+                if !aiUnit.CanFollowPath(path[0:lastIndex], false) {
                     lastIndex -= 1
                     break
                 }
@@ -279,7 +311,7 @@ func doAIMovementPathfinding(model *CombatModel, aiActions AIUnitActionsInterfac
         gateX, gateY := model.GetCityGateCoordinates()
         if gateX != -1 && gateY != -1 {
             path, ok := model.computePath(aiUnit.X, aiUnit.Y, gateX, gateY, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
-            if ok && len(path) > 1 && aiUnit.CanFollowPath(path) {
+            if ok && len(path) > 1 && aiUnit.CanFollowPath(path, false) {
                 aiActions.MoveUnit(aiUnit, path[1:])
                 return true
             }

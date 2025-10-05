@@ -131,10 +131,17 @@ type CombatEventMakeGibs struct {
     Count int
 }
 
+type CombatDoSingleAuto struct {
+}
+
 // FIXME: kind of ugly to need a specific event like this for one projectile type
 type CombatEventCreateLightningBolt struct {
     Target *ArmyUnit
     Strength int
+}
+
+type CombatUpdates struct {
+    SingleAuto bool
 }
 
 type MouseState int
@@ -225,6 +232,15 @@ type Gib struct {
     Image *ebiten.Image
 }
 
+type DamageIndicator struct {
+    X int
+    Y int
+    Offset int
+    Damage int // the damage to show
+    Life int // how many more frames to show this indicator, counts down to 0
+    Count int
+}
+
 type CombatDrawFunc func(*ebiten.Image)
 
 type CombatScreen struct {
@@ -257,8 +273,12 @@ type CombatScreen struct {
     Gibs []*Gib
 
     CameraScale float64
+    ExtraControl bool
 
     ExtraHighlightedUnit *ArmyUnit
+    ShowInfoLevel int
+
+    DamageIndicators []DamageIndicator
 
     Counter uint64
 
@@ -613,8 +633,9 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        _, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
+        hurt, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
         combat.MakeGibs(unit, lost)
+        combat.AddDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -630,6 +651,7 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
 
     damage := func(unit *ArmyUnit) {
         fireDamage, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
+        combat.AddDamageIndicator(unit, fireDamage)
         combat.MakeGibs(unit, lost)
 
         combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
@@ -649,7 +671,8 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength 
     explodeImages := images[11:]
 
     damage := func(unit *ArmyUnit) {
-        combat.Model.ApplyImmolationDamage(unit, strength)
+        hurt := combat.Model.ApplyImmolationDamage(unit, strength)
+        combat.AddDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -663,7 +686,8 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Project
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        _, lost := ApplyDamage(unit, unit.ReduceInvulnerability(15), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
+        hurt, lost := ApplyDamage(unit, unit.ReduceInvulnerability(15), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
+        combat.AddDamageIndicator(unit, hurt)
         combat.MakeGibs(unit, lost)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -695,6 +719,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
             }
         }
 
+        combat.AddDamageIndicator(unit, damage)
         combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -709,7 +734,8 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, stren
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        _, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(15, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
+        hurt, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(15, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
+        combat.AddDamageIndicator(unit, hurt)
         combat.MakeGibs(unit, lost)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -726,6 +752,7 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projecti
 
     effect := func(unit *ArmyUnit) {
         combat.MakeGibs(unit, unit.TakeDamage(10, DamageNormal))
+        combat.AddDamageIndicator(unit, 10)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -757,7 +784,8 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
         Effect: func(unit *ArmyUnit) {
-            _, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+            hurt, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+            combat.AddDamageIndicator(unit, hurt)
             combat.MakeGibs(unit, lost)
             if unit.GetHealth() <= 0 {
                 combat.Model.KillUnit(unit)
@@ -794,11 +822,14 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Pro
         Effect: func(unit *ArmyUnit) {
 
             lost := 0
+            damage := 0
             // 10 separate attacks are different than a single 55-point attack due to defense
             for strength := range 10 {
-                _, more := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength + 1, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                hurt, more := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength + 1, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
                 lost += more
+                damage += hurt
             }
+            combat.AddDamageIndicator(unit, damage)
             combat.MakeGibs(unit, lost)
 
             if unit.GetHealth() <= 0 {
@@ -820,6 +851,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
         resistance := GetResistanceFor(unit, data.LifeMagic) - reduceResistance
         damage := rand.N(10) + 1 - resistance
         if damage > 0 {
+            combat.AddDamageIndicator(unit, damage)
             combat.MakeGibs(unit, unit.TakeDamage(damage, DamageUndead))
             if unitCaster != nil {
                 unitCaster.Heal(damage)
@@ -843,7 +875,8 @@ func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) *Proje
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        combat.Model.ApplyImmolationDamage(unit, 15)
+        hurt := combat.Model.ApplyImmolationDamage(unit, 15)
+        combat.AddDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1396,6 +1429,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
             }
         }
 
+        combat.AddDamageIndicator(unit, damage)
         combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -1431,6 +1465,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projec
             }
         }
 
+        combat.AddDamageIndicator(unit, damage)
         combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -1454,6 +1489,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Proje
             }
         }
 
+        combat.AddDamageIndicator(unit, damage)
         combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -1552,6 +1588,7 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
             }
         }
 
+        combat.AddDamageIndicator(unit, damage)
         combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -2070,7 +2107,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                 scale.DrawScaled(screen, movementImage, &options)
                 combat.Fonts.HudFont.PrintOptions(screen, 130, 190, font.FontOptions{Justify: font.FontJustifyRight, Scale: scale.ScaleAmount}, fmt.Sprintf("%v", combat.Model.SelectedUnit.MovesLeft.ToFloat()))
 
-                combat.DrawHealthBar(screen, 123, 197, combat.Model.SelectedUnit)
+                combat.DrawHealthBar(screen, 123, 197, 255, combat.Model.SelectedUnit)
             }
 
             ui.StandardDraw(screen)
@@ -2080,11 +2117,14 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
     buttonX := float64(144)
     buttonY := float64(168)
 
-    makeButton := func(lbxIndex int, buttonDisabledIndex, x int, y int, action func()) *uilib.UIElement {
+    makeButton2 := func(lbxIndex int, buttonDisabledIndex, x int, y int, action func(), alterColor func(*colorm.ColorM)) *uilib.UIElement {
         buttons, _ := combat.ImageCache.GetImages("compix.lbx", lbxIndex)
         buttonDisabled, _ := combat.ImageCache.GetImage("compix.lbx", buttonDisabledIndex, 0)
         rect := image.Rect(0, 0, buttons[0].Bounds().Dx(), buttons[0].Bounds().Dy()).Add(image.Point{int(buttonX) + buttons[0].Bounds().Dx() * x, int(buttonY) + buttons[0].Bounds().Dy() * y})
         index := 0
+        var options colorm.DrawImageOptions
+        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+        options.GeoM = scale.ScaleGeom(options.GeoM)
         return &uilib.UIElement{
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
@@ -2103,15 +2143,19 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                 index = 0
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                var extraColor colorm.ColorM
+                alterColor(&extraColor)
                 if combat.ButtonsDisabled {
-                    scale.DrawScaled(screen, buttonDisabled, &options)
+                    colorm.DrawImage(screen, buttonDisabled, extraColor, &options)
                 } else {
-                    scale.DrawScaled(screen, buttons[index], &options)
+                    colorm.DrawImage(screen, buttons[index], extraColor, &options)
                 }
             },
         }
+    }
+
+    makeButton := func(lbxIndex int, buttonDisabledIndex, x int, y int, action func()) *uilib.UIElement {
+        return makeButton2(lbxIndex, buttonDisabledIndex, x, y, action, func(_ *colorm.ColorM){})
     }
 
     // spell
@@ -2255,11 +2299,21 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
     }))
 
     // auto
-    elements = append(elements, makeButton(4, 26, 1, 1, func(){
+    elements = append(elements, makeButton2(4, 26, 1, 1, func(){
+        if combat.ExtraControl {
+            combat.Events <- &CombatDoSingleAuto{}
+            return
+        }
+
         if combat.Model.AttackingArmy.Player == player {
             combat.Model.AttackingArmy.Auto = true
         } else {
             combat.Model.DefendingArmy.Auto = true
+        }
+    }, func(color *colorm.ColorM){
+        if combat.ExtraControl {
+            color.Translate(0, 0, 0.9, 0)
+            color.Scale(0.9, 0.9, 1, 1)
         }
     }))
 
@@ -2416,6 +2470,7 @@ func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
     for combat.Model.UpdateProjectiles(combat.Counter) {
         combat.Counter += 1
         combat.ProcessInput()
+        combat.UpdateDamageIndicators()
         combat.UpdateAnimations()
         combat.UpdateGibs()
         if yield() != nil {
@@ -2530,13 +2585,20 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         appliedDamage, lost := ApplyDamage(target, damage, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
         combat.MakeGibs(target, lost)
 
+        totalDamage := appliedDamage
+
         log.Printf("attacker %v rolled %v ranged damage to defender %v, applied %v", attacker.Unit.GetName(), damage, target.Unit.GetName(), appliedDamage)
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
-            combat.Model.doTouchAttack(attacker, target, 0)
+            funcs := combat.Model.doTouchAttack(attacker, target, 0)
+            for _, f := range funcs {
+                totalDamage += f()
+            }
         }
 
-        combat.Model.ApplyImmolationDamage(defender, combat.Model.immolationDamage(attacker, defender))
+        totalDamage += combat.Model.ApplyImmolationDamage(defender, combat.Model.immolationDamage(attacker, defender))
+
+        combat.AddDamageIndicator(target, totalDamage)
 
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 
@@ -2851,7 +2913,9 @@ func (combat *CombatScreen) ShowSummon(yield coroutine.YieldFunc, unit *ArmyUnit
     }
 }
 
-func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
+func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) CombatUpdates {
+
+    var updates CombatUpdates
 
     sounds := set.MakeSet[int]()
     defer func(){
@@ -2910,9 +2974,12 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) {
                     case *CombatPlaySound:
                         use := event.(*CombatPlaySound)
                         sounds.Insert(use.Sound)
+
+                    case *CombatDoSingleAuto:
+                        updates.SingleAuto = true
                 }
             default:
-                return
+                return updates
         }
     }
 }
@@ -2955,6 +3022,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             combat.Counter += 1
             combat.UpdateAnimations()
             combat.UpdateGibs()
+            combat.UpdateDamageIndicators()
             combat.ProcessInput()
             mover.SetHeight(-i/mergeSpeed)
             yield()
@@ -2963,6 +3031,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
         for i := range mergeCount {
             combat.Counter += 1
             combat.UpdateAnimations()
+            combat.UpdateDamageIndicators()
             combat.UpdateGibs()
             combat.ProcessInput()
             mover.SetFade(float32(i)/float32(mergeCount))
@@ -2980,6 +3049,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
         for i := range mergeCount {
             combat.Counter += 1
             combat.UpdateAnimations()
+            combat.UpdateDamageIndicators()
             combat.UpdateGibs()
             combat.ProcessInput()
             mover.SetHeight(-(mergeCount/mergeSpeed - i/mergeSpeed))
@@ -2990,6 +3060,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
         for i := range mergeCount {
             combat.Counter += 1
             combat.UpdateAnimations()
+            combat.UpdateDamageIndicators()
             combat.UpdateGibs()
             combat.ProcessInput()
             mover.SetFade(float32(mergeCount - i)/float32(mergeCount))
@@ -3036,7 +3107,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     }
 
     // FIXME: move some of this code into model.go
-    for len(path) > 0 {
+    for len(path) > 0 && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {
         mover.CurrentPath = path
         targetX, targetY := path[0].X, path[0].Y
 
@@ -3056,8 +3127,9 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         speed := float64(0.04)
 
         reached := false
-        for !reached {
+        for !reached && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {
             combat.UpdateAnimations()
+            combat.UpdateDamageIndicators()
             combat.UpdateGibs()
             combat.ProcessInput()
             combat.Counter += 1
@@ -3186,18 +3258,35 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
         combat.Counter += 1
         combat.UpdateAnimations()
         combat.UpdateGibs()
+        combat.UpdateDamageIndicators()
         combat.ProcessInput()
-        combat.ProcessEvents(yield)
+        combat.ProcessEvents(yield) // ignore return
 
         // delay the actual melee computation to give time for the sound to play
         if i == 20 {
-            combat.Model.meleeAttack(combat.Model.SelectedUnit, defender)
+            attackerDamage, defenderDamage := combat.Model.meleeAttack(attacker, defender)
+
+            combat.AddDamageIndicator(defender, attackerDamage)
+            combat.AddDamageIndicator(attacker, defenderDamage)
         }
 
         if yield() != nil {
             return
         }
     }
+}
+
+func (combat *CombatScreen) AddDamageIndicator(unit *ArmyUnit, damage int) {
+    offsetWidth := 8
+    indicator := DamageIndicator{
+        X: unit.X,
+        Y: unit.Y,
+        Offset: rand.N(offsetWidth * 2 + 1) - offsetWidth,
+        Damage: damage,
+        Life: 50,
+    }
+
+    combat.DamageIndicators = append(combat.DamageIndicators, indicator)
 }
 
 type AIUnitActions struct {
@@ -3277,6 +3366,8 @@ func (combat *CombatScreen) ProcessInput() {
     combat.ExtraHighlightedUnit = nil
     var keys []ebiten.Key
     keys = inpututil.AppendPressedKeys(keys)
+    showInfo := 0
+    combat.ExtraControl = false
     for _, key := range keys {
         speed := 0.8
         switch key {
@@ -3306,7 +3397,22 @@ func (combat *CombatScreen) ProcessInput() {
                 if combat.Model.SelectedUnit != nil && !combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
                     combat.ExtraHighlightedUnit = combat.Model.SelectedUnit
                 }
+            case ebiten.KeyShift:
+                showInfo = 100
+            case ebiten.KeyControl:
+                combat.ExtraControl = true
         }
+    }
+
+    infoStep := 13
+
+    if showInfo > 0 {
+        if combat.ShowInfoLevel < showInfo {
+            combat.ShowInfoLevel += infoStep
+            combat.ShowInfoLevel = min(combat.ShowInfoLevel, showInfo)
+        }
+    } else {
+        combat.ShowInfoLevel = max(0, combat.ShowInfoLevel - infoStep)
     }
 
     // FIXME: handle right-click drag to move the camera
@@ -3316,6 +3422,20 @@ func (combat *CombatScreen) ProcessInput() {
     wheelScale := 1 + float64(wheelY) / 10
     combat.CameraScale *= wheelScale
     combat.Coordinates.Scale(wheelScale, wheelScale)
+}
+
+func (combat *CombatScreen) UpdateDamageIndicators() {
+    var keepIndicators []DamageIndicator
+
+    for _, indicator := range combat.DamageIndicators {
+        indicator.Life -= 1
+        indicator.Count += 1
+        if indicator.Life > 0 {
+            keepIndicators = append(keepIndicators, indicator)
+        }
+    }
+
+    combat.DamageIndicators = keepIndicators
 }
 
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
@@ -3361,6 +3481,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     combat.MouseTileX = int(math.Round(tileX))
     combat.MouseTileY = int(math.Round(tileY))
 
+    combat.UpdateDamageIndicators()
     combat.UpdateAnimations()
     combat.UpdateGibs()
 
@@ -3369,7 +3490,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     combat.ProcessInput()
 
-    combat.ProcessEvents(yield)
+    updates := combat.ProcessEvents(yield)
 
     if len(combat.Model.Projectiles) > 0 {
         combat.doProjectiles(yield)
@@ -3394,8 +3515,8 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
             moved := false
             for _, index := range rand.Perm(len(points)) {
                 point := points[index]
-                if combat.TileIsEmpty(point.X, point.Y) && combat.Model.CanMoveTo(confusedUnit, point.X, point.Y) {
-                    path, _ := combat.Model.FindPath(confusedUnit, point.X, point.Y)
+                if combat.TileIsEmpty(point.X, point.Y) && combat.Model.CanMoveTo(confusedUnit, point.X, point.Y, false) {
+                    path, _ := combat.Model.FindPath(confusedUnit, point.X, point.Y, false)
                     path = path[1:]
                     combat.doMoveUnit(yield, confusedUnit, path)
                     moved = true
@@ -3414,19 +3535,24 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         return CombatStateRunning
     }
 
-    if combat.Model.SelectedUnit != nil && combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
+    if combat.Model.SelectedUnit != nil && (combat.Model.IsAIControlled(combat.Model.SelectedUnit) || updates.SingleAuto) {
         aiUnit := combat.Model.SelectedUnit
 
         aiArmy := combat.Model.GetArmy(aiUnit)
-        casted := combat.Model.doAiCast(combat, aiArmy)
-        if casted {
-            combat.doProjectiles(yield)
+
+        // don't let a single auto unit cast wizard spells
+        if combat.Model.IsAIControlled(aiUnit) {
+            casted := combat.Model.doAiCast(combat, aiArmy)
+            if casted {
+                combat.doProjectiles(yield)
+            }
         }
 
         // keep making choices until the unit runs out of moves
         for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) && aiUnit.GetHealth() > 0 {
-            doAI(combat.Model, &AIUnitActions{yield: yield, combat: combat}, aiUnit)
+            doAI(combat.Model, combat, &AIUnitActions{yield: yield, combat: combat}, aiUnit)
         }
+
         aiUnit.LastTurn = combat.Model.CurrentTurn
         combat.Model.NextUnit()
         return CombatStateRunning
@@ -3439,7 +3565,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     } else if combat.Model.SelectedUnit != nil {
         who := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
         if who == nil {
-            if combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY) {
+            if combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl) {
                 combat.MouseState = CombatMoveOk
             } else {
                 combat.MouseState = CombatNotOk
@@ -3468,11 +3594,11 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
        inputmanager.LeftClick() &&
        mouseY < scale.Scale(hudY) {
 
-        if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY){
+        if combat.TileIsEmpty(combat.MouseTileX, combat.MouseTileY) && combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl) {
             if combat.Model.SelectedUnit.CanTeleport() {
                 combat.doTeleport(yield, combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.Model.SelectedUnit.HasAbility(data.AbilityMerging))
             } else {
-                path, _ := combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+                path, _ := combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl)
                 path = path[1:]
                 combat.doMoveUnit(yield, combat.Model.SelectedUnit, path)
             }
@@ -3556,11 +3682,11 @@ func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y i
         return uint8(out)
     }
 
-    lineColor := util.PremultiplyAlpha(color.RGBA{
+    lineColor := color.NRGBA{
         R: lerp(minColor.R, maxColor.R),
         G: lerp(minColor.G, maxColor.G),
         B: lerp(minColor.B, maxColor.B),
-        A: 190})
+        A: 190}
 
 
     rFloat := float32(lineColor.R) / 255
@@ -3593,8 +3719,8 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     y1 := 5
     width := 65
     height := 45
-    vector.DrawFilledRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), color.RGBA{R: 0, G: 0, B: 0, A: 100}, false)
-    vector.StrokeRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), float32(scale.Scale(1)), util.PremultiplyAlpha(color.RGBA{R: 0x27, G: 0x4e, B: 0xdc, A: 100}), false)
+    vector.DrawFilledRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), color.NRGBA{R: 0, G: 0, B: 0, A: 100}, false)
+    vector.StrokeRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), float32(scale.Scale(1)), color.NRGBA{R: 0x27, G: 0x4e, B: 0xdc, A: 100}, false)
     combat.Fonts.InfoFont.PrintOptions(screen, float64(x1 + 35), float64(y1 + 2), font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v", unit.Unit.GetName()))
 
     meleeImage, _ := combat.ImageCache.GetImage("compix.lbx", 61, 0)
@@ -3665,7 +3791,7 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
 
     combat.Fonts.InfoFont.PrintOptions(screen, float64(x1 + 14), float64(y1 + 37), font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, "Hits")
 
-    combat.DrawHealthBar(screen, x1 + 25, y1 + 40, unit)
+    combat.DrawHealthBar(screen, x1 + 25, y1 + 40, 255, unit)
 
     // draw experience badge
     badge := units.GetExperienceBadge(unit)
@@ -3683,13 +3809,13 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
 // mostly green if healthy (>66% health)
 // yellow if between 33% to 66% health
 // otherwise red
-func (combat *CombatScreen) DrawHealthBar(screen *ebiten.Image, x int, y int, unit *ArmyUnit){
-    highHealth := color.RGBA{R: 0, G: 0xff, B: 0, A: 0xff}
-    mediumHealth := color.RGBA{R: 0xff, G: 0xff, B: 0, A: 0xff}
-    lowHealth := color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
+func (combat *CombatScreen) DrawHealthBar(screen *ebiten.Image, x int, y int, alpha uint8, unit *ArmyUnit){
+    highHealth := color.NRGBA{R: 0, G: 0xff, B: 0, A: alpha}
+    mediumHealth := color.NRGBA{R: 0xff, G: 0xff, B: 0, A: alpha}
+    lowHealth := color.NRGBA{R: 0xff, G: 0, B: 0, A: alpha}
     healthWidth := 15
 
-    vector.StrokeLine(screen, float32(scale.Scale(x)), float32(scale.Scale(y)), float32(scale.Scale(x + healthWidth)), float32(scale.Scale(y)), float32(scale.Scale(1)), color.RGBA{R: 0, G: 0, B: 0, A: 0xff}, false)
+    vector.StrokeLine(screen, float32(scale.Scale(x)), float32(scale.Scale(y)), float32(scale.Scale(x + healthWidth)), float32(scale.Scale(y)), float32(scale.Scale(1)), color.NRGBA{R: 0, G: 0, B: 0, A: alpha}, false)
 
     healthPercent := float64(unit.GetHealth()) / float64(unit.GetMaxHealth())
     healthLength := float64(healthWidth) * healthPercent
@@ -4096,7 +4222,81 @@ func (combat *CombatScreen) ShowExtraHighlight(screen *ebiten.Image, unit *ArmyU
     drawQuad(float32(p1.X), float32(p1.Y), float32(p4.X), float32(p4.Y), float32(p4.X), float32(0), float32(p1.X), float32(0), color.RGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase + 30)})
 }
 
-func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
+func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
+
+    x1 := 2
+    y1 := 10
+    x2 := data.ScreenWidth - 2
+    y2 := data.ScreenHeight - 20
+
+    subScreen := screen.SubImage(image.Rect(scale.Scale(x1), scale.Scale(y1), scale.Scale(x2), scale.Scale(y2))).(*ebiten.Image)
+
+    var alpha uint8 = uint8(180 * combat.ShowInfoLevel / 100)
+
+    var fontOptions ebiten.DrawImageOptions
+    fontOptions.ColorScale.ScaleAlpha(float32(alpha) / 255)
+
+    vector.DrawFilledRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), color.NRGBA{R: 0xd7, G: 0xac, B: 0x5a, A: alpha}, false)
+    vector.StrokeRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2-x1)), float32(scale.Scale(y2-y1)), 2, color.NRGBA{R: 0, G: 0, B: 0, A: alpha}, true)
+
+    lineX := (x1 + x2) / 2
+    vector.StrokeLine(subScreen, float32(scale.Scale(lineX)), float32(scale.Scale(y1)), float32(scale.Scale(lineX)), float32(scale.Scale(y2)), 2, color.RGBA{R: 0, G: 0, B: 0, A: alpha}, false)
+
+    combat.Fonts.AttackingWizardFont.PrintOptions(
+        subScreen,
+        float64(x1 + 80),
+        float64(y1 + 10),
+        font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &fontOptions},
+        combat.Model.AttackingArmy.Player.GetWizard().Name,
+    )
+
+    defendX := lineX + 60
+    combat.Fonts.DefendingWizardFont.PrintOptions(
+        subScreen,
+        float64(defendX),
+        float64(y1 + 10),
+        font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &fontOptions},
+        combat.Model.DefendingArmy.Player.GetWizard().Name,
+    )
+
+    showUnits := func(startX int, army *Army) {
+        startY := y1 + 10 + 20
+        unitFont := combat.Fonts.HudFont
+        for i, unit := range army.units {
+
+            unitX := startX + (i % 3) * 49
+            unitY := startY + (i / 3) * unitFont.Height() * 5
+
+            unitFont.PrintOptions(subScreen, float64(unitX), float64(unitY), font.FontOptions{Scale: scale.ScaleAmount, Options: &fontOptions}, unit.Unit.GetName())
+            unitY += unitFont.Height()
+            unitFont.PrintOptions(subScreen, float64(unitX), float64(unitY), font.FontOptions{Scale: scale.ScaleAmount, Options: &fontOptions}, fmt.Sprintf("%v/%v HP", unit.GetHealth(), unit.GetMaxHealth()))
+            unitY += unitFont.Height()
+            banner := unit.Unit.GetBanner()
+            unitImage, err := combat.ImageCache.GetImageTransform(unit.Unit.GetLbxFile(), unit.Unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
+            if err == nil {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(unitX), float64(unitY))
+                options.ColorScale.ScaleAlpha(float32(alpha) / 255)
+                scale.DrawScaled(subScreen, unitImage, &options)
+
+                for _, enchantment := range unit.GetEnchantments() {
+                    util.DrawOutline(subScreen, &combat.ImageCache, unitImage, scale.ScaleGeom(options.GeoM), options.ColorScale, combat.Counter/8, enchantment.Color())
+                    break
+                }
+
+                combat.DrawHealthBar(subScreen, unitX + unitImage.Bounds().Dx() + 2, unitY + unitImage.Bounds().Dy() / 2, alpha, unit)
+                unitY += unitImage.Bounds().Dy() + 2
+            }
+
+        }
+    }
+
+    showUnits(x1 + 5, combat.Model.AttackingArmy)
+    showUnits(x1 + defendX - 57, combat.Model.DefendingArmy)
+
+}
+
+func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
     isVisible := functional.Memoize(combat.makeIsUnitVisibleFunc())
 
     animationIndex := combat.Counter / 8
@@ -4225,7 +4425,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                 path = combat.Model.SelectedUnit.CurrentPath
                 ok = true
             } else {
-                path, ok = combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY)
+                path, ok = combat.Model.FindPath(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl)
                 if ok {
                     path = path[1:]
                 }
@@ -4234,7 +4434,16 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             if ok {
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(0.8)
-                for i := 0; i < len(path); i++ {
+
+                moves := combat.Model.SelectedUnit.MovesLeft
+
+                lastX := combat.Model.SelectedUnit.X
+                lastY := combat.Model.SelectedUnit.Y
+
+                movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
+                showBad := false
+
+                for i := range path {
                     tileX, tileY := path[i].X, path[i].Y
 
                     tx, ty := tilePosition(float64(tileX), float64(tileY))
@@ -4242,14 +4451,21 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
                     // ty += float64(tile0.Bounds().Dy())/2
 
                     // show boots
-                    movementImage, _ := combat.ImageCache.GetImage("compix.lbx", 72, 0)
                     tx -= float64(movementImage.Bounds().Dx())/2
                     ty -= float64(movementImage.Bounds().Dy())/2
 
                     options.GeoM.Reset()
                     options.GeoM.Scale(combat.CameraScale, combat.CameraScale)
                     options.GeoM.Translate(tx, ty)
+
+                    if !showBad && moves.LessThanEqual(fraction.FromInt(0)) {
+                        showBad = true
+                        options.ColorScale.Scale(0.1, 0.1, 0.1, 1)
+                    }
+
                     scale.DrawScaled(screen, movementImage, &options)
+
+                    moves = moves.Subtract(pathCost(image.Pt(lastX, lastY), image.Pt(tileX, tileY)))
                 }
             }
         }
@@ -4551,6 +4767,25 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
 
     combat.UI.Draw(combat.UI, screen)
 
+    for _, indicator := range combat.DamageIndicators {
+        tx, ty := tilePosition(float64(indicator.X), float64(indicator.Y))
+        tx += float64(indicator.Offset)
+        ty -= 12
+        ty -= float64(indicator.Count) / 5
+        var options ebiten.DrawImageOptions
+        if indicator.Life < 10 {
+            options.ColorScale.ScaleAlpha(float32(indicator.Life) / 10)
+        }
+        if indicator.Damage > 8 {
+            options.ColorScale.Scale(1, 0.5, 0.5, 1)
+        } else if indicator.Damage > 3 {
+            options.ColorScale.Scale(1, 0.75, 0.75, 1)
+        } else {
+            options.ColorScale.Scale(1.5, 1.5, 1.5, 1)
+        }
+        combat.Fonts.InfoFont.PrintOptions(screen, tx, ty, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, Options: &options, DropShadow: true}, fmt.Sprintf("%d", indicator.Damage))
+    }
+
     if combat.Model.HighlightedUnit != nil && isVisible(combat.Model.HighlightedUnit) {
         combat.ShowUnitInfo(screen, combat.Model.HighlightedUnit)
     }
@@ -4569,5 +4804,9 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image){
             options.GeoM.Translate(projectile.X, projectile.Y)
             scale.DrawScaled(screen, frame, &options)
         }
+    }
+
+    if combat.ShowInfoLevel > 0 {
+        combat.ShowCombatInfo(screen)
     }
 }
