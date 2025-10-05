@@ -142,14 +142,13 @@ func makePlayerData(id int, game *gamelib.Game, player *playerlib.Player) Player
             return uint16(spell.Index)
         }, player.ResearchCandidateSpells.Spells...),
         CombatSkillLeft: uint16(player.RemainingCastingSkill),
+        CastingCostRemaining: uint16(max(0, player.ComputeEffectiveSpellCost(player.CastingSpell, true) - player.CastingSpellProgress)),
+        CastingCostOriginal: uint16(player.ComputeEffectiveSpellCost(player.CastingSpell, true)),
+        CastingSpellIndex: uint16(player.CastingSpell.Index),
     }
 
     /*
 type PlayerData struct {
-    CombatSkillLeft uint16
-    CastingCostRemaining uint16
-    CastingCostOriginal uint16
-    CastingSpellIndex uint16
     SkillLeft uint16
     NominalSkill uint16
     TaxRate uint16
