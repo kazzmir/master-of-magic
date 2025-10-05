@@ -235,6 +235,7 @@ type Gib struct {
 type DamageIndicator struct {
     X int
     Y int
+    Offset int
     Damage int // the damage to show
     Life int // how many more frames to show this indicator, counts down to 0
     Count int
@@ -632,8 +633,9 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        _, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
+        hurt, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
         combat.MakeGibs(unit, lost)
+        combat.AddDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -649,6 +651,7 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
 
     damage := func(unit *ArmyUnit) {
         fireDamage, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
+        combat.AddDamageIndicator(unit, fireDamage)
         combat.MakeGibs(unit, lost)
 
         combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
@@ -668,7 +671,8 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength 
     explodeImages := images[11:]
 
     damage := func(unit *ArmyUnit) {
-        combat.Model.ApplyImmolationDamage(unit, strength)
+        hurt := combat.Model.ApplyImmolationDamage(unit, strength)
+        combat.AddDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -682,7 +686,8 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Project
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        _, lost := ApplyDamage(unit, unit.ReduceInvulnerability(15), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
+        hurt, lost := ApplyDamage(unit, unit.ReduceInvulnerability(15), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
+        combat.AddDamageIndicator(unit, hurt)
         combat.MakeGibs(unit, lost)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -714,6 +719,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
             }
         }
 
+        combat.AddDamageIndicator(unit, damage)
         combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -728,7 +734,8 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, stren
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        _, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(15, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
+        hurt, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(15, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
+        combat.AddDamageIndicator(unit, hurt)
         combat.MakeGibs(unit, lost)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -745,6 +752,7 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projecti
 
     effect := func(unit *ArmyUnit) {
         combat.MakeGibs(unit, unit.TakeDamage(10, DamageNormal))
+        combat.AddDamageIndicator(unit, 10)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -776,7 +784,8 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
         Effect: func(unit *ArmyUnit) {
-            _, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+            hurt, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+            combat.AddDamageIndicator(unit, hurt)
             combat.MakeGibs(unit, lost)
             if unit.GetHealth() <= 0 {
                 combat.Model.KillUnit(unit)
@@ -813,11 +822,14 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Pro
         Effect: func(unit *ArmyUnit) {
 
             lost := 0
+            damage := 0
             // 10 separate attacks are different than a single 55-point attack due to defense
             for strength := range 10 {
-                _, more := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength + 1, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                hurt, more := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength + 1, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
                 lost += more
+                damage += hurt
             }
+            combat.AddDamageIndicator(unit, damage)
             combat.MakeGibs(unit, lost)
 
             if unit.GetHealth() <= 0 {
@@ -839,6 +851,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
         resistance := GetResistanceFor(unit, data.LifeMagic) - reduceResistance
         damage := rand.N(10) + 1 - resistance
         if damage > 0 {
+            combat.AddDamageIndicator(unit, damage)
             combat.MakeGibs(unit, unit.TakeDamage(damage, DamageUndead))
             if unitCaster != nil {
                 unitCaster.Heal(damage)
@@ -862,7 +875,8 @@ func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) *Proje
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        combat.Model.ApplyImmolationDamage(unit, 15)
+        hurt := combat.Model.ApplyImmolationDamage(unit, 15)
+        combat.AddDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1415,6 +1429,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
             }
         }
 
+        combat.AddDamageIndicator(unit, damage)
         combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -1450,6 +1465,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projec
             }
         }
 
+        combat.AddDamageIndicator(unit, damage)
         combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -1473,6 +1489,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Proje
             }
         }
 
+        combat.AddDamageIndicator(unit, damage)
         combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -1571,6 +1588,7 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
             }
         }
 
+        combat.AddDamageIndicator(unit, damage)
         combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -2567,13 +2585,20 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         appliedDamage, lost := ApplyDamage(target, damage, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
         combat.MakeGibs(target, lost)
 
+        totalDamage := appliedDamage
+
         log.Printf("attacker %v rolled %v ranged damage to defender %v, applied %v", attacker.Unit.GetName(), damage, target.Unit.GetName(), appliedDamage)
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
-            combat.Model.doTouchAttack(attacker, target, 0)
+            funcs := combat.Model.doTouchAttack(attacker, target, 0)
+            for _, f := range funcs {
+                totalDamage += f()
+            }
         }
 
-        combat.Model.ApplyImmolationDamage(defender, combat.Model.immolationDamage(attacker, defender))
+        totalDamage += combat.Model.ApplyImmolationDamage(defender, combat.Model.immolationDamage(attacker, defender))
+
+        combat.AddDamageIndicator(target, totalDamage)
 
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 
@@ -3252,9 +3277,11 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 }
 
 func (combat *CombatScreen) AddDamageIndicator(unit *ArmyUnit, damage int) {
+    offsetWidth := 8
     indicator := DamageIndicator{
         X: unit.X,
         Y: unit.Y,
+        Offset: rand.N(offsetWidth * 2 + 1) - offsetWidth,
         Damage: damage,
         Life: 50,
     }
@@ -4742,7 +4769,8 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
 
     for _, indicator := range combat.DamageIndicators {
         tx, ty := tilePosition(float64(indicator.X), float64(indicator.Y))
-        ty -= 5
+        tx += float64(indicator.Offset)
+        ty -= 12
         ty -= float64(indicator.Count) / 5
         var options ebiten.DrawImageOptions
         if indicator.Life < 10 {
