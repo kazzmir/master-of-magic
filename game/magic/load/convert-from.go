@@ -183,13 +183,11 @@ func makePlayerData(id int, game *gamelib.Game, player *playerlib.Player) Player
         RetortConjurer: boolToInt(player.Wizard.RetortEnabled(data.RetortConjurer)),
         RetortCharismatic: boolToInt(player.Wizard.RetortEnabled(data.RetortCharismatic)),
         RetortArtificer: boolToInt(player.Wizard.RetortEnabled(data.RetortArtificer)),
+        // HeroData: []PlayerHeroData
     }
 
     /*
 type PlayerData struct {
-
-    HeroData []PlayerHeroData
-
     VaultItems []int16
     Diplomacy DiplomacyData
 

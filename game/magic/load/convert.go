@@ -5,6 +5,7 @@ import (
     "image"
     "fmt"
     "math/rand/v2"
+    "log"
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -880,6 +881,18 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         MyrrorFog: myrrorFog,
     }
 
+    for _, heroData := range playerData.HeroData {
+        if heroData.Unit != 0 {
+            log.Printf("Player %v has hero %v %v", playerIndex, heroData.Unit, heroData.Name)
+            /*
+            Unit int16
+            Name string
+            Items []int16
+            ItemSlot []int16
+            */
+        }
+    }
+
     player.Cities = saveGame.convertCities(&player, playerIndex, wizards, game)
     player.UpdateResearchCandidates()
     player.UpdateFogVisibility()
@@ -965,6 +978,13 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
         _, ok := game.ArtifactPool[artifact.Name]
         if ok {
             delete(game.ArtifactPool, artifact.Name)
+        }
+    }
+
+    log.Printf("Units:")
+    for i, unit := range saveGame.Units {
+        if unit.HeroSlot > 0 {
+            log.Printf("%v: hero %+v", i, unit)
         }
     }
 

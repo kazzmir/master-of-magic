@@ -106,7 +106,7 @@ func compareSaveFile(path string) error {
 
     saveGame, err := load.LoadSaveGame(reader)
     if err != nil {
-        return err
+        return fmt.Errorf("Unable to load saved game: %v", err)
     }
 
     reader2, err := os.Open(path)

@@ -1749,17 +1749,19 @@ type UnitData struct {
     Owner int8
     MovesMax int8
     TypeIndex uint8
-    Hero int8
+    HeroSlot int8
     Finished int8
     Moves int8
     DestinationX int8
     DestinationY int8
     Status int8
     Level int8
+    Unknown2 uint8
     Experience int16
     MoveFailed int8
     Damage int8
     DrawPriority int8
+    Unknown3 uint8
     InTower int16
     SightRange int8
     Mutations int8
@@ -1768,7 +1770,7 @@ type UnitData struct {
     RoadX int8
     RoadY int8
 
-    Unknown1 []byte // 3 bytes of unknown data
+    Unknown1 uint8
 }
 
 func loadUnits(reader io.Reader) ([]UnitData, error) {
@@ -1814,7 +1816,7 @@ func loadUnits(reader io.Reader) ([]UnitData, error) {
             return nil, err
         }
 
-        data.Hero, err = lbx.ReadN[int8](unitReader)
+        data.HeroSlot, err = lbx.ReadN[int8](unitReader)
         if err != nil {
             return nil, err
         }
@@ -1849,6 +1851,11 @@ func loadUnits(reader io.Reader) ([]UnitData, error) {
             return nil, err
         }
 
+        data.Unknown2, err = lbx.ReadN[uint8](unitReader) // skip 1 byte
+        if err != nil {
+            return nil, err
+        }
+
         data.Experience, err = lbx.ReadN[int16](unitReader)
         if err != nil {
             return nil, err
@@ -1865,6 +1872,11 @@ func loadUnits(reader io.Reader) ([]UnitData, error) {
         }
 
         data.DrawPriority, err = lbx.ReadN[int8](unitReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Unknown3, err = lbx.ReadByte(unitReader) // skip 1 byte
         if err != nil {
             return nil, err
         }
@@ -1904,8 +1916,7 @@ func loadUnits(reader io.Reader) ([]UnitData, error) {
             return nil, err
         }
 
-        data.Unknown1 = make([]byte, 3)
-        _, err = io.ReadFull(unitReader, data.Unknown1)
+        data.Unknown1, err = lbx.ReadN[uint8](unitReader)
         if err != nil {
             return nil, err
         }
@@ -2336,7 +2347,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
 
     saveGame.Units, err = loadUnits(reader)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("unable to load units: %v", err)
     }
 
     saveGame.ArcanusTerrainSpecials, err = loadMapData[uint8](reader)

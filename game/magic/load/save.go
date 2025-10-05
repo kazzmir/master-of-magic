@@ -1119,7 +1119,7 @@ func writeUnit(writer io.Writer, data *UnitData) error {
         return err
     }
 
-    err = writeN[int8](writer, data.Hero)
+    err = writeN[int8](writer, data.HeroSlot)
     if err != nil {
         return err
     }
@@ -1154,6 +1154,11 @@ func writeUnit(writer io.Writer, data *UnitData) error {
         return err
     }
 
+    err = writeN[uint8](writer, data.Unknown2)
+    if err != nil {
+        return err
+    }
+
     err = writeN[int16](writer, data.Experience)
     if err != nil {
         return err
@@ -1170,6 +1175,11 @@ func writeUnit(writer io.Writer, data *UnitData) error {
     }
 
     err = writeN[int8](writer, data.DrawPriority)
+    if err != nil {
+        return err
+    }
+
+    err = writeN[uint8](writer, data.Unknown3)
     if err != nil {
         return err
     }
@@ -1209,7 +1219,7 @@ func writeUnit(writer io.Writer, data *UnitData) error {
         return err
     }
 
-    err = writeSlice(writer, data.Unknown1)
+    err = writeN(writer, data.Unknown1)
     if err != nil {
         return err
     }
