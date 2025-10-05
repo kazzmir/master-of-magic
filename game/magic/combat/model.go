@@ -3193,8 +3193,8 @@ func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
     return alive
 }
 
-func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit) ([]func(), bool) {
-    damage := []func(){}
+func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit) ([]func() int , bool) {
+    damage := []func() int {}
     hit := false
 
     if attacker.HasAbility(data.AbilityFireBreath) {
@@ -3203,7 +3203,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
 
         // FIXME: the tohit value here should not include the Holy Weapon bonus
 
-        damage = append(damage, func(){
+        damage = append(damage, func() int {
             fireDamage := 0
             lost := 0
             // one breath attack per figure
@@ -3217,6 +3217,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
             model.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
             // damage += fireDamage
             model.Observer.FireBreathAttack(attacker, defender, fireDamage)
+            return fireDamage
         })
     }
 
@@ -3224,7 +3225,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
         strength := int(attacker.GetAbilityValue(data.AbilityLightningBreath))
         hit = true
 
-        damage = append(damage, func(){
+        damage = append(damage, func() int {
             lightningDamage := 0
             lost := 0
             for range attacker.Figures() {
@@ -3237,6 +3238,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
             model.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
             // damage += lightningDamage
             model.Observer.LightningBreathAttack(attacker, defender, lightningDamage)
+            return lightningDamage
         })
     }
 
@@ -3330,8 +3332,8 @@ func (model *CombatModel) immolationDamage(attacker *ArmyUnit, defender *ArmyUni
     return 0
 }
 
-func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, fearFigure int) []func() {
-    damageFuncs := []func(){}
+func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, fearFigure int) []func() int {
+    damageFuncs := []func() int {}
 
     if attacker.HasAbility(data.AbilityPoisonTouch) && !defender.HasAbility(data.AbilityPoisonImmunity) {
         damage := 0
@@ -3346,10 +3348,12 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
             damageType = DamageUndead
         }
 
-        damageFuncs = append(damageFuncs, func(){
+        damageFuncs = append(damageFuncs, func() int {
             model.MakeGibs(defender, defender.TakeDamage(damage, damageType))
             model.Observer.PoisonTouchAttack(attacker, defender, damage)
             model.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.GetHealth()))
+
+            return damage
         })
     }
 
@@ -3371,12 +3375,13 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
                 // cannot steal more life than the target has
                 damage = min(damage, defender.GetHealth())
 
-                damageFuncs = append(damageFuncs, func(){
+                damageFuncs = append(damageFuncs, func() int {
                     model.MakeGibs(defender, defender.TakeDamage(damage, DamageUndead))
                     attacker.Heal(damage)
                     model.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.GetHealth()))
 
                     model.Observer.LifeStealTouchAttack(attacker, defender, damage)
+                    return damage
                 })
             }
         }
@@ -3397,12 +3402,13 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
                 }
             }
 
-            damageFuncs = append(damageFuncs, func(){
+            damageFuncs = append(damageFuncs, func() int {
                 model.MakeGibs(defender, defender.TakeDamage(damage, DamageIrreversable))
 
                 model.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.StoningTouchAttack(attacker, defender, damage)
+                return damage
             })
         }
     }
@@ -3436,11 +3442,12 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
                 }
             }
 
-            damageFuncs = append(damageFuncs, func(){
+            damageFuncs = append(damageFuncs, func() int {
                 model.MakeGibs(defender, defender.TakeDamage(damage, DamageIrreversable))
                 model.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DispelEvilTouchAttack(attacker, defender, damage)
+                return damage
             })
         }
     }
@@ -3457,12 +3464,13 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
                 }
             }
 
-            damageFuncs = append(damageFuncs, func(){
+            damageFuncs = append(damageFuncs, func() int {
                 model.MakeGibs(defender, defender.TakeDamage(damage, DamageNormal))
 
                 model.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DeathTouchAttack(attacker, defender, damage)
+                return damage
             })
         }
     }
@@ -3478,11 +3486,12 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
                 }
             }
 
-            damageFuncs = append(damageFuncs, func(){
+            damageFuncs = append(damageFuncs, func() int {
                 model.MakeGibs(defender, defender.TakeDamage(damage, DamageIrreversable))
                 model.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DestructionAttack(attacker, defender, damage)
+                return damage
             })
         }
     }
@@ -3511,15 +3520,18 @@ func (model *CombatModel) ComputeWallDefense(attacker *ArmyUnit, defender *ArmyU
     return 0
 }
 
-func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDamage int) {
+func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDamage int) int {
     if immolationDamage > 0 {
         hurt, lost := ApplyAreaDamage(defender, immolationDamage, units.DamageImmolation, 0)
         model.MakeGibs(defender, lost)
         model.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.GetHealth()))
+        return hurt
     }
+    
+    return 0
 }
 
-func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUnit, damage int) {
+func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUnit, damage int) int {
     modifiers := DamageModifiers{
         WallDefense: model.ComputeWallDefense(attacker, defender),
         ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
@@ -3536,11 +3548,13 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
     hurt, lost := ApplyDamage(defender, damage, units.DamageMeleePhysical, attacker.GetDamageSource(), modifiers)
     model.MakeGibs(defender, lost)
     model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.GetHealth()))
+    return hurt
 }
 
-func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) {
-    model.ApplyImmolationDamage(defender, 5)
+func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) int {
+    hurt := model.ApplyImmolationDamage(defender, 5)
     model.Observer.WallOfFire(defender, 5)
+    return hurt
 }
 
 func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
@@ -3726,8 +3740,9 @@ func (model *CombatModel) MakeGibs(defender *ArmyUnit, lost int) {
 }
 
 /* attacker is performing a physical melee attack against defender
+ * returns total damage done by attacker and total damage done by defender
  */
-func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
+func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (int, int){
     // for each figure in attacker, choose a random number from 1-100, if lower than the ToHit percent then
     // add 1 damage point. do this random roll for however much the melee attack power is
 
@@ -3735,6 +3750,9 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     attackerFear := 0
     // number of defending units in fear
     defenderFear := 0
+
+    totalAttackerDamage := 0
+    totalDefenderDamage := 0
 
     doRound := func (round int) {
         switch round {
@@ -3746,7 +3764,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
 
                 immolationDamage := 0
                 throwDamage := 0
-                damageFuncs := []func(){}
+                damageFuncs := []func() int{}
 
                 for range attacks {
                     damage, throwHit := model.doThrowAttack(attacker, defender)
@@ -3784,23 +3802,27 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                         EldritchWeapon: attacker.HasEnchantment(data.UnitEnchantmentEldritchWeapon),
                     })
 
+                    totalAttackerDamage += damage
+
                     model.MakeGibs(defender, lost)
 
                     model.Observer.ThrowAttack(attacker, defender, damage)
                     model.AddLogEvent(fmt.Sprintf("%v throws %v at %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.GetHealth()))
                 }
 
-                model.ApplyImmolationDamage(defender, immolationDamage)
+                totalAttackerDamage += model.ApplyImmolationDamage(defender, immolationDamage)
                 for _, f := range damageFuncs {
-                    f()
+                    totalAttackerDamage += f()
                 }
+                totalAttackerDamage += gazeDamage
+                totalAttackerDamage += gazeIrreversableDamage
 
                 model.MakeGibs(defender, defender.TakeDamage(gazeDamage, DamageNormal))
                 model.MakeGibs(defender, defender.TakeDamage(gazeIrreversableDamage, DamageIrreversable))
 
             case 1:
                 immolationDamage := 0
-                damageFuncs := []func(){}
+                damageFuncs := []func() int {}
 
                 gazeDamage, gazeIrreversableDamage, hit := model.doGazeAttack(defender, attacker)
                 if hit {
@@ -3810,10 +3832,13 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                     }
                 }
 
-                model.ApplyImmolationDamage(attacker, immolationDamage)
+                totalDefenderDamage += model.ApplyImmolationDamage(attacker, immolationDamage)
                 for _, f := range damageFuncs {
-                    f()
+                    totalDefenderDamage += f()
                 }
+                totalDefenderDamage += gazeDamage
+                totalDefenderDamage += gazeIrreversableDamage
+
                 model.MakeGibs(attacker, attacker.TakeDamage(gazeDamage, DamageNormal))
                 model.MakeGibs(attacker, attacker.TakeDamage(gazeIrreversableDamage, DamageIrreversable))
 
@@ -3824,11 +3849,11 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 // for this to be false, either both are inside the wall of fire, or both are outside.
                 if model.InsideWallOfFire(defender.X, defender.Y) != model.InsideWallOfFire(attacker.X, attacker.Y) {
                     if !attacker.IsFlying() {
-                        model.ApplyWallOfFireDamage(attacker)
+                        totalDefenderDamage += model.ApplyWallOfFireDamage(attacker)
                     }
 
                     if !defender.IsFlying() {
-                        model.ApplyWallOfFireDamage(defender)
+                        totalAttackerDamage += model.ApplyWallOfFireDamage(defender)
                     }
                 }
 
@@ -3850,7 +3875,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
 
                     immolationDamage := 0
 
-                    damageFuncs := []func(){}
+                    damageFuncs := []func() int {}
 
                     if hit {
                         model.Observer.MeleeAttack(attacker, defender, attackerDamage)
@@ -3859,10 +3884,10 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                             damageFuncs = append(damageFuncs, model.doTouchAttack(attacker, defender, attackerFear)...)
                         }
 
-                        model.ApplyMeleeDamage(attacker, defender, attackerDamage)
-                        model.ApplyImmolationDamage(defender, immolationDamage)
+                        totalAttackerDamage += model.ApplyMeleeDamage(attacker, defender, attackerDamage)
+                        totalAttackerDamage += model.ApplyImmolationDamage(defender, immolationDamage)
                         for _, f := range damageFuncs {
-                            f()
+                            totalAttackerDamage += f()
                         }
                     }
                 }
@@ -3895,7 +3920,8 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                 defenderImmolationDamage := 0
                 defenderMeleeDamage := 0
 
-                damageFuncs := []func(){}
+                var attackerDamageFuncs []func() int
+                var defenderDamageFuncs []func() int
 
                 // attacker has not melee attacked yet, so let them do it now, or they have haste so they can attack again
                 for range attacks {
@@ -3911,7 +3937,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                         defenderMeleeDamage += attackerDamage
                         defenderImmolationDamage += model.immolationDamage(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                            damageFuncs = append(damageFuncs, model.doTouchAttack(attacker, defender, attackerFear)...)
+                            attackerDamageFuncs = append(attackerDamageFuncs, model.doTouchAttack(attacker, defender, attackerFear)...)
                         }
                     }
                 }
@@ -3936,20 +3962,24 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
                             attackerMeleeDamage += defenderDamage
                             attackerImmolationDamage += model.immolationDamage(defender, attacker)
                             if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
-                                damageFuncs = append(damageFuncs, model.doTouchAttack(defender, attacker, defenderFear)...)
+                                defenderDamageFuncs = append(defenderDamageFuncs, model.doTouchAttack(defender, attacker, defenderFear)...)
                             }
                         }
                     }
                 }
 
-                model.ApplyImmolationDamage(defender, defenderImmolationDamage)
-                model.ApplyMeleeDamage(attacker, defender, defenderMeleeDamage)
+                totalAttackerDamage += model.ApplyImmolationDamage(defender, defenderImmolationDamage)
+                totalAttackerDamage += model.ApplyMeleeDamage(attacker, defender, defenderMeleeDamage)
 
-                model.ApplyImmolationDamage(attacker, attackerImmolationDamage)
-                model.ApplyMeleeDamage(defender, attacker, attackerMeleeDamage)
+                totalDefenderDamage += model.ApplyImmolationDamage(attacker, attackerImmolationDamage)
+                totalDefenderDamage += model.ApplyMeleeDamage(defender, attacker, attackerMeleeDamage)
 
-                for _, f := range damageFuncs {
-                    f()
+                for _, f := range attackerDamageFuncs {
+                    totalAttackerDamage += f()
+                }
+
+                for _, f := range defenderDamageFuncs {
+                    totalDefenderDamage += f()
                 }
             }
     }
@@ -3977,6 +4007,8 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     }
 
     defender.Attacked += 1
+
+    return totalAttackerDamage, totalDefenderDamage
 }
 
 func (model *CombatModel) KillUnit(unit *ArmyUnit){

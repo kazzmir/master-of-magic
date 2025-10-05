@@ -909,6 +909,7 @@ func makeScenario12(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createWarlockArmyN(defendingPlayer, 2)
+    defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatWyrm, 1, 1, data.PlaneArcanus, defendingPlayer.Wizard.Banner, defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
     /*
