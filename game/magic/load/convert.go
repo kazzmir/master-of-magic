@@ -1085,6 +1085,9 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
         wizards = append(wizards, saveGame.convertWizard(int(playerIndex)))
     }
 
+    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
+    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
+
     for playerIndex := range saveGame.NumPlayers {
         player := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
         game.Players = append(game.Players, player)
@@ -1098,8 +1101,6 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // saveGame.Units / saveGame.NumUnits
     // saveGame.Events
 
-    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
-    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
     // FIXME: game.RandomEvents
     // FIXME: game.RoadWorkArcanus
     // FIXME: game.RoadWorkMyrror

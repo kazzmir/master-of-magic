@@ -6026,6 +6026,11 @@ func (game *Game) ComputeMaximumPopulation(x int, y int, plane data.Plane) int {
     // find catchment area of x, y
     // for each square, compute food production
     // maximum pop is food production
+    maybeCity, _ := game.FindCity(x, y, plane)
+    if maybeCity != nil {
+        return maybeCity.MaximumCitySize()
+    }
+
     mapUse := game.GetMap(plane)
     catchment := mapUse.GetCatchmentArea(x, y)
 
