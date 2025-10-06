@@ -96,7 +96,7 @@ func TestUnitHealth(test *testing.T) {
 }
 
 type TestObserver struct {
-    Melee func(attacker *ArmyUnit, defender *ArmyUnit, damageRoll int)
+    Melee func(attacker *ArmyUnit, defender *ArmyUnit, damageRoll []int)
     Throw func(attacker *ArmyUnit, defender *ArmyUnit, defenderDamage int)
     PoisonTouch func(attacker *ArmyUnit, defender *ArmyUnit, damage int)
     Fear func(attacker *ArmyUnit, defender *ArmyUnit, fear int)
@@ -147,7 +147,7 @@ func (observer *TestObserver) LightningBreathAttack(attacker *ArmyUnit, defender
 func (observer *TestObserver) ImmolationAttack(attacker *ArmyUnit, defender *ArmyUnit, damage int){
 }
 
-func (observer *TestObserver) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit, damageRoll int){
+func (observer *TestObserver) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit, damageRoll []int){
     if observer.Melee != nil {
         observer.Melee(attacker, defender, damageRoll)
     }
@@ -194,7 +194,7 @@ func TestBasicMelee(test *testing.T){
     defenderMelee := false
 
     observer := &TestObserver{
-        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
+        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll []int){
             if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee = true
             } else if defendingArmy.units[0] == meleeAttacker {
@@ -243,7 +243,7 @@ func TestAttackerHaste(test *testing.T){
     defenderMelee := 0
 
     observer := &TestObserver{
-        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
+        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll []int){
             if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee += 1
             } else if defendingArmy.units[0] == meleeAttacker {
@@ -300,7 +300,7 @@ func TestFirstStrike(test *testing.T){
     defenderMelee := 0
 
     observer := &TestObserver{
-        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
+        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll []int){
             if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee += 1
             } else if defendingArmy.units[0] == meleeAttacker {
@@ -360,7 +360,7 @@ func TestFirstStrikeNegate(test *testing.T){
     defenderMelee := 0
 
     observer := &TestObserver{
-        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
+        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll []int){
             if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee += 1
             } else if defendingArmy.units[0] == meleeAttacker {
@@ -423,7 +423,7 @@ func TestThrowAttack(test *testing.T){
                 attackerThrow += 1
             }
         },
-        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
+        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll []int){
             if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee += 1
             } else if defendingArmy.units[0] == meleeAttacker {
@@ -500,7 +500,7 @@ func TestThrownTouchAttack(test *testing.T){
                 attackerPoison += 1
             }
         },
-        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
+        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll []int){
             if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee += 1
             } else if defendingArmy.units[0] == meleeAttacker {
@@ -566,7 +566,7 @@ func TestFear(test *testing.T){
     defenderMelee := 0
 
     observer := &TestObserver{
-        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll int){
+        Melee: func(meleeAttacker *ArmyUnit, meleeDefender *ArmyUnit, damageRoll []int){
             if attackingArmy.units[0] == meleeAttacker {
                 attackerMelee += 1
             } else if defendingArmy.units[0] == meleeAttacker {

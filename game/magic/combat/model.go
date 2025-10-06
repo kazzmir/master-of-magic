@@ -1765,7 +1765,7 @@ func ApplyAreaDamage(unit UnitDamage, attackStrength int, damageType units.Damag
 // apply damage to lead figure, and if it dies then keep applying remaining damage to the next figure
 // FIXME: its possible that the damage can be passed to ComputeRoll() to determine how much actual damage is done
 // returns damage taken and the number of visible figures lost
-func ApplyDamage(unit UnitDamage, damage int, damageType units.Damage, source DamageSource, modifiers DamageModifiers) (int, int) {
+func ApplyDamage(unit UnitDamage, damageRolls []int, damageType units.Damage, source DamageSource, modifiers DamageModifiers) (int, int) {
     isMagic := damageType == units.DamageRangedMagical || damageType == units.DamageFire || damageType == units.DamageCold
     if isMagic && unit.HasAbility(data.AbilityMagicImmunity) {
         return 0, 0
@@ -1773,23 +1773,30 @@ func ApplyDamage(unit UnitDamage, damage int, damageType units.Damage, source Da
 
     taken := 0
     lost := 0
-    for damage > 0 && unit.GetHealth() > 0 {
-        // compute defense, apply damage to lead figure. if lead figure dies, apply damage to next figure
-        defense := ComputeDefense(unit, damageType, source, modifiers)
-        damage -= defense
+    for _, damage := range damageRolls {
+        if unit.GetHealth() <= 0 {
+            break
+        }
 
-        if damage > 0 {
-            health_per_figure := unit.GetMaxHealth() / unit.GetCount()
-            healthLeft := unit.GetHealth() % unit.Figures()
-            if healthLeft == 0 {
-                healthLeft = health_per_figure
+        for damage > 0 && unit.GetHealth() > 0 {
+            // compute defense, apply damage to lead figure. if lead figure dies, apply damage to next figure
+            defense := ComputeDefense(unit, damageType, source, modifiers)
+            damage -= defense
+
+            if damage > 0 {
+                // log.Printf("Applying %v damage to %v. Max health %v, count %v, figures %v", damage, unit, unit.GetMaxHealth(), unit.GetCount(), unit.Figures())
+                health_per_figure := unit.GetMaxHealth() / unit.GetCount()
+                healthLeft := unit.GetHealth() % unit.Figures()
+                if healthLeft == 0 {
+                    healthLeft = health_per_figure
+                }
+
+                take := min(healthLeft, damage)
+                lost += unit.TakeDamage(take, modifiers.DamageType)
+                damage -= take
+
+                taken += take
             }
-
-            take := min(healthLeft, damage)
-            lost += unit.TakeDamage(take, modifiers.DamageType)
-            damage -= take
-
-            taken += take
         }
     }
 
@@ -1899,13 +1906,14 @@ func (unit *ArmyUnit) ComputeRangeDamage(defender *ArmyUnit, tileDistance int) i
     return defender.ReduceInvulnerability(ComputeRoll(unit.GetRangedAttackPower(), toHit))
 }
 
-func (unit *ArmyUnit) ComputeMeleeDamage(defender *ArmyUnit, fearFigure int, counterAttack bool) (int, bool) {
+func (unit *ArmyUnit) ComputeMeleeDamage(defender *ArmyUnit, fearFigure int, counterAttack bool) ([]int, bool) {
 
     if unit.GetMeleeAttackPower() == 0 {
-        return 0, false
+        return nil, false
     }
 
-    damage := 0
+    var rolls []int
+
     hit := false
     for range unit.Figures() - fearFigure {
         // even if all figures fail to cause damage, it still counts as a hit for touch purposes
@@ -1916,10 +1924,10 @@ func (unit *ArmyUnit) ComputeMeleeDamage(defender *ArmyUnit, fearFigure int, cou
             // counter attack to-hit might be penalized
             toHit = unit.GetCounterAttackToHit(defender)
         }
-        damage += defender.ReduceInvulnerability(ComputeRoll(unit.GetMeleeAttackPower(), toHit))
+        rolls = append(rolls, ComputeRoll(unit.GetMeleeAttackPower(), toHit))
     }
 
-    return damage, hit
+    return rolls, hit
 }
 
 // return how many units should become afraid
@@ -3209,7 +3217,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
             // one breath attack per figure
             for range attacker.Figures() {
                 attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee(defender))
-                moreDamage, moreLost := ApplyDamage(defender, defender.ReduceInvulnerability(attackerDamage), units.DamageFire, attacker.GetDamageSource(), DamageModifiers{Magic: data.ChaosMagic})
+                moreDamage, moreLost := ApplyDamage(defender, []int{attackerDamage}, units.DamageFire, attacker.GetDamageSource(), DamageModifiers{Magic: data.ChaosMagic})
                 fireDamage += moreDamage
                 lost += moreLost
             }
@@ -3230,7 +3238,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
             lost := 0
             for range attacker.Figures() {
                 attackerDamage := ComputeRoll(strength, attacker.GetToHitMelee(defender))
-                moreLightningDamage, mostLost := ApplyDamage(defender, defender.ReduceInvulnerability(attackerDamage), units.DamageRangedMagical, attacker.GetDamageSource(), DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                moreLightningDamage, mostLost := ApplyDamage(defender, []int{attackerDamage}, units.DamageRangedMagical, attacker.GetDamageSource(), DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
                 lightningDamage += moreLightningDamage
                 lost += mostLost
             }
@@ -3531,7 +3539,7 @@ func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDa
     return 0
 }
 
-func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUnit, damage int) int {
+func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUnit, damageRolls []int) int {
     modifiers := DamageModifiers{
         WallDefense: model.ComputeWallDefense(attacker, defender),
         ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
@@ -3545,9 +3553,13 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
         modifiers.DamageType = DamageUndead
     }
 
-    hurt, lost := ApplyDamage(defender, damage, units.DamageMeleePhysical, attacker.GetDamageSource(), modifiers)
+    for i := range damageRolls {
+        damageRolls[i] = defender.ReduceInvulnerability(damageRolls[i])
+    }
+
+    hurt, lost := ApplyDamage(defender, damageRolls, units.DamageMeleePhysical, attacker.GetDamageSource(), modifiers)
     model.MakeGibs(defender, lost)
-    model.AddLogEvent(fmt.Sprintf("%v damage roll %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), hurt, defender.GetHealth()))
+    model.AddLogEvent(fmt.Sprintf("%v damage rolls %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damageRolls, defender.Unit.GetName(), hurt, defender.GetHealth()))
     return hurt
 }
 
@@ -3796,7 +3808,8 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
                 }
 
                 if throwDamage > 0 {
-                    damage, lost := ApplyDamage(defender, throwDamage, units.DamageThrown, attacker.GetDamageSource(), DamageModifiers{
+                    // FIXME: should each throw be separate?
+                    damage, lost := ApplyDamage(defender, []int{throwDamage}, units.DamageThrown, attacker.GetDamageSource(), DamageModifiers{
                         ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
                         NegateWeaponImmunity: attacker.CanNegateWeaponImmunity(),
                         EldritchWeapon: attacker.HasEnchantment(data.UnitEnchantmentEldritchWeapon),
@@ -3865,12 +3878,16 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
                 }
             case 4:
                 if attacker.HasAbility(data.AbilityFirstStrike) && !defender.HasAbility(data.AbilityNegateFirstStrike) {
-                    attackerDamage, hit := attacker.ComputeMeleeDamage(defender, attackerFear, false)
+                    attackerDamageRolls, hit := attacker.ComputeMeleeDamage(defender, attackerFear, false)
 
                     // asleep units take full attack power as damage
                     if defender.IsAsleep() {
                         hit = true
-                        attackerDamage = attacker.GetMeleeAttackPower() * max(0, attacker.Figures() - attackerFear)
+                        var newRolls []int
+                        for range attackerDamageRolls {
+                            newRolls = append(newRolls, attacker.GetMeleeAttackPower())
+                        }
+                        attackerDamageRolls = newRolls
                     }
 
                     immolationDamage := 0
@@ -3878,13 +3895,13 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
                     damageFuncs := []func() int {}
 
                     if hit {
-                        model.Observer.MeleeAttack(attacker, defender, attackerDamage)
+                        model.Observer.MeleeAttack(attacker, defender, attackerDamageRolls)
                         immolationDamage += model.immolationDamage(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
                             damageFuncs = append(damageFuncs, model.doTouchAttack(attacker, defender, attackerFear)...)
                         }
 
-                        totalAttackerDamage += model.ApplyMeleeDamage(attacker, defender, attackerDamage)
+                        totalAttackerDamage += model.ApplyMeleeDamage(attacker, defender, attackerDamageRolls)
                         totalAttackerDamage += model.ApplyImmolationDamage(defender, immolationDamage)
                         for _, f := range damageFuncs {
                             totalAttackerDamage += f()
@@ -3918,7 +3935,8 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
                 }
 
                 defenderImmolationDamage := 0
-                defenderMeleeDamage := 0
+                var defenderDamageRolls []int
+                var attackerDamageRolls []int
 
                 var attackerDamageFuncs []func() int
                 var defenderDamageFuncs []func() int
@@ -3929,12 +3947,17 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
 
                     if defender.IsAsleep() {
                         hit = true
-                        attackerDamage = attacker.GetMeleeAttackPower() * max(0, attacker.Figures() - attackerFear)
+                        var newRolls []int
+                        for range attackerDamage {
+                            newRolls = append(newRolls, attacker.GetMeleeAttackPower())
+                        }
+                        attackerDamage = newRolls
                     }
+
+                    attackerDamageRolls = append(attackerDamageRolls, attackerDamage...)
 
                     if hit {
                         model.Observer.MeleeAttack(attacker, defender, attackerDamage)
-                        defenderMeleeDamage += attackerDamage
                         defenderImmolationDamage += model.immolationDamage(attacker, defender)
                         if attacker.Unit.CanTouchAttack(units.DamageMeleePhysical) {
                             attackerDamageFuncs = append(attackerDamageFuncs, model.doTouchAttack(attacker, defender, attackerFear)...)
@@ -3948,7 +3971,6 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
                 }
 
                 attackerImmolationDamage := 0
-                attackerMeleeDamage := 0
 
                 if !defender.IsAsleep() {
                     // defender does counter-attack
@@ -3957,9 +3979,10 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
 
                         // attacker can't possibly be asleep, so no need to check here
 
+                        defenderDamageRolls = append(defenderDamageRolls, defenderDamage...)
+
                         if hit {
                             model.Observer.MeleeAttack(defender, attacker, defenderDamage)
-                            attackerMeleeDamage += defenderDamage
                             attackerImmolationDamage += model.immolationDamage(defender, attacker)
                             if defender.Unit.CanTouchAttack(units.DamageMeleePhysical) {
                                 defenderDamageFuncs = append(defenderDamageFuncs, model.doTouchAttack(defender, attacker, defenderFear)...)
@@ -3969,10 +3992,10 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
                 }
 
                 totalAttackerDamage += model.ApplyImmolationDamage(defender, defenderImmolationDamage)
-                totalAttackerDamage += model.ApplyMeleeDamage(attacker, defender, defenderMeleeDamage)
+                totalAttackerDamage += model.ApplyMeleeDamage(attacker, defender, attackerDamageRolls)
 
                 totalDefenderDamage += model.ApplyImmolationDamage(attacker, attackerImmolationDamage)
-                totalDefenderDamage += model.ApplyMeleeDamage(defender, attacker, attackerMeleeDamage)
+                totalDefenderDamage += model.ApplyMeleeDamage(defender, attacker, defenderDamageRolls)
 
                 for _, f := range attackerDamageFuncs {
                     totalAttackerDamage += f()
