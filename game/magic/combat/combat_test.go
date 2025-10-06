@@ -212,6 +212,49 @@ func TestBasicMelee(test *testing.T){
     }
 }
 
+// attacker is multi-figure so should do multiple damage rolls
+// multiple small damage rolls that are easily blockable should result in 0 damage
+func TestMeleeMultiFigure(test *testing.T){
+    defendingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    attackingArmy := &Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    defender := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attacker := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+
+    // should easily block all 1 damage rolls
+    defender.Unit.Defense = 100
+
+    defendingArmy.AddUnit(defender)
+    attackingArmy.AddUnit(attacker)
+
+    combat := &CombatModel{
+        SelectedUnit: nil,
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Turn: TeamDefender,
+        DefendingArmy: defendingArmy,
+        AttackingArmy: attackingArmy,
+    }
+
+    combat.Initialize(spellbook.Spells{}, 0, 0)
+
+    // since each roll does 1 damage, and defender has 100% block, defender should take 0 damage
+    // if instead the damage was added up into one number then the defender would have to block 2000 points of damage
+    var rolls []int
+    for range 2000 {
+        rolls = append(rolls, 1) // always roll 1
+    }
+
+    hurt, _ := ApplyDamage(defendingArmy.units[0], rolls, units.DamageMeleePhysical, DamageSourceNormal, DamageModifiers{})
+    if hurt > 0 {
+        test.Errorf("Error: defender should have taken 0 damage, got %d", hurt)
+    }
+}
+
 func TestAttackerHaste(test *testing.T){
     defendingArmy := &Army{
         Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
