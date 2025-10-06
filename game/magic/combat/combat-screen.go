@@ -633,7 +633,7 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        hurt, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
+        hurt, lost := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
         combat.MakeGibs(unit, lost)
         combat.AddDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
@@ -650,7 +650,7 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        fireDamage, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
+        fireDamage, lost := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
         combat.AddDamageIndicator(unit, fireDamage)
         combat.MakeGibs(unit, lost)
 
@@ -686,7 +686,7 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Project
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        hurt, lost := ApplyDamage(unit, unit.ReduceInvulnerability(15), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
+        hurt, lost := ApplyDamage(unit, []int{15}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
         combat.AddDamageIndicator(unit, hurt)
         combat.MakeGibs(unit, lost)
         if unit.GetHealth() <= 0 {
@@ -734,7 +734,7 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, stren
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        hurt, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(15, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
+        hurt, lost := ApplyDamage(unit, []int{ComputeRoll(15, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
         combat.AddDamageIndicator(unit, hurt)
         combat.MakeGibs(unit, lost)
         if unit.GetHealth() <= 0 {
@@ -784,7 +784,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
         Effect: func(unit *ArmyUnit) {
-            hurt, lost := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+            hurt, lost := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             combat.AddDamageIndicator(unit, hurt)
             combat.MakeGibs(unit, lost)
             if unit.GetHealth() <= 0 {
@@ -825,7 +825,7 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Pro
             damage := 0
             // 10 separate attacks are different than a single 55-point attack due to defense
             for strength := range 10 {
-                hurt, more := ApplyDamage(unit, unit.ReduceInvulnerability(ComputeRoll(strength + 1, 30)), units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                hurt, more := ApplyDamage(unit, []int{ComputeRoll(strength + 1, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
                 lost += more
                 damage += hurt
             }
@@ -2582,7 +2582,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         damage := attacker.ComputeRangeDamage(target, tileDistance)
 
         // FIXME: for magical damage, set the Magic damage modifier for the proper realm
-        appliedDamage, lost := ApplyDamage(target, damage, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
+        appliedDamage, lost := ApplyDamage(target, []int{damage}, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
         combat.MakeGibs(target, lost)
 
         totalDamage := appliedDamage
