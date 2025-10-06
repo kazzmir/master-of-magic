@@ -893,6 +893,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
                 hero := makeHero(&player, heroData, &saveGame.Units[heroData.Unit], game)
                 if hero.HeroType != herolib.HeroNone {
                     player.Heroes[heroIndex] = hero
+                    player.AddUnit(hero)
                     heroIndex += 1
                     if heroIndex >= len(player.Heroes) {
                         break
@@ -906,6 +907,17 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
             Items []int16
             ItemSlot []int16
             */
+        }
+    }
+
+    for unitIndex := range saveGame.NumUnits {
+        unit := &saveGame.Units[unitIndex]
+        if unit.Owner == int8(playerIndex) && getHeroType(unit.TypeIndex) == herolib.HeroNone {
+            plane := data.PlaneArcanus
+            if unit.Plane == 1 {
+                plane = data.PlaneMyrror
+            }
+            player.AddUnit(units.MakeOverworldUnitFromUnit(getUnitType(unit.TypeIndex), int(unit.X), int(unit.Y), plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
         }
     }
 

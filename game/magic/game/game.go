@@ -989,6 +989,14 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
         yield()
     }
 
+    if army.Player.SelectedStack != nil {
+        stack := army.Player.SelectedStack
+        select {
+            case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y()}:
+            default:
+        }
+    }
+
     game.HudUI = game.MakeHudUI()
 
     // absorb most recent left click
@@ -7342,6 +7350,12 @@ func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
 /* disband units due to lack of resources, return an array of messages about units that were lost
  */
 func (game *Game) DisbandUnits(player *playerlib.Player) []string {
+    /*
+    if 2 > 1 {
+        return nil
+    }
+    */
+
     // keep removing units until the upkeep value can be paid
     ok := false
     var disbandedMessages []string
