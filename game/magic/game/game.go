@@ -8478,7 +8478,7 @@ func (game *Game) doChaosRift() {
 
                     wrapper := &UnitDamageWrapper{StackUnit: choice}
 
-                    combat.ApplyDamage(wrapper, wrapper.ReduceInvulnerability(combat.ComputeRoll(8, 30)), units.DamageRangedMagical, combat.DamageSourceSpell, combat.DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                    combat.ApplyDamage(wrapper, []int{combat.ComputeRoll(8, 30)}, units.DamageRangedMagical, combat.DamageSourceSpell, combat.DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
                 }
 
                 // check for dead units

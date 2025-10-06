@@ -43,7 +43,7 @@ func TestDamageNormal(test *testing.T) {
 
     strength := 4
 
-    damage, _ := combat.ApplyDamage(&wrapper, strength, units.DamageRangedMagical, combat.DamageSourceSpell, combat.DamageModifiers{Magic: data.ChaosMagic})
+    damage, _ := combat.ApplyDamage(&wrapper, []int{strength}, units.DamageRangedMagical, combat.DamageSourceSpell, combat.DamageModifiers{Magic: data.ChaosMagic})
     if damage != strength {
         test.Errorf("expected %v damage, got %d", strength, damage)
     }
@@ -78,7 +78,7 @@ func TestDamageHero(test *testing.T) {
 
     strength := 4
 
-    damage, _ := combat.ApplyDamage(&wrapper, strength, units.DamageRangedMagical, combat.DamageSourceSpell, combat.DamageModifiers{Magic: data.ChaosMagic})
+    damage, _ := combat.ApplyDamage(&wrapper, []int{strength}, units.DamageRangedMagical, combat.DamageSourceSpell, combat.DamageModifiers{Magic: data.ChaosMagic})
     if damage != strength {
         test.Errorf("expected %v damage, got %d", strength, damage)
     }
