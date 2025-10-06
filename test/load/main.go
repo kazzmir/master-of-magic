@@ -109,6 +109,12 @@ func compareSaveFile(path string) error {
         return fmt.Errorf("Unable to load saved game: %v", err)
     }
 
+    /*
+    for i, unit := range saveGame.Units {
+        log.Printf("Unit %d: %+v", i, unit)
+    }
+    */
+
     reader2, err := os.Open(path)
     if err != nil {
         return err

@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -881,9 +882,24 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         MyrrorFog: myrrorFog,
     }
 
+    heroIndex := 0
     for _, heroData := range playerData.HeroData {
-        if heroData.Unit != 0 {
+        if heroData.Unit > 0 {
             log.Printf("Player %v has hero %v %v", playerIndex, heroData.Unit, heroData.Name)
+
+            if heroData.Unit < saveGame.NumUnits {
+                log.Printf("  with unit data %+v", saveGame.Units[heroData.Unit])
+
+                hero := makeHero(&player, heroData, &saveGame.Units[heroData.Unit], game)
+                if hero.HeroType != herolib.HeroNone {
+                    player.Heroes[heroIndex] = hero
+                    heroIndex += 1
+                    if heroIndex >= len(player.Heroes) {
+                        break
+                    }
+                }
+            }
+
             /*
             Unit int16
             Name string
@@ -898,6 +914,267 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     player.UpdateFogVisibility()
 
     return &player
+}
+
+func getUnitType(index uint8) units.Unit {
+    switch index {
+        case 0: return units.HeroBrax
+        case 1: return units.HeroGunther
+        case 2: return units.HeroZaldron
+        case 3: return units.HeroBShan
+        case 4: return units.HeroRakir
+        case 5: return units.HeroValana
+        case 6: return units.HeroBahgtru
+        case 7: return units.HeroSerena
+        case 8: return units.HeroShuri
+        case 9: return units.HeroTheria
+        case 10: return units.HeroGreyfairer
+        case 11: return units.HeroTaki
+        case 12: return units.HeroReywind
+        case 13: return units.HeroMalleus
+        case 14: return units.HeroTumu
+        case 15: return units.HeroJaer
+        case 16: return units.HeroMarcus
+        case 17: return units.HeroFang
+        case 18: return units.HeroMorgana
+        case 19: return units.HeroAureus
+        case 20: return units.HeroShinBo
+        case 21: return units.HeroSpyder
+        case 22: return units.HeroShalla
+        case 23: return units.HeroYramrag
+        case 24: return units.HeroMysticX
+        case 25: return units.HeroAerie
+        case 26: return units.HeroDethStryke
+        case 27: return units.HeroElana
+        case 28: return units.HeroRoland
+        case 29: return units.HeroMortu
+        case 30: return units.HeroAlorra
+        case 31: return units.HeroSirHarold
+        case 32: return units.HeroRavashack
+        case 33: return units.HeroWarrax
+        case 34: return units.HeroTorin
+        case 35: return units.Trireme
+        case 36: return units.Galley
+        case 37: return units.Catapult
+        case 38: return units.Warship
+        case 39: return units.BarbarianSpearmen
+        case 40: return units.BarbarianSwordsmen
+        case 41: return units.BarbarianBowmen
+        case 42: return units.BarbarianCavalry
+        case 43: return units.BarbarianShaman
+        case 44: return units.BarbarianSettlers
+        case 45: return units.Berserkers
+        case 46: return units.BeastmenSpearmen
+        case 47: return units.BeastmenSwordsmen
+        case 48: return units.BeastmenHalberdiers
+        case 49: return units.BeastmenBowmen
+        case 50: return units.BeastmenPriest
+        case 51: return units.BeastmenMagician
+        case 52: return units.BeastmenEngineer
+        case 53: return units.BeastmenSettlers
+        case 54: return units.Centaur
+        case 55: return units.Manticore
+        case 56: return units.Minotaur
+        case 57: return units.DarkElfSpearmen
+        case 58: return units.DarkElfSwordsmen
+        case 59: return units.DarkElfHalberdiers
+        case 60: return units.DarkElfCavalry
+        case 61: return units.DarkElfPriests
+        case 62: return units.DarkElfSettlers
+        case 63: return units.Nightblades
+        case 64: return units.Warlocks
+        case 65: return units.Nightmares
+        case 66: return units.DraconianSpearmen
+        case 67: return units.DraconianSwordsmen
+        case 68: return units.DraconianHalberdiers
+        case 69: return units.DraconianBowmen
+        case 70: return units.DraconianShaman
+        case 71: return units.DraconianMagician
+        // case 72: return units.DraconianEngineer
+        case 73: return units.DraconianSettlers
+        case 74: return units.DoomDrake
+        case 75: return units.AirShip
+        case 76: return units.DwarfSwordsmen
+        case 77: return units.DwarfHalberdiers
+        case 78: return units.DwarfEngineer
+        case 79: return units.Hammerhands
+        case 80: return units.SteamCannon
+        case 81: return units.Golem
+        case 82: return units.DwarfSettlers
+        case 83: return units.GnollSpearmen
+        case 84: return units.GnollSwordsmen
+        case 85: return units.GnollHalberdiers
+        case 86: return units.GnollBowmen
+        case 87: return units.GnollSettlers
+        case 88: return units.WolfRiders
+        case 89: return units.HalflingSpearmen
+        case 90: return units.HalflingSwordsmen
+        case 91: return units.HalflingBowmen
+        case 92: return units.HalflingShamans
+        case 93: return units.HalflingSettlers
+        case 94: return units.Slingers
+        case 95: return units.HighElfSpearmen
+        case 96: return units.HighElfSwordsmen
+        case 97: return units.HighElfHalberdiers
+        case 98: return units.HighElfCavalry
+        case 99: return units.HighElfMagician
+        case 100: return units.HighElfSettlers
+        case 101: return units.Longbowmen
+        case 102: return units.ElvenLord
+        case 103: return units.Pegasai
+        case 104: return units.HighMenSpearmen
+        case 105: return units.HighMenSwordsmen
+        case 106: return units.HighMenBowmen
+        case 107: return units.HighMenCavalry
+        case 108: return units.HighMenPriest
+        case 109: return units.HighMenMagician
+        case 110: return units.HighMenEngineer
+        case 111: return units.HighMenSettlers
+        case 112: return units.HighMenPikemen
+        case 113: return units.Paladin
+        case 114: return units.KlackonSpearmen
+        case 115: return units.KlackonSwordsmen
+        case 116: return units.KlackonHalberdiers
+        case 117: return units.KlackonEngineer
+        case 118: return units.KlackonSettlers
+        case 119: return units.StagBeetle
+        case 120: return units.LizardSpearmen
+        case 121: return units.LizardSwordsmen
+        case 122: return units.LizardHalberdiers
+        case 123: return units.LizardJavelineers
+        case 124: return units.LizardShamans
+        case 125: return units.LizardSettlers
+        case 126: return units.DragonTurtle
+        case 127: return units.NomadSpearmen
+        case 128: return units.NomadSwordsmen
+        case 129: return units.NomadBowmen
+        case 130: return units.NomadPriest
+        // case 131: return units.NomadMagicians
+        case 132: return units.NomadSettlers
+        case 133: return units.NomadHorsebowemen
+        case 134: return units.NomadPikemen
+        case 135: return units.NomadRangers
+        case 136: return units.Griffin
+        case 137: return units.OrcSpearmen
+        case 138: return units.OrcSwordsmen
+        case 139: return units.OrcHalberdiers
+        case 140: return units.OrcBowmen
+        case 141: return units.OrcCavalry
+        case 142: return units.OrcShamans
+        case 143: return units.OrcMagicians
+        case 144: return units.OrcEngineers
+        case 145: return units.OrcSettlers
+        case 146: return units.WyvernRiders
+        case 147: return units.TrollSpearmen
+        case 148: return units.TrollSwordsmen
+        case 149: return units.TrollHalberdiers
+        case 150: return units.TrollShamans
+        case 151: return units.TrollSettlers
+        case 152: return units.WarTrolls
+        case 153: return units.WarMammoths
+        case 154: return units.MagicSpirit
+        case 155: return units.HellHounds
+        case 156: return units.Gargoyle
+        case 157: return units.FireGiant
+        case 158: return units.FireElemental
+        case 159: return units.ChaosSpawn
+        case 160: return units.Chimeras
+        case 161: return units.DoomBat
+        case 162: return units.Efreet
+        case 163: return units.Hydra
+        case 164: return units.GreatDrake
+        case 165: return units.Skeleton
+        case 166: return units.Ghoul
+        case 167: return units.NightStalker
+        case 168: return units.WereWolf
+        case 169: return units.Demon
+        case 170: return units.Wraith
+        case 171: return units.ShadowDemons
+        case 172: return units.DeathKnights
+        case 173: return units.DemonLord
+        case 174: return units.Zombie
+        case 175: return units.Unicorn
+        case 176: return units.GuardianSpirit
+        case 177: return units.Angel
+        case 178: return units.ArchAngel
+        case 179: return units.WarBear
+        case 180: return units.Sprites
+        case 181: return units.Cockatrices
+        case 182: return units.Basilisk
+        case 183: return units.GiantSpiders
+        case 184: return units.StoneGiant
+        case 185: return units.Colossus
+        case 186: return units.Gorgon
+        case 187: return units.EarthElemental
+        case 188: return units.Behemoth
+        case 189: return units.GreatWyrm
+        case 190: return units.FloatingIsland
+        case 191: return units.PhantomBeast
+        case 192: return units.PhantomWarrior
+        case 193: return units.StormGiant
+        case 194: return units.AirElemental
+        case 195: return units.Djinn
+        case 196: return units.SkyDrake
+        case 197: return units.Nagas
+    }
+
+    return units.UnitNone
+}
+
+func getHeroType(index uint8) herolib.HeroType {
+    switch index {
+        case 0: return herolib.HeroBrax
+        case 1: return herolib.HeroGunther
+        case 2: return herolib.HeroZaldron
+        case 3: return herolib.HeroBShan
+        case 4: return herolib.HeroRakir
+        case 5: return herolib.HeroValana
+        case 6: return herolib.HeroBahgtru
+        case 7: return herolib.HeroSerena
+        case 8: return herolib.HeroShuri
+        case 9: return herolib.HeroTheria
+        case 10: return herolib.HeroGreyfairer
+        case 11: return herolib.HeroTaki
+        case 12: return herolib.HeroReywind
+        case 13: return herolib.HeroMalleus
+        case 14: return herolib.HeroTumu
+        case 15: return herolib.HeroJaer
+        case 16: return herolib.HeroMarcus
+        case 17: return herolib.HeroFang
+        case 18: return herolib.HeroMorgana
+        case 19: return herolib.HeroAureus
+        case 20: return herolib.HeroShinBo
+        case 21: return herolib.HeroSpyder
+        case 22: return herolib.HeroShalla
+        case 23: return herolib.HeroYramrag
+        case 24: return herolib.HeroMysticX
+        case 25: return herolib.HeroAerie
+        case 26: return herolib.HeroDethStryke
+        case 27: return herolib.HeroElana
+        case 28: return herolib.HeroRoland
+        case 29: return herolib.HeroMortu
+        case 30: return herolib.HeroAlorra
+        case 31: return herolib.HeroSirHarold
+        case 32: return herolib.HeroRavashack
+        case 33: return herolib.HeroWarrax
+        case 34: return herolib.HeroTorin
+    }
+
+    return herolib.HeroNone
+}
+
+func makeUnit(unitData *UnitData, player *playerlib.Player) *units.OverworldUnit {
+    plane := data.PlaneArcanus
+    if unitData.Plane == 1 {
+        plane = data.PlaneMyrror
+    }
+    return units.MakeOverworldUnitFromUnit(getUnitType(unitData.TypeIndex), int(unitData.X), int(unitData.Y), plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
+}
+
+func makeHero(player *playerlib.Player, heroData PlayerHeroData, unitData *UnitData, game *gamelib.Game) *herolib.Hero {
+    hero := herolib.MakeHero(makeUnit(unitData, player), getHeroType(unitData.TypeIndex), heroData.Name)
+    hero.AddExperience(int(unitData.Experience))
+    return hero
 }
 
 func (saveGame *SaveGame) convertArtifacts(spells spellbook.Spells) []*artifact.Artifact {
@@ -981,12 +1258,14 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
         }
     }
 
+    /*
     log.Printf("Units:")
     for i, unit := range saveGame.Units {
         if unit.HeroSlot > 0 {
             log.Printf("%v: hero %+v", i, unit)
         }
     }
+    */
 
     wizards := []setup.WizardCustom{}
     for playerIndex := range saveGame.NumPlayers {
