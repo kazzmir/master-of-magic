@@ -490,12 +490,14 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
             catchmentProvider = game.MyrrorMap
         }
 
+        // log.Printf("City data: %+v", cityData)
+
         city := citylib.City{
             Population: 1000 * int(cityData.Population) + 10 * int(cityData.Population10),
             Farmers: int(cityData.Farmers),
             Workers: int(cityData.Population - cityData.Farmers),
             Rebels: 0,
-            Name: string(cityData.Name),
+            Name: string(bytes.Trim(cityData.Name, "\x00")),
             Plane: plane,
             Race: race,
             X: int(cityData.X),
