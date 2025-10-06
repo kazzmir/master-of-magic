@@ -442,207 +442,6 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
         // 0x19: data.CityEnchantmentNightshade, // FIXME add nightshade
     }
 
-    unitMap := map[int]units.Unit {
-        0: units.HeroBrax,
-        1: units.HeroGunther,
-        2: units.HeroZaldron,
-        3: units.HeroBShan,
-        4: units.HeroRakir,
-        5: units.HeroValana,
-        6: units.HeroBahgtru,
-        7: units.HeroSerena,
-        8: units.HeroShuri,
-        9: units.HeroTheria,
-        10: units.HeroGreyfairer,
-        11: units.HeroTaki,
-        12: units.HeroReywind,
-        13: units.HeroMalleus,
-        14: units.HeroTumu,
-        15: units.HeroJaer,
-        16: units.HeroMarcus,
-        17: units.HeroFang,
-        18: units.HeroMorgana,
-        19: units.HeroAureus,
-        20: units.HeroShinBo,
-        21: units.HeroSpyder,
-        22: units.HeroShalla,
-        23: units.HeroYramrag,
-        24: units.HeroMysticX,
-        25: units.HeroAerie,
-        26: units.HeroDethStryke,
-        27: units.HeroElana,
-        28: units.HeroRoland,
-        29: units.HeroMortu,
-        30: units.HeroAlorra,
-        31: units.HeroSirHarold,
-        32: units.HeroRavashack,
-        33: units.HeroWarrax,
-        34: units.HeroTorin,
-        35: units.Trireme,
-        36: units.Galley,
-        37: units.Catapult,
-        38: units.Warship,
-        39: units.BarbarianSpearmen,
-        40: units.BarbarianSwordsmen,
-        41: units.BarbarianBowmen,
-        42: units.BarbarianCavalry,
-        43: units.BarbarianShaman,
-        44: units.BarbarianSettlers,
-        45: units.Berserkers,
-        46: units.BeastmenSpearmen,
-        47: units.BeastmenSwordsmen,
-        48: units.BeastmenHalberdiers,
-        49: units.BeastmenBowmen,
-        50: units.BeastmenPriest,
-        51: units.BeastmenMagician,
-        52: units.BeastmenEngineer,
-        53: units.BeastmenSettlers,
-        54: units.Centaur,
-        55: units.Manticore,
-        56: units.Minotaur,
-        57: units.DarkElfSpearmen,
-        58: units.DarkElfSwordsmen,
-        59: units.DarkElfHalberdiers,
-        60: units.DarkElfCavalry,
-        61: units.DarkElfPriests,
-        62: units.DarkElfSettlers,
-        63: units.Nightblades,
-        64: units.Warlocks,
-        65: units.Nightmares,
-        66: units.DraconianSpearmen,
-        67: units.DraconianSwordsmen,
-        68: units.DraconianHalberdiers,
-        69: units.DraconianBowmen,
-        70: units.DraconianShaman,
-        71: units.DraconianMagician,
-        // 72: units.DraconianEngineer
-        73: units.DraconianSettlers,
-        74: units.DoomDrake,
-        75: units.AirShip,
-        76: units.DwarfSwordsmen,
-        77: units.DwarfHalberdiers,
-        78: units.DwarfEngineer,
-        79: units.Hammerhands,
-        80: units.SteamCannon,
-        81: units.Golem,
-        82: units.DwarfSettlers,
-        83: units.GnollSpearmen,
-        84: units.GnollSwordsmen,
-        85: units.GnollHalberdiers,
-        86: units.GnollBowmen,
-        87: units.GnollSettlers,
-        88: units.WolfRiders,
-        89: units.HalflingSpearmen,
-        90: units.HalflingSwordsmen,
-        91: units.HalflingBowmen,
-        92: units.HalflingShamans,
-        93: units.HalflingSettlers,
-        94: units.Slingers,
-        95: units.HighElfSpearmen,
-        96: units.HighElfSwordsmen,
-        97: units.HighElfHalberdiers,
-        98: units.HighElfCavalry,
-        99: units.HighElfMagician,
-        100: units.HighElfSettlers,
-        101: units.Longbowmen,
-        102: units.ElvenLord,
-        103: units.Pegasai,
-        104: units.HighMenSpearmen,
-        105: units.HighMenSwordsmen,
-        106: units.HighMenBowmen,
-        107: units.HighMenCavalry,
-        108: units.HighMenPriest,
-        109: units.HighMenMagician,
-        110: units.HighMenEngineer,
-        111: units.HighMenSettlers,
-        112: units.HighMenPikemen,
-        113: units.Paladin,
-        114: units.KlackonSpearmen,
-        115: units.KlackonSwordsmen,
-        116: units.KlackonHalberdiers,
-        117: units.KlackonEngineer,
-        118: units.KlackonSettlers,
-        119: units.StagBeetle,
-        120: units.LizardSpearmen,
-        121: units.LizardSwordsmen,
-        122: units.LizardHalberdiers,
-        123: units.LizardJavelineers,
-        124: units.LizardShamans,
-        125: units.LizardSettlers,
-        126: units.DragonTurtle,
-        127: units.NomadSpearmen,
-        128: units.NomadSwordsmen,
-        129: units.NomadBowmen,
-        130: units.NomadPriest,
-        // 131: units.NomadMagicians
-        132: units.NomadSettlers,
-        133: units.NomadHorsebowemen,
-        134: units.NomadPikemen,
-        135: units.NomadRangers,
-        136: units.Griffin,
-        137: units.OrcSpearmen,
-        138: units.OrcSwordsmen,
-        139: units.OrcHalberdiers,
-        140: units.OrcBowmen,
-        141: units.OrcCavalry,
-        142: units.OrcShamans,
-        143: units.OrcMagicians,
-        144: units.OrcEngineers,
-        145: units.OrcSettlers,
-        146: units.WyvernRiders,
-        147: units.TrollSpearmen,
-        148: units.TrollSwordsmen,
-        149: units.TrollHalberdiers,
-        150: units.TrollShamans,
-        151: units.TrollSettlers,
-        152: units.WarTrolls,
-        153: units.WarMammoths,
-        154: units.MagicSpirit,
-        155: units.HellHounds,
-        156: units.Gargoyle,
-        157: units.FireGiant,
-        158: units.FireElemental,
-        159: units.ChaosSpawn,
-        160: units.Chimeras,
-        161: units.DoomBat,
-        162: units.Efreet,
-        163: units.Hydra,
-        164: units.GreatDrake,
-        165: units.Skeleton,
-        166: units.Ghoul,
-        167: units.NightStalker,
-        168: units.WereWolf,
-        169: units.Demon,
-        170: units.Wraith,
-        171: units.ShadowDemons,
-        172: units.DeathKnights,
-        173: units.DemonLord,
-        174: units.Zombie,
-        175: units.Unicorn,
-        176: units.GuardianSpirit,
-        177: units.Angel,
-        178: units.ArchAngel,
-        179: units.WarBear,
-        180: units.Sprites,
-        181: units.Cockatrices,
-        182: units.Basilisk,
-        183: units.GiantSpiders,
-        184: units.StoneGiant,
-        185: units.Colossus,
-        186: units.Gorgon,
-        187: units.EarthElemental,
-        188: units.Behemoth,
-        189: units.GreatWyrm,
-        190: units.FloatingIsland,
-        191: units.PhantomBeast,
-        192: units.PhantomWarrior,
-        193: units.StormGiant,
-        194: units.AirElemental,
-        195: units.Djinn,
-        196: units.SkyDrake,
-        197: units.Nagas,
-    }
-
     for index := range int(saveGame.NumCities) {
         cityData := saveGame.Cities[index]
 
@@ -683,7 +482,7 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
         if cityData.Construction < 100 {
             producingBuilding = buildingMap[int(cityData.Construction)]
         } else {
-            producingUnit = unitMap[int(cityData.Construction)-100]
+            producingUnit = getUnitType(int(cityData.Construction)-100)
         }
 
         catchmentProvider := game.ArcanusMap
@@ -917,7 +716,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
             if unit.Plane == 1 {
                 plane = data.PlaneMyrror
             }
-            player.AddUnit(units.MakeOverworldUnitFromUnit(getUnitType(unit.TypeIndex), int(unit.X), int(unit.Y), plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+            player.AddUnit(units.MakeOverworldUnitFromUnit(getUnitType(int(unit.TypeIndex)), int(unit.X), int(unit.Y), plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
         }
     }
 
@@ -928,7 +727,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     return &player
 }
 
-func getUnitType(index uint8) units.Unit {
+func getUnitType(index int) units.Unit {
     switch index {
         case 0: return units.HeroBrax
         case 1: return units.HeroGunther
@@ -1180,7 +979,7 @@ func makeUnit(unitData *UnitData, player *playerlib.Player) *units.OverworldUnit
     if unitData.Plane == 1 {
         plane = data.PlaneMyrror
     }
-    return units.MakeOverworldUnitFromUnit(getUnitType(unitData.TypeIndex), int(unitData.X), int(unitData.Y), plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
+    return units.MakeOverworldUnitFromUnit(getUnitType(int(unitData.TypeIndex)), int(unitData.X), int(unitData.Y), plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
 }
 
 func makeHero(player *playerlib.Player, heroData PlayerHeroData, unitData *UnitData, game *gamelib.Game) *herolib.Hero {
