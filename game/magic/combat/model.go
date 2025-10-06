@@ -1774,10 +1774,6 @@ func ApplyDamage(unit UnitDamage, damageRolls []int, damageType units.Damage, so
     taken := 0
     lost := 0
     for _, damage := range damageRolls {
-        if unit.GetHealth() <= 0 {
-            break
-        }
-
         damage = unit.ReduceInvulnerability(damage)
 
         for damage > 0 && unit.GetHealth() > 0 {
