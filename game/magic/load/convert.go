@@ -1101,23 +1101,20 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
     game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
 
-    allStacksMoves := make(map[*playerlib.UnitStack]image.Point)
-
     for playerIndex := range saveGame.NumPlayers {
         player, stackMoves := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
         game.Players = append(game.Players, player)
 
-        for k, v := range stackMoves {
-            allStacksMoves[k] = v
-        }
-    }
 
-    for stack, destination := range allStacksMoves {
-        // FIXME: associate the player with the stack
-        path := game.FindPath(stack.X(), stack.Y(), destination.X, destination.Y, game.Players[0], stack, game.Players[0].GetFog(stack.Plane()))
-        if path != nil {
-            stack.CurrentPath = path
-        }
+        defer func(){
+            for stack, destination := range stackMoves {
+                // FIXME: associate the player with the stack
+                path := game.FindPath(stack.X(), stack.Y(), destination.X, destination.Y, player, stack, player.GetFog(stack.Plane()))
+                if path != nil {
+                    stack.CurrentPath = path
+                }
+            }
+        }()
     }
 
     // FIXME: add neutral player with brown banner and ai.MakeRaiderAI()
