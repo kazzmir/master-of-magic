@@ -523,7 +523,7 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
     return cities
 }
 
-func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardCustom, artifacts []*artifact.Artifact, game *gamelib.Game) *playerlib.Player {
+func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardCustom, artifacts []*artifact.Artifact, game *gamelib.Game) (*playerlib.Player, map[*playerlib.UnitStack]image.Point) {
     playerData := saveGame.PlayerData[playerIndex]
     human := playerIndex == 0
 
@@ -713,6 +713,8 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         }
     }
 
+    stackMoves := make(map[*playerlib.UnitStack]image.Point)
+
     for unitIndex := range saveGame.NumUnits {
         unit := &saveGame.Units[unitIndex]
         if unit.Owner == int8(playerIndex) && getHeroType(unit.TypeIndex) == herolib.HeroNone {
@@ -720,7 +722,16 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
             if unit.Plane == 1 {
                 plane = data.PlaneMyrror
             }
-            player.AddUnit(units.MakeOverworldUnitFromUnit(getUnitType(int(unit.TypeIndex)), int(unit.X), int(unit.Y), plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+            newUnit := player.AddUnit(units.MakeOverworldUnitFromUnit(getUnitType(int(unit.TypeIndex)), int(unit.X), int(unit.Y), plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+            newUnit.SetMovesLeft(fraction.FromInt(int(unit.Moves) * 2))
+            if unit.Finished == 1 {
+                newUnit.SetBusy(units.BusyStatusPatrol)
+            }
+
+            if unit.DestinationX > 0 && unit.DestinationY > 0 {
+                log.Printf("Unit %v going to %v,%v", newUnit.GetName(), unit.DestinationX, unit.DestinationY)
+                stackMoves[player.FindStackByUnit(newUnit)] = image.Pt(int(unit.DestinationX), int(unit.DestinationY))
+            }
         }
     }
 
@@ -728,7 +739,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     player.UpdateResearchCandidates()
     player.UpdateFogVisibility()
 
-    return &player
+    return &player, stackMoves
 }
 
 func getUnitType(index int) units.Unit {
@@ -1090,10 +1101,25 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
     game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
 
+    allStacksMoves := make(map[*playerlib.UnitStack]image.Point)
+
     for playerIndex := range saveGame.NumPlayers {
-        player := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
+        player, stackMoves := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
         game.Players = append(game.Players, player)
+
+        for k, v := range stackMoves {
+            allStacksMoves[k] = v
+        }
     }
+
+    for stack, destination := range allStacksMoves {
+        // FIXME: associate the player with the stack
+        path := game.FindPath(stack.X(), stack.Y(), destination.X, destination.Y, game.Players[0], stack, game.Players[0].GetFog(stack.Plane()))
+        if path != nil {
+            stack.CurrentPath = path
+        }
+    }
+
     // FIXME: add neutral player with brown banner and ai.MakeRaiderAI()
 
     // FIXME: add all remaining information from saveGame
