@@ -453,6 +453,8 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
 
         race := fromRaceValue(int(cityData.Race))
 
+        // log.Printf("City %v buildings %v", string(cityData.Name), cityData.Buildings)
+
         buildings := set.MakeSet[buildinglib.Building]()
         for index, building := range buildingMap {
             if int8(cityData.Buildings[index]) == 0 || int8(cityData.Buildings[index]) == 1 {

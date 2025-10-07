@@ -2195,7 +2195,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         if n > 0 {
             return fmt.Sprintf("+%v", n)
         } else if n == 0 {
-            return "0"
+            return "+0"
         } else {
             return fmt.Sprintf("%v", n)
         }
