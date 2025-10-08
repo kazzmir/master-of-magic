@@ -171,13 +171,13 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
                 x := float64(31)
 
                 if highlightedCity == city {
-                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1))), scale.Scale(float32(elementY - 3)), scale.Scale(float32(52)), scale.Scale(float32(10)), highlightColor, false)
-                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1+57))), scale.Scale(float32(elementY-3)), scale.Scale(float32(44)), scale.Scale(float32(10)), highlightColor, false)
-                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1+119-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
-                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1+139-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
-                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1+159-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
-                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1+165))), scale.Scale(float32(elementY-3)), scale.Scale(float32(76)), scale.Scale(float32(10)), highlightColor, false)
-                    vector.DrawFilledRect(screen, scale.Scale(float32((x-1+258-13))), scale.Scale(float32(elementY-3)), scale.Scale(float32(15)), scale.Scale(float32(10)), highlightColor, false)
+                    vector.FillRect(screen, scale.Scale(float32((x-1))), scale.Scale(float32(elementY - 3)), scale.Scale(float32(52)), scale.Scale(float32(10)), highlightColor, false)
+                    vector.FillRect(screen, scale.Scale(float32((x-1+57))), scale.Scale(float32(elementY-3)), scale.Scale(float32(44)), scale.Scale(float32(10)), highlightColor, false)
+                    vector.FillRect(screen, scale.Scale(float32((x-1+119-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
+                    vector.FillRect(screen, scale.Scale(float32((x-1+139-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
+                    vector.FillRect(screen, scale.Scale(float32((x-1+159-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
+                    vector.FillRect(screen, scale.Scale(float32((x-1+165))), scale.Scale(float32(elementY-3)), scale.Scale(float32(76)), scale.Scale(float32(10)), highlightColor, false)
+                    vector.FillRect(screen, scale.Scale(float32((x-1+258-13))), scale.Scale(float32(elementY-3)), scale.Scale(float32(15)), scale.Scale(float32(10)), highlightColor, false)
                 }
 
                 normalFont.Print(screen, x, elementY, scale.ScaleAmount, ebiten.ColorScale{}, city.Name)

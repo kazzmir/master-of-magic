@@ -2337,7 +2337,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     // darken the 4 corners of the small map view
     drawDarkTile := func(x int, y int){
         x1, y1 := mapGeom.Apply(float64(x * tileWidth), float64(y * tileHeight))
-        vector.DrawFilledRect(mapPart, float32(x1), float32(y1), float32(tileWidth), float32(tileHeight), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
+        vector.FillRect(mapPart, float32(x1), float32(y1), float32(tileWidth), float32(tileHeight), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
     }
 
     drawDarkTile(0, 0)
@@ -2349,7 +2349,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
 
     if cityScreen.BuildScreen != nil {
         // screen.Fill(color.RGBA{R: 0, G: 0, B: 0, A: 0x80})
-        vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, true)
+        vector.FillRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, true)
         cityScreen.BuildScreen.Draw(screen)
     }
 }

@@ -223,7 +223,7 @@ func (console *Console) Draw(screen *ebiten.Image) {
     if console.PosY > 0 {
         rect := image.Rect(0, 0, screen.Bounds().Dx(), console.PosY)
         backgroundColor := util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 120})
-        vector.DrawFilledRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Dx()), float32(rect.Dy()), backgroundColor, false)
+        vector.FillRect(screen, float32(rect.Min.X), float32(rect.Min.Y), float32(rect.Dx()), float32(rect.Dy()), backgroundColor, false)
 
         face := &text.GoTextFace{
             Source: console.Font,
