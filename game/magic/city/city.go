@@ -1132,10 +1132,6 @@ func (city *City) MaximumCitySize() int {
 }
 
 func (city *City) PopulationGrowthRate() int {
-    if city.Citizens() >= city.MaximumCitySize() {
-        return 0
-    }
-
     base := 10 * (city.MaximumCitySize() - city.Citizens() + 1) / 2
     switch city.Race {
         case data.RaceBarbarian: base += 20
@@ -1200,6 +1196,11 @@ func (city *City) PopulationGrowthRate() int {
 
     if city.SurplusFood() < 0 {
         base = 50 * city.SurplusFood()
+    }
+
+    // can't have positive growth if at max size
+    if base > 0 && city.Citizens() >= city.MaximumCitySize() {
+        return 0
     }
 
     return base
