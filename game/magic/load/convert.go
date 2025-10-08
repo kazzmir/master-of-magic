@@ -715,6 +715,22 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
 
     stackMoves := make(map[*playerlib.UnitStack]image.Point)
 
+    const (
+        StatusReady = 0
+        StatusPatrol = 1
+        StatusBuildRoad = 2
+        StatusGoto = 3
+        StatusReachedDest = 4
+        StatusWait = 5
+        StatusCasting = 6
+        StatusPurify = 8
+        StatusMeld = 9
+        StatusSettle = 10
+        StatusSeekTransport = 11
+        StatusMove = 16
+        StatusPurifyDone = 111
+    )
+
     for unitIndex := range saveGame.NumUnits {
         unit := &saveGame.Units[unitIndex]
         if unit.Owner == int8(playerIndex) && getHeroType(unit.TypeIndex) == herolib.HeroNone {
@@ -725,13 +741,19 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
             newUnit := player.AddUnit(units.MakeOverworldUnitFromUnit(getUnitType(int(unit.TypeIndex)), int(unit.X), int(unit.Y), plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
             newUnit.SetMovesLeft(fraction.FromInt(int(unit.Moves) * 2))
             if unit.Finished == 1 {
-                newUnit.SetBusy(units.BusyStatusPatrol)
+                newUnit.SetMovesLeft(fraction.Zero())
+
+                switch unit.Status {
+                    case StatusPatrol: newUnit.SetBusy(units.BusyStatusPatrol)
+                    case StatusBuildRoad: newUnit.SetBusy(units.BusyStatusBuildRoad)
+                    case StatusPurify: newUnit.SetBusy(units.BusyStatusPurify)
+                    case StatusGoto:
+                        log.Printf("Unit %v going to %v,%v status %v", newUnit.GetName(), unit.DestinationX, unit.DestinationY, unit.Status)
+                        stackMoves[player.FindStackByUnit(newUnit)] = image.Pt(int(unit.DestinationX), int(unit.DestinationY))
+                    // FIXME: stasis
+                }
             }
 
-            if unit.DestinationX > 0 && unit.DestinationY > 0 {
-                log.Printf("Unit %v going to %v,%v", newUnit.GetName(), unit.DestinationX, unit.DestinationY)
-                stackMoves[player.FindStackByUnit(newUnit)] = image.Pt(int(unit.DestinationX), int(unit.DestinationY))
-            }
         }
     }
 
@@ -1104,7 +1126,6 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     for playerIndex := range saveGame.NumPlayers {
         player, stackMoves := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
         game.Players = append(game.Players, player)
-
 
         defer func(){
             for stack, destination := range stackMoves {
