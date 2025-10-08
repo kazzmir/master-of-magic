@@ -592,7 +592,7 @@ func makeSpellChoiceElements(ui *uilib.UI, imageCache *util.ImageCache, fonts Ar
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            vector.DrawFilledRect(screen, 0, 0, scale.Scale(float32(data.ScreenWidth)), scale.Scale(float32(data.ScreenHeight)), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
+            vector.FillRect(screen, 0, 0, scale.Scale(float32(data.ScreenWidth)), scale.Scale(float32(data.ScreenHeight)), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
 
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(28), float64(12))

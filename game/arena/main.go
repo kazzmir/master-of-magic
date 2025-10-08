@@ -611,7 +611,7 @@ func (engine *Engine) DefaultDraw(screen *ebiten.Image) {
     switch engine.GameMode {
         case GameModeNewGameUI:
             engine.DrawUI(screen)
-            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, true)
+            vector.FillRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, true)
             engine.NewGameUI.Draw(screen)
         case GameModeUI:
             engine.DrawUI(screen)
@@ -2327,8 +2327,8 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                     length = 1
                 }
 
-                vector.DrawFilledRect(healthImage, 0, 10, float32(healthImage.Bounds().Dx()), 4, color.RGBA{R: 0, G: 0, B: 0, A: 255}, true)
-                vector.DrawFilledRect(healthImage, 0, 10, length, 4, healthColor, true)
+                vector.FillRect(healthImage, 0, 10, float32(healthImage.Bounds().Dx()), 4, color.RGBA{R: 0, G: 0, B: 0, A: 255}, true)
+                vector.FillRect(healthImage, 0, 10, length, 4, healthColor, true)
                 box1.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(healthImage)))
 
                 unitBox.AddChild(box1)

@@ -1807,7 +1807,7 @@ func (game *Game) blinkRed(yield coroutine.YieldFunc) {
         var scale colorm.ColorM
         scale.Scale(1, 1, 1, float64(getAlpha() / 2))
 
-        vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), scale.Apply(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}), false)
+        vector.FillRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), scale.Apply(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}), false)
     }
 
     for i := uint64(0); i < fadeSpeed; i++ {
@@ -3400,8 +3400,8 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
         black := color.RGBA{A: 255}
 
         drawBar := func (y float64, size float64, lineColor color.RGBA) {
-            vector.DrawFilledRect(mainImage, float32(barStart + 1), float32(y + 1), float32(size), 2, black, false)
-            vector.DrawFilledRect(mainImage, float32(barStart), float32(y), float32(size), 2, lineColor, false)
+            vector.FillRect(mainImage, float32(barStart + 1), float32(y + 1), float32(size), 2, black, false)
+            vector.FillRect(mainImage, float32(barStart), float32(y), float32(size), 2, lineColor, false)
         }
 
         for i, player := range players {
