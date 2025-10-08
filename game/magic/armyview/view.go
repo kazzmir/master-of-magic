@@ -360,7 +360,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                             if highlightedUnit == unit {
                                 x, y := options.GeoM.Apply(0, 0)
                                 x2, y2 := options.GeoM.Apply(float64(pic.Bounds().Dx()), float64(pic.Bounds().Dy()))
-                                vector.DrawFilledRect(screen, float32(x), float32(y+1), float32(x2-x), float32(y2-y)-1, highlightColor, false)
+                                vector.FillRect(screen, float32(x), float32(y+1), float32(x2-x), float32(y2-y)-1, highlightColor, false)
                             }
 
                             if unit.GetBusy() == units.BusyStatusPatrol || unit.GetBusy() == units.BusyStatusStasis {

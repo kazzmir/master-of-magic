@@ -2880,12 +2880,12 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
         x2 := float64(data.ScreenWidth / 2) + text / 2 + float64(1)
         y := 4
 
-        vector.DrawFilledRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y)), float32(scale.Scale(x2 - x1)), float32(scale.Scale(combat.Fonts.EnchantmentFont.Height() + 1)), color.RGBA{R: 0, G: 0, B: 0x0, A: 120}, false)
+        vector.FillRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y)), float32(scale.Scale(x2 - x1)), float32(scale.Scale(combat.Fonts.EnchantmentFont.Height() + 1)), color.RGBA{R: 0, G: 0, B: 0x0, A: 120}, false)
         combat.Fonts.EnchantmentFont.PrintOptions(screen, float64(data.ScreenWidth / 2), float64((y + 1)), font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, castDescription)
 
         vector.StrokeRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y)), float32(scale.Scale(x2 - x1)), float32(scale.Scale(combat.Fonts.EnchantmentFont.Height() + 1)), float32(scale.Scale(1)), color.RGBA{R: 0xff, G: 0xff, B: 0x0, A: 0xff}, false)
 
-        vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), util.PremultiplyAlpha(value), false)
+        vector.FillRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), util.PremultiplyAlpha(value), false)
     }
 
     for counter < counterMax {
@@ -3638,7 +3638,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     return CombatStateRunning
 }
 
-func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y int, matrix *ebiten.GeoM, minColor color.RGBA, maxColor color.RGBA){
+func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y int, matrix *ebiten.GeoM, minColor color.NRGBA, maxColor color.NRGBA){
     tile0, _ := combat.ImageCache.GetImage("cmbgrass.lbx", 0, 0)
 
     var useMatrix ebiten.GeoM
@@ -3688,30 +3688,18 @@ func (combat *CombatScreen) DrawHighlightedTile(screen *ebiten.Image, x int, y i
         B: lerp(minColor.B, maxColor.B),
         A: 190}
 
+    var path vector.Path
+    path.MoveTo(float32(x1), float32(y1))
+    path.LineTo(float32(x2), float32(y2))
+    path.LineTo(float32(x3), float32(y3))
+    path.LineTo(float32(x4), float32(y4))
+    path.Close()
 
-    rFloat := float32(lineColor.R) / 255
-    gFloat := float32(lineColor.G) / 255
-    bFloat := float32(lineColor.B) / 255
-    aFloat := float32(lineColor.A) / 255
+    var fill vector.FillOptions
+    var pathOptions vector.DrawPathOptions
+    pathOptions.ColorScale.ScaleWithColor(lineColor)
 
-    vertices := []ebiten.Vertex{
-        ebiten.Vertex{DstX: float32(x1), DstY: float32(y1), SrcX: 0, SrcY: 0, ColorR: rFloat, ColorG: gFloat, ColorB: bFloat, ColorA: aFloat},
-        ebiten.Vertex{DstX: float32(x2), DstY: float32(y2), SrcX: 0, SrcY: 0, ColorR: rFloat, ColorG: gFloat, ColorB: bFloat, ColorA: aFloat},
-        ebiten.Vertex{DstX: float32(x3), DstY: float32(y3), SrcX: 0, SrcY: 0, ColorR: rFloat, ColorG: gFloat, ColorB: bFloat, ColorA: aFloat},
-        ebiten.Vertex{DstX: float32(x4), DstY: float32(y4), SrcX: 0, SrcY: 0, ColorR: rFloat, ColorG: gFloat, ColorB: bFloat, ColorA: aFloat},
-    }
-
-    indicies := []uint16{0, 1, 2, 2, 3, 0}
-
-    screen.DrawTriangles(vertices, indicies, combat.WhitePixel, &ebiten.DrawTrianglesOptions{})
-
-
-        /*
-    vector.StrokeLine(screen, float32(x1), float32(y1), float32(x2), float32(y2), 1, lineColor, false)
-    vector.StrokeLine(screen, float32(x2), float32(y2), float32(x3), float32(y3), 1, lineColor, false)
-    vector.StrokeLine(screen, float32(x3), float32(y3), float32(x4), float32(y4), 1, lineColor, false)
-    vector.StrokeLine(screen, float32(x4), float32(y4), float32(x1), float32(y1), 1, lineColor, false)
-    */
+    vector.FillPath(screen, &path, &fill, &pathOptions)
 }
 
 func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
@@ -3719,7 +3707,7 @@ func (combat *CombatScreen) ShowUnitInfo(screen *ebiten.Image, unit *ArmyUnit){
     y1 := 5
     width := 65
     height := 45
-    vector.DrawFilledRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), color.NRGBA{R: 0, G: 0, B: 0, A: 100}, false)
+    vector.FillRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), color.NRGBA{R: 0, G: 0, B: 0, A: 100}, false)
     vector.StrokeRect(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(width)), float32(scale.Scale(height)), float32(scale.Scale(1)), color.NRGBA{R: 0x27, G: 0x4e, B: 0xdc, A: 100}, false)
     combat.Fonts.InfoFont.PrintOptions(screen, float64(x1 + 35), float64(y1 + 2), font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v", unit.Unit.GetName()))
 
@@ -4180,24 +4168,20 @@ func (combat *CombatScreen) ShowExtraHighlight(screen *ebiten.Image, unit *ArmyU
     p4 := points[3]
 
     // draw quad with bottom two points (x3,y3) and (x4,y4), and top two points (x3, 0) and (x4, 0)
+    var fillOptions vector.FillOptions
 
-    drawQuad := func(x1, y1, x2, y2, x3, y3, x4, y4 float32, col color.RGBA) {
+    drawQuad := func(x1, y1, x2, y2, x3, y3, x4, y4 float32, col color.NRGBA) {
         var path vector.Path
         path.MoveTo(x1, y1)
         path.LineTo(x2, y2)
         path.LineTo(x3, y3)
         path.LineTo(x4, y4)
         path.Close()
-        vertices, indices := path.AppendVerticesAndIndicesForFilling(nil, nil)
 
-        for i := range vertices {
-            vertices[i].ColorR = float32(col.R) / 255
-            vertices[i].ColorG = float32(col.G) / 255
-            vertices[i].ColorB = float32(col.B) / 255
-            vertices[i].ColorA = float32(col.A) / 255
-        }
+        var pathOptions vector.DrawPathOptions
+        pathOptions.ColorScale.ScaleWithColor(col)
 
-        screen.DrawTriangles(vertices, indices, combat.WhitePixel, nil)
+        vector.FillPath(screen, &path, &fillOptions, &pathOptions)
     }
 
     getAlpha := func(phase uint64) uint8 {
@@ -4218,8 +4202,8 @@ func (combat *CombatScreen) ShowExtraHighlight(screen *ebiten.Image, unit *ArmyU
     }
 
     basePhase := combat.Counter
-    drawQuad(float32(p3.X), float32(p3.Y), float32(p4.X), float32(p4.Y), float32(p4.X), float32(0), float32(p3.X), float32(0), color.RGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase)})
-    drawQuad(float32(p1.X), float32(p1.Y), float32(p4.X), float32(p4.Y), float32(p4.X), float32(0), float32(p1.X), float32(0), color.RGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase + 30)})
+    drawQuad(float32(p3.X), float32(p3.Y), float32(p4.X), float32(p4.Y), float32(p4.X), float32(0), float32(p3.X), float32(0), color.NRGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase)})
+    drawQuad(float32(p1.X), float32(p1.Y), float32(p4.X), float32(p4.Y), float32(p4.X), float32(0), float32(p1.X), float32(0), color.NRGBA{R: 255, G: 255, B: 255, A: getAlpha(basePhase + 30)})
 }
 
 func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
@@ -4236,7 +4220,7 @@ func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
     var fontOptions ebiten.DrawImageOptions
     fontOptions.ColorScale.ScaleAlpha(float32(alpha) / 255)
 
-    vector.DrawFilledRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), color.NRGBA{R: 0xd7, G: 0xac, B: 0x5a, A: alpha}, false)
+    vector.FillRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), color.NRGBA{R: 0xd7, G: 0xac, B: 0x5a, A: alpha}, false)
     vector.StrokeRect(subScreen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2-x1)), float32(scale.Scale(y2-y1)), 2, color.NRGBA{R: 0, G: 0, B: 0, A: alpha}, true)
 
     lineX := (x1 + x2) / 2
@@ -4412,7 +4396,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         combat.DrawWall(screen, x, y, tilePosition, animationIndex)
     }
 
-    combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.RGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.RGBA{R: 0, G: 0xef, B: 0xff, A: 255})
+    combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.NRGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.NRGBA{R: 0, G: 0xef, B: 0xff, A: 255})
 
     if combat.Model.SelectedUnit != nil && isVisible(combat.Model.SelectedUnit) {
         // if the unit is currently selecting a spell, then don't draw the movement path
@@ -4471,8 +4455,8 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         }
 
         if !combat.Model.SelectedUnit.Moving {
-            minColor := color.RGBA{R: 32, G: 0, B: 0, A: 255}
-            maxColor := color.RGBA{R: 255, G: 0, B: 0, A: 255}
+            minColor := color.NRGBA{R: 32, G: 0, B: 0, A: 255}
+            maxColor := color.NRGBA{R: 255, G: 0, B: 0, A: 255}
 
             combat.DrawHighlightedTile(screen, combat.Model.SelectedUnit.X, combat.Model.SelectedUnit.Y, &useMatrix, minColor, maxColor)
         }

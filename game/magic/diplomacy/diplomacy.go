@@ -104,7 +104,7 @@ func (talk *Talk) AddItem(item string, available bool, action func()){
                 options.ColorScale.SetG(2)
                 options.ColorScale.SetB(2)
 
-                vector.DrawFilledRect(screen, scale.Scale(float32(rect.Min.X)), scale.Scale(float32(rect.Min.Y)), scale.Scale(float32(220)), scale.Scale(float32(talk.Font.Height())), color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 50}, false)
+                vector.FillRect(screen, scale.Scale(float32(rect.Min.X)), scale.Scale(float32(rect.Min.Y)), scale.Scale(float32(220)), scale.Scale(float32(talk.Font.Height())), color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: 50}, false)
 
             }
 
@@ -584,7 +584,7 @@ func ShowDiplomacyScreen(cache *lbx.LbxCache, player *playerlib.Player, enemy *p
             if alpha > 255 {
                 alpha = 255
             }
-            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: uint8(alpha)}, false)
+            vector.FillRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0x00, G: 0x00, B: 0x00, A: uint8(alpha)}, false)
         }
 
         /*

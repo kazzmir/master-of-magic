@@ -74,7 +74,7 @@ func SaveWav(outputFile io.Writer, soundLbx *lbx.LbxFile, index int) error {
 
     s16Samples := convertToS16(vocData.AllSamples())
 
-    resampled := audiolib.Resample(bytes.NewReader(s16Samples), int64(len(s16Samples)), int(vocData.SampleRate()), SampleRate)
+    resampled := audiolib.ResampleReader(bytes.NewReader(s16Samples), int64(len(s16Samples)), int(vocData.SampleRate()), SampleRate)
 
     pcmData, err := io.ReadAll(resampled)
     if err != nil {
@@ -128,7 +128,7 @@ func GetSoundMaker(soundLbx *lbx.LbxFile, index int) (MakePlayerFunc, error) {
 
     s16Samples := convertToS16(vocData.AllSamples())
 
-    resampled := audiolib.Resample(bytes.NewReader(s16Samples), int64(len(s16Samples)), int(vocData.SampleRate()), SampleRate)
+    resampled := audiolib.ResampleReader(bytes.NewReader(s16Samples), int64(len(s16Samples)), int(vocData.SampleRate()), SampleRate)
 
     resampledData, err := io.ReadAll(resampled)
     if err != nil {

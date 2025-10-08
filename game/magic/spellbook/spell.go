@@ -1675,7 +1675,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         */
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // FIXME: do the whole page flipping thing with distorted pages
-            vector.DrawFilledRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 128}, false)
+            vector.FillRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 128}, false)
 
             background, _ := imageCache.GetImage("spells.lbx", 0, 0)
             var options ebiten.DrawImageOptions
@@ -1895,7 +1895,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                     options.ColorScale.SetB(1.2)
                 }
 
-                vector.DrawFilledRect(screen, scale.Scale(float32(rect.Min.X-1)), scale.Scale(float32(rect.Min.Y-1)), scale.Scale(float32(rect.Dx()+2)), scale.Scale(float32(rect.Dy()+2)), color.RGBA{R: 32, G: 32, B: 32, A: 128}, true)
+                vector.FillRect(screen, scale.Scale(float32(rect.Min.X-1)), scale.Scale(float32(rect.Min.Y-1)), scale.Scale(float32(rect.Dx()+2)), scale.Scale(float32(rect.Dy()+2)), color.RGBA{R: 32, G: 32, B: 32, A: 128}, true)
                 if selected {
                     vector.StrokeRect(screen, scale.Scale(float32(rect.Min.X-1)), scale.Scale(float32(rect.Min.Y-1)), scale.Scale(float32(rect.Dx()+2)), scale.Scale(float32(rect.Dy()+2)), 1, color.RGBA{R: 255, G: 255, B: 255, A: 255}, false)
                 }
