@@ -2243,7 +2243,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         top := bottom - len(lines) * fontUse.Height()
         fontOptions := font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}
         for i, line := range lines {
-            cityScreen.Fonts.ProducingFont.PrintOptions(screen, 237, float64(top + i * fontUse.Height()), fontOptions, line)
+            fontUse.PrintOptions(screen, 237, float64(top + i * fontUse.Height()), fontOptions, line)
         }
 
         // for all buildings besides trade goods and housing, show amount of work required to build
