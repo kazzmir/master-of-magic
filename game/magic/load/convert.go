@@ -754,6 +754,8 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
 
             newUnit := player.AddUnit(units.MakeOverworldUnitFromUnit(getUnitType(int(unit.TypeIndex)), int(unit.X), int(unit.Y), plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
+            newUnit.AddExperience(int(unit.Experience))
+
             switch unit.Mutations & 3 {
                 case MutationMagicWeapon:
                     newUnit.SetWeaponBonus(data.WeaponMagic)
