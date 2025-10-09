@@ -7,6 +7,7 @@ import (
     "math/rand/v2"
     "cmp"
     "slices"
+    "strings"
     "image"
     "image/color"
     "hash/fnv"
@@ -2194,7 +2195,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         if n > 0 {
             return fmt.Sprintf("+%v", n)
         } else if n == 0 {
-            return "0"
+            return "+0"
         } else {
             return fmt.Sprintf("%v", n)
         }
@@ -2225,7 +2226,25 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
             scale.DrawScaled(screen, producingPics[index], &options)
         }
 
-        cityScreen.Fonts.ProducingFont.PrintOptions(screen, 237, 179, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}, cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding))
+        var lines []string
+        parts := strings.Split(cityScreen.City.BuildingInfo.Name(cityScreen.City.ProducingBuilding), " ")
+        for _, part := range parts {
+            if len(lines) == 0 {
+                lines = append(lines, part)
+            } else if len(lines[len(lines) - 1]) + 1 + len(part) < 15 {
+                lines[len(lines) - 1] += " " + part
+            } else {
+                lines = append(lines, part)
+            }
+        }
+
+        fontUse := cityScreen.Fonts.ProducingFont
+        bottom := 179 + fontUse.Height()
+        top := bottom - len(lines) * fontUse.Height()
+        fontOptions := font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}
+        for i, line := range lines {
+            fontUse.PrintOptions(screen, 237, float64(top + i * fontUse.Height()), fontOptions, line)
+        }
 
         // for all buildings besides trade goods and housing, show amount of work required to build
 

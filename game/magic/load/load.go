@@ -5,6 +5,7 @@ import (
     "log"
     "fmt"
     "bytes"
+    "bufio"
     "errors"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -104,6 +105,7 @@ func (heroIndex HeroIndex) GetHero() herolib.HeroType {
 type HeroAbility uint32
 
 const (
+    HeroAbility_NONE HeroAbility = 0x00000000
     HeroAbility_LEADERSHIP HeroAbility = 0x00000001
     HeroAbility_LEADERSHIP2 HeroAbility = 0x00000002
     HeroAbility_LEGENDARY HeroAbility      = 0x00000008
@@ -167,6 +169,7 @@ type HeroData struct {
     AbilitySet *set.Set[HeroAbility]
     CastingSkill int8
     Spells [4]uint8
+    ExtraByte byte // unknown value
 }
 
 func makeHeroAbilities(abilities uint32) *set.Set[HeroAbility] {
@@ -290,10 +293,12 @@ func loadHeroData(reader io.Reader) (HeroData, error) {
         }
     }
 
-    _, err = lbx.ReadByte(reader) // skip 1 byte
+    // not sure what this is, but the original game puts some data here
+    extraByte, err := lbx.ReadByte(reader)
     if err != nil {
         return HeroData{}, err
     }
+    heroData.ExtraByte = extraByte
 
     return heroData, nil
 }
@@ -367,6 +372,13 @@ type DiplomacyData struct {
     TributeSpell []int8
     TributeGold []int16
     WarningProgress []int8
+
+    Unknown1 []int16 // 6 bytes, unknown
+    Unknown2 []int8  // 24 bytes, unknown
+    Unknown3 []int8  // 90 bytes, unknown
+    Unknown4 []int8  // 30 bytes, unknown
+    Unknown5 []int8  // 6 bytes, unknown
+    Unknown6 []int8  // 6 bytes, unknown
 }
 
 func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
@@ -444,7 +456,7 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
         return DiplomacyData{}, err
     }
 
-    unknown1, err := lbx.ReadArrayN[int16](dataReader, NumPlayers)
+    out.Unknown1, err = lbx.ReadArrayN[int16](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
@@ -454,7 +466,7 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
         return DiplomacyData{}, err
     }
 
-    unknown2, err := lbx.ReadArrayN[int8](dataReader, 24)
+    out.Unknown2, err = lbx.ReadArrayN[int8](dataReader, 24)
     if err != nil {
         return DiplomacyData{}, err
     }
@@ -464,7 +476,7 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
         return DiplomacyData{}, err
     }
 
-    unknown3, err := lbx.ReadArrayN[int8](dataReader, 90)
+    out.Unknown3, err = lbx.ReadArrayN[int8](dataReader, 90)
     if err != nil {
         return DiplomacyData{}, err
     }
@@ -474,17 +486,17 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
         return DiplomacyData{}, err
     }
 
-    unknown4, err := lbx.ReadArrayN[int8](dataReader, 30)
+    out.Unknown4, err = lbx.ReadArrayN[int8](dataReader, 30)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    unknown5, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.Unknown5, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
 
-    unknown6, err := lbx.ReadArrayN[int8](dataReader, NumPlayers)
+    out.Unknown6, err = lbx.ReadArrayN[int8](dataReader, NumPlayers)
     if err != nil {
         return DiplomacyData{}, err
     }
@@ -493,13 +505,6 @@ func loadDiplomacy(reader io.Reader) (DiplomacyData, error) {
     if err != nil {
         return DiplomacyData{}, err
     }
-
-    _ = unknown1
-    _ = unknown2
-    _ = unknown3
-    _ = unknown4
-    _ = unknown5
-    _ = unknown6
 
     return out, nil
 }
@@ -579,6 +584,8 @@ type PlayerData struct {
     RetortCharismatic int8
     RetortArtificer int8
 
+    HeroData []PlayerHeroData
+
     VaultItems []int16
     Diplomacy DiplomacyData
 
@@ -602,6 +609,20 @@ type PlayerData struct {
     TargetWizard uint16
     PrimaryRealm uint16
     SecondaryRealm uint16
+
+    Unknown1 uint8
+    Unknown2 []uint8
+    Unknown3 []uint8
+    Unknown4 uint16
+    Unknown5 int16
+    Unknown6 uint16
+    Unknown7 uint16
+    Unknown8 uint8
+    Unknown9 uint8
+    Unknown10 uint16
+    Unknown11 uint8
+    Unknown12 uint8
+    Unknown13 []uint8
 }
 
 func loadPlayerData(reader io.Reader) (PlayerData, error) {
@@ -639,7 +660,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    _, err = lbx.ReadByte(playerReader) // skip 1 byte
+    out.Unknown1, err = lbx.ReadByte(playerReader) // skip 1 byte
     if err != nil {
         return PlayerData{}, err
     }
@@ -654,7 +675,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    _, err = lbx.ReadArrayN[uint8](playerReader, 6) // skip 6 bytes
+    out.Unknown2, err = lbx.ReadArrayN[uint8](playerReader, 6) // skip 6 bytes
     if err != nil {
         return PlayerData{}, err
     }
@@ -720,7 +741,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    _, err = lbx.ReadArrayN[uint8](playerReader, 4) // skip 4 byte
+    out.Unknown3, err = lbx.ReadArrayN[uint8](playerReader, 4) // skip 4 byte
     if err != nil {
         return PlayerData{}, err
     }
@@ -732,7 +753,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    _, err = lbx.ReadN[uint16](playerReader) // skip 2 byte
+    out.Unknown4, err = lbx.ReadN[uint16](playerReader) // skip 2 byte
     if err != nil {
         return PlayerData{}, err
     }
@@ -880,12 +901,16 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         }
     }
 
-    _, err = lbx.ReadN[int16](playerReader) // skip 2 bytes
+    out.HeroData = heroData
+
+    out.Unknown5, err = lbx.ReadN[int16](playerReader) // skip 2 bytes
 
     out.VaultItems, err = lbx.ReadArrayN[int16](playerReader, 4)
     if err != nil {
         return PlayerData{}, err
     }
+
+    // log.Printf("Vault items: %v", out.VaultItems)
 
     // log.Printf("Player offset diplomacy: 0x%x", playerReader.BytesRead)
 
@@ -929,7 +954,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    unknown1, err := lbx.ReadN[uint16](playerReader)
+    out.Unknown6, err = lbx.ReadN[uint16](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
@@ -961,7 +986,7 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    unknown2, err := lbx.ReadN[uint16](playerReader)
+    out.Unknown7, err = lbx.ReadN[uint16](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
@@ -991,17 +1016,17 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    unknown3, err := lbx.ReadN[uint8](playerReader)
+    out.Unknown8, err = lbx.ReadN[uint8](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
 
-    unknown4, err := lbx.ReadN[uint8](playerReader)
+    out.Unknown9, err = lbx.ReadN[uint8](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
 
-    unknown5, err := lbx.ReadN[uint16](playerReader)
+    out.Unknown10, err = lbx.ReadN[uint16](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
@@ -1013,17 +1038,17 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
         return PlayerData{}, err
     }
 
-    unknown6, err := lbx.ReadN[uint8](playerReader)
+    out.Unknown11, err = lbx.ReadN[uint8](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
 
-    unknown7, err := lbx.ReadN[uint8](playerReader)
+    out.Unknown12, err = lbx.ReadN[uint8](playerReader)
     if err != nil {
         return PlayerData{}, err
     }
 
-    unknown8, err := lbx.ReadArrayN[uint8](playerReader, 6)
+    out.Unknown13, err = lbx.ReadArrayN[uint8](playerReader, 6)
     if err != nil {
         return PlayerData{}, err
     }
@@ -1037,15 +1062,6 @@ func loadPlayerData(reader io.Reader) (PlayerData, error) {
     if err != nil {
         return PlayerData{}, err
     }
-
-    _ = unknown1
-    _ = unknown2
-    _ = unknown3
-    _ = unknown4
-    _ = unknown5
-    _ = unknown6
-    _ = unknown7
-    _ = unknown8
 
     return out, nil
 }
@@ -1114,6 +1130,7 @@ type NodeData struct {
     AuraY []byte
     NodeType int8
     Flags int8
+    Unknown1 int8
 }
 
 func loadNodes(reader io.Reader) ([]NodeData, error) {
@@ -1170,6 +1187,11 @@ func loadNodes(reader io.Reader) ([]NodeData, error) {
         }
 
         data.Flags, err = lbx.ReadN[int8](nodeReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Unknown1, err = lbx.ReadN[int8](nodeReader) // skip 1 byte
         if err != nil {
             return nil, err
         }
@@ -1233,6 +1255,7 @@ type TowerData struct {
     X int8
     Y int8
     Owner int8
+    Unknown1 int8
 }
 
 func loadTowers(reader io.Reader) ([]TowerData, error) {
@@ -1263,6 +1286,11 @@ func loadTowers(reader io.Reader) ([]TowerData, error) {
             return nil, err
         }
 
+        data.Unknown1, err = lbx.ReadN[int8](towerReader) // skip 1 byte
+        if err != nil {
+            return nil, err
+        }
+
         // log.Printf("Tower: x=%v y=%v owner=%v", x, y, owner)
         out = append(out, data)
     }
@@ -1288,6 +1316,9 @@ type LairData struct {
     Item1 int16
     Item2 int16
     Item3 int16
+
+    Unknown1 uint8 // 1 byte, unknown
+    Unknown2 uint8 // 1 byte, unknown
 }
 
 func loadLairs(reader io.Reader) ([]LairData, error) {
@@ -1348,8 +1379,7 @@ func loadLairs(reader io.Reader) ([]LairData, error) {
             return nil, err
         }
 
-        // 1 byte of padding
-        _, err = lbx.ReadByte(lairReader)
+        data.Unknown1, err = lbx.ReadByte(lairReader)
         if err != nil {
             return nil, err
         }
@@ -1379,7 +1409,7 @@ func loadLairs(reader io.Reader) ([]LairData, error) {
             return nil, err
         }
 
-        _, err = lbx.ReadByte(lairReader) // skip 1 byte
+        data.Unknown2, err = lbx.ReadByte(lairReader) // skip 1 byte
         if err != nil {
             return nil, err
         }
@@ -1546,6 +1576,9 @@ type CityData struct {
     Research int8
     Food int8
     RoadConnections []byte
+
+    Unknown1 byte // 1 byte, unknown
+    Unknown2 byte // 1 byte, unknown
 }
 
 func loadCities(reader io.Reader) ([]CityData, error) {
@@ -1612,7 +1645,10 @@ func loadCities(reader io.Reader) ([]CityData, error) {
             return nil, err
         }
 
-        _, err = lbx.ReadByte(cityReader) // skip 1 byte
+        data.Unknown1, err = lbx.ReadByte(cityReader) // skip 1 byte
+        if err != nil {
+            return nil, err
+        }
 
         data.Population10, err = lbx.ReadN[int16](cityReader)
         if err != nil {
@@ -1624,7 +1660,10 @@ func loadCities(reader io.Reader) ([]CityData, error) {
             return nil, err
         }
 
-        _, err = lbx.ReadByte(cityReader) // skip 1 byte
+        data.Unknown2, err = lbx.ReadByte(cityReader) // skip 1 byte
+        if err != nil {
+            return nil, err
+        }
 
         data.Construction, err = lbx.ReadN[int16](cityReader)
         if err != nil {
@@ -1710,17 +1749,19 @@ type UnitData struct {
     Owner int8
     MovesMax int8
     TypeIndex uint8
-    Hero int8
+    HeroSlot int8
     Finished int8
     Moves int8
     DestinationX int8
     DestinationY int8
     Status int8
     Level int8
+    Unknown2 uint8
     Experience int16
     MoveFailed int8
     Damage int8
     DrawPriority int8
+    Unknown3 uint8
     InTower int16
     SightRange int8
     Mutations int8
@@ -1728,6 +1769,8 @@ type UnitData struct {
     RoadTurns int8
     RoadX int8
     RoadY int8
+
+    Unknown1 uint8
 }
 
 func loadUnits(reader io.Reader) ([]UnitData, error) {
@@ -1773,7 +1816,7 @@ func loadUnits(reader io.Reader) ([]UnitData, error) {
             return nil, err
         }
 
-        data.Hero, err = lbx.ReadN[int8](unitReader)
+        data.HeroSlot, err = lbx.ReadN[int8](unitReader)
         if err != nil {
             return nil, err
         }
@@ -1808,6 +1851,11 @@ func loadUnits(reader io.Reader) ([]UnitData, error) {
             return nil, err
         }
 
+        data.Unknown2, err = lbx.ReadN[uint8](unitReader) // skip 1 byte
+        if err != nil {
+            return nil, err
+        }
+
         data.Experience, err = lbx.ReadN[int16](unitReader)
         if err != nil {
             return nil, err
@@ -1824,6 +1872,11 @@ func loadUnits(reader io.Reader) ([]UnitData, error) {
         }
 
         data.DrawPriority, err = lbx.ReadN[int8](unitReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Unknown3, err = lbx.ReadByte(unitReader) // skip 1 byte
         if err != nil {
             return nil, err
         }
@@ -1859,6 +1912,11 @@ func loadUnits(reader io.Reader) ([]UnitData, error) {
         }
 
         data.RoadY, err = lbx.ReadN[int8](unitReader)
+        if err != nil {
+            return nil, err
+        }
+
+        data.Unknown1, err = lbx.ReadN[uint8](unitReader)
         if err != nil {
             return nil, err
         }
@@ -2055,7 +2113,7 @@ func loadEvents(reader io.Reader) (EventData, error) {
     eventData.DepletionPlayer, _ = lbx.ReadN[int16](eventReader)
     eventData.DepletionData, _ = lbx.ReadN[int16](eventReader)
     eventData.MineralsStatus, _ = lbx.ReadN[int16](eventReader)
-    eventData.MineralsData, _ = lbx.ReadN[int16](eventReader)
+    eventData.MineralsData, _ = lbx.ReadN[int16](eventReader) // FIXME: this might be out of order with MineralsPlayer
     eventData.MineralsPlayer, _ = lbx.ReadN[int16](eventReader)
     eventData.PopulationBoomStatus, _ = lbx.ReadN[int16](eventReader)
     eventData.PopulationBoomData, _ = lbx.ReadN[int16](eventReader)
@@ -2129,7 +2187,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
     var err error
     var saveGame SaveGame
 
-    reader := &ReadMonitor{reader: reader1}
+    reader := &ReadMonitor{reader: bufio.NewReader(reader1)}
 
     var heroData [][]HeroData
     for range NumPlayers {
@@ -2289,7 +2347,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
 
     saveGame.Units, err = loadUnits(reader)
     if err != nil {
-        return nil, err
+        return nil, fmt.Errorf("unable to load units: %v", err)
     }
 
     saveGame.ArcanusTerrainSpecials, err = loadMapData[uint8](reader)

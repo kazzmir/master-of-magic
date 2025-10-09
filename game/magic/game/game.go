@@ -872,6 +872,18 @@ func (game *Game) SuggestCityName(race data.Race) (string) {
     return chooseCityName(existingNames, choices)
 }
 
+func (game *Game) AllUnits() []units.StackUnit{
+    var out []units.StackUnit
+
+    for _, player := range game.Players {
+        for _, unit := range player.Units {
+            out = append(out, unit)
+        }
+    }
+
+    return out
+}
+
 func (game *Game) AllCities() []*citylib.City {
     var out []*citylib.City
 
@@ -975,6 +987,14 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
 
     for army.Update() == armyview.ArmyScreenStateRunning {
         yield()
+    }
+
+    if army.Player.SelectedStack != nil {
+        stack := army.Player.SelectedStack
+        select {
+            case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y()}:
+            default:
+        }
     }
 
     game.HudUI = game.MakeHudUI()
@@ -6006,6 +6026,11 @@ func (game *Game) ComputeMaximumPopulation(x int, y int, plane data.Plane) int {
     // find catchment area of x, y
     // for each square, compute food production
     // maximum pop is food production
+    maybeCity, _ := game.FindCity(x, y, plane)
+    if maybeCity != nil {
+        return maybeCity.MaximumCitySize()
+    }
+
     mapUse := game.GetMap(plane)
     catchment := mapUse.GetCatchmentArea(x, y)
 
@@ -7330,6 +7355,12 @@ func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
 /* disband units due to lack of resources, return an array of messages about units that were lost
  */
 func (game *Game) DisbandUnits(player *playerlib.Player) []string {
+    /*
+    if 2 > 1 {
+        return nil
+    }
+    */
+
     // keep removing units until the upkeep value can be paid
     ok := false
     var disbandedMessages []string

@@ -5,6 +5,7 @@ import (
     "image"
     "fmt"
     "math/rand/v2"
+    "log"
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -14,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -24,6 +26,48 @@ import (
 
     "github.com/hajimehoshi/ebiten/v2"
 )
+
+func fromRaceValue(raceValue int) data.Race {
+    switch raceValue {
+        case 0: return data.RaceBarbarian
+        case 1: return data.RaceBeastmen
+        case 2: return data.RaceDarkElf
+        case 3: return data.RaceDraconian
+        case 4: return data.RaceDwarf
+        case 5: return data.RaceGnoll
+        case 6: return data.RaceHalfling
+        case 7: return data.RaceHighElf
+        case 8: return data.RaceHighMen
+        case 9: return data.RaceKlackon
+        case 10: return data.RaceLizard
+        case 11: return data.RaceNomad
+        case 12: return data.RaceOrc
+        case 13: return data.RaceTroll
+    }
+
+    return data.RaceNone
+}
+
+func toRaceInt(race data.Race) int {
+    switch race {
+        case data.RaceBarbarian: return 0
+        case data.RaceBeastmen: return 1
+        case data.RaceDarkElf: return 2
+        case data.RaceDraconian: return 3
+        case data.RaceDwarf: return 4
+        case data.RaceGnoll: return 5
+        case data.RaceHalfling: return 6
+        case data.RaceHighElf: return 7
+        case data.RaceHighMen: return 8
+        case data.RaceKlackon: return 9
+        case data.RaceLizard: return 10
+        case data.RaceNomad: return 11
+        case data.RaceOrc: return 12
+        case data.RaceTroll: return 13
+    }
+
+    return 0
+}
 
 func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane data.Plane, cityProvider maplib.CityProvider, players []*playerlib.Player) *maplib.Map {
 
@@ -263,23 +307,7 @@ func (saveGame *SaveGame) convertWizard(playerIndex int) setup.WizardCustom {
         books = append(books, data.WizardBook{Magic: data.DeathMagic, Count: int(playerData.SpellRanks[4])})
     }
 
-    var race data.Race
-    switch playerData.CapitalRace {
-        case 0: race = data.RaceBarbarian
-        case 1: race = data.RaceBeastmen
-        case 2: race = data.RaceDarkElf
-        case 3: race = data.RaceDraconian
-        case 4: race = data.RaceDwarf
-        case 5: race = data.RaceGnoll
-        case 6: race = data.RaceHalfling
-        case 7: race = data.RaceHighElf
-        case 8: race = data.RaceHighMen
-        case 9: race = data.RaceKlackon
-        case 10: race = data.RaceLizard
-        case 11: race = data.RaceNomad
-        case 12: race = data.RaceOrc
-        case 13: race = data.RaceTroll
-    }
+    race := fromRaceValue(int(playerData.CapitalRace))
 
     var banner data.BannerType
     switch playerData.BannerId {
@@ -414,208 +442,7 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
         // 0x19: data.CityEnchantmentNightshade, // FIXME add nightshade
     }
 
-    unitMap := map[int]units.Unit {
-        0: units.HeroBrax,
-        1: units.HeroGunther,
-        2: units.HeroZaldron,
-        3: units.HeroBShan,
-        4: units.HeroRakir,
-        5: units.HeroValana,
-        6: units.HeroBahgtru,
-        7: units.HeroSerena,
-        8: units.HeroShuri,
-        9: units.HeroTheria,
-        10: units.HeroGreyfairer,
-        11: units.HeroTaki,
-        12: units.HeroReywind,
-        13: units.HeroMalleus,
-        14: units.HeroTumu,
-        15: units.HeroJaer,
-        16: units.HeroMarcus,
-        17: units.HeroFang,
-        18: units.HeroMorgana,
-        19: units.HeroAureus,
-        20: units.HeroShinBo,
-        21: units.HeroSpyder,
-        22: units.HeroShalla,
-        23: units.HeroYramrag,
-        24: units.HeroMysticX,
-        25: units.HeroAerie,
-        26: units.HeroDethStryke,
-        27: units.HeroElana,
-        28: units.HeroRoland,
-        29: units.HeroMortu,
-        30: units.HeroAlorra,
-        31: units.HeroSirHarold,
-        32: units.HeroRavashack,
-        33: units.HeroWarrax,
-        34: units.HeroTorin,
-        35: units.Trireme,
-        36: units.Galley,
-        37: units.Catapult,
-        38: units.Warship,
-        39: units.BarbarianSpearmen,
-        40: units.BarbarianSwordsmen,
-        41: units.BarbarianBowmen,
-        42: units.BarbarianCavalry,
-        43: units.BarbarianShaman,
-        44: units.BarbarianSettlers,
-        45: units.Berserkers,
-        46: units.BeastmenSpearmen,
-        47: units.BeastmenSwordsmen,
-        48: units.BeastmenHalberdiers,
-        49: units.BeastmenBowmen,
-        50: units.BeastmenPriest,
-        51: units.BeastmenMagician,
-        52: units.BeastmenEngineer,
-        53: units.BeastmenSettlers,
-        54: units.Centaur,
-        55: units.Manticore,
-        56: units.Minotaur,
-        57: units.DarkElfSpearmen,
-        58: units.DarkElfSwordsmen,
-        59: units.DarkElfHalberdiers,
-        60: units.DarkElfCavalry,
-        61: units.DarkElfPriests,
-        62: units.DarkElfSettlers,
-        63: units.Nightblades,
-        64: units.Warlocks,
-        65: units.Nightmares,
-        66: units.DraconianSpearmen,
-        67: units.DraconianSwordsmen,
-        68: units.DraconianHalberdiers,
-        69: units.DraconianBowmen,
-        70: units.DraconianShaman,
-        71: units.DraconianMagician,
-        // 72: units.DraconianEngineer
-        73: units.DraconianSettlers,
-        74: units.DoomDrake,
-        75: units.AirShip,
-        76: units.DwarfSwordsmen,
-        77: units.DwarfHalberdiers,
-        78: units.DwarfEngineer,
-        79: units.Hammerhands,
-        80: units.SteamCannon,
-        81: units.Golem,
-        82: units.DwarfSettlers,
-        83: units.GnollSpearmen,
-        84: units.GnollSwordsmen,
-        85: units.GnollHalberdiers,
-        86: units.GnollBowmen,
-        87: units.GnollSettlers,
-        88: units.WolfRiders,
-        89: units.HalflingSpearmen,
-        90: units.HalflingSwordsmen,
-        91: units.HalflingBowmen,
-        92: units.HalflingShamans,
-        93: units.HalflingSettlers,
-        94: units.Slingers,
-        95: units.HighElfSpearmen,
-        96: units.HighElfSwordsmen,
-        97: units.HighElfHalberdiers,
-        98: units.HighElfCavalry,
-        99: units.HighElfMagician,
-        100: units.HighElfSettlers,
-        101: units.Longbowmen,
-        102: units.ElvenLord,
-        103: units.Pegasai,
-        104: units.HighMenSpearmen,
-        105: units.HighMenSwordsmen,
-        106: units.HighMenBowmen,
-        107: units.HighMenCavalry,
-        108: units.HighMenPriest,
-        109: units.HighMenMagician,
-        110: units.HighMenEngineer,
-        111: units.HighMenSettlers,
-        112: units.HighMenPikemen,
-        113: units.Paladin,
-        114: units.KlackonSpearmen,
-        115: units.KlackonSwordsmen,
-        116: units.KlackonHalberdiers,
-        117: units.KlackonEngineer,
-        118: units.KlackonSettlers,
-        119: units.StagBeetle,
-        120: units.LizardSpearmen,
-        121: units.LizardSwordsmen,
-        122: units.LizardHalberdiers,
-        123: units.LizardJavelineers,
-        124: units.LizardShamans,
-        125: units.LizardSettlers,
-        126: units.DragonTurtle,
-        127: units.NomadSpearmen,
-        128: units.NomadSwordsmen,
-        129: units.NomadBowmen,
-        130: units.NomadPriest,
-        // 131: units.NomadMagicians
-        132: units.NomadSettlers,
-        133: units.NomadHorsebowemen,
-        134: units.NomadPikemen,
-        135: units.NomadRangers,
-        136: units.Griffin,
-        137: units.OrcSpearmen,
-        138: units.OrcSwordsmen,
-        139: units.OrcHalberdiers,
-        140: units.OrcBowmen,
-        141: units.OrcCavalry,
-        142: units.OrcShamans,
-        143: units.OrcMagicians,
-        144: units.OrcEngineers,
-        145: units.OrcSettlers,
-        146: units.WyvernRiders,
-        147: units.TrollSpearmen,
-        148: units.TrollSwordsmen,
-        149: units.TrollHalberdiers,
-        150: units.TrollShamans,
-        151: units.TrollSettlers,
-        152: units.WarTrolls,
-        153: units.WarMammoths,
-        154: units.MagicSpirit,
-        155: units.HellHounds,
-        156: units.Gargoyle,
-        157: units.FireGiant,
-        158: units.FireElemental,
-        159: units.ChaosSpawn,
-        160: units.Chimeras,
-        161: units.DoomBat,
-        162: units.Efreet,
-        163: units.Hydra,
-        164: units.GreatDrake,
-        165: units.Skeleton,
-        166: units.Ghoul,
-        167: units.NightStalker,
-        168: units.WereWolf,
-        169: units.Demon,
-        170: units.Wraith,
-        171: units.ShadowDemons,
-        172: units.DeathKnights,
-        173: units.DemonLord,
-        174: units.Zombie,
-        175: units.Unicorn,
-        176: units.GuardianSpirit,
-        177: units.Angel,
-        178: units.ArchAngel,
-        179: units.WarBear,
-        180: units.Sprites,
-        181: units.Cockatrices,
-        182: units.Basilisk,
-        183: units.GiantSpiders,
-        184: units.StoneGiant,
-        185: units.Colossus,
-        186: units.Gorgon,
-        187: units.EarthElemental,
-        188: units.Behemoth,
-        189: units.GreatWyrm,
-        190: units.FloatingIsland,
-        191: units.PhantomBeast,
-        192: units.PhantomWarrior,
-        193: units.StormGiant,
-        194: units.AirElemental,
-        195: units.Djinn,
-        196: units.SkyDrake,
-        197: units.Nagas,
-    }
-
-    for index := 0; index < int(saveGame.NumCities); index++ {
+    for index := range int(saveGame.NumCities) {
         cityData := saveGame.Cities[index]
 
         if int(cityData.Owner) != playerIndex {
@@ -624,23 +451,9 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
 
         plane := data.Plane(cityData.Plane)
 
-        var race data.Race
-        switch cityData.Race {
-            case 0: race = data.RaceBarbarian
-            case 1: race = data.RaceBeastmen
-            case 2: race = data.RaceDarkElf
-            case 3: race = data.RaceDraconian
-            case 4: race = data.RaceDwarf
-            case 5: race = data.RaceGnoll
-            case 6: race = data.RaceHalfling
-            case 7: race = data.RaceHighElf
-            case 8: race = data.RaceHighMen
-            case 9: race = data.RaceKlackon
-            case 10: race = data.RaceLizard
-            case 11: race = data.RaceNomad
-            case 12: race = data.RaceOrc
-            case 13: race = data.RaceTroll
-        }
+        race := fromRaceValue(int(cityData.Race))
+
+        // log.Printf("City %v buildings %v", string(cityData.Name), cityData.Buildings)
 
         buildings := set.MakeSet[buildinglib.Building]()
         for index, building := range buildingMap {
@@ -671,7 +484,7 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
         if cityData.Construction < 100 {
             producingBuilding = buildingMap[int(cityData.Construction)]
         } else {
-            producingUnit = unitMap[int(cityData.Construction)-100]
+            producingUnit = getUnitType(int(cityData.Construction)-100)
         }
 
         catchmentProvider := game.ArcanusMap
@@ -679,12 +492,14 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
             catchmentProvider = game.MyrrorMap
         }
 
+        // log.Printf("City data: %+v", cityData)
+
         city := citylib.City{
             Population: 1000 * int(cityData.Population) + 10 * int(cityData.Population10),
             Farmers: int(cityData.Farmers),
             Workers: int(cityData.Population - cityData.Farmers),
             Rebels: 0,
-            Name: string(cityData.Name),
+            Name: string(bytes.Trim(cityData.Name, "\x00")),
             Plane: plane,
             Race: race,
             X: int(cityData.X),
@@ -708,7 +523,7 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
     return cities
 }
 
-func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardCustom, artifacts []*artifact.Artifact, game *gamelib.Game) *playerlib.Player {
+func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardCustom, artifacts []*artifact.Artifact, game *gamelib.Game) (*playerlib.Player, map[*playerlib.UnitStack]image.Point) {
     playerData := saveGame.PlayerData[playerIndex]
     human := playerIndex == 0
 
@@ -802,9 +617,6 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     // FIXME: Add remaining infos from playerData
     // Personality
     // Objective
-    // MasteryResearch
-    // PowerBase
-    // Volcanoes
     // VolcanoPower
     // AverageUnitCost
     // CombatSkillLeft
@@ -825,8 +637,13 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     // PrimaryRealm
     // SecondaryRealm
 
+    // doesn't seem necessary to store this since we compute it anyway
+    // PowerBase
+    // Volcanoes
+
     player := playerlib.Player{
         Wizard: wizards[playerIndex],
+        SpellOfMasteryCost: int(playerData.MasteryResearch),
         TaxRate: fraction.Make(int(playerData.TaxRate), 2),
         PowerDistribution: playerlib.PowerDistribution{
             Mana: float64(playerData.ManaRatio) / 100,
@@ -868,11 +685,460 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         MyrrorFog: myrrorFog,
     }
 
+    heroIndex := 0
+    for _, heroData := range playerData.HeroData {
+        if heroData.Unit > 0 {
+            log.Printf("Player %v has hero %v %v", playerIndex, heroData.Unit, heroData.Name)
+
+            if heroData.Unit < saveGame.NumUnits {
+                log.Printf("  with unit data %+v", saveGame.Units[heroData.Unit])
+
+                hero := makeHero(&player, heroData, &saveGame.Units[heroData.Unit], game)
+                if hero.HeroType != herolib.HeroNone {
+                    player.Heroes[heroIndex] = hero
+                    player.AddUnit(hero)
+                    heroIndex += 1
+                    if heroIndex >= len(player.Heroes) {
+                        break
+                    }
+                }
+            }
+
+            /*
+            Unit int16
+            Name string
+            Items []int16
+            ItemSlot []int16
+            */
+        }
+    }
+
+    stackMoves := make(map[*playerlib.UnitStack]image.Point)
+
+    const (
+        StatusReady = 0
+        StatusPatrol = 1
+        StatusBuildRoad = 2
+        StatusGoto = 3
+        StatusReachedDest = 4
+        StatusWait = 5
+        StatusCasting = 6
+        StatusPurify = 8
+        StatusMeld = 9
+        StatusSettle = 10
+        StatusSeekTransport = 11
+        StatusMove = 16
+        StatusPurifyDone = 111
+    )
+
+    const (
+        MutationNone = 0
+        MutationMagicWeapon = 1
+        MutationMythrilWeapon = 2
+        MutationAdamantiumWeapon = 3
+        MutationChaosChannelsDemonSkin = 4
+        MutationChaosChannelsDemonWings = 8
+        MutationChaosChannelsDemonBreath = 16
+        MutationUndead = 32
+        MutationStasisInit = 64
+        MutationStasisLinger = 128
+    )
+
+    const (
+        EnchantmentImmolation      = 0b00000000000000000000000000000001
+        EnchantmentGuardianWind    = 0b00000000000000000000000000000010
+        EnchantmentBerserk         = 0b00000000000000000000000000000100
+        EnchantmentCloakOfFear     = 0b00000000000000000000000000001000
+        EnchantmentBlackChannels   = 0b00000000000000000000000000010000
+        EnchantmentWraithForm      = 0b00000000000000000000000000100000
+        EnchantmentRegeneration    = 0b00000000000000000000000001000000
+        EnchantmentPathfinding     = 0b00000000000000000000000010000000
+        EnchantmentWaterWalking    = 0b00000000000000000000000100000000
+        EnchantmentResistElements  = 0b00000000000000000000001000000000
+        EnchantmentElementalArmor  = 0b00000000000000000000010000000000
+        EnchantmentStoneSkin       = 0b00000000000000000000100000000000
+        EnchantmentIronSkin        = 0b00000000000000000001000000000000
+        EnchantmentEndurance       = 0b00000000000000000010000000000000
+        EnchantmentSpellLock       = 0b00000000000000000100000000000000
+        EnchantmentInvisibility    = 0b00000000000000001000000000000000
+        EnchantmentWindWalking     = 0b00000000000000010000000000000000
+        EnchantmentFlight          = 0b00000000000000100000000000000000
+        EnchantmentResistMagic     = 0b00000000000001000000000000000000
+        EnchantmentMagicImmunity   = 0b00000000000010000000000000000000
+        EnchantmentFlameBlade      = 0b00000000000100000000000000000000
+        EnchantmentEldritchWeapon  = 0b00000000001000000000000000000000
+        EnchantmentTrueSight       = 0b00000000010000000000000000000000
+        EnchantmentHolyWeapon      = 0b00000000100000000000000000000000
+        EnchantmentHeroism         = 0b00000001000000000000000000000000
+        EnchantmentBless           = 0b00000010000000000000000000000000
+        EnchantmentLionHeart       = 0b00000100000000000000000000000000
+        EnchantmentGiantStrength   = 0b00001000000000000000000000000000
+        EnchantmentPlanarTravel    = 0b00010000000000000000000000000000
+        EnchantmentHolyArmor       = 0b00100000000000000000000000000000
+        EnchantmentRighteousness   = 0b01000000000000000000000000000000
+        EnchantmentInvulnerability = 0b10000000000000000000000000000000
+    )
+
+    unitEnchantmentMap := map[int]data.UnitEnchantment{
+        EnchantmentImmolation: data.UnitEnchantmentImmolation,
+        EnchantmentGuardianWind: data.UnitEnchantmentGuardianWind,
+        EnchantmentBerserk: data.UnitEnchantmentBerserk,
+        EnchantmentCloakOfFear: data.UnitEnchantmentCloakOfFear,
+        EnchantmentBlackChannels: data.UnitEnchantmentBlackChannels,
+        EnchantmentWraithForm: data.UnitEnchantmentWraithForm,
+        EnchantmentRegeneration: data.UnitEnchantmentRegeneration,
+        EnchantmentPathfinding: data.UnitEnchantmentPathFinding,
+        EnchantmentWaterWalking: data.UnitEnchantmentWaterWalking,
+        EnchantmentResistElements: data.UnitEnchantmentResistElements,
+        EnchantmentElementalArmor: data.UnitEnchantmentElementalArmor,
+        EnchantmentStoneSkin: data.UnitEnchantmentStoneSkin,
+        EnchantmentIronSkin: data.UnitEnchantmentIronSkin,
+        EnchantmentEndurance: data.UnitEnchantmentEndurance,
+        EnchantmentSpellLock: data.UnitEnchantmentSpellLock,
+        EnchantmentInvisibility: data.UnitEnchantmentInvisibility,
+        EnchantmentWindWalking: data.UnitEnchantmentWindWalking,
+        EnchantmentFlight: data.UnitEnchantmentFlight,
+        EnchantmentResistMagic: data.UnitEnchantmentResistMagic,
+        EnchantmentMagicImmunity: data.UnitEnchantmentMagicImmunity,
+        EnchantmentFlameBlade: data.UnitEnchantmentFlameBlade,
+        EnchantmentEldritchWeapon: data.UnitEnchantmentEldritchWeapon,
+        EnchantmentTrueSight: data.UnitEnchantmentTrueSight,
+        EnchantmentHolyWeapon: data.UnitEnchantmentHolyWeapon,
+        EnchantmentHeroism: data.UnitEnchantmentHeroism,
+        EnchantmentBless: data.UnitEnchantmentBless,
+        EnchantmentLionHeart: data.UnitEnchantmentLionHeart,
+        EnchantmentGiantStrength: data.UnitEnchantmentGiantStrength,
+        EnchantmentPlanarTravel: data.UnitEnchantmentPlanarTravel,
+        EnchantmentHolyArmor: data.UnitEnchantmentHolyArmor,
+        EnchantmentRighteousness: data.UnitEnchantmentRighteousness,
+        EnchantmentInvulnerability: data.UnitEnchantmentInvulnerability,
+    }
+
+    for unitIndex := range saveGame.NumUnits {
+        unit := &saveGame.Units[unitIndex]
+        if unit.Owner == int8(playerIndex) && getHeroType(unit.TypeIndex) == herolib.HeroNone {
+            plane := data.PlaneArcanus
+            if unit.Plane == 1 {
+                plane = data.PlaneMyrror
+            }
+
+            newUnit := player.AddUnit(units.MakeOverworldUnitFromUnit(getUnitType(int(unit.TypeIndex)), int(unit.X), int(unit.Y), plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+
+            newUnit.AddExperience(int(unit.Experience))
+
+            switch unit.Mutations & 3 {
+                case MutationMagicWeapon:
+                    newUnit.SetWeaponBonus(data.WeaponMagic)
+                case MutationMythrilWeapon:
+                    newUnit.SetWeaponBonus(data.WeaponMythril)
+                case MutationAdamantiumWeapon:
+                    newUnit.SetWeaponBonus(data.WeaponAdamantium)
+            }
+
+            if unit.Mutations & MutationChaosChannelsDemonSkin != 0 {
+                newUnit.AddEnchantment(data.UnitEnchantmentChaosChannelsDemonSkin)
+            }
+
+            if unit.Mutations & MutationChaosChannelsDemonWings != 0 {
+                newUnit.AddEnchantment(data.UnitEnchantmentChaosChannelsDemonWings)
+            }
+
+            if unit.Mutations & MutationChaosChannelsDemonBreath != 0 {
+                newUnit.AddEnchantment(data.UnitEnchantmentChaosChannelsFireBreath)
+            }
+
+            // FIXME: handle undead and stasis
+
+            for bit, enchantment := range unitEnchantmentMap {
+                if int(unit.Enchantments) & bit != 0 {
+                    newUnit.AddEnchantment(enchantment)
+                }
+            }
+
+            newUnit.SetMovesLeft(fraction.FromInt(int(unit.Moves) * 2))
+            if unit.Finished == 1 {
+                newUnit.SetMovesLeft(fraction.Zero())
+
+                switch unit.Status {
+                    case StatusPatrol: newUnit.SetBusy(units.BusyStatusPatrol)
+                    case StatusBuildRoad: newUnit.SetBusy(units.BusyStatusBuildRoad)
+                    case StatusPurify: newUnit.SetBusy(units.BusyStatusPurify)
+                    case StatusGoto:
+                        log.Printf("Unit %v going to %v,%v status %v", newUnit.GetName(), unit.DestinationX, unit.DestinationY, unit.Status)
+                        stackMoves[player.FindStackByUnit(newUnit)] = image.Pt(int(unit.DestinationX), int(unit.DestinationY))
+                    // FIXME: stasis
+                }
+            }
+
+        }
+    }
+
     player.Cities = saveGame.convertCities(&player, playerIndex, wizards, game)
     player.UpdateResearchCandidates()
     player.UpdateFogVisibility()
 
-    return &player
+    return &player, stackMoves
+}
+
+func getUnitType(index int) units.Unit {
+    switch index {
+        case 0: return units.HeroBrax
+        case 1: return units.HeroGunther
+        case 2: return units.HeroZaldron
+        case 3: return units.HeroBShan
+        case 4: return units.HeroRakir
+        case 5: return units.HeroValana
+        case 6: return units.HeroBahgtru
+        case 7: return units.HeroSerena
+        case 8: return units.HeroShuri
+        case 9: return units.HeroTheria
+        case 10: return units.HeroGreyfairer
+        case 11: return units.HeroTaki
+        case 12: return units.HeroReywind
+        case 13: return units.HeroMalleus
+        case 14: return units.HeroTumu
+        case 15: return units.HeroJaer
+        case 16: return units.HeroMarcus
+        case 17: return units.HeroFang
+        case 18: return units.HeroMorgana
+        case 19: return units.HeroAureus
+        case 20: return units.HeroShinBo
+        case 21: return units.HeroSpyder
+        case 22: return units.HeroShalla
+        case 23: return units.HeroYramrag
+        case 24: return units.HeroMysticX
+        case 25: return units.HeroAerie
+        case 26: return units.HeroDethStryke
+        case 27: return units.HeroElana
+        case 28: return units.HeroRoland
+        case 29: return units.HeroMortu
+        case 30: return units.HeroAlorra
+        case 31: return units.HeroSirHarold
+        case 32: return units.HeroRavashack
+        case 33: return units.HeroWarrax
+        case 34: return units.HeroTorin
+        case 35: return units.Trireme
+        case 36: return units.Galley
+        case 37: return units.Catapult
+        case 38: return units.Warship
+        case 39: return units.BarbarianSpearmen
+        case 40: return units.BarbarianSwordsmen
+        case 41: return units.BarbarianBowmen
+        case 42: return units.BarbarianCavalry
+        case 43: return units.BarbarianShaman
+        case 44: return units.BarbarianSettlers
+        case 45: return units.Berserkers
+        case 46: return units.BeastmenSpearmen
+        case 47: return units.BeastmenSwordsmen
+        case 48: return units.BeastmenHalberdiers
+        case 49: return units.BeastmenBowmen
+        case 50: return units.BeastmenPriest
+        case 51: return units.BeastmenMagician
+        case 52: return units.BeastmenEngineer
+        case 53: return units.BeastmenSettlers
+        case 54: return units.Centaur
+        case 55: return units.Manticore
+        case 56: return units.Minotaur
+        case 57: return units.DarkElfSpearmen
+        case 58: return units.DarkElfSwordsmen
+        case 59: return units.DarkElfHalberdiers
+        case 60: return units.DarkElfCavalry
+        case 61: return units.DarkElfPriests
+        case 62: return units.DarkElfSettlers
+        case 63: return units.Nightblades
+        case 64: return units.Warlocks
+        case 65: return units.Nightmares
+        case 66: return units.DraconianSpearmen
+        case 67: return units.DraconianSwordsmen
+        case 68: return units.DraconianHalberdiers
+        case 69: return units.DraconianBowmen
+        case 70: return units.DraconianShaman
+        case 71: return units.DraconianMagician
+        // case 72: return units.DraconianEngineer
+        case 73: return units.DraconianSettlers
+        case 74: return units.DoomDrake
+        case 75: return units.AirShip
+        case 76: return units.DwarfSwordsmen
+        case 77: return units.DwarfHalberdiers
+        case 78: return units.DwarfEngineer
+        case 79: return units.Hammerhands
+        case 80: return units.SteamCannon
+        case 81: return units.Golem
+        case 82: return units.DwarfSettlers
+        case 83: return units.GnollSpearmen
+        case 84: return units.GnollSwordsmen
+        case 85: return units.GnollHalberdiers
+        case 86: return units.GnollBowmen
+        case 87: return units.GnollSettlers
+        case 88: return units.WolfRiders
+        case 89: return units.HalflingSpearmen
+        case 90: return units.HalflingSwordsmen
+        case 91: return units.HalflingBowmen
+        case 92: return units.HalflingShamans
+        case 93: return units.HalflingSettlers
+        case 94: return units.Slingers
+        case 95: return units.HighElfSpearmen
+        case 96: return units.HighElfSwordsmen
+        case 97: return units.HighElfHalberdiers
+        case 98: return units.HighElfCavalry
+        case 99: return units.HighElfMagician
+        case 100: return units.HighElfSettlers
+        case 101: return units.Longbowmen
+        case 102: return units.ElvenLord
+        case 103: return units.Pegasai
+        case 104: return units.HighMenSpearmen
+        case 105: return units.HighMenSwordsmen
+        case 106: return units.HighMenBowmen
+        case 107: return units.HighMenCavalry
+        case 108: return units.HighMenPriest
+        case 109: return units.HighMenMagician
+        case 110: return units.HighMenEngineer
+        case 111: return units.HighMenSettlers
+        case 112: return units.HighMenPikemen
+        case 113: return units.Paladin
+        case 114: return units.KlackonSpearmen
+        case 115: return units.KlackonSwordsmen
+        case 116: return units.KlackonHalberdiers
+        case 117: return units.KlackonEngineer
+        case 118: return units.KlackonSettlers
+        case 119: return units.StagBeetle
+        case 120: return units.LizardSpearmen
+        case 121: return units.LizardSwordsmen
+        case 122: return units.LizardHalberdiers
+        case 123: return units.LizardJavelineers
+        case 124: return units.LizardShamans
+        case 125: return units.LizardSettlers
+        case 126: return units.DragonTurtle
+        case 127: return units.NomadSpearmen
+        case 128: return units.NomadSwordsmen
+        case 129: return units.NomadBowmen
+        case 130: return units.NomadPriest
+        // case 131: return units.NomadMagicians
+        case 132: return units.NomadSettlers
+        case 133: return units.NomadHorsebowemen
+        case 134: return units.NomadPikemen
+        case 135: return units.NomadRangers
+        case 136: return units.Griffin
+        case 137: return units.OrcSpearmen
+        case 138: return units.OrcSwordsmen
+        case 139: return units.OrcHalberdiers
+        case 140: return units.OrcBowmen
+        case 141: return units.OrcCavalry
+        case 142: return units.OrcShamans
+        case 143: return units.OrcMagicians
+        case 144: return units.OrcEngineers
+        case 145: return units.OrcSettlers
+        case 146: return units.WyvernRiders
+        case 147: return units.TrollSpearmen
+        case 148: return units.TrollSwordsmen
+        case 149: return units.TrollHalberdiers
+        case 150: return units.TrollShamans
+        case 151: return units.TrollSettlers
+        case 152: return units.WarTrolls
+        case 153: return units.WarMammoths
+        case 154: return units.MagicSpirit
+        case 155: return units.HellHounds
+        case 156: return units.Gargoyle
+        case 157: return units.FireGiant
+        case 158: return units.FireElemental
+        case 159: return units.ChaosSpawn
+        case 160: return units.Chimeras
+        case 161: return units.DoomBat
+        case 162: return units.Efreet
+        case 163: return units.Hydra
+        case 164: return units.GreatDrake
+        case 165: return units.Skeleton
+        case 166: return units.Ghoul
+        case 167: return units.NightStalker
+        case 168: return units.WereWolf
+        case 169: return units.Demon
+        case 170: return units.Wraith
+        case 171: return units.ShadowDemons
+        case 172: return units.DeathKnights
+        case 173: return units.DemonLord
+        case 174: return units.Zombie
+        case 175: return units.Unicorn
+        case 176: return units.GuardianSpirit
+        case 177: return units.Angel
+        case 178: return units.ArchAngel
+        case 179: return units.WarBear
+        case 180: return units.Sprites
+        case 181: return units.Cockatrices
+        case 182: return units.Basilisk
+        case 183: return units.GiantSpiders
+        case 184: return units.StoneGiant
+        case 185: return units.Colossus
+        case 186: return units.Gorgon
+        case 187: return units.EarthElemental
+        case 188: return units.Behemoth
+        case 189: return units.GreatWyrm
+        case 190: return units.FloatingIsland
+        case 191: return units.PhantomBeast
+        case 192: return units.PhantomWarrior
+        case 193: return units.StormGiant
+        case 194: return units.AirElemental
+        case 195: return units.Djinn
+        case 196: return units.SkyDrake
+        case 197: return units.Nagas
+    }
+
+    return units.UnitNone
+}
+
+func getHeroType(index uint8) herolib.HeroType {
+    switch index {
+        case 0: return herolib.HeroBrax
+        case 1: return herolib.HeroGunther
+        case 2: return herolib.HeroZaldron
+        case 3: return herolib.HeroBShan
+        case 4: return herolib.HeroRakir
+        case 5: return herolib.HeroValana
+        case 6: return herolib.HeroBahgtru
+        case 7: return herolib.HeroSerena
+        case 8: return herolib.HeroShuri
+        case 9: return herolib.HeroTheria
+        case 10: return herolib.HeroGreyfairer
+        case 11: return herolib.HeroTaki
+        case 12: return herolib.HeroReywind
+        case 13: return herolib.HeroMalleus
+        case 14: return herolib.HeroTumu
+        case 15: return herolib.HeroJaer
+        case 16: return herolib.HeroMarcus
+        case 17: return herolib.HeroFang
+        case 18: return herolib.HeroMorgana
+        case 19: return herolib.HeroAureus
+        case 20: return herolib.HeroShinBo
+        case 21: return herolib.HeroSpyder
+        case 22: return herolib.HeroShalla
+        case 23: return herolib.HeroYramrag
+        case 24: return herolib.HeroMysticX
+        case 25: return herolib.HeroAerie
+        case 26: return herolib.HeroDethStryke
+        case 27: return herolib.HeroElana
+        case 28: return herolib.HeroRoland
+        case 29: return herolib.HeroMortu
+        case 30: return herolib.HeroAlorra
+        case 31: return herolib.HeroSirHarold
+        case 32: return herolib.HeroRavashack
+        case 33: return herolib.HeroWarrax
+        case 34: return herolib.HeroTorin
+    }
+
+    return herolib.HeroNone
+}
+
+func makeUnit(unitData *UnitData, player *playerlib.Player) *units.OverworldUnit {
+    plane := data.PlaneArcanus
+    if unitData.Plane == 1 {
+        plane = data.PlaneMyrror
+    }
+    return units.MakeOverworldUnitFromUnit(getUnitType(int(unitData.TypeIndex)), int(unitData.X), int(unitData.Y), plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
+}
+
+func makeHero(player *playerlib.Player, heroData PlayerHeroData, unitData *UnitData, game *gamelib.Game) *herolib.Hero {
+    hero := herolib.MakeHero(makeUnit(unitData, player), getHeroType(unitData.TypeIndex), heroData.Name)
+    hero.AddExperience(int(unitData.Experience))
+    return hero
 }
 
 func (saveGame *SaveGame) convertArtifacts(spells spellbook.Spells) []*artifact.Artifact {
@@ -956,15 +1222,38 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
         }
     }
 
+    /*
+    log.Printf("Units:")
+    for i, unit := range saveGame.Units {
+        if unit.HeroSlot > 0 {
+            log.Printf("%v: hero %+v", i, unit)
+        }
+    }
+    */
+
     wizards := []setup.WizardCustom{}
     for playerIndex := range saveGame.NumPlayers {
         wizards = append(wizards, saveGame.convertWizard(int(playerIndex)))
     }
 
+    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
+    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
+
     for playerIndex := range saveGame.NumPlayers {
-        player := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
+        player, stackMoves := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
         game.Players = append(game.Players, player)
+
+        defer func(){
+            for stack, destination := range stackMoves {
+                // FIXME: associate the player with the stack
+                path := game.FindPath(stack.X(), stack.Y(), destination.X, destination.Y, player, stack, player.GetFog(stack.Plane()))
+                if path != nil {
+                    stack.CurrentPath = path
+                }
+            }
+        }()
     }
+
     // FIXME: add neutral player with brown banner and ai.MakeRaiderAI()
 
     // FIXME: add all remaining information from saveGame
@@ -974,8 +1263,6 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // saveGame.Units / saveGame.NumUnits
     // saveGame.Events
 
-    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
-    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
     // FIXME: game.RandomEvents
     // FIXME: game.RoadWorkArcanus
     // FIXME: game.RoadWorkMyrror

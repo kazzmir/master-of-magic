@@ -321,6 +321,8 @@ type Player struct {
     // currently employed heroes
     Heroes [6]*herolib.Hero
 
+    SpellOfMasteryCost int
+
     VaultEquipment [4]*artifact.Artifact
 
     // total power points put into the casting skill
@@ -366,8 +368,14 @@ func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight i
         return fog
     }
 
+    spellOfMasteryCost := 60000
+    if wizard.MagicLevel(wizard.MostBooks()) >= 11 {
+        spellOfMasteryCost -= 3000
+    }
+
     return &Player{
         TaxRate: fraction.FromInt(1),
+        SpellOfMasteryCost: spellOfMasteryCost,
         ArcanusFog: makeFog(),
         MyrrorFog: makeFog(),
         Wizard: wizard,
@@ -761,6 +769,14 @@ func (player *Player) LearnSpell(spell spellbook.Spell) {
     player.KnownSpells.AddSpell(spell)
     player.UpdateResearchCandidates()
 
+    // learned spells reduce the research cost of the spell of mastery
+    if spell.Name != "Spell of Mastery" {
+        player.SpellOfMasteryCost -= spell.ResearchCost / 2
+        if player.SpellOfMasteryCost < 0 {
+            player.SpellOfMasteryCost = 0
+        }
+    }
+
     // if the spell learned is the one being researched, then reset the research spell
     if spell.Name == player.ResearchingSpell.Name {
         player.ResearchingSpell = spellbook.Spell{}
@@ -1034,6 +1050,11 @@ func (player *Player) SpellResearchPerTurn(power int) float64 {
 }
 
 func (player *Player) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {
+    // special case for spell of mastery
+    if spell.Name == "Spell of Mastery" {
+        return player.SpellOfMasteryCost
+    }
+
     return spellbook.ComputeSpellCost(&player.Wizard, spell, overland, player.GlobalEnchantmentsProvider.HasEnchantment(data.EnchantmentEvilOmens))
 }
 

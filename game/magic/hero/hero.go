@@ -57,6 +57,8 @@ const (
     HeroTheria
     HeroTumu
     HeroAureus
+
+    HeroNone
 )
 
 func (heroType HeroType) GetRequiredFame() int {

@@ -1198,6 +1198,11 @@ func (city *City) PopulationGrowthRate() int {
         base = 50 * city.SurplusFood()
     }
 
+    // can't have positive growth if at max size
+    if base > 0 && city.Citizens() >= city.MaximumCitySize() {
+        return 0
+    }
+
     return base
 }
 
