@@ -744,6 +744,76 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         MutationStasisLinger = 128
     )
 
+    const (
+        EnchantmentImmolation      = 0b00000000000000000000000000000001
+        EnchantmentGuardianWind    = 0b00000000000000000000000000000010
+        EnchantmentBerserk         = 0b00000000000000000000000000000100
+        EnchantmentCloakOfFear     = 0b00000000000000000000000000001000
+        EnchantmentBlackChannels   = 0b00000000000000000000000000010000
+        EnchantmentWraithForm      = 0b00000000000000000000000000100000
+        EnchantmentRegeneration    = 0b00000000000000000000000001000000
+        EnchantmentPathfinding     = 0b00000000000000000000000010000000
+        EnchantmentWaterWalking    = 0b00000000000000000000000100000000
+        EnchantmentResistElements  = 0b00000000000000000000001000000000
+        EnchantmentElementalArmor  = 0b00000000000000000000010000000000
+        EnchantmentStoneSkin       = 0b00000000000000000000100000000000
+        EnchantmentIronSkin        = 0b00000000000000000001000000000000
+        EnchantmentEndurance       = 0b00000000000000000010000000000000
+        EnchantmentSpellLock       = 0b00000000000000000100000000000000
+        EnchantmentInvisibility    = 0b00000000000000001000000000000000
+        EnchantmentWindWalking     = 0b00000000000000010000000000000000
+        EnchantmentFlight          = 0b00000000000000100000000000000000
+        EnchantmentResistMagic     = 0b00000000000001000000000000000000
+        EnchantmentMagicImmunity   = 0b00000000000010000000000000000000
+        EnchantmentFlameBlade      = 0b00000000000100000000000000000000
+        EnchantmentEldritchWeapon  = 0b00000000001000000000000000000000
+        EnchantmentTrueSight       = 0b00000000010000000000000000000000
+        EnchantmentHolyWeapon      = 0b00000000100000000000000000000000
+        EnchantmentHeroism         = 0b00000001000000000000000000000000
+        EnchantmentBless           = 0b00000010000000000000000000000000
+        EnchantmentLionHeart       = 0b00000100000000000000000000000000
+        EnchantmentGiantStrength   = 0b00001000000000000000000000000000
+        EnchantmentPlanarTravel    = 0b00010000000000000000000000000000
+        EnchantmentHolyArmor       = 0b00100000000000000000000000000000
+        EnchantmentRighteousness   = 0b01000000000000000000000000000000
+        EnchantmentInvulnerability = 0b10000000000000000000000000000000
+    )
+
+    unitEnchantmentMap := map[int]data.UnitEnchantment{
+        EnchantmentImmolation: data.UnitEnchantmentImmolation,
+        EnchantmentGuardianWind: data.UnitEnchantmentGuardianWind,
+        EnchantmentBerserk: data.UnitEnchantmentBerserk,
+        EnchantmentCloakOfFear: data.UnitEnchantmentCloakOfFear,
+        EnchantmentBlackChannels: data.UnitEnchantmentBlackChannels,
+        EnchantmentWraithForm: data.UnitEnchantmentWraithForm,
+        EnchantmentRegeneration: data.UnitEnchantmentRegeneration,
+        EnchantmentPathfinding: data.UnitEnchantmentPathFinding,
+        EnchantmentWaterWalking: data.UnitEnchantmentWaterWalking,
+        EnchantmentResistElements: data.UnitEnchantmentResistElements,
+        EnchantmentElementalArmor: data.UnitEnchantmentElementalArmor,
+        EnchantmentStoneSkin: data.UnitEnchantmentStoneSkin,
+        EnchantmentIronSkin: data.UnitEnchantmentIronSkin,
+        EnchantmentEndurance: data.UnitEnchantmentEndurance,
+        EnchantmentSpellLock: data.UnitEnchantmentSpellLock,
+        EnchantmentInvisibility: data.UnitEnchantmentInvisibility,
+        EnchantmentWindWalking: data.UnitEnchantmentWindWalking,
+        EnchantmentFlight: data.UnitEnchantmentFlight,
+        EnchantmentResistMagic: data.UnitEnchantmentResistMagic,
+        EnchantmentMagicImmunity: data.UnitEnchantmentMagicImmunity,
+        EnchantmentFlameBlade: data.UnitEnchantmentFlameBlade,
+        EnchantmentEldritchWeapon: data.UnitEnchantmentEldritchWeapon,
+        EnchantmentTrueSight: data.UnitEnchantmentTrueSight,
+        EnchantmentHolyWeapon: data.UnitEnchantmentHolyWeapon,
+        EnchantmentHeroism: data.UnitEnchantmentHeroism,
+        EnchantmentBless: data.UnitEnchantmentBless,
+        EnchantmentLionHeart: data.UnitEnchantmentLionHeart,
+        EnchantmentGiantStrength: data.UnitEnchantmentGiantStrength,
+        EnchantmentPlanarTravel: data.UnitEnchantmentPlanarTravel,
+        EnchantmentHolyArmor: data.UnitEnchantmentHolyArmor,
+        EnchantmentRighteousness: data.UnitEnchantmentRighteousness,
+        EnchantmentInvulnerability: data.UnitEnchantmentInvulnerability,
+    }
+
     for unitIndex := range saveGame.NumUnits {
         unit := &saveGame.Units[unitIndex]
         if unit.Owner == int8(playerIndex) && getHeroType(unit.TypeIndex) == herolib.HeroNone {
@@ -778,6 +848,12 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
             }
 
             // FIXME: handle undead and stasis
+
+            for bit, enchantment := range unitEnchantmentMap {
+                if int(unit.Enchantments) & bit != 0 {
+                    newUnit.AddEnchantment(enchantment)
+                }
+            }
 
             newUnit.SetMovesLeft(fraction.FromInt(int(unit.Moves) * 2))
             if unit.Finished == 1 {
