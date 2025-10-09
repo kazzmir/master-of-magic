@@ -731,6 +731,19 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         StatusPurifyDone = 111
     )
 
+    const (
+        MutationNone = 0
+        MutationMagicWeapon = 1
+        MutationMythrilWeapon = 2
+        MutationAdamantiumWeapon = 3
+        MutationChaosChannelsDemonSkin = 4
+        MutationChaosChannelsDemonWings = 8
+        MutationChaosChannelsDemonBreath = 16
+        MutationUndead = 32
+        MutationStasisInit = 64
+        MutationStasisLinger = 128
+    )
+
     for unitIndex := range saveGame.NumUnits {
         unit := &saveGame.Units[unitIndex]
         if unit.Owner == int8(playerIndex) && getHeroType(unit.TypeIndex) == herolib.HeroNone {
@@ -738,7 +751,32 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
             if unit.Plane == 1 {
                 plane = data.PlaneMyrror
             }
+
             newUnit := player.AddUnit(units.MakeOverworldUnitFromUnit(getUnitType(int(unit.TypeIndex)), int(unit.X), int(unit.Y), plane, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+
+            switch unit.Mutations & 3 {
+                case MutationMagicWeapon:
+                    newUnit.SetWeaponBonus(data.WeaponMagic)
+                case MutationMythrilWeapon:
+                    newUnit.SetWeaponBonus(data.WeaponMythril)
+                case MutationAdamantiumWeapon:
+                    newUnit.SetWeaponBonus(data.WeaponAdamantium)
+            }
+
+            if unit.Mutations & MutationChaosChannelsDemonSkin != 0 {
+                newUnit.AddEnchantment(data.UnitEnchantmentChaosChannelsDemonSkin)
+            }
+
+            if unit.Mutations & MutationChaosChannelsDemonWings != 0 {
+                newUnit.AddEnchantment(data.UnitEnchantmentChaosChannelsDemonWings)
+            }
+
+            if unit.Mutations & MutationChaosChannelsDemonBreath != 0 {
+                newUnit.AddEnchantment(data.UnitEnchantmentChaosChannelsFireBreath)
+            }
+
+            // FIXME: handle undead and stasis
+
             newUnit.SetMovesLeft(fraction.FromInt(int(unit.Moves) * 2))
             if unit.Finished == 1 {
                 newUnit.SetMovesLeft(fraction.Zero())
