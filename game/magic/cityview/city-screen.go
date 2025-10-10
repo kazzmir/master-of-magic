@@ -1165,10 +1165,12 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
 
     // FIXME: show Nightshade as a city enchantment if a nightshade tile is in the city catchment area and an appropriate building exists
 
+    maxPosition := 209
     var resourceIcons []*uilib.UIElement
+
     resetResourceIcons := func(){
         ui.RemoveElements(resourceIcons)
-        resourceIcons = cityScreen.CreateResourceIcons(ui)
+        resourceIcons = cityScreen.CreateResourceIcons(maxPosition, ui)
         ui.AddElements(resourceIcons)
     }
 
@@ -1177,8 +1179,6 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         var workerElements []*uilib.UIElement
         setupWorkers = func(){
             ui.RemoveElements(workerElements)
-
-            maxPosition := 209
 
             offset1 := 0
             offset2 := 0
@@ -2093,7 +2093,7 @@ func (cityScreen *CityScreen) ResearchProducers() []ResourceUsage {
     return usage
 }
 
-func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIElement {
+func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI) []*uilib.UIElement {
     foodRequired := cityScreen.City.RequiredFood()
     foodSurplus := cityScreen.City.SurplusFood()
 
@@ -2148,7 +2148,8 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
     })
 
     var goldUpkeepOptions ebiten.DrawImageOptions
-    goldGeom := cityScreen.drawIcons(cityScreen.City.ComputeUpkeep(), smallCoin, bigCoin, goldUpkeepOptions, nil)
+    upKeep := cityScreen.City.ComputeUpkeep()
+    goldGeom := cityScreen.drawIcons(upKeep, smallCoin, bigCoin, goldUpkeepOptions, nil)
 
     x, _ := goldGeom.Apply(0, 0)
 
@@ -2164,7 +2165,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(ui *uilib.UI) []*uilib.UIEleme
         Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(goldMaintenanceRect.Min.X), float64(goldMaintenanceRect.Min.Y))
-            cityScreen.drawIcons(cityScreen.City.ComputeUpkeep(), smallCoin, bigCoin, options, screen)
+            cityScreen.drawIcons(upKeep, smallCoin, bigCoin, options, screen)
 
             // util.DrawRect(screen, goldMaintenanceRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
         },
