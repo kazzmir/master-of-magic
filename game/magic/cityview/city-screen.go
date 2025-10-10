@@ -668,11 +668,12 @@ func (cityScreen *CityScreen) ResetUI() {
     cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
 }
 
-func (cityScreen *CityScreen) CreateCitizenIcons(setupWorkers func()) []*uilib.UIElement {
+// returns the elements and the right most pixel used
+func (cityScreen *CityScreen) CreateCitizenIcons(offset1 int, offset2 int, setupWorkers func()) ([]*uilib.UIElement, int) {
     farmer, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(cityScreen.City.Race), 0)
     if err != nil {
         log.Printf("Could not load farmer image: %v", err)
-        return nil
+        return nil, 0
     }
 
     var workerElements []*uilib.UIElement
@@ -712,7 +713,7 @@ func (cityScreen *CityScreen) CreateCitizenIcons(setupWorkers func()) []*uilib.U
             },
         })
 
-        citizenX += farmer.Bounds().Dx()
+        citizenX += farmer.Bounds().Dx() - offset1
     }
 
     // the farmers that can be changed to workers
@@ -736,7 +737,7 @@ func (cityScreen *CityScreen) CreateCitizenIcons(setupWorkers func()) []*uilib.U
             },
         })
 
-        citizenX += farmer.Bounds().Dx() 
+        citizenX += farmer.Bounds().Dx() - offset2
     }
 
     worker, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(cityScreen.City.Race), 0)
@@ -759,7 +760,7 @@ func (cityScreen *CityScreen) CreateCitizenIcons(setupWorkers func()) []*uilib.U
                 },
             })
 
-            citizenX += worker.Bounds().Dx()
+            citizenX += worker.Bounds().Dx() - offset2
         }
     }
 
@@ -777,11 +778,11 @@ func (cityScreen *CityScreen) CreateCitizenIcons(setupWorkers func()) []*uilib.U
                 },
             })
 
-            citizenX += rebel.Bounds().Dx()
+            citizenX += rebel.Bounds().Dx() - offset2
         }
     }
 
-    return workerElements
+    return workerElements, citizenX
 }
 
 func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI {
@@ -1176,7 +1177,22 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         var workerElements []*uilib.UIElement
         setupWorkers = func(){
             ui.RemoveElements(workerElements)
-            workerElements = cityScreen.CreateCitizenIcons(setupWorkers)
+
+            maxPosition := 209
+
+            offset1 := 0
+            offset2 := 0
+
+            for offset1 < 4 {
+                var position int
+                workerElements, position = cityScreen.CreateCitizenIcons(offset1, offset2, setupWorkers)
+                if position > maxPosition {
+                    offset1 += 1
+                    offset2 += 1
+                } else {
+                    break
+                }
+            }
 
             ui.AddElements(workerElements)
 
