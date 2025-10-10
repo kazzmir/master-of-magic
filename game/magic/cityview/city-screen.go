@@ -668,6 +668,122 @@ func (cityScreen *CityScreen) ResetUI() {
     cityScreen.UI = cityScreen.MakeUI(buildinglib.BuildingNone)
 }
 
+func (cityScreen *CityScreen) CreateCitizenIcons(setupWorkers func()) []*uilib.UIElement {
+    farmer, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(cityScreen.City.Race), 0)
+    if err != nil {
+        log.Printf("Could not load farmer image: %v", err)
+        return nil
+    }
+
+    var workerElements []*uilib.UIElement
+
+    citizenX := 6
+    workerY := float64(27)
+
+    // the city might not have enough the required subsistence farmers, so only show what is available
+    subsistenceFarmers := min(cityScreen.City.ComputeSubsistenceFarmers(), cityScreen.City.Farmers)
+
+    // pixels of space in the area where the citizen icons show up
+    // maxSpace := 200
+
+    // subsistence farmers
+    /*
+    group1Space := subsistenceFarmers
+    // normal farmers/workers/rebels
+    group2Space := max(0, cityScreen.City.Farmers - subsistenceFarmers) + cityScreen.City.Workers + cityScreen.City.Rebels
+    */
+    groupGap := 3
+
+    // if group1Space * farmer.Bounds().Dx() + groupGap + 
+
+    for i := 0; i < subsistenceFarmers; i++ {
+        posX := citizenX
+        workerElements = append(workerElements, &uilib.UIElement{
+            Rect: util.ImageRect(posX, int(workerY), farmer),
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(posX), workerY)
+                scale.DrawScaled(screen, farmer, &options)
+            },
+            LeftClick: func(element *uilib.UIElement) {
+                cityScreen.City.Farmers = subsistenceFarmers
+                cityScreen.City.Workers = cityScreen.City.Citizens() - cityScreen.City.Rebels - cityScreen.City.Farmers
+                setupWorkers()
+            },
+        })
+
+        citizenX += farmer.Bounds().Dx()
+    }
+
+    // the farmers that can be changed to workers
+    citizenX += groupGap
+    for i := subsistenceFarmers; i < cityScreen.City.Farmers; i++ {
+        posX := citizenX
+
+        extraFarmer := i
+
+        workerElements = append(workerElements, &uilib.UIElement{
+            Rect: util.ImageRect(posX, int(workerY), farmer),
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(posX), workerY)
+                scale.DrawScaled(screen, farmer, &options)
+            },
+            LeftClick: func(element *uilib.UIElement) {
+                cityScreen.City.Farmers = extraFarmer
+                cityScreen.City.Workers = cityScreen.City.Citizens() - cityScreen.City.Rebels - cityScreen.City.Farmers
+                setupWorkers()
+            },
+        })
+
+        citizenX += farmer.Bounds().Dx() 
+    }
+
+    worker, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(cityScreen.City.Race), 0)
+    if err == nil {
+        for i := 0; i < cityScreen.City.Workers; i++ {
+            posX := citizenX
+
+            workerNum := i
+            workerElements = append(workerElements, &uilib.UIElement{
+                Rect: util.ImageRect(posX, int(workerY), worker),
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(posX), workerY)
+                    scale.DrawScaled(screen, worker, &options)
+                },
+                LeftClick: func(element *uilib.UIElement) {
+                    cityScreen.City.Workers -= workerNum + 1
+                    cityScreen.City.Farmers += workerNum + 1
+                    setupWorkers()
+                },
+            })
+
+            citizenX += worker.Bounds().Dx()
+        }
+    }
+
+    rebel, err := cityScreen.ImageCache.GetImageTransform("backgrnd.lbx", getRaceRebelIndex(cityScreen.City.Race), 0, "crop", util.AutoCrop)
+    if err == nil {
+        citizenX += 3
+        for i := 0; i < cityScreen.City.Rebels; i++ {
+            posX := citizenX
+
+            workerElements = append(workerElements, &uilib.UIElement{
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(posX), workerY - float64(2))
+                    scale.DrawScaled(screen, rebel, &options)
+                },
+            })
+
+            citizenX += rebel.Bounds().Dx()
+        }
+    }
+
+    return workerElements
+}
+
 func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI {
     ui := &uilib.UI{
         Cache: cityScreen.LbxCache,
@@ -1055,103 +1171,12 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         ui.AddElements(resourceIcons)
     }
 
-    farmer, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(cityScreen.City.Race), 0)
     var setupWorkers func()
     if err == nil {
-        workerY := float64(27)
         var workerElements []*uilib.UIElement
         setupWorkers = func(){
             ui.RemoveElements(workerElements)
-            workerElements = nil
-            citizenX := 6
-
-            // the city might not have enough the required subsistence farmers, so only show what is available
-            subsistenceFarmers := min(cityScreen.City.ComputeSubsistenceFarmers(), cityScreen.City.Farmers)
-
-            for i := 0; i < subsistenceFarmers; i++ {
-                posX := citizenX
-                workerElements = append(workerElements, &uilib.UIElement{
-                    Rect: util.ImageRect(posX, int(workerY), farmer),
-                    Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                        var options ebiten.DrawImageOptions
-                        options.GeoM.Translate(float64(posX), workerY)
-                        scale.DrawScaled(screen, farmer, &options)
-                    },
-                    LeftClick: func(element *uilib.UIElement) {
-                        cityScreen.City.Farmers = subsistenceFarmers
-                        cityScreen.City.Workers = cityScreen.City.Citizens() - cityScreen.City.Rebels - cityScreen.City.Farmers
-                        setupWorkers()
-                    },
-                })
-
-                citizenX += farmer.Bounds().Dx()
-            }
-
-            // the farmers that can be changed to workers
-            citizenX += 3
-            for i := subsistenceFarmers; i < cityScreen.City.Farmers; i++ {
-                posX := citizenX
-
-                extraFarmer := i
-
-                workerElements = append(workerElements, &uilib.UIElement{
-                    Rect: util.ImageRect(posX, int(workerY), farmer),
-                    Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                        var options ebiten.DrawImageOptions
-                        options.GeoM.Translate(float64(posX), workerY)
-                        scale.DrawScaled(screen, farmer, &options)
-                    },
-                    LeftClick: func(element *uilib.UIElement) {
-                        cityScreen.City.Farmers = extraFarmer
-                        cityScreen.City.Workers = cityScreen.City.Citizens() - cityScreen.City.Rebels - cityScreen.City.Farmers
-                        setupWorkers()
-                    },
-                })
-
-                citizenX += farmer.Bounds().Dx()
-            }
-
-            worker, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(cityScreen.City.Race), 0)
-            if err == nil {
-                for i := 0; i < cityScreen.City.Workers; i++ {
-                    posX := citizenX
-
-                    workerNum := i
-                    workerElements = append(workerElements, &uilib.UIElement{
-                        Rect: util.ImageRect(posX, int(workerY), worker),
-                        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                            var options ebiten.DrawImageOptions
-                            options.GeoM.Translate(float64(posX), workerY)
-                            scale.DrawScaled(screen, worker, &options)
-                        },
-                        LeftClick: func(element *uilib.UIElement) {
-                            cityScreen.City.Workers -= workerNum + 1
-                            cityScreen.City.Farmers += workerNum + 1
-                            setupWorkers()
-                        },
-                    })
-
-                    citizenX += worker.Bounds().Dx()
-                }
-            }
-
-            rebel, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(cityScreen.City.Race), 0)
-            if err == nil {
-                citizenX += 3
-                for i := 0; i < cityScreen.City.Rebels; i++ {
-                    posX := citizenX
-
-                    workerElements = append(workerElements, &uilib.UIElement{
-                        Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                            var options ebiten.DrawImageOptions
-                            options.GeoM.Translate(float64(posX), workerY - float64(2))
-                            scale.DrawScaled(screen, rebel, &options)
-                        },
-                    })
-
-                    citizenX += rebel.Bounds().Dx()
-                }
-            }
+            workerElements = cityScreen.CreateCitizenIcons(setupWorkers)
 
             ui.AddElements(workerElements)
 
