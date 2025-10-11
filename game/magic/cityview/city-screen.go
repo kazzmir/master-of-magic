@@ -2276,10 +2276,14 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(researchRect.Min.X), float64(researchRect.Min.Y))
         research := cityScreen.City.ResearchProduction()
+        researchString := fmt.Sprintf("Research %v", research)
 
         for offset := range min(smallResearch.Bounds().Dx() - 1, bigResearch.Bounds().Dx() - 1) {
             element := &uilib.UIElement{
                 Rect: researchRect,
+                Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+                    return researchString, cityScreen.Fonts.SmallFont
+                },
                 LeftClick: func(element *uilib.UIElement) {
                     research := cityScreen.ResearchProducers()
                     ui.AddElements(cityScreen.MakeResourceDialog("Spell Research", smallResearch, bigResearch, ui, research))
