@@ -697,13 +697,13 @@ func (cityScreen *CityScreen) CreateCitizenIcons(offset1 int, offset2 int, setup
 
     // if group1Space * farmer.Bounds().Dx() + groupGap + 
 
-    for i := 0; i < subsistenceFarmers; i++ {
+    for range subsistenceFarmers {
         posX := citizenX
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(posX), workerY)
         workerElements = append(workerElements, &uilib.UIElement{
             Rect: util.ImageRect(posX, int(workerY), farmer),
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(posX), workerY)
                 scale.DrawScaled(screen, farmer, &options)
             },
             LeftClick: func(element *uilib.UIElement) {
@@ -722,12 +722,12 @@ func (cityScreen *CityScreen) CreateCitizenIcons(offset1 int, offset2 int, setup
         posX := citizenX
 
         extraFarmer := i
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(posX), workerY)
 
         workerElements = append(workerElements, &uilib.UIElement{
             Rect: util.ImageRect(posX, int(workerY), farmer),
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(posX), workerY)
                 scale.DrawScaled(screen, farmer, &options)
             },
             LeftClick: func(element *uilib.UIElement) {
@@ -742,15 +742,15 @@ func (cityScreen *CityScreen) CreateCitizenIcons(offset1 int, offset2 int, setup
 
     worker, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(cityScreen.City.Race), 0)
     if err == nil {
-        for i := 0; i < cityScreen.City.Workers; i++ {
+        for i := range cityScreen.City.Workers {
             posX := citizenX
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(posX), workerY)
 
             workerNum := i
             workerElements = append(workerElements, &uilib.UIElement{
                 Rect: util.ImageRect(posX, int(workerY), worker),
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                    var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(posX), workerY)
                     scale.DrawScaled(screen, worker, &options)
                 },
                 LeftClick: func(element *uilib.UIElement) {
@@ -764,16 +764,18 @@ func (cityScreen *CityScreen) CreateCitizenIcons(offset1 int, offset2 int, setup
         }
     }
 
-    rebel, err := cityScreen.ImageCache.GetImageTransform("backgrnd.lbx", getRaceRebelIndex(cityScreen.City.Race), 0, "crop", util.AutoCrop)
+    rebel, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(cityScreen.City.Race), 0)
     if err == nil {
         citizenX += 3
-        for i := 0; i < cityScreen.City.Rebels; i++ {
+        for range cityScreen.City.Rebels {
             posX := citizenX
+            var options ebiten.DrawImageOptions
+            // draw from the bottom of the box
+            options.GeoM.Translate(0, workerY + 14)
+            options.GeoM.Translate(float64(posX), float64(-rebel.Bounds().Dy()))
 
             workerElements = append(workerElements, &uilib.UIElement{
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                    var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(float64(posX), workerY - float64(2))
                     scale.DrawScaled(screen, rebel, &options)
                 },
             })
@@ -2610,6 +2612,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 localOptions := options
                 localOptions.ColorScale.ScaleAlpha(getAlpha())
+                // top of the box
                 localOptions.GeoM.Translate(float64(6), float64(27))
                 farmer, _ := imageCache.GetImage("backgrnd.lbx", getRaceFarmerIndex(city.Race), 0)
                 worker, _ := imageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(city.Race), 0)
