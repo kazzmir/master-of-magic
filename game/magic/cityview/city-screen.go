@@ -697,6 +697,8 @@ func (cityScreen *CityScreen) CreateCitizenIcons(offset1 int, offset2 int, setup
 
     // if group1Space * farmer.Bounds().Dx() + groupGap + 
 
+    farmerToolTip := fmt.Sprintf("Farmers %d", cityScreen.City.Farmers)
+
     for range subsistenceFarmers {
         posX := citizenX
         var options ebiten.DrawImageOptions
@@ -705,6 +707,9 @@ func (cityScreen *CityScreen) CreateCitizenIcons(offset1 int, offset2 int, setup
             Rect: util.ImageRect(posX, int(workerY), farmer),
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 scale.DrawScaled(screen, farmer, &options)
+            },
+            Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+                return farmerToolTip, cityScreen.Fonts.SmallFont
             },
             LeftClick: func(element *uilib.UIElement) {
                 cityScreen.City.Farmers = subsistenceFarmers
@@ -730,6 +735,9 @@ func (cityScreen *CityScreen) CreateCitizenIcons(offset1 int, offset2 int, setup
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 scale.DrawScaled(screen, farmer, &options)
             },
+            Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+                return farmerToolTip, cityScreen.Fonts.SmallFont
+            },
             LeftClick: func(element *uilib.UIElement) {
                 cityScreen.City.Farmers = extraFarmer
                 cityScreen.City.Workers = cityScreen.City.Citizens() - cityScreen.City.Rebels - cityScreen.City.Farmers
@@ -742,6 +750,7 @@ func (cityScreen *CityScreen) CreateCitizenIcons(offset1 int, offset2 int, setup
 
     worker, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceWorkerIndex(cityScreen.City.Race), 0)
     if err == nil {
+        workerToolTip := fmt.Sprintf("Workers %d", cityScreen.City.Workers)
         for i := range cityScreen.City.Workers {
             posX := citizenX
             var options ebiten.DrawImageOptions
@@ -752,6 +761,9 @@ func (cityScreen *CityScreen) CreateCitizenIcons(offset1 int, offset2 int, setup
                 Rect: util.ImageRect(posX, int(workerY), worker),
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                     scale.DrawScaled(screen, worker, &options)
+                },
+                Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+                    return workerToolTip, cityScreen.Fonts.SmallFont
                 },
                 LeftClick: func(element *uilib.UIElement) {
                     cityScreen.City.Workers -= workerNum + 1
@@ -767,6 +779,7 @@ func (cityScreen *CityScreen) CreateCitizenIcons(offset1 int, offset2 int, setup
     rebel, err := cityScreen.ImageCache.GetImage("backgrnd.lbx", getRaceRebelIndex(cityScreen.City.Race), 0)
     if err == nil {
         citizenX += 3
+        rebelToolTip := fmt.Sprintf("Rebels %d", cityScreen.City.Rebels)
         for range cityScreen.City.Rebels {
             posX := citizenX
             var options ebiten.DrawImageOptions
@@ -775,6 +788,10 @@ func (cityScreen *CityScreen) CreateCitizenIcons(offset1 int, offset2 int, setup
             options.GeoM.Translate(float64(posX), float64(-rebel.Bounds().Dy()))
 
             workerElements = append(workerElements, &uilib.UIElement{
+                Rect: util.ImageRect(posX, int(workerY), rebel),
+                Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+                    return rebelToolTip, cityScreen.Fonts.SmallFont
+                },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                     scale.DrawScaled(screen, rebel, &options)
                 },
