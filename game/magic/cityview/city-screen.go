@@ -2160,58 +2160,62 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
         },
     })
 
-    goldOffset := 0
-    for goldOffset < min(smallCoin.Bounds().Dx() - 1, bigCoin.Bounds().Dx() - 1) {
-        var goldUpkeepOptions ebiten.DrawImageOptions
-        upKeep := cityScreen.City.ComputeUpkeep()
-        goldGeom := cityScreen.drawIcons(upKeep, smallCoin, bigCoin, goldUpkeepOptions, goldOffset, nil)
-
-        x, _ := goldGeom.Apply(0, 0)
-
-        // FIXME: if income - upkeep < 0 then show greyed out icons for gold
-
-        goldMaintenanceRect := image.Rect(6, 68, 6 + int(x), 68 + bigCoin.Bounds().Dy())
-        goldElementMaintenance := &uilib.UIElement{
-            Rect: goldMaintenanceRect,
-            LeftClick: func(element *uilib.UIElement) {
-                maintenance := cityScreen.BuildingMaintenanceResources()
-                ui.AddElements(cityScreen.MakeResourceDialog("Building Maintenance", smallCoin, bigCoin, ui, maintenance))
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(goldMaintenanceRect.Min.X), float64(goldMaintenanceRect.Min.Y))
-                cityScreen.drawIcons(upKeep, smallCoin, bigCoin, options, goldOffset, screen)
-
-                // util.DrawRect(screen, goldMaintenanceRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
-            },
-        }
-
+    makeGoldElements := func() []*uilib.UIElement {
+        goldOffset := 0
         goldSurplus := cityScreen.City.GoldSurplus()
+        upKeep := cityScreen.City.ComputeUpkeep()
+        var goldUpkeepOptions ebiten.DrawImageOptions
 
-        goldGeom = cityScreen.drawIcons(goldSurplus, smallCoin, bigCoin, goldUpkeepOptions, goldOffset, nil)
-        x, _ = goldGeom.Apply(0, 0)
-        goldSurplusRect := image.Rect(goldMaintenanceRect.Max.X + 6, 68, goldMaintenanceRect.Max.X + 6 + int(x), 68 + bigCoin.Bounds().Dy())
-        goldElementSurplus := &uilib.UIElement{
-            Rect: goldSurplusRect,
-            LeftClick: func(element *uilib.UIElement) {
-                gold := cityScreen.GoldProducers()
-                ui.AddElements(cityScreen.MakeResourceDialog("Gold", smallCoin, bigCoin, ui, gold))
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(goldSurplusRect.Min.X), float64(goldSurplusRect.Min.Y))
-                cityScreen.drawIcons(goldSurplus, smallCoin, bigCoin, options, goldOffset, screen)
-                // util.DrawRect(screen, goldSurplusRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
-            },
+        // determine what offset will make the icons fit into the bounding box
+        for goldOffset < min(smallCoin.Bounds().Dx() - 1, bigCoin.Bounds().Dx() - 1) {
+            goldGeom := cityScreen.drawIcons(upKeep, smallCoin, bigCoin, goldUpkeepOptions, goldOffset, nil)
+
+            x, _ := goldGeom.Apply(0, 0)
+
+            goldMaintenanceRect := image.Rect(6, 68, 6 + int(x), 68 + bigCoin.Bounds().Dy())
+            goldElementMaintenance := &uilib.UIElement{
+                Rect: goldMaintenanceRect,
+                LeftClick: func(element *uilib.UIElement) {
+                    maintenance := cityScreen.BuildingMaintenanceResources()
+                    ui.AddElements(cityScreen.MakeResourceDialog("Building Maintenance", smallCoin, bigCoin, ui, maintenance))
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(goldMaintenanceRect.Min.X), float64(goldMaintenanceRect.Min.Y))
+                    cityScreen.drawIcons(upKeep, smallCoin, bigCoin, options, goldOffset, screen)
+
+                    // util.DrawRect(screen, goldMaintenanceRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+                },
+            }
+
+            goldGeom = cityScreen.drawIcons(goldSurplus, smallCoin, bigCoin, goldUpkeepOptions, goldOffset, nil)
+            x, _ = goldGeom.Apply(0, 0)
+            goldSurplusRect := image.Rect(goldMaintenanceRect.Max.X + 6, 68, goldMaintenanceRect.Max.X + 6 + int(x), 68 + bigCoin.Bounds().Dy())
+            goldElementSurplus := &uilib.UIElement{
+                Rect: goldSurplusRect,
+                LeftClick: func(element *uilib.UIElement) {
+                    gold := cityScreen.GoldProducers()
+                    ui.AddElements(cityScreen.MakeResourceDialog("Gold", smallCoin, bigCoin, ui, gold))
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    var options ebiten.DrawImageOptions
+                    options.GeoM.Translate(float64(goldSurplusRect.Min.X), float64(goldSurplusRect.Min.Y))
+                    cityScreen.drawIcons(goldSurplus, smallCoin, bigCoin, options, goldOffset, screen)
+                    // util.DrawRect(screen, goldSurplusRect, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+                },
+            }
+
+            if goldSurplusRect.Max.X < maxPosition {
+                return []*uilib.UIElement{goldElementMaintenance, goldElementSurplus}
+            } else {
+                goldOffset += 1
+            }
         }
 
-        if goldSurplusRect.Max.X < maxPosition {
-            elements = append(elements, goldElementMaintenance, goldElementSurplus)
-            break
-        } else {
-            goldOffset += 1
-        }
+        return nil
     }
+
+    elements = append(elements, makeGoldElements()...)
 
     powerRect := image.Rect(6, 76, 6 + 9 * bigMagic.Bounds().Dx(), 76 + bigMagic.Bounds().Dy())
     elements = append(elements, &uilib.UIElement{
