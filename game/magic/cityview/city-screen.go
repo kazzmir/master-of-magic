@@ -2115,22 +2115,44 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
         foodSurplus := cityScreen.City.SurplusFood()
         foodRequired = int(max(0, min(foodRequired, foodRequired + foodSurplus)))
         foodRect := image.Rect(6, 52, 6 + 9 * bigFood.Bounds().Dx(), 52 + bigFood.Bounds().Dy())
-        element := &uilib.UIElement{
-            Rect: foodRect,
-            LeftClick: func(element *uilib.UIElement) {
-                foodProducers := cityScreen.FoodProducers()
-                ui.AddElements(cityScreen.MakeResourceDialog("Food", smallFood, bigFood, ui, foodProducers))
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(foodRect.Min.X), float64(foodRect.Min.Y))
-                options.GeoM = cityScreen.drawIcons(foodRequired, smallFood, bigFood, options, 0, screen)
-                options.GeoM.Translate(float64(5), 0)
-                cityScreen.drawIcons(foodSurplus, smallFood, bigFood, options, 0, screen)
-            },
+
+        // draws and returns the right most x position after drawing the icons
+        doDraw := func(screen *ebiten.Image, offset int) int {
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(foodRect.Min.X), float64(foodRect.Min.Y))
+            options.GeoM = cityScreen.drawIcons(foodRequired, smallFood, bigFood, options, 0, screen)
+            options.GeoM.Translate(float64(5), 0)
+            geom := cityScreen.drawIcons(foodSurplus, smallFood, bigFood, options, 0, screen)
+            x, _ := geom.Apply(0, 0)
+            return int(x)
         }
 
-        return []*uilib.UIElement{element}
+        makeElement := func(offset int) *uilib.UIElement {
+            return &uilib.UIElement{
+                Rect: foodRect,
+                LeftClick: func(element *uilib.UIElement) {
+                    foodProducers := cityScreen.FoodProducers()
+                    ui.AddElements(cityScreen.MakeResourceDialog("Food", smallFood, bigFood, ui, foodProducers))
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    doDraw(screen, offset)
+
+                    // util.DrawRect(screen, scale.ScaleRect(foodRect), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+                },
+            }
+        }
+
+        // the small food is much smaller than the big food, but we use a single offset for both.
+        // we could in theory use different offsets, but that would be more complicated.
+        for offset := range min(smallFood.Bounds().Dx() - 1, bigFood.Bounds().Dx() - 1) {
+            if doDraw(nil, offset) < foodRect.Bounds().Dx() {
+                return []*uilib.UIElement{makeElement(offset)}
+            }
+        }
+
+        // if we get here, the icons don't fit even with the maximum offset, so just return an element with the largest possible offset
+        // this will result in icons that extend beyond the bounding box, but at least they will be fully visible
+        return []*uilib.UIElement{makeElement(min(smallFood.Bounds().Dx() - 1, bigFood.Bounds().Dx() - 1))}
     }
 
     makeProductionElements := func() []*uilib.UIElement {
@@ -2140,30 +2162,39 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
         workRect := image.Rect(6, 60, 6 + 9 * bigHammer.Bounds().Dx(), 60 + bigHammer.Bounds().Dy())
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(workRect.Min.X), float64(workRect.Min.Y))
-        element := &uilib.UIElement{
-            Rect: workRect,
-            LeftClick: func(element *uilib.UIElement) {
-                workProducers := cityScreen.WorkProducers()
-                ui.AddElements(cityScreen.MakeResourceDialog("Production", smallHammer, bigHammer, ui, workProducers))
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                cityScreen.drawIcons(int(production), smallHammer, bigHammer, options, 0, screen)
-                // util.DrawRect(screen, scale.ScaleRect(workRect), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
-            },
+
+        for offset := range min(smallHammer.Bounds().Dx() - 1, bigHammer.Bounds().Dx() - 1) {
+            element := &uilib.UIElement{
+                Rect: workRect,
+                LeftClick: func(element *uilib.UIElement) {
+                    workProducers := cityScreen.WorkProducers()
+                    ui.AddElements(cityScreen.MakeResourceDialog("Production", smallHammer, bigHammer, ui, workProducers))
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    cityScreen.drawIcons(int(production), smallHammer, bigHammer, options, offset, screen)
+                    // util.DrawRect(screen, scale.ScaleRect(workRect), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
+                },
+            }
+
+            geom := cityScreen.drawIcons(int(production), smallHammer, bigHammer, options, offset, nil)
+            x, _ := geom.Apply(0, 0)
+            if int(x) < workRect.Bounds().Dx() {
+                return []*uilib.UIElement{element}
+            }
         }
-        return []*uilib.UIElement{element}
+
+        return nil
     }
 
     makeGoldElements := func() []*uilib.UIElement {
         smallCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 42, 0)
         bigCoin, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 90, 0)
-        goldOffset := 0
         goldSurplus := cityScreen.City.GoldSurplus()
         upKeep := cityScreen.City.ComputeUpkeep()
         var goldUpkeepOptions ebiten.DrawImageOptions
 
         // determine what offset will make the icons fit into the bounding box
-        for goldOffset < min(smallCoin.Bounds().Dx() - 1, bigCoin.Bounds().Dx() - 1) {
+        for goldOffset := range min(smallCoin.Bounds().Dx() - 1, bigCoin.Bounds().Dx() - 1) {
             goldGeom := cityScreen.drawIcons(upKeep, smallCoin, bigCoin, goldUpkeepOptions, goldOffset, nil)
 
             x, _ := goldGeom.Apply(0, 0)
@@ -2203,8 +2234,6 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
 
             if goldSurplusRect.Max.X < maxPosition {
                 return []*uilib.UIElement{goldElementMaintenance, goldElementSurplus}
-            } else {
-                goldOffset += 1
             }
         }
 
