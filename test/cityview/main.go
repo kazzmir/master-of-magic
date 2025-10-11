@@ -77,8 +77,8 @@ func NewEngine() (*Engine, error) {
                 data.RetortInfernalPower,
             },
         },
-        // TaxRate: fraction.Make(2, 1),
-        TaxRate: fraction.Zero(),
+        TaxRate: fraction.Make(3, 1),
+        // TaxRate: fraction.Zero(),
         GlobalEnchantments: set.MakeSet[data.Enchantment](),
     }
 
@@ -103,8 +103,8 @@ func NewEngine() (*Engine, error) {
         TileCache: make(map[int]*ebiten.Image),
     }
 
-    city := citylib.MakeCity("Boston", rand.N(20), rand.N(13) + 4, data.RaceKlackon, buildingInfo, &gameMap, &NoCityProvider{}, &player)
-    city.Population = 12000
+    city := citylib.MakeCity("Boston", rand.N(20), rand.N(13) + 4, data.RaceHighElf, buildingInfo, &gameMap, &NoCityProvider{}, &player)
+    city.Population = 24000
     city.Farmers = 4
     city.Workers = 2
     city.Production = 18
