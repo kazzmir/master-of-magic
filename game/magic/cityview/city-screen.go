@@ -2275,18 +2275,28 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
         researchRect := image.Rect(6, 84, 6 + 9 * bigResearch.Bounds().Dx(), 84 + bigResearch.Bounds().Dy())
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(researchRect.Min.X), float64(researchRect.Min.Y))
-        element := &uilib.UIElement{
-            Rect: researchRect,
-            LeftClick: func(element *uilib.UIElement) {
-                research := cityScreen.ResearchProducers()
-                ui.AddElements(cityScreen.MakeResourceDialog("Spell Research", smallResearch, bigResearch, ui, research))
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                cityScreen.drawIcons(cityScreen.City.ResearchProduction(), smallResearch, bigResearch, options, 0, screen)
-            },
+        research := cityScreen.City.ResearchProduction()
+
+        for offset := range min(smallResearch.Bounds().Dx() - 1, bigResearch.Bounds().Dx() - 1) {
+            element := &uilib.UIElement{
+                Rect: researchRect,
+                LeftClick: func(element *uilib.UIElement) {
+                    research := cityScreen.ResearchProducers()
+                    ui.AddElements(cityScreen.MakeResourceDialog("Spell Research", smallResearch, bigResearch, ui, research))
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    cityScreen.drawIcons(research, smallResearch, bigResearch, options, offset, screen)
+                },
+            }
+
+            geom := cityScreen.drawIcons(research, smallResearch, bigResearch, options, offset, nil)
+            x, _ := geom.Apply(0, 0)
+            if int(x) < researchRect.Bounds().Dx() {
+                return []*uilib.UIElement{element}
+            }
         }
 
-        return []*uilib.UIElement{element}
+        return nil
     }
 
     var elements []*uilib.UIElement
