@@ -2246,18 +2246,27 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
         powerRect := image.Rect(6, 76, 6 + 9 * bigMagic.Bounds().Dx(), 76 + bigMagic.Bounds().Dy())
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(powerRect.Min.X), float64(powerRect.Min.Y))
-        element := &uilib.UIElement{
-            Rect: powerRect,
-            LeftClick: func(element *uilib.UIElement) {
-                power := cityScreen.PowerProducers()
-                ui.AddElements(cityScreen.MakeResourceDialog("Power", smallMagic, bigMagic, ui, power))
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                cityScreen.drawIcons(cityScreen.City.ComputePower(), smallMagic, bigMagic, options, 0, screen)
-            },
+        power := cityScreen.City.ComputePower()
+        for offset := range min(smallMagic.Bounds().Dx() - 1, bigMagic.Bounds().Dx() - 1) {
+            element := &uilib.UIElement{
+                Rect: powerRect,
+                LeftClick: func(element *uilib.UIElement) {
+                    power := cityScreen.PowerProducers()
+                    ui.AddElements(cityScreen.MakeResourceDialog("Power", smallMagic, bigMagic, ui, power))
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    cityScreen.drawIcons(power, smallMagic, bigMagic, options, offset, screen)
+                },
+            }
+
+            geom := cityScreen.drawIcons(power, smallMagic, bigMagic, options, offset, nil)
+            x, _ := geom.Apply(0, 0)
+            if int(x) < powerRect.Bounds().Dx() {
+                return []*uilib.UIElement{element}
+            }
         }
 
-        return []*uilib.UIElement{element}
+        return nil
     }
 
     makeResearchElements := func() []*uilib.UIElement {
