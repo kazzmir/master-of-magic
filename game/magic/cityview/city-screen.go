@@ -2138,6 +2138,8 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
         bigHammer, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 89, 0)
         production := cityScreen.City.WorkProductionRate()
         workRect := image.Rect(6, 60, 6 + 9 * bigHammer.Bounds().Dx(), 60 + bigHammer.Bounds().Dy())
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(workRect.Min.X), float64(workRect.Min.Y))
         element := &uilib.UIElement{
             Rect: workRect,
             LeftClick: func(element *uilib.UIElement) {
@@ -2145,9 +2147,8 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
                 ui.AddElements(cityScreen.MakeResourceDialog("Production", smallHammer, bigHammer, ui, workProducers))
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(workRect.Min.X), float64(workRect.Min.Y))
                 cityScreen.drawIcons(int(production), smallHammer, bigHammer, options, 0, screen)
+                // util.DrawRect(screen, scale.ScaleRect(workRect), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
             },
         }
         return []*uilib.UIElement{element}
@@ -2214,6 +2215,8 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
         smallMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 43, 0)
         bigMagic, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 91, 0)
         powerRect := image.Rect(6, 76, 6 + 9 * bigMagic.Bounds().Dx(), 76 + bigMagic.Bounds().Dy())
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(powerRect.Min.X), float64(powerRect.Min.Y))
         element := &uilib.UIElement{
             Rect: powerRect,
             LeftClick: func(element *uilib.UIElement) {
@@ -2221,8 +2224,6 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
                 ui.AddElements(cityScreen.MakeResourceDialog("Power", smallMagic, bigMagic, ui, power))
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(powerRect.Min.X), float64(powerRect.Min.Y))
                 cityScreen.drawIcons(cityScreen.City.ComputePower(), smallMagic, bigMagic, options, 0, screen)
             },
         }
@@ -2233,8 +2234,9 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
     makeResearchElements := func() []*uilib.UIElement {
         smallResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 44, 0)
         bigResearch, _ := cityScreen.ImageCache.GetImage("backgrnd.lbx", 92, 0)
-
         researchRect := image.Rect(6, 84, 6 + 9 * bigResearch.Bounds().Dx(), 84 + bigResearch.Bounds().Dy())
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(researchRect.Min.X), float64(researchRect.Min.Y))
         element := &uilib.UIElement{
             Rect: researchRect,
             LeftClick: func(element *uilib.UIElement) {
@@ -2242,8 +2244,6 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
                 ui.AddElements(cityScreen.MakeResourceDialog("Spell Research", smallResearch, bigResearch, ui, research))
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(researchRect.Min.X), float64(researchRect.Min.Y))
                 cityScreen.drawIcons(cityScreen.City.ResearchProduction(), smallResearch, bigResearch, options, 0, screen)
             },
         }
