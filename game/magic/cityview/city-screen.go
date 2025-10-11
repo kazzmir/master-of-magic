@@ -2116,6 +2116,8 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
         foodRequired = int(max(0, min(foodRequired, foodRequired + foodSurplus)))
         foodRect := image.Rect(6, 52, 6 + 9 * bigFood.Bounds().Dx(), 52 + bigFood.Bounds().Dy())
 
+        foodSurplusString := fmt.Sprintf("Food Surplus %v", foodSurplus)
+
         // draws and returns the right most x position after drawing the icons
         doDraw := func(screen *ebiten.Image, offset int) int {
             var options ebiten.DrawImageOptions
@@ -2133,6 +2135,9 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
                 LeftClick: func(element *uilib.UIElement) {
                     foodProducers := cityScreen.FoodProducers()
                     ui.AddElements(cityScreen.MakeResourceDialog("Food", smallFood, bigFood, ui, foodProducers))
+                },
+                Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+                    return foodSurplusString, cityScreen.Fonts.SmallFont
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                     doDraw(screen, offset)
@@ -2162,6 +2167,7 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
         workRect := image.Rect(6, 60, 6 + 9 * bigHammer.Bounds().Dx(), 60 + bigHammer.Bounds().Dy())
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(workRect.Min.X), float64(workRect.Min.Y))
+        productionString := fmt.Sprintf("Production %v", production)
 
         for offset := range min(smallHammer.Bounds().Dx() - 1, bigHammer.Bounds().Dx() - 1) {
             element := &uilib.UIElement{
@@ -2169,6 +2175,9 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
                 LeftClick: func(element *uilib.UIElement) {
                     workProducers := cityScreen.WorkProducers()
                     ui.AddElements(cityScreen.MakeResourceDialog("Production", smallHammer, bigHammer, ui, workProducers))
+                },
+                Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+                    return productionString, cityScreen.Fonts.SmallFont
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                     cityScreen.drawIcons(int(production), smallHammer, bigHammer, options, offset, screen)
@@ -2193,6 +2202,9 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
         upKeep := cityScreen.City.ComputeUpkeep()
         var goldUpkeepOptions ebiten.DrawImageOptions
 
+        maintenanceString := fmt.Sprintf("Gold Upkeep %v", upKeep)
+        surplusString := fmt.Sprintf("Gold Surplus %v", goldSurplus)
+
         // determine what offset will make the icons fit into the bounding box
         for goldOffset := range min(smallCoin.Bounds().Dx() - 1, bigCoin.Bounds().Dx() - 1) {
             goldGeom := cityScreen.drawIcons(upKeep, smallCoin, bigCoin, goldUpkeepOptions, goldOffset, nil)
@@ -2205,6 +2217,9 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
                 LeftClick: func(element *uilib.UIElement) {
                     maintenance := cityScreen.BuildingMaintenanceResources()
                     ui.AddElements(cityScreen.MakeResourceDialog("Building Maintenance", smallCoin, bigCoin, ui, maintenance))
+                },
+                Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+                    return maintenanceString, cityScreen.Fonts.SmallFont
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                     var options ebiten.DrawImageOptions
@@ -2223,6 +2238,9 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
                 LeftClick: func(element *uilib.UIElement) {
                     gold := cityScreen.GoldProducers()
                     ui.AddElements(cityScreen.MakeResourceDialog("Gold", smallCoin, bigCoin, ui, gold))
+                },
+                Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+                    return surplusString, cityScreen.Fonts.SmallFont
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                     var options ebiten.DrawImageOptions
@@ -2247,9 +2265,13 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(powerRect.Min.X), float64(powerRect.Min.Y))
         power := cityScreen.City.ComputePower()
+        powerString := fmt.Sprintf("Power %v", power)
         for offset := range min(smallMagic.Bounds().Dx() - 1, bigMagic.Bounds().Dx() - 1) {
             element := &uilib.UIElement{
                 Rect: powerRect,
+                Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+                    return powerString, cityScreen.Fonts.SmallFont
+                },
                 LeftClick: func(element *uilib.UIElement) {
                     power := cityScreen.PowerProducers()
                     ui.AddElements(cityScreen.MakeResourceDialog("Power", smallMagic, bigMagic, ui, power))
