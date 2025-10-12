@@ -562,6 +562,8 @@ func convertHeroAbility(ability HeroAbility) data.Ability {
 func setHeroData(hero *herolib.Hero, heroData *HeroData) {
     hero.Abilities = nil
 
+    log.Printf("  set hero data for %v to %v", hero.Name, heroData.AbilitySet)
+
     for _, ability := range heroData.AbilitySet.Values() {
         hero.Abilities = append(hero.Abilities, convertHeroAbility(ability))
     }
@@ -739,15 +741,17 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
             log.Printf("Player %v has hero %v %v", playerIndex, heroData.Unit, heroData.Name)
 
             if heroData.Unit < saveGame.NumUnits {
-                log.Printf("  with unit data %+v", saveGame.Units[heroData.Unit])
-
                 heroUnitData := saveGame.Units[heroData.Unit]
+
+                log.Printf("  with unit data %+v", heroUnitData)
 
                 hero := makeHero(&player, heroData, &heroUnitData, game)
                 if hero.HeroType != herolib.HeroNone {
-                    heroData := saveGame.HeroData[playerIndex][getHeroType(heroUnitData.TypeIndex)]
+                    heroData := &saveGame.HeroData[playerIndex][heroUnitData.TypeIndex]
 
-                    setHeroData(hero, &heroData)
+                    log.Printf("  hero data player=%v hero %v: %+v", playerIndex, heroUnitData.TypeIndex, heroData)
+
+                    setHeroData(hero, heroData)
 
                     player.Heroes[heroIndex] = hero
                     player.AddUnit(hero)
@@ -1293,6 +1297,14 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
     game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
 
+    for player, heros := range saveGame.HeroData {
+        for i, heroData := range heros {
+            if getHeroType(uint8(i)) == herolib.HeroDethStryke {
+                log.Printf("Player %v hero %d: %+v", player, i, heroData)
+            }
+        }
+    }
+
     for playerIndex := range saveGame.NumPlayers {
         player, stackMoves := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
         game.Players = append(game.Players, player)
@@ -1312,13 +1324,8 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
 
     // FIXME: add all remaining information from saveGame
     // saveGame.Unit
-    /*
-    for player, heros := range saveGame.HeroData {
-        for i, heroData := range heros {
-            log.Printf("Player %v hero %d: %+v", player, i, heroData)
-        }
-    }
-    */
+    
+
     // saveGame.HeroData
     // saveGame.GrandVizier
     // saveGame.Units / saveGame.NumUnits
