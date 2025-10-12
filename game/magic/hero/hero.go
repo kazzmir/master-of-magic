@@ -772,6 +772,7 @@ func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
     return hero.Unit.GetAbilityValue(ability)
 }
 
+// FIXME: maybe this method shouldn't exist, and instead just iterate through GetAbilities()
 func (hero *Hero) GetAbilityReference(ability data.AbilityType) *data.Ability {
     for i := range len(hero.Abilities) {
         if hero.Abilities[i].Ability == ability {
@@ -1329,6 +1330,7 @@ func (hero *Hero) GetBaseProgression() []string {
     return improvements
 }
 
+// these abilities include the bonuses from hero level progression
 func (hero *Hero) GetAbilities() []data.Ability {
     var enchantmentAbilities []data.Ability
     for _, enchantment := range hero.GetEnchantments() {
