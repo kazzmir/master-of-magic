@@ -711,13 +711,24 @@ func (hero *Hero) SetMovesLeft(moves fraction.Fraction) {
     hero.OverworldUnit.MovesUsed = hero.GetMovementSpeed().Subtract(moves)
 }
 
+func (hero *Hero) GetThrownValue() int {
+    thrown := hero.GetAbilityReference(data.AbilityThrown)
+    if thrown == nil || thrown.Value == 0 {
+        return 0
+    }
+
+    level := hero.GetHeroExperienceLevel()
+    return int(thrown.Value) + level.ToInt()
+}
+
 func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
     ref := hero.GetAbilityReference(ability)
     if ref != nil {
 
         // melee bonus applies to thrown and breath attacks
         if ability == data.AbilityThrown {
-            if ref.Value == 0 {
+            value := hero.GetThrownValue()
+            if value == 0 {
                 return 0
             }
 
@@ -1327,7 +1338,12 @@ func (hero *Hero) GetAbilities() []data.Ability {
     var outAbilities []data.Ability
     for _, ability := range hero.Abilities {
         newAbility := ability
-        newAbility.Value = float32(hero.GetAbilityBonus(ability.Ability))
+        switch newAbility.Ability {
+            case data.AbilityThrown:
+                newAbility.Value = float32(hero.GetThrownValue())
+            default:
+                newAbility.Value = float32(hero.GetAbilityBonus(ability.Ability))
+        }
         outAbilities = append(outAbilities, newAbility)
     }
 

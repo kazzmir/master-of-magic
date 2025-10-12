@@ -274,7 +274,7 @@ func (ability Ability) Name() string {
         case AbilityStoningTouch: return fmt.Sprintf("Stoning Touch %v", int(ability.Value))
         case AbilitySummonDemons: return "Summon Demons"
         case AbilityTeleporting: return "Teleporting"
-        case AbilityThrown: return "Thrown"
+        case AbilityThrown: return fmt.Sprintf("Thrown %v", int(ability.Value))
         case AbilityToHit: return fmt.Sprintf("+%v To Hit", ability.Value/10)
         case AbilityTransport: return "Transport"
         case AbilityWallCrusher: return "Wall Crusher"
@@ -310,6 +310,24 @@ func (ability Ability) Name() string {
     }
 
     return "?"
+}
+
+func (ability Ability) IsHeroAbility() bool {
+    switch ability.Ability {
+        case AbilitySuperAgility, AbilityArcanePower,
+             AbilitySuperArcanePower, AbilityArmsmaster,
+             AbilitySuperArmsmaster, AbilityBlademaster,
+             AbilitySuperBlademaster, AbilityCaster,
+             AbilityCharmed, AbilityConstitution,
+             AbilitySuperConstitution, AbilityLeadership,
+             AbilitySuperLeadership, AbilityLegendary,
+             AbilitySuperLegendary, AbilityLucky,
+             AbilityMight, AbilitySuperMight,
+             AbilityNoble, AbilityPrayermaster,
+             AbilitySuperPrayermaster, AbilitySage,
+             AbilitySuperSage: return true
+        default: return false
+    }
 }
 
 // the index in the lbx file for this icon

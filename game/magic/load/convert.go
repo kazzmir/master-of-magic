@@ -4,6 +4,7 @@ import (
     "bytes"
     "image"
     "fmt"
+    "slices"
     "math/rand/v2"
     "log"
 
@@ -559,8 +560,12 @@ func convertHeroAbility(ability HeroAbility) data.Ability {
     return data.MakeAbility(data.AbilityNone)
 }
 
+func isHeroAbility(ability data.Ability) bool {
+    return ability.IsHeroAbility()
+}
+
 func setHeroData(hero *herolib.Hero, heroData *HeroData) {
-    hero.Abilities = nil
+    hero.Abilities = slices.DeleteFunc(hero.Abilities, isHeroAbility)
 
     // log.Printf("  set hero data for %v to %v", hero.Name, heroData.AbilitySet)
 
