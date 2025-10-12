@@ -208,6 +208,23 @@ func (ability Ability) String() string {
 }
 
 func (ability Ability) Name() string {
+    plusValue := func(name string) string {
+        if ability.Value > 0 {
+            return fmt.Sprintf("%v +%v", name, int(ability.Value))
+        } else {
+            return name
+        }
+    }
+
+    // for blademaster, 30% -> +3
+    plusValue10 := func(name string) string {
+        if ability.Value > 0 {
+            return fmt.Sprintf("%v +%v", name, int(ability.Value/10))
+        } else {
+            return name
+        }
+    }
+
     switch ability.Ability {
         case AbilityArmorPiercing: return "Armor Piercing"
         case AbilityCauseFear: return "Cause Fear"
@@ -265,29 +282,31 @@ func (ability Ability) Name() string {
         case AbilityWebSpell: return "Web Spell"
         case AbilityWindWalking: return "Wind Walking"
         case AbilityAgility: return "Agility"
-        case AbilitySuperAgility: return "Super Agility"
-        case AbilityArcanePower: return "Arcane Power"
-        case AbilitySuperArcanePower: return "Super Arcane Power"
-        case AbilityArmsmaster: return "Armsmaster"
-        case AbilitySuperArmsmaster: return "Super Armsmaster"
-        case AbilityBlademaster: return "Blademaster"
-        case AbilitySuperBlademaster: return "Super Blademaster"
+
+        // FIXME: add +X to each ability that has a value
+        case AbilitySuperAgility: return plusValue("Super Agility")
+        case AbilityArcanePower: return plusValue("Arcane Power")
+        case AbilitySuperArcanePower: return plusValue("Super Arcane Power")
+        case AbilityArmsmaster: return plusValue("Armsmaster")
+        case AbilitySuperArmsmaster: return plusValue("Super Armsmaster")
+        case AbilityBlademaster: return plusValue10("Blademaster")
+        case AbilitySuperBlademaster: return plusValue10("Super Blademaster")
         case AbilityCaster: return fmt.Sprintf("Caster %v mp", ability.Value)
         case AbilityCharmed: return "Charmed"
-        case AbilityConstitution: return "Constitution"
-        case AbilitySuperConstitution: return "Super Constitution"
-        case AbilityLeadership: return "Leadership"
-        case AbilitySuperLeadership: return "Super Leadership"
-        case AbilityLegendary: return "Legendary"
-        case AbilitySuperLegendary: return "Super Legendary"
+        case AbilityConstitution: return plusValue("Constitution")
+        case AbilitySuperConstitution: return plusValue("Super Constitution")
+        case AbilityLeadership: return plusValue("Leadership")
+        case AbilitySuperLeadership: return plusValue("Super Leadership")
+        case AbilityLegendary: return plusValue("Legendary")
+        case AbilitySuperLegendary: return plusValue("Super Legendary")
         case AbilityLucky: return "Lucky"
-        case AbilityMight: return "Might"
-        case AbilitySuperMight: return "Super Might"
+        case AbilityMight: return plusValue("Might")
+        case AbilitySuperMight: return plusValue("Super Might")
         case AbilityNoble: return "Noble"
-        case AbilityPrayermaster: return "Prayermaster"
-        case AbilitySuperPrayermaster: return "Super Prayermaster"
-        case AbilitySage: return "Sage"
-        case AbilitySuperSage: return "Super Sage"
+        case AbilityPrayermaster: return plusValue("Prayermaster")
+        case AbilitySuperPrayermaster: return plusValue("Super Prayermaster")
+        case AbilitySage: return plusValue("Sage")
+        case AbilitySuperSage: return plusValue("Super Sage")
     }
 
     return "?"

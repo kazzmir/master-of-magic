@@ -1324,7 +1324,14 @@ func (hero *Hero) GetAbilities() []data.Ability {
         enchantmentAbilities = append(enchantmentAbilities, enchantment.Abilities()...)
     }
 
-    return append(hero.Abilities, enchantmentAbilities...)
+    var outAbilities []data.Ability
+    for _, ability := range hero.Abilities {
+        newAbility := ability
+        newAbility.Value = float32(hero.GetAbilityBonus(ability.Ability))
+        outAbilities = append(outAbilities, newAbility)
+    }
+
+    return append(outAbilities, enchantmentAbilities...)
 }
 
 func (hero *Hero) GetTitle() string {
