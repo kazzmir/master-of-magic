@@ -374,12 +374,7 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
                 x, y := options.GeoM.Apply(float64(pic.Bounds().Dx() + 2), float64(5))
 
-                abilityBonus := hero.GetAbilityBonus(ability.Ability)
-                if abilityBonus > 0 {
-                    fonts.SmallFont.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("%v +%v", ability.Name(), abilityBonus))
-                } else {
-                    fonts.SmallFont.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, DropShadow: true}, ability.Name())
-                }
+                fonts.SmallFont.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount, DropShadow: true}, ability.Name())
             }
 
             column += 1
