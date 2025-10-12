@@ -564,6 +564,23 @@ func isHeroAbility(ability data.Ability) bool {
     return ability.IsHeroAbility()
 }
 
+// initial casting skill pool
+// https://masterofmagic.fandom.com/wiki/Caster#Improvement_Table
+func convertCastingSkill(castingSkill int8) float32 {
+    switch castingSkill {
+        case 0: return 0
+        case 1: return 5
+        case 2: return 7.5
+        case 3: return 10
+        case 4: return 12.5
+        case 5: return 15
+        case 6: return 17.5
+        case 7: return 20
+    }
+
+    return 0
+}
+
 func setHeroData(hero *herolib.Hero, heroData *HeroData) {
     hero.Abilities = slices.DeleteFunc(hero.Abilities, isHeroAbility)
 
@@ -574,7 +591,19 @@ func setHeroData(hero *herolib.Hero, heroData *HeroData) {
     }
 
     if heroData.CastingSkill != 0 {
-        hero.Abilities = append(hero.Abilities, data.MakeAbilityValue(data.AbilityCaster, float32(heroData.CastingSkill)))
+        found := false
+        for i := range hero.Abilities {
+            ability := &hero.Abilities[i]
+            if ability.Ability == data.AbilityCaster {
+                found = true
+                ability.Value = convertCastingSkill(heroData.CastingSkill)
+                break
+            }
+        }
+        // can it happen that a hero doesn't implicitly have caster but somehow be given the ability later?
+        if !found {
+            hero.Abilities = append(hero.Abilities, data.MakeAbilityValue(data.AbilityCaster, float32(heroData.CastingSkill)))
+        }
     }
 }
 
@@ -743,14 +772,16 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     heroIndex := 0
     for _, heroData := range playerData.HeroData {
         if heroData.Unit > 0 {
-            // log.Printf("Player %v has hero %v %v", playerIndex, heroData.Unit, heroData.Name)
-
             if heroData.Unit < saveGame.NumUnits {
                 heroUnitData := saveGame.Units[heroData.Unit]
+
+                log.Printf("Player %v has hero %v %v: %+v", playerIndex, heroData.Unit, heroData.Name, heroUnitData)
 
                 hero := makeHero(&player, heroData, &heroUnitData, game)
                 if hero.HeroType != herolib.HeroNone {
                     heroData := &saveGame.HeroData[playerIndex][heroUnitData.TypeIndex]
+
+                    log.Printf("  hero data: %+v", heroData)
 
                     setHeroData(hero, heroData)
 

@@ -711,6 +711,16 @@ func (hero *Hero) SetMovesLeft(moves fraction.Fraction) {
     hero.OverworldUnit.MovesUsed = hero.GetMovementSpeed().Subtract(moves)
 }
 
+func (hero *Hero) GetCasterValue() int {
+    caster := hero.GetAbilityReference(data.AbilityCaster)
+    if caster == nil || caster.Value == 0 {
+        return 0
+    }
+
+    level := hero.GetHeroExperienceLevel()
+    return int(caster.Value * float32(level.ToInt() + 1))
+}
+
 func (hero *Hero) GetThrownValue() int {
     thrown := hero.GetAbilityReference(data.AbilityThrown)
     if thrown == nil || thrown.Value == 0 {
@@ -1343,6 +1353,8 @@ func (hero *Hero) GetAbilities() []data.Ability {
         switch newAbility.Ability {
             case data.AbilityThrown:
                 newAbility.Value = float32(hero.GetThrownValue())
+            case data.AbilityCaster:
+                newAbility.Value = float32(hero.GetCasterValue())
             default:
                 newAbility.Value = float32(hero.GetAbilityBonus(ability.Ability))
         }

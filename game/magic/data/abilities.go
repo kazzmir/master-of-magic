@@ -317,7 +317,7 @@ func (ability Ability) IsHeroAbility() bool {
         case AbilitySuperAgility, AbilityArcanePower,
              AbilitySuperArcanePower, AbilityArmsmaster,
              AbilitySuperArmsmaster, AbilityBlademaster,
-             AbilitySuperBlademaster, AbilityCaster,
+             AbilitySuperBlademaster,
              AbilityCharmed, AbilityConstitution,
              AbilitySuperConstitution, AbilityLeadership,
              AbilitySuperLeadership, AbilityLegendary,
