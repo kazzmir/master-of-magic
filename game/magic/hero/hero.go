@@ -716,14 +716,15 @@ func (hero *Hero) SetMovesLeft(moves fraction.Fraction) {
     hero.OverworldUnit.MovesUsed = hero.GetMovementSpeed().Subtract(moves)
 }
 
-func (hero *Hero) GetCasterValue() int {
+func (hero *Hero) GetCasterValue() float32 {
     caster, ok := hero.Abilities[data.AbilityCaster]
     if !ok || caster.Value == 0 {
         return 0
     }
 
     level := hero.GetHeroExperienceLevel()
-    return int(caster.Value * float32(level.ToInt() + 1))
+    fmt.Printf("Caster ability: %v, level: %v\n", caster.Value, level.ToInt())
+    return caster.Value * float32(level.ToInt() + 1)
 }
 
 func (hero *Hero) GetThrownValue() int {
@@ -780,6 +781,10 @@ func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
         // FIXME: maybe only apply the leadership bonus in combat
         abilityBonus := hero.GetAbilityLeadership()
         return float32(value) + float32(abilityBonus) / 2 + modifier
+    }
+
+    if ability == data.AbilityCaster {
+        return hero.GetCasterValue()
     }
 
     heroAbility, ok := hero.Abilities[ability]
@@ -1368,7 +1373,7 @@ func (hero *Hero) GetAbilities() []data.Ability {
             case data.AbilityThrown:
                 newAbility.Value = float32(hero.GetThrownValue())
             case data.AbilityCaster:
-                newAbility.Value = float32(hero.GetCasterValue())
+                newAbility.Value = hero.GetCasterValue()
             case data.AbilityFireBreath:
                 newAbility.Value = float32(hero.GetFireBreathValue())
             default:

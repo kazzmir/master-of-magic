@@ -94,4 +94,9 @@ func TestHeroProgression(test *testing.T) {
     if zaldron.GetAbilityDefense() != 5 {
         test.Errorf("Expected defense for champion with agility to be 5 but was %v", zaldron.GetAbilityDefense())
     }
+
+    // zaldron starts with 7.5, at champion level, caster should be 37
+    if int(zaldron.GetAbilityValue(data.AbilityCaster)) != 37 {
+        test.Errorf("Expected caster level to be 37 but was %v", zaldron.GetAbilityValue(data.AbilityCaster))
+    }
 }
