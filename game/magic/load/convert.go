@@ -4,7 +4,7 @@ import (
     "bytes"
     "image"
     "fmt"
-    "slices"
+    "maps"
     "math/rand/v2"
     "log"
 
@@ -582,28 +582,20 @@ func convertCastingSkill(castingSkill int8) float32 {
 }
 
 func setHeroData(hero *herolib.Hero, heroData *HeroData) {
-    hero.Abilities = slices.DeleteFunc(hero.Abilities, isHeroAbility)
+    // the hero object might have some abilities already initialized on it
+    maps.DeleteFunc(hero.Abilities, func (ability data.AbilityType, value data.Ability) bool {
+        return value.IsHeroAbility()
+    })
 
     // log.Printf("  set hero data for %v to %v", hero.Name, heroData.AbilitySet)
 
     for _, ability := range heroData.AbilitySet.Values() {
-        hero.Abilities = append(hero.Abilities, convertHeroAbility(ability))
+        newAbility := convertHeroAbility(ability)
+        hero.Abilities[newAbility.Ability] = newAbility
     }
 
     if heroData.CastingSkill != 0 {
-        found := false
-        for i := range hero.Abilities {
-            ability := &hero.Abilities[i]
-            if ability.Ability == data.AbilityCaster {
-                found = true
-                ability.Value = convertCastingSkill(heroData.CastingSkill)
-                break
-            }
-        }
-        // can it happen that a hero doesn't implicitly have caster but somehow be given the ability later?
-        if !found {
-            hero.Abilities = append(hero.Abilities, data.MakeAbilityValue(data.AbilityCaster, float32(heroData.CastingSkill)))
-        }
+        hero.Abilities[data.AbilityCaster] = data.MakeAbilityValue(data.AbilityCaster, convertCastingSkill(heroData.CastingSkill))
     }
 }
 

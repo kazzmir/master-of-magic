@@ -3,6 +3,7 @@ package hero
 import (
     "fmt"
     "slices"
+    "cmp"
     "math/rand/v2"
     "math"
 
@@ -279,7 +280,7 @@ type Hero struct {
     Status HeroStatus
 
     // set at start of game
-    Abilities []data.Ability
+    Abilities map[data.AbilityType]data.Ability
 
     Equipment [3]*artifact.Artifact
 }
@@ -291,12 +292,22 @@ func MakeHeroSimple(heroType HeroType) *Hero {
     return MakeHero(unit, heroType, heroType.DefaultName())
 }
 
+func abilitiesToMap(abilities []data.Ability) map[data.AbilityType]data.Ability {
+    out := make(map[data.AbilityType]data.Ability)
+
+    for _, ability := range abilities {
+        out[ability.Ability] = ability
+    }
+
+    return out
+}
+
 func MakeHero(unit *units.OverworldUnit, heroType HeroType, name string) *Hero {
     return &Hero{
         OverworldUnit: unit,
         Name: name,
         HeroType: heroType,
-        Abilities: slices.Clone(unit.GetAbilities()),
+        Abilities: abilitiesToMap(unit.GetAbilities()),
         Status: StatusAvailable,
     }
 }
@@ -376,24 +387,18 @@ func (hero *Hero) AddAbility(ability data.AbilityType) bool {
     }
 
     if ability == data.AbilityCaster {
-        if hero.HasAbility(data.AbilityCaster) {
-            abilityReference := hero.GetAbilityReference(data.AbilityCaster)
-            abilityReference.Value += 2.5
-        } else {
-            hero.Abilities = append(hero.Abilities, data.MakeAbilityValue(ability, 2.5))
-        }
+        old := hero.Abilities[ability]
+        hero.Abilities[ability] = data.MakeAbilityValue(ability, old.Value + 2.5)
         return true
     }
 
     // upgrade from regular ability to super version
     if hero.HasAbility(ability) {
-        hero.Abilities = slices.DeleteFunc(hero.Abilities, func(a data.Ability) bool {
-            return a.Ability == ability
-        })
-
-        hero.Abilities = append(hero.Abilities, data.MakeAbility(superVersion(ability)))
+        delete(hero.Abilities, ability)
+        newAbility := superVersion(ability)
+        hero.Abilities[newAbility] = data.MakeAbility(newAbility)
     } else {
-        hero.Abilities = append(hero.Abilities, data.MakeAbility(ability))
+        hero.Abilities[ability] = data.MakeAbility(ability)
     }
 
     return true
@@ -712,8 +717,8 @@ func (hero *Hero) SetMovesLeft(moves fraction.Fraction) {
 }
 
 func (hero *Hero) GetCasterValue() int {
-    caster := hero.GetAbilityReference(data.AbilityCaster)
-    if caster == nil || caster.Value == 0 {
+    caster, ok := hero.Abilities[data.AbilityCaster]
+    if !ok || caster.Value == 0 {
         return 0
     }
 
@@ -722,8 +727,8 @@ func (hero *Hero) GetCasterValue() int {
 }
 
 func (hero *Hero) GetThrownValue() int {
-    thrown := hero.GetAbilityReference(data.AbilityThrown)
-    if thrown == nil || thrown.Value == 0 {
+    thrown, ok := hero.Abilities[data.AbilityThrown]
+    if !ok || thrown.Value == 0 {
         return 0
     }
 
@@ -731,51 +736,55 @@ func (hero *Hero) GetThrownValue() int {
     return int(thrown.Value) + level.ToInt()
 }
 
+func (hero *Hero) GetFireBreathValue() int {
+    fireBreath, ok := hero.Abilities[data.AbilityFireBreath]
+    if !ok || fireBreath.Value == 0 {
+        return 0
+    }
+
+    level := hero.GetHeroExperienceLevel()
+    return int(fireBreath.Value) + level.ToInt()
+}
+
 func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
-    ref := hero.GetAbilityReference(ability)
-    if ref != nil {
-
-        // melee bonus applies to thrown and breath attacks
-        if ability == data.AbilityThrown {
-            value := hero.GetThrownValue()
-            if value == 0 {
-                return 0
-            }
-
-            modifier := float32(0)
-
-            if hero.GetRealm() == data.ChaosMagic && hero.OverworldUnit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
-                modifier += 2
-            }
-
-            abilityBonus := hero.GetAbilityMelee()
-            if abilityBonus > 0 {
-                return ref.Value * float32(abilityBonus) / 2 + modifier
-            }
-
-            return ref.Value + modifier
+    // melee bonus applies to thrown and breath attacks
+    if ability == data.AbilityThrown {
+        value := hero.GetThrownValue()
+        if value == 0 {
+            return 0
         }
 
-        if ability == data.AbilityFireBreath {
-            if ref.Value == 0 {
-                return 0
-            }
+        modifier := float32(0)
 
-            modifier := float32(0)
-
-            if hero.GetRealm() == data.ChaosMagic && hero.OverworldUnit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
-                modifier += 2
-            }
-
-            abilityBonus := hero.GetAbilityMelee()
-            if abilityBonus > 0 {
-                return ref.Value * float32(abilityBonus) / 2 + modifier
-            }
-
-            return ref.Value + modifier
+        if hero.GetRealm() == data.ChaosMagic && hero.OverworldUnit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+            modifier += 2
         }
 
-        return ref.Value
+        abilityBonus := hero.GetAbilityLeadership()
+        // FIXME: maybe only apply the leadership bonus in combat
+        return float32(value) + float32(abilityBonus) / 2 + modifier
+    }
+
+    if ability == data.AbilityFireBreath {
+        value := hero.GetFireBreathValue()
+        if value == 0 {
+            return 0
+        }
+
+        modifier := float32(0)
+
+        if hero.GetRealm() == data.ChaosMagic && hero.OverworldUnit.GlobalEnchantments.HasEnchantment(data.EnchantmentChaosSurge) {
+            modifier += 2
+        }
+
+        // FIXME: maybe only apply the leadership bonus in combat
+        abilityBonus := hero.GetAbilityLeadership()
+        return float32(value) + float32(abilityBonus) / 2 + modifier
+    }
+
+    heroAbility, ok := hero.Abilities[ability]
+    if ok {
+        return heroAbility.Value
     }
 
     // will likely be 0 except for special cases such as chaos channel fire breath
@@ -783,6 +792,7 @@ func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
 }
 
 // FIXME: maybe this method shouldn't exist, and instead just iterate through GetAbilities()
+/*
 func (hero *Hero) GetAbilityReference(ability data.AbilityType) *data.Ability {
     for i := range len(hero.Abilities) {
         if hero.Abilities[i].Ability == ability {
@@ -792,17 +802,21 @@ func (hero *Hero) GetAbilityReference(ability data.AbilityType) *data.Ability {
 
     return nil
 }
+*/
 
 func (hero *Hero) HasAbility(ability data.AbilityType) bool {
+    _, ok := hero.Abilities[ability]
+    if ok {
+        return true
+    }
+
     for _, item := range hero.Equipment {
         if item != nil && item.HasAbility(ability) {
             return true
         }
     }
 
-    return hero.Unit.HasAbility(ability) || slices.ContainsFunc(hero.Abilities, func (a data.Ability) bool {
-        return a.Ability == ability
-    })
+    return hero.Unit.HasAbility(ability)
 }
 
 func (hero *Hero) HasItemAbility(ability data.ItemAbility) bool {
@@ -1355,13 +1369,17 @@ func (hero *Hero) GetAbilities() []data.Ability {
                 newAbility.Value = float32(hero.GetThrownValue())
             case data.AbilityCaster:
                 newAbility.Value = float32(hero.GetCasterValue())
+            case data.AbilityFireBreath:
+                newAbility.Value = float32(hero.GetFireBreathValue())
             default:
                 newAbility.Value = float32(hero.GetAbilityBonus(ability.Ability))
         }
         outAbilities = append(outAbilities, newAbility)
     }
 
-    return append(outAbilities, enchantmentAbilities...)
+    return slices.SortedFunc(slices.Values(append(outAbilities, enchantmentAbilities...)), func (a, b data.Ability) int {
+        return cmp.Compare(a.Ability, b.Ability)
+    })
 }
 
 func (hero *Hero) GetTitle() string {

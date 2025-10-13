@@ -2,6 +2,8 @@ package load
 
 import (
     // "fmt"
+    "maps"
+    "slices"
 
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -269,13 +271,13 @@ func convertAbility(ability data.Ability) HeroAbility {
     return HeroAbility_NONE
 }
 
-func makeAbilityBits(abilities []data.Ability) uint32 {
+func makeAbilityBits(abilities map[data.AbilityType]data.Ability) uint32 {
     all := makeAbilityMap()
 
     var out uint32
 
-    for _, ability := range abilities {
-        bits, ok := all[ability.Ability]
+    for ability := range abilities {
+        bits, ok := all[ability]
         if ok {
             out |= uint32(bits)
         }
@@ -300,11 +302,11 @@ func makeHeroData(player *playerlib.Player, allSpells *spellbook.Spells) []HeroD
             continue
         }
 
-        caster := hero.GetAbilityReference(data.AbilityCaster)
+        level := hero.GetHeroExperienceLevel()
+        casterValue := float32(hero.GetAbilityValue(data.AbilityCaster)) / float32(level.ToInt())
         var castingSkill int8
-        if caster != nil {
-            castingSkill = int8(caster.Value)
-        }
+        // FIXME: the caster value will end up being something like 5, 7.5, which should be converted into 1, 2, 3, etc
+        castingSkill = int8(casterValue)
 
         var spells [4]uint8
         for i, spellName := range hero.GetKnownSpells() {
@@ -317,7 +319,7 @@ func makeHeroData(player *playerlib.Player, allSpells *spellbook.Spells) []HeroD
         data := HeroData{
             Level: int16(hero.GetHeroExperienceLevel()),
             Abilities: makeAbilityBits(hero.Abilities),
-            AbilitySet: set.NewSet(mapSlice(convertAbility, hero.Abilities...)...),
+            AbilitySet: set.NewSet(mapSlice(convertAbility, slices.Collect(maps.Values(hero.Abilities))...)...),
             CastingSkill: castingSkill,
             Spells: spells,
         }
