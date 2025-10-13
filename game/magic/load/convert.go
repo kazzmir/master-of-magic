@@ -761,42 +761,6 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         MyrrorFog: myrrorFog,
     }
 
-    heroIndex := 0
-    for _, heroData := range playerData.HeroData {
-        if heroData.Unit > 0 {
-            if heroData.Unit < saveGame.NumUnits {
-                heroUnitData := saveGame.Units[heroData.Unit]
-
-                log.Printf("Player %v has hero %v %v: %+v", playerIndex, heroData.Unit, heroData.Name, heroUnitData)
-
-                hero := makeHero(&player, heroData, &heroUnitData, game)
-                if hero.HeroType != herolib.HeroNone {
-                    heroData := &saveGame.HeroData[playerIndex][heroUnitData.TypeIndex]
-
-                    log.Printf("  hero data: %+v", heroData)
-
-                    setHeroData(hero, heroData)
-
-                    player.Heroes[heroIndex] = hero
-                    player.AddUnit(hero)
-                    heroIndex += 1
-                    if heroIndex >= len(player.Heroes) {
-                        break
-                    }
-                }
-            }
-
-            /*
-            Unit int16
-            Name string
-            Items []int16
-            ItemSlot []int16
-            */
-        }
-    }
-
-    stackMoves := make(map[*playerlib.UnitStack]image.Point)
-
     const (
         StatusReady = 0
         StatusPatrol = 1
@@ -894,6 +858,47 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         EnchantmentHolyArmor: data.UnitEnchantmentHolyArmor,
         EnchantmentRighteousness: data.UnitEnchantmentRighteousness,
         EnchantmentInvulnerability: data.UnitEnchantmentInvulnerability,
+    }
+
+    stackMoves := make(map[*playerlib.UnitStack]image.Point)
+
+    heroIndex := 0
+    for _, heroData := range playerData.HeroData {
+        if heroData.Unit > 0 {
+            if heroData.Unit < saveGame.NumUnits {
+                heroUnitData := saveGame.Units[heroData.Unit]
+
+                log.Printf("Player %v has hero %v %v: %+v", playerIndex, heroData.Unit, heroData.Name, heroUnitData)
+
+                hero := makeHero(&player, heroData, &heroUnitData, game)
+                if hero.HeroType != herolib.HeroNone {
+                    heroData := &saveGame.HeroData[playerIndex][heroUnitData.TypeIndex]
+
+                    log.Printf("  hero data: %+v", heroData)
+
+                    setHeroData(hero, heroData)
+
+                    for bit, enchantment := range unitEnchantmentMap {
+                        if int(heroUnitData.Enchantments) & bit != 0 {
+                            hero.AddEnchantment(enchantment)
+                        }
+                    }
+
+                    /* Handle equipment
+                     Items []int16
+                     ItemSlot []int16
+                    */
+
+                    player.Heroes[heroIndex] = hero
+                    player.AddUnit(hero)
+                    heroIndex += 1
+                    if heroIndex >= len(player.Heroes) {
+                        break
+                    }
+                }
+            }
+
+        }
     }
 
     for unitIndex := range saveGame.NumUnits {
