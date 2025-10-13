@@ -723,7 +723,6 @@ func (hero *Hero) GetCasterValue() float32 {
     }
 
     level := hero.GetHeroExperienceLevel()
-    fmt.Printf("Caster ability: %v, level: %v\n", caster.Value, level.ToInt())
     return caster.Value * float32(level.ToInt() + 1)
 }
 
