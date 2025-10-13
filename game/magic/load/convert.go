@@ -863,14 +863,14 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     stackMoves := make(map[*playerlib.UnitStack]image.Point)
 
     heroIndex := 0
-    for _, heroData := range playerData.HeroData {
-        if heroData.Unit > 0 {
-            if heroData.Unit < saveGame.NumUnits {
-                heroUnitData := saveGame.Units[heroData.Unit]
+    for _, playerHeroData := range playerData.HeroData {
+        if playerHeroData.Unit > 0 {
+            if playerHeroData.Unit < saveGame.NumUnits {
+                heroUnitData := saveGame.Units[playerHeroData.Unit]
 
-                log.Printf("Player %v has hero %v %v: %+v", playerIndex, heroData.Unit, heroData.Name, heroUnitData)
+                log.Printf("Player %v has hero %v %v: %+v", playerIndex, playerHeroData.Unit, playerHeroData.Name, heroUnitData)
 
-                hero := makeHero(&player, heroData, &heroUnitData, game)
+                hero := makeHero(&player, playerHeroData, &heroUnitData, game)
                 if hero.HeroType != herolib.HeroNone {
                     heroData := &saveGame.HeroData[playerIndex][heroUnitData.TypeIndex]
 
@@ -883,6 +883,27 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
                             hero.AddEnchantment(enchantment)
                         }
                     }
+
+                    /*
+                    for _, item := range playerHeroData.Items {
+                        if item != -1 && int(item) < len(artifacts) {
+                            log.Printf("  hero item: %+v", artifacts[item])
+                        }
+                    }
+                    */
+
+                    // this isn't quite right
+                    for slot, item := range playerHeroData.ItemSlot {
+                        if item != -1 && int(item) < len(artifacts) {
+                            hero.Equipment[slot] = artifacts[item]
+                            // log.Printf("  hero itemslot: %+v", artifacts[item])
+                        }
+                    }
+
+                    /*
+                    log.Printf("  hero items: %+v", playerHeroData.Items)
+                    log.Printf("  hero itemslots: %+v", playerHeroData.ItemSlot)
+                    */
 
                     /* Handle equipment
                      Items []int16
