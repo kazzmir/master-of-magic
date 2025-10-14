@@ -240,12 +240,14 @@ var CombatDoneErr = errors.New("combat done")
 func makeRoundedButtonImage(width int, height int, border int, col color.Color) *ebiten.Image {
     img := ebiten.NewImage(width, height)
 
-    vector.DrawFilledRect(img, float32(border), 0, float32(width - border * 2), float32(height), col, true)
-    vector.DrawFilledRect(img, 0, float32(border), float32(width), float32(height - border * 2), col, true)
-    vector.DrawFilledCircle(img, float32(border), float32(border), float32(border), col, true)
-    vector.DrawFilledCircle(img, float32(width-border), float32(border), float32(border), col, true)
-    vector.DrawFilledCircle(img, float32(border), float32(height-border), float32(border), col, true)
-    vector.DrawFilledCircle(img, float32(width-border), float32(height-border), float32(border), col, true)
+    vector.FillRect(img, float32(border), 0, float32(width - border * 2), float32(height), col, false)
+    vector.FillRect(img, 0, float32(border), float32(width), float32(height - border * 2), col, false)
+    vector.FillCircle(img, float32(border), float32(border), float32(border), col, false)
+    vector.FillCircle(img, float32(width-border), float32(border), float32(border), col, false)
+    vector.FillCircle(img, float32(border), float32(height-border), float32(border), col, false)
+    vector.FillCircle(img, float32(width-border), float32(height-border), float32(border), col, false)
+
+    // img.Fill(col)
 
     return img
 }
@@ -283,8 +285,8 @@ func makeNineRoundedButtonImage(width int, height int, border int, col color.Col
 
 func makeBorderOutline(col color.Color) *ui_image.NineSlice {
     img := ebiten.NewImage(20, 20)
-    vector.StrokeRect(img, 0, 0, 18, 18, 1, col, true)
-    vector.StrokeLine(img, 19, 0, 19, 19, 1, lighten(col, -80), true)
+    vector.StrokeRect(img, 0, 0, 18, 18, 1, col, false)
+    vector.StrokeLine(img, 19, 0, 19, 19, 1, lighten(col, -80), false)
     return makeNineImage(img, 3)
 }
 
