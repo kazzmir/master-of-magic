@@ -4,6 +4,7 @@ import (
     "bytes"
     "image"
     "fmt"
+    "maps"
     "math/rand/v2"
     "log"
 
@@ -523,6 +524,81 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
     return cities
 }
 
+func convertHeroAbility(ability HeroAbility) data.Ability {
+
+    switch ability {
+        case HeroAbility_CHARMED: return data.MakeAbility(data.AbilityCharmed)
+        case HeroAbility_PRAYERMASTER: return data.MakeAbility(data.AbilityPrayermaster)
+        case HeroAbility_PRAYERMASTER2: return data.MakeAbility(data.AbilitySuperPrayermaster)
+        case HeroAbility_LEADERSHIP: return data.MakeAbility(data.AbilityLeadership)
+        case HeroAbility_LEADERSHIP2: return data.MakeAbility(data.AbilitySuperLeadership)
+        case HeroAbility_LEGENDARY: return data.MakeAbility(data.AbilityLegendary)
+        case HeroAbility_LEGENDARY2: return data.MakeAbility(data.AbilitySuperLegendary)
+        case HeroAbility_BLADEMASTER: return data.MakeAbility(data.AbilityBlademaster)
+        case HeroAbility_BLADEMASTER2: return data.MakeAbility(data.AbilitySuperBlademaster)
+        case HeroAbility_ARMSMASTER: return data.MakeAbility(data.AbilityArmsmaster)
+        case HeroAbility_ARMSMASTER2: return data.MakeAbility(data.AbilitySuperArmsmaster)
+        case HeroAbility_CONSTITUTION: return data.MakeAbility(data.AbilityConstitution)
+        case HeroAbility_CONSTITUTION2: return data.MakeAbility(data.AbilitySuperConstitution)
+        case HeroAbility_MIGHT: return data.MakeAbility(data.AbilityMight)
+        case HeroAbility_MIGHT2: return data.MakeAbility(data.AbilitySuperMight)
+        case HeroAbility_ARCANE_POWER: return data.MakeAbility(data.AbilityArcanePower)
+        case HeroAbility_ARCANE_POWER2: return data.MakeAbility(data.AbilitySuperArcanePower)
+        case HeroAbility_SAGE: return data.MakeAbility(data.AbilitySage)
+        case HeroAbility_SAGE2: return data.MakeAbility(data.AbilitySuperSage)
+        case HeroAbility_AGILITY: return data.MakeAbility(data.AbilityAgility)
+        case HeroAbility_AGILITY2: return data.MakeAbility(data.AbilitySuperAgility)
+        case HeroAbility_LUCKY: return data.MakeAbility(data.AbilityLucky)
+        case HeroAbility_NOBLE: return data.MakeAbility(data.AbilityNoble)
+        // case HeroAbility_FEMALE: return data.MakeAbility(data.AbilityFemale)
+
+        /*
+    */
+
+    }
+
+    return data.MakeAbility(data.AbilityNone)
+}
+
+func isHeroAbility(ability data.Ability) bool {
+    return ability.IsHeroAbility()
+}
+
+// initial casting skill pool
+// https://masterofmagic.fandom.com/wiki/Caster#Improvement_Table
+func convertCastingSkill(castingSkill int8) float32 {
+    switch castingSkill {
+        case 0: return 0
+        case 1: return 5
+        case 2: return 7.5
+        case 3: return 10
+        case 4: return 12.5
+        case 5: return 15
+        case 6: return 17.5
+        case 7: return 20
+    }
+
+    return 0
+}
+
+func setHeroData(hero *herolib.Hero, heroData *HeroData) {
+    // the hero object might have some abilities already initialized on it
+    maps.DeleteFunc(hero.Abilities, func (ability data.AbilityType, value data.Ability) bool {
+        return value.IsHeroAbility()
+    })
+
+    // log.Printf("  set hero data for %v to %v", hero.Name, heroData.AbilitySet)
+
+    for _, ability := range heroData.AbilitySet.Values() {
+        newAbility := convertHeroAbility(ability)
+        hero.Abilities[newAbility.Ability] = newAbility
+    }
+
+    if heroData.CastingSkill != 0 {
+        hero.Abilities[data.AbilityCaster] = data.MakeAbilityValue(data.AbilityCaster, convertCastingSkill(heroData.CastingSkill))
+    }
+}
+
 func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardCustom, artifacts []*artifact.Artifact, game *gamelib.Game) (*playerlib.Player, map[*playerlib.UnitStack]image.Point) {
     playerData := saveGame.PlayerData[playerIndex]
     human := playerIndex == 0
@@ -685,36 +761,6 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         MyrrorFog: myrrorFog,
     }
 
-    heroIndex := 0
-    for _, heroData := range playerData.HeroData {
-        if heroData.Unit > 0 {
-            log.Printf("Player %v has hero %v %v", playerIndex, heroData.Unit, heroData.Name)
-
-            if heroData.Unit < saveGame.NumUnits {
-                log.Printf("  with unit data %+v", saveGame.Units[heroData.Unit])
-
-                hero := makeHero(&player, heroData, &saveGame.Units[heroData.Unit], game)
-                if hero.HeroType != herolib.HeroNone {
-                    player.Heroes[heroIndex] = hero
-                    player.AddUnit(hero)
-                    heroIndex += 1
-                    if heroIndex >= len(player.Heroes) {
-                        break
-                    }
-                }
-            }
-
-            /*
-            Unit int16
-            Name string
-            Items []int16
-            ItemSlot []int16
-            */
-        }
-    }
-
-    stackMoves := make(map[*playerlib.UnitStack]image.Point)
-
     const (
         StatusReady = 0
         StatusPatrol = 1
@@ -812,6 +858,66 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         EnchantmentHolyArmor: data.UnitEnchantmentHolyArmor,
         EnchantmentRighteousness: data.UnitEnchantmentRighteousness,
         EnchantmentInvulnerability: data.UnitEnchantmentInvulnerability,
+    }
+
+    stackMoves := make(map[*playerlib.UnitStack]image.Point)
+
+    heroIndex := 0
+    for _, playerHeroData := range playerData.HeroData {
+        if playerHeroData.Unit > 0 {
+            if playerHeroData.Unit < saveGame.NumUnits {
+                heroUnitData := saveGame.Units[playerHeroData.Unit]
+
+                // log.Printf("Player %v has hero %v %v: %+v", playerIndex, playerHeroData.Unit, playerHeroData.Name, heroUnitData)
+
+                hero := makeHero(&player, playerHeroData, &heroUnitData, game)
+                if hero.HeroType != herolib.HeroNone {
+                    heroData := &saveGame.HeroData[playerIndex][heroUnitData.TypeIndex]
+
+                    // log.Printf("  hero data: %+v", heroData)
+
+                    setHeroData(hero, heroData)
+
+                    for bit, enchantment := range unitEnchantmentMap {
+                        if int(heroUnitData.Enchantments) & bit != 0 {
+                            hero.AddEnchantment(enchantment)
+                        }
+                    }
+
+                    /*
+                    for _, item := range playerHeroData.Items {
+                        if item != -1 && int(item) < len(artifacts) {
+                            log.Printf("  hero item: %+v", artifacts[item])
+                        }
+                    }
+                    */
+
+                    // this isn't quite right
+                    for slot, item := range playerHeroData.Items {
+                        // why -1? im not really sure..
+                        if item > -1 && int(item) < len(artifacts) {
+                            // we could in theory check the ItemSlot, but the slots are hard coded anyway
+                            hero.Equipment[slot] = artifacts[item]
+                            // log.Printf("  hero itemslot %v: %+v", slot, artifacts[item])
+                        }
+                    }
+
+
+                    /* Handle equipment
+                     Items []int16
+                     ItemSlot []int16
+                    */
+
+                    player.Heroes[heroIndex] = hero
+                    player.AddUnit(hero)
+                    heroIndex += 1
+                    if heroIndex >= len(player.Heroes) {
+                        break
+                    }
+                }
+            }
+
+        }
     }
 
     for unitIndex := range saveGame.NumUnits {
@@ -1148,6 +1254,8 @@ func (saveGame *SaveGame) convertArtifacts(spells spellbook.Spells) []*artifact.
     for _, item := range saveGame.Items {
 
         if item.Cost == 0 {
+            // we need nil here to keep the indexes correct
+            artifacts = append(artifacts, nil)
             continue
         }
 
@@ -1215,7 +1323,15 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     game.TurnNumber = uint64(saveGame.Turn)
 
     artifacts := saveGame.convertArtifacts(game.AllSpells())
+    // artifacts that are in the game are removed from the pool
+    // because the ones in the pool are the ones not found yet.
+    // an artifact that is not in the pool must have been created
+    // by a player via the 'enchant item' or 'create artifact' spells.
     for _, artifact := range artifacts {
+        if artifact == nil {
+            continue
+        }
+
         _, ok := game.ArtifactPool[artifact.Name]
         if ok {
             delete(game.ArtifactPool, artifact.Name)
@@ -1239,6 +1355,16 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
     game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
 
+    /*
+    for player, heros := range saveGame.HeroData {
+        for i, heroData := range heros {
+            if getHeroType(uint8(i)) == herolib.HeroDethStryke {
+                log.Printf("Player %v hero %d: %+v", player, i, heroData)
+            }
+        }
+    }
+    */
+
     for playerIndex := range saveGame.NumPlayers {
         player, stackMoves := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
         game.Players = append(game.Players, player)
@@ -1257,10 +1383,8 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // FIXME: add neutral player with brown banner and ai.MakeRaiderAI()
 
     // FIXME: add all remaining information from saveGame
-    // saveGame.Unit
-    // saveGame.HeroData
+    
     // saveGame.GrandVizier
-    // saveGame.Units / saveGame.NumUnits
     // saveGame.Events
 
     // FIXME: game.RandomEvents

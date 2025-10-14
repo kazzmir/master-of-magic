@@ -2340,7 +2340,7 @@ var HeroGunther Unit = Unit{
     Name: "Gunther",
     Race: data.RaceHero,
     Abilities: []data.Ability{
-        data.MakeAbilityValue(data.AbilityThrown, 5),
+        data.MakeAbilityValue(data.AbilityThrown, 3),
         data.MakeAbility(data.AbilityMight),
     },
 }

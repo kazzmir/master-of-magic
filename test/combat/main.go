@@ -229,6 +229,7 @@ func createHeroArmy(player *player.Player, cache *lbx.LbxCache) *combat.Army {
     }
 
     torin := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), herolib.HeroTorin, "warby")
+    torin.AddExperience(1000)
     torin.Equipment[0] = &item
 
     army.AddUnit(torin)
