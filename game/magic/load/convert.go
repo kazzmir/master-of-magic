@@ -892,18 +892,18 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
                     }
                     */
 
+                    log.Printf("  hero items: %+v", playerHeroData.Items)
+                    log.Printf("  hero itemslots: %+v", playerHeroData.ItemSlot)
+
                     // this isn't quite right
-                    for slot, item := range playerHeroData.ItemSlot {
-                        if item != -1 && int(item) < len(artifacts) {
+                    for slot, item := range playerHeroData.Items {
+                        // why -1? im not really sure..
+                        if item > -1 && int(item) < len(artifacts) {
                             hero.Equipment[slot] = artifacts[item]
-                            // log.Printf("  hero itemslot: %+v", artifacts[item])
+                            log.Printf("  hero itemslot %v: %+v", slot, artifacts[item])
                         }
                     }
 
-                    /*
-                    log.Printf("  hero items: %+v", playerHeroData.Items)
-                    log.Printf("  hero itemslots: %+v", playerHeroData.ItemSlot)
-                    */
 
                     /* Handle equipment
                      Items []int16
@@ -1256,6 +1256,8 @@ func (saveGame *SaveGame) convertArtifacts(spells spellbook.Spells) []*artifact.
     for _, item := range saveGame.Items {
 
         if item.Cost == 0 {
+            // we need nil here to keep the indexes correct
+            artifacts = append(artifacts, nil)
             continue
         }
 
@@ -1323,7 +1325,15 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     game.TurnNumber = uint64(saveGame.Turn)
 
     artifacts := saveGame.convertArtifacts(game.AllSpells())
+    // artifacts that are in the game are removed from the pool
+    // because the ones in the pool are the ones not found yet.
+    // an artifact that is not in the pool must have been created
+    // by a player via the 'enchant item' or 'create artifact' spells.
     for _, artifact := range artifacts {
+        if artifact == nil {
+            continue
+        }
+
         _, ok := game.ArtifactPool[artifact.Name]
         if ok {
             delete(game.ArtifactPool, artifact.Name)
