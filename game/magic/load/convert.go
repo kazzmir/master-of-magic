@@ -868,13 +868,13 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
             if playerHeroData.Unit < saveGame.NumUnits {
                 heroUnitData := saveGame.Units[playerHeroData.Unit]
 
-                log.Printf("Player %v has hero %v %v: %+v", playerIndex, playerHeroData.Unit, playerHeroData.Name, heroUnitData)
+                // log.Printf("Player %v has hero %v %v: %+v", playerIndex, playerHeroData.Unit, playerHeroData.Name, heroUnitData)
 
                 hero := makeHero(&player, playerHeroData, &heroUnitData, game)
                 if hero.HeroType != herolib.HeroNone {
                     heroData := &saveGame.HeroData[playerIndex][heroUnitData.TypeIndex]
 
-                    log.Printf("  hero data: %+v", heroData)
+                    // log.Printf("  hero data: %+v", heroData)
 
                     setHeroData(hero, heroData)
 
@@ -892,15 +892,13 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
                     }
                     */
 
-                    log.Printf("  hero items: %+v", playerHeroData.Items)
-                    log.Printf("  hero itemslots: %+v", playerHeroData.ItemSlot)
-
                     // this isn't quite right
                     for slot, item := range playerHeroData.Items {
                         // why -1? im not really sure..
                         if item > -1 && int(item) < len(artifacts) {
+                            // we could in theory check the ItemSlot, but the slots are hard coded anyway
                             hero.Equipment[slot] = artifacts[item]
-                            log.Printf("  hero itemslot %v: %+v", slot, artifacts[item])
+                            // log.Printf("  hero itemslot %v: %+v", slot, artifacts[item])
                         }
                     }
 
