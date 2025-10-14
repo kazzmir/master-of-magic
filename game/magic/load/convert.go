@@ -1383,12 +1383,8 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // FIXME: add neutral player with brown banner and ai.MakeRaiderAI()
 
     // FIXME: add all remaining information from saveGame
-    // saveGame.Unit
     
-
-    // saveGame.HeroData
     // saveGame.GrandVizier
-    // saveGame.Units / saveGame.NumUnits
     // saveGame.Events
 
     // FIXME: game.RandomEvents
