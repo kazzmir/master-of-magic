@@ -717,6 +717,11 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     // PowerBase
     // Volcanoes
 
+    convertNominalSkill := func(nominalSkill uint16) int {
+        var z int = int(nominalSkill)
+        return z * z - z + 1
+    }
+
     player := playerlib.Player{
         Wizard: wizards[playerIndex],
         SpellOfMasteryCost: int(playerData.MasteryResearch),
@@ -744,6 +749,8 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         ResearchProgress: researchingSpell.ResearchCost - int(playerData.ResearchCostRemaining),
         CastingSpell: spellMap[int(playerData.CastingSpellIndex)],
         CastingSpellProgress: int(playerData.CastingCostOriginal - playerData.CastingCostRemaining),
+        RemainingCastingSkill: int(playerData.SkillLeft),
+        CastingSkillPower: convertNominalSkill(playerData.NominalSkill),
         // FIXME: CastingSkillPower
         // FIXME: RemainingCastingSkill
         GlobalEnchantments: globalEnchantments,

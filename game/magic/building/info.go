@@ -382,6 +382,12 @@ func ReadBuildingInfo(cache *lbx.LbxCache) (BuildingInfos, error) {
         wizardsGuild.UpkeepPower = 3
     }
 
+    oracle := out.GetBuildingByName("Oracle")
+    if oracle != nil {
+        // oracle should not provide research
+        oracle.Research = 0
+    }
+
     none := out.GetBuildingByName("None")
     if none != nil {
         none.Name = ""
