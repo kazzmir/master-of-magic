@@ -181,8 +181,7 @@ func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane dat
     }
 
     for _, node := range saveGame.Nodes {
-
-        if node.Plane == 0 && plane != data.PlaneArcanus || node.Plane != 0 && plane != data.PlaneMyrror {
+        if (node.Plane == 0 && plane != data.PlaneArcanus) || (node.Plane != 0 && plane != data.PlaneMyrror) {
             continue
         }
 
@@ -374,7 +373,7 @@ func (saveGame *SaveGame) convertFogMap(plane data.Plane) data.FogMap {
     return out
 }
 
-func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex int, wizards []setup.WizardCustom, game *gamelib.Game) []*citylib.City {
+func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex int, wizards []setup.WizardCustom, game *gamelib.Game, arcanusMap *maplib.Map, myrrorMap *maplib.Map) []*citylib.City {
     cities := []*citylib.City{}
     buildingMap := map[int]buildinglib.Building{
         0x01: buildinglib.BuildingTradeGoods,
@@ -488,12 +487,11 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
             producingUnit = getUnitType(int(cityData.Construction)-100)
         }
 
+        // log.Printf("City data: %+v", cityData)
         catchmentProvider := game.ArcanusMap
         if plane == data.PlaneMyrror {
             catchmentProvider = game.MyrrorMap
         }
-
-        // log.Printf("City data: %+v", cityData)
 
         city := citylib.City{
             Population: 1000 * int(cityData.Population) + 10 * int(cityData.Population10),
@@ -512,11 +510,12 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
             Production: float32(cityData.Production),
             ProducingBuilding: producingBuilding,
             ProducingUnit: producingUnit,
-            CatchmentProvider: catchmentProvider,
             CityServices: game,
+            CatchmentProvider: catchmentProvider,
             ReignProvider: player,
             BuildingInfo: game.BuildingInfo,
         }
+
         city.UpdateUnrest()
         cities = append(cities, &city)
     }
@@ -599,7 +598,7 @@ func setHeroData(hero *herolib.Hero, heroData *HeroData) {
     }
 }
 
-func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardCustom, artifacts []*artifact.Artifact, game *gamelib.Game) (*playerlib.Player, map[*playerlib.UnitStack]image.Point) {
+func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardCustom, artifacts []*artifact.Artifact, game *gamelib.Game) (*playerlib.Player, map[*playerlib.UnitStack]image.Point, func()) {
     playerData := saveGame.PlayerData[playerIndex]
     human := playerIndex == 0
 
@@ -717,6 +716,11 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     // PowerBase
     // Volcanoes
 
+    convertNominalSkill := func(nominalSkill uint16) int {
+        var z int = int(nominalSkill)
+        return z * z - z + 1
+    }
+
     player := playerlib.Player{
         Wizard: wizards[playerIndex],
         SpellOfMasteryCost: int(playerData.MasteryResearch),
@@ -744,6 +748,8 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         ResearchProgress: researchingSpell.ResearchCost - int(playerData.ResearchCostRemaining),
         CastingSpell: spellMap[int(playerData.CastingSpellIndex)],
         CastingSpellProgress: int(playerData.CastingCostOriginal - playerData.CastingCostRemaining),
+        RemainingCastingSkill: int(playerData.SkillLeft),
+        CastingSkillPower: convertNominalSkill(playerData.NominalSkill),
         // FIXME: CastingSkillPower
         // FIXME: RemainingCastingSkill
         GlobalEnchantments: globalEnchantments,
@@ -753,12 +759,18 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         // FIXME: Heroes
         VaultEquipment: vaultEquipment,
         // FIXME: CreateArtifact
-        // FIXME: Units
-        // FIXME: Stacks
-        // FIXME: UnitId
-        // FIXME: SelectedStack
         ArcanusFog: arcanusFog,
         MyrrorFog: myrrorFog,
+    }
+
+    if player.CastingSpell.Valid() && (player.CastingSpell.Name == "Create Artifact" || player.CastingSpell.Name == "Enchant Item") {
+        // the artifact being created is the last one. not sure about enemy wizards
+        if len(artifacts) > 0 {
+            last := artifacts[len(artifacts)-1]
+            player.CreateArtifact = last
+            player.CastingSpellProgress = last.Cost - int(playerData.CastingCostRemaining)
+            player.CastingSpell.OverrideCost = last.Cost
+        }
     }
 
     const (
@@ -860,6 +872,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         EnchantmentInvulnerability: data.UnitEnchantmentInvulnerability,
     }
 
+    // keep track of stacks that want to move to some destination point
     stackMoves := make(map[*playerlib.UnitStack]image.Point)
 
     heroIndex := 0
@@ -884,29 +897,13 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
                         }
                     }
 
-                    /*
-                    for _, item := range playerHeroData.Items {
-                        if item != -1 && int(item) < len(artifacts) {
-                            log.Printf("  hero item: %+v", artifacts[item])
-                        }
-                    }
-                    */
-
-                    // this isn't quite right
                     for slot, item := range playerHeroData.Items {
-                        // why -1? im not really sure..
                         if item > -1 && int(item) < len(artifacts) {
                             // we could in theory check the ItemSlot, but the slots are hard coded anyway
                             hero.Equipment[slot] = artifacts[item]
                             // log.Printf("  hero itemslot %v: %+v", slot, artifacts[item])
                         }
                     }
-
-
-                    /* Handle equipment
-                     Items []int16
-                     ItemSlot []int16
-                    */
 
                     player.Heroes[heroIndex] = hero
                     player.AddUnit(hero)
@@ -979,11 +976,14 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         }
     }
 
-    player.Cities = saveGame.convertCities(&player, playerIndex, wizards, game)
     player.UpdateResearchCandidates()
     player.UpdateFogVisibility()
 
-    return &player, stackMoves
+    updateCities := func() {
+        player.Cities = saveGame.convertCities(&player, playerIndex, wizards, game, game.ArcanusMap, game.MyrrorMap)
+    }
+
+    return &player, stackMoves, updateCities
 }
 
 func getUnitType(index int) units.Unit {
@@ -1252,7 +1252,6 @@ func (saveGame *SaveGame) convertArtifacts(spells spellbook.Spells) []*artifact.
 
     artifacts := []*artifact.Artifact{}
     for _, item := range saveGame.Items {
-
         if item.Cost == 0 {
             // we need nil here to keep the indexes correct
             artifacts = append(artifacts, nil)
@@ -1352,9 +1351,6 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
         wizards = append(wizards, saveGame.convertWizard(int(playerIndex)))
     }
 
-    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
-    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
-
     /*
     for player, heros := range saveGame.HeroData {
         for i, heroData := range heros {
@@ -1365,9 +1361,13 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     }
     */
 
+    var playerDefers []func()
+
     for playerIndex := range saveGame.NumPlayers {
-        player, stackMoves := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
+        player, stackMoves, deferred := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
         game.Players = append(game.Players, player)
+
+        playerDefers = append(playerDefers, deferred)
 
         defer func(){
             for stack, destination := range stackMoves {
@@ -1379,6 +1379,16 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
             }
         }()
     }
+
+    // the players must exist before we can convert the maps
+    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
+    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
+
+    // any initialization that needs the maps to occur can now run
+    for _, f := range playerDefers {
+        f()
+    }
+
 
     // FIXME: add neutral player with brown banner and ai.MakeRaiderAI()
 

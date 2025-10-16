@@ -3699,6 +3699,7 @@ func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
 
                 for i := 0; i < 90; i += zoomSpeed2 {
                     game.Camera.AnimatedZoom = math.Sin(float64(i) * math.Pi / 180.0) - 1
+                    game.Counter += 1
                     yield()
 
                     _, wheelY := ebiten.Wheel()
@@ -3727,6 +3728,7 @@ func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
 
                 for i := 0; i < 90; i += zoomSpeed2 {
                     game.Camera.AnimatedZoom = 1.0 - math.Sin(float64(i) * math.Pi / 180.0)
+                    game.Counter += 1
                     yield()
 
                     _, wheelY := ebiten.Wheel()
