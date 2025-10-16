@@ -765,12 +765,18 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         // FIXME: Heroes
         VaultEquipment: vaultEquipment,
         // FIXME: CreateArtifact
-        // FIXME: Units
-        // FIXME: Stacks
-        // FIXME: UnitId
-        // FIXME: SelectedStack
         ArcanusFog: arcanusFog,
         MyrrorFog: myrrorFog,
+    }
+
+    if player.CastingSpell.Valid() && (player.CastingSpell.Name == "Create Artifact" || player.CastingSpell.Name == "Enchant Item") {
+        // the artifact being created is the last one. not sure about enemy wizards
+        if len(artifacts) > 0 {
+            last := artifacts[len(artifacts)-1]
+            player.CreateArtifact = last
+            player.CastingSpellProgress = last.Cost - int(playerData.CastingCostRemaining)
+            player.CastingSpell.OverrideCost = last.Cost
+        }
     }
 
     const (
@@ -872,6 +878,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         EnchantmentInvulnerability: data.UnitEnchantmentInvulnerability,
     }
 
+    // keep track of stacks that want to move to some destination point
     stackMoves := make(map[*playerlib.UnitStack]image.Point)
 
     heroIndex := 0
@@ -896,29 +903,13 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
                         }
                     }
 
-                    /*
-                    for _, item := range playerHeroData.Items {
-                        if item != -1 && int(item) < len(artifacts) {
-                            log.Printf("  hero item: %+v", artifacts[item])
-                        }
-                    }
-                    */
-
-                    // this isn't quite right
                     for slot, item := range playerHeroData.Items {
-                        // why -1? im not really sure..
                         if item > -1 && int(item) < len(artifacts) {
                             // we could in theory check the ItemSlot, but the slots are hard coded anyway
                             hero.Equipment[slot] = artifacts[item]
                             // log.Printf("  hero itemslot %v: %+v", slot, artifacts[item])
                         }
                     }
-
-
-                    /* Handle equipment
-                     Items []int16
-                     ItemSlot []int16
-                    */
 
                     player.Heroes[heroIndex] = hero
                     player.AddUnit(hero)
@@ -1265,7 +1256,6 @@ func (saveGame *SaveGame) convertArtifacts(spells spellbook.Spells) []*artifact.
 
     artifacts := []*artifact.Artifact{}
     for _, item := range saveGame.Items {
-
         if item.Cost == 0 {
             // we need nil here to keep the indexes correct
             artifacts = append(artifacts, nil)
