@@ -407,6 +407,11 @@ func computeChaosNodeEnemies(budget int) ([]units.Unit, []units.Unit) {
 
 func MakeMagicNode(kind MagicNode, magicSetting data.MagicSetting, difficulty data.DifficultySetting, plane data.Plane) (*ExtraMagicNode, *ExtraEncounter) {
     zone := makeZone(plane)
+
+    rand.Shuffle(len(zone), func(i, j int) {
+        zone[i], zone[j] = zone[j], zone[i]
+    })
+
     var guardians []units.Unit
     var secondary []units.Unit
 
