@@ -373,8 +373,7 @@ func (saveGame *SaveGame) convertFogMap(plane data.Plane) data.FogMap {
     return out
 }
 
-func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex int, wizards []setup.WizardCustom, game *gamelib.Game) ([]*citylib.City, []func()) {
-    var defers []func()
+func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex int, wizards []setup.WizardCustom, game *gamelib.Game, arcanusMap *maplib.Map, myrrorMap *maplib.Map) []*citylib.City {
     cities := []*citylib.City{}
     buildingMap := map[int]buildinglib.Building{
         0x01: buildinglib.BuildingTradeGoods,
@@ -489,6 +488,10 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
         }
 
         // log.Printf("City data: %+v", cityData)
+        catchmentProvider := game.ArcanusMap
+        if plane == data.PlaneMyrror {
+            catchmentProvider = game.MyrrorMap
+        }
 
         city := citylib.City{
             Population: 1000 * int(cityData.Population) + 10 * int(cityData.Population10),
@@ -508,25 +511,16 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
             ProducingBuilding: producingBuilding,
             ProducingUnit: producingUnit,
             CityServices: game,
+            CatchmentProvider: catchmentProvider,
             ReignProvider: player,
             BuildingInfo: game.BuildingInfo,
         }
 
-        // have to set this later so that we can update unrest properly
-        defers = append(defers, func() {
-            catchmentProvider := game.ArcanusMap
-            if plane == data.PlaneMyrror {
-                catchmentProvider = game.MyrrorMap
-            }
-
-            city.CatchmentProvider = catchmentProvider
-            city.UpdateUnrest()
-        })
-
+        city.UpdateUnrest()
         cities = append(cities, &city)
     }
 
-    return cities, defers
+    return cities
 }
 
 func convertHeroAbility(ability HeroAbility) data.Ability {
@@ -604,7 +598,7 @@ func setHeroData(hero *herolib.Hero, heroData *HeroData) {
     }
 }
 
-func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardCustom, artifacts []*artifact.Artifact, game *gamelib.Game) (*playerlib.Player, map[*playerlib.UnitStack]image.Point, []func()) {
+func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardCustom, artifacts []*artifact.Artifact, game *gamelib.Game) (*playerlib.Player, map[*playerlib.UnitStack]image.Point, func()) {
     playerData := saveGame.PlayerData[playerIndex]
     human := playerIndex == 0
 
@@ -982,12 +976,14 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         }
     }
 
-    var defers []func()
-    player.Cities, defers = saveGame.convertCities(&player, playerIndex, wizards, game)
     player.UpdateResearchCandidates()
     player.UpdateFogVisibility()
 
-    return &player, stackMoves, defers
+    updateCities := func() {
+        player.Cities = saveGame.convertCities(&player, playerIndex, wizards, game, game.ArcanusMap, game.MyrrorMap)
+    }
+
+    return &player, stackMoves, updateCities
 }
 
 func getUnitType(index int) units.Unit {
@@ -1368,10 +1364,10 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     var playerDefers []func()
 
     for playerIndex := range saveGame.NumPlayers {
-        player, stackMoves, defers := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
+        player, stackMoves, deferred := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
         game.Players = append(game.Players, player)
 
-        playerDefers = append(playerDefers, defers...)
+        playerDefers = append(playerDefers, deferred)
 
         defer func(){
             for stack, destination := range stackMoves {
