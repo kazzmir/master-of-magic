@@ -1473,7 +1473,13 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Camera.Center(20, 20)
     if len(game.Players[0].Cities) > 0 {
-        game.Camera.Center(game.Players[0].Cities[0].X, game.Players[0].Cities[0].Y)
+        city := game.Players[0].Cities[0]
+        game.Events <- &gamelib.GameEventMoveCamera{
+            Instant: true,
+            Plane: city.Plane,
+            X: city.X,
+            Y: city.Y,
+        }
     }
 
     return game

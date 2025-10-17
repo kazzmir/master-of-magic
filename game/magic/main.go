@@ -4,6 +4,7 @@ import (
     "log"
     "fmt"
     "flag"
+    "io"
     "errors"
     "math"
     "math/rand/v2"
@@ -27,6 +28,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
+    "github.com/kazzmir/master-of-magic/game/magic/load"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/mainview"
@@ -338,41 +340,99 @@ func initializeNeutralPlayer(game *gamelib.Game, arcanusCityArea gamelib.CityVal
     return player
 }
 
-func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) error {
-    game := gamelib.MakeGame(magic.Cache, settings)
-    defer game.Shutdown()
+type OriginalGameLoader struct {
+    Cache *lbx.LbxCache
+    NewGame chan *gamelib.Game
+}
 
-    magic.Drawer = func(screen *ebiten.Image) {
-        game.Draw(screen)
+func (loader *OriginalGameLoader) Load(reader io.Reader) error {
+    saved, err := load.LoadSaveGame(reader)
+    if err != nil {
+        return err
     }
 
-    arcanusCityArea := game.MakeCityValidArea(data.PlaneArcanus)
-    myrrorCityArea := game.MakeCityValidArea(data.PlaneMyrror)
+    newGame := saved.Convert(loader.Cache)
 
-    human := initializePlayer(game, humanWizard, true, arcanusCityArea, myrrorCityArea)
-
-    for range settings.Opponents {
-        wizard, ok := game.ChooseWizard()
-        if ok {
-            initializePlayer(game, wizard, false, arcanusCityArea, myrrorCityArea)
-        } else {
-            log.Printf("Warning: unable to add another wizard to the game")
+    if newGame != nil {
+        select {
+            case loader.NewGame <- newGame:
+            default:
         }
+
+        return nil
     }
 
-    log.Printf("Create neutral player")
-    neutral := initializeNeutralPlayer(game, arcanusCityArea, myrrorCityArea)
-    log.Printf("done create neutral player with %v cities", len(neutral.Cities))
+    return fmt.Errorf("Could not convert saved game")
+}
 
-    // hack
-    // human.Admin = true
-    _ = human
+func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) error {
+    initializeGame := func() *gamelib.Game {
+        game := gamelib.MakeGame(magic.Cache, settings)
 
-    game.DoNextTurn()
+        magic.Drawer = func(screen *ebiten.Image) {
+            game.Draw(screen)
+        }
+
+        arcanusCityArea := game.MakeCityValidArea(data.PlaneArcanus)
+        myrrorCityArea := game.MakeCityValidArea(data.PlaneMyrror)
+
+        human := initializePlayer(game, humanWizard, true, arcanusCityArea, myrrorCityArea)
+
+        for range settings.Opponents {
+            wizard, ok := game.ChooseWizard()
+            if ok {
+                initializePlayer(game, wizard, false, arcanusCityArea, myrrorCityArea)
+            } else {
+                log.Printf("Warning: unable to add another wizard to the game")
+            }
+        }
+
+        log.Printf("Create neutral player")
+        neutral := initializeNeutralPlayer(game, arcanusCityArea, myrrorCityArea)
+        log.Printf("done create neutral player with %v cities", len(neutral.Cities))
+
+        // hack
+        // human.Admin = true
+        _ = human
+
+        game.DoNextTurn()
+        return game
+    }
+
+    gameLoader := &OriginalGameLoader{
+        Cache: magic.Cache,
+        NewGame: make(chan *gamelib.Game, 1),
+    }
+
+    game := initializeGame()
+    defer func() {
+        // wrap the game variable so that only the remaining reference is shutdown
+        game.Shutdown()
+    }()
+    game.GameLoader = gameLoader
+
+    /*
+    runtime.AddCleanup(game, func(x int){
+        log.Printf("Cleaned up game instance %v", x)
+    }, 0)
+    */
 
     for game.Update(yield) != gamelib.GameStateQuit {
         if inputmanager.IsQuitPressed() {
             return ebiten.Termination
+        }
+
+        select {
+            case newGame := <-gameLoader.NewGame:
+                game.Shutdown()
+                game = newGame
+                game.GameLoader = gameLoader
+                game.CurrentPlayer = 0
+
+                magic.Drawer = func(screen *ebiten.Image) {
+                    game.Draw(screen)
+                }
+            default:
         }
 
         yield()
