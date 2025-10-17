@@ -1317,6 +1317,67 @@ func (saveGame *SaveGame) convertArtifacts(spells spellbook.Spells) []*artifact.
     return artifacts
 }
 
+func setupRelations(player *playerlib.Player, index int, playerData *PlayerData, allPlayers []*playerlib.Player) {
+    const (
+        NoTreaty int8 = 0
+        Pact int8 = 1
+        Alliance int8 = 2
+        War int8 = 3
+        FinalWar int8 = 4
+    )
+
+    convertTreatyType := func(treaty int8) data.TreatyType {
+        switch treaty {
+            case NoTreaty: return data.TreatyNone
+            case Pact: return data.TreatyPact
+            case Alliance: return data.TreatyAlliance
+            case War, FinalWar: return data.TreatyWar
+        }
+
+        return data.TreatyNone
+    }
+
+    for contactIndex := range playerData.Diplomacy.Contacted {
+        if contactIndex != index && contactIndex < len(allPlayers) {
+            otherPlayer := allPlayers[contactIndex]
+            player.AwarePlayer(otherPlayer)
+            relation, ok := player.GetDiplomaticRelation(otherPlayer)
+            if ok {
+
+                relation.TreatyInterest = int(playerData.Diplomacy.TreatyInterest[contactIndex])
+                relation.TradeInterest = int(playerData.Diplomacy.TradeInterest[contactIndex])
+                relation.PeaceInterest = int(playerData.Diplomacy.PeaceInterest[contactIndex])
+                relation.StartingRelation = int(playerData.Diplomacy.DefaultRelations[contactIndex])
+                relation.VisibleRelation = int(playerData.Diplomacy.VisibleRelations[contactIndex])
+                relation.Treaty = convertTreatyType(playerData.Diplomacy.DiplomacyStatus[contactIndex])
+
+                /*
+                Treaty data.TreatyType
+                // from -100 to +100, where -100 means this player hates the other, and +100 means this player loves the other
+                StartingRelation int
+                VisibleRelation int
+
+                // these values indicate how likely the player will be to accept a treaty or trade
+                TreatyInterest int
+                TradeInterest int
+                PeaceInterest int
+
+                // how many turns since a peace treaty has been made with this player. While this value is above 0
+                // the owner will not perform any hostile actions
+                PeaceCounter int
+
+                // how hostile this player is to the other
+                Hostility Hostility
+
+                // how many times this player has been warned about their actions
+                WarningCounter int
+                */
+
+            }
+        }
+    }
+}
+
 func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     game := gamelib.MakeGame(cache, saveGame.convertSettings())
     game.TurnNumber = uint64(saveGame.Turn)
@@ -1378,6 +1439,13 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
                 }
             }
         }()
+    }
+
+    // now set up player relations
+    for playerIndex := range saveGame.NumPlayers {
+        data := &saveGame.PlayerData[playerIndex]
+        player := game.Players[playerIndex]
+        setupRelations(player, int(playerIndex), data, game.Players)
     }
 
     // the players must exist before we can convert the maps
