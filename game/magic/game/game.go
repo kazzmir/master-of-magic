@@ -1267,6 +1267,7 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
 
     ui.AddElement(input)
     ui.FocusElement(input, name)
+    defer ui.UnfocusElement()
 
     for !quit {
         game.Counter += 1

@@ -13,6 +13,15 @@ import (
     "image"
     // "image/color"
 
+    // for trace/pprof
+    "net/http"
+    _ "net/http/pprof"
+    /*
+    "runtime"
+    "runtime/debug"
+    "os"
+    */
+
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -365,6 +374,17 @@ func (loader *OriginalGameLoader) Load(reader io.Reader) error {
     return fmt.Errorf("Could not convert saved game")
 }
 
+/*
+func writeHeapDump(filename string) {
+    runtime.GC()
+    out, err := os.Create(filename)
+    if err == nil {
+        debug.WriteHeapDump(out.Fd())
+        out.Close()
+    }
+}
+*/
+
 func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) error {
     initializeGame := func() *gamelib.Game {
         game := gamelib.MakeGame(magic.Cache, settings)
@@ -415,6 +435,7 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     runtime.AddCleanup(game, func(x int){
         log.Printf("Cleaned up game instance %v", x)
     }, 0)
+    writeHeapDump("g1.dump")
     */
 
     for game.Update(yield) != gamelib.GameStateQuit {
@@ -432,6 +453,8 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
                 magic.Drawer = func(screen *ebiten.Image) {
                     game.Draw(screen)
                 }
+
+                // writeHeapDump("g2.dump")
             default:
         }
 
@@ -618,9 +641,18 @@ func main() {
 
     var dataPath string
     var startGame bool
+    var trace bool
     flag.StringVar(&dataPath, "data", "", "path to master of magic lbx data files. Give either a directory or a zip file. Data is searched for in the current directory if not given.")
     flag.BoolVar(&startGame, "start", false, "start the game immediately with a random wizard")
+    flag.BoolVar(&trace, "trace", false, "enable profiling (pprof)")
     flag.Parse()
+
+    if trace {
+        go func() {
+            log.Printf("Starting pprof server on localhost:8000")
+            log.Println(http.ListenAndServe("localhost:8000", nil))
+        }()
+    }
 
     ebiten.SetWindowSize(data.ScreenWidth * 4, data.ScreenHeight * 4)
     ebiten.SetWindowTitle("magic")
