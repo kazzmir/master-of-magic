@@ -6,8 +6,10 @@ import (
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    "github.com/kazzmir/master-of-magic/game/magic/gamemenu"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
@@ -22,7 +24,14 @@ const (
     MainScreenStateRunning MainScreenState = iota
     MainScreenStateQuit
     MainScreenStateNewGame
+    MainScreenStateLoadGame
 )
+
+type MainScreenEvent interface {
+}
+
+type MainScreenEventLoad struct {
+}
 
 type MainScreen struct {
     Counter uint64
@@ -30,14 +39,23 @@ type MainScreen struct {
     State MainScreenState
     ImageCache util.ImageCache
     UI *uilib.UI
+    GameLoader gamemenu.GameLoader
+    Events chan MainScreenEvent
+    Drawer func(screen *ebiten.Image)
 }
 
-func MakeMainScreen(cache *lbx.LbxCache) *MainScreen {
+func MakeMainScreen(cache *lbx.LbxCache, gameLoader gamemenu.GameLoader) *MainScreen {
     main := &MainScreen{
         Counter: 0,
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         State: MainScreenStateRunning,
+        GameLoader: gameLoader,
+        Events: make(chan MainScreenEvent, 10),
+    }
+
+    main.Drawer = func(screen *ebiten.Image) {
+        main.UI.Draw(main.UI, screen)
     }
 
     main.UI = main.MakeUI()
@@ -250,7 +268,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
 
     // TODO: when load game functionality is there, take save files presence into account for these vars
     isContinueBtnActive := false
-    isLoadGameBtnActive := false
+    isLoadGameBtnActive := true
 
     // continue
     elements = append(elements, makeButton(1, 110, 130, "Continue", isContinueBtnActive, func(){
@@ -259,7 +277,10 @@ func (main *MainScreen) MakeUI() *uilib.UI {
 
     // load game
     elements = append(elements, makeButton(2, 110, 130 + 16 * 1, "Load", isLoadGameBtnActive, func(){
-        log.Printf("load")
+        select {
+            case main.Events <- &MainScreenEventLoad{}:
+            default:
+        }
     }))
 
     // new game
@@ -279,14 +300,53 @@ func (main *MainScreen) MakeUI() *uilib.UI {
     return ui
 }
 
-func (main *MainScreen) Update() MainScreenState {
+func (main *MainScreen) RunGameScreen(yield coroutine.YieldFunc) MainScreenState {
+    oldDrawer := main.Drawer
+    defer func() {
+        main.Drawer = oldDrawer
+    }()
+
+    gameScreen, quit := gamemenu.MakeGameMenuUI(main.Cache, main.GameLoader, func(){})
+
+    ui := &uilib.UI{
+    }
+
+    main.Drawer = func(screen *ebiten.Image) {
+        ui.StandardDraw(screen)
+    }
+
+    ui.SetElementsFromArray(nil)
+    ui.AddGroup(gameScreen)
+
+    for quit.Err() == nil {
+        ui.StandardUpdate()
+        if yield() != nil {
+            break
+        }
+    }
+
+    yield()
+
+    return MainScreenStateRunning
+}
+
+func (main *MainScreen) Update(yield coroutine.YieldFunc) MainScreenState {
     main.Counter += 1
 
     main.UI.StandardUpdate()
+
+    select {
+    case event := <-main.Events:
+            switch event.(type) {
+                case *MainScreenEventLoad:
+                    main.State = main.RunGameScreen(yield)
+            }
+        default:
+    }
 
     return main.State
 }
 
 func (main *MainScreen) Draw(screen *ebiten.Image) {
-    main.UI.Draw(main.UI, screen)
+    main.Drawer(screen)
 }
