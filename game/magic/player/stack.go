@@ -286,6 +286,18 @@ func (stack *UnitStack) ToggleActive(unit units.StackUnit){
     }
 }
 
+func (stack *UnitStack) ResetActive() {
+    for _, unit := range stack.units {
+        if unit.GetMovesLeft().GreaterThan(fraction.Zero()) && unit.GetBusy() == units.BusyStatusNone {
+            stack.active[unit] = true
+        }
+
+        if unit.GetMovesLeft().LessThanEqual(fraction.Zero()) || unit.GetBusy() == units.BusyStatusNone {
+            stack.active[unit] = false
+        }
+    }
+}
+
 func (stack *UnitStack) AddUnit(unit units.StackUnit){
     _, existing := stack.active[unit]
     if existing {

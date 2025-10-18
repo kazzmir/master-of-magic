@@ -982,8 +982,11 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
                     // FIXME: stasis
                 }
             }
-
         }
+    }
+
+    for _, stack := range player.Stacks {
+        stack.ResetActive()
     }
 
     player.UpdateResearchCandidates()
