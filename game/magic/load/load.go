@@ -1600,6 +1600,8 @@ func loadCities(reader io.Reader) ([]CityData, error) {
             return nil, err
         }
 
+        // log.Printf("City name raw: %v: %v", data.Name, string(data.Name))
+
         data.Race, err = lbx.ReadN[int8](cityReader)
         if err != nil {
             return nil, err

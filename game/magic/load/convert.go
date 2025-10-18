@@ -70,6 +70,17 @@ func toRaceInt(race data.Race) int {
     return 0
 }
 
+func firstNonZero(arr []byte) []byte {
+    var out []byte
+    for _, b := range arr {
+        if b == 0 {
+            break
+        }
+        out = append(out, b)
+    }
+    return out
+}
+
 func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane data.Plane, cityProvider maplib.CityProvider, players []*playerlib.Player) *maplib.Map {
 
     map_ := maplib.Map{
@@ -498,7 +509,7 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
             Farmers: int(cityData.Farmers),
             Workers: int(cityData.Population - cityData.Farmers),
             Rebels: 0,
-            Name: string(bytes.Trim(cityData.Name, "\x00")),
+            Name: string(firstNonZero(cityData.Name)),
             Plane: plane,
             Race: race,
             X: int(cityData.X),
@@ -1306,7 +1317,7 @@ func (saveGame *SaveGame) convertArtifacts(spells spellbook.Spells) []*artifact.
         }
 
         artifacts = append(artifacts, &artifact.Artifact{
-            Name: string(bytes.Trim(item.Name, "\x00")),
+            Name: string(firstNonZero(item.Name)),
             Image: int(item.IconIndex),
             Type: typeMap[item.Type],
             Cost: int(item.Cost),
