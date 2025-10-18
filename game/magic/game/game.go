@@ -2278,6 +2278,7 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
     event := GameEventRunUI{
         Group: gameMenu,
         Quit: quit,
+        Song: music.SongNone,
     }
 
     select {
@@ -7132,11 +7133,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
             conjunction, conjunctionColor := game.ActiveConjunctionName()
 
+            goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(240, 77)
             elements = append(elements, &uilib.UIElement{
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                    goldFood, _ := game.ImageCache.GetImage("main.lbx", 34, 0)
-                    var options ebiten.DrawImageOptions
-                    options.GeoM.Translate(240, 77)
                     scale.DrawScaled(screen, goldFood, &options)
 
                     negativeScale := ebiten.ColorScale{}

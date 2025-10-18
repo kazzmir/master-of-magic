@@ -402,6 +402,8 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
         game.Draw(screen)
     }
 
+    game.RefreshUI()
+
     /*
     runtime.AddCleanup(game, func(x int){
         log.Printf("Cleaned up game instance %v", x)
@@ -420,6 +422,7 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
                 game = newGame
                 game.GameLoader = gameLoader
                 game.CurrentPlayer = 0
+                game.RefreshUI()
 
                 magic.Drawer = func(screen *ebiten.Image) {
                     game.Draw(screen)

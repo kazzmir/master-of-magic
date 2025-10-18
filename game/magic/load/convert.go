@@ -1,7 +1,6 @@
 package load
 
 import (
-    "bytes"
     "image"
     "fmt"
     "maps"
