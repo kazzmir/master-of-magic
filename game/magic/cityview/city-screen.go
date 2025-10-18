@@ -2355,6 +2355,26 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
     return elements
 }
 
+// 1000 -> "1,000"
+func numberWithComma(n int) string {
+    value := fmt.Sprintf("%v", n)
+    var result strings.Builder
+
+    count := 0
+    for i := len(value) - 1; i >= 0; i-- {
+        result.WriteByte(value[i])
+        count++
+        if count % 3 == 0 && i != 0 {
+            result.WriteByte(',')
+        }
+    }
+
+    // reverse the string
+    runes := []rune(result.String())
+    slices.Reverse(runes)
+    return string(runes)
+}
+
 func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, geom ebiten.GeoM, counter uint64), tileWidth int, tileHeight int) {
     animationCounter := cityScreen.Counter / 8
 
@@ -2377,7 +2397,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
 
-    cityScreen.Fonts.DescriptionFont.PrintOptions(screen, 210, 19, font.FontOptions{Justify: font.FontJustifyRight, Scale: scale.ScaleAmount}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
+    cityScreen.Fonts.DescriptionFont.PrintOptions(screen, 210, 19, font.FontOptions{Justify: font.FontJustifyRight, Scale: scale.ScaleAmount}, fmt.Sprintf("Population: %v (%v)", numberWithComma(cityScreen.City.Population), deltaNumber(cityScreen.City.PopulationGrowthRate())))
 
     showWork := false
     workRequired := 0
