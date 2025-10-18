@@ -1409,7 +1409,9 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
 
     wizards := []setup.WizardCustom{}
     for playerIndex := range saveGame.NumPlayers {
-        wizards = append(wizards, saveGame.convertWizard(int(playerIndex)))
+        if int(playerIndex) < len(saveGame.PlayerData) {
+            wizards = append(wizards, saveGame.convertWizard(int(playerIndex)))
+        }
     }
 
     /*
