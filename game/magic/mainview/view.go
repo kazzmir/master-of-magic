@@ -274,7 +274,10 @@ func (main *MainScreen) MakeUI() *uilib.UI {
 
     // load game
     elements = append(elements, makeButton(2, 110, 130 + 16 * 1, "Load", isLoadGameBtnActive, func(){
-        log.Printf("load")
+        select {
+            case main.Events <- &MainScreenEventLoad{}:
+            default:
+        }
     }))
 
     // new game

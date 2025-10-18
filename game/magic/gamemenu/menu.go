@@ -27,6 +27,8 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, doQuit func()) (
 
     group := uilib.MakeGroup()
 
+    getAlpha := group.MakeFadeIn(7)
+
     group.Update = func(){
         if gameLoader != nil {
             dropped := ebiten.DroppedFiles()
@@ -69,23 +71,28 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, doQuit func()) (
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
+                options.ColorScale.ScaleAlpha(getAlpha())
                 scale.DrawScaled(screen, useImage, &options)
             },
         }
     }
 
-    var backgroundOptions ebiten.DrawImageOptions
     group.AddElement(&uilib.UIElement{
         Layer: 2,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var backgroundOptions ebiten.DrawImageOptions
+            backgroundOptions.ColorScale.ScaleAlpha(getAlpha())
             scale.DrawScaled(screen, background, &backgroundOptions)
         },
     })
 
     // quit
     group.AddElement(makeButton(2, 43, 171, func(){
-        doQuit()
-        cancel()
+        getAlpha = group.MakeFadeOut(7)
+        group.AddDelay(7, func(){
+            doQuit()
+            cancel()
+        })
     }))
 
     // load
@@ -114,7 +121,10 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, doQuit func()) (
 
     // ok
     group.AddElement(makeButton(4, 231, 171, func(){
-        cancel()
+        getAlpha = group.MakeFadeOut(7)
+        group.AddDelay(7, func(){
+            cancel()
+        })
     }))
 
     return group, quit
