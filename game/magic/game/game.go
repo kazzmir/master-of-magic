@@ -1638,6 +1638,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 
     quit := false
     for !quit {
+        game.Counter += 1
         if inputmanager.LeftClick() {
             quit = true
         }
