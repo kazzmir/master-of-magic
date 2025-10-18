@@ -134,7 +134,7 @@ func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreen
         menu.Draw(screen)
     }
 
-    for menu.Update() == mainview.MainScreenStateRunning {
+    for menu.Update(yield) == mainview.MainScreenStateRunning {
 
         if inputmanager.IsQuitPressed() {
             return mainview.MainScreenStateQuit
@@ -385,51 +385,16 @@ func writeHeapDump(filename string) {
 }
 */
 
-func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) error {
-    initializeGame := func() *gamelib.Game {
-        game := gamelib.MakeGame(magic.Cache, settings)
-
-        magic.Drawer = func(screen *ebiten.Image) {
-            game.Draw(screen)
-        }
-
-        arcanusCityArea := game.MakeCityValidArea(data.PlaneArcanus)
-        myrrorCityArea := game.MakeCityValidArea(data.PlaneMyrror)
-
-        human := initializePlayer(game, humanWizard, true, arcanusCityArea, myrrorCityArea)
-
-        for range settings.Opponents {
-            wizard, ok := game.ChooseWizard()
-            if ok {
-                initializePlayer(game, wizard, false, arcanusCityArea, myrrorCityArea)
-            } else {
-                log.Printf("Warning: unable to add another wizard to the game")
-            }
-        }
-
-        log.Printf("Create neutral player")
-        neutral := initializeNeutralPlayer(game, arcanusCityArea, myrrorCityArea)
-        log.Printf("done create neutral player with %v cities", len(neutral.Cities))
-
-        // hack
-        // human.Admin = true
-        _ = human
-
-        game.DoNextTurn()
-        return game
-    }
-
-    gameLoader := &OriginalGameLoader{
-        Cache: magic.Cache,
-        NewGame: make(chan *gamelib.Game, 1),
-    }
-
-    game := initializeGame()
+func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *MagicGame, gameLoader *OriginalGameLoader) error {
     defer func() {
         // wrap the game variable so that only the remaining reference is shutdown
         game.Shutdown()
     }()
     game.GameLoader = gameLoader
+
+    magic.Drawer = func(screen *ebiten.Image) {
+        game.Draw(screen)
+    }
 
     /*
     runtime.AddCleanup(game, func(x int){
@@ -462,6 +427,35 @@ func runGameInstance(yield coroutine.YieldFunc, magic *MagicGame, settings setup
     }
 
     return nil
+}
+
+func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) *gamelib.Game {
+    game := gamelib.MakeGame(magic.Cache, settings)
+
+    arcanusCityArea := game.MakeCityValidArea(data.PlaneArcanus)
+    myrrorCityArea := game.MakeCityValidArea(data.PlaneMyrror)
+
+    human := initializePlayer(game, humanWizard, true, arcanusCityArea, myrrorCityArea)
+
+    for range settings.Opponents {
+        wizard, ok := game.ChooseWizard()
+        if ok {
+            initializePlayer(game, wizard, false, arcanusCityArea, myrrorCityArea)
+        } else {
+            log.Printf("Warning: unable to add another wizard to the game")
+        }
+    }
+
+    log.Printf("Create neutral player")
+    neutral := initializeNeutralPlayer(game, arcanusCityArea, myrrorCityArea)
+    log.Printf("done create neutral player with %v cities", len(neutral.Cities))
+
+    // hack
+    // human.Admin = true
+    _ = human
+
+    game.DoNextTurn()
+    return game
 }
 
 func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error {
@@ -533,7 +527,11 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
 
         log.Printf("Starting game with settings=%+v wizard=%v race=%v", settings, wizard.Name, wizard.Race)
 
-        return runGameInstance(yield, game, settings, wizard)
+        realGame := initializeGame(game, settings, wizard)
+        return runGameInstance(realGame, yield, game, &OriginalGameLoader{
+            Cache: game.Cache,
+            NewGame: make(chan *gamelib.Game, 1),
+        })
     }
 
     music := musiclib.MakeMusic(game.Cache)
@@ -545,6 +543,11 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     yield()
 
     music.PlaySong(musiclib.SongTitle)
+
+    gameLoader := &OriginalGameLoader{
+        Cache: game.Cache,
+        NewGame: make(chan *gamelib.Game, 1),
+    }
 
     for {
         state := runMainMenu(yield, game)
@@ -575,7 +578,8 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
 
                 music.Stop()
 
-                err := runGameInstance(yield, game, settings, wizard)
+                realGame := initializeGame(game, settings, wizard)
+                err := runGameInstance(realGame, yield, game, gameLoader)
 
                 if err != nil {
                     game.Drawer = shutdown

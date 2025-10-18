@@ -6,6 +6,7 @@ import (
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
@@ -250,7 +251,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
 
     // TODO: when load game functionality is there, take save files presence into account for these vars
     isContinueBtnActive := false
-    isLoadGameBtnActive := false
+    isLoadGameBtnActive := true
 
     // continue
     elements = append(elements, makeButton(1, 110, 130, "Continue", isContinueBtnActive, func(){
@@ -279,7 +280,7 @@ func (main *MainScreen) MakeUI() *uilib.UI {
     return ui
 }
 
-func (main *MainScreen) Update() MainScreenState {
+func (main *MainScreen) Update(yield coroutine.YieldFunc) MainScreenState {
     main.Counter += 1
 
     main.UI.StandardUpdate()

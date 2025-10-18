@@ -39,7 +39,7 @@ func (engine *Engine) Update() error {
         }
     }
 
-    switch engine.MainScreen.Update() {
+    switch engine.MainScreen.Update(nil) {
         case mainview.MainScreenStateRunning:
         /*
         case introlib.IntroStateDone:
