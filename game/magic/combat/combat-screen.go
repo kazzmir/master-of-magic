@@ -4255,8 +4255,7 @@ func (combat *CombatScreen) ShowCombatInfo(screen *ebiten.Image) {
             unitY += unitFont.Height()
             unitFont.PrintOptions(subScreen, float64(unitX), float64(unitY), font.FontOptions{Scale: scale.ScaleAmount, Options: &fontOptions}, fmt.Sprintf("%v/%v HP", unit.GetHealth(), unit.GetMaxHealth()))
             unitY += unitFont.Height()
-            banner := unit.Unit.GetBanner()
-            unitImage, err := combat.ImageCache.GetImageTransform(unit.Unit.GetLbxFile(), unit.Unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
+            unitImage, err := unitview.GetUnitOverworldImage(&combat.ImageCache, unit.Unit)
             if err == nil {
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(unitX), float64(unitY))
