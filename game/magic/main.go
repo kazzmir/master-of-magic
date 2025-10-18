@@ -127,8 +127,8 @@ func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) (bool, setup.Wizar
     return state == setup.NewWizardScreenStateCanceled, newWizard.CustomWizard
 }
 
-func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreenState {
-    menu := mainview.MakeMainScreen(game.Cache)
+func runMainMenu(yield coroutine.YieldFunc, game *MagicGame, gameLoader *OriginalGameLoader) (*gamelib.Game, mainview.MainScreenState) {
+    menu := mainview.MakeMainScreen(game.Cache, gameLoader)
 
     game.Drawer = func(screen *ebiten.Image) {
         menu.Draw(screen)
@@ -136,16 +136,22 @@ func runMainMenu(yield coroutine.YieldFunc, game *MagicGame) mainview.MainScreen
 
     for menu.Update(yield) == mainview.MainScreenStateRunning {
 
+        select {
+            case newGame := <-gameLoader.NewGame:
+                return newGame, mainview.MainScreenStateLoadGame
+            default:
+        }
+
         if inputmanager.IsQuitPressed() {
-            return mainview.MainScreenStateQuit
+            return nil, mainview.MainScreenStateQuit
         }
 
         if yield() != nil {
-            return mainview.MainScreenStateQuit
+            return nil, mainview.MainScreenStateQuit
         }
     }
 
-    return menu.State
+    return nil, menu.State
 }
 
 /* starting units are swordsmen and spearmen of the appropriate race
@@ -550,12 +556,26 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     }
 
     for {
-        state := runMainMenu(yield, game)
+        newGame, state := runMainMenu(yield, game, gameLoader)
         switch state {
             case mainview.MainScreenStateQuit:
                 game.Drawer = shutdown
                 yield()
                 return ebiten.Termination
+            case mainview.MainScreenStateLoadGame:
+                if newGame != nil {
+                    music.Stop()
+                    // FIXME: should this go here?
+                    newGame.CurrentPlayer = 0
+                    err := runGameInstance(newGame, yield, game, gameLoader)
+                    if err != nil {
+                        game.Drawer = shutdown
+                        yield()
+                        return err
+                    }
+
+                    music.PlaySong(musiclib.SongTitle)
+                }
             case mainview.MainScreenStateNewGame:
                 var settings setup.NewGameSettings
                 var wizard setup.WizardCustom

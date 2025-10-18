@@ -20,7 +20,7 @@ type Engine struct {
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
-    mainScreen := mainview.MakeMainScreen(cache)
+    mainScreen := mainview.MakeMainScreen(cache, nil)
 
     return &Engine{
         LbxCache: cache,

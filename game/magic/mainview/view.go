@@ -24,6 +24,7 @@ const (
     MainScreenStateRunning MainScreenState = iota
     MainScreenStateQuit
     MainScreenStateNewGame
+    MainScreenStateLoadGame
 )
 
 type MainScreenEvent interface {
@@ -38,16 +39,18 @@ type MainScreen struct {
     State MainScreenState
     ImageCache util.ImageCache
     UI *uilib.UI
+    GameLoader gamemenu.GameLoader
     Events chan MainScreenEvent
     Drawer func(screen *ebiten.Image)
 }
 
-func MakeMainScreen(cache *lbx.LbxCache) *MainScreen {
+func MakeMainScreen(cache *lbx.LbxCache, gameLoader gamemenu.GameLoader) *MainScreen {
     main := &MainScreen{
         Counter: 0,
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         State: MainScreenStateRunning,
+        GameLoader: gameLoader,
         Events: make(chan MainScreenEvent, 10),
     }
 
@@ -297,13 +300,13 @@ func (main *MainScreen) MakeUI() *uilib.UI {
     return ui
 }
 
-func (main *MainScreen) RunGameScreen(yield coroutine.YieldFunc) {
+func (main *MainScreen) RunGameScreen(yield coroutine.YieldFunc) MainScreenState {
     oldDrawer := main.Drawer
     defer func() {
         main.Drawer = oldDrawer
     }()
 
-    gameScreen, quit := gamemenu.MakeGameMenuUI(main.Cache, nil, func(){})
+    gameScreen, quit := gamemenu.MakeGameMenuUI(main.Cache, main.GameLoader, func(){})
 
     ui := &uilib.UI{
     }
@@ -323,6 +326,8 @@ func (main *MainScreen) RunGameScreen(yield coroutine.YieldFunc) {
     }
 
     yield()
+
+    return MainScreenStateRunning
 }
 
 func (main *MainScreen) Update(yield coroutine.YieldFunc) MainScreenState {
@@ -334,7 +339,7 @@ func (main *MainScreen) Update(yield coroutine.YieldFunc) MainScreenState {
     case event := <-main.Events:
             switch event.(type) {
                 case *MainScreenEventLoad:
-                    main.RunGameScreen(yield)
+                    main.State = main.RunGameScreen(yield)
             }
         default:
     }
