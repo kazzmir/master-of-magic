@@ -1260,7 +1260,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                 if err != nil {
                     return
                 }
-                pic, err := cityScreen.ImageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
+                pic, err := unitview.GetUnitOverworldImage(&cityScreen.ImageCache, unit)
                 if err != nil {
                     return
                 }
@@ -2355,6 +2355,26 @@ func (cityScreen *CityScreen) CreateResourceIcons(maxPosition int, ui *uilib.UI)
     return elements
 }
 
+// 1000 -> "1,000"
+func numberWithComma(n int) string {
+    value := fmt.Sprintf("%v", n)
+    var result strings.Builder
+
+    count := 0
+    for i := len(value) - 1; i >= 0; i-- {
+        result.WriteByte(value[i])
+        count++
+        if count % 3 == 0 && i != 0 {
+            result.WriteByte(',')
+        }
+    }
+
+    // reverse the string
+    runes := []rune(result.String())
+    slices.Reverse(runes)
+    return string(runes)
+}
+
 func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *ebiten.Image, geom ebiten.GeoM, counter uint64), tileWidth int, tileHeight int) {
     animationCounter := cityScreen.Counter / 8
 
@@ -2365,7 +2385,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     }
 
     cityScreen.Fonts.BigFont.PrintOptions(screen, 20, 3, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
-    cityScreen.Fonts.DescriptionFont.PrintOptions(screen, 6, 19, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("%v", cityScreen.City.Race))
+    cityScreen.Fonts.DescriptionFont.PrintOptions(screen, 6, 19, font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("%v", cityScreen.City.Race))
 
     deltaNumber := func(n int) string {
         if n > 0 {
@@ -2377,7 +2397,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
 
-    cityScreen.Fonts.DescriptionFont.PrintOptions(screen, 210, 19, font.FontOptions{Justify: font.FontJustifyRight, Scale: scale.ScaleAmount}, fmt.Sprintf("Population: %v (%v)", cityScreen.City.Population, deltaNumber(cityScreen.City.PopulationGrowthRate())))
+    cityScreen.Fonts.DescriptionFont.PrintOptions(screen, 210, 19, font.FontOptions{Justify: font.FontJustifyRight, Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("Population: %v (%v)", numberWithComma(cityScreen.City.Population), deltaNumber(cityScreen.City.PopulationGrowthRate())))
 
     showWork := false
     workRequired := 0
@@ -2671,7 +2691,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
                 x += float64((i % 6) * 20)
                 y += float64((i / 6) * 20)
 
-                pic, _ := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
+                pic, _ := unitview.GetUnitOverworldImage(&imageCache, unit)
                 rect := image.Rect(int(x), int(y), int(x) + pic.Bounds().Dx(), int(y) + pic.Bounds().Dy())
                 group.AddElement(&uilib.UIElement{
                     Rect: rect,

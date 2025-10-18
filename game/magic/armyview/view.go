@@ -247,8 +247,6 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
 
     highlightColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: 255, A: 90})
 
-    banner := view.Player.Wizard.Banner
-
     var unitElements []*uilib.UIElement
     resetUnits = func(){
         ui.RemoveElements(unitElements)
@@ -333,7 +331,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                 if highlightedUnit == nil {
                     highlightedUnit = unit
                 }
-                pic, _ := view.ImageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
+                pic, _ := unitview.GetUnitOverworldImage(&view.ImageCache, unit)
                 if pic != nil {
                     element := &uilib.UIElement{
                         Rect: util.ImageRect(int(elementX), int(elementY), pic),

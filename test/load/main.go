@@ -64,6 +64,7 @@ func NewEngine(saveGame *load.SaveGame, admin bool) (*Engine, error) {
 
     game := saveGame.Convert(cache)
     game.CurrentPlayer = 0
+    game.RefreshUI()
     // game.DoNextTurn()
 
     if admin {

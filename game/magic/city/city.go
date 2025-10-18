@@ -1470,8 +1470,8 @@ func (city *City) ProductionWorkers() float32 {
         case data.RaceBeastmen: workerRate = 2
         case data.RaceDarkElf: workerRate = 2
         case data.RaceDraconian: workerRate = 2
-        case data.RaceDwarf: workerRate = 2
-        case data.RaceTroll: workerRate = 3
+        case data.RaceDwarf: workerRate = 3
+        case data.RaceTroll: workerRate = 2
     }
 
     return float32(workerRate * city.Workers)
