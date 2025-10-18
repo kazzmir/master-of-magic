@@ -1587,7 +1587,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
             stackOptions.GeoM.Translate(float64(7), float64(55))
 
             for _, unit := range stack.Units() {
-                pic, _ := GetUnitImage(unit, &game.ImageCache, city.GetBanner())
+                pic, _ := unitview.GetUnitOverworldImage(&game.ImageCache, unit)
                 scale.DrawScaled(screen, pic, &stackOptions)
                 stackOptions.GeoM.Translate(float64(pic.Bounds().Dx() + 1), 0)
             }
@@ -5630,16 +5630,6 @@ func (game *Game) makeTranquilityFizzleUI(tranquilityOwner *playerlib.Player, ca
     return group, quit
 }
 
-func GetUnitImage(unit units.StackUnit, imageCache *util.ImageCache, banner data.BannerType) (*ebiten.Image, error) {
-    image, err := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, banner.String(), units.MakeUpdateUnitColorsFunc(banner))
-
-    if err != nil {
-        log.Printf("Error: unit '%v' image in lbx file %v is missing: %v", unit.GetName(), unit.GetLbxFile(), err)
-    }
-
-    return image, err
-}
-
 func GetCityImage(city *citylib.City, cache *util.ImageCache) (*ebiten.Image, error) {
     var spriteIndex int = 21
     var animationIndex int = 0
@@ -6711,7 +6701,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
 
                         options.GeoM.Translate(1, 1)
-                        unitImage, err := GetUnitImage(unit, &game.ImageCache, unit.GetBanner())
+                        unitImage, err := unitview.GetUnitOverworldImage(&game.ImageCache, unit)
                         if err == nil {
 
                             if unit.GetBusy() != units.BusyStatusNone {
@@ -8933,7 +8923,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
                 options.GeoM = saveGeom
             }
 
-            pic, err := GetUnitImage(leader, overworld.ImageCache, leader.GetBanner())
+            pic, err := unitview.GetUnitOverworldImage(overworld.ImageCache, leader)
             if err == nil {
                 // screen scale is already taken into account, so we can translate by 1 pixel here
                 options.GeoM.Translate(1, 1)
