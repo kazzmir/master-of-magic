@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    "github.com/kazzmir/master-of-magic/game/magic/gamemenu"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
@@ -25,12 +26,20 @@ const (
     MainScreenStateNewGame
 )
 
+type MainScreenEvent interface {
+}
+
+type MainScreenEventLoad struct {
+}
+
 type MainScreen struct {
     Counter uint64
     Cache *lbx.LbxCache
     State MainScreenState
     ImageCache util.ImageCache
     UI *uilib.UI
+    Events chan MainScreenEvent
+    Drawer func(screen *ebiten.Image)
 }
 
 func MakeMainScreen(cache *lbx.LbxCache) *MainScreen {
@@ -39,6 +48,11 @@ func MakeMainScreen(cache *lbx.LbxCache) *MainScreen {
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         State: MainScreenStateRunning,
+        Events: make(chan MainScreenEvent, 10),
+    }
+
+    main.Drawer = func(screen *ebiten.Image) {
+        main.UI.Draw(main.UI, screen)
     }
 
     main.UI = main.MakeUI()
@@ -280,14 +294,51 @@ func (main *MainScreen) MakeUI() *uilib.UI {
     return ui
 }
 
+func (main *MainScreen) RunGameScreen(yield coroutine.YieldFunc) {
+    oldDrawer := main.Drawer
+    defer func() {
+        main.Drawer = oldDrawer
+    }()
+
+    gameScreen, quit := gamemenu.MakeGameMenuUI(main.Cache, nil, func(){})
+
+    ui := &uilib.UI{
+    }
+
+    main.Drawer = func(screen *ebiten.Image) {
+        ui.StandardDraw(screen)
+    }
+
+    ui.SetElementsFromArray(nil)
+    ui.AddGroup(gameScreen)
+
+    for quit.Err() == nil {
+        ui.StandardUpdate()
+        if yield() != nil {
+            break
+        }
+    }
+
+    yield()
+}
+
 func (main *MainScreen) Update(yield coroutine.YieldFunc) MainScreenState {
     main.Counter += 1
 
     main.UI.StandardUpdate()
 
+    select {
+    case event := <-main.Events:
+            switch event.(type) {
+                case *MainScreenEventLoad:
+                    main.RunGameScreen(yield)
+            }
+        default:
+    }
+
     return main.State
 }
 
 func (main *MainScreen) Draw(screen *ebiten.Image) {
-    main.UI.Draw(main.UI, screen)
+    main.Drawer(screen)
 }

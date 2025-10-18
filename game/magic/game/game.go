@@ -5,8 +5,6 @@ import (
     "image"
     "math/rand/v2"
     "log"
-    "io/fs"
-    "io"
     "math"
     "fmt"
     "context"
@@ -47,6 +45,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
+    "github.com/kazzmir/master-of-magic/game/magic/gamemenu"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
@@ -289,15 +288,11 @@ const (
     GameStateQuit
 )
 
-type GameLoader interface {
-    Load(reader io.Reader) error
-}
-
 type Game struct {
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
 
-    GameLoader GameLoader
+    GameLoader gamemenu.GameLoader
 
     Music *music.Music
 
@@ -2276,123 +2271,20 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache, ui *uilib.UI, back
 }
 
 func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
-    quit := false
-
-    imageCache := util.MakeImageCache(game.Cache)
-
-    background, _ := imageCache.GetImage("load.lbx", 0, 0)
-
-    ui := &uilib.UI{
-        Update: func(ui *uilib.UI){
-            if game.GameLoader != nil {
-                dropped := ebiten.DroppedFiles()
-
-                if dropped != nil {
-                    files, err := fs.ReadDir(dropped, ".")
-                    if err == nil {
-                        for _, file := range files {
-                            log.Printf("Dropped file: %v", file.Name())
-                            func (){
-                                opened, err := dropped.Open(file.Name())
-                                if err != nil {
-                                    return
-                                }
-                                defer opened.Close()
-
-                                // load has a side effect of storing the new game. the main loop will pick this up and switch to the new game
-                                err = game.GameLoader.Load(opened)
-                                if err != nil {
-                                    log.Printf("Error loading dropped save file: %v", err)
-                                } else {
-                                    quit = true
-                                }
-                            }()
-                        }
-                    }
-                }
-            }
-        },
-        Draw: func(ui *uilib.UI, screen *ebiten.Image){
-            var options ebiten.DrawImageOptions
-            scale.DrawScaled(screen, background, &options)
-
-            ui.StandardDraw(screen)
-        },
-    }
-
-    var elements []*uilib.UIElement
-
-    makeButton := func (index int, x int, y int, action func()) *uilib.UIElement {
-        useImage, _ := imageCache.GetImage("load.lbx", index, 0)
-        return &uilib.UIElement{
-            Rect: util.ImageRect(x, y, useImage),
-            PlaySoundLeftClick: true,
-            LeftClick: func(element *uilib.UIElement){
-                action()
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
-                scale.DrawScaled(screen, useImage, &options)
-            },
-        }
-    }
-
-    // quit
-    elements = append(elements, makeButton(2, 43, 171, func(){
+    gameMenu, quit := gamemenu.MakeGameMenuUI(game.Cache, game.GameLoader, func(){
         game.State = GameStateQuit
-        quit = true
-    }))
+    })
 
-    // load
-    elements = append(elements, makeButton(1, 83, 171, func(){
-        // FIXME
-    }))
-
-    // save
-    elements = append(elements, makeButton(3, 122, 171, func(){
-        // FIXME
-    }))
-
-    // settings
-    elements = append(elements, makeButton(12, 172, 171, func(){
-        // disable for now
-        /*
-        ui.RemoveElements(elements)
-
-        game.MakeSettingsUI(&imageCache, ui, &background, func(){
-            quit = true
-            // re-enter the game menu
-            game.Events <- &GameEventGameMenu{}
-        })
-        */
-    }))
-
-    // ok
-    elements = append(elements, makeButton(4, 231, 171, func(){
-        quit = true
-    }))
-
-    ui.SetElementsFromArray(elements)
-
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        ui.Draw(ui, screen)
+    event := GameEventRunUI{
+        Group: gameMenu,
+        Quit: quit,
     }
 
-    yield()
-    for !quit {
-        ui.StandardUpdate()
-
-        yield()
+    select {
+        case game.Events <- &event:
+            game.RefreshUI()
+        default:
     }
-    yield()
-
-    game.RefreshUI()
 }
 
 func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artifact) {
