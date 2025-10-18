@@ -5,6 +5,8 @@ import (
     "image"
     "math/rand/v2"
     "log"
+    "io/fs"
+    "io"
     "math"
     "fmt"
     "context"
@@ -287,9 +289,15 @@ const (
     GameStateQuit
 )
 
+type GameLoader interface {
+    Load(reader io.Reader) error
+}
+
 type Game struct {
     Cache *lbx.LbxCache
     ImageCache util.ImageCache
+
+    GameLoader GameLoader
 
     Music *music.Music
 
@@ -1259,6 +1267,7 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
 
     ui.AddElement(input)
     ui.FocusElement(input, name)
+    defer ui.UnfocusElement()
 
     for !quit {
         game.Counter += 1
@@ -2279,6 +2288,35 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
     background, _ := imageCache.GetImage("load.lbx", 0, 0)
 
     ui := &uilib.UI{
+        Update: func(ui *uilib.UI){
+            if game.GameLoader != nil {
+                dropped := ebiten.DroppedFiles()
+
+                if dropped != nil {
+                    files, err := fs.ReadDir(dropped, ".")
+                    if err == nil {
+                        for _, file := range files {
+                            log.Printf("Dropped file: %v", file.Name())
+                            func (){
+                                opened, err := dropped.Open(file.Name())
+                                if err != nil {
+                                    return
+                                }
+                                defer opened.Close()
+
+                                // load has a side effect of storing the new game. the main loop will pick this up and switch to the new game
+                                err = game.GameLoader.Load(opened)
+                                if err != nil {
+                                    log.Printf("Error loading dropped save file: %v", err)
+                                } else {
+                                    quit = true
+                                }
+                            }()
+                        }
+                    }
+                }
+            }
+        },
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             scale.DrawScaled(screen, background, &options)

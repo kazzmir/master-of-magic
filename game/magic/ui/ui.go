@@ -177,6 +177,7 @@ type UI struct {
     // keep track of the minimum and maximum keys so we don't have to sort
     minLayer UILayer
     maxLayer UILayer
+    Update func(*UI)
     Draw func(*UI, *ebiten.Image)
     HandleKeys UIKeyFunc
     Counter uint64
@@ -492,6 +493,10 @@ func (ui *UI) StandardDraw(screen *ebiten.Image) {
 
 func (ui *UI) StandardUpdate() {
     ui.Counter += 1
+
+    if ui.Update != nil {
+        ui.Update(ui)
+    }
 
     if len(ui.Delays) > 0 {
         var keepDelays []UIDelay
