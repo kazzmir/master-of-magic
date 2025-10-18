@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/ebitenui/ebitenui v0.7.2
-	github.com/hajimehoshi/ebiten/v2 v2.9.0
+	github.com/hajimehoshi/ebiten/v2 v2.9.2
 	golang.org/x/exp v0.0.0-20251002181428-27f1f14c8bb9
 )
 
