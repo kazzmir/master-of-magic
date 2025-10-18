@@ -2385,7 +2385,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
     }
 
     cityScreen.Fonts.BigFont.PrintOptions(screen, 20, 3, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v of %s", cityScreen.City.GetSize(), cityScreen.City.Name))
-    cityScreen.Fonts.DescriptionFont.PrintOptions(screen, 6, 19, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("%v", cityScreen.City.Race))
+    cityScreen.Fonts.DescriptionFont.PrintOptions(screen, 6, 19, font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("%v", cityScreen.City.Race))
 
     deltaNumber := func(n int) string {
         if n > 0 {
@@ -2397,7 +2397,7 @@ func (cityScreen *CityScreen) Draw(screen *ebiten.Image, mapView func (screen *e
         }
     }
 
-    cityScreen.Fonts.DescriptionFont.PrintOptions(screen, 210, 19, font.FontOptions{Justify: font.FontJustifyRight, Scale: scale.ScaleAmount}, fmt.Sprintf("Population: %v (%v)", numberWithComma(cityScreen.City.Population), deltaNumber(cityScreen.City.PopulationGrowthRate())))
+    cityScreen.Fonts.DescriptionFont.PrintOptions(screen, 210, 19, font.FontOptions{Justify: font.FontJustifyRight, Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("Population: %v (%v)", numberWithComma(cityScreen.City.Population), deltaNumber(cityScreen.City.PopulationGrowthRate())))
 
     showWork := false
     workRequired := 0
