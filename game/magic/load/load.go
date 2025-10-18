@@ -2215,9 +2215,17 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
         return nil, err
     }
 
+    if saveGame.NumPlayers < 0 || saveGame.NumPlayers > NumPlayers {
+        return nil, fmt.Errorf("invalid number of players: %v", saveGame.NumPlayers)
+    }
+
     saveGame.LandSize, err = lbx.ReadN[int16](reader)
     if err != nil {
         return nil, err
+    }
+
+    if saveGame.LandSize < 0 || saveGame.LandSize > 20 {
+        return nil, fmt.Errorf("invalid land size: %v", saveGame.LandSize)
     }
 
     saveGame.Magic, err = lbx.ReadN[int16](reader)
