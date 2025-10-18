@@ -1260,7 +1260,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                 if err != nil {
                     return
                 }
-                pic, err := cityScreen.ImageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
+                pic, err := unitview.GetUnitOverworldImage(&cityScreen.ImageCache, unit)
                 if err != nil {
                     return
                 }
@@ -2671,7 +2671,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
                 x += float64((i % 6) * 20)
                 y += float64((i / 6) * 20)
 
-                pic, _ := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
+                pic, _ := unitview.GetUnitOverworldImage(&imageCache, unit)
                 rect := image.Rect(int(x), int(y), int(x) + pic.Bounds().Dx(), int(y) + pic.Bounds().Dy())
                 group.AddElement(&uilib.UIElement{
                     Rect: rect,

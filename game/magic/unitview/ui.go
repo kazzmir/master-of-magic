@@ -501,3 +501,13 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
 
     return elements
 }
+
+type OverworldUnit interface {
+    GetLbxFile() string
+    GetLbxIndex() int
+    GetBanner() data.BannerType
+}
+
+func GetUnitOverworldImage(imageCache *util.ImageCache, unit OverworldUnit) (*ebiten.Image, error) {
+    return imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, unit.GetBanner().String(), units.MakeUpdateUnitColorsFunc(unit.GetBanner()))
+}
