@@ -33,6 +33,19 @@ type Page struct {
     IsResearch bool
 }
 
+func magicToOrder(magic data.MagicType) int {
+    switch magic {
+        case data.NatureMagic: return 0
+        case data.SorceryMagic: return 1
+        case data.ChaosMagic: return 2
+        case data.LifeMagic: return 3
+        case data.DeathMagic: return 4
+        case data.ArcaneMagic: return 5
+    }
+
+    return -1
+}
+
 func computeHalfPages(spells Spells, max int) []Page {
     var halfPages []Page
 
@@ -444,6 +457,11 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
     // sort research spells by turns to research
     slices.SortFunc(researchSpells.Spells, func(a, b Spell) int {
+
+        if a.Magic != b.Magic {
+            return cmp.Compare(magicToOrder(a.Magic), magicToOrder(b.Magic))
+        }
+
         turnsA := a.ResearchCost / caster.ComputeEffectiveResearchPerTurn(researchPoints, a)
         turnsB := b.ResearchCost / caster.ComputeEffectiveResearchPerTurn(researchPoints, b)
 
@@ -1253,15 +1271,6 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     group := uilib.MakeGroup()
     ui.AddGroup(group)
 
-    // LBX values for magic types. Maybe move to data package?
-    magicToOrder := map[data.MagicType]int{
-        data.NatureMagic: 0,
-        data.SorceryMagic: 1,
-        data.ChaosMagic: 2,
-        data.LifeMagic: 3,
-        data.DeathMagic: 4,
-        data.ArcaneMagic: 5,
-    }
 
     slices.SortFunc(spells.Spells, func(a, b Spell) int {
         // HACK: when casting Create Artifact, the override spell cost is stored in the currentSpell
@@ -1275,7 +1284,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         }
 
         if a.Magic != b.Magic {
-            return cmp.Compare(magicToOrder[a.Magic], magicToOrder[b.Magic])
+            return cmp.Compare(magicToOrder(a.Magic), magicToOrder(b.Magic))
         }
 
         costA := caster.ComputeEffectiveSpellCost(a, overland)
