@@ -5615,9 +5615,45 @@ func (model *CombatModel) shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spe
     return true
 }
 
+func (model *CombatModel) IsAttackingArmy(army *Army) bool {
+    return army == model.AttackingArmy
+}
+
+func (model *CombatModel) IsDefendingArmy(army *Army) bool {
+    return army == model.DefendingArmy
+}
+
+func (model *CombatModel) AnyTile(predicate func(*Tile) bool) bool {
+    // don't cast if there are already tiles with fire in them on the battlefield
+    for x := range model.Tiles[0] {
+        for y := range model.Tiles {
+            if predicate(&model.Tiles[y][x]) {
+                return true
+            }
+        }
+    }
+
+    return false
+}
+
 // take the current situation into consideration when deciding whether to cast a spell
 func (model *CombatModel) shouldAICastSpell(army *Army, spell spellbook.Spell) bool {
     switch spell.Name {
+        // for now ai never tries to recall a hero
+        case "Recall Hero":
+            return false
+        case "Wall of Fire":
+            // don't cast if we are attacking, because only the defender has a town
+            if model.IsAttackingArmy(army) {
+                return false
+            }
+
+            if model.AnyTile(func (tile *Tile) bool {
+                return tile.Fire != nil
+            }) {
+                return false
+            }
+
         case "Mass Healing":
             for _, unit := range army.units {
                 if unit.GetHealth() > 0 && float64(unit.GetHealth()) < float64(unit.GetMaxHealth()) * 4 / 5 {
