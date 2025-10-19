@@ -374,7 +374,11 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             skill := magic.Power - (mana + research)
 
             fonts.NormalFont.PrintOptions(screen, float64(56), float64(160), rightShadow, fmt.Sprintf("%v MP", mana))
-            fonts.NormalFont.PrintOptions(screen, float64(103), float64(160), rightShadow, fmt.Sprintf("%v RP", research))
+            if player.ResearchingSpell.Valid() {
+                fonts.NormalFont.PrintOptions(screen, float64(103), float64(160), rightShadow, fmt.Sprintf("%v RP", int(player.SpellResearchPerTurn(research))))
+            } else {
+                fonts.NormalFont.PrintOptions(screen, float64(103), float64(160), rightShadow, "No Spell")
+            }
             fonts.NormalFont.PrintOptions(screen, float64(151), float64(160), rightShadow, fmt.Sprintf("%v SP", skill))
 
             ui.StandardDraw(screen)
@@ -589,6 +593,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                     adjustManaPercent(float64(amount) / float64(manaPowerStaff.Bounds().Dy()))
                 }
             },
+            Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
+                return fmt.Sprintf("%v%%", int(player.PowerDistribution.Mana * 100)), fonts.SmallerFont
+            },
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Mana Points Ratio")
                 if helpEntries != nil {
@@ -691,6 +698,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                     adjustResearchPercent(float64(amount) / float64(researchPowerStaff.Bounds().Dy()))
                 }
             },
+            Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
+                return fmt.Sprintf("%v%%", int(player.PowerDistribution.Research * 100)), fonts.SmallerFont
+            },
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Research Ratio")
                 if helpEntries != nil {
@@ -753,6 +763,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                     adjustSkillPercent(float64(amount) / float64(skillPowerStaff.Bounds().Dy()))
                 }
             },
+            Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
+                return fmt.Sprintf("%v%%", int(player.PowerDistribution.Skill * 100)), fonts.SmallerFont
+            },
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Casting Skill Ratio")
                 if helpEntries != nil {
@@ -802,9 +815,16 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // vector.StrokeRect(screen, float32(spellCastUIRect.Min.X), float32(spellCastUIRect.Min.Y), float32(spellCastUIRect.Dx()), float32(spellCastUIRect.Dy()), 1, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff}, false)
 
-            fonts.SmallerFont.PrintOptions(screen, float64(5), float64(176), leftShadow, fmt.Sprintf("Casting Skill: %v(%v)", overworldCastingSkill, castingSkill))
-            fonts.SmallerFont.PrintOptions(screen, float64(5), float64(183), leftShadow, fmt.Sprintf("Magic Reserve: %v", player.Mana))
-            fonts.SmallerFont.PrintOptions(screen, float64(5), float64(190), leftShadow, fmt.Sprintf("Power Base: %v", magic.Power))
+            rightSide := spellCastUIRect.Max.X - 7
+
+            fonts.SmallerFont.PrintOptions(screen, float64(spellCastUIRect.Min.X), float64(176), leftShadow, "Casting Skill:")
+            fonts.SmallerFont.PrintOptions(screen, float64(rightSide), 176, rightShadow, fmt.Sprintf("%v(%v)", overworldCastingSkill, castingSkill))
+
+            fonts.SmallerFont.PrintOptions(screen, float64(spellCastUIRect.Min.X), float64(183), leftShadow, "Magic Reserve:")
+            fonts.SmallerFont.PrintOptions(screen, float64(rightSide), float64(183), rightShadow, fmt.Sprintf("%v", player.Mana))
+
+            fonts.SmallerFont.PrintOptions(screen, float64(spellCastUIRect.Min.X), float64(190), leftShadow, "Power Base:")
+            fonts.SmallerFont.PrintOptions(screen, float64(rightSide), float64(190), rightShadow, fmt.Sprintf("%v", magic.Power))
         },
     })
 
@@ -819,8 +839,12 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // util.DrawRect(screen, castingRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
-            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(176), leftShadow, fmt.Sprintf("Casting: %v", player.CastingSpell.Name))
-            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(183), leftShadow, fmt.Sprintf("Researching: %v", player.ResearchingSpell.Name))
+            tab := 156
+            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(176), leftShadow, "Casting:")
+            fonts.SmallerFont.PrintOptions(screen, float64(tab), float64(176), leftShadow, player.CastingSpell.Name)
+
+            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(183), leftShadow, "Researching:")
+            fonts.SmallerFont.PrintOptions(screen, float64(tab), float64(183), leftShadow, player.ResearchingSpell.Name)
 
             summonCity := player.FindSummoningCity()
             if summonCity == nil {
@@ -829,7 +853,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 }
             }
 
-            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(190), leftShadow, fmt.Sprintf("Summon To: %v", summonCity.Name))
+            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(190), leftShadow, "Summon To:")
+            fonts.SmallerFont.PrintOptions(screen, float64(tab), float64(190), leftShadow, summonCity.Name)
         },
     })
 
