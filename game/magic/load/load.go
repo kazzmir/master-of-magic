@@ -273,7 +273,7 @@ func loadHeroData(reader io.Reader) (HeroData, error) {
 
     heroData.Level, err = lbx.ReadN[int16](reader)
     if err != nil {
-        return HeroData{}, err
+        return HeroData{}, fmt.Errorf("Unable to read hero level: %v", err)
     }
 
     heroData.Abilities, err = lbx.ReadN[uint32](reader)
@@ -2253,7 +2253,7 @@ func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
         for range NumHeroes {
             heroData, err := loadHeroData(reader)
             if err != nil {
-                return nil, err
+                return nil, fmt.Errorf("Error reading hero data: %v", err)
             }
             /*
             if player == 0 {
