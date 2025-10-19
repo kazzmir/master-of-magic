@@ -1253,6 +1253,29 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     group := uilib.MakeGroup()
     ui.AddGroup(group)
 
+    // LBX values for magic types. Maybe move to data package?
+    magicToOrder := map[data.MagicType]int{
+        data.NatureMagic: 0,
+        data.SorceryMagic: 1,
+        data.ChaosMagic: 2,
+        data.LifeMagic: 3,
+        data.DeathMagic: 4,
+        data.ArcaneMagic: 5,
+    }
+
+    slices.SortFunc(spells.Spells, func(a, b Spell) int {
+        if a.Magic != b.Magic {
+            return cmp.Compare(magicToOrder[a.Magic], magicToOrder[b.Magic])
+        }
+
+        costA := caster.ComputeEffectiveSpellCost(a, overland)
+        costB := caster.ComputeEffectiveSpellCost(b, overland)
+
+        log.Printf("Comparing spell costs for %v (%v) and %v (%v)", a.Name, costA, b.Name, costB)
+
+        return cmp.Compare(costA, costB)
+    })
+
     useSpells := spells.Copy()
     for spell, charge := range charges {
         if charge > 0 {
@@ -1413,7 +1436,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
             icon1Width := 0
 
-            for i := 0; i < icons1; i++ {
+            for range icons1 {
                 scale.DrawScaled(screen, icon, &iconOptions)
                 iconOptions.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
                 icon1Width += icon.Bounds().Dx() + 1
@@ -1434,7 +1457,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
             part3Options.GeoM.Translate(0, float64(icon.Bounds().Dy()+1))
 
-            for i := 0; i < iconCount; i++ {
+            for range iconCount {
                 scale.DrawScaled(screen, icon, &part3Options)
                 part3Options.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
             }
