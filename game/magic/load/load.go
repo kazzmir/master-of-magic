@@ -7,6 +7,8 @@ import (
     "bytes"
     "bufio"
     "errors"
+    "compress/gzip"
+    "archive/zip"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -2184,12 +2186,66 @@ func (read *ReadMonitor) Read(p []byte) (n int, err error) {
     return n, err
 }
 
+func isGzip(reader *bufio.Reader) bool {
+    bytes, err := reader.Peek(3)
+    if err != nil {
+        return false
+    }
+    return bytes[0] == 0x1f && bytes[1] == 0x8b && bytes[2] == 0x08
+}
+
+func isZip(reader *bufio.Reader) bool {
+    bytes, err := reader.Peek(4)
+    if err != nil {
+        return false
+    }
+    return bytes[0] == 0x50 && bytes[1] == 0x4b && bytes[2] == 0x03 && bytes[3] == 0x04
+}
+
 // load a dos savegame file
+// reader can be gzip compressed, zip compressed, or uncompressed
 func LoadSaveGame(reader1 io.Reader) (*SaveGame, error) {
     var err error
     var saveGame SaveGame
 
-    reader := &ReadMonitor{reader: bufio.NewReader(reader1)}
+    baseReader := bufio.NewReader(reader1)
+
+    var reader *ReadMonitor
+
+    if isGzip(baseReader) {
+        gzipReader, err := gzip.NewReader(baseReader)
+        if err != nil {
+            return nil, fmt.Errorf("unable to create gzip reader: %v", err)
+        }
+
+        reader = &ReadMonitor{reader: gzipReader}
+        log.Printf("Detected gzip compressed savegame")
+    } else if isZip(baseReader) {
+        var allBytes bytes.Buffer
+        _, err := io.Copy(&allBytes, io.LimitReader(baseReader, 50*1024*1024)) // limit to 50 MB
+        if err != nil {
+            return nil, fmt.Errorf("unable to read zip data: %v", err)
+        }
+
+        zipReader, err := zip.NewReader(bytes.NewReader(allBytes.Bytes()), int64(allBytes.Len()))
+        if err != nil {
+            return nil, fmt.Errorf("unable to create zip reader: %v", err)
+        }
+
+        if len(zipReader.File) == 0 {
+            return nil, fmt.Errorf("zip archive contains no files")
+        }
+
+        file, err := zipReader.File[0].Open()
+        if err != nil {
+            return nil, fmt.Errorf("unable to open zip file entry: %v", err)
+        }
+
+        reader = &ReadMonitor{reader: file}
+        log.Printf("Detected zip compressed savegame")
+    } else {
+        reader = &ReadMonitor{reader: baseReader}
+    }
 
     var heroData [][]HeroData
     for range NumPlayers {
