@@ -593,6 +593,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                     adjustManaPercent(float64(amount) / float64(manaPowerStaff.Bounds().Dy()))
                 }
             },
+            Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
+                return fmt.Sprintf("%v%%", int(player.PowerDistribution.Mana * 100)), fonts.SmallerFont
+            },
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Mana Points Ratio")
                 if helpEntries != nil {
@@ -695,6 +698,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                     adjustResearchPercent(float64(amount) / float64(researchPowerStaff.Bounds().Dy()))
                 }
             },
+            Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
+                return fmt.Sprintf("%v%%", int(player.PowerDistribution.Research * 100)), fonts.SmallerFont
+            },
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Research Ratio")
                 if helpEntries != nil {
@@ -756,6 +762,9 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                     amount := skillPowerStaff.Bounds().Dy() - posY
                     adjustSkillPercent(float64(amount) / float64(skillPowerStaff.Bounds().Dy()))
                 }
+            },
+            Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
+                return fmt.Sprintf("%v%%", int(player.PowerDistribution.Skill * 100)), fonts.SmallerFont
             },
             RightClick: func(element *uilib.UIElement){
                 helpEntries := help.GetEntriesByName("Casting Skill Ratio")
