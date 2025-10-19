@@ -830,8 +830,12 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             // util.DrawRect(screen, castingRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
-            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(176), leftShadow, fmt.Sprintf("Casting: %v", player.CastingSpell.Name))
-            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(183), leftShadow, fmt.Sprintf("Researching: %v", player.ResearchingSpell.Name))
+            tab := 156
+            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(176), leftShadow, "Casting:")
+            fonts.SmallerFont.PrintOptions(screen, float64(tab), float64(176), leftShadow, player.CastingSpell.Name)
+
+            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(183), leftShadow, "Researching:")
+            fonts.SmallerFont.PrintOptions(screen, float64(tab), float64(183), leftShadow, player.ResearchingSpell.Name)
 
             summonCity := player.FindSummoningCity()
             if summonCity == nil {
@@ -840,7 +844,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 }
             }
 
-            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(190), leftShadow, fmt.Sprintf("Summon To: %v", summonCity.Name))
+            fonts.SmallerFont.PrintOptions(screen, float64(100), float64(190), leftShadow, "Summon To:")
+            fonts.SmallerFont.PrintOptions(screen, float64(tab), float64(190), leftShadow, summonCity.Name)
         },
     })
 
