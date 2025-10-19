@@ -679,7 +679,9 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
 
     researchingSpell := spellMap[int(playerData.ResearchingSpellIndex)]
     researchCandidateSpells := spellbook.Spells{}
-    researchCandidateSpells.Spells = append(researchCandidateSpells.Spells, researchingSpell)
+    if researchingSpell.Valid() {
+        researchCandidateSpells.Spells = append(researchCandidateSpells.Spells, researchingSpell)
+    }
 
     knownSpells := spellbook.Spells{}
     researchPoolSpells := spellbook.Spells{}
