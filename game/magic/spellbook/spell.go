@@ -449,6 +449,16 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
         return knownSpells.Contains(spell)
     }
 
+    slices.SortFunc(allSpells.Spells, func(a, b Spell) int {
+        if a.Magic != b.Magic {
+            return cmp.Compare(magicToOrder(a.Magic), magicToOrder(b.Magic))
+        }
+
+        costA := caster.ComputeEffectiveSpellCost(a, true)
+        costB := caster.ComputeEffectiveSpellCost(b, true)
+        return cmp.Compare(costA, costB)
+    })
+
     // compute half pages
     var halfPages []Page
     if !pickResearchSpell {
@@ -457,11 +467,6 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
 
     // sort research spells by turns to research
     slices.SortFunc(researchSpells.Spells, func(a, b Spell) int {
-
-        if a.Magic != b.Magic {
-            return cmp.Compare(magicToOrder(a.Magic), magicToOrder(b.Magic))
-        }
-
         turnsA := a.ResearchCost / caster.ComputeEffectiveResearchPerTurn(researchPoints, a)
         turnsB := b.ResearchCost / caster.ComputeEffectiveResearchPerTurn(researchPoints, b)
 
