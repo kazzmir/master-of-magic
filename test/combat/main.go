@@ -465,6 +465,12 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
 }
 
 func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Unable to read spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Lair",
             Banner: data.BannerBlue,
@@ -474,11 +480,17 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
     defendingArmy.LayoutUnits(combat.TeamDefender)
 
-    allSpells, err := spellbook.ReadSpellsFromCache(cache)
-    if err != nil {
-        log.Printf("Unable to read spells: %v", err)
-        allSpells = spellbook.Spells{}
-    }
+    defendingPlayer.CastingSkillPower = 10000
+    defendingPlayer.Mana = 10000
+    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
+    // defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Stone"))
+    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Darkness"))
+
+    city := citylib.MakeCity("xyz", 10, 10, defendingPlayer.Wizard.Race, nil, nil, nil, defendingPlayer)
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+    // city.Buildings.Insert(buildinglib.BuildingCityWalls)
+
+    // city.AddEnchantment(data.CityEnchantmentWallOfFire, defendingPlayer.Wizard.Banner)
 
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
@@ -501,7 +513,7 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy := createHeroArmy(attackingPlayer, cache)
     attackingArmy.LayoutUnits(combat.TeamAttacker)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: city}, data.MagicNone, 0, 0)
 }
 
 // fight in an unwalled city with a fortress

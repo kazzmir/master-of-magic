@@ -118,11 +118,9 @@ type CombatEventMessage struct {
 }
 
 type CombatCreateWallOfFire struct {
-    Sound int
 }
 
 type CombatCreateWallOfDarkness struct {
-    Sound int
 }
 
 type CombatEventMakeGibs struct {
@@ -2962,13 +2960,9 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) CombatUpdat
                         combat.ShowSummon(yield, summon.Unit)
 
                     case *CombatCreateWallOfFire:
-                        use := event.(*CombatCreateWallOfFire)
-                        sounds.Insert(use.Sound)
                         createWallOfFire(combat.Model.Tiles, TownCenterX, TownCenterY, 4, combat.Counter)
 
                     case *CombatCreateWallOfDarkness:
-                        use := event.(*CombatCreateWallOfDarkness)
-                        sounds.Insert(use.Sound)
                         createWallOfDarkness(combat.Model.Tiles, TownCenterX, TownCenterY, 4, combat.Counter)
 
                     case *CombatPlaySound:

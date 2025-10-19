@@ -5590,13 +5590,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
 
         case "Wall of Fire":
             model.Events <- &CombatCreateWallOfFire{
-                Sound: spell.Sound,
             }
+            castedCallback(true)
         case "Wall of Darkness":
             model.Events <- &CombatCreateWallOfDarkness{
-                Sound: spell.Sound,
             }
-
+            castedCallback(true)
 
         default:
             log.Printf("Unhandled spell %v", spell.Name)
