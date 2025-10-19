@@ -1264,6 +1264,16 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
     }
 
     slices.SortFunc(spells.Spells, func(a, b Spell) int {
+        // HACK: when casting Create Artifact, the override spell cost is stored in the currentSpell
+        // so we just replace the spell being compared with the currentSpell to get the correct cost
+        if a.Name == currentSpell.Name {
+            a = currentSpell
+        }
+
+        if b.Name == currentSpell.Name {
+            b = currentSpell
+        }
+
         if a.Magic != b.Magic {
             return cmp.Compare(magicToOrder[a.Magic], magicToOrder[b.Magic])
         }
@@ -1271,7 +1281,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         costA := caster.ComputeEffectiveSpellCost(a, overland)
         costB := caster.ComputeEffectiveSpellCost(b, overland)
 
-        log.Printf("Comparing spell costs for %v (%v) and %v (%v)", a.Name, costA, b.Name, costB)
+        // log.Printf("Comparing spell costs for %v (%v, override %v) and %v (%v, override %v)", a.Name, costA, a.OverrideCost, b.Name, costB, b.OverrideCost)
 
         return cmp.Compare(costA, costB)
     })
