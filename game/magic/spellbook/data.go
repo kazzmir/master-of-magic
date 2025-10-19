@@ -41,11 +41,11 @@ func (spell Spell) IsVariableCost() bool {
 }
 
 func (spell Spell) Invalid() bool {
-    return spell.Name == ""
+    return !spell.Valid()
 }
 
 func (spell Spell) Valid() bool {
-    return spell.Name != ""
+    return spell.Name != "" && spell.Name != "None"
 }
 
 func (spell Spell) IsOfRealm(realm data.MagicType) bool {

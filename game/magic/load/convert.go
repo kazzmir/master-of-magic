@@ -673,8 +673,8 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     }
 
     spellMap := make(map[int]spellbook.Spell)
-    for index, spell := range game.AllSpells().Spells {
-        spellMap[index] = spell
+    for _, spell := range game.AllSpells().Spells {
+        spellMap[spell.Index] = spell
     }
 
     researchingSpell := spellMap[int(playerData.ResearchingSpellIndex)]
