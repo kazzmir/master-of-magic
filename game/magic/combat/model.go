@@ -5653,6 +5653,29 @@ func (model *CombatModel) shouldAICastSpell(army *Army, spell spellbook.Spell) b
             }) {
                 return false
             }
+        case "Wall of Darkness":
+            // don't cast if we are attacking, because only the defender has a town
+            if model.IsAttackingArmy(army) {
+                return false
+            }
+
+            if model.AnyTile(func (tile *Tile) bool {
+                return tile.Darkness != nil
+            }) {
+                return false
+            }
+
+        case "Wall of Stone":
+            // don't cast if we are attacking, because only the defender has a town
+            if model.IsAttackingArmy(army) {
+                return false
+            }
+
+            if model.AnyTile(func (tile *Tile) bool {
+                return tile.Wall != nil
+            }) {
+                return false
+            }
 
         case "Mass Healing":
             for _, unit := range army.units {
