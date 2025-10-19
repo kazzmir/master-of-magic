@@ -1029,15 +1029,12 @@ func (player *Player) ComputeEffectiveResearchPerTurn(research float64, spell sp
     return computeEffectiveResearchPerTurn(&player.Wizard, research, spell)
 }
 
-// this returns the raw research production per turn, not accounting for retorts or spellbooks
-func (player *Player) SpellResearchPerTurn(power int) float64 {
-    research := float64(0)
+func (player *Player) BaseResearchPerTurn() float64 {
+    var research float64
 
     for _, city := range player.Cities {
         research += float64(city.ResearchProduction())
     }
-
-    research += float64(power) * player.PowerDistribution.Research
 
     // add in sage heroes
     for _, hero := range player.Heroes {
@@ -1047,6 +1044,11 @@ func (player *Player) SpellResearchPerTurn(power int) float64 {
     }
 
     return research
+}
+
+// this returns the raw research production per turn, not accounting for retorts or spellbooks
+func (player *Player) SpellResearchPerTurn(power int) float64 {
+    return player.BaseResearchPerTurn() + float64(power) * player.PowerDistribution.Research
 }
 
 func (player *Player) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {

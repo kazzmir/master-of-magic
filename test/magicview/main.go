@@ -41,6 +41,7 @@ func NewEngine() (*Engine, error) {
     player.CastingSkillPower = 280
     player.Gold = 234
     player.Mana = 981
+    player.ResearchingSpell = allSpells.FindByName("Fireball")
 
     player.Wizard.ToggleRetort(data.RetortAlchemy, 2)
     player.GlobalEnchantments.Insert(data.EnchantmentNatureAwareness)
