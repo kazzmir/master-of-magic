@@ -1350,7 +1350,13 @@ func setupRelations(player *playerlib.Player, index int, playerData *PlayerData,
         return data.TreatyNone
     }
 
-    for contactIndex := range playerData.Diplomacy.Contacted {
+    // log.Printf("Setting up relations for player %v: %+v", index, playerData.Diplomacy)
+
+    for contactIndex, contacted := range playerData.Diplomacy.Contacted {
+        if contacted == 0 {
+            continue
+        }
+
         if contactIndex != index && contactIndex < len(allPlayers) {
             otherPlayer := allPlayers[contactIndex]
             player.AwarePlayer(otherPlayer)
