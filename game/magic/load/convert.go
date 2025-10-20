@@ -928,7 +928,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
                         if item > -1 && int(item) < len(artifacts) {
                             // we could in theory check the ItemSlot, but the slots are hard coded anyway
                             hero.Equipment[slot] = artifacts[item]
-                            // log.Printf("  hero itemslot %v: %+v", slot, artifacts[item])
+                            // log.Printf("  hero itemslot %v: item=%v %+v", slot, item, artifacts[item])
                         }
                     }
 
@@ -1495,6 +1495,7 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
         f()
     }
 
+    /*
     locationMap := make(map[image.Point]bool)
     for _, location := range game.MyrrorMap.GetEncounterLocations() {
         log.Printf("Myrror encounter at %+v", location)
@@ -1508,6 +1509,7 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
             log.Printf("Unit %v at encounter location: %v, %v", i, unit.X, unit.Y)
         }
     }
+    */
 
     /*
     for i := range len(saveGame.Units) {

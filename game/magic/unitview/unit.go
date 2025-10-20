@@ -444,9 +444,10 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
 
         artifacts := slices.Clone(unit.GetArtifacts())
 
-        for _, slot := range unit.GetArtifactSlots() {
+        for i, slot := range unit.GetArtifactSlots() {
             rect := util.ImageRect(x, y, background)
 
+            /*
             var showArtifact *artifact.Artifact
             for _, check := range artifacts {
                 if check == nil {
@@ -458,6 +459,8 @@ func createUnitAbilitiesElements(cache *lbx.LbxCache, imageCache *util.ImageCach
                     break
                 }
             }
+            */
+            showArtifact := artifacts[i]
 
             elements = append(elements, &uilib.UIElement{
                 Rect: rect,
