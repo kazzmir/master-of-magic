@@ -33,6 +33,19 @@ type Page struct {
     IsResearch bool
 }
 
+func magicToOrder(magic data.MagicType) int {
+    switch magic {
+        case data.NatureMagic: return 0
+        case data.SorceryMagic: return 1
+        case data.ChaosMagic: return 2
+        case data.LifeMagic: return 3
+        case data.DeathMagic: return 4
+        case data.ArcaneMagic: return 5
+    }
+
+    return -1
+}
+
 func computeHalfPages(spells Spells, max int) []Page {
     var halfPages []Page
 
@@ -222,6 +235,7 @@ type SpellCaster interface {
     ComputeEffectiveResearchPerTurn(float64, Spell) int
     // the actual cost to cast the spell
     ComputeEffectiveSpellCost(spell Spell, overland bool) int
+    ComputeTurnsToCast(cost int) int
 }
 
 type Wizard interface {
@@ -435,6 +449,16 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     knownSpell := func(spell Spell) bool {
         return knownSpells.Contains(spell)
     }
+
+    slices.SortFunc(allSpells.Spells, func(a, b Spell) int {
+        if a.Magic != b.Magic {
+            return cmp.Compare(magicToOrder(a.Magic), magicToOrder(b.Magic))
+        }
+
+        costA := caster.ComputeEffectiveSpellCost(a, true)
+        costB := caster.ComputeEffectiveSpellCost(b, true)
+        return cmp.Compare(costA, costB)
+    })
 
     // compute half pages
     var halfPages []Page
@@ -1246,12 +1270,45 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         red, red, red,
     }
 
+    whiteFade := color.NRGBA{R: 255, G: 255, B: 255, A: 128}
+    paletteWhite := color.Palette{
+        color.RGBA{},
+        whiteFade, whiteFade, whiteFade,
+        whiteFade, whiteFade, whiteFade,
+        whiteFade, whiteFade, whiteFade,
+    }
+
+    whiteFadeFont := font.MakeOptimizedFontWithPalette(fonts[1], paletteWhite)
+
     titleFont := font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
 
     pageCache := make(map[int]*ebiten.Image)
 
     group := uilib.MakeGroup()
     ui.AddGroup(group)
+
+    slices.SortFunc(spells.Spells, func(a, b Spell) int {
+        // HACK: when casting Create Artifact, the override spell cost is stored in the currentSpell
+        // so we just replace the spell being compared with the currentSpell to get the correct cost
+        if a.Name == currentSpell.Name {
+            a = currentSpell
+        }
+
+        if b.Name == currentSpell.Name {
+            b = currentSpell
+        }
+
+        if a.Magic != b.Magic {
+            return cmp.Compare(magicToOrder(a.Magic), magicToOrder(b.Magic))
+        }
+
+        costA := caster.ComputeEffectiveSpellCost(a, overland)
+        costB := caster.ComputeEffectiveSpellCost(b, overland)
+
+        // log.Printf("Comparing spell costs for %v (%v, override %v) and %v (%v, override %v)", a.Name, costA, a.OverrideCost, b.Name, costB, b.OverrideCost)
+
+        return cmp.Compare(costA, costB)
+    })
 
     useSpells := spells.Copy()
     for spell, charge := range charges {
@@ -1379,7 +1436,8 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
             // casting on the overland shows N icons where N is the number of turns it takes to cast the spell
             if overland {
-                iconCount = costRemaining / int(math.Max(1, float64(castingSkill)))
+                // iconCount = costRemaining / int(math.Max(1, float64(castingSkill)))
+                iconCount = caster.ComputeTurnsToCast(costRemaining)
                 if iconCount < 1 {
                     iconCount = 1
                 }
@@ -1413,13 +1471,13 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
             icon1Width := 0
 
-            for i := 0; i < icons1; i++ {
+            for range icons1 {
                 scale.DrawScaled(screen, icon, &iconOptions)
                 iconOptions.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
                 icon1Width += icon.Bounds().Dx() + 1
             }
 
-            if overland && costRemaining < castingSkill {
+            if overland && caster.ComputeTurnsToCast(costRemaining) == 0 {
                 x, y := iconOptions.GeoM.Apply(0, 0)
                 x += 2
                 infoFont.PrintOptions(screen, x, y, font.FontOptions{Options: &spellOptions, Scale: scale.ScaleAmount}, "Instant")
@@ -1434,7 +1492,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
             part3Options.GeoM.Translate(0, float64(icon.Bounds().Dy()+1))
 
-            for i := 0; i < iconCount; i++ {
+            for range iconCount {
                 scale.DrawScaled(screen, icon, &part3Options)
                 part3Options.GeoM.Translate(float64(icon.Bounds().Dx()) + 1, 0)
             }
@@ -1492,6 +1550,16 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         }
 
         makeSpell := func(rect image.Rectangle, spell Spell) *uilib.UIElement {
+
+            turnsRemaining := 0
+            if overland {
+                costRemaining := caster.ComputeEffectiveSpellCost(spell, overland)
+                if spell.Name == currentSpell.Name {
+                    costRemaining -= currentProgress
+                }
+                turnsRemaining = caster.ComputeTurnsToCast(costRemaining)
+            }
+
             return &uilib.UIElement{
                 Rect: rect,
                 Layer: 1,
@@ -1502,6 +1570,12 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                     if highlightedSpell.Name == spell.Name {
                         highlightedSpell = Spell{}
                     }
+                },
+                Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
+                    if overland {
+                        return fmt.Sprintf("%v turns", turnsRemaining), whiteFadeFont
+                    }
+                    return "", nil
                 },
                 LeftClick: func(this *uilib.UIElement){
                     if !overland && !canCast(spell) {

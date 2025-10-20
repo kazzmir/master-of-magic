@@ -183,8 +183,7 @@ func main(){
 
     err := compareSaveFile(positionalArgs[0])
     if err != nil {
-        log.Printf("Error comparing save file: %v", err)
-        return
+        log.Printf("Warning: comparing save file: %v", err)
     }
 
     reader, err := os.Open(positionalArgs[0])

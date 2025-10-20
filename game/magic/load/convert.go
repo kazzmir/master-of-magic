@@ -673,13 +673,15 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     }
 
     spellMap := make(map[int]spellbook.Spell)
-    for index, spell := range game.AllSpells().Spells {
-        spellMap[index] = spell
+    for _, spell := range game.AllSpells().Spells {
+        spellMap[spell.Index] = spell
     }
 
     researchingSpell := spellMap[int(playerData.ResearchingSpellIndex)]
     researchCandidateSpells := spellbook.Spells{}
-    researchCandidateSpells.Spells = append(researchCandidateSpells.Spells, researchingSpell)
+    if researchingSpell.Valid() {
+        researchCandidateSpells.Spells = append(researchCandidateSpells.Spells, researchingSpell)
+    }
 
     knownSpells := spellbook.Spells{}
     researchPoolSpells := spellbook.Spells{}
@@ -1350,7 +1352,13 @@ func setupRelations(player *playerlib.Player, index int, playerData *PlayerData,
         return data.TreatyNone
     }
 
-    for contactIndex := range playerData.Diplomacy.Contacted {
+    // log.Printf("Setting up relations for player %v: %+v", index, playerData.Diplomacy)
+
+    for contactIndex, contacted := range playerData.Diplomacy.Contacted {
+        if contacted == 0 {
+            continue
+        }
+
         if contactIndex != index && contactIndex < len(allPlayers) {
             otherPlayer := allPlayers[contactIndex]
             player.AwarePlayer(otherPlayer)

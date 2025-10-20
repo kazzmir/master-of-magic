@@ -6,7 +6,7 @@ import (
     "strings"
     "fmt"
     "bytes"
-    "sort"
+    // "sort"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -41,11 +41,11 @@ func (spell Spell) IsVariableCost() bool {
 }
 
 func (spell Spell) Invalid() bool {
-    return spell.Name == ""
+    return !spell.Valid()
 }
 
 func (spell Spell) Valid() bool {
-    return spell.Name != ""
+    return spell.Name != "" && spell.Name != "None"
 }
 
 func (spell Spell) IsOfRealm(realm data.MagicType) bool {
@@ -315,12 +315,14 @@ func (spells Spells) GetSpellsBySection(section Section) Spells {
         }
     }
 
+    /*
     sort.Slice(out, func(i, j int) bool {
         if out[i].Magic == out[j].Magic {
             return out[i].CastCost < out[j].CastCost
         }
         return out[i].Magic < out[j].Magic
     })
+    */
 
     return SpellsFromArray(out)
 }

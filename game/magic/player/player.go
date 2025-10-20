@@ -1051,6 +1051,11 @@ func (player *Player) SpellResearchPerTurn(power int) float64 {
     return player.BaseResearchPerTurn() + float64(power) * player.PowerDistribution.Research
 }
 
+func (player *Player) ComputeTurnsToCast(cost int) int {
+    // this method should be overriden
+    panic("Override ComputeTurnsToCast")
+}
+
 func (player *Player) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {
     // special case for spell of mastery
     if spell.Name == "Spell of Mastery" {

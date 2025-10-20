@@ -133,3 +133,78 @@ func TestChangeCityOwner(test *testing.T){
         test.Errorf("gaias blessing still on city")
     }
 }
+
+func TestCastTurns(test *testing.T){
+    // enough mana to cast in one turn
+    cast1 := CastPlayer{
+        player: nil,
+        castingSkill: 10,
+        manaPerTurn: 5,
+        mana: 100,
+    }
+
+    if cast1.ComputeTurnsToCast(5) != 0 {
+        test.Errorf("Expected 0 turns but got %v", cast1.ComputeTurnsToCast(5))
+    }
+
+    // take multiple turns, but doesn't run out of mana
+    cast2 := CastPlayer{
+        player: nil,
+        castingSkill: 10,
+        manaPerTurn: 0,
+        mana: 100,
+    }
+
+    if cast2.ComputeTurnsToCast(15) != 1 {
+        test.Errorf("Expected 1 turns but got %v", cast2.ComputeTurnsToCast(15))
+    }
+
+    // runs out of mana before casting
+    cast3 := CastPlayer{
+        player: nil,
+        castingSkill: 10,
+        manaPerTurn: 4,
+        mana: 10,
+    }
+
+    // first turn: 10 (casting skill), then 4 mana per turn
+    if cast3.ComputeTurnsToCast(50) != 10 {
+        test.Errorf("Expected 10 turns but got %v", cast3.ComputeTurnsToCast(50))
+    }
+
+    cast4 := CastPlayer{
+        player: nil,
+        castingSkill: 10,
+        manaPerTurn: 20,
+        mana: 0,
+    }
+
+    // first turn: 0, then 10 for each turn
+    if cast4.ComputeTurnsToCast(50) != 5 {
+        test.Errorf("Expected 5 turns but got %v", cast4.ComputeTurnsToCast(50))
+    }
+
+    cast5 := CastPlayer{
+        player: nil,
+        castingSkill: 10,
+        manaPerTurn: -5,
+        mana: 10,
+    }
+
+    // infinite turns
+    if cast5.ComputeTurnsToCast(50) != 1000 {
+        test.Errorf("Expected 1000 turns but got %v", cast5.ComputeTurnsToCast(50))
+    }
+
+    // if the player doesn't have casting skill somehow then it is infinite
+    cast6 := CastPlayer{
+        player: nil,
+        castingSkill: 0,
+        manaPerTurn: 5,
+        mana: 10,
+    }
+
+    if cast6.ComputeTurnsToCast(50) != 1000 {
+        test.Errorf("Expected 1000 turns but got %v", cast6.ComputeTurnsToCast(1000))
+    }
+}

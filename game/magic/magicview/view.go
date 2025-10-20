@@ -841,10 +841,18 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             // util.DrawRect(screen, castingRect, color.RGBA{R: 0xff, G: 0x0, B: 0x0, A: 0xff})
             tab := 156
             fonts.SmallerFont.PrintOptions(screen, float64(100), float64(176), leftShadow, "Casting:")
-            fonts.SmallerFont.PrintOptions(screen, float64(tab), float64(176), leftShadow, player.CastingSpell.Name)
+            name := player.CastingSpell.Name
+            if player.CastingSpell.Invalid() {
+                name = "None"
+            }
+            fonts.SmallerFont.PrintOptions(screen, float64(tab), float64(176), leftShadow, name)
 
             fonts.SmallerFont.PrintOptions(screen, float64(100), float64(183), leftShadow, "Researching:")
-            fonts.SmallerFont.PrintOptions(screen, float64(tab), float64(183), leftShadow, player.ResearchingSpell.Name)
+            name = player.ResearchingSpell.Name
+            if player.ResearchingSpell.Invalid() {
+                name = "None"
+            }
+            fonts.SmallerFont.PrintOptions(screen, float64(tab), float64(183), leftShadow, name)
 
             summonCity := player.FindSummoningCity()
             if summonCity == nil {

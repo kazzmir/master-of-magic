@@ -41,6 +41,10 @@ func (caster *Caster) ComputeEffectiveSpellCost(spell spellbook.Spell, overland 
     return spell.Cost(overland) / 2
 }
 
+func (caster *Caster) ComputeTurnsToCast(cost int) int {
+    return max(1, cost / 60)
+}
+
 func (engine *Engine) MakeUI() *uilib.UI {
     allSpells, err := spellbook.ReadSpellsFromCache(engine.Cache)
     if err != nil {
