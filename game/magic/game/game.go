@@ -297,6 +297,11 @@ func (castPlayer *CastPlayer) ComputeEffectiveResearchPerTurn(research float64, 
 }
 
 func (castPlayer *CastPlayer) ComputeTurnsToCast(cost int) int {
+    infiniteTurns := 1000
+    if castPlayer.castingSkill <= 0 {
+        return infiniteTurns
+    }
+
     turns := 0
 
     usableMana := castPlayer.mana
@@ -309,7 +314,7 @@ func (castPlayer *CastPlayer) ComputeTurnsToCast(cost int) int {
             // if mana is 0 and manaPerTurn is negative then we basically can never cast the spell
             if usableMana <= 0 && castPlayer.manaPerTurn <= 0 {
                 // maybe try to return +infinity?
-                return 1000
+                return infiniteTurns
             }
 
             spend := max(1, min(castPlayer.castingSkill, usableMana))

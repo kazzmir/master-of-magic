@@ -195,4 +195,16 @@ func TestCastTurns(test *testing.T){
     if cast5.ComputeTurnsToCast(50) != 1000 {
         test.Errorf("Expected 1000 turns but got %v", cast5.ComputeTurnsToCast(50))
     }
+
+    // if the player doesn't have casting skill somehow then it is infinite
+    cast6 := CastPlayer{
+        player: nil,
+        castingSkill: 0,
+        manaPerTurn: 5,
+        mana: 10,
+    }
+
+    if cast6.ComputeTurnsToCast(50) != 1000 {
+        test.Errorf("Expected 1000 turns but got %v", cast6.ComputeTurnsToCast(1000))
+    }
 }
