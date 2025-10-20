@@ -3031,9 +3031,13 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         }
                     case *GameEventSelectLocationForSpell:
                         selectLocation := event.(*GameEventSelectLocationForSpell)
-                        tileX, tileY, cancel := game.selectLocationForSpell(yield, selectLocation.Spell, selectLocation.Player, selectLocation.LocationType)
-                        if !cancel {
-                            selectLocation.SelectedFunc(yield, tileX, tileY)
+                        if selectLocation.Player.IsHuman() {
+                            tileX, tileY, cancel := game.selectLocationForSpell(yield, selectLocation.Spell, selectLocation.Player, selectLocation.LocationType)
+                            if !cancel {
+                                selectLocation.SelectedFunc(yield, tileX, tileY)
+                            }
+                        } else {
+                            // FIXME: implement AI location selection
                         }
                     case *GameEventCastSpell:
                         castSpell := event.(*GameEventCastSpell)

@@ -2035,9 +2035,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
     entityInfo := game.ComputeCityStackInfo()
 
     for !quit {
-        if game.Camera.GetZoom() > 0.9 {
-            overworld.Counter += 1
-        }
+        overworld.Counter += 1
 
         zoomed := game.doInputZoom(yield)
         _ = zoomed
