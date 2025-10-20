@@ -1297,6 +1297,11 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
                         }
 
                         colorm.DrawImage(screen, pic, matrix, &options)
+
+                        enchantment := util.First(unit.GetEnchantments(), data.UnitEnchantmentNone)
+                        if enchantment != data.UnitEnchantmentNone {
+                            util.DrawOutline(screen, &cityScreen.ImageCache, pic, options.GeoM, ebiten.ColorScale{}, ui.Counter/10, enchantment.Color())
+                        }
                     },
                 }
 
