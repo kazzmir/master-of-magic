@@ -660,14 +660,14 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
     flipLeftSide := 0
     flipRightSide := 1
 
-    openPage := func (findSpell Spell, isOk func(Page) bool){
+    openPage := func (isOk func(Page, Spell) bool){
         currentPage := 0
         found := false
 
         loop:
         for page, halfPage := range halfPages {
             for _, spell := range halfPage.Spells.Spells {
-                if spell.Name == findSpell.Name && isOk(halfPage) {
+                if isOk(halfPage, spell) {
                     currentPage = page
                     found = true
                     break loop
@@ -683,15 +683,19 @@ func ShowSpellBook(yield coroutine.YieldFunc, cache *lbx.LbxCache, allSpells Spe
         }
     }
 
+    openPage(func (page Page, spell Spell) bool {
+        return page.IsResearch
+    })
+
     if researchingSpell.Valid() {
-        openPage(researchingSpell, func (page Page) bool {
-            return page.IsResearch
+        openPage(func (page Page, findSpell Spell) bool {
+            return page.IsResearch && findSpell.Name == researchingSpell.Name
         })
     }
 
     if learnedSpell.Valid() {
-        openPage(learnedSpell, func (page Page) bool {
-            return !page.IsResearch
+        openPage(func (page Page, findSpell Spell) bool {
+            return !page.IsResearch && findSpell.Name == learnedSpell.Name
         })
     }
 
