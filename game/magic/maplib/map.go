@@ -1136,6 +1136,19 @@ func (mapObject *Map) GetEncounter(x int, y int) *ExtraEncounter {
     return getExtra[*ExtraEncounter](mapObject.ExtraMap[image.Pt(x, y)], ExtraKindEncounter)
 }
 
+func (mapObject *Map) GetEncounterLocations() []image.Point {
+    var out []image.Point
+
+    for point, extras := range mapObject.ExtraMap {
+        _, exists := extras[ExtraKindEncounter]
+        if exists {
+            out = append(out, point)
+        }
+    }
+
+    return out
+}
+
 func (mapObject *Map) RemoveEncounter(x int, y int) {
     _, exists := mapObject.ExtraMap[image.Pt(x, y)]
     if !exists {

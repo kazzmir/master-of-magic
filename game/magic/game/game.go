@@ -1996,13 +1996,15 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
         return nil
     }
 
+    allFlyers := stack.AllFlyers()
+
     if fog.GetFog(useMap.WrapX(newX), newY) != data.FogTypeUnexplored {
         tileTo := useMap.GetTile(newX, newY)
         if tileTo.Tile.IsLand() && stack.HasSailingUnits(true) {
             return nil
         }
 
-        if !tileTo.Tile.IsLand() && !stack.AllFlyers() && stack.AnyLandWalkers() {
+        if !tileTo.Tile.IsLand() && !allFlyers && stack.AnyLandWalkers() {
             maybeStack := player.FindStack(useMap.WrapX(newX), newY, stack.Plane())
             if maybeStack != nil && maybeStack.HasSailingUnits(false) {
                 // ok, can move there because there is a ship
@@ -2091,7 +2093,8 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
 
         // don't know what the cost is, assume we can move there
         // FIXME: how should this behave for different FogTypes?
-        if x2 >= 0 && x2 < len(fog) && y2 >= 0 && y2 < len(fog[x2]) && fog[x2][y2] == data.FogTypeUnexplored {
+        // flying stacks can move anywhere, so don't penalize them
+        if !allFlyers && x2 >= 0 && x2 < len(fog) && y2 >= 0 && y2 < len(fog[x2]) && fog[x2][y2] == data.FogTypeUnexplored {
             // increase cost of unknown tile by a lot so we prefer to move to known tiles
             return baseCost + 3
         }
@@ -3028,9 +3031,13 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         }
                     case *GameEventSelectLocationForSpell:
                         selectLocation := event.(*GameEventSelectLocationForSpell)
-                        tileX, tileY, cancel := game.selectLocationForSpell(yield, selectLocation.Spell, selectLocation.Player, selectLocation.LocationType)
-                        if !cancel {
-                            selectLocation.SelectedFunc(yield, tileX, tileY)
+                        if selectLocation.Player.IsHuman() {
+                            tileX, tileY, cancel := game.selectLocationForSpell(yield, selectLocation.Spell, selectLocation.Player, selectLocation.LocationType)
+                            if !cancel {
+                                selectLocation.SelectedFunc(yield, tileX, tileY)
+                            }
+                        } else {
+                            // FIXME: implement AI location selection
                         }
                     case *GameEventCastSpell:
                         castSpell := event.(*GameEventCastSpell)
@@ -5995,7 +6002,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
 
             castingCost := player.ComputeEffectiveSpellCost(spell, true)
 
-            if castingCost <= player.Mana && castingCost <= player.RemainingCastingSkill {
+            if spell.Valid() && castingCost <= player.Mana && castingCost <= player.RemainingCastingSkill {
                 player.Mana -= castingCost
                 player.RemainingCastingSkill -= castingCost
 

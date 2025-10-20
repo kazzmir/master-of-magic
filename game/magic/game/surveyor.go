@@ -356,9 +356,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
     }
 
     for !quit {
-        if game.Camera.GetZoom() >= 0.9 {
-            overworld.Counter += 1
-        }
+        overworld.Counter += 1
         zoomed := game.doInputZoom(yield)
         _ = zoomed
 

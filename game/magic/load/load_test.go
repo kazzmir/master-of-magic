@@ -12,6 +12,7 @@ func BenchmarkGzipLoadFunction(bench *testing.B) {
     if err != nil {
         bench.Fatal(err)
     }
+    defer file.Close()
 
     var buffer bytes.Buffer
     _, err = io.Copy(&buffer, file)
