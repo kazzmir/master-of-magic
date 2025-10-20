@@ -281,6 +281,54 @@ const (
     ChangeCityRemoveAllEnchantments
 )
 
+type CastPlayer struct {
+    player *playerlib.Player
+    castingSkill int
+    manaPerTurn int
+    mana int
+}
+
+func (castPlayer *CastPlayer) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {
+    return castPlayer.player.ComputeEffectiveSpellCost(spell, overland)
+}
+
+func (castPlayer *CastPlayer) ComputeEffectiveResearchPerTurn(research float64, spell spellbook.Spell) int {
+    return castPlayer.player.ComputeEffectiveResearchPerTurn(research, spell)
+}
+
+func (castPlayer *CastPlayer) ComputeTurnsToCast(cost int) int {
+    turns := 0
+
+    usableMana := castPlayer.mana
+
+    for cost > 0 {
+        if cost <= usableMana {
+            cost -= castPlayer.castingSkill
+            usableMana -= castPlayer.castingSkill
+        } else {
+            // if mana is 0 and manaPerTurn is negative then we basically can never cast the spell
+            if usableMana <= 0 && castPlayer.manaPerTurn <= 0 {
+                // maybe try to return +infinity?
+                return 1000
+            }
+
+            spend := max(1, min(castPlayer.castingSkill, usableMana))
+            cost -= spend
+            usableMana -= spend
+            if castPlayer.manaPerTurn > 0 {
+                usableMana += castPlayer.manaPerTurn
+            }
+        }
+
+        if cost > 0 {
+            turns += 1
+        }
+    }
+
+    return turns
+}
+
+
 type GameState int
 const (
     GameStateRunning GameState = iota
@@ -5888,7 +5936,14 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
     // don't show this spell in the spellbook, it will be cast automatically
     overlandSpells.RemoveSpell(overlandSpells.FindByName("Spell of Return"))
 
-    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, overlandSpells, make(map[spellbook.Spell]int), player.ComputeOverworldCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, player, &player.CastingSpellPage, func (spell spellbook.Spell, picked bool){
+    castPlayer := CastPlayer{
+        player: player,
+        castingSkill: player.ComputeOverworldCastingSkill(),
+        manaPerTurn: player.ManaPerTurn(game.ComputePower(player), game),
+        mana: player.Mana,
+    }
+
+    game.HudUI.AddElements(spellbook.MakeSpellBookCastUI(game.HudUI, game.Cache, overlandSpells, make(map[spellbook.Spell]int), player.ComputeOverworldCastingSkill(), player.CastingSpell, player.CastingSpellProgress, true, &castPlayer, &player.CastingSpellPage, func (spell spellbook.Spell, picked bool){
         if picked {
             if spell.Name == "Create Artifact" || spell.Name == "Enchant Item" {
 

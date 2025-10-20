@@ -144,6 +144,11 @@ func (player *Player) ComputeEffectiveResearchPerTurn(cost float64, spell spellb
     return 0
 }
 
+func (player *Player) ComputeTurnsToCast(cost int) int {
+    // shouldn't matter
+    return 1
+}
+
 func (player *Player) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {
     return spellbook.ComputeSpellCost(&player.Wizard, spell, overland, false)
 }

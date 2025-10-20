@@ -235,6 +235,7 @@ type SpellCaster interface {
     ComputeEffectiveResearchPerTurn(float64, Spell) int
     // the actual cost to cast the spell
     ComputeEffectiveSpellCost(spell Spell, overland bool) int
+    ComputeTurnsToCast(cost int) int
 }
 
 type Wizard interface {
@@ -1269,13 +1270,22 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         red, red, red,
     }
 
+    whiteFade := color.NRGBA{R: 255, G: 255, B: 255, A: 128}
+    paletteWhite := color.Palette{
+        color.RGBA{},
+        whiteFade, whiteFade, whiteFade,
+        whiteFade, whiteFade, whiteFade,
+        whiteFade, whiteFade, whiteFade,
+    }
+
+    whiteFadeFont := font.MakeOptimizedFontWithPalette(fonts[1], paletteWhite)
+
     titleFont := font.MakeOptimizedFontWithPalette(fonts[4], redPalette)
 
     pageCache := make(map[int]*ebiten.Image)
 
     group := uilib.MakeGroup()
     ui.AddGroup(group)
-
 
     slices.SortFunc(spells.Spells, func(a, b Spell) int {
         // HACK: when casting Create Artifact, the override spell cost is stored in the currentSpell
@@ -1426,7 +1436,8 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
 
             // casting on the overland shows N icons where N is the number of turns it takes to cast the spell
             if overland {
-                iconCount = costRemaining / int(math.Max(1, float64(castingSkill)))
+                // iconCount = costRemaining / int(math.Max(1, float64(castingSkill)))
+                iconCount = caster.ComputeTurnsToCast(costRemaining)
                 if iconCount < 1 {
                     iconCount = 1
                 }
@@ -1466,7 +1477,7 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                 icon1Width += icon.Bounds().Dx() + 1
             }
 
-            if overland && costRemaining < castingSkill {
+            if overland && caster.ComputeTurnsToCast(costRemaining) == 0 {
                 x, y := iconOptions.GeoM.Apply(0, 0)
                 x += 2
                 infoFont.PrintOptions(screen, x, y, font.FontOptions{Options: &spellOptions, Scale: scale.ScaleAmount}, "Instant")
@@ -1539,6 +1550,16 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
         }
 
         makeSpell := func(rect image.Rectangle, spell Spell) *uilib.UIElement {
+
+            turnsRemaining := 0
+            if overland {
+                costRemaining := caster.ComputeEffectiveSpellCost(spell, overland)
+                if spell.Name == currentSpell.Name {
+                    costRemaining -= currentProgress
+                }
+                turnsRemaining = caster.ComputeTurnsToCast(costRemaining)
+            }
+
             return &uilib.UIElement{
                 Rect: rect,
                 Layer: 1,
@@ -1549,6 +1570,12 @@ func MakeSpellBookCastUI(ui *uilib.UI, cache *lbx.LbxCache, spells Spells, charg
                     if highlightedSpell.Name == spell.Name {
                         highlightedSpell = Spell{}
                     }
+                },
+                Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
+                    if overland {
+                        return fmt.Sprintf("%v turns", turnsRemaining), whiteFadeFont
+                    }
+                    return "", nil
                 },
                 LeftClick: func(this *uilib.UIElement){
                     if !overland && !canCast(spell) {

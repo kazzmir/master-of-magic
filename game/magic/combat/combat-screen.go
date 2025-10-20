@@ -1662,6 +1662,11 @@ func (combat *CombatScreen) AddSelectTargetsElements(targets []*ArmyUnit, title 
 type UnitCaster struct {
 }
 
+func (caster *UnitCaster) ComputeTurnsToCast(cost int) int {
+    // shouldn't matter in combat
+    return 1
+}
+
 func (caster *UnitCaster) ComputeEffectiveResearchPerTurn(research float64, spell spellbook.Spell) int {
     return int(research)
 }
