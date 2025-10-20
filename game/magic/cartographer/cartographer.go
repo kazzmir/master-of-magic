@@ -66,6 +66,27 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
 
     currentPlane := data.PlaneArcanus
 
+    if len(players) > 0 {
+        player := players[0]
+        hasArcanusCity := false
+        hasMyrrorCity := false
+        for _, city := range cities {
+            if city.GetBanner() == player.GetBanner() {
+                if city.Plane == data.PlaneArcanus {
+                    hasArcanusCity = true
+                } else if city.Plane == data.PlaneMyrror {
+                    hasMyrrorCity = true
+                }
+            }
+        }
+
+        if hasArcanusCity {
+            currentPlane = data.PlaneArcanus
+        } else if hasMyrrorCity {
+            currentPlane = data.PlaneMyrror
+        }
+    }
+
     playerName := functional.Memoize(func (banner data.BannerType) string {
         for _, player := range players {
             if player.GetBanner() == banner {
@@ -168,8 +189,8 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
                     shadow_x1, shadow_y1 := options.GeoM.Apply(offset, offset)
                     shadow_x2, shadow_y2 := options.GeoM.Apply(offset + size, offset + size)
 
-                    vector.DrawFilledRect(showMap, float32(shadow_x1), float32(shadow_y1), float32(shadow_x2 - shadow_x1), float32(shadow_y2 - shadow_y1), color.RGBA{A:255}, false)
-                    vector.DrawFilledRect(showMap, float32(x1), float32(y1), float32(x2 - x1), float32(y2 - y1), bannerColor(city.GetBanner()), false)
+                    vector.FillRect(showMap, float32(shadow_x1), float32(shadow_y1), float32(shadow_x2 - shadow_x1), float32(shadow_y2 - shadow_y1), color.RGBA{A:255}, false)
+                    vector.FillRect(showMap, float32(x1), float32(y1), float32(x2 - x1), float32(y2 - y1), bannerColor(city.GetBanner()), false)
                 }
             }
         }
@@ -184,7 +205,7 @@ func MakeCartographer(cache *lbx.LbxCache, cities []*citylib.City, stacks []*pla
 
                     x1, y1 := options.GeoM.Apply(3, 3)
 
-                    vector.DrawFilledRect(showMap, float32(x1), float32(y1), 1, 1, bannerColor(stack.GetBanner()), false)
+                    vector.FillRect(showMap, float32(x1), float32(y1), 1, 1, bannerColor(stack.GetBanner()), false)
                 }
             }
         }
