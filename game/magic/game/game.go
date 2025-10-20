@@ -6002,7 +6002,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
 
             castingCost := player.ComputeEffectiveSpellCost(spell, true)
 
-            if castingCost <= player.Mana && castingCost <= player.RemainingCastingSkill {
+            if spell.Valid() && castingCost <= player.Mana && castingCost <= player.RemainingCastingSkill {
                 player.Mana -= castingCost
                 player.RemainingCastingSkill -= castingCost
 
