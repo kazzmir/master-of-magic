@@ -317,6 +317,7 @@ func (castPlayer *CastPlayer) ComputeTurnsToCast(cost int) int {
                 return infiniteTurns
             }
 
+            // there is probably a closed-form equation for this
             spend := max(1, min(castPlayer.castingSkill, usableMana))
             cost -= spend
             usableMana -= spend
