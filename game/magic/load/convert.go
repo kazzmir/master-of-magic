@@ -102,8 +102,8 @@ func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane dat
         terrainFlags = saveGame.MyrrorMapSquareFlags
     }
 
-    for y := range(WorldHeight) {
-        for x := range(WorldWidth) {
+    for y := range WorldHeight {
+        for x := range WorldWidth {
             point := image.Pt(x, y)
 
             map_.Map.Terrain[x][y] = int(terrainSource.Data[x][y]) + terrainOffset
@@ -158,7 +158,7 @@ func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane dat
             continue
         }
 
-        if lair.Plane == 0 && plane != data.PlaneArcanus || lair.Plane != 0 && plane != data.PlaneMyrror {
+        if (lair.Plane == 0 && plane != data.PlaneArcanus) || (lair.Plane != 0 && plane != data.PlaneMyrror) {
             continue
         }
 
@@ -181,12 +181,27 @@ func (saveGame *SaveGame) ConvertMap(terrainData *terrain.TerrainData, plane dat
         if map_.ExtraMap[point] == nil {
             map_.ExtraMap[point] = make(map[maplib.ExtraKind]maplib.ExtraTile)
         }
+
+        var guardians []units.Unit
+        budget := 0
+
+        unit1 := getUnitType(int(lair.Guard1_unit_type))
+        for range lair.Guard1_unit_count & 0xf {
+            guardians = append(guardians, unit1)
+            budget += unit1.CastingCost
+        }
+
+        unit2 := getUnitType(int(lair.Guard2_unit_type))
+        for range lair.Guard2_unit_count & 0xf {
+            guardians = append(guardians, unit2)
+            budget += unit2.CastingCost
+        }
+
         map_.ExtraMap[point][maplib.ExtraKindEncounter] = &maplib.ExtraEncounter{
             Type: encounterType,
-            // FIXME: set budget, units and explored by
-            Budget: 0,
-            Units: nil,
-            ExploredBy: nil,
+            Budget: budget,
+            Units: guardians,
+            ExploredBy: set.MakeSet[maplib.Wizard](), // FIXME
         }
     }
 
@@ -1480,6 +1495,27 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
         f()
     }
 
+    locationMap := make(map[image.Point]bool)
+    for _, location := range game.MyrrorMap.GetEncounterLocations() {
+        log.Printf("Myrror encounter at %+v", location)
+        locationMap[location] = true
+    }
+
+    for i := range len(saveGame.Units) {
+        unit := &saveGame.Units[i]
+        _, ok := locationMap[image.Pt(int(unit.X), int(unit.Y))]
+        if ok {
+            log.Printf("Unit %v at encounter location: %v, %v", i, unit.X, unit.Y)
+        }
+    }
+
+    /*
+    for i := range len(saveGame.Units) {
+        if saveGame.Units[i].InTower != 0 {
+            log.Printf("Unit %v: %+v", i, saveGame.Units[i])
+        }
+    }
+    */
 
     // FIXME: add neutral player with brown banner and ai.MakeRaiderAI()
 
