@@ -728,7 +728,11 @@ func (ui *UI) StandardUpdate() {
                 */
 
                 bounds := ui.focusedElement.Rect.Bounds()
-                handled, err = ui.textField.HandleInput(bounds.Min.X, bounds.Max.Y + 1)
+	            // return f.HandleInputWithBounds(image.Rect(x, y, x+1, y+1))
+
+                rect := image.Rect(bounds.Min.X, bounds.Max.Y + 1, bounds.Min.X + 1, bounds.Max.Y + 2)
+
+                handled, err = ui.textField.HandleInputWithBounds(rect)
                 // log.Printf("Handle input %v", err)
                 if err != nil {
                     log.Printf("input error %v", err)
