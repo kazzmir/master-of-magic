@@ -1431,13 +1431,13 @@ func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]FullTile {
                             continue
                         }
 
-                        // ignore the tile itself
-                        if sharedX == dx && sharedY == dy {
+                        sharedTileX := mapObject.WrapX(tileX + sharedX)
+                        sharedTileY := tileY + sharedY
+
+                        // if the new tile is the same as the original tile, skip
+                        if sharedTileX == x && sharedTileY == y {
                             continue
                         }
-
-                        sharedTileX := mapObject.WrapX(x + sharedX)
-                        sharedTileY := y + sharedY
 
                         if mapObject.CityProvider.ContainsCity(sharedTileX, sharedTileY, mapObject.Plane) {
                             tile.IsShared = true

@@ -67,14 +67,16 @@ func TestInfluence(test *testing.T) {
 }
 
 type TestCityProvider struct {
+    Cities map[image.Point]bool
 }
 
 func (provider *TestCityProvider) ContainsCity(x int, y int, plane data.Plane) bool {
-    return false
+    _, exists := provider.Cities[image.Pt(x, y)]
+    return exists
 }
 
 func TestCatchmentArea(test *testing.T) {
-    testCityProvider := TestCityProvider{}
+    testCityProvider := TestCityProvider{Cities: make(map[image.Point]bool)}
     terrainData := terrain.MakeTerrainData([]image.Image{nil}, []terrain.TerrainTile{terrain.TerrainTile{TileIndex: 0, Tile: terrain.TileLand}})
     rawMap := terrain.MakeMap(20, 20)
     xmap := Map{
@@ -94,5 +96,30 @@ func TestCatchmentArea(test *testing.T) {
         if tile.IsShared {
             test.Errorf("Expected no shared tiles in catchment area")
         }
+    }
+
+    // two cities do not overlap at all
+    testCityProvider.Cities[image.Pt(5, 5)] = true
+    testCityProvider.Cities[image.Pt(19, 5)] = true
+
+    catchment = xmap.GetCatchmentArea(5, 5)
+    for _, tile := range catchment {
+        if tile.IsShared {
+            test.Errorf("Expected no shared tiles in catchment area with two non-overlapping cities")
+        }
+    }
+
+    testCityProvider.Cities[image.Pt(6, 6)] = true
+    catchment = xmap.GetCatchmentArea(5, 5)
+
+    count := 0
+    for _, tile := range catchment {
+        if tile.IsShared {
+            count += 1
+        }
+    }
+
+    if count != 14 {
+        test.Errorf("Expected 6 shared tiles in catchment area with overlapping cities, got %d", count)
     }
 }
