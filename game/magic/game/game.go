@@ -4714,6 +4714,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
                 options.GeoM.Translate(float64(overworld.Camera.SizeX / 2 * mapUse.TileWidth()), float64(overworld.Camera.SizeY / 2 * mapUse.TileHeight()))
                 // offset by the shared tile position
                 options.GeoM.Translate(float64(point.X * mapUse.TileWidth()), float64(point.Y * mapUse.TileHeight()))
+                options.GeoM.Translate(float64(mapUse.TileWidth() / 2 - halfTile.Bounds().Dx() / 2), float64(mapUse.TileHeight() / 2 - halfTile.Bounds().Dy() / 2))
                 // zoom will not affect the tile
                 scale.DrawScaled(mapView, halfTile, &options)
             }
