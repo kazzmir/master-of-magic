@@ -1241,7 +1241,11 @@ func (city *City) BaseFoodLevel() int {
     food := fraction.Zero()
 
     for _, tile := range catchment {
-        food = food.Add(tile.FoodBonus())
+        value := tile.FoodBonus()
+        if tile.IsShared {
+            value = value.Divide(fraction.FromInt(2))
+        }
+        food = food.Add(value)
     }
 
     if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
@@ -1253,7 +1257,11 @@ func (city *City) BaseFoodLevel() int {
     }
 
     for _, tile := range catchment {
-        food = food.Add(fraction.FromInt(tile.GetBonus().FoodBonus()))
+        value := fraction.FromInt(tile.GetBonus().FoodBonus())
+        if tile.IsShared {
+            value = value.Divide(fraction.FromInt(2))
+        }
+        food = food.Add(value)
     }
 
     return int(food.ToFloat())
@@ -1519,7 +1527,11 @@ func (city *City) ProductionTerrain() float32 {
     hasGaiasBlessing := city.HasEnchantment(data.CityEnchantmentGaiasBlessing)
 
     for _, tile := range catchment {
-        production += float32(tile.ProductionBonus(hasGaiasBlessing)) / 100
+        value := float32(tile.ProductionBonus(hasGaiasBlessing)) / 100
+        if tile.IsShared {
+            value /= 2
+        }
+        production += value
     }
 
     return production * (city.ProductionWorkers() + city.ProductionFarmers())
