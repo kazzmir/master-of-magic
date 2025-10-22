@@ -159,6 +159,14 @@ func MakeCity(name string, x int, y int, race data.Race, buildingInfo buildingli
     return &city
 }
 
+func (city *City) GetPlanePoint() data.PlanePoint {
+    return data.PlanePoint{
+        Plane: city.Plane,
+        X: city.X,
+        Y: city.Y,
+    }
+}
+
 func (city *City) String() string {
     return fmt.Sprintf("%v of %v", city.GetSize(), city.Name)
 }

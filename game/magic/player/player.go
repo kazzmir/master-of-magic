@@ -5,6 +5,7 @@ import (
     "math"
     "math/rand/v2"
     "image"
+    "maps"
     "fmt"
     "cmp"
 
@@ -351,7 +352,7 @@ type Player struct {
     Units []units.StackUnit
 
     Stacks []*UnitStack
-    Cities []*citylib.City
+    Cities map[data.PlanePoint]*citylib.City
 
     // counter for the next created unit owned by this player
     UnitId uint64
@@ -380,6 +381,7 @@ func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight i
         MyrrorFog: makeFog(),
         Wizard: wizard,
         Human: human,
+        Cities: make(map[data.PlanePoint]*citylib.City),
         HeroPool: createHeroes(heroNames),
         PlayerRelations: make(map[*Player]*Relationship),
         GlobalEnchantments: set.MakeSet[data.Enchantment](),
@@ -1167,9 +1169,13 @@ func (player *Player) OwnsStack(stack *UnitStack) bool {
 }
 
 func (player *Player) OwnsCity(city *citylib.City) bool {
-    return slices.ContainsFunc(player.Cities, func (check *citylib.City) bool {
-        return check == city
-    })
+    for _, ownedCity := range player.Cities {
+        if ownedCity == city {
+            return true
+        }
+    }
+
+    return false
 }
 
 func (player *Player) FindCity(x int, y int, plane data.Plane) *citylib.City {
@@ -1446,15 +1452,17 @@ func (player *Player) RemoveUnit(unit units.StackUnit) {
     }
 }
 
+func (player *Player) GetCities() []*citylib.City {
+    return slices.Collect(maps.Values(player.Cities))
+}
+
 func (player *Player) AddCity(city *citylib.City) *citylib.City {
-    player.Cities = append(player.Cities, city)
+    player.Cities[city.GetPlanePoint()] = city
     return city
 }
 
 func (player *Player) RemoveCity(city *citylib.City) {
-    player.Cities = slices.DeleteFunc(player.Cities, func (c *citylib.City) bool {
-        return c == city
-    })
+    delete(player.Cities, city.GetPlanePoint())
 }
 
 func (player *Player) AddStack(stack *UnitStack) *UnitStack {

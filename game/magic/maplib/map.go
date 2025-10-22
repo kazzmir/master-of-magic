@@ -567,6 +567,7 @@ type FullTile struct {
     Tile terrain.Tile
     X int
     Y int
+    IsHalf bool
 }
 
 func (tile *FullTile) Name(mapObject *Map) string {
