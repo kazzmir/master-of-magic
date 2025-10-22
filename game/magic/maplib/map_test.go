@@ -65,3 +65,34 @@ func TestInfluence(test *testing.T) {
         test.Errorf("Expected no magic at 4,4")
     }
 }
+
+type TestCityProvider struct {
+}
+
+func (provider *TestCityProvider) ContainsCity(x int, y int, plane data.Plane) bool {
+    return false
+}
+
+func TestCatchmentArea(test *testing.T) {
+    testCityProvider := TestCityProvider{}
+    terrainData := terrain.MakeTerrainData([]image.Image{nil}, []terrain.TerrainTile{terrain.TerrainTile{TileIndex: 0, Tile: terrain.TileLand}})
+    rawMap := terrain.MakeMap(20, 20)
+    xmap := Map{
+        Data: terrainData,
+        Plane: data.PlaneArcanus,
+        Map: rawMap,
+        CityProvider: &testCityProvider,
+        ExtraMap: make(map[image.Point]map[ExtraKind]ExtraTile),
+    }
+
+    catchment := xmap.GetCatchmentArea(5, 5)
+    if len(catchment) != 21 {
+        test.Errorf("Expected catchment area of size 21, got %d", len(catchment))
+    }
+
+    for _, tile := range catchment {
+        if tile.IsShared {
+            test.Errorf("Expected no shared tiles in catchment area")
+        }
+    }
+}
