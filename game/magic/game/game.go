@@ -4692,10 +4692,32 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
         FogBlack: game.GetFogImage(),
     }
 
+    catchment := mapUse.GetCatchmentArea(city.X, city.Y)
+
+    var sharedPoints []image.Point
+    for _, tile := range catchment {
+        if tile.IsShared {
+            sharedPoints = append(sharedPoints, image.Point{X: tile.X - city.X, Y: tile.Y - city.Y})
+        }
+    }
+
     oldDrawer := game.Drawer
+    halfTile, _ := game.ImageCache.GetImage("backgrnd.lbx", 0, 0)
     game.Drawer = func(screen *ebiten.Image, game *Game){
         cityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
             overworld.DrawOverworld(mapView, geom)
+
+            var options ebiten.DrawImageOptions
+            for _, point := range sharedPoints {
+                options.GeoM = geom
+                // move to center of the map
+                options.GeoM.Translate(float64(overworld.Camera.SizeX / 2 * mapUse.TileWidth()), float64(overworld.Camera.SizeY / 2 * mapUse.TileHeight()))
+                // offset by the shared tile position
+                options.GeoM.Translate(float64(point.X * mapUse.TileWidth()), float64(point.Y * mapUse.TileHeight()))
+                // zoom will not affect the tile
+                scale.DrawScaled(mapView, halfTile, &options)
+            }
+
         }, mapUse.TileWidth(), mapUse.TileHeight())
     }
 

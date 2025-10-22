@@ -279,7 +279,7 @@ func makeBuildingSlots2(city *citylib.City) []BuildingSlot {
 }
 
 func makeBuildingSlots(city *citylib.City) []BuildingSlot {
-    // use a random seed based on the position and name of the city so that each game gets
+    // use a random seed based on the position and race of the city so that each game gets
     // a different city view, but within the same game the city view is consistent
     random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + uint64(1000 * city.Race)))
 
