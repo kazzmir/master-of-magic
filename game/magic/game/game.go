@@ -4692,10 +4692,33 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
         FogBlack: game.GetFogImage(),
     }
 
+    catchment := mapUse.GetCatchmentArea(city.X, city.Y)
+
+    var sharedPoints []image.Point
+    for _, tile := range catchment {
+        if tile.IsShared {
+            sharedPoints = append(sharedPoints, image.Point{X: tile.X - city.X, Y: tile.Y - city.Y})
+        }
+    }
+
     oldDrawer := game.Drawer
+    halfTile, _ := game.ImageCache.GetImage("backgrnd.lbx", 0, 0)
     game.Drawer = func(screen *ebiten.Image, game *Game){
         cityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
             overworld.DrawOverworld(mapView, geom)
+
+            var options ebiten.DrawImageOptions
+            for _, point := range sharedPoints {
+                options.GeoM = geom
+                // move to center of the map
+                options.GeoM.Translate(float64(overworld.Camera.SizeX / 2 * mapUse.TileWidth()), float64(overworld.Camera.SizeY / 2 * mapUse.TileHeight()))
+                // offset by the shared tile position
+                options.GeoM.Translate(float64(point.X * mapUse.TileWidth()), float64(point.Y * mapUse.TileHeight()))
+                options.GeoM.Translate(float64(mapUse.TileWidth() / 2 - halfTile.Bounds().Dx() / 2), float64(mapUse.TileHeight() / 2 - halfTile.Bounds().Dy() / 2))
+                // zoom will not affect the tile
+                scale.DrawScaled(mapView, halfTile, &options)
+            }
+
         }, mapUse.TileWidth(), mapUse.TileHeight())
     }
 
@@ -8226,8 +8249,9 @@ func (game *Game) DoRandomEvents() {
                     case RandomEventDepletion:
                         // choose a random town that has a mineral bonus in its catchment area,
                         // and then remove the bonus from the map
-                        for _, cityIndex := range rand.Perm(len(target.Cities)) {
-                            city := target.Cities[cityIndex]
+                        cities := target.GetCities()
+                        for _, cityIndex := range rand.Perm(len(cities)) {
+                            city := cities[cityIndex]
                             mapUse := game.GetMap(city.Plane)
                             catchment := mapUse.GetCatchmentArea(city.X, city.Y)
                             var choices []maplib.FullTile
@@ -8252,7 +8276,8 @@ func (game *Game) DoRandomEvents() {
                         for _, player := range game.Players {
                             if player.GetBanner() == data.BannerBrown {
                                 if len(player.Cities) > 0 {
-                                    city := player.Cities[rand.N(len(player.Cities))]
+                                    cities := target.GetCities()
+                                    city := cities[rand.N(len(cities))]
                                     // if the owner of the city has a stack garrisoned there then the garrison is disbanded
                                     stack := player.FindStack(city.X, city.Y, city.Plane)
                                     if stack != nil {
@@ -8295,8 +8320,9 @@ func (game *Game) DoRandomEvents() {
                         return MakeGreatMeteorEvent(game.TurnNumber, city.Name, people, units, buildings), nil
 
                     case RandomEventNewMinerals:
-                        for _, cityIndex := range rand.Perm(len(target.Cities)) {
-                            city := target.Cities[cityIndex]
+                        cities := target.GetCities()
+                        for _, cityIndex := range rand.Perm(len(cities)) {
+                            city := cities[cityIndex]
                             mapUse := game.GetMap(city.Plane)
                             catchment := mapUse.GetCatchmentArea(city.X, city.Y)
                             var choices []maplib.FullTile
@@ -8319,8 +8345,9 @@ func (game *Game) DoRandomEvents() {
                         }
 
                     case RandomEventPlague:
-                        for _, cityIndex := range rand.Perm(len(target.Cities)) {
-                            city := target.Cities[cityIndex]
+                        cities := target.GetCities()
+                        for _, cityIndex := range rand.Perm(len(cities)) {
+                            city := cities[cityIndex]
                             if !usedCities.Contains(city) {
                                 return MakePlagueEvent(game.TurnNumber, city), nil
                             }
@@ -8329,8 +8356,9 @@ func (game *Game) DoRandomEvents() {
                         return nil, nil
 
                     case RandomEventPopulationBoom:
-                        for _, cityIndex := range rand.Perm(len(target.Cities)) {
-                            city := target.Cities[cityIndex]
+                        cities := target.GetCities()
+                        for _, cityIndex := range rand.Perm(len(cities)) {
+                            city := cities[cityIndex]
                             if !usedCities.Contains(city) {
                                 return MakePopulationBoomEvent(game.TurnNumber, city), nil
                             }

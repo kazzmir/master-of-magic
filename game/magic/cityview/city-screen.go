@@ -10,7 +10,6 @@ import (
     "strings"
     "image"
     "image/color"
-    "hash/fnv"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -150,12 +149,6 @@ func sortBuildings(buildings []buildinglib.Building) []buildinglib.Building {
     return buildings
 }
 
-func hash(str string) uint64 {
-    hasher := fnv.New64a()
-    hasher.Write([]byte(str))
-    return hasher.Sum64()
-}
-
 func makeRectComputePoint(rect *buildinglib.Rect) func(x int, y int) image.Point {
     startX := 0
     startY := 0
@@ -279,9 +272,9 @@ func makeBuildingSlots2(city *citylib.City) []BuildingSlot {
 }
 
 func makeBuildingSlots(city *citylib.City) []BuildingSlot {
-    // use a random seed based on the position and name of the city so that each game gets
+    // use a random seed based on the position and race of the city so that each game gets
     // a different city view, but within the same game the city view is consistent
-    random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
+    random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + uint64(1000 * city.Race)))
 
     toLayout := city.Buildings.Clone()
 
@@ -403,84 +396,6 @@ func makeBuildingSlots(city *citylib.City) []BuildingSlot {
     })
 
     return slots
-}
-
-func makeBuildingSlotsOld(city *citylib.City) []BuildingSlot {
-    // use a random seed based on the position and name of the city so that each game gets
-    // a different city view, but within the same game the city view is consistent
-    random := rand.New(rand.NewPCG(uint64(city.X), uint64(city.Y) + hash(city.Name)))
-
-    // for testing purposes, use a random seed
-    // random = rand.New(rand.NewPCG(rand.Uint64(), rand.Uint64()))
-    openSlots := randomSlots(random)
-    // openSlots := buildingSlots()
-
-    var buildings []BuildingSlot
-
-    for _, building := range sortBuildings(city.Buildings.Values()) {
-        // city walls is handled specially
-        if building == buildinglib.BuildingCityWalls {
-            buildings = append(buildings, BuildingSlot{Building: building, Point: image.Pt(0, 75)})
-            continue
-        }
-
-        if wasBuildingReplaced(building, city) {
-            continue
-        }
-
-        if len(openSlots) == 0 {
-            log.Printf("Ran out of open slots in city view for %+v for building %v", city, city.BuildingInfo.Name(building))
-            continue
-        }
-
-        point := openSlots[0]
-        openSlots = openSlots[1:]
-
-        buildings = append(buildings, BuildingSlot{Building: building, Point: point})
-    }
-
-    maxTrees := random.IntN(15) + 20
-    for i := 0; i < maxTrees; i++ {
-        x := random.IntN(150) + 20
-        y := random.IntN(60) + 10
-
-        tree := []buildinglib.Building{BuildingTree1, BuildingTree2, BuildingTree3}[random.IntN(3)]
-
-        buildings = append(buildings, BuildingSlot{Building: tree, Point: image.Pt(x, y)})
-    }
-
-    // FIXME: this is based on the population of the city
-    maxHouses := random.IntN(15) + 20
-
-    for i := 0; i < maxHouses; i++ {
-        x := random.IntN(150) + 20
-        y := random.IntN(60) + 10
-
-        // house types are based on population size (village vs capital, etc)
-        house := []buildinglib.Building{BuildingTreeHouse1, BuildingTreeHouse2, BuildingTreeHouse3, BuildingTreeHouse4, BuildingTreeHouse5}[random.IntN(5)]
-
-        buildings = append(buildings, BuildingSlot{Building: house, Point: image.Pt(x, y)})
-    }
-
-    slices.SortFunc(buildings, func(a BuildingSlot, b BuildingSlot) int {
-        if a.Point.Y < b.Point.Y {
-            return -1
-        }
-
-        if a.Point.Y == b.Point.Y {
-            if a.Point.X < b.Point.X {
-                return -1
-            }
-
-            if a.Point.X == b.Point.X {
-                return 0
-            }
-        }
-
-        return 1
-    })
-
-    return buildings
 }
 
 func MakeCityScreen(cache *lbx.LbxCache, city *citylib.City, player *playerlib.Player, newBuilding buildinglib.Building) *CityScreen {

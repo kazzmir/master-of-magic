@@ -5593,6 +5593,80 @@ func createScenario61(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// cities too close to each other with shared tiles
+func createScenario62(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 62")
+    wizard := setup.WizardCustom{
+        Name: "player",
+        Banner: data.BannerBlue,
+        Race: data.RaceHighMen,
+        Retorts: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
+    introCity.Population = 14000
+    introCity.Plane = data.PlaneArcanus
+    introCity.ProducingBuilding = buildinglib.BuildingHousing
+    introCity.ProducingUnit = units.UnitNone
+    introCity.Farmers = 14
+
+    introCity.AddBuilding(buildinglib.BuildingShrine)
+
+    introCity.ResetCitizens()
+
+    player.AddCity(introCity)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    player.LiftFog(x, y, 3, data.PlaneArcanus)
+
+    _ = introCity
+
+    for i := 0; i < 3; i++ {
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x + i, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    }
+
+    city2 := citylib.MakeCity("utah", x + 2, y + 1, data.RaceDarkElf, game.BuildingInfo, game.CurrentMap(), game, player)
+    city2.Population = 7000
+    city2.Plane = data.PlaneArcanus
+    city2.ProducingBuilding = buildinglib.BuildingShrine
+    city2.ProducingUnit = units.UnitNone
+
+    city2.ResetCitizens()
+
+    player.AddCity(city2)
+
+    player.LiftFog(x, y, 3, data.PlaneArcanus)
+
+    game.Camera.Center(x, y)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -5660,6 +5734,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 59: game = createScenario59(cache)
         case 60: game = createScenario60(cache)
         case 61: game = createScenario61(cache)
+        case 62: game = createScenario62(cache)
         default: game = createScenario1(cache)
     }
 

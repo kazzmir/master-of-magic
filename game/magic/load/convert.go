@@ -748,6 +748,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         return z * z - z + 1
     }
 
+    // it would be better to use a constructor function here
     player := playerlib.Player{
         Wizard: wizards[playerIndex],
         SpellOfMasteryCost: int(playerData.MasteryResearch),
@@ -759,6 +760,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         },
         Gold: int(playerData.GoldReserve),
         Mana: int(playerData.ManaReserve),
+        Cities: make(map[data.PlanePoint]*citylib.City),
         Human: human,
         AIBehavior: aiBehavior,
         // FIXME: Defeated
@@ -1010,7 +1012,9 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     player.UpdateFogVisibility()
 
     updateCities := func() {
-        player.Cities = saveGame.convertCities(&player, playerIndex, wizards, game, game.ArcanusMap, game.MyrrorMap)
+        for _, city := range saveGame.convertCities(&player, playerIndex, wizards, game, game.ArcanusMap, game.MyrrorMap) {
+            player.AddCity(city)
+        }
     }
 
     return &player, stackMoves, updateCities
@@ -1533,14 +1537,16 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // FIXME: game.PurifyWorkMyrror
 
     game.Camera.Center(20, 20)
-    if len(game.Players[0].Cities) > 0 {
-        city := game.Players[0].Cities[0]
+
+    // center on some random city
+    for _, city := range game.Players[0].Cities {
         game.Events <- &gamelib.GameEventMoveCamera{
             Instant: true,
             Plane: city.Plane,
             X: city.X,
             Y: city.Y,
         }
+        break
     }
 
     return game

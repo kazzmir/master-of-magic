@@ -63,6 +63,13 @@ func (provider *NoCityProvider) GetAllGlobalEnchantments() map[data.BannerType]*
     return enchantments
 }
 
+type NoMaplibCityProvider struct {
+}
+
+func (provider *NoMaplibCityProvider) ContainsCity(x int, y int, plane data.Plane) bool {
+    return false
+}
+
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -101,6 +108,7 @@ func NewEngine() (*Engine, error) {
         Data: terrainData,
         Map: terrain.GenerateLandCellularAutomata(20, 20, terrainData, data.PlaneArcanus),
         TileCache: make(map[int]*ebiten.Image),
+        CityProvider: &NoMaplibCityProvider{},
     }
 
     city := citylib.MakeCity("Boston", rand.N(20), rand.N(13) + 4, data.RaceHighElf, buildingInfo, &gameMap, &NoCityProvider{}, &player)

@@ -5,6 +5,7 @@ import (
     "fmt"
     "slices"
     "strings"
+    "maps"
     "image"
     "image/color"
 
@@ -127,7 +128,7 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
 
     var elements []*uilib.UIElement
 
-    cities := slices.Clone(view.Player.Cities)
+    cities := slices.Collect(maps.Values(view.Player.Cities))
     slices.SortFunc(cities, func(a *citylib.City, b *citylib.City) int {
         return strings.Compare(a.Name, b.Name)
     })

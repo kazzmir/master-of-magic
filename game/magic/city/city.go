@@ -159,6 +159,14 @@ func MakeCity(name string, x int, y int, race data.Race, buildingInfo buildingli
     return &city
 }
 
+func (city *City) GetPlanePoint() data.PlanePoint {
+    return data.PlanePoint{
+        Plane: city.Plane,
+        X: city.X,
+        Y: city.Y,
+    }
+}
+
 func (city *City) String() string {
     return fmt.Sprintf("%v of %v", city.GetSize(), city.Name)
 }
@@ -622,9 +630,13 @@ func (city *City) PowerCitizens() int {
 func (city *City) PowerMinerals() int {
     catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
 
-    extra := 0
+    var extra float32 = 0
     for _, tile := range catchment {
-        extra += tile.GetBonus().PowerBonus()
+        value := float32(tile.GetBonus().PowerBonus())
+        if tile.IsShared {
+            value /= 2
+        }
+        extra += value
     }
 
     if city.Race == data.RaceDwarf {
@@ -632,10 +644,10 @@ func (city *City) PowerMinerals() int {
     }
 
     if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
-        extra = int(float64(extra) * 1.5)
+        extra = float32(extra) * 1.5
     }
 
-    return extra
+    return int(extra)
 }
 
 func (city *City) PowerFortress() int {
@@ -1233,7 +1245,11 @@ func (city *City) BaseFoodLevel() int {
     food := fraction.Zero()
 
     for _, tile := range catchment {
-        food = food.Add(tile.FoodBonus())
+        value := tile.FoodBonus()
+        if tile.IsShared {
+            value = value.Divide(fraction.FromInt(2))
+        }
+        food = food.Add(value)
     }
 
     if city.HasEnchantment(data.CityEnchantmentGaiasBlessing) {
@@ -1245,7 +1261,11 @@ func (city *City) BaseFoodLevel() int {
     }
 
     for _, tile := range catchment {
-        food = food.Add(fraction.FromInt(tile.GetBonus().FoodBonus()))
+        value := fraction.FromInt(tile.GetBonus().FoodBonus())
+        if tile.IsShared {
+            value = value.Divide(fraction.FromInt(2))
+        }
+        food = food.Add(value)
     }
 
     return int(food.ToFloat())
@@ -1353,10 +1373,14 @@ func (city *City) GoldTradeGoods() int {
 func (city *City) GoldMinerals() int {
     catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
 
-    extra := 0
+    var extra float32 = 0
 
     for _, tile := range catchment {
-        extra += tile.GetBonus().GoldBonus()
+        value := float32(tile.GetBonus().GoldBonus())
+        if tile.IsShared {
+            value /= 2
+        }
+        extra += value
     }
 
     if city.Race == data.RaceDwarf {
@@ -1364,10 +1388,10 @@ func (city *City) GoldMinerals() int {
     }
 
     if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
-        extra = int(float64(extra) * 1.5)
+        extra = float32(extra) * 1.5
     }
 
-    return extra
+    return int(extra)
 }
 
 // return the percent of foreign trade bonus
@@ -1511,7 +1535,11 @@ func (city *City) ProductionTerrain() float32 {
     hasGaiasBlessing := city.HasEnchantment(data.CityEnchantmentGaiasBlessing)
 
     for _, tile := range catchment {
-        production += float32(tile.ProductionBonus(hasGaiasBlessing)) / 100
+        value := float32(tile.ProductionBonus(hasGaiasBlessing)) / 100
+        if tile.IsShared {
+            value /= 2
+        }
+        production += value
     }
 
     return production * (city.ProductionWorkers() + city.ProductionFarmers())

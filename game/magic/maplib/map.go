@@ -567,6 +567,8 @@ type FullTile struct {
     Tile terrain.Tile
     X int
     Y int
+    // shared between multiple cities
+    IsShared bool
 }
 
 func (tile *FullTile) Name(mapObject *Map) string {
@@ -1409,6 +1411,7 @@ func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]FullTile {
 
     for dx := -2; dx <= 2; dx++ {
         for dy := -2; dy <= 2; dy++ {
+            // ignore corners
             if int(math.Abs(float64(dx)) + math.Abs(float64(dy))) == 4 {
                 continue
             }
@@ -1418,6 +1421,31 @@ func (mapObject *Map) GetCatchmentArea(x int, y int) map[image.Point]FullTile {
 
             tile := mapObject.GetTile(tileX, tileY)
             if tile.Valid() {
+                // if any of the tiles are within another city's catchment area, mark this tile as shared
+
+                shared_loop:
+                for sharedX := -2; sharedX <= 2; sharedX++ {
+                    for sharedY := -2; sharedY <= 2; sharedY++ {
+                        // ignore corners
+                        if int(math.Abs(float64(sharedX)) + math.Abs(float64(sharedY))) == 4 {
+                            continue
+                        }
+
+                        sharedTileX := mapObject.WrapX(tileX + sharedX)
+                        sharedTileY := tileY + sharedY
+
+                        // if the new tile is the same as the original tile, skip
+                        if sharedTileX == x && sharedTileY == y {
+                            continue
+                        }
+
+                        if mapObject.CityProvider.ContainsCity(sharedTileX, sharedTileY, mapObject.Plane) {
+                            tile.IsShared = true
+                            break shared_loop
+                        }
+                    }
+                }
+
                 area[image.Pt(tileX, tileY)] = tile
             }
         }
