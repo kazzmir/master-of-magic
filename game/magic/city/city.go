@@ -630,9 +630,13 @@ func (city *City) PowerCitizens() int {
 func (city *City) PowerMinerals() int {
     catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
 
-    extra := 0
+    var extra float32 = 0
     for _, tile := range catchment {
-        extra += tile.GetBonus().PowerBonus()
+        value := float32(tile.GetBonus().PowerBonus())
+        if tile.IsShared {
+            value /= 2
+        }
+        extra += value
     }
 
     if city.Race == data.RaceDwarf {
@@ -640,10 +644,10 @@ func (city *City) PowerMinerals() int {
     }
 
     if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
-        extra = int(float64(extra) * 1.5)
+        extra = float32(extra) * 1.5
     }
 
-    return extra
+    return int(extra)
 }
 
 func (city *City) PowerFortress() int {
@@ -1369,10 +1373,14 @@ func (city *City) GoldTradeGoods() int {
 func (city *City) GoldMinerals() int {
     catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
 
-    extra := 0
+    var extra float32 = 0
 
     for _, tile := range catchment {
-        extra += tile.GetBonus().GoldBonus()
+        value := float32(tile.GetBonus().GoldBonus())
+        if tile.IsShared {
+            value /= 2
+        }
+        extra += value
     }
 
     if city.Race == data.RaceDwarf {
@@ -1380,10 +1388,10 @@ func (city *City) GoldMinerals() int {
     }
 
     if city.Buildings.Contains(buildinglib.BuildingMinersGuild) {
-        extra = int(float64(extra) * 1.5)
+        extra = float32(extra) * 1.5
     }
 
-    return extra
+    return int(extra)
 }
 
 // return the percent of foreign trade bonus
