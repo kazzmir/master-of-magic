@@ -4955,7 +4955,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
 
                 return true
             })
-        case "CurseBlackSleep":
+        case "Black Sleep":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateBlackSleepProjectile(target))
                 castedCallback(true)
