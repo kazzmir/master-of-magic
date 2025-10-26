@@ -1139,6 +1139,8 @@ func (city *City) CheckDispel(spell spellbook.Spell) bool {
                 return true
             }
             return city.CheckDispelNightshade()
+        case "Ice Storm", "Stasis", "Fire Storm", "Black Wind":
+            return city.CheckDispelNightshade()
     }
 
     return false

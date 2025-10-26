@@ -553,7 +553,10 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                         return
                     }
 
-                    // FIXME: dispel chance if tile contains a city
+                    if city != nil && city.CheckDispel(spell) {
+                        game.ShowFizzleSpell(spell, player)
+                        return
+                    }
 
                     game.doCastOnMap(yield, tileX, tileY, 53, spell.Sound, func (x int, y int, animationFrame int) {})
 
@@ -659,7 +662,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         case "Ice Storm":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                // FIXME: dispel chance if tile contains a city
+                city, _ := game.FindCity(tileX, tileY, game.Plane)
+                if city != nil {
+                    if city.CheckDispel(spell) {
+                        game.ShowFizzleSpell(spell, player)
+                        return
+                    }
+                }
 
                 enemyStack, enemy := game.FindStack(tileX, tileY, game.Plane)
 
@@ -678,7 +687,11 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyUnit, SelectedFunc: selected}
         case "Fire Storm":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                // FIXME: dispel chance if tile contains a city
+                city, _ := game.FindCity(tileX, tileY, game.Plane)
+                if city != nil && city.CheckDispel(spell) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
 
                 enemyStack, enemy := game.FindStack(tileX, tileY, game.Plane)
 
