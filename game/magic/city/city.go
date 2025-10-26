@@ -1125,6 +1125,30 @@ func (city *City) ComputeUnrest() int {
     return int(math.Max(0, total))
 }
 
+// true if the spell should be dispelled during casting
+func (city *City) CheckDispel(spell spellbook.Spell) bool {
+    switch spell.Name {
+        case "Chaos Rift", "Call the Void", "Raise Volcano", "Corruption":
+            if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
+                return true
+            }
+
+            return city.CheckDispelNightshade()
+        case "Cursed Lands", "Famine", "Evil Presence", "Pestilence":
+            if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
+                return true
+            }
+            return city.CheckDispelNightshade()
+    }
+
+    return false
+}
+
+func (city *City) CheckDispelNightshade() bool {
+    // FIXME: if nightshade is effective then compute a dispel chance
+    return false
+}
+
 // returns the number of nightshade tiles that contribute to the city dispelling enemy wizards spells
 func (city *City) EffectiveNightshade() int {
     if city.Buildings.Contains(buildinglib.BuildingShrine) || city.Buildings.Contains(buildinglib.BuildingSagesGuild) {
