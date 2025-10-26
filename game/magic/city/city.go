@@ -1133,22 +1133,29 @@ func (city *City) CheckDispel(spell spellbook.Spell) bool {
                 return true
             }
 
-            return city.CheckDispelNightshade()
+            return city.CheckDispelNightshade(spell)
         case "Cursed Lands", "Famine", "Evil Presence", "Pestilence":
             if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
                 return true
             }
-            return city.CheckDispelNightshade()
+            return city.CheckDispelNightshade(spell)
         case "Ice Storm", "Stasis", "Fire Storm", "Black Wind":
-            return city.CheckDispelNightshade()
+            return city.CheckDispelNightshade(spell)
     }
 
     return false
 }
 
-func (city *City) CheckDispelNightshade() bool {
-    // FIXME: if nightshade is effective then compute a dispel chance
-    return false
+func (city *City) CheckDispelNightshade(spell spellbook.Spell) bool {
+    tiles := city.EffectiveNightshade()
+    if tiles == 0 {
+        return false
+    }
+
+    nightshadeStrength := 100 * tiles
+
+    dispelChance := 1000 * nightshadeStrength / (nightshadeStrength + spell.Cost(true))
+    return rand.N(1000) < dispelChance
 }
 
 // returns the number of nightshade tiles that contribute to the city dispelling enemy wizards spells
