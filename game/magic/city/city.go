@@ -247,7 +247,7 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
     hasForest := false
     minersGuildOk := false
 
-    for _, tile := range city.CatchmentProvider.GetCatchmentArea(city.X, city.Y) {
+    for _, tile := range city.GetCatchmentArea() {
         switch tile.Tile.TerrainType() {
             case terrain.Forest, terrain.NatureNode: hasForest = true
             case terrain.Mountain, terrain.Volcano, terrain.Hill, terrain.ChaosNode:
@@ -628,7 +628,7 @@ func (city *City) PowerCitizens() int {
 }
 
 func (city *City) PowerMinerals() int {
-    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+    catchment := city.GetCatchmentArea()
 
     var extra float32 = 0
     for _, tile := range catchment {
@@ -1125,6 +1125,24 @@ func (city *City) ComputeUnrest() int {
     return int(math.Max(0, total))
 }
 
+// returns the number of nightshade tiles that contribute to the city dispelling enemy wizards spells
+func (city *City) EffectiveNightshade() int {
+    if city.Buildings.Contains(buildinglib.BuildingShrine) || city.Buildings.Contains(buildinglib.BuildingSagesGuild) {
+        catchment := city.GetCatchmentArea()
+        count := 0
+        for _, tile := range catchment {
+            if tile.GetBonus() == data.BonusNightshade {
+                count += 1
+            }
+        }
+
+        return count
+    }
+
+    // if no shrine or sages guild, then there is no effective nightshade
+    return 0
+}
+
 /* returns the maximum number of citizens. population is citizens * 1000
  */
 func (city *City) MaximumCitySize() int {
@@ -1238,10 +1256,14 @@ func (city *City) SurplusFood() int {
     return city.FoodProductionRate() - city.RequiredFood()
 }
 
+func (city *City) GetCatchmentArea() map[image.Point]maplib.FullTile {
+    return city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+}
+
 /* compute amount of available food on tiles in catchment area
  */
 func (city *City) BaseFoodLevel() int {
-    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+    catchment := city.GetCatchmentArea()
     food := fraction.Zero()
 
     for _, tile := range catchment {
@@ -1337,7 +1359,7 @@ func (city *City) foodProductionRate(farmers int) int {
 func (city *City) ComputeWildGame() int {
     bonus := 0
 
-    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+    catchment := city.GetCatchmentArea()
 
     for _, tile := range catchment {
         if !tile.Corrupted() {
@@ -1371,7 +1393,7 @@ func (city *City) GoldTradeGoods() int {
 }
 
 func (city *City) GoldMinerals() int {
-    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+    catchment := city.GetCatchmentArea()
 
     var extra float32 = 0
 
@@ -1530,7 +1552,7 @@ func (city *City) ProductionMechaniciansGuild() float32 {
 }
 
 func (city *City) ProductionTerrain() float32 {
-    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+    catchment := city.GetCatchmentArea()
     production := float32(0)
     hasGaiasBlessing := city.HasEnchantment(data.CityEnchantmentGaiasBlessing)
 
@@ -1576,7 +1598,7 @@ func (city *City) UnitProductionCost(unit *units.Unit) int {
         return unit.ProductionCost
     }
 
-    catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+    catchment := city.GetCatchmentArea()
     reduction := float32(0)
 
     for _, tile := range catchment {
@@ -1665,7 +1687,7 @@ func (city *City) GetWeaponBonus() data.WeaponBonus {
     hasAdamantium := false
 
     if city.Buildings.Contains(buildinglib.BuildingAlchemistsGuild) {
-        catchment := city.CatchmentProvider.GetCatchmentArea(city.X, city.Y)
+        catchment := city.GetCatchmentArea()
 
         for _, tile := range catchment {
             if tile.GetBonus() == data.BonusMithrilOre {
@@ -1823,7 +1845,7 @@ func (city *City) DoNextTurn(mapObject *maplib.Map) []CityEvent {
 
     if city.HasEnchantment(data.CityEnchantmentConsecration) {
         // At the beginning of each turn, all tiles in a 5x5 square (minus corners) around any city with Consecration should lose corruption
-        for point, _ := range mapObject.GetCatchmentArea(city.X, city.Y) {
+        for point, _ := range city.GetCatchmentArea() {
             mapObject.RemoveCorruption(point.X, point.Y)
         }
     }
