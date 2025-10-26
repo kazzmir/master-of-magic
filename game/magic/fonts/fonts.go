@@ -867,6 +867,7 @@ type CityViewFonts struct {
     RubbleFont *font.Font
     CastFont *font.Font
     BannerFonts map[data.BannerType]*font.Font
+    BlackBannerFont *font.Font
 }
 
 func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
@@ -914,6 +915,17 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
         bannerFonts[banner] = font.MakeOptimizedFontWithPalette(fonts[0], makeBannerPalette(banner))
     }
 
+    black := color.RGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff}
+    blackPalette := color.Palette{
+        color.RGBA{R: 0, G: 0, B: 0x00, A: 0x0},
+        color.RGBA{R: 0, G: 0, B: 0, A: 0x0},
+        black, black, black,
+        black, black, black,
+        black, black, black,
+    }
+
+    blackBannerFont := font.MakeOptimizedFontWithPalette(fonts[0], blackPalette)
+
     return &CityViewFonts{
         BigFont: loader(TitleYellowFont),
         DescriptionFont: loader(DescriptionFont),
@@ -922,6 +934,7 @@ func MakeCityViewFonts(cache *lbx.LbxCache) (*CityViewFonts, error) {
         RubbleFont: loader(SmallRed),
         BannerFonts: bannerFonts,
         CastFont: loader(LightGradient1),
+        BlackBannerFont: blackBannerFont,
     }, nil
 }
 

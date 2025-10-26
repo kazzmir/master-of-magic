@@ -1029,7 +1029,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     }
 
     if cityScreen.City.EffectiveNightshade() > 0 {
-        useFont := cityScreen.Fonts.BannerFonts[data.BannerGreen]
+        useFont := cityScreen.Fonts.BlackBannerFont
         lastEnchantmentY += useFont.Height()
 
         x := 140
