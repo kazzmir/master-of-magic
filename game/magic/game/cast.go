@@ -518,6 +518,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 stack, owner := game.FindStack(tileX, tileY, game.Plane)
                 if stack != nil {
 
+                    // FIXME: I think this check isn't needed because the SelectLocationForSpell should prevent selecting a city tile
                     city, _ := game.FindCity(tileX, tileY, game.Plane)
                     if city != nil && !city.CanTarget(spell) {
                         game.ShowFizzleSpell(spell, player)
@@ -545,6 +546,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 stack, _ := game.FindStack(tileX, tileY, game.Plane)
                 if stack != nil {
 
+                    // FIXME: I think this check isn't needed because the SelectLocationForSpell should prevent selecting a city tile
                     city, _ := game.FindCity(tileX, tileY, game.Plane)
                     if city != nil && !city.CanTarget(spell) {
                         game.ShowFizzleSpell(spell, player)
@@ -2178,7 +2180,6 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         }
 
                     case LocationTypeEnemyUnit:
-                        // also consider if the unit is in a city with a spell ward that prevents this unit from being targeted
                         if player.IsVisible(tileX, tileY, game.Plane) {
                             stack := entityInfo.FindStack(tileX, tileY, game.Plane)
                             if stack != nil && entityInfo.ContainsEnemy(tileX, tileY, game.Plane, player) {
