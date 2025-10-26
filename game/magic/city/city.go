@@ -1127,10 +1127,6 @@ func (city *City) ComputeUnrest() int {
 
 // returns the number of nightshade tiles that contribute to the city dispelling enemy wizards spells
 func (city *City) EffectiveNightshade() int {
-    if 2 > 1 {
-        return 1
-    }
-
     if city.Buildings.Contains(buildinglib.BuildingShrine) || city.Buildings.Contains(buildinglib.BuildingSagesGuild) {
         catchment := city.GetCatchmentArea()
         count := 0
