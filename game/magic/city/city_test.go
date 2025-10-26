@@ -9,7 +9,9 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
 )
@@ -650,35 +652,39 @@ func TestEnchantments(test *testing.T){
 func makeScenarioMap() map[image.Point]maplib.FullTile {
     out := make(map[image.Point]maplib.FullTile)
 
-    out[image.Point{-2, -2}] = maplib.FullTile{Tile: terrain.TileHills1}
-    out[image.Point{-2, -1}] = maplib.FullTile{Tile: terrain.TileForest1}
-    out[image.Point{-2,  0}] = maplib.FullTile{Tile: terrain.TileHills1, Extras: make(map[maplib.ExtraKind]maplib.ExtraTile)}
-    out[image.Point{-2,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-    out[image.Point{-2,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
+    makeTile := func(tile terrain.Tile) maplib.FullTile {
+        return maplib.FullTile{Tile: tile, Extras: make(map[maplib.ExtraKind]maplib.ExtraTile)}
+    }
 
-    out[image.Point{-1, -2}] = maplib.FullTile{Tile: terrain.TileHills1}
-    out[image.Point{-1, -1}] = maplib.FullTile{Tile: terrain.TileForest1}
-    out[image.Point{-1,  0}] = maplib.FullTile{Tile: terrain.TileHills1, Extras: make(map[maplib.ExtraKind]maplib.ExtraTile)}
-    out[image.Point{-1,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-    out[image.Point{-1,  2}] = maplib.FullTile{Tile: terrain.TileRiver0001}
+    out[image.Point{-2, -2}] = makeTile(terrain.TileHills1)
+    out[image.Point{-2, -1}] = makeTile(terrain.TileForest1)
+    out[image.Point{-2,  0}] = makeTile(terrain.TileHills1)
+    out[image.Point{-2,  1}] = makeTile(terrain.TileRiver0001)
+    out[image.Point{-2,  2}] = makeTile(terrain.TileForest1)
 
-    out[image.Point{ 0, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    out[image.Point{ 0, -1}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    out[image.Point{ 0,  0}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-    out[image.Point{ 0,  1}] = maplib.FullTile{Tile: terrain.TileRiver0001}
-    out[image.Point{ 0,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
+    out[image.Point{-1, -2}] = makeTile(terrain.TileHills1)
+    out[image.Point{-1, -1}] = makeTile(terrain.TileForest1)
+    out[image.Point{-1,  0}] = makeTile(terrain.TileHills1)
+    out[image.Point{-1,  1}] = makeTile(terrain.TileRiver0001)
+    out[image.Point{-1,  2}] = makeTile(terrain.TileRiver0001)
 
-    out[image.Point{ 1, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    out[image.Point{ 1, -1}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    out[image.Point{ 1,  0}] = maplib.FullTile{Tile: terrain.TileForest1}
-    out[image.Point{ 1,  1}] = maplib.FullTile{Tile: terrain.TileForest1}
-    out[image.Point{ 1,  2}] = maplib.FullTile{Tile: terrain.TileForest1}
+    out[image.Point{ 0, -2}] = makeTile(terrain.TileShore1_00000001)
+    out[image.Point{ 0, -1}] = makeTile(terrain.TileShore1_00000001)
+    out[image.Point{ 0,  0}] = makeTile(terrain.TileRiver0001)
+    out[image.Point{ 0,  1}] = makeTile(terrain.TileRiver0001)
+    out[image.Point{ 0,  2}] = makeTile(terrain.TileForest1)
 
-    out[image.Point{ 2, -2}] = maplib.FullTile{Tile: terrain.TileShore1_00000001}
-    out[image.Point{ 2, -1}] = maplib.FullTile{Tile: terrain.TileGrasslands1}
-    out[image.Point{ 2,  0}] = maplib.FullTile{Tile: terrain.TileTundra}
-    out[image.Point{ 2,  1}] = maplib.FullTile{Tile: terrain.TileHills1}
-    out[image.Point{ 2,  2}] = maplib.FullTile{Tile: terrain.TileHills1}
+    out[image.Point{ 1, -2}] = makeTile(terrain.TileShore1_00000001)
+    out[image.Point{ 1, -1}] = makeTile(terrain.TileShore1_00000001)
+    out[image.Point{ 1,  0}] = makeTile(terrain.TileForest1)
+    out[image.Point{ 1,  1}] = makeTile(terrain.TileForest1)
+    out[image.Point{ 1,  2}] = makeTile(terrain.TileForest1)
+
+    out[image.Point{ 2, -2}] = makeTile(terrain.TileShore1_00000001)
+    out[image.Point{ 2, -1}] = makeTile(terrain.TileGrasslands1)
+    out[image.Point{ 2,  0}] = makeTile(terrain.TileTundra)
+    out[image.Point{ 2,  1}] = makeTile(terrain.TileHills1)
+    out[image.Point{ 2,  2}] = makeTile(terrain.TileHills1)
 
     out[image.Point{-2,  0}].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusGoldOre}
     out[image.Point{-1,  0}].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusIronOre}
@@ -835,4 +841,48 @@ func TestScenario2(test *testing.T) {
         test.Errorf("City GoldSurplus is not correct: %v", city.GoldSurplus())
     }
 
+}
+
+func TestNightshadeDispel(test *testing.T) {
+    reign := NoReign{NumberOfBooks: 11, TaxRate: fraction.FromInt(1)}
+
+    testMap := makeScenarioMap()
+    // 3 nightshade tiles should dispel most weak spells
+    testMap[image.Pt(1, 0)].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusNightshade}
+    testMap[image.Pt(2, 0)].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusNightshade}
+    testMap[image.Pt(0, 1)].Extras[maplib.ExtraKindBonus] = &maplib.ExtraBonus{Bonus: data.BonusNightshade}
+    city := MakeCity("Schleswig", 10, 10, data.RaceBarbarian, nil, &Catchment{Map: testMap, GoldBonus: 30}, &NoCities{}, &reign)
+    city.Buildings.Insert(buildinglib.BuildingShrine)
+
+    weakSpell := spellbook.Spell{
+        Eligibility: spellbook.EligibilityOverlandOnly,
+        CastCost: 1,
+    }
+
+    count := 0
+    for range 10 {
+        if city.CheckDispelNightshade(weakSpell) {
+            count += 1
+        }
+    }
+
+    if count < 8 {
+        test.Errorf("Weak spell should have been dispelled most of the time, but was only dispelled %v out of 10", count)
+    }
+
+    strongSpell := spellbook.Spell{
+        Eligibility: spellbook.EligibilityOverlandOnly,
+        CastCost: 1000000,
+    }
+
+    count = 0
+    for range 10 {
+        if city.CheckDispelNightshade(strongSpell) {
+            count += 1
+        }
+    }
+
+    if count > 1 {
+        test.Errorf("Strong spell should have been dispelled rarely, but was dispelled %v out of 10", count)
+    }
 }
