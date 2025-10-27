@@ -1862,7 +1862,7 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player ArmyPl
         unit.SpellCharges = unit.Unit.GetSpellChargeSpells()
     } else {
         if unit.GetRealm() != data.MagicNone {
-            unit.Spells.AddAllSpells(allSpells.GetSpellsByMagic(unit.GetRealm()))
+            unit.Spells.AddAllSpells(allSpells.GetSpellsByMagic(unit.GetRealm()).CombatSpells(defendingCity))
         }
     }
 }
