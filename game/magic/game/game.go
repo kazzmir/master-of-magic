@@ -6084,6 +6084,16 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
     return production
 }
 
+// FIXME: cache the spells
+func (game *Game) GetSpellByName(name string) spellbook.Spell {
+    spells, err := spellbook.ReadSpellsFromCache(game.Cache)
+    if err != nil {
+        return spellbook.Spell{}
+    }
+
+    return spells.FindByName(name)
+}
+
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
     cityName := game.SuggestCityName(settlers.GetRace())
 
@@ -7597,13 +7607,12 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     }
 
     player.Mana += player.ManaPerTurn(power, game)
-    if player.Mana < 0 {
-        player.Mana = 0
-    }
 
     if timeStop {
         player.Mana -= data.EnchantmentTimeStop.UpkeepMana()
     }
+
+    player.Mana = max(0, player.Mana)
 
     if !player.CastingSpell.Invalid() {
         // mana spent on the skill is the minimum of {player's mana, casting skill, remaining cost for spell}

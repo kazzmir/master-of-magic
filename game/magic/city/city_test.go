@@ -76,6 +76,10 @@ func (provider *NoCities) PlagueActive(city *City) bool {
     return false
 }
 
+func (provider *NoCities) GetSpellByName(name string) spellbook.Spell {
+    return spellbook.Spell{}
+}
+
 func (provider *NoCities) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment] {
     enchantments := make(map[data.BannerType]*set.Set[data.Enchantment])
     return enchantments
@@ -215,6 +219,10 @@ func (provider *AllConnected) PopulationBoomActive(city *City) bool {
 
 func (provider *AllConnected) PlagueActive(city *City) bool {
     return false
+}
+
+func (provider *AllConnected) GetSpellByName(name string) spellbook.Spell {
+    return spellbook.Spell{}
 }
 
 func (provider *AllConnected) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment] {

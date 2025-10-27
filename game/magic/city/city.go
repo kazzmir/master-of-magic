@@ -87,6 +87,7 @@ type CityServicesProvider interface {
     PopulationBoomActive(city *City) bool
     PlagueActive(city *City) bool
     GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment]
+    GetSpellByName(name string) spellbook.Spell
 }
 
 type ReignProvider interface {
@@ -1883,10 +1884,30 @@ func (city *City) DoNextTurn(mapObject *maplib.Map) []CityEvent {
         }
     }
 
+    city.MaybeDispelNightshade()
+
     // update minimum farmers
     city.ResetCitizens()
 
     return cityEvents
+}
+
+func (city *City) MaybeDispelNightshade() {
+    if city.EffectiveNightshade() > 0 {
+
+        var toRemove []data.CityEnchantment
+        for _, enchantment := range city.Enchantments.Values() {
+            // if this is an enemy enchantment then attempt to dispel it
+            if enchantment.Owner != city.ReignProvider.GetBanner() {
+                spell := city.CityServices.GetSpellByName(enchantment.Enchantment.SpellName())
+                if city.CheckDispelNightshade(spell) {
+                    toRemove = append(toRemove, enchantment.Enchantment)
+                }
+            }
+        }
+
+        city.RemoveEnchantments(toRemove...)
+    }
 }
 
 func (city *City) AllowedBuildings(what buildinglib.Building) []buildinglib.Building {

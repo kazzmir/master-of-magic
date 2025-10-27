@@ -10,6 +10,7 @@ import (
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -75,6 +76,10 @@ func (no *NoServices) PopulationBoomActive(city *citylib.City) bool {
 
 func (no *NoServices) PlagueActive(city *citylib.City) bool {
     return false
+}
+
+func (no *NoServices) GetSpellByName(name string) spellbook.Spell {
+    return spellbook.Spell{}
 }
 
 func (no *NoServices) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment] {
