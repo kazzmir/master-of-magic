@@ -29,6 +29,7 @@ type StackUnit interface {
     GetUpkeepFood() int
     GetUpkeepMana() int
     GetEnchantments() []data.UnitEnchantment
+    GetUpkeepEnchantments() []data.UnitEnchantment
     AddEnchantment(data.UnitEnchantment)
     HasEnchantment(data.UnitEnchantment) bool
     RemoveEnchantment(data.UnitEnchantment)

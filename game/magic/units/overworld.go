@@ -187,6 +187,10 @@ func (unit *OverworldUnit) RemoveEnchantment(toRemove data.UnitEnchantment) {
     })
 }
 
+func (unit *OverworldUnit) GetUpkeepEnchantments() []data.UnitEnchantment {
+    return slices.Clone(unit.Enchantments)
+}
+
 func (unit *OverworldUnit) GetEnchantments() []data.UnitEnchantment {
     out := slices.Clone(unit.Enchantments)
 

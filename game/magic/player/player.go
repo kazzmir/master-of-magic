@@ -1127,7 +1127,7 @@ func (player *Player) TotalEnchantmentUpkeep(cityEnchantmentsProvider CityEnchan
     }
 
     for _, unit := range player.Units {
-        for _, enchantment := range unit.GetEnchantments() {
+        for _, enchantment := range unit.GetUpkeepEnchantments() {
             upkeep += enchantment.UpkeepMana()
         }
     }
