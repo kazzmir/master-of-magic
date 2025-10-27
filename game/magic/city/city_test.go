@@ -757,8 +757,30 @@ func TestScenario1(test *testing.T) {
         test.Errorf("City ComputePower is not correct: %v", city.ComputePower())
     }
 
-    if city.PopulationGrowthRate() != 140 {
-        test.Errorf("City PopulationGrowthRate is not correct: actual=%v, expected=%v", city.PopulationGrowthRate(), 140)
+    city.Farmers = 4
+    city.Workers = 0
+    // city.ResetCitizens()
+
+    if city.Workers != 0 {
+        test.Errorf("City Workers is not correct: actual=%v, expected=%v", city.Workers, 0)
+    }
+
+    // housing bonus is 1.15 due to builders hall
+    if city.PopulationGrowthRate() != 120 {
+        test.Errorf("City PopulationGrowthRate is not correct: actual=%v, expected=%v", city.PopulationGrowthRate(), 120)
+    }
+
+    city.Farmers = 2
+    city.Workers = 2
+    // city.ResetCitizens()
+
+    if city.Workers != 2 {
+        test.Errorf("City Workers is not correct: actual=%v, expected=%v", city.Workers, 2)
+    }
+
+    // housing bonus is 1.65 due to builders hall and 2 workers, 1+0.15+2/4
+    if city.PopulationGrowthRate() != 170 {
+        test.Errorf("City PopulationGrowthRate is not correct: actual=%v, expected=%v", city.PopulationGrowthRate(), 170)
     }
 }
 
