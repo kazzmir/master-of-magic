@@ -5724,6 +5724,7 @@ func createScenario63(cache *lbx.LbxCache) *gamelib.Game {
     introCity.Farmers = 14
 
     introCity.AddBuilding(buildinglib.BuildingShrine)
+    introCity.AddBuilding(buildinglib.BuildingOracle)
 
     introCity.ResetCitizens()
 
@@ -5742,7 +5743,8 @@ func createScenario63(cache *lbx.LbxCache) *gamelib.Game {
 
     arcanusMap := game.GetMap(data.PlaneArcanus)
     city2 := citylib.MakeCity("utah", arcanusMap.WrapX(x + 2), y + 1, data.RaceDarkElf, game.BuildingInfo, game.CurrentMap(), game, enemy1)
-    city2.Population = 7000
+    city2.Population = 14000
+    city2.Farmers = 12
     city2.Plane = data.PlaneArcanus
     city2.ProducingBuilding = buildinglib.BuildingShrine
     city2.ProducingUnit = units.UnitNone
@@ -5753,8 +5755,12 @@ func createScenario63(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy1.AddCity(city2)
 
-    arcanusMap.SetBonus(arcanusMap.WrapX(x + 3), y + 1, data.BonusNightshade)
-    arcanusMap.SetBonus(arcanusMap.WrapX(x + 2), y + 2, data.BonusNightshade)
+    for i := 0; i < 3; i++ {
+        enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, city2.X, city2.Y, data.PlaneArcanus, enemy1.GetWizard().Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
+    }
+
+    arcanusMap.SetBonus(arcanusMap.WrapX(city2.X + 1), city2.Y + 1, data.BonusNightshade)
+    arcanusMap.SetBonus(arcanusMap.WrapX(city2.X + 1), city2.Y + 2, data.BonusNightshade)
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
 

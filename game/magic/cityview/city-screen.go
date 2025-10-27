@@ -2672,6 +2672,9 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
             }
         }
 
+        enchantmentX := 142
+        enchantmentY := 51
+
         for i, enchantment := range slices.SortedFunc(slices.Values(city.Enchantments.Values()), func (a citylib.Enchantment, b citylib.Enchantment) int {
             return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
         }) {
@@ -2680,7 +2683,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
             if useFont == nil {
                 continue
             }
-            x, y := options.GeoM.Apply(float64(142), float64((51 + i * useFont.Height())))
+            x, y := options.GeoM.Apply(float64(enchantmentX), float64((enchantmentY + i * useFont.Height())))
             rect := image.Rect(int(x), int(y), int(x + useFont.MeasureTextWidth(enchantment.Enchantment.Name(), 1)), int(y) + useFont.Height())
             group.AddElement(&uilib.UIElement{
                 Rect: rect,
@@ -2706,6 +2709,26 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
                 },
                 RightClick: func(element *uilib.UIElement){
                     helpEntries := help.GetEntriesByName(enchantment.Enchantment.Name())
+                    if helpEntries != nil {
+                        group.AddElement(uilib.MakeHelpElementWithLayer(group, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                    }
+                },
+            })
+        }
+
+        if city.EffectiveNightshade() > 0 {
+            useFont := fonts.BlackBannerFont
+            x, y := options.GeoM.Apply(float64(enchantmentX), float64((enchantmentY + city.Enchantments.Size() * useFont.Height())))
+            rect := image.Rect(int(x), int(y), int(x + useFont.MeasureTextWidth("Nightshade", 1)), int(y) + useFont.Height())
+            group.AddElement(&uilib.UIElement{
+                Rect: rect,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha(getAlpha())
+                    useFont.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, "Nightshade")
+                },
+                RightClick: func(element *uilib.UIElement){
+                    helpEntries := help.GetEntriesByName("Nightshade")
                     if helpEntries != nil {
                         group.AddElement(uilib.MakeHelpElementWithLayer(group, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
                     }
