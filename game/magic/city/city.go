@@ -1895,18 +1895,20 @@ func (city *City) DoNextTurn(mapObject *maplib.Map) []CityEvent {
 func (city *City) MaybeDispelNightshade() {
     if city.EffectiveNightshade() > 0 {
 
-        var toRemove []data.CityEnchantment
+        var toRemove []Enchantment
         for _, enchantment := range city.Enchantments.Values() {
             // if this is an enemy enchantment then attempt to dispel it
             if enchantment.Owner != city.ReignProvider.GetBanner() {
                 spell := city.CityServices.GetSpellByName(enchantment.Enchantment.SpellName())
                 if city.CheckDispelNightshade(spell) {
-                    toRemove = append(toRemove, enchantment.Enchantment)
+                    toRemove = append(toRemove, enchantment)
                 }
             }
         }
 
-        city.RemoveEnchantments(toRemove...)
+        for _, enchantment := range toRemove {
+            city.CancelEnchantment(enchantment.Enchantment, enchantment.Owner)
+        }
     }
 }
 
