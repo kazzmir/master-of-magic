@@ -376,7 +376,7 @@ func (view *ArmyScreen) MakeUI() *uilib.UI {
                     }
                     ui.AddElement(element)
                     unitElements = append(unitElements, element)
-                    x += pic.Bounds().Dx() + 1
+                    x += pic.Bounds().Dx()
                 }
             }
 
