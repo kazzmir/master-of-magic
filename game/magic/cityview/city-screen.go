@@ -950,12 +950,14 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
     var enchantmentElements []*uilib.UIElement
 
     // if there are too many enchantments then up/down arrows will appear that let the user scroll the enchantment view
+    lastEnchantmentY := 51
     for i, enchantment := range slices.SortedFunc(slices.Values(cityScreen.City.Enchantments.Values()), func (a citylib.Enchantment, b citylib.Enchantment) int {
         return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
     }) {
         useFont := cityScreen.Fonts.BannerFonts[enchantment.Owner]
         x := 140
         y := (51 + i * useFont.Height())
+        lastEnchantmentY = y
 
         rect := image.Rect(x, y, x + int(useFont.MeasureTextWidth(enchantment.Enchantment.Name(), 1)), y + useFont.Height())
         inside := false
@@ -1026,7 +1028,45 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         enchantmentElements = append(enchantmentElements, enchantmentElement)
     }
 
-    if cityScreen.City.Enchantments.Size() > maxEnchantments {
+    if cityScreen.City.EffectiveNightshade() > 0 {
+        useFont := cityScreen.Fonts.BlackBannerFont
+        lastEnchantmentY += useFont.Height()
+
+        x := 140
+
+        rect := image.Rect(x, lastEnchantmentY, x + int(useFont.MeasureTextWidth("Nightshade", 1)), lastEnchantmentY + useFont.Height())
+        inside := false
+        enchantmentElement := &uilib.UIElement{
+            Rect: rect,
+            Inside: func(element *uilib.UIElement, x int, y int){
+                if image.Pt(x, y).In(enchantmentAreaRect.Sub(element.Rect.Min)) {
+                    inside = true
+                }
+            },
+            NotInside: func(element *uilib.UIElement){
+                inside = false
+            },
+            RightClick: func(element *uilib.UIElement){
+                if !inside {
+                    return
+                }
+
+                helpEntries := help.GetEntriesByName("Nightshade")
+                if helpEntries != nil {
+                    group.AddElement(uilib.MakeHelpElementWithLayer(group, cityScreen.LbxCache, &cityScreen.ImageCache, 2, helpEntries[0], helpEntries[1:]...))
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                area := screen.SubImage(scale.ScaleRect(enchantmentAreaRect)).(*ebiten.Image)
+                useFont.PrintOptions(area, float64(element.Rect.Min.X), float64(element.Rect.Min.Y), font.FontOptions{Scale: scale.ScaleAmount}, "Nightshade")
+            },
+        }
+
+        group.AddElement(enchantmentElement)
+        enchantmentElements = append(enchantmentElements, enchantmentElement)
+    }
+
+    if len(enchantmentElements) > maxEnchantments {
         enchantmentMin := 0
         // shift all enchantment rect's around depending on the scroll position
         updateElements := func(){
@@ -1070,7 +1110,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             },
             LeftClickRelease: func(element *uilib.UIElement){
                 downUse = 1
-                enchantmentMin = min(cityScreen.City.Enchantments.Size() - maxEnchantments, enchantmentMin + 1)
+                enchantmentMin = min(len(enchantmentElements) - maxEnchantments, enchantmentMin + 1)
 
                 updateElements()
             },
@@ -1086,7 +1126,7 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
             Rect: enchantmentAreaRect,
             Scroll: func (element *uilib.UIElement, x float64, y float64) {
                 if y < 0 {
-                    enchantmentMin = min(cityScreen.City.Enchantments.Size() - maxEnchantments, enchantmentMin + 1)
+                    enchantmentMin = min(len(enchantmentElements) - maxEnchantments, enchantmentMin + 1)
                     updateElements()
                 } else if y > 0 {
                     enchantmentMin = max(0, enchantmentMin - 1)
@@ -1096,8 +1136,6 @@ func (cityScreen *CityScreen) MakeUI(newBuilding buildinglib.Building) *uilib.UI
         })
 
     }
-
-    // FIXME: show Nightshade as a city enchantment if a nightshade tile is in the city catchment area and an appropriate building exists
 
     var resourceIcons []*uilib.UIElement
 
@@ -2634,6 +2672,9 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
             }
         }
 
+        enchantmentX := 142
+        enchantmentY := 51
+
         for i, enchantment := range slices.SortedFunc(slices.Values(city.Enchantments.Values()), func (a citylib.Enchantment, b citylib.Enchantment) int {
             return cmp.Compare(a.Enchantment.Name(), b.Enchantment.Name())
         }) {
@@ -2642,7 +2683,7 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
             if useFont == nil {
                 continue
             }
-            x, y := options.GeoM.Apply(float64(142), float64((51 + i * useFont.Height())))
+            x, y := options.GeoM.Apply(float64(enchantmentX), float64((enchantmentY + i * useFont.Height())))
             rect := image.Rect(int(x), int(y), int(x + useFont.MeasureTextWidth(enchantment.Enchantment.Name(), 1)), int(y) + useFont.Height())
             group.AddElement(&uilib.UIElement{
                 Rect: rect,
@@ -2668,6 +2709,26 @@ func SimplifiedView(cache *lbx.LbxCache, city *citylib.City, player *playerlib.P
                 },
                 RightClick: func(element *uilib.UIElement){
                     helpEntries := help.GetEntriesByName(enchantment.Enchantment.Name())
+                    if helpEntries != nil {
+                        group.AddElement(uilib.MakeHelpElementWithLayer(group, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
+                    }
+                },
+            })
+        }
+
+        if city.EffectiveNightshade() > 0 {
+            useFont := fonts.BlackBannerFont
+            x, y := options.GeoM.Apply(float64(enchantmentX), float64((enchantmentY + city.Enchantments.Size() * useFont.Height())))
+            rect := image.Rect(int(x), int(y), int(x + useFont.MeasureTextWidth("Nightshade", 1)), int(y) + useFont.Height())
+            group.AddElement(&uilib.UIElement{
+                Rect: rect,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha(getAlpha())
+                    useFont.PrintOptions(screen, x, y, font.FontOptions{Options: &options, Scale: scale.ScaleAmount}, "Nightshade")
+                },
+                RightClick: func(element *uilib.UIElement){
+                    helpEntries := help.GetEntriesByName("Nightshade")
                     if helpEntries != nil {
                         group.AddElement(uilib.MakeHelpElementWithLayer(group, cache, &imageCache, 2, helpEntries[0], helpEntries[1:]...))
                     }

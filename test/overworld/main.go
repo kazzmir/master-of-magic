@@ -5667,6 +5667,109 @@ func createScenario62(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// nightshade protecting a town fizzles spells cast on it
+func createScenario63(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 63")
+    wizard := setup.WizardCustom{
+        Name: "player",
+        Banner: data.BannerBlue,
+        Race: data.RaceHighMen,
+        Retorts: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.Mana = 5000
+    player.CastingSkillPower = 20000
+
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    player.KnownSpells.AddSpell(allSpells.FindByName("Chaos Rift"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Corruption"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Call the Void"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Evil Presence"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Famine"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Cursed Lands"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Pestilence"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Raise Volcano"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Ice Storm"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Stasis"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Fire Storm"))
+    player.KnownSpells.AddSpell(allSpells.FindByName("Black Wind"))
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    introCity := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
+    introCity.Population = 14000
+    introCity.Plane = data.PlaneArcanus
+    introCity.ProducingBuilding = buildinglib.BuildingHousing
+    introCity.ProducingUnit = units.UnitNone
+    introCity.Farmers = 14
+
+    introCity.AddBuilding(buildinglib.BuildingShrine)
+    introCity.AddBuilding(buildinglib.BuildingOracle)
+
+    introCity.ResetCitizens()
+
+    player.AddCity(introCity)
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    player.LiftFog(x, y, 3, data.PlaneArcanus)
+
+    _ = introCity
+
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "dingus",
+        Banner: data.BannerRed,
+    }, false)
+
+    arcanusMap := game.GetMap(data.PlaneArcanus)
+    city2 := citylib.MakeCity("utah", arcanusMap.WrapX(x + 2), y + 1, data.RaceDarkElf, game.BuildingInfo, game.CurrentMap(), game, enemy1)
+    city2.Population = 14000
+    city2.Farmers = 12
+    city2.Plane = data.PlaneArcanus
+    city2.ProducingBuilding = buildinglib.BuildingShrine
+    city2.ProducingUnit = units.UnitNone
+
+    city2.Buildings.Insert(buildinglib.BuildingShrine)
+
+    city2.ResetCitizens()
+
+    enemy1.AddCity(city2)
+
+    for i := 0; i < 3; i++ {
+        newUnit := enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, city2.X, city2.Y, data.PlaneArcanus, enemy1.GetWizard().Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
+        newUnit.SetBusy(units.BusyStatusPatrol)
+    }
+
+    arcanusMap.SetBonus(arcanusMap.WrapX(city2.X + 1), city2.Y + 1, data.BonusNightshade)
+    arcanusMap.SetBonus(arcanusMap.WrapX(city2.X + 1), city2.Y + 2, data.BonusNightshade)
+
+    player.LiftFog(x, y, 3, data.PlaneArcanus)
+
+    game.Camera.Center(x, y)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -5735,6 +5838,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 60: game = createScenario60(cache)
         case 61: game = createScenario61(cache)
         case 62: game = createScenario62(cache)
+        case 63: game = createScenario63(cache)
         default: game = createScenario1(cache)
     }
 

@@ -11,6 +11,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/camera"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
@@ -56,6 +57,10 @@ func (provider *NoCityProvider) PopulationBoomActive(city *citylib.City) bool {
 
 func (provider *NoCityProvider) PlagueActive(city *citylib.City) bool {
     return false
+}
+
+func (provider *NoCityProvider) GetSpellByName(name string) spellbook.Spell {
+    return spellbook.Spell{}
 }
 
 func (provider *NoCityProvider) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment] {

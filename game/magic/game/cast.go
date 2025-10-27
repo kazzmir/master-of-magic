@@ -325,7 +325,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         */
         case "Chaos Rift":
             before := func (city *citylib.City) bool {
-                if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
+                if city.CheckDispel(spell) {
                     game.ShowFizzleSpell(spell, player)
                     return false
                 }
@@ -334,7 +334,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentChaosRift, before, noCityCallback)
         case "Cursed Lands":
             before := func (city *citylib.City) bool {
-                if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
+                if city.CheckDispel(spell) {
                     game.ShowFizzleSpell(spell, player)
                     return false
                 }
@@ -343,7 +343,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentCursedLands, before, noCityCallback)
         case "Famine":
             before := func (city *citylib.City) bool {
-                if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
+                if city.CheckDispel(spell) {
                     game.ShowFizzleSpell(spell, player)
                     return false
                 }
@@ -352,7 +352,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentFamine, before, noCityCallback)
         case "Pestilence":
             before := func (city *citylib.City) bool {
-                if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
+                if city.CheckDispel(spell) {
                     game.ShowFizzleSpell(spell, player)
                     return false
                 }
@@ -361,7 +361,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.doCastCityEnchantmentFull(spell, player, LocationTypeEnemyCity, data.CityEnchantmentPestilence, before, noCityCallback)
         case "Evil Presence":
             before := func (city *citylib.City) bool {
-                if city.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentDeathWard) {
+                if city.CheckDispel(spell) {
                     game.ShowFizzleSpell(spell, player)
                     return false
                 }
@@ -518,11 +518,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 stack, owner := game.FindStack(tileX, tileY, game.Plane)
                 if stack != nil {
 
+                    // FIXME: I think this check isn't needed because the SelectLocationForSpell should prevent selecting a city tile
                     city, _ := game.FindCity(tileX, tileY, game.Plane)
                     if city != nil && !city.CanTarget(spell) {
                         game.ShowFizzleSpell(spell, player)
                         return
                     }
+
+                    // FIXME: dispel chance if tile contains a city
 
                     game.doCastOnMap(yield, tileX, tileY, 14, spell.Sound, func (x int, y int, animationFrame int) {})
 
@@ -543,8 +546,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 stack, _ := game.FindStack(tileX, tileY, game.Plane)
                 if stack != nil {
 
+                    // FIXME: I think this check isn't needed because the SelectLocationForSpell should prevent selecting a city tile
                     city, _ := game.FindCity(tileX, tileY, game.Plane)
                     if city != nil && !city.CanTarget(spell) {
+                        game.ShowFizzleSpell(spell, player)
+                        return
+                    }
+
+                    if city != nil && city.CheckDispel(spell) {
                         game.ShowFizzleSpell(spell, player)
                         return
                     }
@@ -653,6 +662,14 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         case "Ice Storm":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                city, _ := game.FindCity(tileX, tileY, game.Plane)
+                if city != nil {
+                    if city.CheckDispel(spell) {
+                        game.ShowFizzleSpell(spell, player)
+                        return
+                    }
+                }
+
                 enemyStack, enemy := game.FindStack(tileX, tileY, game.Plane)
 
                 game.doCastOnMap(yield, tileX, tileY, 10, spell.Sound, func (x int, y int, animationFrame int) {})
@@ -670,6 +687,12 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyUnit, SelectedFunc: selected}
         case "Fire Storm":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
+                city, _ := game.FindCity(tileX, tileY, game.Plane)
+                if city != nil && city.CheckDispel(spell) {
+                    game.ShowFizzleSpell(spell, player)
+                    return
+                }
+
                 enemyStack, enemy := game.FindStack(tileX, tileY, game.Plane)
 
                 game.doCastOnMap(yield, tileX, tileY, 6, spell.Sound, func (x int, y int, animationFrame int) {})
@@ -708,7 +731,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 chosenCity, owner := game.FindCity(tileX, tileY, game.Plane)
 
-                if chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
+                if chosenCity.CheckDispel(spell) {
                     game.ShowFizzleSpell(spell, player)
                     return
                 }
@@ -732,7 +755,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
                 // unclear if chaos ward makes the spell fizzle or if this tile just can't be selected
-                if chosenCity != nil && chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
+                if chosenCity != nil && chosenCity.CheckDispel(spell) {
                     game.ShowFizzleSpell(spell, player)
                     return
                 }
@@ -749,7 +772,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                 chosenCity, _ := game.FindCity(tileX, tileY, game.Plane)
 
                 // FIXME: it's not obvious if Chaos Ward prevents Corruption from being cast on city center. Left it here because it sounds logical
-                if chosenCity != nil && chosenCity.HasAnyOfEnchantments(data.CityEnchantmentConsecration, data.CityEnchantmentChaosWard) {
+                if chosenCity != nil && chosenCity.CheckDispel(spell) {
                     game.ShowFizzleSpell(spell, player)
                     return
                 }
@@ -2170,7 +2193,6 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         }
 
                     case LocationTypeEnemyUnit:
-                        // also consider if the unit is in a city with a spell ward that prevents this unit from being targeted
                         if player.IsVisible(tileX, tileY, game.Plane) {
                             stack := entityInfo.FindStack(tileX, tileY, game.Plane)
                             if stack != nil && entityInfo.ContainsEnemy(tileX, tileY, game.Plane, player) {
