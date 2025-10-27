@@ -375,7 +375,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
             fonts.NormalFont.PrintOptions(screen, float64(56), float64(160), rightShadow, fmt.Sprintf("%v MP", mana))
             if player.ResearchingSpell.Valid() {
-                fonts.NormalFont.PrintOptions(screen, float64(103), float64(160), rightShadow, fmt.Sprintf("%v RP", int(player.SpellResearchPerTurn(magic.Power))))
+                fonts.NormalFont.PrintOptions(screen, float64(103), float64(160), rightShadow, fmt.Sprintf("%v RP", int(player.ComputeEffectiveResearchPerTurn(player.SpellResearchPerTurn(magic.Power), player.ResearchingSpell))))
             } else {
                 fonts.NormalFont.PrintOptions(screen, float64(103), float64(160), rightShadow, "No Spell")
             }
