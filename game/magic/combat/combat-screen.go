@@ -2322,11 +2322,17 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
     // flee
     elements = append(elements, makeButton(21, 27, 0, 2, func(){
-        if combat.Model.AttackingArmy.Player == player {
-            combat.Model.AttackingArmy.Fled = true
-        } else {
-            combat.Model.DefendingArmy.Fled = true
+
+        doFlee := func() {
+            if combat.Model.AttackingArmy.Player == player {
+                combat.Model.AttackingArmy.Fled = true
+            } else {
+                combat.Model.DefendingArmy.Fled = true
+            }
         }
+
+        confirm := uilib.MakeConfirmDialog(ui, combat.Cache, &combat.ImageCache, "Do you wish to flee?", false, doFlee, func(){})
+        ui.AddElements(confirm)
     }))
 
     // done
