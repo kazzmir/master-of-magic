@@ -314,7 +314,7 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
-    if city.PopulationGrowthRate() != 15 {
+    if city.PopulationGrowthRate() != 10 {
         // 10 * (12 - 10 + 1) / 2 max city size and population
         test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
@@ -347,7 +347,7 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
-    if city.PopulationGrowthRate() != 15 {
+    if city.PopulationGrowthRate() != 10 {
         // 10 * (12 - 10 + 1) / 2 max city size and population
         test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
@@ -380,7 +380,7 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
-    if city.PopulationGrowthRate() != 15 {
+    if city.PopulationGrowthRate() != 10 {
         // 10 * (12 - 10 + 1) / 2 max city size and population
         test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
@@ -413,7 +413,7 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
-    if city.PopulationGrowthRate() != 15 {
+    if city.PopulationGrowthRate() != 10 {
         // 10 * (12 - 10 + 1) / 2 max city size and population
         test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
@@ -446,7 +446,7 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
-    if city.PopulationGrowthRate() != 85 {
+    if city.PopulationGrowthRate() != 80 {
         // 10 * (18 - 10 + 1) / 2 max city size and population + (2.5 * 18) rounded to 10s gaias blessing
         test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
@@ -479,7 +479,7 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
-    if city.PopulationGrowthRate() != 63 {
+    if city.PopulationGrowthRate() != 60 {
         // (10 * (18 - 10 + 1) / 2 max city size and population + (2.5 * 18) rounded to 10s gaias blessing) * 0.75 dark rituals
         test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
@@ -511,7 +511,7 @@ func TestEnchantments(test *testing.T){
         test.Errorf("City ComputeUnrest is not correct: %v", city.ComputeUnrest())
     }
 
-    if city.PopulationGrowthRate() != 127 {
+    if city.PopulationGrowthRate() != 120 {
         // ((10 * (18 - 10 + 1) / 2 max city size and population + (2.5 * 18) rounded to 10s gaias blessing) * 2 stream of life) * 0.75 dark rituals
         test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
     }
@@ -715,6 +715,10 @@ func TestScenario1(test *testing.T) {
     city.ProducingBuilding = building.BuildingHousing
     // maybe add 2 units garrison and call city.ResetCitizens()
 
+    if city.MaximumCitySize() != 20 {
+        test.Errorf("City MaximumCitySize is not correct: %v", city.MaximumCitySize())
+    }
+
     // Food
     if city.FarmerFoodProduction(city.Farmers) != 6 {
         test.Errorf("City FarmerFoodProduction is not correct: %v", city.FarmerFoodProduction(city.Farmers))
@@ -753,8 +757,8 @@ func TestScenario1(test *testing.T) {
         test.Errorf("City ComputePower is not correct: %v", city.ComputePower())
     }
 
-    if city.PopulationGrowthRate() != 120 {
-        test.Errorf("City PopulationGrowthRate is not correct: %v", city.PopulationGrowthRate())
+    if city.PopulationGrowthRate() != 140 {
+        test.Errorf("City PopulationGrowthRate is not correct: actual=%v, expected=%v", city.PopulationGrowthRate(), 140)
     }
 }
 

@@ -1227,29 +1227,8 @@ func (city *City) PopulationGrowthRate() int {
         base += int(2.5 * float32(city.MaximumCitySize()) / 10) * 10
     }
 
-    if city.ProducingBuilding == buildinglib.BuildingHousing {
-        bonus := 50
-        if city.Population > 1 {
-            bonus = (city.Workers / city.Population) * 100
-        }
-
-        if city.Buildings.Contains(buildinglib.BuildingBuildersHall) {
-            bonus += 15
-        }
-
-        if city.Buildings.Contains(buildinglib.BuildingSawmill) {
-            bonus += 10
-        }
-
-        base += bonus
-    }
-
     if city.HasEnchantment(data.CityEnchantmentStreamOfLife) {
         base *= 2
-    }
-
-    if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
-        base = int(0.75 * float32(base))
     }
 
     // if the base is negative, this can actually make the population shrink even faster
@@ -1257,8 +1236,35 @@ func (city *City) PopulationGrowthRate() int {
         base *= 2
     }
 
-    // how does population boom interact with starving?
+    var bonus float32 = 0
 
+    if city.ProducingBuilding == buildinglib.BuildingHousing {
+        if city.Citizens() > 1 {
+            bonus = float32(city.Workers) / float32(city.Citizens())
+        } else {
+            bonus = 0.5
+        }
+
+        if city.Buildings.Contains(buildinglib.BuildingBuildersHall) {
+            bonus += 0.15
+        }
+
+        if city.Buildings.Contains(buildinglib.BuildingSawmill) {
+            bonus += 0.10
+        }
+    }
+
+    if city.HasEnchantment(data.CityEnchantmentDarkRituals) {
+        bonus -= 0.25
+    }
+
+    base = int(float32(base) * (1 + bonus))
+    if base > 0 {
+        // chop of any remaining non-zero digit in the ones place
+        base -= base % 10
+    }
+
+    // how does population boom interact with starving?
     if city.SurplusFood() < 0 {
         base = 50 * city.SurplusFood()
     }
