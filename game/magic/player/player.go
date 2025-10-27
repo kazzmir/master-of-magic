@@ -1080,9 +1080,23 @@ func (player *Player) GoldPerTurn() int {
 
     gold -= player.TotalUnitUpkeepGold()
 
+    gold += 10 * player.GetNobleHeroes()
+
     gold += player.FoodPerTurn() / 2
 
     return gold
+}
+
+func (player *Player) GetNobleHeroes() int {
+    count := 0
+
+    for _, hero := range player.Heroes {
+        if hero != nil && hero.Status == herolib.StatusEmployed && hero.HasAbility(data.AbilityNoble) {
+            count += 1
+        }
+    }
+
+    return count
 }
 
 func (player *Player) FoodPerTurn() int {

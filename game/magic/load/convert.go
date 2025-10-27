@@ -1278,6 +1278,7 @@ func makeUnit(unitData *UnitData, player *playerlib.Player) *units.OverworldUnit
 func makeHero(player *playerlib.Player, heroData PlayerHeroData, unitData *UnitData, game *gamelib.Game) *herolib.Hero {
     hero := herolib.MakeHero(makeUnit(unitData, player), getHeroType(unitData.TypeIndex), heroData.Name)
     hero.AddExperience(int(unitData.Experience))
+    hero.SetStatus(herolib.StatusEmployed)
     return hero
 }
 
