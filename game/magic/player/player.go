@@ -1151,7 +1151,7 @@ func (player *Player) ManaPerTurn(power int, cityEnchantmentsProvider CityEnchan
         manaFocusingBonus = 1.25
     }
 
-    mana += int(float64(power) * player.PowerDistribution.Mana * manaFocusingBonus)
+    mana += int(math.Round(float64(power) * player.PowerDistribution.Mana * manaFocusingBonus))
 
     return mana
 }
