@@ -7790,6 +7790,10 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
             if city.Buildings.Contains(buildinglib.BuildingAnimistsGuild) {
                 rate = 0.1667
             }
+
+            if city.HasEnchantment(data.CityEnchantmentStreamOfLife) {
+                rate = 1
+            }
         }
 
         // any healer in the same stack provides an additional 20% healing rate
