@@ -1899,7 +1899,7 @@ func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
 
     totalHeightNeeded := 10 + totalRows * rowSize + 10
 
-    extraPieces := int(math.Ceil(float64(totalHeightNeeded - boxTop.Bounds().Dy() - boxBottom.Bounds().Dy()) / float64(boxPiece.Bounds().Dy())))
+    extraPieces := int(math.Ceil(float64(max(0, totalHeightNeeded - boxTop.Bounds().Dy() - boxBottom.Bounds().Dy())) / float64(boxPiece.Bounds().Dy())))
 
     // prerender the entire ui since it never changes
     background := ebiten.NewImage(boxTop.Bounds().Dx(), boxTop.Bounds().Dy() + boxPiece.Bounds().Dy() * extraPieces + boxBottom.Bounds().Dy())
