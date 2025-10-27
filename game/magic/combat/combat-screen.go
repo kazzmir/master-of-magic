@@ -2021,7 +2021,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
             if combat.Model.AttackingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
-                combat.Fonts.AttackingWizardFont.PrintOptions(screen, 280, 167, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount}, combat.Model.AttackingArmy.Player.GetWizard().Name)
+                combat.Fonts.AttackingWizardFont.PrintOptions(screen, 280, 167, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, combat.Model.AttackingArmy.Player.GetWizard().Name)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(246, 179)
@@ -2048,7 +2048,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
             if combat.Model.DefendingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
-                combat.Fonts.DefendingWizardFont.PrintOptions(screen, 40, 167, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, combat.Model.DefendingArmy.Player.GetWizard().Name)
+                combat.Fonts.DefendingWizardFont.PrintOptions(screen, 40, 167, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, DropShadow: true}, combat.Model.DefendingArmy.Player.GetWizard().Name)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(float64(7), float64(179))
