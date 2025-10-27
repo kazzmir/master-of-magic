@@ -1502,7 +1502,7 @@ func (unit *ArmyUnit) CanCast() bool {
     }
 
     for _, spell := range unit.Spells.Spells {
-        if int(unit.CastingSkill) >= spell.CastCost {
+        if int(unit.CastingSkill) >= spell.Cost(false) {
             return true
         }
     }
@@ -1820,7 +1820,7 @@ func makeSummonDemonSpell() spellbook.Spell {
     }
 }
 
-func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player ArmyPlayer) {
+func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player ArmyPlayer, defendingCity bool) {
     unit.CastingSkill = 0
     unit.SpellCharges = make(map[spellbook.Spell]int)
     for _, ability := range unit.Unit.GetAbilities() {
@@ -1858,7 +1858,7 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player ArmyPl
     }
 
     if unit.Unit.IsHero() {
-        unit.Spells.AddAllSpells(player.GetKnownSpells())
+        unit.Spells.AddAllSpells(player.GetKnownSpells().CombatSpells(defendingCity))
         unit.SpellCharges = unit.Unit.GetSpellChargeSpells()
     } else {
         if unit.GetRealm() != data.MagicNone {
@@ -2315,7 +2315,7 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
         unit.Model = model
         unit.Team = TeamDefender
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
-        unit.InitializeSpells(allSpells, model.DefendingArmy.Player)
+        unit.InitializeSpells(allSpells, model.DefendingArmy.Player, model.Zone.City != nil)
         if model.IsInsideMap(unit.X, unit.Y) {
             model.Tiles[unit.Y][unit.X].Unit = unit
         }
@@ -2325,7 +2325,7 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
         unit.Model = model
         unit.Team = TeamAttacker
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
-        unit.InitializeSpells(allSpells, model.AttackingArmy.Player)
+        unit.InitializeSpells(allSpells, model.AttackingArmy.Player, false)
         if model.IsInsideMap(unit.X, unit.Y) {
             model.Tiles[unit.Y][unit.X].Unit = unit
         }
