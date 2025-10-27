@@ -1127,7 +1127,7 @@ func (player *Player) TotalEnchantmentUpkeep(cityEnchantmentsProvider CityEnchan
     }
 
     for _, unit := range player.Units {
-        for _, enchantment := range unit.GetEnchantments() {
+        for _, enchantment := range unit.GetUpkeepEnchantments() {
             upkeep += enchantment.UpkeepMana()
         }
     }
@@ -1151,7 +1151,7 @@ func (player *Player) ManaPerTurn(power int, cityEnchantmentsProvider CityEnchan
         manaFocusingBonus = 1.25
     }
 
-    mana += int(float64(power) * player.PowerDistribution.Mana * manaFocusingBonus)
+    mana += int(math.Round(float64(power) * player.PowerDistribution.Mana * manaFocusingBonus))
 
     return mana
 }
