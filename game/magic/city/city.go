@@ -1165,6 +1165,7 @@ func (city *City) EffectiveNightshade() int {
         catchment := city.GetCatchmentArea()
         count := 0
         for _, tile := range catchment {
+            // if the tile is corrupted there will be no nightshade bonus on it
             if tile.GetBonus() == data.BonusNightshade {
                 count += 1
             }
