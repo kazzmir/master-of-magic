@@ -1050,7 +1050,12 @@ func (player *Player) BaseResearchPerTurn() float64 {
 
 // this returns the raw research production per turn, not accounting for retorts or spellbooks
 func (player *Player) SpellResearchPerTurn(power int) float64 {
-    return player.BaseResearchPerTurn() + float64(power) * player.PowerDistribution.Research
+    bonus := 1.0
+    if player.Wizard.RetortEnabled(data.RetortSageMaster) {
+        bonus = 1.25
+    }
+
+    return (player.BaseResearchPerTurn() + float64(power) * player.PowerDistribution.Research) * bonus
 }
 
 func (player *Player) ComputeTurnsToCast(cost int) int {
