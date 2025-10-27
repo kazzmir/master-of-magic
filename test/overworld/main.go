@@ -5756,7 +5756,8 @@ func createScenario63(cache *lbx.LbxCache) *gamelib.Game {
     enemy1.AddCity(city2)
 
     for i := 0; i < 3; i++ {
-        enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, city2.X, city2.Y, data.PlaneArcanus, enemy1.GetWizard().Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
+        newUnit := enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, city2.X, city2.Y, data.PlaneArcanus, enemy1.GetWizard().Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
+        newUnit.SetBusy(units.BusyStatusPatrol)
     }
 
     arcanusMap.SetBonus(arcanusMap.WrapX(city2.X + 1), city2.Y + 1, data.BonusNightshade)
