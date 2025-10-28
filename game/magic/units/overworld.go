@@ -57,6 +57,10 @@ type OverworldUnit struct {
     Banner data.BannerType
 
     // a reference to an enclosing struct type, or a reference to self
+    // The OverworldUnit type should never invoke the same method name on the parent
+    // that is, o.Foo() should not call o.Parent.Foo()
+    // o.Bar() can call o.Parent.Foo(), though
+    // Parent.Foo() can invoke o.Foo() as well
     Parent StackUnit
 
     Plane data.Plane
@@ -308,11 +312,11 @@ func (unit *OverworldUnit) SetMovesLeft(overworld bool, moves fraction.Fraction)
 }
 
 func (unit *OverworldUnit) IsFlying() bool {
-    return unit.Unit.Flying || unit.HasEnchantment(data.UnitEnchantmentFlight) || unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings)
+    return unit.Unit.Flying || unit.Parent.HasEnchantment(data.UnitEnchantmentFlight) || unit.Parent.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings)
 }
 
 func (unit *OverworldUnit) IsInvisible() bool {
-    return unit.HasAbility(data.AbilityInvisibility)
+    return unit.Parent.HasAbility(data.AbilityInvisibility)
 }
 
 func (unit *OverworldUnit) IsSailing() bool {
@@ -943,7 +947,7 @@ func (unit *OverworldUnit) GetArtifacts() []*artifact.Artifact {
 }
 
 func (unit *OverworldUnit) GetSightRange() int {
-    scouting := unit.GetAbilityValue(data.AbilityScouting)
+    scouting := unit.Parent.GetAbilityValue(data.AbilityScouting)
     if scouting >= 2 {
         return int(scouting)
     }
