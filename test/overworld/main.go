@@ -265,13 +265,17 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
     player.AddCity(introCity)
 
     player.Gold = 5000
-    player.Mana = 26
+    player.Mana = 260
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    for range 4 {
+        newUnit := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenBowmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+        newUnit.AddEnchantment(data.UnitEnchantmentGiantStrength)
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    }
 
     settlers := player.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSettlers, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 

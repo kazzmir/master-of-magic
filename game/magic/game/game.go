@@ -1588,7 +1588,7 @@ func MakeOutpostFonts(cache *lbx.LbxCache) *OutpostFonts {
     }
 }
 
-func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack, rename bool){
+func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack, player *playerlib.Player, rename bool){
     /*
     drawer := game.Drawer
     defer func(){
@@ -1606,12 +1606,12 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
     quit := false
 
     background, _ := game.ImageCache.GetImage("backgrnd.lbx", 32, 0)
-    var options ebiten.DrawImageOptions
+    var uiOptions ebiten.DrawImageOptions
 
     x1 := 30
     y1 := 50
 
-    options.GeoM.Translate(float64(x1), float64(y1))
+    uiOptions.GeoM.Translate(float64(x1), float64(y1))
     rect := util.ImageRect(x1, y1, background)
     group.AddElement(&uilib.UIElement{
         LeftClick: func(element *uilib.UIElement){
@@ -1620,12 +1620,12 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         Order: 0,
         Rect: rect,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            scale.DrawScaled(screen, background, &options)
+            scale.DrawScaled(screen, background, &uiOptions)
 
             numHouses := city.GetOutpostHouses()
             maxHouses := 10
 
-            houseOptions := options
+            houseOptions := uiOptions
             houseOptions.GeoM.Translate(float64(7), float64(31))
 
             fullHouseIndex := 34
@@ -1653,28 +1653,17 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
                 houseOptions.GeoM.Translate(float64(emptyHouse.Bounds().Dx() + 1), 0)
             }
 
-            if stack != nil {
-                stackOptions := options
-                stackOptions.GeoM.Translate(float64(7), float64(55))
+            x, y := uiOptions.GeoM.Apply(float64(6), float64(22))
+            game.Fonts.InfoFontYellow.Print(screen, x, y, scale.ScaleAmount, uiOptions.ColorScale, city.Race.String())
 
-                for _, unit := range stack.Units() {
-                    pic, _ := unitview.GetUnitOverworldImage(&game.ImageCache, unit)
-                    scale.DrawScaled(screen, pic, &stackOptions)
-                    stackOptions.GeoM.Translate(float64(pic.Bounds().Dx() + 1), 0)
-                }
-            }
-
-            x, y := options.GeoM.Apply(float64(6), float64(22))
-            game.Fonts.InfoFontYellow.Print(screen, x, y, scale.ScaleAmount, options.ColorScale, city.Race.String())
-
-            x, y = options.GeoM.Apply(float64(20), float64(5))
+            x, y = uiOptions.GeoM.Apply(float64(20), float64(5))
             if rename {
-                fonts.BigFont.Print(screen, x, y, scale.ScaleAmount, options.ColorScale, "New Outpost Founded")
+                fonts.BigFont.Print(screen, x, y, scale.ScaleAmount, uiOptions.ColorScale, "New Outpost Founded")
             } else {
-                fonts.BigFont.Print(screen, x, y, scale.ScaleAmount, options.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
+                fonts.BigFont.Print(screen, x, y, scale.ScaleAmount, uiOptions.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
             }
 
-            cityScapeOptions := options
+            cityScapeOptions := uiOptions
             cityScapeOptions.GeoM.Translate(float64(185), float64(30))
             x, y = cityScapeOptions.GeoM.Apply(0, 0)
             cityScape := screen.SubImage(scale.ScaleRect(image.Rect(int(x), int(y), int(x) + 72, int(y) + 66))).(*ebiten.Image)
@@ -1708,6 +1697,47 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 
         },
     })
+
+    if stack != nil {
+
+        for i, unit := range stack.Units() {
+            pic, _ := unitview.GetUnitOverworldImage(&game.ImageCache, unit)
+            stackOptions := uiOptions
+            stackOptions.GeoM.Translate(float64(7), float64(55))
+            stackOptions.GeoM.Translate(float64(i % 5) * float64(pic.Bounds().Dx()), float64(i / 5) * float64(pic.Bounds().Dy() + 1))
+
+            var patrolOptions colorm.DrawImageOptions
+            var matrix colorm.ColorM
+            patrolOptions.GeoM = scale.ScaleGeom(stackOptions.GeoM)
+            matrix.ChangeHSV(0, 0, 1)
+
+            x, y := stackOptions.GeoM.Apply(0, 0)
+            group.AddElement(&uilib.UIElement{
+                Order: 1,
+                Rect: util.ImageRect(int(x), int(y), pic),
+                LeftClick: func(element *uilib.UIElement){
+                    player.SelectedStack = stack
+                    game.RefreshUI()
+                    quit = true
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    if unit.GetBusy() != units.BusyStatusNone {
+                        colorm.DrawImage(screen, pic, matrix, &patrolOptions)
+                    } else {
+                        scale.DrawScaled(screen, pic, &stackOptions)
+                    }
+
+                    // draw the first enchantment on the unit
+                    for _, enchantment := range unit.GetEnchantments() {
+                        util.DrawOutline(screen, &game.ImageCache, pic, scale.ScaleGeom(stackOptions.GeoM), stackOptions.ColorScale, game.Counter/8, enchantment.Color())
+                        break
+                    }
+                },
+            })
+
+        }
+    }
+
 
     /*
     game.Drawer = func (screen *ebiten.Image, game *Game){
@@ -3103,7 +3133,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventNewOutpost:
                         outpost := event.(*GameEventNewOutpost)
                         if outpost.Player.IsHuman() {
-                            game.showOutpost(yield, outpost.City, outpost.Stack, true)
+                            game.showOutpost(yield, outpost.City, outpost.Stack, outpost.Player, true)
                         }
                     case *GameEventVault:
                         vaultEvent := event.(*GameEventVault)
@@ -4458,7 +4488,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 city := player.FindCity(tileX, tileY, game.Plane)
                 if city != nil {
                     if city.Outpost {
-                        game.showOutpost(yield, city, player.FindStack(city.X, city.Y, city.Plane), false)
+                        game.showOutpost(yield, city, player.FindStack(city.X, city.Y, city.Plane), player, false)
                     } else {
                         game.doCityScreen(yield, city, player, buildinglib.BuildingNone)
                     }
