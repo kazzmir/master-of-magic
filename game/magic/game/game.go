@@ -6155,7 +6155,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             for _, unit := range player.SelectedStack.ActiveUnits() {
                 if unit.HasAbility(data.AbilityPurify) {
                     unit.SetBusy(units.BusyStatusPurify)
-                    unit.SetMovesLeft(fraction.Zero())
+                    unit.SetMovesLeft(true, fraction.Zero())
                 }
             }
 
@@ -6169,7 +6169,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             for _, unit := range player.SelectedStack.ActiveUnits() {
                 if unit.HasAbility(data.AbilityConstruction) {
                     unit.SetBusy(units.BusyStatusBuildRoad)
-                    unit.SetMovesLeft(fraction.Zero())
+                    unit.SetMovesLeft(true, fraction.Zero())
                 }
             }
 

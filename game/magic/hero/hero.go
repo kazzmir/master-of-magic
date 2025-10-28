@@ -708,12 +708,12 @@ func (hero *Hero) NaturalHeal(rate float64) {
     hero.AdjustHealth(int(amount))
 }
 
-func (hero *Hero) GetMovesLeft() fraction.Fraction {
-    return fraction.Zero().Max(hero.GetMovementSpeed().Subtract(hero.OverworldUnit.MovesUsed))
+func (hero *Hero) GetMovesLeft(overworld bool) fraction.Fraction {
+    return fraction.Zero().Max(hero.GetMovementSpeed(overworld).Subtract(hero.OverworldUnit.MovesUsed))
 }
 
-func (hero *Hero) SetMovesLeft(moves fraction.Fraction) {
-    hero.OverworldUnit.MovesUsed = hero.GetMovementSpeed().Subtract(moves)
+func (hero *Hero) SetMovesLeft(overworld bool, moves fraction.Fraction) {
+    hero.OverworldUnit.MovesUsed = hero.GetMovementSpeed(overworld).Subtract(moves)
 }
 
 func (hero *Hero) GetCasterValue() float32 {
@@ -857,8 +857,8 @@ func (hero *Hero) GetUpkeepGold() int {
     return hero.OverworldUnit.GetUpkeepGold()
 }
 
-func (hero *Hero) GetMovementSpeed() fraction.Fraction {
-    base := hero.OverworldUnit.GetBaseMovementSpeed()
+func (hero *Hero) GetMovementSpeed(overworld bool) fraction.Fraction {
+    base := hero.OverworldUnit.GetBaseMovementSpeed(overworld)
 
     for _, item := range hero.Equipment {
         if item != nil {

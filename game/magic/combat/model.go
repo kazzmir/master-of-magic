@@ -1512,7 +1512,7 @@ func (unit *ArmyUnit) CanCast() bool {
 
 func (unit *ArmyUnit) GetMovementSpeed() fraction.Fraction {
     modifier := fraction.Zero()
-    base := unit.Unit.GetMovementSpeed()
+    base := unit.Unit.GetMovementSpeed(false)
 
     base = unit.Unit.MovementSpeedEnchantmentBonus(base, unit.Enchantments)
 

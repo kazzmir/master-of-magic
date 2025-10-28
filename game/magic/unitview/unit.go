@@ -118,7 +118,7 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     smallFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, "Moves")
     y += float64(smallFont.Height() + 1)
 
-    unitMoves := unit.GetMovementSpeed()
+    unitMoves := unit.GetMovementSpeed(true)
 
     // FIXME: show wings if flying, or the water thing if can walk on water
     movementImage, err := imageCache.GetImage("unitview.lbx", 24, 0)
@@ -158,7 +158,7 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     smallFont.PrintOptions(screen, x, y + float64(11), font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, "Moves")
 
-    unitMoves := unit.GetMovementSpeed()
+    unitMoves := unit.GetMovementSpeed(true)
 
     // FIXME: show wings if flying or the water thing if water walking
     smallBoot, err := imageCache.GetImage("unitview.lbx", 24, 0)

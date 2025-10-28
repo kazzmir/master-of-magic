@@ -291,12 +291,12 @@ func (unit *OverworldUnit) SetId(id uint64) {
     unit.Id = id
 }
 
-func (unit *OverworldUnit) GetMovesLeft() fraction.Fraction {
-    return fraction.Zero().Max(unit.GetMovementSpeed().Subtract(unit.MovesUsed))
+func (unit *OverworldUnit) GetMovesLeft(overworld bool) fraction.Fraction {
+    return fraction.Zero().Max(unit.GetMovementSpeed(overworld).Subtract(unit.MovesUsed))
 }
 
-func (unit *OverworldUnit) SetMovesLeft(moves fraction.Fraction) {
-    unit.MovesUsed = unit.GetMovementSpeed().Subtract(moves)
+func (unit *OverworldUnit) SetMovesLeft(overworld bool, moves fraction.Fraction) {
+    unit.MovesUsed = unit.GetMovementSpeed(overworld).Subtract(moves)
 }
 
 func (unit *OverworldUnit) IsFlying() bool {
@@ -538,12 +538,13 @@ func (unit *OverworldUnit) GetUpkeepMana() int {
     return mana
 }
 
-func (unit *OverworldUnit) GetBaseMovementSpeed() int {
-    return unit.Unit.GetMovementSpeed()
+func (unit *OverworldUnit) GetBaseMovementSpeed(overworld bool) int {
+    return unit.Unit.GetMovementSpeed(overworld)
 }
 
-func (unit *OverworldUnit) GetMovementSpeed() fraction.Fraction {
-    base := fraction.FromInt(unit.GetBaseMovementSpeed())
+// pass in overworld=true if calculating movement on the overworld map, false if in combat
+func (unit *OverworldUnit) GetMovementSpeed(overworld bool) fraction.Fraction {
+    base := fraction.FromInt(unit.GetBaseMovementSpeed(overworld))
 
     base = unit.MovementSpeedEnchantmentBonus(base, unit.Enchantments)
 
@@ -906,8 +907,8 @@ func (unit *OverworldUnit) ResetMoves() {
     unit.MovesUsed = fraction.Zero()
 }
 
-func (unit *OverworldUnit) HasMovesLeft() bool {
-    return unit.GetMovesLeft().GreaterThan(fraction.Zero())
+func (unit *OverworldUnit) HasMovesLeft(overworld bool) bool {
+    return unit.GetMovesLeft(overworld).GreaterThan(fraction.Zero())
 }
 
 func (unit *OverworldUnit) Move(dx int, dy int, cost fraction.Fraction, normalize NormalizeCoordinateFunc){

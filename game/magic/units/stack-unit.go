@@ -21,8 +21,8 @@ type StackUnit interface {
     GetTitle() string
     GetPlane() data.Plane
     SetPlane(data.Plane)
-    GetMovesLeft() fraction.Fraction
-    SetMovesLeft(fraction.Fraction)
+    GetMovesLeft(bool) fraction.Fraction
+    SetMovesLeft(bool, fraction.Fraction)
     GetRace() data.Race
     GetRealm() data.MagicType
     GetUpkeepGold() int
@@ -77,7 +77,7 @@ type StackUnit interface {
     GetCombatIndex(Facing) int
     GetCount() int
     GetVisibleCount() int
-    GetMovementSpeed() fraction.Fraction
+    GetMovementSpeed(bool) fraction.Fraction
     GetProductionCost() int
     GetRangedAttackPower() int
     GetResistance() int
