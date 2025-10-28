@@ -1589,16 +1589,128 @@ func MakeOutpostFonts(cache *lbx.LbxCache) *OutpostFonts {
 }
 
 func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack, rename bool){
+    /*
     drawer := game.Drawer
     defer func(){
         game.Drawer = drawer
     }()
+    */
 
     fonts := MakeOutpostFonts(game.Cache)
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        drawer(screen, game)
+    group := uilib.MakeGroup()
 
+    game.HudUI.AddGroup(group)
+    defer game.HudUI.RemoveGroup(group)
+
+    quit := false
+
+    background, _ := game.ImageCache.GetImage("backgrnd.lbx", 32, 0)
+    var options ebiten.DrawImageOptions
+
+    x1 := 30
+    y1 := 50
+
+    options.GeoM.Translate(float64(x1), float64(y1))
+    rect := util.ImageRect(x1, y1, background)
+    group.AddElement(&uilib.UIElement{
+        LeftClick: func(element *uilib.UIElement){
+            quit = true
+        },
+        Order: 0,
+        Rect: rect,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            scale.DrawScaled(screen, background, &options)
+
+            numHouses := city.GetOutpostHouses()
+            maxHouses := 10
+
+            houseOptions := options
+            houseOptions.GeoM.Translate(float64(7), float64(31))
+
+            fullHouseIndex := 34
+            emptyHouseIndex := 37
+
+            switch city.Race {
+            case data.RaceDarkElf, data.RaceHighElf:
+                fullHouseIndex = 35
+                emptyHouseIndex = 38
+            case data.RaceGnoll, data.RaceKlackon, data.RaceLizard, data.RaceTroll:
+                fullHouseIndex = 36
+                emptyHouseIndex = 39
+            }
+
+            house, _ := game.ImageCache.GetImage("backgrnd.lbx", fullHouseIndex, 0)
+
+            for i := 0; i < numHouses; i++ {
+                scale.DrawScaled(screen, house, &houseOptions)
+                houseOptions.GeoM.Translate(float64(house.Bounds().Dx()) + 1, 0)
+            }
+
+            emptyHouse, _ := game.ImageCache.GetImage("backgrnd.lbx", emptyHouseIndex, 0)
+            for i := numHouses; i < maxHouses; i++ {
+                scale.DrawScaled(screen, emptyHouse, &houseOptions)
+                houseOptions.GeoM.Translate(float64(emptyHouse.Bounds().Dx() + 1), 0)
+            }
+
+            if stack != nil {
+                stackOptions := options
+                stackOptions.GeoM.Translate(float64(7), float64(55))
+
+                for _, unit := range stack.Units() {
+                    pic, _ := unitview.GetUnitOverworldImage(&game.ImageCache, unit)
+                    scale.DrawScaled(screen, pic, &stackOptions)
+                    stackOptions.GeoM.Translate(float64(pic.Bounds().Dx() + 1), 0)
+                }
+            }
+
+            x, y := options.GeoM.Apply(float64(6), float64(22))
+            game.Fonts.InfoFontYellow.Print(screen, x, y, scale.ScaleAmount, options.ColorScale, city.Race.String())
+
+            x, y = options.GeoM.Apply(float64(20), float64(5))
+            if rename {
+                fonts.BigFont.Print(screen, x, y, scale.ScaleAmount, options.ColorScale, "New Outpost Founded")
+            } else {
+                fonts.BigFont.Print(screen, x, y, scale.ScaleAmount, options.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
+            }
+
+            cityScapeOptions := options
+            cityScapeOptions.GeoM.Translate(float64(185), float64(30))
+            x, y = cityScapeOptions.GeoM.Apply(0, 0)
+            cityScape := screen.SubImage(scale.ScaleRect(image.Rect(int(x), int(y), int(x) + 72, int(y) + 66))).(*ebiten.Image)
+
+            cityScapeBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 0)
+            scale.DrawScaled(cityScape, cityScapeBackground, &cityScapeOptions)
+
+            // regular house
+            houseIndex := 25
+
+            switch city.Race {
+                case data.RaceDarkElf, data.RaceHighElf: houseIndex = 30
+                case data.RaceGnoll, data.RaceKlackon, data.RaceLizard, data.RaceTroll: houseIndex = 35
+            }
+
+            cityHouse, _ := game.ImageCache.GetImage("cityscap.lbx", houseIndex, 0)
+            options2 := cityScapeOptions
+            options2.GeoM.Translate(float64(30), float64(20))
+            scale.DrawScaled(cityScape, cityHouse, &options2)
+
+            /*
+            x, y = options2.GeoM.Apply(0, 0)
+            vector.DrawFilledRect(cityScape, float32(x), float32(y), float32(cityScape.Bounds().Dx()), float32(cityScape.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
+            log.Printf("cityscape at %v, %v", x, y)
+            x = 30
+            */
+            // vector.DrawFilledCircle(cityScape, float32(x), float32(y), 3, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+            // vector.DrawFilledCircle(screen, float32(x), float32(y), 3, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+            // vector.StrokeRect(cityScape, float32(x+1), float32(y+1), float32(cityScape.Bounds().Dx())-1, float32(cityScape.Bounds().Dy())-1, 1, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+            // vector.DrawFilledRect(cityScape, 0, 0, 320, 200, util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0x80}), false)
+
+        },
+    })
+
+    /*
+    game.Drawer = func (screen *ebiten.Image, game *Game){
         background, _ := game.ImageCache.GetImage("backgrnd.lbx", 32, 0)
 
         var options ebiten.DrawImageOptions
@@ -1678,26 +1790,26 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
         options2.GeoM.Translate(float64(30), float64(20))
         scale.DrawScaled(cityScape, cityHouse, &options2)
 
-        /*
+        / *
         x, y = options2.GeoM.Apply(0, 0)
         vector.DrawFilledRect(cityScape, float32(x), float32(y), float32(cityScape.Bounds().Dx()), float32(cityScape.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         log.Printf("cityscape at %v, %v", x, y)
         x = 30
-        */
+        * /
         // vector.DrawFilledCircle(cityScape, float32(x), float32(y), 3, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
         // vector.DrawFilledCircle(screen, float32(x), float32(y), 3, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
         // vector.StrokeRect(cityScape, float32(x+1), float32(y+1), float32(cityScape.Bounds().Dx())-1, float32(cityScape.Bounds().Dy())-1, 1, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
         // vector.DrawFilledRect(cityScape, 0, 0, 320, 200, util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0x80}), false)
     }
+    */
 
-    quit := false
     for !quit {
         game.Counter += 1
-        if inputmanager.LeftClick() {
-            quit = true
-        }
 
-        yield()
+        game.HudUI.StandardUpdate()
+        if yield() != nil {
+            break
+        }
     }
 
     if rename {
