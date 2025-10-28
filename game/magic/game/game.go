@@ -6830,12 +6830,15 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         }
 
                         stack.ToggleActive(unit)
+
+                        // FIXME: explain why this is here. Commenting it out doesn't seem to hurt
                         select {
                             case game.Events<- &GameEventMoveUnit{Player: player}:
                             default:
                         }
 
                         updateMinMoves()
+                        game.RefreshUI()
                     },
                     RightClick: func(this *uilib.UIElement){
                         ui.AddGroup(unitview.MakeUnitContextMenu(game.Cache, ui, unit, disband))
