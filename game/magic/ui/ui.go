@@ -624,12 +624,13 @@ func (ui *UI) StandardUpdate() {
 
     for _, element := range slices.Backward(ui.GetHighestLayer()) {
         if image.Pt(mouseX, mouseY).In(element.Rect) {
-            if lastTooltip != element {
-                ui.TooltipTime = ui.Counter
+            if ui.TooltipElement == nil {
+                ui.TooltipElement = element
+                ui.TooltipPosition = image.Pt(mouseX, mouseY)
+                if lastTooltip != element {
+                    ui.TooltipTime = ui.Counter
+                }
             }
-
-            ui.TooltipElement = element
-            ui.TooltipPosition = image.Pt(mouseX, mouseY)
 
             if element.Inside != nil {
                 element.Inside(element, mouseX - element.Rect.Min.X, mouseY - element.Rect.Min.Y)

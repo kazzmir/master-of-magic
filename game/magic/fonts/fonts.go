@@ -30,6 +30,8 @@ const BigFont = "BigFont"
 const TitleYellowFont = "TitleYellowFont"
 const DescriptionFont = "DescriptionFont"
 const SmallWhite = "SmallWhite"
+// 70% opaque
+const SmallWhite70 = "SmallWhite70"
 const SmallRed = "SmallRed"
 const SmallOrange = "SmallOrange"
 const HelpFont = "HelpFont"
@@ -287,6 +289,22 @@ func init() {
             color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
             color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
             color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff},
+        }
+
+        return font.MakeOptimizedFontWithPalette(fonts[1], smallFontPalette)
+    }
+
+    fontLoaders[SmallWhite70] = func (fonts []*font.LbxFont) *font.Font {
+        f := 256 * 0.7
+        alpha := uint8(f)
+        smallFontPalette := color.Palette{
+            color.NRGBA{R: 0, G: 0, B: 0x00, A: 0x0},
+            color.NRGBA{R: 128, G: 128, B: 128, A: alpha},
+            color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: alpha},
+            color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: alpha},
+            color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: alpha},
+            color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: alpha},
+            color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: alpha},
         }
 
         return font.MakeOptimizedFontWithPalette(fonts[1], smallFontPalette)

@@ -1574,6 +1574,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
 
 type OutpostFonts struct {
     BigFont *font.Font
+    SmallFont *font.Font
 }
 
 func MakeOutpostFonts(cache *lbx.LbxCache) *OutpostFonts {
@@ -1585,119 +1586,168 @@ func MakeOutpostFonts(cache *lbx.LbxCache) *OutpostFonts {
 
     return &OutpostFonts{
         BigFont: loader(fontslib.TitleYellowFont),
+        SmallFont: loader(fontslib.SmallWhite70),
     }
 }
 
-func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack, rename bool){
-    drawer := game.Drawer
-    defer func(){
-        game.Drawer = drawer
-    }()
-
+func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, stack *playerlib.UnitStack, player *playerlib.Player, rename bool){
     fonts := MakeOutpostFonts(game.Cache)
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        drawer(screen, game)
+    group := uilib.MakeGroup()
 
-        background, _ := game.ImageCache.GetImage("backgrnd.lbx", 32, 0)
+    game.HudUI.AddGroup(group)
+    defer game.HudUI.RemoveGroup(group)
 
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(30), float64(50))
-        scale.DrawScaled(screen, background, &options)
+    quit := false
 
-        numHouses := city.GetOutpostHouses()
-        maxHouses := 10
+    background, _ := game.ImageCache.GetImage("backgrnd.lbx", 32, 0)
+    var uiOptions ebiten.DrawImageOptions
 
-        houseOptions := options
-        houseOptions.GeoM.Translate(float64(7), float64(31))
+    x1 := 30
+    y1 := 50
 
-        fullHouseIndex := 34
-        emptyHouseIndex := 37
+    uiOptions.GeoM.Translate(float64(x1), float64(y1))
+    rect := util.ImageRect(x1, y1, background)
+    group.AddElement(&uilib.UIElement{
+        LeftClick: func(element *uilib.UIElement){
+            quit = true
+        },
+        Order: 0,
+        Layer: 1,
+        Rect: rect,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            scale.DrawScaled(screen, background, &uiOptions)
 
-        switch city.Race {
+            numHouses := city.GetOutpostHouses()
+            maxHouses := 10
+
+            houseOptions := uiOptions
+            houseOptions.GeoM.Translate(float64(7), float64(31))
+
+            fullHouseIndex := 34
+            emptyHouseIndex := 37
+
+            switch city.Race {
             case data.RaceDarkElf, data.RaceHighElf:
                 fullHouseIndex = 35
                 emptyHouseIndex = 38
             case data.RaceGnoll, data.RaceKlackon, data.RaceLizard, data.RaceTroll:
                 fullHouseIndex = 36
                 emptyHouseIndex = 39
-        }
-
-        house, _ := game.ImageCache.GetImage("backgrnd.lbx", fullHouseIndex, 0)
-
-        for i := 0; i < numHouses; i++ {
-            scale.DrawScaled(screen, house, &houseOptions)
-            houseOptions.GeoM.Translate(float64(house.Bounds().Dx()) + 1, 0)
-        }
-
-        emptyHouse, _ := game.ImageCache.GetImage("backgrnd.lbx", emptyHouseIndex, 0)
-        for i := numHouses; i < maxHouses; i++ {
-            scale.DrawScaled(screen, emptyHouse, &houseOptions)
-            houseOptions.GeoM.Translate(float64(emptyHouse.Bounds().Dx() + 1), 0)
-        }
-
-        if stack != nil {
-            stackOptions := options
-            stackOptions.GeoM.Translate(float64(7), float64(55))
-
-            for _, unit := range stack.Units() {
-                pic, _ := unitview.GetUnitOverworldImage(&game.ImageCache, unit)
-                scale.DrawScaled(screen, pic, &stackOptions)
-                stackOptions.GeoM.Translate(float64(pic.Bounds().Dx() + 1), 0)
             }
+
+            house, _ := game.ImageCache.GetImage("backgrnd.lbx", fullHouseIndex, 0)
+
+            for i := 0; i < numHouses; i++ {
+                scale.DrawScaled(screen, house, &houseOptions)
+                houseOptions.GeoM.Translate(float64(house.Bounds().Dx()) + 1, 0)
+            }
+
+            emptyHouse, _ := game.ImageCache.GetImage("backgrnd.lbx", emptyHouseIndex, 0)
+            for i := numHouses; i < maxHouses; i++ {
+                scale.DrawScaled(screen, emptyHouse, &houseOptions)
+                houseOptions.GeoM.Translate(float64(emptyHouse.Bounds().Dx() + 1), 0)
+            }
+
+            x, y := uiOptions.GeoM.Apply(float64(6), float64(22))
+            game.Fonts.InfoFontYellow.Print(screen, x, y, scale.ScaleAmount, uiOptions.ColorScale, city.Race.String())
+
+            x, y = uiOptions.GeoM.Apply(float64(20), float64(5))
+            if rename {
+                fonts.BigFont.Print(screen, x, y, scale.ScaleAmount, uiOptions.ColorScale, "New Outpost Founded")
+            } else {
+                fonts.BigFont.Print(screen, x, y, scale.ScaleAmount, uiOptions.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
+            }
+
+            cityScapeOptions := uiOptions
+            cityScapeOptions.GeoM.Translate(float64(185), float64(30))
+            x, y = cityScapeOptions.GeoM.Apply(0, 0)
+            cityScape := screen.SubImage(scale.ScaleRect(image.Rect(int(x), int(y), int(x) + 72, int(y) + 66))).(*ebiten.Image)
+
+            cityScapeBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 0)
+            scale.DrawScaled(cityScape, cityScapeBackground, &cityScapeOptions)
+
+            // regular house
+            houseIndex := 25
+
+            switch city.Race {
+                case data.RaceDarkElf, data.RaceHighElf: houseIndex = 30
+                case data.RaceGnoll, data.RaceKlackon, data.RaceLizard, data.RaceTroll: houseIndex = 35
+            }
+
+            cityHouse, _ := game.ImageCache.GetImage("cityscap.lbx", houseIndex, 0)
+            options2 := cityScapeOptions
+            options2.GeoM.Translate(float64(30), float64(20))
+            scale.DrawScaled(cityScape, cityHouse, &options2)
+
+            /*
+            x, y = options2.GeoM.Apply(0, 0)
+            vector.DrawFilledRect(cityScape, float32(x), float32(y), float32(cityScape.Bounds().Dx()), float32(cityScape.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
+            log.Printf("cityscape at %v, %v", x, y)
+            x = 30
+            */
+            // vector.DrawFilledCircle(cityScape, float32(x), float32(y), 3, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+            // vector.DrawFilledCircle(screen, float32(x), float32(y), 3, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+            // vector.StrokeRect(cityScape, float32(x+1), float32(y+1), float32(cityScape.Bounds().Dx())-1, float32(cityScape.Bounds().Dy())-1, 1, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+            // vector.DrawFilledRect(cityScape, 0, 0, 320, 200, util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0x80}), false)
+
+        },
+    })
+
+    if stack != nil {
+
+        var matrix colorm.ColorM
+        matrix.ChangeHSV(0, 0, 1)
+
+        for i, unit := range stack.Units() {
+            pic, _ := unitview.GetUnitOverworldImage(&game.ImageCache, unit)
+            stackOptions := uiOptions
+            stackOptions.GeoM.Translate(float64(7), float64(55))
+            stackOptions.GeoM.Translate(float64(i % 5) * float64(pic.Bounds().Dx()), float64(i / 5) * float64(pic.Bounds().Dy() + 1))
+
+            var patrolOptions colorm.DrawImageOptions
+            patrolOptions.GeoM = scale.ScaleGeom(stackOptions.GeoM)
+
+            x, y := stackOptions.GeoM.Apply(0, 0)
+            group.AddElement(&uilib.UIElement{
+                Order: 1,
+                Layer: 1,
+                Rect: util.ImageRect(int(x), int(y), pic),
+                LeftClick: func(element *uilib.UIElement){
+                    player.SelectedStack = stack
+                    game.RefreshUI()
+                    quit = true
+                },
+                Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+                    return unit.GetName(), fonts.SmallFont
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    if unit.GetBusy() != units.BusyStatusNone {
+                        colorm.DrawImage(screen, pic, matrix, &patrolOptions)
+                    } else {
+                        scale.DrawScaled(screen, pic, &stackOptions)
+                    }
+
+                    // draw the first enchantment on the unit
+                    for _, enchantment := range unit.GetEnchantments() {
+                        util.DrawOutline(screen, &game.ImageCache, pic, scale.ScaleGeom(stackOptions.GeoM), stackOptions.ColorScale, game.Counter/8, enchantment.Color())
+                        break
+                    }
+                },
+            })
+
         }
-
-        x, y := options.GeoM.Apply(float64(6), float64(22))
-        game.Fonts.InfoFontYellow.Print(screen, x, y, scale.ScaleAmount, options.ColorScale, city.Race.String())
-
-        x, y = options.GeoM.Apply(float64(20), float64(5))
-        if rename {
-            fonts.BigFont.Print(screen, x, y, scale.ScaleAmount, options.ColorScale, "New Outpost Founded")
-        } else {
-            fonts.BigFont.Print(screen, x, y, scale.ScaleAmount, options.ColorScale, fmt.Sprintf("Outpost Of %v", city.Name))
-        }
-
-        cityScapeOptions := options
-        cityScapeOptions.GeoM.Translate(float64(185), float64(30))
-        x, y = cityScapeOptions.GeoM.Apply(0, 0)
-        cityScape := screen.SubImage(scale.ScaleRect(image.Rect(int(x), int(y), int(x) + 72, int(y) + 66))).(*ebiten.Image)
-
-        cityScapeBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 0)
-        scale.DrawScaled(cityScape, cityScapeBackground, &cityScapeOptions)
-
-        // regular house
-        houseIndex := 25
-
-        switch city.Race {
-            case data.RaceDarkElf, data.RaceHighElf: houseIndex = 30
-            case data.RaceGnoll, data.RaceKlackon, data.RaceLizard, data.RaceTroll: houseIndex = 35
-        }
-
-        cityHouse, _ := game.ImageCache.GetImage("cityscap.lbx", houseIndex, 0)
-        options2 := cityScapeOptions
-        options2.GeoM.Translate(float64(30), float64(20))
-        scale.DrawScaled(cityScape, cityHouse, &options2)
-
-        /*
-        x, y = options2.GeoM.Apply(0, 0)
-        vector.DrawFilledRect(cityScape, float32(x), float32(y), float32(cityScape.Bounds().Dx()), float32(cityScape.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
-        log.Printf("cityscape at %v, %v", x, y)
-        x = 30
-        */
-        // vector.DrawFilledCircle(cityScape, float32(x), float32(y), 3, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
-        // vector.DrawFilledCircle(screen, float32(x), float32(y), 3, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
-        // vector.StrokeRect(cityScape, float32(x+1), float32(y+1), float32(cityScape.Bounds().Dx())-1, float32(cityScape.Bounds().Dy())-1, 1, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
-        // vector.DrawFilledRect(cityScape, 0, 0, 320, 200, util.PremultiplyAlpha(color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0x80}), false)
     }
 
-    quit := false
+    // FIXME: try to replace this with game.doRunUI(), but the issue is that we want the doInput() to run on top of the
+    // outpost screen, where doRunUI() would remove the ui group first
     for !quit {
         game.Counter += 1
-        if inputmanager.LeftClick() {
-            quit = true
-        }
 
-        yield()
+        game.HudUI.StandardUpdate()
+        if yield() != nil {
+            break
+        }
     }
 
     if rename {
@@ -2991,7 +3041,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventNewOutpost:
                         outpost := event.(*GameEventNewOutpost)
                         if outpost.Player.IsHuman() {
-                            game.showOutpost(yield, outpost.City, outpost.Stack, true)
+                            game.showOutpost(yield, outpost.City, outpost.Stack, outpost.Player, true)
                         }
                     case *GameEventVault:
                         vaultEvent := event.(*GameEventVault)
@@ -4346,7 +4396,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 city := player.FindCity(tileX, tileY, game.Plane)
                 if city != nil {
                     if city.Outpost {
-                        game.showOutpost(yield, city, player.FindStack(city.X, city.Y, city.Plane), false)
+                        game.showOutpost(yield, city, player.FindStack(city.X, city.Y, city.Plane), player, false)
                     } else {
                         game.doCityScreen(yield, city, player, buildinglib.BuildingNone)
                     }
