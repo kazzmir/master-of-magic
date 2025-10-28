@@ -1574,6 +1574,7 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
 
 type OutpostFonts struct {
     BigFont *font.Font
+    SmallFont *font.Font
 }
 
 func MakeOutpostFonts(cache *lbx.LbxCache) *OutpostFonts {
@@ -1585,6 +1586,7 @@ func MakeOutpostFonts(cache *lbx.LbxCache) *OutpostFonts {
 
     return &OutpostFonts{
         BigFont: loader(fontslib.TitleYellowFont),
+        SmallFont: loader(fontslib.SmallWhite70),
     }
 }
 
@@ -1618,6 +1620,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
             quit = true
         },
         Order: 0,
+        Layer: 1,
         Rect: rect,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             scale.DrawScaled(screen, background, &uiOptions)
@@ -1700,6 +1703,9 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 
     if stack != nil {
 
+        var matrix colorm.ColorM
+        matrix.ChangeHSV(0, 0, 1)
+
         for i, unit := range stack.Units() {
             pic, _ := unitview.GetUnitOverworldImage(&game.ImageCache, unit)
             stackOptions := uiOptions
@@ -1707,18 +1713,20 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
             stackOptions.GeoM.Translate(float64(i % 5) * float64(pic.Bounds().Dx()), float64(i / 5) * float64(pic.Bounds().Dy() + 1))
 
             var patrolOptions colorm.DrawImageOptions
-            var matrix colorm.ColorM
             patrolOptions.GeoM = scale.ScaleGeom(stackOptions.GeoM)
-            matrix.ChangeHSV(0, 0, 1)
 
             x, y := stackOptions.GeoM.Apply(0, 0)
             group.AddElement(&uilib.UIElement{
                 Order: 1,
+                Layer: 1,
                 Rect: util.ImageRect(int(x), int(y), pic),
                 LeftClick: func(element *uilib.UIElement){
                     player.SelectedStack = stack
                     game.RefreshUI()
                     quit = true
+                },
+                Tooltip: func(element *uilib.UIElement) (string, *font.Font) {
+                    return unit.GetName(), fonts.SmallFont
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                     if unit.GetBusy() != units.BusyStatusNone {
