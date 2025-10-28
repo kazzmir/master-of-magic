@@ -1063,7 +1063,7 @@ func (iconList *UnitIconList) addUI(unit *units.Unit) {
 
         stats.AddChild(combineHorizontalElements(makeIcon(heart), makeText(fmt.Sprintf("%d", unit.GetHitPoints()))))
 
-        moves := unit.GetMovementSpeed()
+        moves := unit.GetMovementSpeed(true)
         moveImage := walkingImage
         if unit.Flying {
             moveImage = flyingImage

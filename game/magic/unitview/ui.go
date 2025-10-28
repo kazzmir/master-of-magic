@@ -74,7 +74,7 @@ type UnitView interface {
     GetUpkeepGold() int
     GetUpkeepFood() int
     GetUpkeepMana() int
-    GetMovementSpeed() fraction.Fraction
+    GetMovementSpeed(bool) fraction.Fraction
     GetProductionCost() int
 }
 
@@ -483,7 +483,7 @@ func MakeSmallListView(cache *lbx.LbxCache, ui *uilib.UI, stack []UnitView, titl
 
                 unitOptions.GeoM.Translate(20, 0)
                 x, y = unitOptions.GeoM.Apply(0, 1)
-                fonts.Small.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetMovementSpeed().ToFloat()))
+                fonts.Small.PrintOptions(screen, x, y, rightOptions, fmt.Sprintf("%v", unit.GetMovementSpeed(true).ToFloat()))
 
                 moveImage, _ := imageCache.GetImageTransform("unitview.lbx", 24, 0, "cut1", cut1PixelFunc)
                 if unit.IsFlying() {

@@ -162,6 +162,10 @@ type Unit struct {
 
     MeleeAttackPower int
     MovementSpeed int
+
+    // set for units that have a different overland movement speed than normal
+    OverlandMovementSpeed int
+
     Defense int
     Resistance int
     HitPoints int
@@ -213,7 +217,10 @@ func (unit *Unit) GetUpkeepMana() int {
     return unit.UpkeepMana
 }
 
-func (unit *Unit) GetMovementSpeed() int {
+func (unit *Unit) GetMovementSpeed(overworld bool) int {
+    if overworld && unit.OverlandMovementSpeed > 0 {
+        return unit.OverlandMovementSpeed
+    }
     return unit.MovementSpeed
 }
 
@@ -1152,6 +1159,7 @@ var MagicSpirit Unit = Unit{
     MovementSound: MovementSoundFly2,
     AttackSound: AttackSoundNormal,
     MovementSpeed: 1,
+    OverlandMovementSpeed: 2,
     Swimming: true,
     Count: 1,
     MeleeAttackPower: 5,

@@ -987,9 +987,9 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
                 }
             }
 
-            newUnit.SetMovesLeft(fraction.FromInt(int(unit.Moves) * 2))
+            newUnit.SetMovesLeft(true, fraction.FromInt(int(unit.Moves) * 2))
             if unit.Finished == 1 {
-                newUnit.SetMovesLeft(fraction.Zero())
+                newUnit.SetMovesLeft(true, fraction.Zero())
 
                 switch unit.Status {
                     case StatusPatrol: newUnit.SetBusy(units.BusyStatusPatrol)
