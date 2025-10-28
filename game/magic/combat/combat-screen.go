@@ -2074,7 +2074,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                 scale.DrawScaled(screen, plainAttack, &options)
                 combat.Fonts.HudFont.PrintOptions(screen, 130, 174, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyRight}, fmt.Sprintf("%v", combat.Model.SelectedUnit.GetMeleeAttackPower()))
 
-                if combat.Model.SelectedUnit.RangedAttacks > 0 || combat.Model.SelectedUnit.GetCastingSkill() > 0 {
+                if combat.Model.SelectedUnit.CanRangeAttack() {
                     y := float64(180)
                     switch combat.Model.SelectedUnit.Unit.GetRangedAttackDamageType() {
                         case units.DamageRangedPhysical:
