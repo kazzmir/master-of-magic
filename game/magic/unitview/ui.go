@@ -63,7 +63,7 @@ type UnitView interface {
     IsSwimmer() bool
     IsInvisible() bool
     GetDamage() int
-    GetVisibleCount() int
+    VisibleFigures() int
     GetBanner() data.BannerType
     GetName() string
     GetLbxFile() string

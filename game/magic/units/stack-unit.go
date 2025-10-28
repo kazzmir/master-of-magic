@@ -77,6 +77,7 @@ type StackUnit interface {
     GetCombatIndex(Facing) int
     GetCount() int
     GetVisibleCount() int
+    VisibleFigures() int
     GetMovementSpeed(bool) fraction.Fraction
     GetProductionCost() int
     GetRangedAttackPower() int

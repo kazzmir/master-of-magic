@@ -528,6 +528,11 @@ func (unit *OverworldUnit) GetVisibleCount() int {
     return unit.Unit.GetVisibleCount()
 }
 
+func (unit *OverworldUnit) VisibleFigures() int {
+    health_per_figure := float64(unit.Parent.GetMaxHealth()) / float64(unit.Parent.GetVisibleCount())
+    return int(math.Ceil(float64(unit.Parent.GetHealth()) / health_per_figure))
+}
+
 func (unit *OverworldUnit) GetUpkeepGold() int {
     if unit.IsUndead() {
         return 0
