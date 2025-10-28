@@ -303,13 +303,15 @@ func abilitiesToMap(abilities []data.Ability) map[data.AbilityType]data.Ability 
 }
 
 func MakeHero(unit *units.OverworldUnit, heroType HeroType, name string) *Hero {
-    return &Hero{
+    hero := &Hero{
         OverworldUnit: unit,
         Name: name,
         HeroType: heroType,
         Abilities: abilitiesToMap(unit.GetAbilities()),
         Status: StatusAvailable,
     }
+    hero.SetParent(hero)
+    return hero
 }
 
 type abilityChoice int
@@ -602,8 +604,6 @@ func (hero *Hero) GetEnchantments() []data.UnitEnchantment {
     return append(hero.OverworldUnit.GetEnchantments(), artifactsEnchantments...)
 }
 
-// note that HasEnchantment is not the same as contains(GetEnchantments(), enchantment) because HasEnchantment will search
-// in the artifacts as well. GetEnchantments will only return the enchantments that have been explicitly cast on a unit
 func (hero *Hero) HasEnchantment(enchantment data.UnitEnchantment) bool {
     return hero.OverworldUnit.HasEnchantment(enchantment) || slices.ContainsFunc(hero.Equipment[:], func (a *artifact.Artifact) bool {
         return a != nil && a.HasEnchantment(enchantment)
@@ -835,10 +835,6 @@ func (hero *Hero) IsInvisible() bool {
 
 func (hero *Hero) IsSailing() bool {
     return false
-}
-
-func (hero *Hero) IsSwimmer() bool {
-    return hero.OverworldUnit.IsSwimmer() || hero.HasEnchantment(data.UnitEnchantmentWaterWalking)
 }
 
 func (hero *Hero) GetCount() int {

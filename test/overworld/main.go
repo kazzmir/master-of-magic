@@ -5770,6 +5770,93 @@ func createScenario63(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// hero with a wand that grants water walking should be able to walk on water
+func createScenario64(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 64")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Retorts: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+            data.RetortWarlord,
+            data.RetortChanneler,
+            data.RetortMyrran,
+            data.RetortFamous,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.Fame = 12
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
+    city.Population = 8190
+    city.Plane = data.PlaneArcanus
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 5
+    city.Workers = 3
+
+    city.ResetCitizens()
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    player.LiftFog(x, y, 3, data.PlaneArcanus)
+    player.LiftFog(20, 20, 100, data.PlaneMyrror)
+
+    rakir := hero.MakeHero(units.MakeOverworldUnit(units.HeroRakir, x, y, data.PlaneArcanus), hero.HeroRakir, "bubba")
+    player.AddHeroToFortress(rakir)
+    rakir.AddExperience(528)
+
+    rakir.Equipment[0] = &artifact.Artifact{
+        Name: "Baloney",
+        Image: 7,
+        Type: artifact.ArtifactTypeSword,
+        Powers: []artifact.Power{
+            {
+                Type: artifact.PowerTypeAbility1,
+                Amount: 1,
+                Name: "Water Walking",
+                Ability: data.ItemAbilityWaterWalking,
+            },
+        },
+        Cost: 250,
+    }
+
+    stack := player.FindStackByUnit(rakir)
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -5839,6 +5926,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 61: game = createScenario61(cache)
         case 62: game = createScenario62(cache)
         case 63: game = createScenario63(cache)
+        case 64: game = createScenario64(cache)
         default: game = createScenario1(cache)
     }
 
