@@ -55,6 +55,14 @@ type OverworldUnit struct {
     Unit Unit
     MovesUsed fraction.Fraction
     Banner data.BannerType
+
+    // a reference to an enclosing struct type, or a reference to self
+    // The OverworldUnit type should never invoke the same method name on the parent
+    // that is, o.Foo() should not call o.Parent.Foo()
+    // o.Bar() can call o.Parent.Foo(), though
+    // Parent.Foo() can invoke o.Foo() as well
+    Parent StackUnit
+
     Plane data.Plane
     X int
     Y int
@@ -91,6 +99,10 @@ func (unit *OverworldUnit) AddEnchantment(enchantment data.UnitEnchantment) {
     slices.SortFunc(unit.Enchantments, func(a, b data.UnitEnchantment) int {
         return cmp.Compare(int(a), int(b))
     })
+}
+
+func (unit *OverworldUnit) SetParent(parent StackUnit) {
+    unit.Parent = parent
 }
 
 // checks enchantments on the unit itself, ignoring global enchantments
@@ -300,11 +312,11 @@ func (unit *OverworldUnit) SetMovesLeft(overworld bool, moves fraction.Fraction)
 }
 
 func (unit *OverworldUnit) IsFlying() bool {
-    return unit.Unit.Flying || unit.HasEnchantment(data.UnitEnchantmentFlight) || unit.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings)
+    return unit.Unit.Flying || unit.Parent.HasEnchantment(data.UnitEnchantmentFlight) || unit.Parent.HasEnchantment(data.UnitEnchantmentChaosChannelsDemonWings)
 }
 
 func (unit *OverworldUnit) IsInvisible() bool {
-    return unit.HasAbility(data.AbilityInvisibility)
+    return unit.Parent.HasAbility(data.AbilityInvisibility)
 }
 
 func (unit *OverworldUnit) IsSailing() bool {
@@ -312,7 +324,7 @@ func (unit *OverworldUnit) IsSailing() bool {
 }
 
 func (unit *OverworldUnit) IsLandWalker() bool {
-    if unit.IsFlying() || unit.IsSwimmer() || unit.IsSailing() || unit.HasAbility(data.AbilityNonCorporeal) {
+    if unit.Parent.IsFlying() || unit.Parent.IsSwimmer() || unit.Parent.IsSailing() || unit.Parent.HasAbility(data.AbilityNonCorporeal) {
         return false
     }
 
@@ -320,7 +332,7 @@ func (unit *OverworldUnit) IsLandWalker() bool {
 }
 
 func (unit *OverworldUnit) IsSwimmer() bool {
-    return unit.Unit.Swimming || unit.HasEnchantment(data.UnitEnchantmentWaterWalking)
+    return unit.Unit.Swimming || unit.Parent.HasEnchantment(data.UnitEnchantmentWaterWalking)
 }
 
 func (unit *OverworldUnit) AddExperience(amount int) {
@@ -877,7 +889,7 @@ func MakeOverworldUnit(unit Unit, x int, y int, plane data.Plane) *OverworldUnit
 }
 
 func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner data.BannerType, experienceInfo ExperienceInfo, globalEnchantment GlobalEnchantmentProvider) *OverworldUnit {
-    return &OverworldUnit{
+    out := &OverworldUnit{
         Unit: unit,
         Banner: banner,
         Plane: plane,
@@ -886,6 +898,10 @@ func MakeOverworldUnitFromUnit(unit Unit, x int, y int, plane data.Plane, banner
         X: x,
         Y: y,
     }
+
+    // by default the Parent points to self
+    out.Parent = out
+    return out
 }
 
 /* restore health points on the overworld
@@ -931,7 +947,7 @@ func (unit *OverworldUnit) GetArtifacts() []*artifact.Artifact {
 }
 
 func (unit *OverworldUnit) GetSightRange() int {
-    scouting := unit.GetAbilityValue(data.AbilityScouting)
+    scouting := unit.Parent.GetAbilityValue(data.AbilityScouting)
     if scouting >= 2 {
         return int(scouting)
     }
