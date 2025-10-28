@@ -283,6 +283,7 @@ const (
 
 type CastPlayer struct {
     player *playerlib.Player
+    remainingCastingSkill int
     castingSkill int
     manaPerTurn int
     mana int
@@ -306,10 +307,12 @@ func (castPlayer *CastPlayer) ComputeTurnsToCast(cost int) int {
 
     usableMana := castPlayer.mana
 
+    castingSkill := castPlayer.remainingCastingSkill 
+
     for cost > 0 {
         if cost <= usableMana {
-            cost -= castPlayer.castingSkill
-            usableMana -= castPlayer.castingSkill
+            cost -= castingSkill
+            usableMana -= castingSkill
         } else {
             // if mana is 0 and manaPerTurn is negative then we basically can never cast the spell
             if usableMana <= 0 && castPlayer.manaPerTurn <= 0 {
@@ -318,7 +321,7 @@ func (castPlayer *CastPlayer) ComputeTurnsToCast(cost int) int {
             }
 
             // there is probably a closed-form equation for this
-            spend := max(1, min(castPlayer.castingSkill, usableMana))
+            spend := max(1, min(castingSkill, usableMana))
             cost -= spend
             usableMana -= spend
             if castPlayer.manaPerTurn > 0 {
@@ -329,11 +332,12 @@ func (castPlayer *CastPlayer) ComputeTurnsToCast(cost int) int {
         if cost > 0 {
             turns += 1
         }
+
+        castingSkill = castPlayer.castingSkill
     }
 
     return turns
 }
-
 
 type GameState int
 const (
@@ -6024,6 +6028,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
 
     castPlayer := CastPlayer{
         player: player,
+        remainingCastingSkill: player.RemainingCastingSkill,
         castingSkill: player.ComputeOverworldCastingSkill(),
         manaPerTurn: player.ManaPerTurn(game.ComputePower(player), game),
         mana: player.Mana,

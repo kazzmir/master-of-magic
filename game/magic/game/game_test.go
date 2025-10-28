@@ -143,6 +143,7 @@ func TestCastTurns(test *testing.T){
     // enough mana to cast in one turn
     cast1 := CastPlayer{
         player: nil,
+        remainingCastingSkill: 10,
         castingSkill: 10,
         manaPerTurn: 5,
         mana: 100,
@@ -155,6 +156,7 @@ func TestCastTurns(test *testing.T){
     // take multiple turns, but doesn't run out of mana
     cast2 := CastPlayer{
         player: nil,
+        remainingCastingSkill: 10,
         castingSkill: 10,
         manaPerTurn: 0,
         mana: 100,
@@ -167,6 +169,7 @@ func TestCastTurns(test *testing.T){
     // runs out of mana before casting
     cast3 := CastPlayer{
         player: nil,
+        remainingCastingSkill: 10,
         castingSkill: 10,
         manaPerTurn: 4,
         mana: 10,
@@ -179,6 +182,7 @@ func TestCastTurns(test *testing.T){
 
     cast4 := CastPlayer{
         player: nil,
+        remainingCastingSkill: 10,
         castingSkill: 10,
         manaPerTurn: 20,
         mana: 0,
@@ -191,6 +195,7 @@ func TestCastTurns(test *testing.T){
 
     cast5 := CastPlayer{
         player: nil,
+        remainingCastingSkill: 10,
         castingSkill: 10,
         manaPerTurn: -5,
         mana: 10,
