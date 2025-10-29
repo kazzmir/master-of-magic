@@ -1061,7 +1061,7 @@ func (mapObject *Map) GetRoadNeighbors(x int, y int) map[Direction]bool {
                 continue
             }
 
-            out[convert(dx, dy)] = mapObject.ContainsRoad(x + dx, y + dy) || mapObject.CityProvider.ContainsCity(x + dx, y + dy, mapObject.Plane)
+            out[convert(dx, dy)] = mapObject.ContainsRoad(mapObject.WrapX(x + dx), y + dy) || mapObject.CityProvider.ContainsCity(mapObject.WrapX(x + dx), y + dy, mapObject.Plane)
         }
     }
 
