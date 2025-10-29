@@ -1308,7 +1308,7 @@ func (saveGame *SaveGame) convertArtifacts(spells spellbook.Spells) []*artifact.
         }
 
         if item.Movement != 0 {
-            powers = append(powers, artifact.Power{Type: artifact.PowerTypeMovement, Amount: int(item.Movement), Name: fmt.Sprintf("+%v Movement", item.Movement)})
+            powers = append(powers, artifact.Power{Type: artifact.PowerTypeMovement, Amount: int(item.Movement/2), Name: fmt.Sprintf("+%v Movement", item.Movement/2)})
         }
 
         if item.Resistance != 0 {
