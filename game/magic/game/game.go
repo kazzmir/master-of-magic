@@ -4200,7 +4200,11 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                 }
             }
 
+            // have to force the ui to refresh because we are not processing events here
+            game.HudUI = game.MakeHudUI()
+
             // some units in the stack might not have any moves left
+            /*
             beforeActive := len(stack.ActiveUnits())
             stack.EnableMovers()
             afterActive := len(stack.ActiveUnits())
@@ -4208,6 +4212,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                 // stopMoving = true
                 break
             }
+            */
         } else {
             // can't move, so abort the rest of the path
             stopMoving = true
@@ -4219,6 +4224,14 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         stack.CurrentPath = nil
     } else if stepsTaken > 0 {
         stack.CurrentPath = stack.CurrentPath[stepsTaken:]
+    }
+
+    // there might be some units in the stack that can still move, but if they move as a group
+    // then all units should be out of moves once the unit with least amount of movement points is done
+    if stack.GetRemainingMoves().IsZero() {
+        stack.ExhaustMoves()
+        game.DoNextUnit(player)
+        game.RefreshUI()
     }
 
     // only merge stacks if both stacks are stopped, otherwise they can move through each other
@@ -4234,6 +4247,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         newCity.UpdateUnrest()
     }
 
+    /*
     if stepsTaken > 0 {
         if stack.AnyOutOfMoves() {
             stack.ExhaustMoves()
@@ -4242,6 +4256,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
         game.RefreshUI()
     }
+    */
 }
 
 // given a position on the screen in pixels, return true if the position is within the area of the ui designated for the overworld
@@ -7391,9 +7406,11 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         }
         */
 
-        select {
-            case game.Events<- &GameEventMoveUnit{Player: player}:
-            default:
+        if player.SelectedStack != nil && len(player.SelectedStack.CurrentPath) > 0 {
+            select {
+                case game.Events<- &GameEventMoveUnit{Player: player}:
+                default:
+            }
         }
 
         game.RefreshUI()
