@@ -66,6 +66,10 @@ func renderUpkeep(screen *ebiten.Image, imageCache *util.ImageCache, unit UnitVi
     unitCostFood := unit.GetUpkeepFood()
     unitCostMana := unit.GetUpkeepMana()
 
+    for _, enchantment := range unit.GetUpkeepEnchantments() {
+        unitCostMana += enchantment.UpkeepMana()
+    }
+
     smallCoin, _ := imageCache.GetImage("backgrnd.lbx", 42, 0)
     smallFood, _ := imageCache.GetImage("backgrnd.lbx", 40, 0)
     smallMana, _ := imageCache.GetImage("backgrnd.lbx", 43, 0)

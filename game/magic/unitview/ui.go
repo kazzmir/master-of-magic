@@ -68,6 +68,7 @@ type UnitView interface {
     GetName() string
     GetLbxFile() string
     GetLbxIndex() int
+    GetUpkeepEnchantments() []data.UnitEnchantment
     GetCombatIndex(units.Facing) int
     GetCombatLbxFile() string
     GetTitle() string // for heroes. normal units will not have a title
