@@ -757,11 +757,16 @@ func (player *Player) TotalUnitUpkeepFood() int {
     return total
 }
 
+// cost to maintain fantastic creaturess as well as enchantments on units
 func (player *Player) TotalUnitUpkeepMana() int {
     total := 0
 
     for _, unit := range player.Units {
         total += unit.GetUpkeepMana()
+
+        for _, enchantment := range unit.GetUpkeepEnchantments() {
+            total += enchantment.UpkeepMana()
+        }
     }
 
     return total
@@ -1116,6 +1121,7 @@ func (player *Player) FoodPerTurn() int {
     return food
 }
 
+// the total mana upkeep from global enchantments and city enchantments (but not unit enchantments)
 func (player *Player) TotalEnchantmentUpkeep(cityEnchantmentsProvider CityEnchantmentsProvider) int {
     upkeep := 0
 
@@ -1125,12 +1131,6 @@ func (player *Player) TotalEnchantmentUpkeep(cityEnchantmentsProvider CityEnchan
 
     for _, cityEnchanment := range cityEnchantmentsProvider.GetCityEnchantmentsByBanner(player.GetBanner()) {
         upkeep += cityEnchanment.Enchantment.Enchantment.UpkeepMana()
-    }
-
-    for _, unit := range player.Units {
-        for _, enchantment := range unit.GetUpkeepEnchantments() {
-            upkeep += enchantment.UpkeepMana()
-        }
     }
 
     return upkeep
