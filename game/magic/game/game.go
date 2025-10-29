@@ -4324,7 +4324,6 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
                         inactiveUnits := stack.InactiveUnits()
                         if len(inactiveUnits) > 0 {
-                            log.Printf("Split stack remove %v", inactiveUnits)
                             stack.RemoveUnits(inactiveUnits)
                             inactiveStack = player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
                             game.RefreshUI()
@@ -7407,9 +7406,11 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         }
         */
 
-        select {
-            case game.Events<- &GameEventMoveUnit{Player: player}:
-            default:
+        if player.SelectedStack != nil && len(player.SelectedStack.CurrentPath) > 0 {
+            select {
+                case game.Events<- &GameEventMoveUnit{Player: player}:
+                default:
+            }
         }
 
         game.RefreshUI()
