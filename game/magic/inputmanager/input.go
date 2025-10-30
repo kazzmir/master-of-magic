@@ -138,11 +138,3 @@ func Wheel() (float64, float64) {
 
     return x, y
 }
-
-func IsQuitKey(key ebiten.Key) bool {
-    return key == ebiten.KeyEscape || key == ebiten.KeyCapsLock
-}
-
-func IsQuitPressed() bool {
-    return inpututil.IsKeyJustPressed(ebiten.KeyEscape) || inpututil.IsKeyJustPressed(ebiten.KeyCapsLock)
-}
