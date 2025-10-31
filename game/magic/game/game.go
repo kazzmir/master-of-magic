@@ -9161,7 +9161,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     }
 
     // draw current path on top of fog
-    if overworld.SelectedStack != nil {
+    if overworld.SelectedStack != nil && len(overworld.SelectedStack.CurrentPath) > 0 {
         boot, _ := overworld.ImageCache.GetImage("compix.lbx", 72, 0)
         var options ebiten.DrawImageOptions
 
