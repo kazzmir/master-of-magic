@@ -5009,16 +5009,16 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
     }
 
     switch encounter.Type {
-        case maplib.EncounterTypeLair, maplib.EncounterTypeCave: zone.Lair = true
-        case maplib.EncounterTypePlaneTower: zone.Tower = true
-        case maplib.EncounterTypeAncientTemple: zone.AncientTemple = true
-        case maplib.EncounterTypeFallenTemple: zone.FallenTemple = true
-        case maplib.EncounterTypeRuins: zone.Ruins = true
-        case maplib.EncounterTypeAbandonedKeep: zone.AbandonedKeep = true
-        case maplib.EncounterTypeDungeon: zone.Dungeon = true
-        case maplib.EncounterTypeNatureNode: zone.NatureNode = true
-        case maplib.EncounterTypeSorceryNode: zone.SorceryNode = true
-        case maplib.EncounterTypeChaosNode: zone.ChaosNode = true
+        case maplib.EncounterTypeLair, maplib.EncounterTypeCave: zone.Encounter = combat.ZoneLair
+        case maplib.EncounterTypePlaneTower: zone.Encounter = combat.ZoneTower
+        case maplib.EncounterTypeAncientTemple: zone.Encounter = combat.ZoneAncientTemple
+        case maplib.EncounterTypeFallenTemple: zone.Encounter = combat.ZoneFallenTemple
+        case maplib.EncounterTypeRuins: zone.Encounter = combat.ZoneRuins
+        case maplib.EncounterTypeAbandonedKeep: zone.Encounter = combat.ZoneAbandonedKeep
+        case maplib.EncounterTypeDungeon: zone.Encounter = combat.ZoneDungeon
+        case maplib.EncounterTypeNatureNode: zone.Encounter = combat.ZoneNatureNode
+        case maplib.EncounterTypeSorceryNode: zone.Encounter = combat.ZoneSorceryNode
+        case maplib.EncounterTypeChaosNode: zone.Encounter = combat.ZoneChaosNode
     }
 
     result := game.doCombat(yield, player, stack, defender, playerlib.MakeUnitStackFromUnits(enemies), zone)

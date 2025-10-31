@@ -43,35 +43,34 @@ const (
     DamageUndead
 )
 
+type ZoneEncounter int
+const (
+    ZoneNone ZoneEncounter = iota
+    ZoneAncientTemple
+    ZoneFallenTemple
+    ZoneRuins
+    ZoneAbandonedKeep
+    ZoneLair
+    ZoneTower
+    ZoneDungeon
+    ZoneChaosNode
+    ZoneNatureNode
+    ZoneSorceryNode
+)
+
 type ZoneType struct {
     // fighting in a city
     City *citylib.City
 
-    AncientTemple bool
-    FallenTemple bool
-    Ruins bool
-    AbandonedKeep bool
-    Lair bool
-    Tower bool
-    Dungeon bool
-
-    // one of the three node types
-    ChaosNode bool
-    NatureNode bool
-    SorceryNode bool
+    // a lair or node
+    Encounter ZoneEncounter
 }
 
 func (zone *ZoneType) GetMagic() data.MagicType {
-    if zone.ChaosNode {
-        return data.ChaosMagic
-    }
-
-    if zone.NatureNode {
-        return data.NatureMagic
-    }
-
-    if zone.SorceryNode {
-        return data.SorceryMagic
+    switch zone.Encounter {
+        case ZoneChaosNode: return data.ChaosMagic
+        case ZoneNatureNode: return data.NatureMagic
+        case ZoneSorceryNode: return data.SorceryMagic
     }
 
     return data.MagicNone
@@ -353,71 +352,74 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             createCityWall(tiles, TownCenterX, TownCenterY, 4)
         }
 
-    } else if zone.Tower {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 20,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.AbandonedKeep {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 22,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.AncientTemple {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 23,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.FallenTemple {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            // FIXME: check on this
-            Index: 21,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.Lair {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 19,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.Ruins || zone.Dungeon {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 21,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.NatureNode {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 65,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.SorceryNode {
-        tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-            Lbx: "cmbtcity.lbx",
-            Index: 66,
-            Alignment: TileAlignBottom,
-        }
-    } else if zone.ChaosNode {
-        tiles[TownCenterY-1][TownCenterX].ExtraObject = TileTop{
-            Drawer: func(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64) {
-                base, _ := imageCache.GetImageTransform("chriver.lbx", 32, 0, "crop", util.AutoCrop)
-                scale.DrawScaled(screen, base, options)
+    } else {
+        switch zone.Encounter {
+            case ZoneTower:
+                tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+                    Lbx: "cmbtcity.lbx",
+                    Index: 20,
+                    Alignment: TileAlignBottom,
+                }
+            case ZoneAbandonedKeep:
+                tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+                    Lbx: "cmbtcity.lbx",
+                    Index: 22,
+                    Alignment: TileAlignBottom,
+                }
+            case ZoneAncientTemple:
+                tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+                    Lbx: "cmbtcity.lbx",
+                    Index: 23,
+                    Alignment: TileAlignBottom,
+                }
+            case ZoneFallenTemple:
+                tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+                    Lbx: "cmbtcity.lbx",
+                    // FIXME: check on this
+                    Index: 21,
+                    Alignment: TileAlignBottom,
+                }
+            case ZoneLair:
+                tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+                    Lbx: "cmbtcity.lbx",
+                    Index: 19,
+                    Alignment: TileAlignBottom,
+                }
+            case ZoneRuins, ZoneDungeon:
+                tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+                    Lbx: "cmbtcity.lbx",
+                    Index: 21,
+                    Alignment: TileAlignBottom,
+                }
+            case ZoneNatureNode:
+                tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+                    Lbx: "cmbtcity.lbx",
+                    Index: 65,
+                    Alignment: TileAlignBottom,
+                }
+            case ZoneSorceryNode:
+                tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
+                    Lbx: "cmbtcity.lbx",
+                    Index: 66,
+                    Alignment: TileAlignBottom,
+                }
+            case ZoneChaosNode:
+                tiles[TownCenterY-1][TownCenterX].ExtraObject = TileTop{
+                    Drawer: func(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64) {
+                        base, _ := imageCache.GetImageTransform("chriver.lbx", 32, 0, "crop", util.AutoCrop)
+                        scale.DrawScaled(screen, base, options)
 
-                top, _ := imageCache.GetImage("chriver.lbx", 24 + int((counter / 4) % 8), 0)
-                var geom2 ebiten.GeoM
-                geom2.Translate(float64(16), float64(-3))
-                geom2.Concat(options.GeoM)
+                        top, _ := imageCache.GetImage("chriver.lbx", 24 + int((counter / 4) % 8), 0)
+                        var geom2 ebiten.GeoM
+                        geom2.Translate(float64(16), float64(-3))
+                        geom2.Concat(options.GeoM)
 
-                saved := options.GeoM
-                options.GeoM = geom2
-                scale.DrawScaled(screen, top, options)
-                options.GeoM = saved
-            },
+                        saved := options.GeoM
+                        options.GeoM = geom2
+                        scale.DrawScaled(screen, top, options)
+                        options.GeoM = saved
+                    },
+                }
         }
     }
 
