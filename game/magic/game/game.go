@@ -9037,8 +9037,11 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 
     // compute how many maps can fit in the given range
     for fit := range ( (boundX2 - boundX1) / overworld.Map.Width() ) {
-        mapXOffsets = append(mapXOffsets, (fit + 1) * overworld.Map.Width())
-        mapXOffsets = append(mapXOffsets, (fit - 1) * overworld.Map.Width())
+        n := fit + 1
+        // add one width to the right
+        mapXOffsets = append(mapXOffsets, n * overworld.Map.Width())
+        // and to the left
+        mapXOffsets = append(mapXOffsets, -n * overworld.Map.Width())
     }
 
     // mapXOffsets will contain [0, -mapWidth, +mapWidth, -2*mapWidth, +2*mapWidth, ...]
