@@ -71,11 +71,7 @@ func (camera *Camera) Move(dx int, dy int) {
 
 func (camera *Camera) Center(x int, y int) {
     camera.X = x
-    camera.Y = y
-
-    if camera.Y < 0 {
-        camera.Y = 0
-    }
+    camera.Y = max(0, y)
 }
 
 // return the bounds of a rectangle upper left (x1, y1) and lower right (x2, y2)

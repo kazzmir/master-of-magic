@@ -2164,13 +2164,27 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
     neighbors := func (x int, y int) []image.Point {
         out := make([]image.Point, 0, 8)
 
+        // cardinals first, followed by diagonals
+        // left
+        out = append(out, image.Pt(x - 1, y))
+
+        // up
+        if y > 0 {
+            out = append(out, image.Pt(x, y - 1))
+        }
+
+        // right
+        out = append(out, image.Pt(x + 1, y))
+
+        // down
+        if y < useMap.Height() - 1 {
+            out = append(out, image.Pt(x, y + 1))
+        }
+
         // up left
         if y > 0 {
             out = append(out, image.Pt(x - 1, y - 1))
         }
-
-        // left
-        out = append(out, image.Pt(x - 1, y))
 
         // down left
         if y < useMap.Height() - 1 {
@@ -2182,22 +2196,9 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
             out = append(out, image.Pt(x + 1, y - 1))
         }
 
-        // up
-        if y > 0 {
-            out = append(out, image.Pt(x, y - 1))
-        }
-
-        // right
-        out = append(out, image.Pt(x + 1, y))
-
         // down right
         if y < useMap.Height() - 1 {
             out = append(out, image.Pt(x + 1, y + 1))
-        }
-
-        // down
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x, y + 1))
         }
 
         return out

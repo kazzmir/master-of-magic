@@ -6,7 +6,8 @@ import (
     "image"
     "slices"
     "math"
-    _ "log"
+    "log"
+    "cmp"
 
     "github.com/kazzmir/master-of-magic/lib/priority"
 )
@@ -42,6 +43,8 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
         previous *Node
         visited bool
         cost float64
+        // keep track of when nodes were added to enforce ordering for equal cost nodes
+        time int
     }
 
     var endNode *Node
@@ -52,6 +55,7 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
         point: start,
         cost: 0,
         visited: false,
+        time: 0,
     }
 
     lowestCost := Infinity
@@ -65,12 +69,13 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
             return 1
         }
 
-        return 0
+        return cmp.Compare(a.time, b.time)
     }
 
     unvisited := priority.MakePriorityQueue[*Node](compare)
     unvisited.Insert(nodes[start])
 
+    globalTime := 0
     for !unvisited.IsEmpty() {
         node := unvisited.ExtractMin()
 
@@ -78,7 +83,7 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
             continue
         }
 
-        // log.Printf("visiting node: %+v", node)
+        log.Printf("visiting node: %+v", node)
 
         nodes[node.point].visited = true
 
@@ -96,14 +101,16 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
         }
 
         for _, neighbor := range neighbors(node.point.X, node.point.Y) {
+            globalTime += 1
             newNode, ok := nodes[neighbor]
             if !ok {
-                newNode = &Node{point: neighbor, cost: Infinity}
+                newNode = &Node{point: neighbor, cost: Infinity, time: globalTime}
                 nodes[neighbor] = newNode
             }
 
             newCost := node.cost + tileCost(node.point.X, node.point.Y, newNode.point.X, newNode.point.Y)
             if newCost < newNode.cost {
+                log.Printf("updating node %+v cost from %f to %f", newNode.point, newNode.cost, newCost)
                 newNode.cost = newCost
                 newNode.previous = node
                 unvisited.Insert(newNode)
@@ -134,6 +141,7 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
         out = append(out, start)
 
         slices.Reverse(out)
+
         return out, true
     }
 
