@@ -6797,16 +6797,36 @@ func (game *Game) MakeHudUI() *uilib.UI {
     // minimap
     minimapRect := image.Rect(250, 20, 250 + 60, 20 + 32)
     var minimapPoint image.Point
+    moveMinimap := func(){
+
+        middleMapX := minimapRect.Bounds().Dx() / 2
+        middleMapY := minimapRect.Bounds().Dy() / 2
+
+        x := game.Camera.X + (minimapPoint.X - middleMapX) * game.CurrentMap().Width() / minimapRect.Dx()
+        y := game.Camera.Y + (minimapPoint.Y - middleMapY) * game.CurrentMap().Height() / minimapRect.Dy()
+
+        log.Printf("Move to %v, %v", x, y)
+
+        select {
+            case game.Events <- &GameEventMoveCamera{Plane: game.Plane, X: x, Y: y, Instant: false}:
+            default:
+        }
+    }
     elements = append(elements, &uilib.UIElement{
         Rect: minimapRect,
+        /*
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             util.DrawRect(screen, scale.ScaleRect(minimapRect), color.RGBA{R: 255, A: 255})
         },
+        */
         Inside: func(this *uilib.UIElement, x int, y int){
             minimapPoint = image.Pt(x, y)
         },
+        RightClick: func(this *uilib.UIElement){
+            moveMinimap()
+        },
         LeftClick: func(this *uilib.UIElement){
-            log.Printf("minimap left click at %v", minimapPoint)
+            moveMinimap()
         },
     })
 
