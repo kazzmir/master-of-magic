@@ -1,9 +1,9 @@
 package camera
 
-const ZoomMin = 3
-const ZoomMax = 10
-const ZoomDefault = 10
-const ZoomStep = 10
+const ZoomMin = 2
+const ZoomMax = 12
+const ZoomDefault = ZoomMax
+// const ZoomStep = 15
 
 type Camera struct {
     // tile coordinates
@@ -39,7 +39,7 @@ func (camera *Camera) GetZoom() float64 {
 }
 
 func (camera *Camera) GetAnimatedZoom() float64 {
-    return ((float64(camera.Zoom) + camera.AnimatedZoom) / float64(ZoomStep))
+    return ((float64(camera.Zoom) + camera.AnimatedZoom) / float64(ZoomMax))
 }
 
 func (camera *Camera) GetZoomedX() float64 {
