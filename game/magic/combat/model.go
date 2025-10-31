@@ -62,22 +62,8 @@ type ZoneType struct {
     // fighting in a city
     City *citylib.City
 
+    // a lair or node
     Encounter ZoneEncounter
-
-    /*
-    AncientTemple bool
-    FallenTemple bool
-    Ruins bool
-    AbandonedKeep bool
-    Lair bool
-    Tower bool
-    Dungeon bool
-
-    // one of the three node types
-    ChaosNode bool
-    NatureNode bool
-    SorceryNode bool
-    */
 }
 
 func (zone *ZoneType) GetMagic() data.MagicType {
