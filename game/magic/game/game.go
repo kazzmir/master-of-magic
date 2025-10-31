@@ -6794,6 +6794,22 @@ func (game *Game) MakeHudUI() *uilib.UI {
         game.RefreshUI()
     }))
 
+    // minimap
+    minimapRect := image.Rect(250, 20, 250 + 60, 20 + 32)
+    var minimapPoint image.Point
+    elements = append(elements, &uilib.UIElement{
+        Rect: minimapRect,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            util.DrawRect(screen, scale.ScaleRect(minimapRect), color.RGBA{R: 255, A: 255})
+        },
+        Inside: func(this *uilib.UIElement, x int, y int){
+            minimapPoint = image.Pt(x, y)
+        },
+        LeftClick: func(this *uilib.UIElement){
+            log.Printf("minimap left click at %v", minimapPoint)
+        },
+    })
+
     if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
         player := game.Players[0]
         // stack := player.SelectedStack
