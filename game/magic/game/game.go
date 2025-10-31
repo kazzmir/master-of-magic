@@ -9026,6 +9026,22 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         return outX, outY
     }
 
+    boundX1, _, boundX2, _ := overworld.Camera.GetTileBounds()
+
+    // all sprites have to be drawn N times to account for the zoom level being high enough
+    // that the sprite might be visible on both edges of the map
+    mapXOffsets := []int{0}
+
+    // log.Printf("Fit %d maps\n", (boundX2 - boundX1) / overworld.Map.Width())
+
+    // compute how many maps can fit in the given range
+    for fit := range ( (boundX2 - boundX1) / overworld.Map.Width() ) {
+        mapXOffsets = append(mapXOffsets, (fit + 1) * overworld.Map.Width())
+        mapXOffsets = append(mapXOffsets, (fit - 1) * overworld.Map.Width())
+    }
+
+    // mapXOffsets will contain [0, -mapWidth, +mapWidth, -2*mapWidth, +2*mapWidth, ...]
+
     cityPositions := make(map[image.Point]struct{})
 
     for _, city := range overworld.Cities {
@@ -9035,20 +9051,23 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         cityPic, err = GetCityImage(city, overworld.ImageCache)
 
         if err == nil {
-            var options ebiten.DrawImageOptions
+            // var options ebiten.DrawImageOptions
 
             cityX, cityY := overworld.ToCameraCoordinates(city.X, city.Y)
 
-            x, y := convertTileCoordinates(cityX, cityY)
-            // x, y := cityX, cityY
-            // options.GeoM = geom
-            // draw the city in the center of the tile
-            // first compute center of tile
-            options.GeoM.Translate(float64(x + tileWidth / 2.0), float64(y + tileHeight / 2.0))
-            // then move the city image so that the center of the image is at the center of the tile
-            options.GeoM.Translate(float64(-cityPic.Bounds().Dx()) / 2.0, float64(-cityPic.Bounds().Dy()) / 2.0)
-            options.GeoM.Concat(geom)
-            scale.DrawScaled(screen, cityPic, &options)
+            var cityGeom ebiten.GeoM
+            cityGeom.Translate(float64(tileWidth / 2.0), float64(tileHeight / 2.0))
+            cityGeom.Translate(float64(-cityPic.Bounds().Dx()) / 2.0, float64(-cityPic.Bounds().Dy()) / 2.0)
+            cityGeom.Concat(geom)
+
+            var drawOptions ebiten.DrawImageOptions
+            for _, offset := range mapXOffsets {
+                x, y := convertTileCoordinates(cityX + offset, cityY)
+                drawOptions.GeoM.Reset()
+                drawOptions.GeoM.Translate(float64(x), float64(y))
+                drawOptions.GeoM.Concat(cityGeom)
+                scale.DrawScaled(screen, cityPic, &drawOptions)
+            }
 
             /*
             tx, ty := geom.Apply(float64(x), float64(y))
