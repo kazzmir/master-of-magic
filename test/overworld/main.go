@@ -87,11 +87,12 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{LandSize: 0})
 
     game.Plane = data.PlaneArcanus
 
     player := game.AddPlayer(wizard, true)
+    player.Admin = true
 
     player.TaxRate = fraction.Zero()
 

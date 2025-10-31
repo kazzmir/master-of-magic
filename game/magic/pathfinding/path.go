@@ -7,6 +7,7 @@ import (
     "slices"
     "math"
     _ "log"
+    "cmp"
 
     "github.com/kazzmir/master-of-magic/lib/priority"
 )
@@ -42,6 +43,8 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
         previous *Node
         visited bool
         cost float64
+        // keep track of when nodes were added to enforce ordering for equal cost nodes
+        time uint64
     }
 
     var endNode *Node
@@ -52,6 +55,7 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
         point: start,
         cost: 0,
         visited: false,
+        time: 0,
     }
 
     lowestCost := Infinity
@@ -65,20 +69,19 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
             return 1
         }
 
-        return 0
+        return cmp.Compare(a.time, b.time)
     }
 
     unvisited := priority.MakePriorityQueue[*Node](compare)
     unvisited.Insert(nodes[start])
 
+    var globalTime uint64 = 0
     for !unvisited.IsEmpty() {
         node := unvisited.ExtractMin()
 
         if node.visited {
             continue
         }
-
-        // log.Printf("visiting node: %+v", node)
 
         nodes[node.point].visited = true
 
@@ -96,9 +99,10 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
         }
 
         for _, neighbor := range neighbors(node.point.X, node.point.Y) {
+            globalTime += 1
             newNode, ok := nodes[neighbor]
             if !ok {
-                newNode = &Node{point: neighbor, cost: Infinity}
+                newNode = &Node{point: neighbor, cost: Infinity, time: globalTime}
                 nodes[neighbor] = newNode
             }
 
@@ -134,6 +138,7 @@ func FindPath(start image.Point, end image.Point, maxPath float64, tileCost Tile
         out = append(out, start)
 
         slices.Reverse(out)
+
         return out, true
     }
 

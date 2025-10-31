@@ -252,7 +252,7 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
             return
         }
 
-        log.Printf("Found candidate %v size %v", path, info.Size())
+        log.Printf("Found soundfont candidate %v size %v", path, info.Size())
 
         // FIXME: check that the file is really a soundfont by opening it
 

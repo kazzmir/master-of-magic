@@ -2164,13 +2164,27 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
     neighbors := func (x int, y int) []image.Point {
         out := make([]image.Point, 0, 8)
 
+        // cardinals first, followed by diagonals
+        // left
+        out = append(out, image.Pt(x - 1, y))
+
+        // up
+        if y > 0 {
+            out = append(out, image.Pt(x, y - 1))
+        }
+
+        // right
+        out = append(out, image.Pt(x + 1, y))
+
+        // down
+        if y < useMap.Height() - 1 {
+            out = append(out, image.Pt(x, y + 1))
+        }
+
         // up left
         if y > 0 {
             out = append(out, image.Pt(x - 1, y - 1))
         }
-
-        // left
-        out = append(out, image.Pt(x - 1, y))
 
         // down left
         if y < useMap.Height() - 1 {
@@ -2182,22 +2196,9 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
             out = append(out, image.Pt(x + 1, y - 1))
         }
 
-        // up
-        if y > 0 {
-            out = append(out, image.Pt(x, y - 1))
-        }
-
-        // right
-        out = append(out, image.Pt(x + 1, y))
-
         // down right
         if y < useMap.Height() - 1 {
             out = append(out, image.Pt(x + 1, y + 1))
-        }
-
-        // down
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x, y + 1))
         }
 
         return out
@@ -3804,7 +3805,7 @@ func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
         camera.Center(x, y)
     }
 
-    for camera.GetZoomedMaxY() >= float64(game.CurrentMap().Height()) {
+    for camera.GetZoomedMaxY() >= float64(game.CurrentMap().Height()) && camera.Y > 0 {
         y -= 1
         camera.Center(x, y)
     }
@@ -9026,6 +9027,22 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         return outX, outY
     }
 
+    boundX1, _, boundX2, _ := overworld.Camera.GetTileBounds()
+
+    // all sprites have to be drawn N times to account for the zoom level being high enough
+    // that the sprite might be visible on both edges of the map
+    mapXOffsets := []int{0}
+
+    // log.Printf("Fit %d maps\n", (boundX2 - boundX1) / overworld.Map.Width())
+
+    // compute how many maps can fit in the given range
+    for fit := range ( (boundX2 - boundX1) / overworld.Map.Width() ) {
+        mapXOffsets = append(mapXOffsets, (fit + 1) * overworld.Map.Width())
+        mapXOffsets = append(mapXOffsets, (fit - 1) * overworld.Map.Width())
+    }
+
+    // mapXOffsets will contain [0, -mapWidth, +mapWidth, -2*mapWidth, +2*mapWidth, ...]
+
     cityPositions := make(map[image.Point]struct{})
 
     for _, city := range overworld.Cities {
@@ -9035,20 +9052,23 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         cityPic, err = GetCityImage(city, overworld.ImageCache)
 
         if err == nil {
-            var options ebiten.DrawImageOptions
+            // var options ebiten.DrawImageOptions
 
             cityX, cityY := overworld.ToCameraCoordinates(city.X, city.Y)
 
-            x, y := convertTileCoordinates(cityX, cityY)
-            // x, y := cityX, cityY
-            // options.GeoM = geom
-            // draw the city in the center of the tile
-            // first compute center of tile
-            options.GeoM.Translate(float64(x + tileWidth / 2.0), float64(y + tileHeight / 2.0))
-            // then move the city image so that the center of the image is at the center of the tile
-            options.GeoM.Translate(float64(-cityPic.Bounds().Dx()) / 2.0, float64(-cityPic.Bounds().Dy()) / 2.0)
-            options.GeoM.Concat(geom)
-            scale.DrawScaled(screen, cityPic, &options)
+            var cityGeom ebiten.GeoM
+            cityGeom.Translate(float64(tileWidth / 2.0), float64(tileHeight / 2.0))
+            cityGeom.Translate(float64(-cityPic.Bounds().Dx()) / 2.0, float64(-cityPic.Bounds().Dy()) / 2.0)
+            cityGeom.Concat(geom)
+
+            var drawOptions ebiten.DrawImageOptions
+            for _, offset := range mapXOffsets {
+                x, y := convertTileCoordinates(cityX + offset, cityY)
+                drawOptions.GeoM.Reset()
+                drawOptions.GeoM.Translate(float64(x), float64(y))
+                drawOptions.GeoM.Concat(cityGeom)
+                scale.DrawScaled(screen, cityPic, &drawOptions)
+            }
 
             /*
             tx, ty := geom.Apply(float64(x), float64(y))
@@ -9087,49 +9107,51 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
             stackX := float64(overworld.Map.XDistance(overworld.Camera.GetX(), stack.X()) + overworld.Camera.GetX())
             stackY := float64(stack.Y())
             */
-            stackX, stackY := overworld.ToCameraCoordinates(stack.X(), stack.Y())
+            for _, offset := range mapXOffsets {
+                options.GeoM.Reset()
+                stackX, stackY := overworld.ToCameraCoordinates(stack.X(), stack.Y())
 
-            // log.Printf("World %v, %v -> camera %v, %v. Camera: %v, %v", stack.X(), stack.Y(), stackX, stackY, overworld.Camera.GetX(), overworld.Camera.GetY())
+                // log.Printf("World %v, %v -> camera %v, %v. Camera: %v, %v", stack.X(), stack.Y(), stackX, stackY, overworld.Camera.GetX(), overworld.Camera.GetY())
 
-            // x, y := convertTileCoordinates(stackX, stackY)
-            x, y := float64(stackX), float64(stackY)
+                // x, y := convertTileCoordinates(stackX, stackY)
+                x, y := float64(stackX), float64(stackY)
 
-            // nx := overworld.Map.WrapX(x - overworld.Camera.GetX()) + overworld.Camera.GetX() + 6
+                // nx := overworld.Map.WrapX(x - overworld.Camera.GetX()) + overworld.Camera.GetX() + 6
 
-            options.GeoM.Translate((x + float64(stack.OffsetX())) * float64(tileWidth), (y + float64(stack.OffsetY())) * float64(tileHeight))
+                options.GeoM.Translate((x + float64(offset) + float64(stack.OffsetX())) * float64(tileWidth), (y + float64(stack.OffsetY())) * float64(tileHeight))
 
-            leader := stack.Leader()
+                leader := stack.Leader()
 
-            unitBack, err := units.GetUnitBackgroundImage(leader.GetBanner(), overworld.ImageCache)
-            if err == nil {
-                saveGeom := options.GeoM
-                options.GeoM.Concat(geom)
-                scale.DrawScaled(screen, unitBack, &options)
-                options.GeoM = saveGeom
-            }
-
-            pic, err := unitview.GetUnitOverworldImage(overworld.ImageCache, leader)
-            if err == nil {
-                // screen scale is already taken into account, so we can translate by 1 pixel here
-                options.GeoM.Translate(1, 1)
-                options.GeoM.Concat(geom)
-
-                if leader.GetBusy() != units.BusyStatusNone {
-                    var patrolOptions colorm.DrawImageOptions
-                    var matrix colorm.ColorM
-                    patrolOptions.GeoM = scale.ScaleGeom(options.GeoM)
-                    matrix.ChangeHSV(0, 0, 1)
-                    colorm.DrawImage(screen, pic, matrix, &patrolOptions)
-                } else {
-                    scale.DrawScaled(screen, pic, &options)
+                unitBack, err := units.GetUnitBackgroundImage(leader.GetBanner(), overworld.ImageCache)
+                if err == nil {
+                    saveGeom := options.GeoM
+                    options.GeoM.Concat(geom)
+                    scale.DrawScaled(screen, unitBack, &options)
+                    options.GeoM = saveGeom
                 }
 
-                enchantment := util.First(leader.GetEnchantments(), data.UnitEnchantmentNone)
-                if enchantment != data.UnitEnchantmentNone {
-                    util.DrawOutline(screen, overworld.ImageCache, pic, scale.ScaleGeom(options.GeoM), options.ColorScale, overworld.Counter/8, enchantment.Color())
+                pic, err := unitview.GetUnitOverworldImage(overworld.ImageCache, leader)
+                if err == nil {
+                    // screen scale is already taken into account, so we can translate by 1 pixel here
+                    options.GeoM.Translate(1, 1)
+                    options.GeoM.Concat(geom)
+
+                    if leader.GetBusy() != units.BusyStatusNone {
+                        var patrolOptions colorm.DrawImageOptions
+                        var matrix colorm.ColorM
+                        patrolOptions.GeoM = scale.ScaleGeom(options.GeoM)
+                        matrix.ChangeHSV(0, 0, 1)
+                        colorm.DrawImage(screen, pic, matrix, &patrolOptions)
+                    } else {
+                        scale.DrawScaled(screen, pic, &options)
+                    }
+
+                    enchantment := util.First(leader.GetEnchantments(), data.UnitEnchantmentNone)
+                    if enchantment != data.UnitEnchantmentNone {
+                        util.DrawOutline(screen, overworld.ImageCache, pic, scale.ScaleGeom(options.GeoM), options.ColorScale, overworld.Counter/8, enchantment.Color())
+                    }
                 }
             }
-
         }
     }
 
@@ -9140,20 +9162,29 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     }
 
     // draw current path on top of fog
-    if overworld.SelectedStack != nil {
+    if overworld.SelectedStack != nil && len(overworld.SelectedStack.CurrentPath) > 0 {
         boot, _ := overworld.ImageCache.GetImage("compix.lbx", 72, 0)
+        var options ebiten.DrawImageOptions
+
+        var bootGeom ebiten.GeoM
+        bootGeom.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
+        bootGeom.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
+        bootGeom.Concat(geom)
+
         for pointI, point := range overworld.SelectedStack.CurrentPath {
-            var options ebiten.DrawImageOptions
-            x, y := convertTileCoordinates(overworld.ToCameraCoordinates(point.X, point.Y))
-            options.GeoM.Translate(float64(x), float64(y))
-            options.GeoM.Translate(float64(tileWidth) / 2, float64(tileHeight) / 2)
-            options.GeoM.Translate(float64(boot.Bounds().Dx()) / -2, float64(boot.Bounds().Dy()) / -2)
-            options.GeoM.Concat(geom)
+            for _, offset := range mapXOffsets {
+                cx, cy := overworld.ToCameraCoordinates(point.X, point.Y)
+                x, y := convertTileCoordinates(cx + offset, cy)
+                options.GeoM.Reset()
+                options.ColorScale.Reset()
+                options.GeoM.Translate(float64(x), float64(y))
+                options.GeoM.Concat(bootGeom)
 
-            v := float32(1 + (math.Sin(float64(overworld.Counter * 4 + uint64(pointI) * 60) * math.Pi / 180) / 2 + 0.5) / 2)
-            options.ColorScale.Scale(v, v, v, 1)
+                v := float32(1 + (math.Sin(float64(overworld.Counter * 4 + uint64(pointI) * 60) * math.Pi / 180) / 2 + 0.5) / 2)
+                options.ColorScale.Scale(v, v, v, 1)
 
-            scale.DrawScaled(screen, boot, &options)
+                scale.DrawScaled(screen, boot, &options)
+            }
         }
     }
 
