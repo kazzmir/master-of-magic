@@ -441,6 +441,8 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
 func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) *gamelib.Game {
     game := gamelib.MakeGame(magic.Cache, settings)
 
+    game.RefreshUI()
+
     arcanusCityArea := game.MakeCityValidArea(data.PlaneArcanus)
     myrrorCityArea := game.MakeCityValidArea(data.PlaneMyrror)
 
@@ -461,9 +463,10 @@ func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizar
 
     // hack
     // human.Admin = true
-    _ = human
+    game.CurrentPlayer = 0
+    game.StartPlayerTurn(human)
 
-    game.DoNextTurn()
+    // game.DoNextTurn()
     return game
 }
 
