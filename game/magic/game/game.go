@@ -1828,13 +1828,6 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         */
     }
 
-    // sailing units cannot move onto land
-    if tileTo.Tile.IsLand() {
-        if stack.HasSailingUnits(true) {
-            return fraction.Zero(), false
-        }
-    }
-
     containsFriendlyCity := func (x int, y int) bool {
         for _, player := range game.Players {
             if player.GetBanner() == stack.GetBanner() {
@@ -1845,6 +1838,13 @@ func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, so
         }
 
         return false
+    }
+
+    // sailing units cannot move onto land
+    if tileTo.Tile.IsLand() {
+        if stack.HasSailingUnits(true) {
+            return fraction.Zero(), false
+        }
     }
 
     road_v, ok := tileTo.Extras[maplib.ExtraKindRoad]
@@ -2054,7 +2054,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
 
     if fog.GetFog(useMap.WrapX(newX), newY) != data.FogTypeUnexplored {
         tileTo := useMap.GetTile(newX, newY)
-        if tileTo.Tile.IsLand() && stack.HasSailingUnits(true) {
+        if tileTo.Tile.IsLand() && (stack.HasSailingUnits(true) && !allFlyers) {
             return nil
         }
 
