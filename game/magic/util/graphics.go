@@ -6,6 +6,7 @@ import (
     "image/color"
     "math"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/colorconv"
     "github.com/kazzmir/master-of-magic/game/magic/shaders"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
 
@@ -175,7 +176,7 @@ func ToRGBA(c color.Color) color.RGBA {
     }
 }
 
-/*
+// a more sane version of lighten
 func Lighten2(c color.RGBA, amount float64) color.Color {
     h, s, v := colorconv.ColorToHSV(c)
     v += amount/100
@@ -189,7 +190,11 @@ func Lighten2(c color.RGBA, amount float64) color.Color {
     }
     return out
 }
-*/
+
+// just for convenience
+func Darken2(c color.RGBA, amount float64) color.Color {
+    return Lighten2(c, -amount)
+}
 
 func MakeFadeIn(time uint64, counter *uint64) AlphaFadeFunc {
     start := *counter
