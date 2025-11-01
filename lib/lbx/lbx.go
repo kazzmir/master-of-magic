@@ -1187,7 +1187,10 @@ func SaveLbx(lbx LbxFile, writer io.WriteSeeker) error {
         offsets = append(offsets, uint32(offset))
 
         reader := bytes.NewReader(data)
-        io.Copy(writer, reader)
+        _, err = io.Copy(writer, reader)
+        if err != nil {
+            return err
+        }
     }
 
     _, err = writer.Seek(offsetPosition, io.SeekStart)
