@@ -3,6 +3,9 @@ package main
 import (
     "os"
     "log"
+    "image"
+    "bufio"
+    _ "image/png"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
 )
@@ -21,11 +24,22 @@ func main() {
     var lbxFile lbx.LbxFile
     for _, filePath := range files {
         func() {
-            bytes, err := os.ReadFile(filePath)
+            file, err := os.Open(filePath)
             if err != nil {
                 log.Printf("Error reading file %s: %v\n", filePath, err)
             } else {
-                lbxFile.Data = append(lbxFile.Data, bytes)
+                defer file.Close()
+                img, _, err := image.Decode(bufio.NewReader(file))
+                if err != nil {
+                    log.Printf("Error decoding image %s: %v\n", filePath, err)
+                } else {
+                    encoded, err := lbx.EncodeImages([]image.Image{img}, lbx.GetDefaultPalette())
+                    if err != nil {
+                        log.Printf("Error encoding image %s: %v\n", filePath, err)
+                        return
+                    }
+                    lbxFile.Data = append(lbxFile.Data, encoded)
+                }
             }
         }()
     }
