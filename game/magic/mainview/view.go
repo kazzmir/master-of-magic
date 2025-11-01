@@ -25,6 +25,7 @@ const (
     MainScreenStateRunning MainScreenState = iota
     MainScreenStateQuit
     MainScreenStateNewGame
+    MainScreenStateQuickGame
     MainScreenStateLoadGame
 )
 
@@ -280,6 +281,10 @@ func (main *MainScreen) MakeUI() *uilib.UI {
     centerX := data.ScreenWidth / 2
     yBase := 154
     yGap := titleFont.Height() + 1
+
+    elements = append(elements, makeButton(centerX, yBase - yGap * 1, "Quick Start", true, func(){
+        main.State = MainScreenStateQuickGame
+    }))
 
     // continue
     elements = append(elements, makeButton(centerX, yBase, "Continue", isContinueBtnActive, func(){
