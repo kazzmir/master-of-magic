@@ -1781,7 +1781,7 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
             getMapColor = functional.Memoize2(func (terrainType terrain.TerrainType, explored data.FogType) color.RGBA {
                 var use color.RGBA
 
-                landColor := color.RGBA{R: 0xa5, G: 0x6c, B: 0x34, A: 255}
+                landColor := color.RGBA{R: 0x81, G: 0x54, B: 0x29, A: 255}
 
                 switch terrainType {
                     case terrain.Grass: use = landColor
