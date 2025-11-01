@@ -60,6 +60,14 @@ func readInt32(reader io.Reader) (int32, error) {
     return int32(v), err
 }
 
+func WriteUint16(writer io.Writer, value uint16) error {
+    return binary.Write(writer, binary.LittleEndian, value)
+}
+
+func WriteUint32(writer io.Writer, value uint32) error {
+    return binary.Write(writer, binary.LittleEndian, value)
+}
+
 type LbxFile struct {
     Signature uint32
     Version uint16
@@ -1131,6 +1139,75 @@ func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
     }
 
     return lbx, nil
+}
+
+func SaveLbx(lbx LbxFile, writer io.WriteSeeker) error {
+    err := WriteUint16(writer, uint16(len(lbx.Data)))
+    if err != nil {
+        return err
+    }
+
+    err = WriteUint32(writer, LbxSignature)
+    if err != nil {
+        return err
+    }
+
+    // FIXME: does the version matter?
+    err = WriteUint16(writer, 0)
+    if err != nil {
+        return err
+    }
+
+    // fmt.Printf("Version: %v\n", version)
+
+    var offsets []uint32
+
+    offsetPosition, _ := writer.Seek(0, io.SeekCurrent)
+
+    for range lbx.Data {
+        WriteUint32(writer, 0) // placeholder
+    }
+
+    WriteUint32(writer, 0) // placeholder for the final size
+
+    // FIXME: write strings
+    // lbx.Strings = readStringsSection(reader, currentPosition, offsets[0])
+
+    // log.Printf("Strings: %v", strings)
+
+    for _, data := range lbx.Data {
+        offset, err := writer.Seek(0, io.SeekCurrent)
+        if err != nil {
+            return err
+        }
+
+        offsets = append(offsets, uint32(offset))
+
+        reader := bytes.NewReader(data)
+        io.Copy(writer, reader)
+    }
+
+    _, err = writer.Seek(offsetPosition, io.SeekStart)
+    if err != nil {
+        return err
+    }
+
+    for _, offset := range offsets {
+        err := WriteUint32(writer, offset)
+        if err != nil {
+            return err
+        }
+    }
+
+    currentPosition, _ := writer.Seek(0, io.SeekCurrent)
+
+    // the last 4 bytes are the size of the file
+    err = WriteUint32(writer, uint32(currentPosition + 4))
+    if err != nil {
+        return err
+    }
+
+    return nil
 }
 
 /* some lbx images implicitly use a palette from a specific entry
