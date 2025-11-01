@@ -1037,7 +1037,9 @@ func EncodeImages(images []image.Image, palette color.Palette) ([]byte, error) {
     var palettedImages []*image.Paletted
     for _, img := range images {
         newImage := image.NewPaletted(img.Bounds(), palette)
-        draw.FloydSteinberg.Draw(newImage, img.Bounds(), img, image.Point{})
+        // not sure which one is better
+        // draw.FloydSteinberg.Draw(newImage, img.Bounds(), img, image.Point{})
+        draw.Draw(newImage, img.Bounds(), img, image.Point{}, draw.Src)
         palettedImages = append(palettedImages, newImage)
     }
 
@@ -1061,6 +1063,7 @@ func EncodeImages(images []image.Image, palette color.Palette) ([]byte, error) {
         var buf bytes.Buffer
 
         // reset byte: non-zero means full frame. use 1.
+        // FIXME: handle delta between frames
         buf.WriteByte(byte(1))
 
         // for each column
