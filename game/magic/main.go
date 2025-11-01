@@ -588,6 +588,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                 }
             case mainview.MainScreenStateQuickGame:
                 music.Stop()
+                yield()
                 err := startQuickGame(yield, game)
                 if err != nil {
                     game.Drawer = shutdown
