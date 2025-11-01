@@ -441,6 +441,8 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
 func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) *gamelib.Game {
     game := gamelib.MakeGame(magic.Cache, settings)
 
+    game.RefreshUI()
+
     arcanusCityArea := game.MakeCityValidArea(data.PlaneArcanus)
     myrrorCityArea := game.MakeCityValidArea(data.PlaneMyrror)
 
@@ -461,9 +463,10 @@ func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizar
 
     // hack
     // human.Admin = true
-    _ = human
+    game.CurrentPlayer = 0
+    game.StartPlayerTurn(human)
 
-    game.DoNextTurn()
+    // game.DoNextTurn()
     return game
 }
 
@@ -504,6 +507,33 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
     return nil
 }
 
+func startQuickGame(yield coroutine.YieldFunc, game *MagicGame) error {
+    settings := setup.NewGameSettings{
+        Opponents: rand.N(4) + 1,
+        Difficulty: data.DifficultyAverage,
+        Magic: data.MagicSettingNormal,
+        LandSize: rand.N(3),
+    }
+
+    spells, err := spellbook.ReadSpellsFromCache(game.Cache)
+    if err != nil {
+        return err
+    }
+
+    wizard, ok := gamelib.ChooseUniqueWizard(nil, spells)
+    if !ok {
+        return fmt.Errorf("Could not choose a wizard")
+    }
+
+    log.Printf("Starting game with settings=%+v wizard=%v race=%v", settings, wizard.Name, wizard.Race)
+
+    realGame := initializeGame(game, settings, wizard)
+    return runGameInstance(realGame, yield, game, &OriginalGameLoader{
+        Cache: game.Cache,
+        NewGame: make(chan *gamelib.Game, 1),
+    })
+}
+
 func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startGame bool) error {
 
     err := loadData(yield, game, dataPath)
@@ -517,30 +547,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
 
     // start a game immediately
     if startGame {
-        settings := setup.NewGameSettings{
-            Opponents: rand.N(4) + 1,
-            Difficulty: data.DifficultyAverage,
-            Magic: data.MagicSettingNormal,
-            LandSize: rand.N(3),
-        }
-
-        spells, err := spellbook.ReadSpellsFromCache(game.Cache)
-        if err != nil {
-            return err
-        }
-
-        wizard, ok := gamelib.ChooseUniqueWizard(nil, spells)
-        if !ok {
-            return fmt.Errorf("Could not choose a wizard")
-        }
-
-        log.Printf("Starting game with settings=%+v wizard=%v race=%v", settings, wizard.Name, wizard.Race)
-
-        realGame := initializeGame(game, settings, wizard)
-        return runGameInstance(realGame, yield, game, &OriginalGameLoader{
-            Cache: game.Cache,
-            NewGame: make(chan *gamelib.Game, 1),
-        })
+        return startQuickGame(yield, game)
     }
 
     music := musiclib.MakeMusic(game.Cache)
@@ -579,6 +586,16 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
 
                     music.PlaySong(musiclib.SongTitle)
                 }
+            case mainview.MainScreenStateQuickGame:
+                music.Stop()
+                yield()
+                err := startQuickGame(yield, game)
+                if err != nil {
+                    game.Drawer = shutdown
+                    yield()
+                    return err
+                }
+                music.PlaySong(musiclib.SongTitle)
             case mainview.MainScreenStateNewGame:
                 var settings setup.NewGameSettings
                 var wizard setup.WizardCustom

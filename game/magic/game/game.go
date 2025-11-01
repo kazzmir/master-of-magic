@@ -626,7 +626,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Fonts: fonts,
         ArtifactPool: createArtifactPool(lbxCache),
         BuildingInfo: buildingInfo,
-        TurnNumber: 1,
+        TurnNumber: 0,
         CurrentPlayer: -1,
         Camera: camera.MakeCamera(),
 
@@ -7773,7 +7773,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 }
             }
         }
-    } else if game.TurnNumber > 1 {
+    } else if game.TurnNumber > 0 {
 
         if player.IsHuman() {
             select {

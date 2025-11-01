@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/gamemenu"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
@@ -24,6 +25,7 @@ const (
     MainScreenStateRunning MainScreenState = iota
     MainScreenStateQuit
     MainScreenStateNewGame
+    MainScreenStateQuickGame
     MainScreenStateLoadGame
 )
 
@@ -93,14 +95,27 @@ func (main *MainScreen) MakeUI() *uilib.UI {
         },
     }
 
+    fontLoader, err := fontslib.Loader(main.Cache)
+    if err != nil {
+        log.Printf("error loading fonts: %v", err)
+        return nil
+    }
+    creditsFont := fontLoader(fontslib.NormalYellow)
+    titleFont := fontLoader(fontslib.TitleFontOrange)
+    titleFontHighlight := fontLoader(fontslib.BigFont)
+
     getAlpha = ui.MakeFadeIn(8)
 
     var elements []*uilib.UIElement
 
-    makeButton := func(index int, x, y int, helpName string, isActive bool, action func()) *uilib.UIElement {
-        images, _ := main.ImageCache.GetImages("mainscrn.lbx", index)
-        rect := util.ImageRect(x, y, images[0])
-        imageIndex := 1
+    makeButton := func(cx, cy int, helpName string, isActive bool, action func()) *uilib.UIElement {
+        length := int(titleFont.MeasureTextWidth(helpName, 1))
+
+        x := cx - length / 2
+        y := cy
+
+        rect := image.Rect(x, y, x + length, y + titleFont.Height())
+        inside := false
         return &uilib.UIElement{
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
@@ -116,30 +131,23 @@ func (main *MainScreen) MakeUI() *uilib.UI {
             },
             Inside: func(element *uilib.UIElement, x, y int) {
                 if isActive {
-                    imageIndex = 0
+                    inside = true
                 }
             },
             NotInside: func(element *uilib.UIElement){
-                imageIndex = 1
+                inside = false
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
-                options.ColorScale.ScaleAlpha(getAlpha())
-                if !isActive {
-                    options.ColorScale.Scale(0.4, 0.4, 0.4, 1.0)
+
+                use := titleFont
+                if inside {
+                    use = titleFontHighlight
                 }
-                scale.DrawScaled(screen, images[imageIndex], &options)
+
+                use.PrintOptions(screen, float64(cx), float64(y), font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, helpName)
             },
         }
     }
-
-    fontLoader, err := fontslib.Loader(main.Cache)
-    if err != nil {
-        log.Printf("error loading fonts: %v", err)
-        return nil
-    }
-    creditsFont := fontLoader(fontslib.NormalYellow)
 
     abs := func(x int) int {
         if x < 0 {
@@ -270,13 +278,21 @@ func (main *MainScreen) MakeUI() *uilib.UI {
     isContinueBtnActive := false
     isLoadGameBtnActive := true
 
+    centerX := data.ScreenWidth / 2
+    yBase := 154
+    yGap := titleFont.Height() + 1
+
+    elements = append(elements, makeButton(centerX, yBase - yGap * 1, "Quick Start", true, func(){
+        main.State = MainScreenStateQuickGame
+    }))
+
     // continue
-    elements = append(elements, makeButton(1, 110, 130, "Continue", isContinueBtnActive, func(){
+    elements = append(elements, makeButton(centerX, yBase, "Continue", isContinueBtnActive, func(){
         log.Printf("continue")
     }))
 
     // load game
-    elements = append(elements, makeButton(2, 110, 130 + 16 * 1, "Load", isLoadGameBtnActive, func(){
+    elements = append(elements, makeButton(centerX, yBase + yGap * 1, "Load", isLoadGameBtnActive, func(){
         select {
             case main.Events <- &MainScreenEventLoad{}:
             default:
@@ -284,14 +300,14 @@ func (main *MainScreen) MakeUI() *uilib.UI {
     }))
 
     // new game
-    elements = append(elements, makeButton(3, 110, 130 + 16 * 2, "New Game", true, func(){
+    elements = append(elements, makeButton(centerX, yBase + yGap * 2, "New Game", true, func(){
         main.State = MainScreenStateNewGame
     }))
 
     // FIXME: add "Hall of Fame" button
 
     // exit
-    elements = append(elements, makeButton(4, 110, 130 + 16 * 3, "Quit to Dos", true, func(){
+    elements = append(elements, makeButton(centerX, yBase + yGap * 3, "Quit to Dos", true, func(){
         main.State = MainScreenStateQuit
     }))
 
