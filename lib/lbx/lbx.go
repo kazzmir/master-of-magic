@@ -1170,8 +1170,11 @@ func SaveLbx(lbx LbxFile, writer io.WriteSeeker) error {
 
     WriteUint32(writer, 0) // placeholder for the final size
 
-    // FIXME: write strings
-    // lbx.Strings = readStringsSection(reader, currentPosition, offsets[0])
+    // write null-terminated strings
+    for _, s := range lbx.Strings {
+        writer.Write([]byte(s))
+        writer.Write([]byte{0})
+    }
 
     // log.Printf("Strings: %v", strings)
 
