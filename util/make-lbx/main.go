@@ -40,4 +40,6 @@ func main() {
     if err != nil {
         log.Fatalf("Error saving LBX file: %v\n", err)
     }
+
+    log.Printf("Successfully created output.lbx with %d files\n", len(lbxFile.Data))
 }
