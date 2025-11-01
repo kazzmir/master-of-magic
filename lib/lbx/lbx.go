@@ -11,6 +11,7 @@ import (
     "image/color"
     "strings"
     "path/filepath"
+    "golang.org/x/image/draw"
 )
 
 func ReadByte(reader io.Reader) (byte, error) {
@@ -58,6 +59,14 @@ func ReadUint32(reader io.Reader) (uint32, error) {
 func readInt32(reader io.Reader) (int32, error) {
     v, err := ReadUint32(reader)
     return int32(v), err
+}
+
+func WriteUint16(writer io.Writer, value uint16) error {
+    return binary.Write(writer, binary.LittleEndian, value)
+}
+
+func WriteUint32(writer io.Writer, value uint32) error {
+    return binary.Write(writer, binary.LittleEndian, value)
 }
 
 type LbxFile struct {
@@ -1023,6 +1032,149 @@ func (lbx *LbxFile) ReadImagesWithPalette(entry int, palette color.Palette, forc
     return images, nil
 }
 
+func EncodeImages(images []image.Image, palette color.Palette) ([]byte, error) {
+
+    var palettedImages []*image.Paletted
+    for _, img := range images {
+        newImage := image.NewPaletted(img.Bounds(), palette)
+        // not sure which one is better
+        // draw.FloydSteinberg.Draw(newImage, img.Bounds(), img, image.Point{})
+        draw.Draw(newImage, img.Bounds(), img, image.Point{}, draw.Src)
+        palettedImages = append(palettedImages, newImage)
+    }
+
+    // RLE encode first image
+    // Second image can be a diff from the first
+
+    if len(palettedImages) == 0 {
+        return nil, fmt.Errorf("no images to encode")
+    }
+
+    width := palettedImages[0].Bounds().Dx()
+    height := palettedImages[0].Bounds().Dy()
+
+    // encode each image into its block of bytes
+    var imageBlocks [][]byte
+    for _, pimg := range palettedImages {
+        if pimg.Bounds().Dx() != width || pimg.Bounds().Dy() != height {
+            return nil, fmt.Errorf("all images must have same dimensions")
+        }
+
+        var buf bytes.Buffer
+
+        // reset byte: non-zero means full frame. use 1.
+        // FIXME: handle delta between frames
+        buf.WriteByte(byte(1))
+
+        // for each column
+        for x := 0; x < width; x++ {
+            // collect column pixels
+            col := make([]byte, height)
+            allZero := true
+            for y := 0; y < height; y++ {
+                idx := pimg.ColorIndexAt(x, y)
+                col[y] = idx
+                if idx != 0 {
+                    allZero = false
+                }
+            }
+
+            if allZero {
+                // no data for this column
+                buf.WriteByte(0xff)
+                continue
+            }
+
+            // build packet bytes for this column
+            var packets []byte
+            curY := 0
+            for curY < height {
+                // if current is zero, emit a skip-only packet (data_count=0)
+                if col[curY] == 0 {
+                    // count zeros up to 255
+                    skipLen := 0
+                    for curY+skipLen < height && col[curY+skipLen] == 0 && skipLen < 255 {
+                        skipLen++
+                    }
+                    packets = append(packets, byte(0)) // data_count
+                    packets = append(packets, byte(skipLen))
+                    curY += skipLen
+                    continue
+                }
+
+                // non-zero run
+                runLen := 0
+                for curY+runLen < height && col[curY+runLen] != 0 && runLen < 255 {
+                    runLen++
+                }
+
+                packets = append(packets, byte(runLen))
+                // no skip before this run
+                packets = append(packets, byte(0))
+                for i := 0; i < runLen; i++ {
+                    packets = append(packets, col[curY+i])
+                }
+
+                curY += runLen
+            }
+
+            if len(packets) > 255 {
+                return nil, fmt.Errorf("encoded column data too large (>255 bytes) for column %d (height %d)", x, height)
+            }
+
+            // operation: 0 => non-RLE
+            buf.WriteByte(0)
+            // packet_count
+            buf.WriteByte(byte(len(packets)))
+            // packet bytes
+            buf.Write(packets)
+        }
+
+        imageBlocks = append(imageBlocks, buf.Bytes())
+    }
+
+    // build final entry: header + offsets + image blocks
+    var out bytes.Buffer
+
+    // header fields (all little endian uint16)
+    // width, height, currentFrame, bitmapCount, loopCount, unknown3, unknown4, paletteOffset, unknown5
+    WriteUint16(&out, uint16(width))
+    WriteUint16(&out, uint16(height))
+    WriteUint16(&out, uint16(0)) // currentFrame
+    WriteUint16(&out, uint16(len(imageBlocks))) // bitmapCount
+    WriteUint16(&out, uint16(0)) // loopCount
+    WriteUint16(&out, uint16(0)) // unknown3
+    WriteUint16(&out, uint16(0)) // unknown4
+    WriteUint16(&out, uint16(0)) // paletteOffset (0 -> use default)
+    WriteUint16(&out, uint16(0)) // unknown5
+
+    // compute offsets
+    headerSize := 2 * 9
+    offsetsCount := len(imageBlocks) + 1
+    offsetsSize := 4 * offsetsCount
+    firstOffset := uint32(headerSize + offsetsSize)
+
+    offsets := make([]uint32, offsetsCount)
+    off := firstOffset
+    for i, blk := range imageBlocks {
+        offsets[i] = off
+        off += uint32(len(blk))
+    }
+    offsets[offsetsCount-1] = off
+
+    // write offsets
+    for _, o := range offsets {
+        WriteUint32(&out, o)
+    }
+
+    // write image blocks
+    for _, blk := range imageBlocks {
+        out.Write(blk)
+    }
+
+    return out.Bytes(), nil
+}
+
 func (lbxFile *LbxFile) RawData(entry int) ([]byte, error) {
     if entry < 0 || entry >= len(lbxFile.Data) {
         return nil, fmt.Errorf("invalid lbx index %v, must be between 0 and %v", entry, len(lbxFile.Data) - 1)
@@ -1131,6 +1283,81 @@ func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
     }
 
     return lbx, nil
+}
+
+func SaveLbx(lbx LbxFile, writer io.WriteSeeker) error {
+    err := WriteUint16(writer, uint16(len(lbx.Data)))
+    if err != nil {
+        return err
+    }
+
+    err = WriteUint32(writer, LbxSignature)
+    if err != nil {
+        return err
+    }
+
+    // FIXME: does the version matter?
+    err = WriteUint16(writer, 0)
+    if err != nil {
+        return err
+    }
+
+    // fmt.Printf("Version: %v\n", version)
+
+    var offsets []uint32
+
+    offsetPosition, _ := writer.Seek(0, io.SeekCurrent)
+
+    for range lbx.Data {
+        WriteUint32(writer, 0) // placeholder
+    }
+
+    WriteUint32(writer, 0) // placeholder for the final size
+
+    // write null-terminated strings
+    for _, s := range lbx.Strings {
+        writer.Write([]byte(s))
+        writer.Write([]byte{0})
+    }
+
+    // log.Printf("Strings: %v", strings)
+
+    for _, data := range lbx.Data {
+        offset, err := writer.Seek(0, io.SeekCurrent)
+        if err != nil {
+            return err
+        }
+
+        offsets = append(offsets, uint32(offset))
+
+        reader := bytes.NewReader(data)
+        _, err = io.Copy(writer, reader)
+        if err != nil {
+            return err
+        }
+    }
+
+    _, err = writer.Seek(offsetPosition, io.SeekStart)
+    if err != nil {
+        return err
+    }
+
+    for _, offset := range offsets {
+        err := WriteUint32(writer, offset)
+        if err != nil {
+            return err
+        }
+    }
+
+    currentPosition, _ := writer.Seek(0, io.SeekCurrent)
+
+    // the last 4 bytes are the size of the file
+    err = WriteUint32(writer, uint32(currentPosition + 4))
+    if err != nil {
+        return err
+    }
+
+    return nil
 }
 
 /* some lbx images implicitly use a palette from a specific entry
