@@ -98,3 +98,10 @@ func ScaleRect(rect image.Rectangle) image.Rectangle {
         Max: rect.Max.Mul(int(ScaleAmount)),
     }
 }
+
+func UnscaleRect(rect image.Rectangle) image.Rectangle {
+    return image.Rectangle{
+        Min: rect.Min.Div(int(ScaleAmount)),
+        Max: rect.Max.Div(int(ScaleAmount)),
+    }
+}

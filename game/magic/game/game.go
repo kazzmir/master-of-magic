@@ -6794,6 +6794,40 @@ func (game *Game) MakeHudUI() *uilib.UI {
         game.RefreshUI()
     }))
 
+    // minimap
+    minimapRect := scale.UnscaleRect(game.GetMinimapRect())
+    var minimapPoint image.Point
+    moveMinimap := func(){
+
+        middleMapX := minimapRect.Bounds().Dx() / 2
+        middleMapY := minimapRect.Bounds().Dy() / 2
+
+        x := game.Camera.GetX() + (minimapPoint.X - middleMapX)
+        y := game.Camera.GetY() + (minimapPoint.Y - middleMapY)
+
+        select {
+            case game.Events <- &GameEventMoveCamera{Plane: game.Plane, X: x, Y: y, Instant: false}:
+            default:
+        }
+    }
+    elements = append(elements, &uilib.UIElement{
+        Rect: minimapRect,
+        /*
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            util.DrawRect(screen, scale.ScaleRect(minimapRect), color.RGBA{R: 255, A: 255})
+        },
+        */
+        Inside: func(this *uilib.UIElement, x int, y int){
+            minimapPoint = image.Pt(x, y)
+        },
+        RightClick: func(this *uilib.UIElement){
+            moveMinimap()
+        },
+        LeftClick: func(this *uilib.UIElement){
+            moveMinimap()
+        },
+    })
+
     if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
         player := game.Players[0]
         // stack := player.SelectedStack
@@ -9276,12 +9310,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     overworldScreen := screen.SubImage(image.Rect(0, scale.Scale(18), scale.Scale(240), scale.Scale(data.ScreenHeight))).(*ebiten.Image)
     overworld.DrawOverworld(overworldScreen, ebiten.GeoM{})
 
-    var miniGeom ebiten.GeoM
-    miniGeom.Translate(scale.Scale2(250.0, 20.0))
-    mx, my := miniGeom.Apply(0, 0)
-    miniWidth := scale.Scale(60)
-    miniHeight := scale.Scale(31)
-    mini := screen.SubImage(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight)).(*ebiten.Image)
+    mini := screen.SubImage(game.GetMinimapRect()).(*ebiten.Image)
     if mini.Bounds().Dx() > 0 {
         overworld.DrawMinimap(mini)
     }
@@ -9294,6 +9323,15 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     */
 
     game.HudUI.Draw(game.HudUI, screen)
+}
+
+func (game *Game) GetMinimapRect() image.Rectangle {
+    var miniGeom ebiten.GeoM
+    miniGeom.Translate(scale.Scale2(250.0, 20.0))
+    mx, my := miniGeom.Apply(0, 0)
+    miniWidth := scale.Scale(60)
+    miniHeight := scale.Scale(31)
+    return image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight)
 }
 
 func (game *Game) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment] {
