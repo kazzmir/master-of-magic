@@ -1815,6 +1815,11 @@ func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sou
     if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
         // a land walker can move onto a friendly stack on the ocean if that stack has sailing units
         if stack.AnyLandWalkers() {
+            // if the stack already contains a sailing unit, then it is legal to move into water
+            if stack.HasSailingUnits(true) {
+                return fraction.FromInt(1), true
+            }
+
             maybeStack, ok := getStack(destX, destY)
             if ok && maybeStack.HasSailingUnits(false) {
                 return fraction.FromInt(1), true
@@ -2052,6 +2057,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
 
     allFlyers := stack.AllFlyers()
 
+    // FIXME: we might not need this check at all, and just let tileCost handle it
     if fog.GetFog(useMap.WrapX(newX), newY) != data.FogTypeUnexplored {
         tileTo := useMap.GetTile(newX, newY)
         if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(true) {
@@ -2059,11 +2065,15 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
         }
 
         if !tileTo.Tile.IsLand() && !allFlyers && stack.AnyLandWalkers() {
-            maybeStack := player.FindStack(useMap.WrapX(newX), newY, stack.Plane())
-            if maybeStack != nil && maybeStack.HasSailingUnits(false) {
-                // ok, can move there because there is a ship
-            } else {
-                return nil
+
+            // the stack might already contain a sailing unit
+            if !stack.HasSailingUnits(true) {
+                maybeStack := player.FindStack(useMap.WrapX(newX), newY, stack.Plane())
+                if maybeStack != nil && maybeStack.HasSailingUnits(false) {
+                    // ok, can move there because there is a ship
+                } else {
+                    return nil
+                }
             }
         }
 
