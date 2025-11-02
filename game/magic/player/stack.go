@@ -11,6 +11,17 @@ import (
 
 type ActiveMap map[units.StackUnit]bool
 
+type PathStack interface {
+    AllFlyers() bool
+    AnyLandWalkers() bool
+    GetBanner() data.BannerType
+    Plane() data.Plane
+    HasSailingUnits(bool) bool
+    ActiveUnitsDoesntHaveAbility(data.AbilityType) bool
+    ActiveUnitsHasAbility(data.AbilityType) bool
+    HasPathfinding() bool
+}
+
 type UnitStack struct {
     units []units.StackUnit
     active ActiveMap
