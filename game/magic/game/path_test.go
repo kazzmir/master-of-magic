@@ -23,16 +23,16 @@ func TestPathBasic(test *testing.T) {
     })
 
     xmap := maplib.Map{
-        Map: terrain.MakeMap(4, 1),
+        Map: terrain.MakeMap(1, 4),
         Data: terrainData,
         Plane: data.PlaneArcanus,
     }
 
     // ocean, ocean, land, land
     xmap.Map.Terrain[0][0] = 1
-    xmap.Map.Terrain[0][1] = 1
-    xmap.Map.Terrain[0][2] = 0
-    xmap.Map.Terrain[0][3] = 0
+    xmap.Map.Terrain[1][0] = 1
+    xmap.Map.Terrain[2][0] = 0
+    xmap.Map.Terrain[3][0] = 0
 
     game.ArcanusMap = &xmap
 
@@ -50,17 +50,39 @@ func TestPathBasic(test *testing.T) {
 
     fog := makeFog(3, 1)
 
-    player := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &game)
-    landWalker := player.AddUnit(units.MakeOverworldUnit(units.HighMenSwordsmen, 2, 1, data.PlaneArcanus))
+    // land walking unit can move from one land tile to another
+    func (){
+        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &game)
+        landWalker := player1.AddUnit(units.MakeOverworldUnit(units.HighMenSwordsmen, 2, 0, data.PlaneArcanus))
 
-    // land walking unit move from one land tile to another
-    if game.FindPath(landWalker.GetX(), landWalker.GetY(), 3, 1, player, player.FindStack(landWalker.GetX(), landWalker.GetY(), data.PlaneArcanus), fog) == nil {
-        test.Errorf("Expected path from land to land")
-    }
+        if len(game.FindPath(landWalker.GetX(), landWalker.GetY(), 3, 0, player1, player1.FindStack(landWalker.GetX(), landWalker.GetY(), data.PlaneArcanus), fog)) == 0 {
+            test.Errorf("Expected path from land to land")
+        }
+    }()
+
+    // land walking unit without swimming ability cannot move from land -> water
+    func (){
+        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &game)
+        landWalker := player1.AddUnit(units.MakeOverworldUnit(units.HighMenSwordsmen, 2, 0, data.PlaneArcanus))
+
+        // land walking unit move from one land tile to another
+        if len(game.FindPath(landWalker.GetX(), landWalker.GetY(), 1, 0, player1, player1.FindStack(landWalker.GetX(), landWalker.GetY(), data.PlaneArcanus), fog)) != 0 {
+            test.Errorf("Land walker cannot move from land to water")
+        }
+    }()
 
     // land walking unit with swimming ability can move from land -> water
+    func (){
+        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &game)
+        landWalker := player1.AddUnit(units.MakeOverworldUnit(units.LizardSwordsmen, 2, 0, data.PlaneArcanus))
+
+        // land walking unit move from one land tile to another
+        if len(game.FindPath(landWalker.GetX(), landWalker.GetY(), 1, 0, player1, player1.FindStack(landWalker.GetX(), landWalker.GetY(), data.PlaneArcanus), fog)) == 0 {
+            test.Errorf("Swimmer can move from land to water")
+        }
+    }()
+
     // land walking unit with swimming ability can move from water -> land
-    // land walking unit without swimming ability cannot move from land -> water
 
     // flying unit can walk from land -> water, and water->land
 
