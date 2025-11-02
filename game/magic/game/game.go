@@ -1793,7 +1793,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
  * FIXME: some values used by this logic could be precomputed and passed in as an argument. Things like 'containsFriendlyCity' could be a map of all cities
  * on the same plane as the unit, thus avoiding the expensive player.FindCity() call
  */
-func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map, getStack func(int, int) *playerlib.UnitStack) (fraction.Fraction, bool) {
+func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map, getStack func(int, int) playerlib.PathStack) (fraction.Fraction, bool) {
     /*
     if stack.OutOfMoves() {
         return fraction.Zero(), false
@@ -2078,7 +2078,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
         return normalized(a) == normalized(b)
     }
 
-    getStack := func (x int, y int) *playerlib.UnitStack {
+    getStack := func (x int, y int) playerlib.PathStack {
         return player.FindStack(x, y, stack.Plane())
     }
 
@@ -4092,7 +4092,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         }
     }
 
-    getStack := func(x int, y int) *playerlib.UnitStack {
+    getStack := func(x int, y int) playerlib.PathStack {
         return player.FindStack(mapUse.WrapX(x), y, stack.Plane())
     }
 
@@ -4524,7 +4524,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
     path = path[1:]
 
     log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
-    getStack := func(x int, y int) *playerlib.UnitStack {
+    getStack := func(x int, y int) playerlib.PathStack {
         return player.FindStack(x, y, stack.Plane())
     }
     terrainCost, ok := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()), getStack)
