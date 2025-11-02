@@ -1793,7 +1793,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
  * FIXME: some values used by this logic could be precomputed and passed in as an argument. Things like 'containsFriendlyCity' could be a map of all cities
  * on the same plane as the unit, thus avoiding the expensive player.FindCity() call
  */
-func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map, getStack func(int, int) playerlib.PathStack) (fraction.Fraction, bool) {
+func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map, getStack func(int, int) (playerlib.PathStack, bool)) (fraction.Fraction, bool) {
     /*
     if stack.OutOfMoves() {
         return fraction.Zero(), false
@@ -1815,8 +1815,8 @@ func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sou
     if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
         // a land walker can move onto a friendly stack on the ocean if that stack has sailing units
         if stack.AnyLandWalkers() {
-            maybeStack := getStack(destX, destY)
-            if maybeStack != nil && maybeStack.HasSailingUnits(false) {
+            maybeStack, ok := getStack(destX, destY)
+            if ok && maybeStack.HasSailingUnits(false) {
                 return fraction.FromInt(1), true
             }
             return fraction.Zero(), false
@@ -1842,7 +1842,7 @@ func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sou
 
     // sailing units cannot move onto land
     if tileTo.Tile.IsLand() {
-        if stack.HasSailingUnits(true) {
+        if !stack.CanMoveOnLand(true) {
             return fraction.Zero(), false
         }
     }
@@ -2054,7 +2054,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
 
     if fog.GetFog(useMap.WrapX(newX), newY) != data.FogTypeUnexplored {
         tileTo := useMap.GetTile(newX, newY)
-        if tileTo.Tile.IsLand() && (stack.HasSailingUnits(true) && !allFlyers) {
+        if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(true) {
             return nil
         }
 
@@ -2078,8 +2078,9 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
         return normalized(a) == normalized(b)
     }
 
-    getStack := func (x int, y int) playerlib.PathStack {
-        return player.FindStack(x, y, stack.Plane())
+    getStack := func (x int, y int) (playerlib.PathStack, bool) {
+        found := player.FindStack(x, y, stack.Plane())
+        return found, found != nil
     }
 
     // cache locations of enemies
@@ -4092,8 +4093,9 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         }
     }
 
-    getStack := func(x int, y int) playerlib.PathStack {
-        return player.FindStack(mapUse.WrapX(x), y, stack.Plane())
+    getStack := func(x int, y int) (playerlib.PathStack, bool) {
+        found := player.FindStack(mapUse.WrapX(x), y, stack.Plane())
+        return found, found != nil
     }
 
     entityInfo := game.ComputeCityStackInfo()
@@ -4524,8 +4526,9 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
     path = path[1:]
 
     log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
-    getStack := func(x int, y int) playerlib.PathStack {
-        return player.FindStack(x, y, stack.Plane())
+    getStack := func(x int, y int) (playerlib.PathStack, bool) {
+        found := player.FindStack(x, y, stack.Plane())
+        return found, found != nil
     }
     terrainCost, ok := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()), getStack)
     if ok {
