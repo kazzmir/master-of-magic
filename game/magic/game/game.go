@@ -1793,7 +1793,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
  * FIXME: some values used by this logic could be precomputed and passed in as an argument. Things like 'containsFriendlyCity' could be a map of all cities
  * on the same plane as the unit, thus avoiding the expensive player.FindCity() call
  */
-func (game *Game) ComputeTerrainCost(stack *playerlib.UnitStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map, getStack func(int, int) *playerlib.UnitStack) (fraction.Fraction, bool) {
+func (game *Game) ComputeTerrainCost(stack pathfinding.PathStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map, getStack func(int, int) *playerlib.UnitStack) (fraction.Fraction, bool) {
     /*
     if stack.OutOfMoves() {
         return fraction.Zero(), false
@@ -2042,7 +2042,7 @@ func (game *Game) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.Ci
     return ok
 }
 
-func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playerlib.Player, stack *playerlib.UnitStack, fog data.FogMap) pathfinding.Path {
+func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playerlib.Player, stack pathfinding.PathStack, fog data.FogMap) pathfinding.Path {
 
     useMap := game.GetMap(stack.Plane())
 
