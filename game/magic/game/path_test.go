@@ -73,6 +73,13 @@ func TestPathBasic(test *testing.T) {
     }
 
     // flying unit can walk from land -> water, and water->land
+    if !checkValidPath(units.SkyDrake, 2, 1) {
+        test.Errorf("Flying unit can move from land to water")
+    }
+
+    if !checkValidPath(units.SkyDrake, 1, 2) {
+        test.Errorf("Flying unit can move from water to land")
+    }
 
     // stack with flying + land unit can walk land->land but not land->water
     // stack with flying + land unit with swimming ability can walk land->water
