@@ -722,7 +722,8 @@ func (unit *ArmyUnit) ReduceInvulnerability(damage int) int {
 
 func (unit *ArmyUnit) IsFlying() bool {
     // a webbed unit is not flying
-    return unit.Unit.IsFlying() && !unit.HasCurse(data.UnitCurseWeb)
+    // a sleeping unit is also not flying
+    return unit.Unit.IsFlying() && !unit.HasCurse(data.UnitCurseWeb) && !unit.IsAsleep()
 }
 
 func (unit *ArmyUnit) IsInvisible() bool {
