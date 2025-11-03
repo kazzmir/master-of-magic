@@ -120,9 +120,30 @@ func TestPathBasic(test *testing.T) {
     }
 
     // sailing unit can walk water->water, but not water->land
+    if !checkValidPath(0, 1, units.Warship) {
+        test.Errorf("Sailing unit should be able to move from water to water")
+    }
+
+    if checkValidPath(1, 2, units.Warship) {
+        test.Errorf("Sailing unit should not be able to move from water to land")
+    }
 
     // sailing unit with flying can walk water->water and water->land
+    flyingWarship := units.MakeOverworldUnit(units.Warship, 0, 0, data.PlaneArcanus)
+    flyingWarship.AddEnchantment(data.UnitEnchantmentFlight)
+    if !checkValidPathOverworldUnit(0, 1, flyingWarship) {
+        test.Errorf("Flying sailing unit should be move from water to water")
+    }
+
+    if !checkValidPathOverworldUnit(1, 2, flyingWarship) {
+        test.Errorf("Flying sailing unit should be move from water to land")
+    }
+
+    if !checkValidPathOverworldUnit(2, 1, flyingWarship) {
+        test.Errorf("Flying sailing unit should be move from land to water")
+    }
 
     // land walking unit can move onto sailing unit if sailing unit is in water
+
     // land walking unit as part of a stack with a sailing unit that has flight can move into water
 }
