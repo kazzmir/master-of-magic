@@ -144,6 +144,22 @@ func TestPathBasic(test *testing.T) {
     }
 
     // land walking unit can move onto sailing unit if sailing unit is in water
+    func() {
+        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &game)
+
+        // warship in water
+        player1.AddUnit(units.MakeOverworldUnit(units.Warship, 1, 0, data.PlaneArcanus))
+        // swordsmen on land
+        player1.AddUnit(units.MakeOverworldUnit(units.HighMenSwordsmen, 2, 0, data.PlaneArcanus))
+
+        stack := player1.FindStack(2, 0, data.PlaneArcanus)
+
+        // swordsmen should be able to move onto warship
+        path := game.FindPath(2, 0, 1, 0, player1, stack, fog)
+        if len(path) == 0 {
+            test.Errorf("Land unit should be able to move onto sailing unit in water")
+        }
+    }()
 
     // land walking unit as part of a stack with a sailing unit that has flight can move into water
 }
