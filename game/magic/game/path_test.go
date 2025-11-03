@@ -50,43 +50,77 @@ func TestPathBasic(test *testing.T) {
 
     fog := makeFog(3, 1)
 
-    checkValidPath := func (unit units.Unit, fromX, toX int) bool {
+    checkValidPathOverworldUnit := func (fromX, toX int, unit... *units.OverworldUnit) bool {
         player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &game)
-        walker := player1.AddUnit(units.MakeOverworldUnit(unit, fromX, 0, data.PlaneArcanus))
+        for _, u := range unit {
+            newUnit := player1.AddUnit(u)
+            newUnit.SetX(fromX)
+            newUnit.SetY(0)
+        }
 
-        return len(game.FindPath(walker.GetX(), walker.GetY(), toX, 0, player1, player1.FindStack(walker.GetX(), walker.GetY(), data.PlaneArcanus), fog)) > 0
+        return len(game.FindPath(fromX, 0, toX, 0, player1, player1.FindStack(fromX, 0, data.PlaneArcanus), fog)) > 0
+    }
+
+    checkValidPath := func (fromX, toX int, unit... units.Unit) bool {
+        var overworldUnits []*units.OverworldUnit
+        for _, u := range unit {
+            overworldUnits = append(overworldUnits, units.MakeOverworldUnit(u, fromX, 0, data.PlaneArcanus))
+        }
+
+        return checkValidPathOverworldUnit(fromX, toX, overworldUnits...)
     }
 
     // land walking unit can move from one land tile to another
-    if !checkValidPath(units.HighMenSwordsmen, 2, 3) {
+    if !checkValidPath(2, 3, units.HighMenSwordsmen) {
         test.Errorf("Expected path from land to land")
     }
 
     // land walking unit without swimming ability cannot move from land -> water
-    if checkValidPath(units.HighMenSwordsmen, 2, 1) {
+    if checkValidPath(2, 1, units.HighMenSwordsmen) {
         test.Errorf("Land walker cannot move from land to water")
     }
 
     // land walking unit with swimming ability can move from land -> water
-    if !checkValidPath(units.LizardSwordsmen, 2, 1) {
+    if !checkValidPath(2, 1, units.LizardSwordsmen) {
         test.Errorf("Swimmer can move from land to water")
     }
 
     // flying unit can walk from land -> water, and water->land
-    if !checkValidPath(units.SkyDrake, 2, 1) {
+    if !checkValidPath(2, 1, units.SkyDrake) {
         test.Errorf("Flying unit can move from land to water")
     }
 
-    if !checkValidPath(units.SkyDrake, 1, 2) {
+    if !checkValidPath(1, 2, units.SkyDrake) {
         test.Errorf("Flying unit can move from water to land")
     }
 
     // stack with flying + land unit can walk land->land but not land->water
-    // stack with flying + land unit with swimming ability can walk land->water
+    if checkValidPath(2, 1, units.SkyDrake, units.HighMenSwordsmen) {
+        test.Errorf("Flying+land cannot move from land to water")
+    }
 
-    // land walking unit with flight can walk land->land, land->water, and water->land
+    // stack with flying + land unit with swimming ability can walk land->water
+    if !checkValidPath(2, 1, units.SkyDrake, units.LizardSwordsmen) {
+        test.Errorf("Flying+land cannot move from land to water")
+    }
+
+    // land walking unit with flight enchantment can walk land->land, land->water, and water->land
+    flyingHighMen := units.MakeOverworldUnit(units.HighMenSwordsmen, 0, 0, data.PlaneArcanus)
+    flyingHighMen.AddEnchantment(data.UnitEnchantmentFlight)
+    if !checkValidPathOverworldUnit(2, 1, flyingHighMen) {
+        test.Errorf("Flight enchanted land unit should be move from land to water")
+    }
+
+    if !checkValidPathOverworldUnit(2, 3, flyingHighMen) {
+        test.Errorf("Flight enchanted land unit should be move from land to land")
+    }
+
+    if !checkValidPathOverworldUnit(1, 2, flyingHighMen) {
+        test.Errorf("Flight enchanted land unit should be move from water to land")
+    }
 
     // sailing unit can walk water->water, but not water->land
+
     // sailing unit with flying can walk water->water and water->land
 
     // land walking unit can move onto sailing unit if sailing unit is in water
