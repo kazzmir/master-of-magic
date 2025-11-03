@@ -36,21 +36,22 @@ func TestPathBasic(test *testing.T) {
 
     game.ArcanusMap = &xmap
 
-    makeFog := func(width int, height int) data.FogMap {
+    makeFog := func(width int, height int, visibility data.FogType) data.FogMap {
         fog := make(data.FogMap, width)
         for x := 0; x < width; x++ {
             fog[x] = make([]data.FogType, height)
 
             for y := range height {
-                fog[x][y] = data.FogTypeVisible
+                fog[x][y] = visibility
             }
         }
         return fog
     }
 
-    fog := makeFog(3, 1)
+    fog := makeFog(3, 1, data.FogTypeVisible)
+    fogUnknown := makeFog(3, 1, data.FogTypeUnexplored)
 
-    checkValidPathOverworldUnit := func (fromX, toX int, unit... *units.OverworldUnit) bool {
+    checkValidPathOverworldUnit := func (fromX, toX int, fog data.FogMap, unit... *units.OverworldUnit) bool {
         player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &game)
         for _, u := range unit {
             newUnit := player1.AddUnit(u)
@@ -67,7 +68,16 @@ func TestPathBasic(test *testing.T) {
             overworldUnits = append(overworldUnits, units.MakeOverworldUnit(u, fromX, 0, data.PlaneArcanus))
         }
 
-        return checkValidPathOverworldUnit(fromX, toX, overworldUnits...)
+        return checkValidPathOverworldUnit(fromX, toX, fog, overworldUnits...)
+    }
+
+    checkValidPathUnexplored := func (fromX, toX int, unit... units.Unit) bool {
+        var overworldUnits []*units.OverworldUnit
+        for _, u := range unit {
+            overworldUnits = append(overworldUnits, units.MakeOverworldUnit(u, fromX, 0, data.PlaneArcanus))
+        }
+
+        return checkValidPathOverworldUnit(fromX, toX, fogUnknown, overworldUnits...)
     }
 
     // land walking unit can move from one land tile to another
@@ -107,15 +117,15 @@ func TestPathBasic(test *testing.T) {
     // land walking unit with flight enchantment can walk land->land, land->water, and water->land
     flyingHighMen := units.MakeOverworldUnit(units.HighMenSwordsmen, 0, 0, data.PlaneArcanus)
     flyingHighMen.AddEnchantment(data.UnitEnchantmentFlight)
-    if !checkValidPathOverworldUnit(2, 1, flyingHighMen) {
+    if !checkValidPathOverworldUnit(2, 1, fog, flyingHighMen) {
         test.Errorf("Flight enchanted land unit should be move from land to water")
     }
 
-    if !checkValidPathOverworldUnit(2, 3, flyingHighMen) {
+    if !checkValidPathOverworldUnit(2, 3, fog, flyingHighMen) {
         test.Errorf("Flight enchanted land unit should be move from land to land")
     }
 
-    if !checkValidPathOverworldUnit(1, 2, flyingHighMen) {
+    if !checkValidPathOverworldUnit(1, 2, fog, flyingHighMen) {
         test.Errorf("Flight enchanted land unit should be move from water to land")
     }
 
@@ -131,15 +141,15 @@ func TestPathBasic(test *testing.T) {
     // sailing unit with flying can walk water->water and water->land
     flyingWarship := units.MakeOverworldUnit(units.Warship, 0, 0, data.PlaneArcanus)
     flyingWarship.AddEnchantment(data.UnitEnchantmentFlight)
-    if !checkValidPathOverworldUnit(0, 1, flyingWarship) {
+    if !checkValidPathOverworldUnit(0, 1, fog, flyingWarship) {
         test.Errorf("Flying sailing unit should be move from water to water")
     }
 
-    if !checkValidPathOverworldUnit(1, 2, flyingWarship) {
+    if !checkValidPathOverworldUnit(1, 2, fog, flyingWarship) {
         test.Errorf("Flying sailing unit should be move from water to land")
     }
 
-    if !checkValidPathOverworldUnit(2, 1, flyingWarship) {
+    if !checkValidPathOverworldUnit(2, 1, fog, flyingWarship) {
         test.Errorf("Flying sailing unit should be move from land to water")
     }
 
@@ -177,4 +187,9 @@ func TestPathBasic(test *testing.T) {
             test.Errorf("Land unit in stack with flying sailing unit should be able to move into water")
         }
     }()
+
+    // land walker can create a path from land to water as long as the water tile is unexplored
+    if !checkValidPathUnexplored(2, 1, units.HighMenSwordsmen) {
+        test.Errorf("Land walker should be able to path to unexplored water tile")
+    }
 }

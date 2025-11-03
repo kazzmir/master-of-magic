@@ -2058,6 +2058,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
     allFlyers := stack.AllFlyers()
 
     // FIXME: we might not need this check at all, and just let tileCost handle it
+    /*
     if fog.GetFog(useMap.WrapX(newX), newY) != data.FogTypeUnexplored {
         tileTo := useMap.GetTile(newX, newY)
         if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(true) {
@@ -2078,6 +2079,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
         }
 
     }
+    */
 
     normalized := func (a image.Point) image.Point {
         return image.Pt(useMap.WrapX(a.X), a.Y)
