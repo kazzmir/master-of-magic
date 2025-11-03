@@ -5319,13 +5319,16 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
 
         for _, unit := range stack.Units() {
-            if landscape == combat.CombatLandscapeWater && unit.IsLandWalker() {
-                continue
-            }
+            // flying units always get added to battle
+            if !unit.IsFlying() {
+                if landscape == combat.CombatLandscapeWater && unit.IsLandWalker() {
+                    continue
+                }
 
-            // dont add sailing units to non-water combat
-            if landscape != combat.CombatLandscapeWater && unit.IsSailing() {
-                continue
+                // dont add sailing units to non-water combat
+                if landscape != combat.CombatLandscapeWater && unit.IsSailing() {
+                    continue
+                }
             }
 
             army.AddUnit(unit)
