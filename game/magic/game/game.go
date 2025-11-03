@@ -4373,7 +4373,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                             }
                         } else {
                             path := game.FindPath(oldX, oldY, newX, newY, player, stack, player.GetFog(game.Plane))
-                            if path == nil {
+                            if len(path) == 0 {
                                 game.blinkRed(yield)
                                 if inactiveStack != nil {
                                     player.MergeStacks(stack, inactiveStack)
@@ -4395,7 +4395,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                 } else {
                     // make a copy of the unit stack to activate all units, because path finding only checks active units for terrain constraints
                     path := game.FindPath(oldX, oldY, newX, newY, player, playerlib.MakeUnitStackFromUnits(stack.Units()), player.GetFog(game.Plane))
-                    if path == nil {
+                    if len(path) == 0 {
                         game.blinkRed(yield)
                     } else {
                         stack.CurrentPath = path
