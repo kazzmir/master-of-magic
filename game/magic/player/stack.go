@@ -11,6 +11,18 @@ import (
 
 type ActiveMap map[units.StackUnit]bool
 
+type PathStack interface {
+    AllFlyers() bool
+    AnyLandWalkers() bool
+    GetBanner() data.BannerType
+    Plane() data.Plane
+    HasSailingUnits(bool) bool
+    CanMoveOnLand(bool) bool
+    ActiveUnitsDoesntHaveAbility(data.AbilityType) bool
+    ActiveUnitsHasAbility(data.AbilityType) bool
+    HasPathfinding() bool
+}
+
 type UnitStack struct {
     units []units.StackUnit
     active ActiveMap
@@ -151,6 +163,24 @@ func (stack *UnitStack) InactiveUnits() []units.StackUnit {
     }
 
     return inactive
+}
+
+func (stack *UnitStack) CanMoveOnLand(onlyActive bool) bool {
+    use := stack.units
+    if onlyActive {
+        use = stack.ActiveUnits()
+    }
+
+    // sailing units that can't fly cannot move on land
+    for _, unit := range use {
+        if unit.GetRawUnit().Sailing && !unit.IsFlying() {
+            return false
+        }
+    }
+
+    // otherwise every other unit can move on land
+
+    return true
 }
 
 // pass in true to only check active units
