@@ -1,27 +1,88 @@
 <html>
 <head>
+    <style>
+        #Loader {
+            display: grid;
+            place-content: center;
+            height: 100dvh;
+            width: 100dvw;
+        }
+
+        .progress {
+            font-size: 16px;
+        }
+    </style>
+
     <script src="go1.24.0-wasm.js"></script>
     <script>
     function run(){
         (async () => {
             const path = `arena.wasm`
-            const response = await fetch(path)
-            if (response.ok){
-                const src = await response.arrayBuffer()
-                const go = new Go()
-                const result = await WebAssembly.instantiate(src, go.importObject)
-                // go.argv = 
-                // go.env =
-                go.run(result.instance)
-            } else {
-                const pre = document.createElement('pre')
-                pre.innerText = await response.text()
-                document.body.appendChild(pre)
+            // const response = await fetch(path)
+
+            const loadBar = document.getElementById("load-bar")
+            const progressElement = document.getElementById("progress")
+
+            const response = fetch(path).then(response => {
+                let loaded = 0
+                const size = (response.headers.get('Content-Length') ?? response.headers.get("x-goog-stored-content-length")) | 0;
+
+                const mb1 = 1024 * 1024
+
+                const progress = new TransformStream({
+                    transform(chunk, controller) {
+                        loaded += chunk.length;
+                        controller.enqueue(chunk);
+
+                        if (size > 0) {
+                            progressElement.innerText = (loaded / mb1).toFixed(1) + "mb out of " + (size / mb1).toFixed(1) + "mb";
+                            loadBar.value = (loaded / size) * 100;
+                        }
+                    }
+                });
+
+                const body = response.body.pipeThrough(progress);
+
+                const patched = new Response(body, {
+                    status: response.status,
+                    statusText: response.statusText,
+                });
+
+                // Make sure to copy the headers!
+                // Wasm is very picky with it's headers and it will fail to compile if they are not
+                // specified correctly.
+                for (let pair of response.headers.entries()) {
+                    patched.headers.set(pair[0], pair[1]);
+                }
+
+                return patched;
+            });
+
+            const go = new Go()
+            const result = await WebAssembly.instantiateStreaming(response, go.importObject)
+
+            document.getElementById("Loader").remove()
+
+            /*
+            for (const node of document.querySelectorAll(".progress")) {
+                node.innerHTML = "&nbsp;"
             }
+            */
+
+            // go.argv = 
+            // go.env =
+            await go.run(result.instance)
         })()
     }
     </script>
 </head>
 <body onload="run()">
+
+    <div id="Loader">
+        <div id="load-text">Loading game&hellip;</div>
+        <div id="progress" class="progress">&nbsp;</div>
+        <progress id="load-bar" max="100" value="0"></progress>
+    </div>
+
 </body>
 </html>
