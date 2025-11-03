@@ -61,6 +61,8 @@
             const go = new Go()
             const result = await WebAssembly.instantiateStreaming(response, go.importObject)
 
+            document.getElementById("Loader").remove()
+
             /*
             for (const node of document.querySelectorAll(".progress")) {
                 node.innerHTML = "&nbsp;"
@@ -69,7 +71,7 @@
 
             // go.argv = 
             // go.env =
-            go.run(result.instance)
+            await go.run(result.instance)
         })()
     }
     </script>
