@@ -966,6 +966,47 @@ func makeScenario12(cache *lbx.LbxCache) *combat.CombatScreen {
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
 }
 
+func makeScenario13(cache *lbx.LbxCache) *combat.CombatScreen {
+    defendingPlayer := player.MakePlayer(setup.WizardCustom{
+            Name: "Enemy",
+            Banner: data.BannerBlue,
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+    // defendingArmy := createWarlockArmy(&defendingPlayer)
+    defendingArmy := createGreatDrakeArmy(defendingPlayer, 1)
+    defendingArmy.LayoutUnits(combat.TeamDefender)
+
+    // defendingArmy.GetUnits()[0].Y -= 7
+
+    attackingPlayer := player.MakePlayer(setup.WizardCustom{
+            Name: "Merlin",
+            Banner: data.BannerRed,
+            Race: data.RaceHighMen,
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
+
+    attackingPlayer.CastingSkillPower = 10
+    attackingPlayer.TaxRate = fraction.Zero()
+
+    // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
+    // attackingArmy := createArchAngelArmy(attackingPlayer)
+
+    attackingArmy := &combat.Army{Player: attackingPlayer}
+    // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Unicorn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+
+    unit1 := units.MakeOverworldUnitFromUnit(units.Warship, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider())
+    attackingArmy.AddUnit(unit1)
+    unit1.AddEnchantment(data.UnitEnchantmentFlight)
+    unit1.AddEnchantment(data.UnitEnchantmentInvisibility)
+    // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Djinn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+    // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatWyrm, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+    attackingArmy.LayoutUnits(combat.TeamAttacker)
+
+    city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -984,6 +1025,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 10: combatScreen = makeScenario10(cache)
         case 11: combatScreen = makeScenario11(cache)
         case 12: combatScreen = makeScenario12(cache)
+        case 13: combatScreen = makeScenario13(cache)
         default: combatScreen = makeScenario1(cache)
     }
 
