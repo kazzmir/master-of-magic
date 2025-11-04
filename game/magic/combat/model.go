@@ -730,6 +730,14 @@ func (unit *ArmyUnit) IsInvisible() bool {
     return unit.HasAbility(data.AbilityInvisibility) || unit.Model.IsEnchantmentActive(data.CombatEnchantmentMassInvisibility, unit.Team)
 }
 
+func (unit *ArmyUnit) CanSee(other *ArmyUnit) bool {
+    if other.IsInvisible() {
+        return unit.HasAbility(data.AbilityIllusionsImmunity)
+    }
+
+    return true
+}
+
 func (unit *ArmyUnit) IsSwimmer() bool {
     return unit.Unit.IsSwimmer()
 }

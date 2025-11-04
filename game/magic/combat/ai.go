@@ -220,6 +220,8 @@ func doAIMovementPathfinding(model *CombatModel, aiActions AIUnitActionsInterfac
     getPath := func (unit *ArmyUnit) pathfinding.Path {
         path, found := paths[unit]
         if !found {
+            // pretend that there is no unit at the tile. this is a sin of the highest order
+
             model.Tiles[unit.Y][unit.X].Unit = nil
             var ok bool
             path, ok = model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
@@ -273,15 +275,13 @@ func doAIMovementPathfinding(model *CombatModel, aiActions AIUnitActionsInterfac
 
     // find a path to some enemy
     for _, closestEnemy := range candidates {
-        // pretend that there is no unit at the tile. this is a sin of the highest order
-
         path := getPath(closestEnemy)
 
         // a path of length 2 contains the position of the aiUnit and the position of the enemy, so they are right next to each other
         if len(path) == 2 && model.canMeleeAttack(aiUnit, closestEnemy) {
             aiActions.MeleeAttack(aiUnit, closestEnemy)
             return true
-        } else if len(path) > 2 {
+        } else if len(path) > 2 && aiUnit.CanSee(closestEnemy) {
             // ignore path[0], thats where we are now. also ignore the last element, since we can't move onto the enemy
 
             last := path[len(path)-1]
