@@ -8573,6 +8573,8 @@ func (game *Game) DoRandomEvents() {
             if newEvent != nil {
                 game.LastEventTurn = game.TurnNumber
 
+                // log.Printf("Random event occurred: %+v", newEvent)
+
                 if !newEvent.Instant {
                     game.RandomEvents = append(game.RandomEvents, newEvent)
                 }
