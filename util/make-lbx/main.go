@@ -2,12 +2,22 @@ package main
 
 import (
     "os"
+    "io"
     "log"
+    "fmt"
     "image"
     "bufio"
+    "bytes"
     _ "image/png"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+)
+
+type LbxType int
+const (
+    LbxRaw LbxType = iota
+    LbxImage
+    LbxTerrain
 )
 
 type LbxBuilder struct {
@@ -37,6 +47,38 @@ func (builder *LbxBuilder) AddTerrain(img image.Image) error {
     return nil
 }
 
+func (builder *LbxBuilder) AddFileType(path string, lbxType LbxType) error {
+    file, err := os.Open(path)
+    if err != nil {
+        return err
+    }
+    defer file.Close()
+
+    switch lbxType {
+        case LbxRaw:
+            var buf bytes.Buffer
+            _, err = io.Copy(&buf, file)
+            if err != nil {
+                return err
+            }
+            builder.Data = append(builder.Data, buf.Bytes())
+        case LbxImage:
+            img, _, err := image.Decode(bufio.NewReader(file))
+            if err != nil {
+                return err
+            }
+            return builder.AddImage(img)
+        case LbxTerrain:
+            img, _, err := image.Decode(bufio.NewReader(file))
+            if err != nil {
+                return err
+            }
+            return builder.AddTerrain(img)
+    }
+
+    return fmt.Errorf("Unknown LBX type")
+}
+
 func (builder *LbxBuilder) MakeLbx() *lbx.LbxFile {
     return &lbx.LbxFile{
         Data: builder.Data,
@@ -57,24 +99,10 @@ func main() {
     var builder LbxBuilder
 
     for _, filePath := range files {
-        func() {
-            file, err := os.Open(filePath)
-            if err != nil {
-                log.Printf("Error reading file %s: %v\n", filePath, err)
-            } else {
-                defer file.Close()
-                img, _, err := image.Decode(bufio.NewReader(file))
-                if err != nil {
-                    log.Printf("Error decoding image %s: %v\n", filePath, err)
-                } else {
-                    err := builder.AddImage(img)
-                    if err != nil {
-                        log.Printf("Error encoding image %s: %v\n", filePath, err)
-                        return
-                    }
-                }
-            }
-        }()
+        err := builder.AddFileType(filePath, LbxImage)
+        if err != nil {
+            log.Printf("Error processing file %s: %v\n", filePath, err)
+        }
     }
 
     output, err := os.Create("output.lbx")
