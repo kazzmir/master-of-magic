@@ -1312,7 +1312,7 @@ func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
     return lbx, nil
 }
 
-func SaveLbx(lbx LbxFile, writer io.WriteSeeker) error {
+func SaveLbx(lbx *LbxFile, writer io.WriteSeeker) error {
     err := WriteUint16(writer, uint16(len(lbx.Data)))
     if err != nil {
         return err
