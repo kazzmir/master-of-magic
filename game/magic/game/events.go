@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 )
 
 type RandomEventType int
@@ -92,7 +93,8 @@ type RandomEvent struct {
     LbxIndex int // picture from events.lbx
     Instant bool // true if there is no duration
     IsConjunction bool // only one conjunction event can be active at a time
-    TargetCity *citylib.City // if true, then this event targets a city
+    TargetCity *citylib.City // if not nil, then this event targets a city
+    TargetPlayer *playerlib.Player // if not nil, then this event targets a player
 }
 
 func MakeDisjunctionEvent(year uint64) *RandomEvent {
@@ -183,7 +185,7 @@ func MakeDiplomaticMarriageEvent(year uint64, city *citylib.City) *RandomEvent {
     }
 }
 
-func MakeDonationEvent(year uint64, amount int) *RandomEvent {
+func MakeDonationEvent(year uint64, amount int, target *playerlib.Player) *RandomEvent {
     return &RandomEvent{
         Type: RandomEventDonation,
         BirthYear: year,
@@ -191,6 +193,7 @@ func MakeDonationEvent(year uint64, amount int) *RandomEvent {
         LbxIndex: 8,
         IsConjunction: false,
         Instant: true,
+        TargetPlayer: target,
     }
 }
 
@@ -205,7 +208,7 @@ func MakeEarthquakeEvent(year uint64, cityName string, people int, units int, bu
     }
 }
 
-func MakeGiftEvent(year uint64, name string) *RandomEvent {
+func MakeGiftEvent(year uint64, name string, target *playerlib.Player) *RandomEvent {
     return &RandomEvent{
         Type: RandomEventGift,
         BirthYear: year,
@@ -213,6 +216,7 @@ func MakeGiftEvent(year uint64, name string) *RandomEvent {
         LbxIndex: 1,
         IsConjunction: false,
         Instant: true,
+        TargetPlayer: target,
     }
 }
 
@@ -249,7 +253,7 @@ func MakeNewMineralsEvent(year uint64, bonus data.BonusType, city *citylib.City)
     }
 }
 
-func MakePiracyEvent(year uint64, gold int) *RandomEvent {
+func MakePiracyEvent(year uint64, gold int, target *playerlib.Player) *RandomEvent {
     return &RandomEvent{
         Type: RandomEventPiracy,
         BirthYear: year,
@@ -257,6 +261,7 @@ func MakePiracyEvent(year uint64, gold int) *RandomEvent {
         LbxIndex: 5,
         IsConjunction: false,
         Instant: true,
+        TargetPlayer: target,
     }
 }
 

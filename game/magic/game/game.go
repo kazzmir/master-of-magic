@@ -3070,7 +3070,10 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         }
                     case *GameEventShowRandomEvent:
                         randomEvent := event.(*GameEventShowRandomEvent)
-                        game.doRandomEvent(yield, randomEvent.Event, randomEvent.Starting, game.Players[0].Wizard)
+                        target := randomEvent.Event.TargetPlayer
+                        if target == nil || target == game.Players[0] {
+                            game.doRandomEvent(yield, randomEvent.Event, randomEvent.Starting, game.Players[0].Wizard)
+                        }
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)
@@ -8356,7 +8359,7 @@ func (game *Game) DoRandomEvents() {
                         gold := rand.N(2000) + 100
                         target.Gold += gold
 
-                        return MakeDonationEvent(game.TurnNumber, gold), nil
+                        return MakeDonationEvent(game.TurnNumber, gold, target), nil
                     case RandomEventPiracy:
                         if target.Gold < 100 {
                             return nil, nil
@@ -8366,7 +8369,7 @@ func (game *Game) DoRandomEvents() {
                         gold := rand.N(target.Gold / 5) + target.Gold * 3 / 10
                         target.Gold = max(0, target.Gold - gold)
 
-                        return MakePiracyEvent(game.TurnNumber, gold), nil
+                        return MakePiracyEvent(game.TurnNumber, gold, target), nil
                     case RandomEventGift:
                         var out []*artifact.Artifact
                         for _, artifact := range game.ArtifactPool {
@@ -8386,7 +8389,7 @@ func (game *Game) DoRandomEvents() {
 
                         // returning GameEventVault here is ugly but we need a way to have the vault event
                         // be added to game.Events after the random event
-                        return MakeGiftEvent(game.TurnNumber, use.Name), &GameEventVault{CreatedArtifact: use, Player: target}
+                        return MakeGiftEvent(game.TurnNumber, use.Name, target), &GameEventVault{CreatedArtifact: use, Player: target}
                     case RandomEventDepletion:
                         // choose a random town that has a mineral bonus in its catchment area,
                         // and then remove the bonus from the map
@@ -8569,6 +8572,8 @@ func (game *Game) DoRandomEvents() {
             newEvent, extraEvent := makeEvent(choice, targetWizard)
             if newEvent != nil {
                 game.LastEventTurn = game.TurnNumber
+
+                // log.Printf("Random event occurred: %+v", newEvent)
 
                 if !newEvent.Instant {
                     game.RandomEvents = append(game.RandomEvents, newEvent)
