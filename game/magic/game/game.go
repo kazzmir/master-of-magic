@@ -3070,7 +3070,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         }
                     case *GameEventShowRandomEvent:
                         randomEvent := event.(*GameEventShowRandomEvent)
-                        if randomEvent.Event.TargetPlayer == game.Players[0] {
+                        target := randomEvent.Event.TargetPlayer
+                        if target == nil || target == game.Players[0] {
                             game.doRandomEvent(yield, randomEvent.Event, randomEvent.Starting, game.Players[0].Wizard)
                         }
                     case *GameEventScroll:
