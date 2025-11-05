@@ -119,6 +119,15 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
     updateMouse()
 
+    updateTeleport := func(){
+        if selectedItem == nil {
+        } else {
+            // show 'item teleport' if the selected item is not in the same location as each hero
+            // show 'same location' if the item is in the same location as hero
+            // for teleported items, pay a cost of 20 mana
+        }
+    }
+
     /*
     group := uilib.MakeGroup()
     ui.AddGroup(group)
@@ -140,6 +149,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             LeftClick: func(element *uilib.UIElement){
                 selectedItem, player.VaultEquipment[index] = player.VaultEquipment[index], selectedItem
                 updateMouse()
+                updateTeleport()
             },
             RightClick: func(element *uilib.UIElement){
                 if player.VaultEquipment[index] != nil {
@@ -189,6 +199,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                         player.Mana += gainedMana
                         selectedItem = nil
                         updateMouse()
+                        updateTeleport()
                         ui.RemoveGroup(group)
                     }
 
@@ -269,6 +280,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                     if selectedItem == nil || slot.CompatibleWith(selectedItem.Type) {
                         selectedItem, hero.Equipment[slotIndex] = hero.Equipment[slotIndex], selectedItem
                         updateMouse()
+                        updateTeleport()
                     }
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
