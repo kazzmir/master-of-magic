@@ -88,7 +88,22 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
     // mouse should turn into createdArtifact picture
 
-    selectedItem := createdArtifact
+    type ItemLocation struct {
+        Item *artifact.Artifact
+        Location image.Point
+    }
+
+    var fortressLocation image.Point
+
+    fortressCity := player.FindFortressCity()
+    if fortressCity != nil {
+        fortressLocation = image.Pt(fortressCity.GetX(), fortressCity.GetY())
+    }
+
+    selectedItem := ItemLocation{
+        Item: createdArtifact,
+        Location: fortressLocation,
+    }
 
     ui := &uilib.UI{
         Cache: game.Cache,
@@ -109,9 +124,9 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
     ui.SetElementsFromArray(nil)
 
     updateMouse := func(){
-        if selectedItem != nil {
+        if selectedItem.Item != nil {
             mouse.Mouse.SetImageFunc(func (screen *ebiten.Image, options *ebiten.DrawImageOptions){
-                artifact.RenderArtifactImage(screen, &imageCache, *selectedItem, ui.Counter / 8, *options)
+                artifact.RenderArtifactImage(screen, &imageCache, *selectedItem.Item, ui.Counter / 8, *options)
             })
         } else {
             mouse.Mouse.SetImage(game.MouseData.Normal)
@@ -121,7 +136,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
     updateMouse()
 
     updateTeleport := func(){
-        if selectedItem == nil {
+        if selectedItem.Item == nil {
         } else {
             // show 'item teleport' if the selected item is not in the same location as each hero
             // show 'same location' if the item is in the same location as hero
@@ -148,7 +163,12 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             Rect: rect,
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
-                selectedItem, player.VaultEquipment[index] = player.VaultEquipment[index], selectedItem
+                oldItem := selectedItem.Item
+
+                oldItem, player.VaultEquipment[index] = player.VaultEquipment[index], oldItem
+                selectedItem.Item = oldItem
+                selectedItem.Location = fortressLocation
+
                 updateMouse()
                 updateTeleport()
             },
@@ -187,18 +207,18 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             Rect: rect,
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
-                if selectedItem != nil {
+                if selectedItem.Item != nil {
 
                     group := uilib.MakeGroup()
 
-                    gainedMana := selectedItem.Cost
+                    gainedMana := selectedItem.Item.Cost
                     if !player.Wizard.RetortEnabled(data.RetortArtificer) {
                         gainedMana /= 2
                     }
 
                     yes := func(){
                         player.Mana += gainedMana
-                        selectedItem = nil
+                        selectedItem.Item = nil
                         updateMouse()
                         updateTeleport()
                         ui.RemoveGroup(group)
@@ -208,7 +228,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                         ui.RemoveGroup(group)
                     }
 
-                    group.AddElements(uilib.MakeConfirmDialog(group, game.Cache, &imageCache, fmt.Sprintf("Do you want to destroy your %v and gain %v mana crystals?", selectedItem.Name, gainedMana), true, yes, no))
+                    group.AddElements(uilib.MakeConfirmDialog(group, game.Cache, &imageCache, fmt.Sprintf("Do you want to destroy your %v and gain %v mana crystals?", selectedItem.Item.Name, gainedMana), true, yes, no))
                     ui.AddGroup(group)
                 }
             },
@@ -222,6 +242,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
     nameOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xbc, G: 0x8c, B: 0x27, A: 255})
     var teleportOptions ebiten.DrawImageOptions
     teleportOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xc1, G: 0x1f, B: 0x12, A: 255})
+    var sameLocationOptions ebiten.DrawImageOptions
+    sameLocationOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0x5f, G: 0xab, B: 0xdc, A: 255})
 
     // returns elements for the hero portrait and the 3 item slots
     makeHero := func(index int, hero *herolib.Hero) []*uilib.UIElement {
@@ -229,6 +251,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
         x1 := (34 + (index % 2) * 135)
         y1 := (16 + (index / 2) * 46)
+
+        heroLocation := image.Pt(hero.GetX(), hero.GetY())
 
         portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
         profile, _ := imageCache.GetImage(portraitLbx, portraitIndex, 0)
@@ -249,6 +273,14 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             player.RemoveUnit(hero)
         }
 
+        isSameLocation := func() bool {
+            if selectedItem.Item == nil {
+                return false
+            }
+
+            return heroLocation == selectedItem.Location
+        }
+
         elements = append(elements, &uilib.UIElement{
             Rect: rect,
             RightClick: func(element *uilib.UIElement){
@@ -263,8 +295,12 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
                 fonts.ResourceFont.PrintOptions(screen, float64(nameX), float64(nameY), font.FontOptions{Options: &nameOptions, Scale: scale.ScaleAmount, DropShadow: true}, hero.Name)
 
-                if selectedItem != nil {
-                    fonts.ResourceFont.PrintOptions(screen, float64(nameX), float64(nameY + fonts.ResourceFont.Height()), font.FontOptions{Options: &teleportOptions, Scale: scale.ScaleAmount, DropShadow: true}, "Item Teleport")
+                if selectedItem.Item != nil {
+                    if isSameLocation() {
+                        fonts.ResourceFont.PrintOptions(screen, float64(nameX), float64(nameY + fonts.ResourceFont.Height()), font.FontOptions{Options: &sameLocationOptions, Scale: scale.ScaleAmount, DropShadow: true}, "Same Location")
+                    } else {
+                        fonts.ResourceFont.PrintOptions(screen, float64(nameX), float64(nameY + fonts.ResourceFont.Height()), font.FontOptions{Options: &teleportOptions, Scale: scale.ScaleAmount, DropShadow: true}, "Item Teleport")
+                    }
                 }
             },
         })
@@ -292,8 +328,13 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                 PlaySoundLeftClick: true,
                 LeftClick: func(element *uilib.UIElement){
                     // if the slot is incompatible with the selected item then do not allow a swap
-                    if selectedItem == nil || slot.CompatibleWith(selectedItem.Type) {
-                        selectedItem, hero.Equipment[slotIndex] = hero.Equipment[slotIndex], selectedItem
+                    if selectedItem.Item == nil || slot.CompatibleWith(selectedItem.Item.Type) {
+                        oldItem := selectedItem.Item
+                        oldItem, hero.Equipment[slotIndex] = hero.Equipment[slotIndex], oldItem
+
+                        selectedItem.Item = oldItem
+                        selectedItem.Location = heroLocation
+
                         updateMouse()
                         updateTeleport()
                     }
@@ -331,12 +372,12 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             Rect: rect,
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
-                if selectedItem == nil {
+                if selectedItem.Item == nil {
                     index = 1
                 }
             },
             LeftClickRelease: func(element *uilib.UIElement){
-                if selectedItem == nil {
+                if selectedItem.Item == nil {
                     index = 0
                     // can't quit the screen while holding an item
                     quit = true
@@ -345,7 +386,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
                 options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
-                if selectedItem != nil {
+                if selectedItem.Item != nil {
                     options.ColorScale.SetR(2)
                 }
                 scale.DrawScaled(screen, okImages[index], &options)
