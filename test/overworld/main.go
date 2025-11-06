@@ -1739,12 +1739,14 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
     rakir := hero.MakeHero(units.MakeOverworldUnit(units.HeroRakir, x, y, data.PlaneArcanus), hero.HeroRakir, "bubba")
     player.AddHeroToFortress(rakir)
     rakir.AddExperience(528)
+    rakir.Status = hero.StatusEmployed
 
     mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX, x, y+1, data.PlaneArcanus), hero.HeroMysticX, "fred")
     player.AddHeroToFortress(mysticX)
     mysticX.SetExtraAbilities()
     mysticX.AddAbility(data.AbilityArmsmaster)
     mysticX.AddExperience(528)
+    mysticX.Status = hero.StatusEmployed
 
     warlock := player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x, y, data.PlaneArcanus, player.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     // warlock.AddEnchantment(data.UnitEnchantmentGiantStrength)
@@ -2414,7 +2416,9 @@ func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
     city.ResetCitizens()
     player.AddCity(city)
 
-    player.AddHeroToFortress(hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther"))
+    gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther")
+    player.AddHeroToFortress(gunther)
+    gunther.Status = hero.StatusEmployed
 
     enemy := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",
@@ -2487,8 +2491,11 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
     // player.AddHero(gunther)
     // player.AddHero(reywind)
     gunther.AddExperience(19)
+    gunther.Status = hero.StatusEmployed
     reywind.AddExperience(58)
+    reywind.Status = hero.StatusEmployed
     mysticX.AddExperience(19)
+    mysticX.Status = hero.StatusEmployed
 
     enemy := game.AddPlayer(setup.WizardCustom{
         Name: "dingus",
@@ -2978,6 +2985,7 @@ func createScenario32(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 30, data.PlaneArcanus)
 
     gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther")
+    gunther.Status = hero.StatusEmployed
     gunther.Equipment[0] = &artifact.Artifact{
         Name: "Baloney",
         Image: 7,
@@ -5849,6 +5857,7 @@ func createScenario64(cache *lbx.LbxCache) *gamelib.Game {
     rakir := hero.MakeHero(units.MakeOverworldUnit(units.HeroRakir, x, y, data.PlaneArcanus), hero.HeroRakir, "bubba")
     player.AddHeroToFortress(rakir)
     rakir.AddExperience(528)
+    rakir.Status = hero.StatusEmployed
 
     rakir.Equipment[0] = &artifact.Artifact{
         Name: "Baloney",
