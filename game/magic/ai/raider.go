@@ -496,5 +496,6 @@ func (raider *RaiderAI) ConfirmRazeTown(city *citylib.City) bool {
     return true
 }
 
-func (raider *RaiderAI) HandleMerchantItem(self *playerlib.Player, item *artifact.Artifact, cost int) {
+func (raider *RaiderAI) HandleMerchantItem(self *playerlib.Player, item *artifact.Artifact, cost int) bool {
+    return false
 }

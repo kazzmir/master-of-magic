@@ -141,7 +141,7 @@ type AIBehavior interface {
     // true to raze, false to occupy
     ConfirmRazeTown(*citylib.City) bool
 
-    HandleMerchantItem(*Player, *artifact.Artifact, int)
+    HandleMerchantItem(*Player, *artifact.Artifact, int) bool
 }
 
 type Hostility int
