@@ -322,13 +322,40 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                 LeftClick: func(element *uilib.UIElement){
                     // if the slot is incompatible with the selected item then do not allow a swap
                     if selectedItem.Item == nil || slot.CompatibleWith(selectedItem.Item.Type) {
-                        oldItem := selectedItem.Item
-                        oldItem, hero.Equipment[slotIndex] = hero.Equipment[slotIndex], oldItem
 
-                        selectedItem.Item = oldItem
-                        selectedItem.Location = heroLocation
+                        doSwap := func() {
+                            oldItem := selectedItem.Item
+                            oldItem, hero.Equipment[slotIndex] = hero.Equipment[slotIndex], oldItem
 
-                        updateMouse()
+                            selectedItem.Item = oldItem
+                            selectedItem.Location = heroLocation
+
+                            updateMouse()
+                        }
+
+                        // putting an item into a hero slot might cost mana if the hero is not at the same location
+                        // as the item. The player can pay a cost to teleport the item to the hero
+                        if isSameLocation() || selectedItem.Item == nil {
+                            doSwap()
+                        } else {
+                            teleportCost := 20
+
+                            if player.Mana < teleportCost {
+                                ui.AddElement(uilib.MakeErrorElement(ui, game.Cache, &imageCache, "Not enough mana to teleport item", func(){}))
+                            } else {
+
+                                yes := func() {
+                                    doSwap()
+                                    player.Mana -= teleportCost
+                                }
+
+                                no := func(){}
+
+                                group := uilib.MakeGroup()
+                                group.AddElements(uilib.MakeConfirmDialog(group, game.Cache, &imageCache, fmt.Sprintf("Do you wish to make this transfer at a cost of %v mana crystals?", teleportCost), true, yes, no))
+                                ui.AddGroup(group)
+                            }
+                        }
                     }
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -349,13 +376,14 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
     }
 
     for i, hero := range player.Heroes {
-        if hero != nil {
+        if hero != nil && hero.Status == herolib.StatusEmployed {
             ui.AddElements(makeHero(i, hero))
         }
     }
 
     quit := false
 
+    // ok button, exit vault screen
     ui.AddElement(func () *uilib.UIElement {
         okImages, _ := imageCache.GetImages("armylist.lbx", 8)
         index := 0
@@ -386,6 +414,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         }
     }())
 
+    // alchemy button
     ui.AddElement(func () *uilib.UIElement {
         images, _ := imageCache.GetImages("armylist.lbx", 7)
         index := 0
