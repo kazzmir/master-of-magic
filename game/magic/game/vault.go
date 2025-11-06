@@ -154,10 +154,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             Rect: rect,
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
-                oldItem := selectedItem.Item
-
-                oldItem, player.VaultEquipment[index] = player.VaultEquipment[index], oldItem
-                selectedItem.Item = oldItem
+                selectedItem.Item, player.VaultEquipment[index] = player.VaultEquipment[index], selectedItem.Item
                 selectedItem.Location = fortressLocation
 
                 updateMouse()
@@ -324,10 +321,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                     if selectedItem.Item == nil || slot.CompatibleWith(selectedItem.Item.Type) {
 
                         doSwap := func() {
-                            oldItem := selectedItem.Item
-                            oldItem, hero.Equipment[slotIndex] = hero.Equipment[slotIndex], oldItem
-
-                            selectedItem.Item = oldItem
+                            selectedItem.Item, hero.Equipment[slotIndex] = hero.Equipment[slotIndex], selectedItem.Item
                             selectedItem.Location = heroLocation
 
                             updateMouse()
