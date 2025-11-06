@@ -4,6 +4,7 @@ import (
     "log"
     "fmt"
     "image"
+    "image/color"
 
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -243,6 +244,9 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             player.RemoveUnit(hero)
         }
 
+        var nameOptions ebiten.DrawImageOptions
+        nameOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xbc, G: 0x8c, B: 0x27, A: 255})
+
         elements = append(elements, &uilib.UIElement{
             Rect: rect,
             RightClick: func(element *uilib.UIElement){
@@ -251,6 +255,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 scale.DrawScaled(screen, profile, &options)
                 scale.DrawScaled(screen, frame, &options)
+
+                fonts.ResourceFont.PrintOptions(screen, float64(rect.Min.X + profile.Bounds().Dx() + 3), float64(rect.Min.Y), font.FontOptions{Options: &nameOptions, Scale: scale.ScaleAmount, DropShadow: true}, hero.Name)
             },
         })
 
