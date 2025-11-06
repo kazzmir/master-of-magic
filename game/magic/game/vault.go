@@ -218,6 +218,11 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         }
     }())
 
+    var nameOptions ebiten.DrawImageOptions
+    nameOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xbc, G: 0x8c, B: 0x27, A: 255})
+    var teleportOptions ebiten.DrawImageOptions
+    teleportOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xc1, G: 0x1f, B: 0x12, A: 255})
+
     // returns elements for the hero portrait and the 3 item slots
     makeHero := func(index int, hero *herolib.Hero) []*uilib.UIElement {
         // 3 on left, 3 on right
@@ -244,9 +249,6 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             player.RemoveUnit(hero)
         }
 
-        var nameOptions ebiten.DrawImageOptions
-        nameOptions.ColorScale.ScaleWithColor(color.RGBA{R: 0xbc, G: 0x8c, B: 0x27, A: 255})
-
         elements = append(elements, &uilib.UIElement{
             Rect: rect,
             RightClick: func(element *uilib.UIElement){
@@ -256,7 +258,14 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                 scale.DrawScaled(screen, profile, &options)
                 scale.DrawScaled(screen, frame, &options)
 
-                fonts.ResourceFont.PrintOptions(screen, float64(rect.Min.X + profile.Bounds().Dx() + 3), float64(rect.Min.Y), font.FontOptions{Options: &nameOptions, Scale: scale.ScaleAmount, DropShadow: true}, hero.Name)
+                nameX := rect.Min.X + profile.Bounds().Dx() + 3
+                nameY := rect.Min.Y - 1
+
+                fonts.ResourceFont.PrintOptions(screen, float64(nameX), float64(nameY), font.FontOptions{Options: &nameOptions, Scale: scale.ScaleAmount, DropShadow: true}, hero.Name)
+
+                if selectedItem != nil {
+                    fonts.ResourceFont.PrintOptions(screen, float64(nameX), float64(nameY + fonts.ResourceFont.Height()), font.FontOptions{Options: &teleportOptions, Scale: scale.ScaleAmount, DropShadow: true}, "Item Teleport")
+                }
             },
         })
 
