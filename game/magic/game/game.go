@@ -2761,6 +2761,7 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
         quit = true
         if bought {
             delete(game.ArtifactPool, artifact.Name)
+            player.Gold -= cost
             game.doVault(yield, artifact)
         }
     }
