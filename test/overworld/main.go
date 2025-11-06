@@ -1570,7 +1570,10 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
     player.AddHeroToFortress(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroWarrax, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroWarrax, "Warrax"))
     player.AddHeroToFortress(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRavashack, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroRavashack, "Ravashack"))
     player.AddHeroToFortress(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroSirHarold, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroSirHarold, "Sir Harold"))
-    player.AddHeroToFortress(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroAlorra, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroAlorra, "Alorra"))
+
+    alorra := hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroAlorra, x, y, data.PlaneMyrror, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroAlorra, "Alorra")
+    player.AddHeroToFortress(alorra)
+    alorra.SetPlane(data.PlaneMyrror)
 
     player.VaultEquipment[0] = &artifact.Artifact{
         Name: "Baloney",

@@ -90,14 +90,14 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
     type ItemLocation struct {
         Item *artifact.Artifact
-        Location image.Point
+        Location data.PlanePoint
     }
 
-    var fortressLocation image.Point
+    var fortressLocation data.PlanePoint
 
     fortressCity := player.FindFortressCity()
     if fortressCity != nil {
-        fortressLocation = image.Pt(fortressCity.GetX(), fortressCity.GetY())
+        fortressLocation = fortressCity.GetPlanePoint()
     }
 
     selectedItem := ItemLocation{
@@ -135,15 +135,6 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
     updateMouse()
 
-    updateTeleport := func(){
-        if selectedItem.Item == nil {
-        } else {
-            // show 'item teleport' if the selected item is not in the same location as each hero
-            // show 'same location' if the item is in the same location as hero
-            // for teleported items, pay a cost of 20 mana
-        }
-    }
-
     /*
     group := uilib.MakeGroup()
     ui.AddGroup(group)
@@ -170,7 +161,6 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                 selectedItem.Location = fortressLocation
 
                 updateMouse()
-                updateTeleport()
             },
             RightClick: func(element *uilib.UIElement){
                 if player.VaultEquipment[index] != nil {
@@ -220,7 +210,6 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                         player.Mana += gainedMana
                         selectedItem.Item = nil
                         updateMouse()
-                        updateTeleport()
                         ui.RemoveGroup(group)
                     }
 
@@ -252,7 +241,11 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         x1 := (34 + (index % 2) * 135)
         y1 := (16 + (index / 2) * 46)
 
-        heroLocation := image.Pt(hero.GetX(), hero.GetY())
+        heroLocation := data.PlanePoint{
+            X: hero.GetX(),
+            Y: hero.GetY(),
+            Plane: hero.GetPlane(),
+        }
 
         portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
         profile, _ := imageCache.GetImage(portraitLbx, portraitIndex, 0)
@@ -336,7 +329,6 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                         selectedItem.Location = heroLocation
 
                         updateMouse()
-                        updateTeleport()
                     }
                 },
                 Draw: func(element *uilib.UIElement, screen *ebiten.Image){
