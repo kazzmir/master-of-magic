@@ -283,6 +283,14 @@ func (unit *OverworldUnit) GetRealm() data.MagicType {
     return unit.Unit.Realm
 }
 
+func (unit *OverworldUnit) GetPlanePoint() data.PlanePoint {
+    return data.PlanePoint{
+        X: unit.X,
+        Y: unit.Y,
+        Plane: unit.Plane,
+    }
+}
+
 func (unit *OverworldUnit) GetX() int {
     return unit.X
 }

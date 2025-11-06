@@ -238,12 +238,6 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
         x1 := (34 + (index % 2) * 135)
         y1 := (16 + (index / 2) * 46)
 
-        heroLocation := data.PlanePoint{
-            X: hero.GetX(),
-            Y: hero.GetY(),
-            Plane: hero.GetPlane(),
-        }
-
         portraitLbx, portraitIndex := hero.GetPortraitLbxInfo()
         profile, _ := imageCache.GetImage(portraitLbx, portraitIndex, 0)
         // FIXME: there are 5 of these frame images, how are they selected?
@@ -268,7 +262,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
                 return false
             }
 
-            return heroLocation == selectedItem.Location
+            return hero.GetPlanePoint() == selectedItem.Location
         }
 
         elements = append(elements, &uilib.UIElement{
@@ -322,7 +316,7 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
 
                         doSwap := func() {
                             selectedItem.Item, hero.Equipment[slotIndex] = hero.Equipment[slotIndex], selectedItem.Item
-                            selectedItem.Location = heroLocation
+                            selectedItem.Location = hero.GetPlanePoint()
 
                             updateMouse()
                         }
