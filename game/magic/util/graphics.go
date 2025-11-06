@@ -232,7 +232,7 @@ func MakePaletteRotateAnimation(lbxFile *lbx.LbxFile, index int, rotateIndexLow 
 
     var images []*ebiten.Image
 
-    for i := 0; i < (rotateIndexHigh-rotateIndexLow) + 1; i++ {
+    for range rotateIndexHigh - rotateIndexLow {
 
         /*
         rotatedPalette := make(color.Palette, len(basePalette))
