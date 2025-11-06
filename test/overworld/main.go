@@ -1573,6 +1573,13 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
 
     alorra := hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroAlorra, x, y, data.PlaneMyrror, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroAlorra, "Alorra")
     player.AddHeroToFortress(alorra)
+
+    for _, xhero := range player.Heroes {
+        if xhero != nil {
+            xhero.Status = hero.StatusEmployed
+        }
+    }
+
     alorra.SetPlane(data.PlaneMyrror)
 
     player.VaultEquipment[0] = &artifact.Artifact{
