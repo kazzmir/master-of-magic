@@ -8,6 +8,7 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -493,4 +494,8 @@ func (raider *RaiderAI) ProducedUnit(city *citylib.City, player *playerlib.Playe
 
 func (raider *RaiderAI) ConfirmRazeTown(city *citylib.City) bool {
     return true
+}
+
+func (raider *RaiderAI) HandleMerchantItem(self *playerlib.Player, item *artifact.Artifact, cost int) bool {
+    return false
 }

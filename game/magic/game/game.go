@@ -3021,6 +3021,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         merchant := event.(*GameEventMerchant)
                         if merchant.Player.IsHuman() {
                             game.doMerchant(yield, merchant.Cost, merchant.Artifact, merchant.Player)
+                        } else {
+                            merchant.Player.AIBehavior.HandleMerchantItem(merchant.Player, merchant.Artifact, merchant.Cost)
                         }
                     case *GameEventRunUI:
                         runUI := event.(*GameEventRunUI)

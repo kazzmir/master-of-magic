@@ -13,6 +13,8 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
@@ -333,5 +335,34 @@ func (ai *EnemyAI) NewTurn(player *playerlib.Player) {
 }
 
 func (ai *EnemyAI) ConfirmRazeTown(city *citylib.City) bool {
+    return false
+}
+
+func (ai *EnemyAI) HandleMerchantItem(self *playerlib.Player, item *artifact.Artifact, cost int) bool {
+    if self.Gold >= cost {
+        for _, hero := range self.Heroes {
+            if hero != nil && hero.Status == herolib.StatusEmployed {
+                slots := hero.GetArtifactSlots()
+                for i := range hero.Equipment {
+                    if hero.Equipment[i] == nil && slots[i].CompatibleWith(item.Type) {
+                        hero.Equipment[i] = item
+                        log.Printf("AI %v bought artifact %v for %v gold, and gave it to hero %v", self.Wizard.Name, item.Name, cost, hero.Name)
+                        return true
+                    }
+                }
+            }
+        }
+
+        for i := range self.VaultEquipment {
+            // FIXME: possibly replace an artifact
+            if self.VaultEquipment[i] == nil {
+                self.VaultEquipment[i] = item
+                self.Gold -= cost
+                log.Printf("AI %v bought artifact %v for %v gold, and placed it in the vault", self.Wizard.Name, item.Name, cost)
+                return true
+            }
+        }
+    }
+
     return false
 }
