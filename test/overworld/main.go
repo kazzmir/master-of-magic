@@ -5882,6 +5882,92 @@ func createScenario64(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// enemy city exists on an unexplored tile
+func createScenario65(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 65")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Retorts: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+            data.RetortRunemaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{LandSize: 0})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+    // player.Admin = true
+
+    player.TaxRate = fraction.Zero()
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    /*
+    x = 20
+    y = 20
+    */
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.Buildings.Insert(buildinglib.BuildingGranary)
+    city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
+    city.ProducingBuilding = buildinglib.BuildingBank
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 14
+    city.Workers = 3
+
+    city.ResetCitizens()
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 2600
+    player.CastingSkillPower = 10000
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    // log.Printf("City at %v, %v", x, y)
+
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "dingus",
+        Banner: data.BannerRed,
+    }, false)
+
+    enemy1.AddPowerHistory(playerlib.WizardPower{Army: 15, Magic: 3088, SpellResearch: 30})
+
+    enemyCity := citylib.MakeCity("Enemy City", x + 3, y, data.RaceDarkElf, game.BuildingInfo, game.CurrentMap(), game, enemy1)
+    enemyCity.Population = 10000
+    enemyCity.Plane = data.PlaneArcanus
+    enemyCity.ProducingBuilding = buildinglib.BuildingHousing
+    enemyCity.ResetCitizens()
+
+    enemy1.AddCity(enemyCity)
+
+    game.Camera.Center(city.X, city.Y)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -5952,6 +6038,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 62: game = createScenario62(cache)
         case 63: game = createScenario63(cache)
         case 64: game = createScenario64(cache)
+        case 65: game = createScenario65(cache)
         default: game = createScenario1(cache)
     }
 
