@@ -80,7 +80,7 @@ func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsIn
     }
 
     for _, unit := range otherArmy.units {
-        if model.withinMeleeRange(aiUnit, unit) && model.canMeleeAttack(aiUnit, unit) {
+        if model.withinMeleeRange(aiUnit, unit) && model.canMeleeAttack(aiUnit, unit, true) {
             aiActions.MeleeAttack(aiUnit, unit)
             return
         }
@@ -108,7 +108,7 @@ func doAIMovementTeleport(model *CombatModel, aiActions AIUnitActionsInterface, 
             continue
         }
 
-        if model.canMeleeAttack(aiUnit, unit) {
+        if model.canMeleeAttack(aiUnit, unit, false) {
             filterCanAttack = append(filterCanAttack, unit)
         }
     }
@@ -243,7 +243,7 @@ func doAIMovementPathfinding(model *CombatModel, aiActions AIUnitActionsInterfac
 
         for _, unit := range units {
             // skip enemies that we can't melee anyway
-            if !model.canMeleeAttack(aiUnit, unit) {
+            if !model.canMeleeAttack(aiUnit, unit, false) {
                 continue
             }
 
@@ -278,7 +278,7 @@ func doAIMovementPathfinding(model *CombatModel, aiActions AIUnitActionsInterfac
         path := getPath(closestEnemy)
 
         // a path of length 2 contains the position of the aiUnit and the position of the enemy, so they are right next to each other
-        if len(path) == 2 && model.canMeleeAttack(aiUnit, closestEnemy) {
+        if len(path) == 2 && model.canMeleeAttack(aiUnit, closestEnemy, true) {
             aiActions.MeleeAttack(aiUnit, closestEnemy)
             return true
         } else if len(path) > 2 && aiUnit.CanSee(closestEnemy) {

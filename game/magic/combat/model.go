@@ -2660,7 +2660,7 @@ func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTravers
                     // can't move through a city wall
                     if canMove && !canTraverseWall && model.InsideCityWall(cx, cy) != model.InsideCityWall(x, y) {
                         // FIXME: handle destroyed walls here
-                        if !model.IsCityWallGate(x, y) {
+                        if !model.IsCityWallGate(x, y) && !model.IsCityWallGate(cx, cy) {
                             canMove = false
                         }
                     }
@@ -3623,7 +3623,7 @@ func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     return true
 }
 
-func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit, considerWall bool) bool {
     if attacker == defender {
         return false
     }
@@ -3649,13 +3649,22 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         return wall != nil && !wall.Contains(WallKindGate)
     }
 
+    containsGate := func(x int, y int) bool {
+        wall := model.Tiles[y][x].Wall
+        return wall != nil && wall.Contains(WallKindGate)
+    }
+
     // cannot attack through a wall
-    if model.InsideCityWall(attacker.X, attacker.Y) != model.InsideCityWall(defender.X, defender.Y) {
+    if considerWall && model.InsideCityWall(attacker.X, attacker.Y) != model.InsideCityWall(defender.X, defender.Y) {
         // if the attacker normally cannot move through the wall, then they can only attack if either the attacker or defender
         // is adjacent to the gate
         if !attacker.CanTraverseWall() {
             var insideWall *ArmyUnit
             var outsideWall *ArmyUnit
+
+            if containsGate(attacker.X, attacker.Y) || containsGate(defender.X, defender.Y) {
+                return true
+            }
 
             if model.InsideCityWall(attacker.X, attacker.Y) {
                 insideWall = attacker
@@ -3667,56 +3676,56 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
 
             // north
             if outsideWall.X == insideWall.X && outsideWall.Y + 1 == insideWall.Y {
-                if containsWall(outsideWall.X, outsideWall.Y + 1) {
+                if containsWall(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // north east
             if outsideWall.X + 1 == insideWall.X && outsideWall.Y + 1 == insideWall.Y {
-                if containsWall(attacker.X, attacker.Y + 1) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
+                if containsWall(insideWall.X, insideWall.Y) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // east
             if outsideWall.X + 1 == insideWall.X && outsideWall.Y == insideWall.Y {
-                if containsWall(outsideWall.X + 1, outsideWall.Y) {
+                if containsWall(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // south east
             if outsideWall.X + 1 == insideWall.X && outsideWall.Y - 1 == insideWall.Y {
-                if containsWall(outsideWall.X, outsideWall.Y - 1) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
+                if containsWall(insideWall.X, insideWall.Y) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // south
             if outsideWall.X == insideWall.X && outsideWall.Y - 1 == insideWall.Y {
-                if containsWall(outsideWall.X, outsideWall.Y - 1) {
+                if containsWall(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // south west
             if outsideWall.X - 1 == insideWall.X && outsideWall.Y - 1 == insideWall.Y {
-                if containsWall(outsideWall.X, outsideWall.Y - 1) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
+                if containsWall(insideWall.X, insideWall.Y) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // west
             if outsideWall.X - 1 == insideWall.X && outsideWall.Y == insideWall.Y {
-                if containsWall(outsideWall.X - 1, outsideWall.Y) {
+                if containsWall(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // north west
             if outsideWall.X - 1 == insideWall.X && outsideWall.Y + 1 == insideWall.Y {
-                if containsWall(outsideWall.X, outsideWall.Y + 1) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
+                if containsWall(insideWall.X, insideWall.Y) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
                     return false
                 }
             }

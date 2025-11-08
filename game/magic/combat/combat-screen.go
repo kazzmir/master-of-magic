@@ -3580,7 +3580,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
             // prioritize range attack over melee
             if combat.Model.canRangeAttack(combat.Model.SelectedUnit, who) && combat.Model.withinArrowRange(combat.Model.SelectedUnit, who) {
                 newState = CombatRangeAttackOk
-            } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who) && combat.Model.withinMeleeRange(combat.Model.SelectedUnit, who) {
+            } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who, true) && combat.Model.withinMeleeRange(combat.Model.SelectedUnit, who) {
                 newState = CombatMeleeAttackOk
             }
 
@@ -3616,7 +3616,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            if defender != nil && combat.Model.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
                combat.doRangeAttack(yield, attacker, defender)
            // then fall back to melee
-           } else if defender != nil && combat.Model.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){
+           } else if defender != nil && combat.Model.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender, true){
                combat.doMelee(yield, attacker, defender)
                attacker.Paths = make(map[image.Point]pathfinding.Path)
            }
