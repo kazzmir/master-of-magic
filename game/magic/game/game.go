@@ -6637,7 +6637,6 @@ func (game *Game) doPlanarTraval() {
 func (game *Game) OnWaterTile(stack *playerlib.UnitStack) bool {
     mapUse := game.GetMap(stack.Plane())
     tile := mapUse.GetTile(stack.X(), stack.Y())
-    // cannot perform any build action on water
     return tile.Tile.IsWater()
 }
 
