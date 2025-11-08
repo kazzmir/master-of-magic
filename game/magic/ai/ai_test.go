@@ -32,4 +32,8 @@ func TestBuyItem(test *testing.T) {
     if artifacts != 1 {
         test.Errorf("expected 1 artifact in vault, got %d", artifacts)
     }
+
+    if self.Gold != 700 {
+        test.Errorf("expected 700 gold after purchase, got %d", self.Gold)
+    }
 }
