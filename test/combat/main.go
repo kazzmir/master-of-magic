@@ -1007,6 +1007,49 @@ func makeScenario13(cache *lbx.LbxCache) *combat.CombatScreen {
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
 }
 
+// weak enemy attacks city with walls
+func makeScenario14(cache *lbx.LbxCache) *combat.CombatScreen {
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Unable to read spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+
+    defendingPlayer := player.MakePlayer(setup.WizardCustom{
+            Name: "Lair",
+            Banner: data.BannerBlue,
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
+
+    // defendingArmy := createWarlockArmy(&defendingPlayer)
+    defendingArmy := createGreatWyrmArmy(defendingPlayer, 1)
+    defendingArmy.LayoutUnits(combat.TeamDefender)
+
+    defendingPlayer.CastingSkillPower = 10000
+    defendingPlayer.Mana = 10000
+    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
+    // defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Stone"))
+    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Darkness"))
+
+    city := citylib.MakeCity("xyz", 10, 10, defendingPlayer.Wizard.Race, nil, nil, nil, defendingPlayer)
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+    city.Buildings.Insert(buildinglib.BuildingCityWalls)
+
+    // city.AddEnchantment(data.CityEnchantmentWallOfFire, defendingPlayer.Wizard.Banner)
+
+    attackingPlayer := player.MakePlayer(setup.WizardCustom{
+            Name: "Merlin",
+            Banner: data.BannerRed,
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+    attackingPlayer.CastingSkillPower = 10000
+    attackingPlayer.Mana = 10000
+    // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
+    attackingArmy := createLizardmenArmy(attackingPlayer, 3)
+    attackingArmy.LayoutUnits(combat.TeamAttacker)
+
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, defendingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: city}, data.MagicNone, 0, 0)
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -1026,6 +1069,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 11: combatScreen = makeScenario11(cache)
         case 12: combatScreen = makeScenario12(cache)
         case 13: combatScreen = makeScenario13(cache)
+        case 14: combatScreen = makeScenario14(cache)
         default: combatScreen = makeScenario1(cache)
     }
 
