@@ -6634,6 +6634,12 @@ func (game *Game) doPlanarTraval() {
     }
 }
 
+func (game *Game) OnWaterTile(stack *playerlib.UnitStack) bool {
+    mapUse := game.GetMap(stack.Plane())
+    tile := mapUse.GetTile(stack.X(), stack.Y())
+    return tile.Tile.IsWater()
+}
+
 func (game *Game) SwitchPlane() {
     switch game.Plane {
         case data.PlaneArcanus: game.Plane = data.PlaneMyrror
@@ -7186,7 +7192,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     var powers UnitBuildPowers
 
-                    if player.SelectedStack != nil {
+                    if player.SelectedStack != nil && !game.OnWaterTile(player.SelectedStack) {
                         powers = computeUnitBuildPowers(player.SelectedStack)
                     }
 
@@ -7228,7 +7234,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 LeftClick: func(this *uilib.UIElement){
                     var powers UnitBuildPowers
 
-                    if player.SelectedStack != nil {
+                    if player.SelectedStack != nil && !game.OnWaterTile(player.SelectedStack) {
                         powers = computeUnitBuildPowers(player.SelectedStack)
                     }
 
