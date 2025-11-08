@@ -184,6 +184,7 @@ func (stack *UnitStack) CanMoveOnLand(onlyActive bool) bool {
 }
 
 // pass in true to only check active units
+// FIXME: this should probably be HasTransport
 func (stack *UnitStack) HasSailingUnits(onlyActive bool) bool {
     use := stack.units
     if onlyActive {
@@ -402,6 +403,17 @@ func (stack *UnitStack) UseMovement(cost fraction.Fraction){
     for _, unit := range stack.units {
         if stack.active[unit] {
             unit.Move(0, 0, cost, normalize)
+        }
+    }
+}
+
+// make all units that are not transport units inactive
+func (stack *UnitStack) DisableNonTransport() {
+    if stack.HasSailingUnits(true) {
+        for _, unit := range stack.units {
+            if !unit.IsTransport() {
+                stack.active[unit] = false
+            }
         }
     }
 }

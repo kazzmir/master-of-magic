@@ -7446,6 +7446,7 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         if stack.HasMoves() {
             player.SelectedStack = stack
             stack.EnableMovers()
+            stack.DisableNonTransport()
 
             if player.IsHuman() {
                 select {
