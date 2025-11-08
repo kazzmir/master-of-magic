@@ -4446,7 +4446,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                     if stack != nil {
                         player.SelectedStack = stack
                         game.RefreshUI()
-                    } else {
+                    } else if player.IsExplored(tileX, tileY, game.Plane) {
                         for _, otherPlayer := range game.Players {
                             if otherPlayer == player {
                                 continue
