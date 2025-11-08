@@ -1800,7 +1800,7 @@ func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sou
     }
     */
 
-    tileFrom := mapUse.GetTile(sourceX, sourceY)
+    // tileFrom := mapUse.GetTile(sourceX, sourceY)
     tileTo := mapUse.GetTile(destX, destY)
 
     if !tileTo.Valid() {
@@ -1812,7 +1812,7 @@ func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sou
     }
 
     // can't move from land to ocean unless all units are flyers or swimmers
-    if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
+    if /* tileFrom.Tile.IsLand() && */ !tileTo.Tile.IsLand() {
         // a land walker can move onto a friendly stack on the ocean if that stack has sailing units
         if stack.AnyLandWalkers() {
             // if the stack already contains a sailing unit, then it is legal to move into water
