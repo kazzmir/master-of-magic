@@ -1124,7 +1124,7 @@ func (mapObject *Map) GetWaterBodies() []*set.Set[image.Point] {
             }
 
             sets = append(sets, newSet)
-            log.Printf("Found water body with tiles %v", newSet.Values())
+            // log.Printf("Found water body with tiles %v", newSet.Values())
         }
     }
 
