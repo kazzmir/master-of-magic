@@ -535,8 +535,6 @@ func makeShoreTile(index int, bitPattern uint8) Tile {
         case bitPattern & 0b00010100 == 0b00010100: mask &= ^(bitPattern & 0b00001000); fallthrough
         case bitPattern & 0b00000101 == 0b00000101: mask &= ^(bitPattern & 0b00000010)
     }
-    // []Direction{West, SouthWest, South, SouthEast, East, NorthEast, North, NorthWest}
-    // TileShore1_01111100 = makeShoreTile(0x55, 0b01111100)
     comp := makeCompatibilities(makeDirections(^bitPattern), []TerrainType{Ocean, Shore}, AnyOf)
     incomp1 := makeCompatibilities(makeDirections(bitPattern & mask & 0b10101010), []TerrainType{Ocean, Shore}, NoneOf)
     incomp2 := makeCompatibilities(makeDirections(bitPattern & mask & 0b01010101), []TerrainType{Ocean, Shore, River}, NoneOf)

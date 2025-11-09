@@ -594,6 +594,8 @@ func (tile *FullTile) CanTraverse(direction terrain.Direction, traverseType Trav
                     match[direction] = terrain.TileOcean.TerrainType()
                     return !tile.Tile.Matches(match)
                 case TraverseWater:
+                    // shore tiles do not have any compatibilities for the corner directions,
+                    // which usually means those directions can contain land but not water
                     _, has := tile.Tile.Compatibilities[direction]
                     if !has {
                         return false
