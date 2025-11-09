@@ -571,9 +571,61 @@ type FullTile struct {
     IsShared bool
 }
 
+type TraverseType int
+const (
+    TraverseWater TraverseType = iota
+    TraverseLand
+)
+
+// true if this tile can be traversed moving in the given direction with the given traverse type.
+// this is like saying 'can we move out of this tile in the given direction using the given traverse type?'
+// example:
+//  tile=water, direction=north, traverseType=land => false
+//  tile=water, direction=north, traverseType=water => true
+//  tile=shore with land on east side, direction=east, traverseType=land => true
+//  tile=shore with land on east side, direction=east, traverseType=water => false
+func (tile *FullTile) CanTraverse(direction terrain.Direction, traverseType TraverseType) bool {
+    switch tile.Tile.TerrainType() {
+        case terrain.Ocean: return traverseType == TraverseWater
+        case terrain.Shore:
+            match := make(map[terrain.Direction]terrain.TerrainType)
+            switch traverseType {
+                case TraverseLand:
+                    match[direction] = terrain.TileLand.TerrainType()
+                case TraverseWater:
+                    match[direction] = terrain.TileOcean.TerrainType()
+            }
+
+            return tile.Tile.Matches(match)
+
+        default: return traverseType == TraverseLand
+    }
+}
+
 // assume that other tile is 1 tile away (4 cardinals + diagonals)
-func (tile *FullTile) IsConnected(other *FullTile) bool {
+// check if two tiles are connected by water or by land
+/*
+func (tile *FullTile) IsConnected(other *FullTile, connected ConnectedKind) bool {
     if tile.Tile.TerrainType() == terrain.Shore || other.Tile.TerrainType() == terrain.Shore {
+
+        // the directiont that tile is relative to other
+        var direction terrain.Direction
+        switch {
+            case tile.X == other.X - 1 && tile.Y == other.Y: direction = terrain.West
+            case tile.X == other.X + 1 && tile.Y == other.Y: direction = terrain.East
+            case tile.X == other.X && tile.Y == other.Y - 1: direction = terrain.North
+            case tile.X == other.X && tile.Y == other.Y + 1: direction = terrain.South
+            case tile.X == other.X - 1 && tile.Y == other.Y - 1: direction = terrain.NorthWest
+            case tile.X == other.X + 1 && tile.Y == other.Y - 1: direction = terrain.NorthEast
+            case tile.X == other.X - 1 && tile.Y == other.Y + 1: direction = terrain.SouthWest
+            case tile.X == other.X + 1 && tile.Y == other.Y + 1: direction = terrain.SouthEast
+        }
+
+        match := map[terrain.Direction]terrain.TerrainType{
+            direction: tile.Tile.TerrainType(),
+        }
+
+        return other.Tile.Matches(match)
     }
 
     if tile.Tile.TerrainType() == terrain.Ocean || other.Tile.TerrainType() == terrain.Ocean {
@@ -584,6 +636,7 @@ func (tile *FullTile) IsConnected(other *FullTile) bool {
     // must be some kind of land
     return true
 }
+*/
 
 func (tile *FullTile) Name(mapObject *Map) string {
     if tile.IsRiverMouth(mapObject) {

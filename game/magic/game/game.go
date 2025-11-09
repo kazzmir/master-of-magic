@@ -2100,7 +2100,7 @@ func (game *Game) GetWaterBody(mapUse *maplib.Map, x int, y int) *set.Set[image.
                             cy := check.Y + dy
 
                             tile := mapUse.GetTile(cx, cy)
-                            if tile.Valid() && tile.Tile.IsWater() && fromTile.IsConnected(&tile) {
+                            if tile.Valid() && tile.Tile.IsWater() && fromTile.CanTraverse(terrain.ToDirection(dx, dy), maplib.TraverseWater) {
                                 toCheck = append(toCheck, image.Pt(cx, cy))
                             }
                         }

@@ -125,6 +125,73 @@ func TestCatchmentArea(test *testing.T) {
 }
 
 func TestTile(test *testing.T) {
+    tileOcean := FullTile{
+        Tile: terrain.TileOcean,
+    }
+
+    if !tileOcean.CanTraverse(terrain.East, TraverseWater) {
+        test.Errorf("Expected ocean to be traversable by water")
+    }
+
+    if tileOcean.CanTraverse(terrain.West, TraverseLand) {
+        test.Errorf("Expected ocean to not be traversable by land")
+    }
+
+    tile2 := FullTile{
+        Tile: terrain.TileLand,
+    }
+
+    if !tile2.CanTraverse(terrain.North, TraverseLand) {
+        test.Errorf("Expected land to be traversable by land")
+    }
+
+    if tile2.CanTraverse(terrain.South, TraverseWater) {
+        test.Errorf("Expected land to not be traversable by water")
+    }
+
+    // land on all east positions
+    tileShoreRight2 := FullTile{
+        Tile: terrain.TileShore1_00011100,
+    }
+
+    if !tileShoreRight2.CanTraverse(terrain.East, TraverseLand) {
+        test.Errorf("Expected shore tile to be traversable by land on east side")
+    }
+
+    if tileShoreRight2.CanTraverse(terrain.West, TraverseLand) {
+        test.Errorf("Expected shore tile to not be traversable by land on west side")
+    }
+
+    if tileShoreRight2.CanTraverse(terrain.East, TraverseWater) {
+        test.Errorf("Expected shore tile to not be traversable by water on east side")
+    }
+
+    if !tileShoreRight2.CanTraverse(terrain.West, TraverseWater) {
+        test.Errorf("Expected shore tile to be traversable by water on west side")
+    }
+
+    // land on all west positions
+    tileShoreLeft := FullTile{
+        Tile: terrain.TileShore1_11000001,
+    }
+
+    if !tileShoreLeft.CanTraverse(terrain.West, TraverseLand) {
+        test.Errorf("Expected shore tile to be traversable by land on west side")
+    }
+
+    if tileShoreLeft.CanTraverse(terrain.East, TraverseLand) {
+        test.Errorf("Expected shore tile to not be traversable by land on east side")
+    }
+
+    if tileShoreLeft.CanTraverse(terrain.West, TraverseWater) {
+        test.Errorf("Expected shore tile to not be traversable by water on west side")
+    }
+
+    if !tileShoreLeft.CanTraverse(terrain.East, TraverseWater) {
+        test.Errorf("Expected shore tile to be traversable by water on east side")
+    }
+
+    /*
     tile1 := FullTile{
         X: 0,
         Y: 0,
@@ -143,11 +210,53 @@ func TestTile(test *testing.T) {
         Tile: terrain.TileLand,
     }
 
-    if !tile1.IsConnected(&tile2) {
+    if !tile1.IsConnected(&tile2, ConnectedWater) {
         test.Errorf("Expected tile1 and tile2 to be connected")
     }
 
-    if tile1.IsConnected(&tile3) {
+    if tile1.IsConnected(&tile3, ConnectedWater) {
         test.Errorf("Expected tile1 and tile3 to not be connected")
     }
+
+    // a shore tile where the land is on the right side
+    tileShoreRight := FullTile{
+        X: 1,
+        Y: 0,
+        Tile: terrain.TileShore1_00011100,
+    }
+
+    if !tile1.IsConnected(&tileShoreRight, ConnectedWater) {
+        test.Errorf("Expected tile1 and tileShoreRight to be connected")
+    }
+
+    if !tileShoreRight.IsConnected(&tile1, ConnectedWater) {
+        test.Errorf("Expected tileShoreRight and tile1 to be connected")
+    }
+
+    // land on all east positions
+    tileShoreRight2 := FullTile{
+        X: 2,
+        Y: 0,
+        Tile: terrain.TileShore1_00011100,
+    }
+
+    if tile3.IsConnected(&tileShoreRight2, ConnectedLand) {
+        test.Errorf("Expected tile3 and tileShoreRight2 to not be connected")
+    }
+
+    // land on all west positions
+    tileShoreLeft := FullTile{
+        X: 3,
+        Y: 0,
+        Tile: terrain.TileShore1_11000001,
+    }
+
+    if tileShoreRight.IsConnected(&tileShoreLeft, ConnectedWater) {
+        test.Errorf("Expected tileShoreRight and tileShoreLeft to not be connected")
+    }
+
+    if !tileShoreRight.IsConnected(&tileShoreLeft, ConnectedLand) {
+        test.Errorf("Expected tileShoreRight and tileShoreLeft to be connected by land")
+    }
+    */
 }
