@@ -190,6 +190,14 @@ func TestTile(test *testing.T) {
     if !tileShoreLeft.CanTraverse(terrain.East, TraverseWater) {
         test.Errorf("Expected shore tile to be traversable by water on east side")
     }
+
+    tileMouthWest := FullTile{
+        Tile: terrain.TileShore1_01111100,
+    }
+
+    if !tileMouthWest.CanTraverse(terrain.West, TraverseWater) {
+        test.Errorf("Expected shore tile to be traversable by water on west mouth side")
+    }
 }
 
 func TestWaterBodies(test *testing.T) {
@@ -199,6 +207,9 @@ func TestWaterBodies(test *testing.T) {
         terrain.TerrainTile{TileIndex: 2, Tile: terrain.TileShore1_00011100}, // land on east
         terrain.TerrainTile{TileIndex: 3, Tile: terrain.TileShore1_11000001}, // land on west
         terrain.TerrainTile{TileIndex: 4, Tile: terrain.TileLake},
+        terrain.TerrainTile{TileIndex: 5, Tile: terrain.TileShore1_11110001}, // land on south and west
+
+        // []Direction{West, SouthWest, South, SouthEast, East, NorthEast, North, NorthWest}
     })
     rawMap := terrain.MakeMap(1, 6)
     xmap := Map{
@@ -243,4 +254,25 @@ func TestWaterBodies(test *testing.T) {
     if len(waterBodies2) != 3 {
         test.Errorf("Expected 3 water bodies, got %d", len(waterBodies2))
     }
+
+    rawMap = terrain.MakeMap(2, 2)
+    xmap = Map{
+        Data: terrainData,
+        Plane: data.PlaneArcanus,
+        Map: rawMap,
+    }
+
+    // land, shore(west and south)
+    // lake, land
+    rawMap.Terrain[0][0] = 0
+    rawMap.Terrain[1][0] = 5
+    rawMap.Terrain[0][1] = 4
+    rawMap.Terrain[1][1] = 0
+
+    // the lake should count as its own body of water, disconnected from the ocean tiles
+    waterBodies3 := xmap.GetWaterBodies()
+    if len(waterBodies3) != 2 {
+        test.Errorf("Expected 2 water bodies, got %d", len(waterBodies3))
+    }
+
 }

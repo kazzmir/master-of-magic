@@ -591,15 +591,22 @@ func (tile *FullTile) CanTraverse(direction terrain.Direction, traverseType Trav
             match := make(map[terrain.Direction]terrain.TerrainType)
             switch traverseType {
                 case TraverseLand:
-                    match[direction] = terrain.TileLand.TerrainType()
-                case TraverseWater:
                     match[direction] = terrain.TileOcean.TerrainType()
-            }
+                    return !tile.Tile.Matches(match)
+                case TraverseWater:
+                    _, has := tile.Tile.Compatibilities[direction]
+                    if !has {
+                        return false
+                    }
 
-            return tile.Tile.Matches(match)
+                    match[direction] = terrain.TileOcean.TerrainType()
+                    return tile.Tile.Matches(match)
+            }
 
         default: return traverseType == TraverseLand
     }
+
+    return false
 }
 
 func (tile *FullTile) Name(mapObject *Map) string {
@@ -1105,7 +1112,9 @@ func (mapObject *Map) GetWaterBodies() []*set.Set[image.Point] {
                         cy := check.Y + dy
 
                         tile := mapObject.GetTile(cx, cy)
-                        if tile.Valid() && tile.Tile.IsWater() && fromTile.CanTraverse(terrain.ToDirection(dx, dy), TraverseWater) {
+                        // shouldn't need this, but just in case
+                        /* && tile.CanTraverse(terrain.ToDirection(-dx, -dy), TraverseWater) */
+                        if tile.Valid() && tile.Tile.IsWater() && fromTile.CanTraverse(terrain.ToDirection(dx, dy), TraverseWater)  {
                             toCheck = append(toCheck, image.Pt(cx, cy))
                         }
                     }
