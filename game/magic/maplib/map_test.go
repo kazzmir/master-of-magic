@@ -198,6 +198,7 @@ func TestWaterBodies(test *testing.T) {
         terrain.TerrainTile{TileIndex: 1, Tile: terrain.TileOcean},
         terrain.TerrainTile{TileIndex: 2, Tile: terrain.TileShore1_00011100}, // land on east
         terrain.TerrainTile{TileIndex: 3, Tile: terrain.TileShore1_11000001}, // land on west
+        terrain.TerrainTile{TileIndex: 4, Tile: terrain.TileLake},
     })
     rawMap := terrain.MakeMap(1, 6)
     xmap := Map{
@@ -218,5 +219,28 @@ func TestWaterBodies(test *testing.T) {
     waterBodies := xmap.GetWaterBodies()
     if len(waterBodies) != 2 {
         test.Errorf("Expected 2 water bodies, got %d", len(waterBodies))
+    }
+
+    rawMap = terrain.MakeMap(1, 7)
+    xmap = Map{
+        Data: terrainData,
+        Plane: data.PlaneArcanus,
+        Map: rawMap,
+    }
+
+    // land, ocean, shore(east), lake, shore(west), ocean, land
+    // the shore should disconnect the two ocean tiles into separate water bodies
+    rawMap.Terrain[0][0] = 0
+    rawMap.Terrain[1][0] = 1
+    rawMap.Terrain[2][0] = 2
+    rawMap.Terrain[3][0] = 4
+    rawMap.Terrain[4][0] = 3
+    rawMap.Terrain[5][0] = 1
+    rawMap.Terrain[6][0] = 0
+
+    // the lake should count as its own body of water, disconnected from the ocean tiles
+    waterBodies2 := xmap.GetWaterBodies()
+    if len(waterBodies2) != 3 {
+        test.Errorf("Expected 3 water bodies, got %d", len(waterBodies2))
     }
 }
