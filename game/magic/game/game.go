@@ -2059,60 +2059,9 @@ func (game *Game) GetWaterBody(mapUse *maplib.Map, x int, y int) *set.Set[image.
 
     sets, ok := game.WaterBodies[mapUse.Plane]
     if !ok {
-        sets = nil
+        sets = mapUse.GetWaterBodies()
 
-        // compute bodies of water by choosing a water tile and doing a flood fill to find all connected water tiles
-
-        visited := set.NewSet[image.Point]()
-        for tx := range mapUse.Width() {
-            for ty := range mapUse.Height() {
-                if visited.Contains(image.Pt(tx, ty)) {
-                    continue
-                }
-
-                tile := mapUse.GetTile(tx, ty)
-                if !tile.Tile.IsWater() {
-                    visited.Insert(image.Pt(tx, ty))
-                    continue
-                }
-
-                toCheck := []image.Point{image.Pt(tx, ty)}
-
-                newSet := set.NewSet[image.Point]()
-
-                // floodfill
-                for len(toCheck) > 0 {
-                    check := toCheck[0]
-                    toCheck = toCheck[1:]
-
-                    if visited.Contains(check) {
-                        continue
-                    }
-
-                    newSet.Insert(check)
-                    visited.Insert(check)
-
-                    fromTile := mapUse.GetTile(check.X, check.Y)
-
-                    for dx := -1; dx <= 1; dx++ {
-                        for dy := -1; dy <= 1; dy++ {
-                            cx := mapUse.WrapX(check.X + dx)
-                            cy := check.Y + dy
-
-                            tile := mapUse.GetTile(cx, cy)
-                            if tile.Valid() && tile.Tile.IsWater() && fromTile.CanTraverse(terrain.ToDirection(dx, dy), maplib.TraverseWater) {
-                                toCheck = append(toCheck, image.Pt(cx, cy))
-                            }
-                        }
-                    }
-                }
-
-                sets = append(sets, newSet)
-                // log.Printf("Found water body with tiles %v", newSet.Values())
-            }
-        }
-
-        // log.Printf("Found %d water bodies on plane %d", len(sets), mapUse.Plane)
+        log.Printf("Found %d water bodies on plane %d", len(sets), mapUse.Plane)
 
         game.WaterBodies[mapUse.Plane] = sets
     }

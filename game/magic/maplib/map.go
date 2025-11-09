@@ -1100,6 +1100,62 @@ func (mapObject *Map) GetContinentTiles(x int, y int) []FullTile {
     return out
 }
 
+func (mapObject *Map) GetWaterBodies() []*set.Set[image.Point] {
+    var sets []*set.Set[image.Point]
+    // compute bodies of water by choosing a water tile and doing a flood fill to find all connected water tiles
+
+    visited := set.NewSet[image.Point]()
+    for tx := range mapObject.Width() {
+        for ty := range mapObject.Height() {
+            if visited.Contains(image.Pt(tx, ty)) {
+                continue
+            }
+
+            tile := mapObject.GetTile(tx, ty)
+            if !tile.Tile.IsWater() {
+                visited.Insert(image.Pt(tx, ty))
+                continue
+            }
+
+            toCheck := []image.Point{image.Pt(tx, ty)}
+
+            newSet := set.NewSet[image.Point]()
+
+            // floodfill
+            for len(toCheck) > 0 {
+                check := toCheck[0]
+                toCheck = toCheck[1:]
+
+                if visited.Contains(check) {
+                    continue
+                }
+
+                newSet.Insert(check)
+                visited.Insert(check)
+
+                fromTile := mapObject.GetTile(check.X, check.Y)
+
+                for dx := -1; dx <= 1; dx++ {
+                    for dy := -1; dy <= 1; dy++ {
+                        cx := mapObject.WrapX(check.X + dx)
+                        cy := check.Y + dy
+
+                        tile := mapObject.GetTile(cx, cy)
+                        if tile.Valid() && tile.Tile.IsWater() && fromTile.CanTraverse(terrain.ToDirection(dx, dy), TraverseWater) {
+                            toCheck = append(toCheck, image.Pt(cx, cy))
+                        }
+                    }
+                }
+            }
+
+            sets = append(sets, newSet)
+            log.Printf("Found water body with tiles %v", newSet.Values())
+        }
+    }
+
+    return sets
+}
+
 // returns a map where for each direction, if the value is true then there is a road there
 func (mapObject *Map) GetRoadNeighbors(x int, y int) map[Direction]bool {
     out := make(map[Direction]bool)
