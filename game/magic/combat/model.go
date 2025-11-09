@@ -2089,7 +2089,11 @@ func StartingLocation(team Team) (int, int) {
     return 0, 0
 }
 
-func (army *Army) LayoutUnits(team Team){
+type LegalLocation interface {
+    IsLegalLocation(x int, y int) bool
+}
+
+func (army *Army) LayoutUnits(team Team, legalLocation LegalLocation){
     x, y := StartingLocation(team)
     x -= 1
     rowDirection := -1
@@ -2113,20 +2117,29 @@ func (army *Army) LayoutUnits(team Team){
     offsetX := 0
 
     for _, unit := range army.units {
-        unit.X = x + offsetX
-        unit.Y = cy
-        unit.Facing = facing
+        accept := false
+        for !accept {
+            newX := x + offsetX
+            newY := cy
 
-        offsetX = -offsetX
-        if offsetX >= 0 {
-            offsetX += 1
-        }
+            if legalLocation.IsLegalLocation(newX, newY) {
+                unit.X = x + offsetX
+                unit.Y = cy
+                unit.Facing = facing
+                accept = true
+            }
 
-        row += 1
-        if row >= columns {
-            row = 0
-            offsetX = 0
-            cy += rowDirection
+            offsetX = -offsetX
+            if offsetX >= 0 {
+                offsetX += 1
+            }
+
+            row += 1
+            if row >= columns {
+                row = 0
+                offsetX = 0
+                cy += rowDirection
+            }
         }
     }
 }
@@ -2257,7 +2270,18 @@ func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingA
     model.NextTurn()
     model.SelectedUnit = model.ChooseNextUnit(TeamDefender)
 
+    model.AttackingArmy.LayoutUnits(TeamAttacker, model)
+    model.DefendingArmy.LayoutUnits(TeamDefender, model)
+
     return model
+}
+
+func (model *CombatModel) IsLegalLocation(x int, y int) bool {
+    if model.ContainsWallTower(x, y) {
+        return false
+    }
+
+    return true
 }
 
 // do N rolls (n=strength) where each roll has 'chance' success. return number of successful rolls

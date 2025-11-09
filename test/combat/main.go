@@ -292,7 +292,6 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
     defendingArmy := createLizardmenArmy(defendingPlayer, 3)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingArmy.GetUnits()[0].AddCurse(data.UnitCurseBlackSleep)
     defendingArmy.GetUnits()[1].AddCurse(data.UnitCurseConfusion)
@@ -403,7 +402,6 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createWarlockArmyN(attackingPlayer, 3)
     // attackingArmy := createArmyN(attackingPlayer, units.HighElfMagician, 4)
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     /*
     for range 2 {
@@ -440,7 +438,6 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     /*
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -459,7 +456,6 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createSettlerArmy(attackingPlayer, 3)
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
 }
@@ -478,7 +474,6 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingPlayer.CastingSkillPower = 10000
     defendingPlayer.Mana = 10000
@@ -511,7 +506,6 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createHeroArmy(attackingPlayer, cache)
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: city}, data.MagicNone, 0, 0)
 }
@@ -521,12 +515,11 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, false, 0, 0, nil, &noGlobalEnchantments{})
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(defendingPlayer)
     // defendingArmy := createSettlerArmy(defendingPlayer, 3)
-    defendingArmy := createLizardmenArmy(defendingPlayer, 1)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
+    defendingArmy := createLizardmenArmy(defendingPlayer, 3)
 
     defendingPlayer.CastingSkillPower = 10000
     defendingPlayer.Mana = 10000
@@ -541,24 +534,26 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, true, 0, 0, nil, &noGlobalEnchantments{})
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     attackingPlayer.CastingSkillPower = 10000
     attackingPlayer.Mana = 1000
     attackingPlayer.TaxRate = fraction.Zero()
 
+    /*
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disrupt"))
+    */
 
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Darkness"))
 
-    attackingArmy := createGreatDrakeArmy(attackingPlayer, 1)
+    attackingArmy := createArmyN(attackingPlayer, units.StagBeetle, 1)
+    // attackingArmy := createGreatDrakeArmy(attackingPlayer, 1)
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcCavalry, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()))
     // attackingArmy := createWeakArmy(attackingPlayer)
     // attackingArmy := createHighMenBowmanArmy(attackingPlayer)
     // attackingArmy := createHeroArmy(attackingPlayer)
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
@@ -568,7 +563,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     // city.AddEnchantment(data.CityEnchantmentFlyingFortress, defendingPlayer.GetBanner())
     // city.AddEnchantment(data.CityEnchantmentWallOfDarkness, defendingPlayer.Wizard.Banner)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, data.MagicNone, 0, 0)
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, defendingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, data.MagicNone, 0, 0)
 }
 
 // fight in a tower of wizardy
@@ -580,7 +575,6 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     /*
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -601,7 +595,6 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createHeroArmy(attackingPlayer, cache)
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
     attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentCrusade)
     attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentHolyArms)
     attackingPlayer.GlobalEnchantments.Insert(data.EnchantmentChaosSurge)
@@ -623,7 +616,6 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     /*
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -650,7 +642,6 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.ArchAngel, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Djinn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatWyrm, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
@@ -667,7 +658,6 @@ func makeScenario7(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 3)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     /*
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -688,7 +678,6 @@ func makeScenario7(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createArchAngelArmy(attackingPlayer)
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
@@ -705,7 +694,6 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createDeathCreatureArmy(defendingPlayer)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     /*
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -752,7 +740,6 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
 
     attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GiantSpiders, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
 
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     attackingArmy.AddEnchantment(data.CombatEnchantmentWrack)
 
@@ -782,7 +769,6 @@ func makeScenario9(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createSettlerArmy(defendingPlayer, 20)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
     if err != nil {
@@ -813,7 +799,6 @@ func makeScenario9(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Djinn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSwordsmen, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatWyrm, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
@@ -829,7 +814,6 @@ func makeScenario10(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createGreatWyrmArmy(defendingPlayer, 1)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingArmy.GetUnits()[0].Y -= 7
 
@@ -850,7 +834,6 @@ func makeScenario10(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Unicorn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Djinn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatWyrm, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
@@ -868,7 +851,6 @@ func makeScenario11(cache *lbx.LbxCache) *combat.CombatScreen {
     // defendingArmy := createWarlockArmy(defendingPlayer)
     // defendingArmy := createSettlerArmy(defendingPlayer, 3)
     defendingArmy := createLizardmenArmy(defendingPlayer, 2)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingPlayer.CastingSkillPower = 10000
     defendingPlayer.Mana = 10000
@@ -900,7 +882,6 @@ func makeScenario11(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy := createWeakArmy(attackingPlayer)
     // attackingArmy := createHighMenBowmanArmy(attackingPlayer)
     // attackingArmy := createHeroArmy(attackingPlayer)
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
@@ -923,7 +904,6 @@ func makeScenario12(cache *lbx.LbxCache) *combat.CombatScreen {
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createWarlockArmyN(defendingPlayer, 2)
     defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatWyrm, 1, 1, data.PlaneArcanus, defendingPlayer.Wizard.Banner, defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
-    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     /*
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -958,7 +938,6 @@ func makeScenario12(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Djinn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSwordsmen, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatWyrm, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
@@ -974,7 +953,6 @@ func makeScenario13(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createGreatDrakeArmy(defendingPlayer, 1)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     // defendingArmy.GetUnits()[0].Y -= 7
 
@@ -999,7 +977,6 @@ func makeScenario13(cache *lbx.LbxCache) *combat.CombatScreen {
     unit1.AddEnchantment(data.UnitEnchantmentInvisibility)
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Djinn, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatWyrm, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
@@ -1022,7 +999,6 @@ func makeScenario14(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     defendingArmy := createGreatWyrmArmy(defendingPlayer, 1)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
 
     defendingPlayer.CastingSkillPower = 10000
     defendingPlayer.Mana = 10000
@@ -1045,7 +1021,6 @@ func makeScenario14(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.Mana = 10000
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createLizardmenArmy(attackingPlayer, 3)
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, defendingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: city}, data.MagicNone, 0, 0)
 }

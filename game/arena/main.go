@@ -320,8 +320,6 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
         defendingArmy.AddUnit(unit)
     }
 
-    defendingArmy.LayoutUnits(combat.TeamDefender)
-
     enemyPlayer := player.MakeAIPlayer(data.BannerRed)
 
     enemyPlayer.Level = engine.Player.Level
@@ -454,8 +452,6 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     for _, unit := range enemyPlayer.Units {
         attackingArmy.AddUnit(unit)
     }
-
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     landscape := randomChoose(combat.CombatLandscapeGrass, combat.CombatLandscapeDesert, combat.CombatLandscapeMountain, combat.CombatLandscapeTundra)
 

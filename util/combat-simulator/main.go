@@ -456,8 +456,6 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
         }
     }
 
-    defendingArmy.LayoutUnits(combat.TeamDefender)
-
     attackingArmy := combat.Army{
         Player: attackingPlayer,
     }
@@ -472,8 +470,6 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
             attackingArmy.AddUnit(made)
         }
     }
-
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
 
     combatScreen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, humanPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
     engine.Combat = combatScreen
