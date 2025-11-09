@@ -366,6 +366,11 @@ type Game struct {
 
     TurnNumber uint64
 
+    // water bodies holds all the points that are part of the same body of water.
+    // a plane can have mulitple bodies of water if some bodies are landlocked (enclosed entirely by a continent)
+    // this is lazily initialized on first use
+    WaterBodies map[data.Plane][]*set.Set[image.Point]
+
     ArtifactPool map[string]*artifact.Artifact
 
     MouseData *mouselib.MouseData
@@ -1812,7 +1817,7 @@ func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sou
     }
 
     // can't move from land to ocean unless all units are flyers or swimmers
-    if tileFrom.Tile.IsLand() && !tileTo.Tile.IsLand() {
+    if /* tileFrom.Tile.IsLand() && */ !tileTo.Tile.IsLand() {
         // a land walker can move onto a friendly stack on the ocean if that stack has sailing units
         if stack.AnyLandWalkers() {
             // if the stack already contains a sailing unit, then it is legal to move into water
@@ -1848,6 +1853,15 @@ func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sou
     // sailing units cannot move onto land
     if tileTo.Tile.IsLand() {
         if !stack.CanMoveOnLand(true) {
+            return fraction.Zero(), false
+        }
+    }
+
+    // this feels like it can be improved
+    if tileFrom.Tile.IsWater() && tileTo.Tile.IsWater() && !stack.CanMoveOnLand(true) {
+        dx := mapUse.XDistance(sourceX, destX)
+        dy := destY - sourceY
+        if !tileFrom.CanTraverse(terrain.ToDirection(dx, dy), maplib.TraverseWater) {
             return fraction.Zero(), false
         }
     }
@@ -2047,6 +2061,32 @@ func (game *Game) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.Ci
     return ok
 }
 
+func (game *Game) GetWaterBody(mapUse *maplib.Map, x int, y int) *set.Set[image.Point] {
+    if game.WaterBodies == nil {
+        game.WaterBodies = make(map[data.Plane][]*set.Set[image.Point])
+    }
+
+    sets, ok := game.WaterBodies[mapUse.Plane]
+    if !ok {
+        sets = mapUse.GetWaterBodies()
+
+        // log.Printf("Found %d water bodies on plane %d", len(sets), mapUse.Plane)
+
+        game.WaterBodies[mapUse.Plane] = sets
+    }
+
+    find := image.Pt(mapUse.WrapX(x), y)
+
+    // find the body of water that contains the given tile
+    for _, set := range sets {
+        if set.Contains(find) {
+            return set
+        }
+    }
+
+    return nil
+}
+
 func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playerlib.Player, stack playerlib.PathStack, fog data.FogMap) pathfinding.Path {
 
     useMap := game.GetMap(stack.Plane())
@@ -2057,14 +2097,27 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
 
     allFlyers := stack.AllFlyers()
 
-    // FIXME: we might not need this check at all, and just let tileCost handle it
-    /*
+    // this is to avoid doing path finding at all so that we don't spend time trying to compute an impossible path
+    // such as a water unit trying to move to land
     if fog.GetFog(useMap.WrapX(newX), newY) != data.FogTypeUnexplored {
         tileTo := useMap.GetTile(newX, newY)
+        tileFrom := useMap.GetTile(oldX, oldY)
+
+        // if this is a water unit that cannot walk on land then just return nil immediately since the move is impossible
         if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(true) {
             return nil
         }
 
+        // if this is a water unit and it is moving from water to more water, but the destination water tile
+        // is landlocked and the origin tile is not part of the same body of water, then there cannot be a valid
+        // path between the two water tiles
+        if tileTo.Tile.IsWater() && tileFrom.Tile.IsWater() && !stack.CanMoveOnLand(true) {
+            if game.GetWaterBody(useMap, newX, newY) != game.GetWaterBody(useMap, oldX, oldY) {
+                return nil
+            }
+        }
+
+        /*
         if !tileTo.Tile.IsLand() && !allFlyers && stack.AnyLandWalkers() {
 
             // the stack might already contain a sailing unit
@@ -2077,9 +2130,8 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
                 }
             }
         }
-
+        */
     }
-    */
 
     normalized := func (a image.Point) image.Point {
         return image.Pt(useMap.WrapX(a.X), a.Y)
@@ -4343,11 +4395,15 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
                         var inactiveStack *playerlib.UnitStack
 
-                        inactiveUnits := stack.InactiveUnits()
-                        if len(inactiveUnits) > 0 {
-                            stack.RemoveUnits(inactiveUnits)
-                            inactiveStack = player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
-                            game.RefreshUI()
+                        if stack.HasSailingUnits(true) {
+                            stack.DisableNonTransport()
+                        } else {
+                            inactiveUnits := stack.InactiveUnits()
+                            if len(inactiveUnits) > 0 {
+                                stack.RemoveUnits(inactiveUnits)
+                                inactiveStack = player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
+                                game.RefreshUI()
+                            }
                         }
 
                         oldCity := player.FindCity(oldX, oldY, stack.Plane())
@@ -7446,6 +7502,7 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         if stack.HasMoves() {
             player.SelectedStack = stack
             stack.EnableMovers()
+            stack.DisableNonTransport()
 
             if player.IsHuman() {
                 select {
@@ -9355,6 +9412,13 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     */
 
     game.HudUI.Draw(game.HudUI, screen)
+
+    // DEBUGGING: show tile coordinates on screen
+    /*
+    mouseX, mouseY := inputmanager.MousePosition()
+    tileX, tileY := game.ScreenToTile(float64(mouseX), float64(mouseY))
+    game.Fonts.WhiteFont.PrintOptions(screen, float64(mouseX), float64(mouseY - 10), font.FontOptions{}, fmt.Sprintf("%d, %d", tileX, tileY))
+    */
 }
 
 func (game *Game) GetMinimapRect() image.Rectangle {

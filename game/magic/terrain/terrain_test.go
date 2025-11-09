@@ -23,7 +23,7 @@ func TestTerrainMatches(test *testing.T) {
     }
 
     // No compatibilities
-    if !tile.matches(match) {
+    if !tile.Matches(match) {
         test.Errorf("%v should match %v", match, tile)
     }
 
@@ -33,7 +33,7 @@ func TestTerrainMatches(test *testing.T) {
         Type: AnyOf,
     }
     match[North] = Ocean
-    if !tile.matches(match) {
+    if !tile.Matches(match) {
         test.Errorf("%v should match %v", match, tile)
     }
 
@@ -42,7 +42,7 @@ func TestTerrainMatches(test *testing.T) {
         Type: AnyOf,
     }
     match[North] = Shore
-    if !tile.matches(match) {
+    if !tile.Matches(match) {
         test.Errorf("%v should match %v", match, tile)
     }
 
@@ -51,7 +51,7 @@ func TestTerrainMatches(test *testing.T) {
         Type: AnyOf,
     }
     match[North] = Grass
-    if tile.matches(match) {
+    if tile.Matches(match) {
         test.Errorf("%v should not match %v", match, tile)
     }
 
@@ -61,7 +61,7 @@ func TestTerrainMatches(test *testing.T) {
         Type: NoneOf,
     }
     match[North] = Ocean
-    if tile.matches(match) {
+    if tile.Matches(match) {
         test.Errorf("%v should not match %v", match, tile)
     }
 
@@ -70,7 +70,7 @@ func TestTerrainMatches(test *testing.T) {
         Type: NoneOf,
     }
     match[North] = Shore
-    if tile.matches(match) {
+    if tile.Matches(match) {
         test.Errorf("%v should not match %v", match, tile)
     }
 
@@ -79,7 +79,7 @@ func TestTerrainMatches(test *testing.T) {
         Type: NoneOf,
     }
     match[North] = Grass
-    if !tile.matches(match) {
+    if !tile.Matches(match) {
         test.Errorf("%v should match %v", match, tile)
     }
 
@@ -95,19 +95,19 @@ func TestTerrainMatches(test *testing.T) {
 
     match[North] = Shore
     match[South] = Grass
-    if !tile.matches(match) {
+    if !tile.Matches(match) {
         test.Errorf("%v should match %v", match, tile)
     }
 
     match[North] = Shore
     match[South] = Shore
-    if tile.matches(match) {
+    if tile.Matches(match) {
         test.Errorf("%v should not match %v", match, tile)
     }
 
     match[North] = Grass
     match[South] = Grass
-    if tile.matches(match) {
+    if tile.Matches(match) {
         test.Errorf("%v should not match %v", match, tile)
     }
 }

@@ -150,6 +150,23 @@ func (direction Direction) String() string {
     }
 }
 
+// assume dx, dy are in {-1, 0, 1}
+func ToDirection(dx int, dy int) Direction {
+    switch {
+        case dx == -1 && dy == -1: return NorthWest
+        case dx == 0 && dy == -1: return North
+        case dx == 1 && dy == -1: return NorthEast
+        case dx == 1 && dy == 0: return East
+        case dx == 1 && dy == 1: return SouthEast
+        case dx == 0 && dy == 1: return South
+        case dx == -1 && dy == 1: return SouthWest
+        case dx == -1 && dy == 0: return West
+        case dx == 0 && dy == 0: return Center
+    }
+
+    panic("invalid direction")
+}
+
 type CompatibilityType int
 
 const (
@@ -343,43 +360,49 @@ func (tile Tile) IsRiver() bool {
 }
 
 // match the given match to a terrain
-// terrain can contain compatibilites than what the match has
-func (tile *Tile) matches(match map[Direction]TerrainType) bool {
+// terrain can contain more compatibilites than what the match has
+// example: match: {east: anyof(ocean)}, tile terrain: ocean -> matches
+// match: {east: anyof(ocean), south: anyof(shore)}, tile terrain: shore with land on south -> matches
+func (tile *Tile) Matches(match map[Direction]TerrainType) bool {
     for direction, compatibility := range tile.Compatibilities {
-        if compatibility.Type == AnyOf {
-            if !compatibility.Terrains.Contains(match[direction]) {
-                return false
-            }
-
-            /*
-            isAny := false
-            for _, terrain := range compatibility.Terrains {
-                if match[direction] == terrain {
-                    isAny = true
-                    break
+        // only consider directions that are specified in the match
+        _, ok := match[direction]
+        if ok {
+            if compatibility.Type == AnyOf {
+                if !compatibility.Terrains.Contains(match[direction]) {
+                    return false
                 }
-            }
-            if !isAny {
-                return false
-            }
-            */
-        } else {
-            if compatibility.Terrains.Contains(match[direction]) {
-                return false
-            }
 
-            /*
-            none := true
-            for _, terrain := range compatibility.Terrains {
-                if match[direction] == terrain {
-                    none = false
-                    break
+                /*
+                isAny := false
+                for _, terrain := range compatibility.Terrains {
+                    if match[direction] == terrain {
+                        isAny = true
+                        break
+                    }
                 }
+                if !isAny {
+                    return false
+                }
+                */
+            } else {
+                if compatibility.Terrains.Contains(match[direction]) {
+                    return false
+                }
+
+                /*
+                none := true
+                for _, terrain := range compatibility.Terrains {
+                    if match[direction] == terrain {
+                        none = false
+                        break
+                    }
+                }
+                if !none {
+                    return false
+                }
+                */
             }
-            if !none {
-                return false
-            }
-            */
         }
     }
     return true
@@ -1423,7 +1446,7 @@ func (data *TerrainData) TileHeight() int {
 func (data *TerrainData) FindMatchingAllTiles(match map[Direction]TerrainType, plane data.Plane) []int {
     var out []int
     for i, tile := range data.Tiles {
-        if tile.IsPlane(plane) && tile.Tile.matches(match) {
+        if tile.IsPlane(plane) && tile.Tile.Matches(match) {
             out = append(out, i)
         }
     }
@@ -1437,7 +1460,7 @@ func (terrain *TerrainData) FindMatchingTile(match map[Direction]TerrainType, pl
     center, ok := match[Center]
     if ok {
         for _, tile := range terrain.OnlyTiles[center] {
-            if tile.IsPlane(plane) && tile.Tile.matches(match) {
+            if tile.IsPlane(plane) && tile.Tile.Matches(match) {
                 return tile.TileIndex
             }
         }
@@ -1451,7 +1474,7 @@ func (terrain *TerrainData) FindMatchingTile(match map[Direction]TerrainType, pl
     }
 
     for _, tile := range tiles {
-        if tile.Tile.matches(match) {
+        if tile.Tile.Matches(match) {
             return tile.TileIndex
         }
     }

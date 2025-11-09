@@ -331,6 +331,10 @@ func (unit *OverworldUnit) IsSailing() bool {
     return unit.GetRawUnit().Sailing
 }
 
+func (unit *OverworldUnit) IsTransport() bool {
+    return unit.GetAbilityValue(data.AbilityTransport) > 0
+}
+
 func (unit *OverworldUnit) IsLandWalker() bool {
     if unit.Parent.IsFlying() || unit.Parent.IsSwimmer() || unit.Parent.IsSailing() || unit.Parent.HasAbility(data.AbilityNonCorporeal) {
         return false
