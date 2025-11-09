@@ -2057,14 +2057,15 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
 
     allFlyers := stack.AllFlyers()
 
-    // FIXME: we might not need this check at all, and just let tileCost handle it
-    /*
+    // this is to avoid doing path finding at all so that we don't spend time trying to compute an impossible path
+    // such as a water unit trying to move to land
     if fog.GetFog(useMap.WrapX(newX), newY) != data.FogTypeUnexplored {
         tileTo := useMap.GetTile(newX, newY)
         if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(true) {
             return nil
         }
 
+        /*
         if !tileTo.Tile.IsLand() && !allFlyers && stack.AnyLandWalkers() {
 
             // the stack might already contain a sailing unit
@@ -2077,9 +2078,8 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
                 }
             }
         }
-
+        */
     }
-    */
 
     normalized := func (a image.Point) image.Point {
         return image.Pt(useMap.WrapX(a.X), a.Y)
@@ -4343,11 +4343,15 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
                         var inactiveStack *playerlib.UnitStack
 
-                        inactiveUnits := stack.InactiveUnits()
-                        if len(inactiveUnits) > 0 {
-                            stack.RemoveUnits(inactiveUnits)
-                            inactiveStack = player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
-                            game.RefreshUI()
+                        if stack.HasSailingUnits(true) {
+                            stack.DisableNonTransport()
+                        } else {
+                            inactiveUnits := stack.InactiveUnits()
+                            if len(inactiveUnits) > 0 {
+                                stack.RemoveUnits(inactiveUnits)
+                                inactiveStack = player.AddStack(playerlib.MakeUnitStackFromUnits(inactiveUnits))
+                                game.RefreshUI()
+                            }
                         }
 
                         oldCity := player.FindCity(oldX, oldY, stack.Plane())
