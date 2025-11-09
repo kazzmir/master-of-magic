@@ -137,7 +137,17 @@ func TestTile(test *testing.T) {
         Tile: terrain.TileOcean,
     }
 
+    tile3 := FullTile{
+        X: 1,
+        Y: 0,
+        Tile: terrain.TileLand,
+    }
+
     if !tile1.IsConnected(&tile2) {
         test.Errorf("Expected tile1 and tile2 to be connected")
+    }
+
+    if tile1.IsConnected(&tile3) {
+        test.Errorf("Expected tile1 and tile3 to not be connected")
     }
 }

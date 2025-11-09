@@ -576,8 +576,9 @@ func (tile *FullTile) IsConnected(other *FullTile) bool {
     if tile.Tile.TerrainType() == terrain.Shore || other.Tile.TerrainType() == terrain.Shore {
     }
 
-    if tile.Tile.TerrainType() == terrain.Ocean && other.Tile.TerrainType() == terrain.Ocean {
-        return true
+    if tile.Tile.TerrainType() == terrain.Ocean || other.Tile.TerrainType() == terrain.Ocean {
+        // if one is ocean then they must both be
+        return tile.Tile.TerrainType() == other.Tile.TerrainType()
     }
 
     // must be some kind of land
