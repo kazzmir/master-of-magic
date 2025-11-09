@@ -366,6 +366,11 @@ type Game struct {
 
     TurnNumber uint64
 
+    // water bodies holds all the points that are part of the same body of water.
+    // a plane can have mulitple bodies of water if some bodies are landlocked (enclosed entirely by a continent)
+    // this is lazily initialized on first use
+    WaterBodies map[data.Plane][]*set.Set[image.Point]
+
     ArtifactPool map[string]*artifact.Artifact
 
     MouseData *mouselib.MouseData
@@ -2047,6 +2052,80 @@ func (game *Game) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.Ci
     return ok
 }
 
+func (game *Game) GetWaterBody(mapUse *maplib.Map, x int, y int) *set.Set[image.Point] {
+    if game.WaterBodies == nil {
+        game.WaterBodies = make(map[data.Plane][]*set.Set[image.Point])
+    }
+
+    sets, ok := game.WaterBodies[mapUse.Plane]
+    if !ok {
+        sets = nil
+
+        // compute bodies of water by choosing a water tile and doing a flood fill to find all connected water tiles
+
+        visited := set.NewSet[image.Point]()
+        for tx := range mapUse.Width() {
+            for ty := range mapUse.Height() {
+                if visited.Contains(image.Pt(tx, ty)) {
+                    continue
+                }
+
+                tile := mapUse.GetTile(tx, ty)
+                if !tile.Tile.IsWater() {
+                    visited.Insert(image.Pt(tx, ty))
+                    continue
+                }
+
+                toCheck := []image.Point{image.Pt(tx, ty)}
+
+                newSet := set.NewSet[image.Point]()
+
+                // floodfill
+                for len(toCheck) > 0 {
+                    check := toCheck[0]
+                    toCheck = toCheck[1:]
+
+                    if visited.Contains(check) {
+                        continue
+                    }
+
+                    newSet.Insert(check)
+                    visited.Insert(check)
+
+                    for dx := -1; dx <= 1; dx++ {
+                        for dy := -1; dy <= 1; dy++ {
+                            cx := mapUse.WrapX(check.X + dx)
+                            cy := check.Y + dy
+
+                            tile := mapUse.GetTile(cx, cy)
+                            if tile.Valid() && tile.Tile.IsWater() {
+                                toCheck = append(toCheck, image.Pt(cx, cy))
+                            }
+                        }
+                    }
+                }
+
+                sets = append(sets, newSet)
+                // log.Printf("Found water body with tiles %v", newSet.Values())
+            }
+        }
+
+        // log.Printf("Found %d water bodies on plane %d", len(sets), mapUse.Plane)
+
+        game.WaterBodies[mapUse.Plane] = sets
+    }
+
+    find := image.Pt(mapUse.WrapX(x), y)
+
+    for _, set := range sets {
+        if set.Contains(find) {
+            return set
+        }
+    }
+
+    return nil
+}
+
 func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playerlib.Player, stack playerlib.PathStack, fog data.FogMap) pathfinding.Path {
 
     useMap := game.GetMap(stack.Plane())
@@ -2061,8 +2140,20 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
     // such as a water unit trying to move to land
     if fog.GetFog(useMap.WrapX(newX), newY) != data.FogTypeUnexplored {
         tileTo := useMap.GetTile(newX, newY)
+        tileFrom := useMap.GetTile(oldX, oldY)
+
+        // if this is a water unit that cannot walk on land then just return nil immediately since the move is impossible
         if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(true) {
             return nil
+        }
+
+        // if this is a water unit and it is moving from water to more water, but the destination water tile
+        // is landlocked and the origin tile is not part of the same body of water, then there cannot be a valid
+        // path between the two water tiles
+        if tileTo.Tile.IsWater() && tileFrom.Tile.IsWater() && !stack.CanMoveOnLand(true) {
+            if game.GetWaterBody(useMap, newX, newY) != game.GetWaterBody(useMap, oldX, oldY) {
+                return nil
+            }
         }
 
         /*
