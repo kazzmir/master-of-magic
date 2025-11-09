@@ -2117,6 +2117,7 @@ func (game *Game) GetWaterBody(mapUse *maplib.Map, x int, y int) *set.Set[image.
 
     find := image.Pt(mapUse.WrapX(x), y)
 
+    // find the body of water that contains the given tile
     for _, set := range sets {
         if set.Contains(find) {
             return set
