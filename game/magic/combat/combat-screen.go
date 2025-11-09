@@ -3612,13 +3612,15 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            defender := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
            attacker := combat.Model.SelectedUnit
 
-           // try a ranged attack first
-           if defender != nil && combat.Model.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
-               combat.doRangeAttack(yield, attacker, defender)
-           // then fall back to melee
-           } else if defender != nil && combat.Model.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender, true){
-               combat.doMelee(yield, attacker, defender)
-               attacker.Paths = make(map[image.Point]pathfinding.Path)
+           if defender != nil {
+               // try a ranged attack first
+               if combat.Model.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
+                   combat.doRangeAttack(yield, attacker, defender)
+               // then fall back to melee
+               } else if combat.Model.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender, true){
+                   combat.doMelee(yield, attacker, defender)
+                   attacker.Paths = make(map[image.Point]pathfinding.Path)
+               }
            }
        }
     }

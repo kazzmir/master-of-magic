@@ -2265,13 +2265,13 @@ func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingA
         Influence: influence,
     }
 
+    model.AttackingArmy.LayoutUnits(TeamAttacker, model)
+    model.DefendingArmy.LayoutUnits(TeamDefender, model)
+
     model.Initialize(allSpells, overworldX, overworldY)
 
     model.NextTurn()
     model.SelectedUnit = model.ChooseNextUnit(TeamDefender)
-
-    model.AttackingArmy.LayoutUnits(TeamAttacker, model)
-    model.DefendingArmy.LayoutUnits(TeamDefender, model)
 
     return model
 }
