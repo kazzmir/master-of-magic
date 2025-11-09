@@ -90,6 +90,12 @@ func TestPathBasic(test *testing.T) {
         test.Errorf("Land walker cannot move from land to water")
     }
 
+    // land walking unit without swimming ability cannot move from water -> water
+    // this can occur if the land unit is on a boat and the boat is inactive
+    if checkValidPath(1, 0, units.HighMenSwordsmen) {
+        test.Errorf("Land walker cannot move from water to water")
+    }
+
     // land walking unit with swimming ability can move from land -> water
     if !checkValidPath(2, 1, units.LizardSwordsmen) {
         test.Errorf("Swimmer can move from land to water")

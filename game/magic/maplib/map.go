@@ -571,6 +571,46 @@ type FullTile struct {
     IsShared bool
 }
 
+type TraverseType int
+const (
+    TraverseWater TraverseType = iota
+    TraverseLand
+)
+
+// true if this tile can be traversed moving in the given direction with the given traverse type.
+// this is like saying 'can we move out of this tile in the given direction using the given traverse type?'
+// example:
+//  tile=water, direction=north, traverseType=land => false
+//  tile=water, direction=north, traverseType=water => true
+//  tile=shore with land on east side, direction=east, traverseType=land => true
+//  tile=shore with land on east side, direction=east, traverseType=water => false
+func (tile *FullTile) CanTraverse(direction terrain.Direction, traverseType TraverseType) bool {
+    switch tile.Tile.TerrainType() {
+        case terrain.Ocean: return traverseType == TraverseWater
+        case terrain.Shore:
+            match := make(map[terrain.Direction]terrain.TerrainType)
+            switch traverseType {
+                case TraverseLand:
+                    match[direction] = terrain.TileOcean.TerrainType()
+                    return !tile.Tile.Matches(match)
+                case TraverseWater:
+                    // shore tiles do not have any compatibilities for the corner directions,
+                    // which usually means those directions can contain land but not water
+                    _, has := tile.Tile.Compatibilities[direction]
+                    if !has {
+                        return false
+                    }
+
+                    match[direction] = terrain.TileOcean.TerrainType()
+                    return tile.Tile.Matches(match)
+            }
+
+        default: return traverseType == TraverseLand
+    }
+
+    return false
+}
+
 func (tile *FullTile) Name(mapObject *Map) string {
     if tile.IsRiverMouth(mapObject) {
         return "River Mouth"
@@ -1031,6 +1071,64 @@ func (mapObject *Map) GetContinentTiles(x int, y int) []FullTile {
         out = append(out, tile)
     }
     return out
+}
+
+func (mapObject *Map) GetWaterBodies() []*set.Set[image.Point] {
+    var sets []*set.Set[image.Point]
+    // compute bodies of water by choosing a water tile and doing a flood fill to find all connected water tiles
+
+    visited := set.NewSet[image.Point]()
+    for tx := range mapObject.Width() {
+        for ty := range mapObject.Height() {
+            if visited.Contains(image.Pt(tx, ty)) {
+                continue
+            }
+
+            tile := mapObject.GetTile(tx, ty)
+            if !tile.Tile.IsWater() {
+                visited.Insert(image.Pt(tx, ty))
+                continue
+            }
+
+            toCheck := []image.Point{image.Pt(tx, ty)}
+
+            newSet := set.NewSet[image.Point]()
+
+            // floodfill
+            for len(toCheck) > 0 {
+                check := toCheck[0]
+                toCheck = toCheck[1:]
+
+                if visited.Contains(check) {
+                    continue
+                }
+
+                newSet.Insert(check)
+                visited.Insert(check)
+
+                fromTile := mapObject.GetTile(check.X, check.Y)
+
+                for dx := -1; dx <= 1; dx++ {
+                    for dy := -1; dy <= 1; dy++ {
+                        cx := mapObject.WrapX(check.X + dx)
+                        cy := check.Y + dy
+
+                        tile := mapObject.GetTile(cx, cy)
+                        // shouldn't need this, but just in case
+                        /* && tile.CanTraverse(terrain.ToDirection(-dx, -dy), TraverseWater) */
+                        if tile.Valid() && tile.Tile.IsWater() && fromTile.CanTraverse(terrain.ToDirection(dx, dy), TraverseWater)  {
+                            toCheck = append(toCheck, image.Pt(cx, cy))
+                        }
+                    }
+                }
+            }
+
+            sets = append(sets, newSet)
+            // log.Printf("Found water body with tiles %v", newSet.Values())
+        }
+    }
+
+    return sets
 }
 
 // returns a map where for each direction, if the value is true then there is a road there

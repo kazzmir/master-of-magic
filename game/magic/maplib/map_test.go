@@ -123,3 +123,156 @@ func TestCatchmentArea(test *testing.T) {
         test.Errorf("Expected 6 shared tiles in catchment area with overlapping cities, got %d", count)
     }
 }
+
+func TestTile(test *testing.T) {
+    tileOcean := FullTile{
+        Tile: terrain.TileOcean,
+    }
+
+    if !tileOcean.CanTraverse(terrain.East, TraverseWater) {
+        test.Errorf("Expected ocean to be traversable by water")
+    }
+
+    if tileOcean.CanTraverse(terrain.West, TraverseLand) {
+        test.Errorf("Expected ocean to not be traversable by land")
+    }
+
+    tile2 := FullTile{
+        Tile: terrain.TileLand,
+    }
+
+    if !tile2.CanTraverse(terrain.North, TraverseLand) {
+        test.Errorf("Expected land to be traversable by land")
+    }
+
+    if tile2.CanTraverse(terrain.South, TraverseWater) {
+        test.Errorf("Expected land to not be traversable by water")
+    }
+
+    // land on all east positions
+    tileShoreRight2 := FullTile{
+        Tile: terrain.TileShore1_00011100,
+    }
+
+    if !tileShoreRight2.CanTraverse(terrain.East, TraverseLand) {
+        test.Errorf("Expected shore tile to be traversable by land on east side")
+    }
+
+    if tileShoreRight2.CanTraverse(terrain.West, TraverseLand) {
+        test.Errorf("Expected shore tile to not be traversable by land on west side")
+    }
+
+    if tileShoreRight2.CanTraverse(terrain.East, TraverseWater) {
+        test.Errorf("Expected shore tile to not be traversable by water on east side")
+    }
+
+    if !tileShoreRight2.CanTraverse(terrain.West, TraverseWater) {
+        test.Errorf("Expected shore tile to be traversable by water on west side")
+    }
+
+    // land on all west positions
+    tileShoreLeft := FullTile{
+        Tile: terrain.TileShore1_11000001,
+    }
+
+    if !tileShoreLeft.CanTraverse(terrain.West, TraverseLand) {
+        test.Errorf("Expected shore tile to be traversable by land on west side")
+    }
+
+    if tileShoreLeft.CanTraverse(terrain.East, TraverseLand) {
+        test.Errorf("Expected shore tile to not be traversable by land on east side")
+    }
+
+    if tileShoreLeft.CanTraverse(terrain.West, TraverseWater) {
+        test.Errorf("Expected shore tile to not be traversable by water on west side")
+    }
+
+    if !tileShoreLeft.CanTraverse(terrain.East, TraverseWater) {
+        test.Errorf("Expected shore tile to be traversable by water on east side")
+    }
+
+    tileMouthWest := FullTile{
+        Tile: terrain.TileShore1_01111100,
+    }
+
+    if !tileMouthWest.CanTraverse(terrain.West, TraverseWater) {
+        test.Errorf("Expected shore tile to be traversable by water on west mouth side")
+    }
+}
+
+func TestWaterBodies(test *testing.T) {
+    terrainData := terrain.MakeTerrainData([]image.Image{nil}, []terrain.TerrainTile{
+        terrain.TerrainTile{TileIndex: 0, Tile: terrain.TileLand},
+        terrain.TerrainTile{TileIndex: 1, Tile: terrain.TileOcean},
+        terrain.TerrainTile{TileIndex: 2, Tile: terrain.TileShore1_00011100}, // land on east
+        terrain.TerrainTile{TileIndex: 3, Tile: terrain.TileShore1_11000001}, // land on west
+        terrain.TerrainTile{TileIndex: 4, Tile: terrain.TileLake},
+        terrain.TerrainTile{TileIndex: 5, Tile: terrain.TileShore1_11110001}, // land on south and west
+
+        // []Direction{West, SouthWest, South, SouthEast, East, NorthEast, North, NorthWest}
+    })
+    rawMap := terrain.MakeMap(1, 6)
+    xmap := Map{
+        Data: terrainData,
+        Plane: data.PlaneArcanus,
+        Map: rawMap,
+    }
+
+    // land, ocean, shore(east), shore(west), ocean, land
+    // the shore should disconnect the two ocean tiles into separate water bodies
+    rawMap.Terrain[0][0] = 0
+    rawMap.Terrain[1][0] = 1
+    rawMap.Terrain[2][0] = 2
+    rawMap.Terrain[3][0] = 3
+    rawMap.Terrain[4][0] = 1
+    rawMap.Terrain[5][0] = 0
+
+    waterBodies := xmap.GetWaterBodies()
+    if len(waterBodies) != 2 {
+        test.Errorf("Expected 2 water bodies, got %d", len(waterBodies))
+    }
+
+    rawMap = terrain.MakeMap(1, 7)
+    xmap = Map{
+        Data: terrainData,
+        Plane: data.PlaneArcanus,
+        Map: rawMap,
+    }
+
+    // land, ocean, shore(east), lake, shore(west), ocean, land
+    // the shore should disconnect the two ocean tiles into separate water bodies
+    rawMap.Terrain[0][0] = 0
+    rawMap.Terrain[1][0] = 1
+    rawMap.Terrain[2][0] = 2
+    rawMap.Terrain[3][0] = 4
+    rawMap.Terrain[4][0] = 3
+    rawMap.Terrain[5][0] = 1
+    rawMap.Terrain[6][0] = 0
+
+    // the lake should count as its own body of water, disconnected from the ocean tiles
+    waterBodies2 := xmap.GetWaterBodies()
+    if len(waterBodies2) != 3 {
+        test.Errorf("Expected 3 water bodies, got %d", len(waterBodies2))
+    }
+
+    rawMap = terrain.MakeMap(2, 2)
+    xmap = Map{
+        Data: terrainData,
+        Plane: data.PlaneArcanus,
+        Map: rawMap,
+    }
+
+    // land, shore(west and south)
+    // lake, land
+    rawMap.Terrain[0][0] = 0
+    rawMap.Terrain[1][0] = 5
+    rawMap.Terrain[0][1] = 4
+    rawMap.Terrain[1][1] = 0
+
+    // the lake should count as its own body of water, disconnected from the ocean tiles
+    waterBodies3 := xmap.GetWaterBodies()
+    if len(waterBodies3) != 2 {
+        test.Errorf("Expected 2 water bodies, got %d", len(waterBodies3))
+    }
+
+}
