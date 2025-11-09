@@ -1805,7 +1805,7 @@ func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sou
     }
     */
 
-    // tileFrom := mapUse.GetTile(sourceX, sourceY)
+    tileFrom := mapUse.GetTile(sourceX, sourceY)
     tileTo := mapUse.GetTile(destX, destY)
 
     if !tileTo.Valid() {
@@ -1853,6 +1853,15 @@ func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sou
     // sailing units cannot move onto land
     if tileTo.Tile.IsLand() {
         if !stack.CanMoveOnLand(true) {
+            return fraction.Zero(), false
+        }
+    }
+
+    // this feels like it can be improved
+    if tileFrom.Tile.IsWater() && tileTo.Tile.IsWater() && !stack.CanMoveOnLand(true) {
+        dx := mapUse.XDistance(sourceX, destX)
+        dy := destY - sourceY
+        if !tileFrom.CanTraverse(terrain.ToDirection(dx, dy), maplib.TraverseWater) {
             return fraction.Zero(), false
         }
     }
