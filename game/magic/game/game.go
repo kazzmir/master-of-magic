@@ -2070,7 +2070,7 @@ func (game *Game) GetWaterBody(mapUse *maplib.Map, x int, y int) *set.Set[image.
     if !ok {
         sets = mapUse.GetWaterBodies()
 
-        log.Printf("Found %d water bodies on plane %d", len(sets), mapUse.Plane)
+        // log.Printf("Found %d water bodies on plane %d", len(sets), mapUse.Plane)
 
         game.WaterBodies[mapUse.Plane] = sets
     }
