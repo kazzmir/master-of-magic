@@ -571,6 +571,19 @@ type FullTile struct {
     IsShared bool
 }
 
+// assume that other tile is 1 tile away (4 cardinals + diagonals)
+func (tile *FullTile) IsConnected(other *FullTile) bool {
+    if tile.Tile.TerrainType() == terrain.Shore || other.Tile.TerrainType() == terrain.Shore {
+    }
+
+    if tile.Tile.TerrainType() == terrain.Ocean && other.Tile.TerrainType() == terrain.Ocean {
+        return true
+    }
+
+    // must be some kind of land
+    return true
+}
+
 func (tile *FullTile) Name(mapObject *Map) string {
     if tile.IsRiverMouth(mapObject) {
         return "River Mouth"

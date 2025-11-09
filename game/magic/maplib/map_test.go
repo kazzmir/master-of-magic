@@ -123,3 +123,21 @@ func TestCatchmentArea(test *testing.T) {
         test.Errorf("Expected 6 shared tiles in catchment area with overlapping cities, got %d", count)
     }
 }
+
+func TestTile(test *testing.T) {
+    tile1 := FullTile{
+        X: 0,
+        Y: 0,
+        Tile: terrain.TileOcean,
+    }
+
+    tile2 := FullTile{
+        X: 1,
+        Y: 0,
+        Tile: terrain.TileOcean,
+    }
+
+    if !tile1.IsConnected(&tile2) {
+        test.Errorf("Expected tile1 and tile2 to be connected")
+    }
+}

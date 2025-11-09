@@ -2092,13 +2092,15 @@ func (game *Game) GetWaterBody(mapUse *maplib.Map, x int, y int) *set.Set[image.
                     newSet.Insert(check)
                     visited.Insert(check)
 
+                    fromTile := mapUse.GetTile(check.X, check.Y)
+
                     for dx := -1; dx <= 1; dx++ {
                         for dy := -1; dy <= 1; dy++ {
                             cx := mapUse.WrapX(check.X + dx)
                             cy := check.Y + dy
 
                             tile := mapUse.GetTile(cx, cy)
-                            if tile.Valid() && tile.Tile.IsWater() {
+                            if tile.Valid() && tile.Tile.IsWater() && fromTile.IsConnected(&tile) {
                                 toCheck = append(toCheck, image.Pt(cx, cy))
                             }
                         }
