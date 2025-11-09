@@ -9414,9 +9414,11 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     game.HudUI.Draw(game.HudUI, screen)
 
     // DEBUGGING: show tile coordinates on screen
+    /*
     mouseX, mouseY := inputmanager.MousePosition()
     tileX, tileY := game.ScreenToTile(float64(mouseX), float64(mouseY))
     game.Fonts.WhiteFont.PrintOptions(screen, float64(mouseX), float64(mouseY - 10), font.FontOptions{}, fmt.Sprintf("%d, %d", tileX, tileY))
+    */
 }
 
 func (game *Game) GetMinimapRect() image.Rectangle {
