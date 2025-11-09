@@ -602,42 +602,6 @@ func (tile *FullTile) CanTraverse(direction terrain.Direction, traverseType Trav
     }
 }
 
-// assume that other tile is 1 tile away (4 cardinals + diagonals)
-// check if two tiles are connected by water or by land
-/*
-func (tile *FullTile) IsConnected(other *FullTile, connected ConnectedKind) bool {
-    if tile.Tile.TerrainType() == terrain.Shore || other.Tile.TerrainType() == terrain.Shore {
-
-        // the directiont that tile is relative to other
-        var direction terrain.Direction
-        switch {
-            case tile.X == other.X - 1 && tile.Y == other.Y: direction = terrain.West
-            case tile.X == other.X + 1 && tile.Y == other.Y: direction = terrain.East
-            case tile.X == other.X && tile.Y == other.Y - 1: direction = terrain.North
-            case tile.X == other.X && tile.Y == other.Y + 1: direction = terrain.South
-            case tile.X == other.X - 1 && tile.Y == other.Y - 1: direction = terrain.NorthWest
-            case tile.X == other.X + 1 && tile.Y == other.Y - 1: direction = terrain.NorthEast
-            case tile.X == other.X - 1 && tile.Y == other.Y + 1: direction = terrain.SouthWest
-            case tile.X == other.X + 1 && tile.Y == other.Y + 1: direction = terrain.SouthEast
-        }
-
-        match := map[terrain.Direction]terrain.TerrainType{
-            direction: tile.Tile.TerrainType(),
-        }
-
-        return other.Tile.Matches(match)
-    }
-
-    if tile.Tile.TerrainType() == terrain.Ocean || other.Tile.TerrainType() == terrain.Ocean {
-        // if one is ocean then they must both be
-        return tile.Tile.TerrainType() == other.Tile.TerrainType()
-    }
-
-    // must be some kind of land
-    return true
-}
-*/
-
 func (tile *FullTile) Name(mapObject *Map) string {
     if tile.IsRiverMouth(mapObject) {
         return "River Mouth"
