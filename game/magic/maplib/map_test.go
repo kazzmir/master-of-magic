@@ -190,73 +190,29 @@ func TestTile(test *testing.T) {
     if !tileShoreLeft.CanTraverse(terrain.East, TraverseWater) {
         test.Errorf("Expected shore tile to be traversable by water on east side")
     }
+}
 
-    /*
-    tile1 := FullTile{
-        X: 0,
-        Y: 0,
-        Tile: terrain.TileOcean,
+func TestWaterBodies(test *testing.T) {
+    terrainData := terrain.MakeTerrainData([]image.Image{nil}, []terrain.TerrainTile{
+        terrain.TerrainTile{TileIndex: 0, Tile: terrain.TileLand},
+        terrain.TerrainTile{TileIndex: 1, Tile: terrain.TileOcean},
+        terrain.TerrainTile{TileIndex: 2, Tile: terrain.TileShore1_00011100}, // land on east
+        terrain.TerrainTile{TileIndex: 3, Tile: terrain.TileShore1_11000001}, // land on west
+    })
+    rawMap := terrain.MakeMap(1, 4)
+    xmap := Map{
+        Data: terrainData,
+        Plane: data.PlaneArcanus,
+        Map: rawMap,
     }
 
-    tile2 := FullTile{
-        X: 1,
-        Y: 0,
-        Tile: terrain.TileOcean,
-    }
+    rawMap.Terrain[0][0] = 1
+    rawMap.Terrain[1][0] = 2
+    rawMap.Terrain[2][0] = 3
+    rawMap.Terrain[3][0] = 1
 
-    tile3 := FullTile{
-        X: 1,
-        Y: 0,
-        Tile: terrain.TileLand,
+    waterBodies := xmap.GetWaterBodies()
+    if len(waterBodies) != 2 {
+        test.Errorf("Expected 2 water bodies, got %d", len(waterBodies))
     }
-
-    if !tile1.IsConnected(&tile2, ConnectedWater) {
-        test.Errorf("Expected tile1 and tile2 to be connected")
-    }
-
-    if tile1.IsConnected(&tile3, ConnectedWater) {
-        test.Errorf("Expected tile1 and tile3 to not be connected")
-    }
-
-    // a shore tile where the land is on the right side
-    tileShoreRight := FullTile{
-        X: 1,
-        Y: 0,
-        Tile: terrain.TileShore1_00011100,
-    }
-
-    if !tile1.IsConnected(&tileShoreRight, ConnectedWater) {
-        test.Errorf("Expected tile1 and tileShoreRight to be connected")
-    }
-
-    if !tileShoreRight.IsConnected(&tile1, ConnectedWater) {
-        test.Errorf("Expected tileShoreRight and tile1 to be connected")
-    }
-
-    // land on all east positions
-    tileShoreRight2 := FullTile{
-        X: 2,
-        Y: 0,
-        Tile: terrain.TileShore1_00011100,
-    }
-
-    if tile3.IsConnected(&tileShoreRight2, ConnectedLand) {
-        test.Errorf("Expected tile3 and tileShoreRight2 to not be connected")
-    }
-
-    // land on all west positions
-    tileShoreLeft := FullTile{
-        X: 3,
-        Y: 0,
-        Tile: terrain.TileShore1_11000001,
-    }
-
-    if tileShoreRight.IsConnected(&tileShoreLeft, ConnectedWater) {
-        test.Errorf("Expected tileShoreRight and tileShoreLeft to not be connected")
-    }
-
-    if !tileShoreRight.IsConnected(&tileShoreLeft, ConnectedLand) {
-        test.Errorf("Expected tileShoreRight and tileShoreLeft to be connected by land")
-    }
-    */
 }
