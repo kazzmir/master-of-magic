@@ -2566,6 +2566,10 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
 
                 game.ResolveStackAt(hero.GetX(), hero.GetY(), hero.GetPlane())
 
+                if player.SelectedStack == nil {
+                    player.SelectedStack = player.FindStack(hero.GetX(), hero.GetY(), hero.GetPlane())
+                }
+
                 game.RefreshUI()
             }
         } else {
