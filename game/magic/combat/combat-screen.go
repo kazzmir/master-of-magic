@@ -123,12 +123,6 @@ type CombatCreateWallOfFire struct {
 type CombatCreateWallOfDarkness struct {
 }
 
-type CombatEventMakeGibs struct {
-    Unit *ArmyUnit
-    // number of figures to make gibs for
-    Count int
-}
-
 type CombatDoSingleAuto struct {
 }
 
@@ -203,33 +197,6 @@ func computeTileDistance(x1 int, y1 int, x2 int, y2 int) int {
     return distance
 }
 
-type Gib struct {
-    X float64
-    Y float64
-    Z float64
-
-    OffsetX float64
-    OffsetY float64
-
-    Life int
-
-    // how the image rotates in air
-    Rotation float64
-    RotationSpeed float64
-
-    Dx float64
-    Dy float64
-
-    // angle in the x/y plane
-    Angle float64
-    // angle in the y/z plane. not used yet, but could be used to show a 3d effect
-    // Phi float64
-
-    Velocity float64
-
-    Image *ebiten.Image
-}
-
 type DamageIndicator struct {
     X int
     Y int
@@ -268,7 +235,6 @@ type CombatScreen struct {
 
     // creating gibs and be optional
     DeathAnimation DeathAnimationType
-    Gibs []*Gib
 
     CameraScale float64
     ExtraControl bool
@@ -631,8 +597,7 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        hurt, lost := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
-        combat.MakeGibs(unit, lost)
+        hurt, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
         combat.AddDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -648,9 +613,8 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
     explodeImages := images[3:]
 
     damage := func(unit *ArmyUnit) {
-        fireDamage, lost := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
+        fireDamage, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
         combat.AddDamageIndicator(unit, fireDamage)
-        combat.MakeGibs(unit, lost)
 
         combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.GetHealth() <= 0 {
@@ -684,9 +648,8 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Project
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        hurt, lost := ApplyDamage(unit, []int{15}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
+        hurt, _ := ApplyDamage(unit, []int{15}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
         combat.AddDamageIndicator(unit, hurt)
-        combat.MakeGibs(unit, lost)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -718,7 +681,6 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
         }
 
         combat.AddDamageIndicator(unit, damage)
-        combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -732,9 +694,8 @@ func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, stren
     explodeImages := images
 
     damage := func (unit *ArmyUnit) {
-        hurt, lost := ApplyDamage(unit, []int{ComputeRoll(15, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
+        hurt, _ := ApplyDamage(unit, []int{ComputeRoll(15, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
         combat.AddDamageIndicator(unit, hurt)
-        combat.MakeGibs(unit, lost)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -749,7 +710,6 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projecti
     explodeImages := images[3:]
 
     effect := func(unit *ArmyUnit) {
-        combat.MakeGibs(unit, unit.TakeDamage(10, DamageNormal))
         combat.AddDamageIndicator(unit, 10)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -782,9 +742,8 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
         Effect: func(unit *ArmyUnit) {
-            hurt, lost := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+            hurt, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
             combat.AddDamageIndicator(unit, hurt)
-            combat.MakeGibs(unit, lost)
             if unit.GetHealth() <= 0 {
                 combat.Model.KillUnit(unit)
             }
@@ -828,7 +787,6 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Pro
                 damage += hurt
             }
             combat.AddDamageIndicator(unit, damage)
-            combat.MakeGibs(unit, lost)
 
             if unit.GetHealth() <= 0 {
                 combat.Model.KillUnit(unit)
@@ -850,7 +808,6 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
         damage := rand.N(10) + 1 - resistance
         if damage > 0 {
             combat.AddDamageIndicator(unit, damage)
-            combat.MakeGibs(unit, unit.TakeDamage(damage, DamageUndead))
             if unitCaster != nil {
                 unitCaster.Heal(damage)
             } else {
@@ -1304,7 +1261,6 @@ func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit) *Projectil
         }
 
         // FIXME: do stoning damage, which is irreversable
-        combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1428,7 +1384,6 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
         }
 
         combat.AddDamageIndicator(unit, damage)
-        combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1464,7 +1419,6 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projec
         }
 
         combat.AddDamageIndicator(unit, damage)
-        combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1488,7 +1442,6 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Proje
         }
 
         combat.AddDamageIndicator(unit, damage)
-        combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1587,7 +1540,6 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
         }
 
         combat.AddDamageIndicator(unit, damage)
-        combat.MakeGibs(unit, unit.TakeDamage(damage, DamageIrreversable))
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1673,135 +1625,6 @@ func (caster *UnitCaster) ComputeEffectiveResearchPerTurn(research float64, spel
 
 func (caster *UnitCaster) ComputeEffectiveSpellCost(spell spellbook.Spell, overland bool) int {
     return spell.Cost(overland)
-}
-
-// create gib effects for a unit
-func (combat *CombatScreen) MakeGibs(unit *ArmyUnit, lost int) {
-    if combat.DeathAnimation != DeathAnimationGibs {
-        return
-    }
-
-    if lost <= 0 {
-        return
-    }
-
-    // create gibs at the location of figures from unit.VisibleFigures() to lost
-
-    banner := unit.Unit.GetBanner()
-    combatImages, _ := combat.ImageCache.GetImagesTransform(unit.Unit.GetCombatLbxFile(), unit.Unit.GetCombatIndex(unit.Facing), banner.String(), units.MakeUpdateUnitColorsFunc(banner))
-
-    if len(combatImages) < 2 {
-        return
-    }
-
-    gibImage := combatImages[2]
-    gibSize := 5
-
-    type gibOffset struct {
-        Image *ebiten.Image
-        Angle float64
-        X int
-        Y int
-        /*
-        Dx float64
-        Dy float64
-        */
-        Velocity float64
-    }
-
-    middleX := float64(gibImage.Bounds().Dx()) / 2
-    // middleY := gibImage.Bounds().Dy() / 2
-
-    bottomY := gibImage.Bounds().Dy() + 6
-
-    pixels := make ([]byte, gibSize * gibSize * 4)
-
-    // returns true if the image has enough pixels to be considered a gib part
-    isGibImage := func (part *ebiten.Image) bool {
-        usePixels := pixels[:part.Bounds().Dx() * part.Bounds().Dy() * 4]
-
-        part.ReadPixels(usePixels)
-        nonAlpha := 0
-        for pixelX := 0; pixelX < part.Bounds().Dx(); pixelX++ {
-            for pixelY := 0; pixelY < part.Bounds().Dy(); pixelY++ {
-                alpha := usePixels[(pixelY * part.Bounds().Dx() + pixelX) * 4 + 3]
-                // 200 to account for the fact that alpha values are not always 255, but they might be something like 254. 200 is big enough for a cutoff
-                if alpha > 200 {
-                    nonAlpha += 1
-                }
-            }
-        }
-
-        return nonAlpha > len(usePixels) / 4 * 5 / 10
-    }
-
-    var gibParts []gibOffset
-    for x := 0; x < gibImage.Bounds().Dx(); x += gibSize {
-        for y := 0; y < gibImage.Bounds().Dy(); y += gibSize {
-            gibPart := gibImage.SubImage(image.Rect(x, y, x + gibSize, y + gibSize)).(*ebiten.Image)
-
-            if !isGibImage(gibPart) {
-                continue
-            }
-
-            // angle := math.Atan2(float64(y - bottomY), float64(x) + float64(gibSize) / 2 - middleX) / 10
-            angle := -rand.Float64() * (math.Pi - 2 * math.Pi / 4) - math.Pi / 4
-
-            // log.Printf("Angle x=%v y=%v centerX=%v centerY=%v angle=%v", x + gibSize / 2, y, middleX, bottomY, angle)
-
-            dx := float64(x) - middleX
-            dy := float64(y - bottomY)
-
-            velocity := math.Sqrt(dx * dx + dy * dy) / 14
-
-            gibParts = append(gibParts, gibOffset{
-                Image: gibPart,
-                Angle: angle,
-                Velocity: velocity,
-                X: x,
-                Y: gibImage.Bounds().Dy() - y,
-            })
-        }
-    }
-
-    var moreGibs []*Gib
-
-    visible := unit.VisibleFigures()
-
-    points := unitview.CombatPoints(visible + lost)
-    for i := range lost {
-        if i + visible < len(points) {
-            point := points[visible + i]
-
-            for _, part := range gibParts {
-                velocity := part.Velocity * (rand.Float64() + 0.5)
-                // angle := part.Angle + (rand.Float64() - 0.5) / 4
-                angle := part.Angle
-
-                moreGibs = append(moreGibs, &Gib{
-                    X: float64(unit.X),
-                    Y: float64(unit.Y),
-                    OffsetX: float64(point.X),
-                    // 6 is the ground height
-                    OffsetY: float64(point.Y - 6),
-                    Z: float64(part.Y + 1),
-                    Life: 120,
-                    // Z: part.Y,
-                    Rotation: rand.Float64() * 2 * math.Pi,
-                    RotationSpeed: (rand.Float64() - 0.5) / 3,
-                    Angle: angle,
-                    // Phi: rand.Float64() * 2 * math.Pi,
-                    Dx: math.Cos(angle) * velocity * 0.5,
-                    Dy: -math.Sin(angle) * velocity,
-                    // Velocity: rand.Float64() * 2,
-                    // Velocity: 0.01,
-                    Image: part.Image,
-                })
-            }
-        }
-    }
-
-    combat.Gibs = append(combat.Gibs, moreGibs...)
 }
 
 func (combat *CombatScreen) MakeInfoUI(remove func()) *uilib.UIElementGroup {
@@ -2483,7 +2306,6 @@ func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
         combat.ProcessInput()
         combat.UpdateDamageIndicators()
         combat.UpdateAnimations()
-        combat.UpdateGibs()
         if yield() != nil {
             return
         }
@@ -2593,8 +2415,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
         damage := attacker.ComputeRangeDamage(target, tileDistance)
 
         // FIXME: for magical damage, set the Magic damage modifier for the proper realm
-        appliedDamage, lost := ApplyDamage(target, []int{damage}, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
-        combat.MakeGibs(target, lost)
+        appliedDamage, _ := ApplyDamage(target, []int{damage}, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
 
         totalDamage := appliedDamage
 
@@ -2941,9 +2762,6 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) CombatUpdat
                         combat.doSelectUnit(yield, use.Selecter, use.Spell, use.SelectTarget, use.CanTarget, use.SelectTeam)
                     case *CombatEventNextUnit:
                         combat.Model.NextUnit()
-                    case *CombatEventMakeGibs:
-                        use := event.(*CombatEventMakeGibs)
-                        combat.MakeGibs(use.Unit, use.Count)
                     case *CombatEventGlobalSpell:
                         use := event.(*CombatEventGlobalSpell)
                         combat.doCastEnchantment(yield, use.Caster, use.Magic, use.Name)
@@ -3017,7 +2835,6 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
         for i := range mergeCount {
             combat.Counter += 1
             combat.UpdateAnimations()
-            combat.UpdateGibs()
             combat.UpdateDamageIndicators()
             combat.ProcessInput()
             mover.SetHeight(-i/mergeSpeed)
@@ -3028,7 +2845,6 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             combat.Counter += 1
             combat.UpdateAnimations()
             combat.UpdateDamageIndicators()
-            combat.UpdateGibs()
             combat.ProcessInput()
             mover.SetFade(float32(i)/float32(mergeCount))
             yield()
@@ -3046,7 +2862,6 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             combat.Counter += 1
             combat.UpdateAnimations()
             combat.UpdateDamageIndicators()
-            combat.UpdateGibs()
             combat.ProcessInput()
             mover.SetHeight(-(mergeCount/mergeSpeed - i/mergeSpeed))
             yield()
@@ -3057,7 +2872,6 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
             combat.Counter += 1
             combat.UpdateAnimations()
             combat.UpdateDamageIndicators()
-            combat.UpdateGibs()
             combat.ProcessInput()
             mover.SetFade(float32(mergeCount - i)/float32(mergeCount))
             yield()
@@ -3126,7 +2940,6 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         for !reached && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {
             combat.UpdateAnimations()
             combat.UpdateDamageIndicators()
-            combat.UpdateGibs()
             combat.ProcessInput()
             combat.Counter += 1
 
@@ -3253,7 +3066,6 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
     for i := range 60 {
         combat.Counter += 1
         combat.UpdateAnimations()
-        combat.UpdateGibs()
         combat.UpdateDamageIndicators()
         combat.ProcessInput()
         combat.ProcessEvents(yield) // ignore return
@@ -3324,38 +3136,6 @@ func (combat *CombatScreen) UpdateMouseState() {
             index := (combat.Counter / 8) % uint64(len(combat.Mouse.Cast))
             globalMouse.Mouse.SetImage(combat.Mouse.Cast[index])
     }
-}
-
-func (combat *CombatScreen) UpdateGibs() {
-    var keepGibs []*Gib
-
-    for _, gib := range combat.Gibs {
-        if gib.Z > 0 {
-            gib.Life = 20
-            gib.Rotation += gib.RotationSpeed
-            if gib.Rotation < 0 {
-                gib.Rotation += 2 * math.Pi
-            }
-            if gib.Rotation > 2*math.Pi {
-                gib.Rotation -= 2 * math.Pi
-            }
-
-            gib.OffsetX += gib.Dx
-            gib.Z += gib.Dy
-            // gravity
-            gib.Dy -= 0.08
-        } else {
-            if gib.Life > 0 {
-                gib.Life -= 1
-            }
-        }
-
-        if gib.Life > 0 {
-            keepGibs = append(keepGibs, gib)
-        }
-    }
-
-    combat.Gibs = keepGibs
 }
 
 func (combat *CombatScreen) ProcessInput() {
@@ -3479,7 +3259,6 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     combat.UpdateDamageIndicators()
     combat.UpdateAnimations()
-    combat.UpdateGibs()
 
     // hudY := data.ScreenHeightOriginal - hudImage.Bounds().Dy()
     hudY := (data.ScreenHeight - hudImage.Bounds().Dy())
