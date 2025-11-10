@@ -48,6 +48,10 @@ func (set *Set[T]) Contains(v T) bool {
     return ok
 }
 
+func (set *Set[T]) IsEmpty() bool {
+    return len(set.data) == 0
+}
+
 func (set *Set[T]) Size() int {
     return len(set.data)
 }

@@ -2192,6 +2192,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                         player.UseMana(int(float64(spellCost) * army.Range.ToFloat()))
                         if success {
                             combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.GetWizard().Name, spell.Name))
+                            combat.PlaySound(spell)
                         }
                     })
                 }
@@ -2230,6 +2231,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                                     caster.Casted = true
                                     if success {
                                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
+                                        combat.PlaySound(spell)
                                     }
                                     caster.MovesLeft = fraction.FromInt(0)
                                     select {
@@ -2708,7 +2710,6 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
             combat.MouseState = CombatCast
 
             if inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
-                combat.PlaySound(spell)
                 selectTile(combat.MouseTileX, combat.MouseTileY)
                 yield()
                 break
@@ -2827,16 +2828,6 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
             if unit != nil && canTargetMemo(unit) && inputmanager.LeftClick() && mouseY < scale.Scale(hudY) {
                 // log.Printf("Click unit at %v,%v -> %v", combat.MouseTileX, combat.MouseTileY, unit)
                 if selectTeam == TeamEither || unit.Team == selectTeam {
-
-                    combat.PlaySound(spell)
-
-                    sound, err := combat.AudioCache.GetSound(spell.Sound)
-                    if err == nil {
-                        sound.Play()
-                    } else {
-                        log.Printf("No such sound %v for %v: %v", spell.Sound, spell.Name, err)
-                    }
-
                     selectTarget(unit)
 
                     // shouldn't need to set the mouse state here
@@ -3580,7 +3571,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
             // prioritize range attack over melee
             if combat.Model.canRangeAttack(combat.Model.SelectedUnit, who) && combat.Model.withinArrowRange(combat.Model.SelectedUnit, who) {
                 newState = CombatRangeAttackOk
-            } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who) && combat.Model.withinMeleeRange(combat.Model.SelectedUnit, who) {
+            } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who, true) && combat.Model.withinMeleeRange(combat.Model.SelectedUnit, who) {
                 newState = CombatMeleeAttackOk
             }
 
@@ -3612,13 +3603,15 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            defender := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
            attacker := combat.Model.SelectedUnit
 
-           // try a ranged attack first
-           if defender != nil && combat.Model.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
-               combat.doRangeAttack(yield, attacker, defender)
-           // then fall back to melee
-           } else if defender != nil && combat.Model.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender){
-               combat.doMelee(yield, attacker, defender)
-               attacker.Paths = make(map[image.Point]pathfinding.Path)
+           if defender != nil {
+               // try a ranged attack first
+               if combat.Model.withinArrowRange(attacker, defender) && combat.Model.canRangeAttack(attacker, defender) {
+                   combat.doRangeAttack(yield, attacker, defender)
+               // then fall back to melee
+               } else if combat.Model.withinMeleeRange(attacker, defender) && combat.Model.canMeleeAttack(attacker, defender, true){
+                   combat.doMelee(yield, attacker, defender)
+                   attacker.Paths = make(map[image.Point]pathfinding.Path)
+               }
            }
        }
     }
@@ -4354,12 +4347,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         scale.DrawScaled(screen, clouds, &options)
     }
 
-    // then draw extra stuff on top
-    for _, point := range combat.TopDownOrder {
-        x := point.X
-        y := point.Y
-
-        extra := combat.Model.Tiles[y][x].ExtraObject
+    drawExtraObject := func(x int, y int, extra TileTop) {
         if extra.Drawer != nil {
             options.GeoM.Reset()
             tx, ty := tilePosition(float64(x), float64(y))
@@ -4396,8 +4384,15 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
 
             // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         }
+    }
 
-        combat.DrawWall(screen, x, y, tilePosition, animationIndex)
+    // then draw extra stuff on top
+    for _, point := range combat.TopDownOrder {
+        x := point.X
+        y := point.Y
+
+        extra := combat.Model.Tiles[y][x].ExtraObject
+        drawExtraObject(x, y, extra)
     }
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.NRGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.NRGBA{R: 0, G: 0xef, B: 0xff, A: 255})
@@ -4466,7 +4461,8 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         }
     }
 
-    renderUnit := func(unit *ArmyUnit, unitOptions ebiten.DrawImageOptions){
+    renderUnit := func(unit *ArmyUnit) {
+        var unitOptions ebiten.DrawImageOptions
         banner := unit.Unit.GetBanner()
         combatImages, _ := combat.ImageCache.GetImagesTransform(unit.Unit.GetCombatLbxFile(), unit.Unit.GetCombatIndex(unit.Facing), banner.String(), units.MakeUpdateUnitColorsFunc(banner))
 
@@ -4628,37 +4624,102 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         }
     }
 
-    // sort units in top down order before drawing them
-    allUnits := make([]*ArmyUnit, 0, len(combat.Model.DefendingArmy.units) + len(combat.Model.AttackingArmy.units))
+    type Drawable struct {
+        GetY func() float64
+        GetX func() float64
+        Render func()
+    }
 
-    allUnits = append(allUnits, combat.Model.DefendingArmy.units...)
-    allUnits = append(allUnits, combat.Model.AttackingArmy.units...)
+    unitDrawable := func(unit *ArmyUnit) Drawable {
+        return Drawable{
+            GetX: func() float64 {
+                return float64(unit.X)
+            },
+            GetY: func() float64 {
+                return float64(unit.Y)
+            },
+            Render: func() {
+                renderUnit(unit)
+            },
+        }
+    }
+
+    wallDrawable := func(tile TilePoint) Drawable {
+        var offset float64 = 0
+
+        if tile.Tile.HasEasternWall() || tile.Tile.HasSouthernWall() {
+            offset += 0.1
+        } else {
+            offset -= 0.1
+        }
+
+        return Drawable{
+            GetX: func() float64 {
+                return float64(tile.X)
+            },
+            GetY: func() float64 {
+                return float64(tile.Y) + offset
+            },
+            Render: func() {
+                combat.DrawWall(screen, tile.X, tile.Y, tilePosition, animationIndex)
+            },
+        }
+    }
+
+    fortressDrawable := func() Drawable {
+        extra := TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 17,
+            Alignment: TileAlignBottom,
+        }
+
+        return Drawable{
+            GetX: func() float64 {
+                return float64(TownCenterX)
+            },
+            GetY: func() float64 {
+                return float64(TownCenterY)
+            },
+            Render: func() {
+                drawExtraObject(TownCenterX, TownCenterY, extra)
+            },
+        }
+    }
+
+    // sort units in top down order before drawing them
+    allDrawables := make([]Drawable, 0, len(combat.Model.DefendingArmy.units) + len(combat.Model.AttackingArmy.units) + 100)
+
+    for _, unit := range combat.Model.AttackingArmy.units {
+        allDrawables = append(allDrawables, unitDrawable(unit))
+    }
+
+    for _, unit := range combat.Model.DefendingArmy.units {
+        allDrawables = append(allDrawables, unitDrawable(unit))
+    }
+
+    if combat.Model.Zone.City != nil && combat.Model.Zone.City.HasFortress() {
+        allDrawables = append(allDrawables, fortressDrawable())
+    }
 
     for _, unit := range combat.Model.AttackingArmy.KilledUnits {
         if unit.LostUnitsTime > 0 {
-            allUnits = append(allUnits, unit)
+            allDrawables = append(allDrawables, unitDrawable(unit))
         }
     }
 
     for _, unit := range combat.Model.DefendingArmy.KilledUnits {
         if unit.LostUnitsTime > 0 {
-            allUnits = append(allUnits, unit)
+            allDrawables = append(allDrawables, unitDrawable(unit))
         }
     }
 
-    /*
-    for _, unit := range combat.Model.DefendingArmy.units {
-        allUnits = append(allUnits, unit)
+    for _, tile := range combat.Model.WallTiles() {
+        allDrawables = append(allDrawables, wallDrawable(tile))
     }
 
-    for _, unit := range combat.Model.AttackingArmy.units {
-        allUnits = append(allUnits, unit)
-    }
-    */
-
-    compareUnit := func(unitA *ArmyUnit, unitB *ArmyUnit) int {
-        ax, ay := tilePosition(float64(unitA.X), float64(unitA.Y))
-        bx, by := tilePosition(float64(unitB.X), float64(unitB.Y))
+    compareDrawable := func(drawA Drawable, drawB Drawable) int {
+        ax, ay := tilePosition(drawA.GetX(), drawA.GetY())
+        bx, by := tilePosition(drawB.GetX(), drawB.GetY())
 
         if ay < by {
             return -1
@@ -4677,14 +4738,12 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         }
 
         return 0
-
     }
 
-    slices.SortFunc(allUnits, compareUnit)
+    slices.SortFunc(allDrawables, compareDrawable)
 
-    for _, unit := range allUnits {
-        var options ebiten.DrawImageOptions
-        renderUnit(unit, options)
+    for _, drawable := range allDrawables {
+        drawable.Render()
     }
 
     for _, unit := range combat.Model.OtherUnits {
@@ -4701,6 +4760,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         scale.DrawScaled(screen, frame, &unitOptions)
     }
 
+    /*
     for _, gib := range combat.Gibs {
         var gibOptions ebiten.DrawImageOptions
 
@@ -4720,6 +4780,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
 
         scale.DrawScaled(screen, gib.Image, &gibOptions)
     }
+    */
 
     if combat.ExtraHighlightedUnit != nil {
         getTilePoints := func(x int, y int) ([]image.Point){

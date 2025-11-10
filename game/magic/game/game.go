@@ -5402,9 +5402,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     attackingArmy := createArmy(attacker, attackerStack)
     defendingArmy := createArmy(defender, defenderStack)
 
-    attackingArmy.LayoutUnits(combat.TeamAttacker)
-    defendingArmy.LayoutUnits(combat.TeamDefender)
-
     var state combat.CombatState
     var defeatedDefenders int
     var defeatedAttackers int

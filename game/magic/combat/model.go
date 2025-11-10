@@ -211,6 +211,24 @@ type Tile struct {
     InsideWall bool
 }
 
+func (tile *Tile) HasEasternWall() bool {
+    return (tile.Wall != nil && (tile.Wall.Contains(WallKindEast) || tile.Wall.Contains(WallKindGate))) ||
+           (tile.Fire != nil && tile.Fire.Contains(FireSideEast)) ||
+           (tile.Darkness != nil && tile.Darkness.Contains(DarknessSideEast))
+}
+
+func (tile *Tile) HasSouthernWall() bool {
+    return (tile.Wall != nil && (tile.Wall.Contains(WallKindSouth))) ||
+           (tile.Fire != nil && tile.Fire.Contains(FireSideSouth)) ||
+           (tile.Darkness != nil && tile.Darkness.Contains(DarknessSideSouth))
+}
+
+func (tile *Tile) HasAnyWall() bool {
+    return (tile.Wall != nil && !tile.Wall.IsEmpty()) ||
+           (tile.Fire != nil && !tile.Fire.IsEmpty()) ||
+           (tile.Darkness != nil && !tile.Darkness.IsEmpty())
+}
+
 type CombatLandscape int
 
 const (
@@ -332,14 +350,6 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             }
         }
 
-        if zone.City.HasFortress() {
-            tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-                Lbx: "cmbtcity.lbx",
-                Index: 17,
-                Alignment: TileAlignBottom,
-            }
-        }
-
         if zone.City.HasWallOfFire() {
             createWallOfFire(tiles, TownCenterX, TownCenterY, 4, 0)
         }
@@ -353,6 +363,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         }
 
     } else {
+        // FIXME: maybe put these in the sorted list in the combat screen draw method
         switch zone.Encounter {
             case ZoneTower:
                 tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
@@ -2089,7 +2100,11 @@ func StartingLocation(team Team) (int, int) {
     return 0, 0
 }
 
-func (army *Army) LayoutUnits(team Team){
+type LegalLocation interface {
+    IsLegalLocation(x int, y int) bool
+}
+
+func (army *Army) LayoutUnits(team Team, legalLocation LegalLocation){
     x, y := StartingLocation(team)
     x -= 1
     rowDirection := -1
@@ -2113,20 +2128,29 @@ func (army *Army) LayoutUnits(team Team){
     offsetX := 0
 
     for _, unit := range army.units {
-        unit.X = x + offsetX
-        unit.Y = cy
-        unit.Facing = facing
+        accept := false
+        for !accept {
+            newX := x + offsetX
+            newY := cy
 
-        offsetX = -offsetX
-        if offsetX >= 0 {
-            offsetX += 1
-        }
+            if legalLocation.IsLegalLocation(newX, newY) {
+                unit.X = newX
+                unit.Y = newY
+                unit.Facing = facing
+                accept = true
+            }
 
-        row += 1
-        if row >= columns {
-            row = 0
-            offsetX = 0
-            cy += rowDirection
+            offsetX = -offsetX
+            if offsetX >= 0 {
+                offsetX += 1
+            }
+
+            row += 1
+            if row >= columns {
+                row = 0
+                offsetX = 0
+                cy += rowDirection
+            }
         }
     }
 }
@@ -2252,12 +2276,58 @@ func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingA
         Influence: influence,
     }
 
+    model.AttackingArmy.LayoutUnits(TeamAttacker, model)
+    model.DefendingArmy.LayoutUnits(TeamDefender, model)
+
     model.Initialize(allSpells, overworldX, overworldY)
 
     model.NextTurn()
     model.SelectedUnit = model.ChooseNextUnit(TeamDefender)
 
     return model
+}
+
+type TilePoint struct {
+    Tile *Tile
+    X int
+    Y int
+}
+
+func (model *CombatModel) WallTiles() []TilePoint {
+    var out []TilePoint
+    for dx := -4; dx <= 4; dx++ {
+        for dy := -4; dy <= 4; dy++ {
+            x := TownCenterX + dx
+            y := TownCenterY + dy
+
+            if model.IsInsideMap(x, y) {
+                tile := &model.Tiles[y][x]
+                if tile.HasAnyWall() {
+                    out = append(out, TilePoint{
+                        Tile: tile,
+                        X: x,
+                        Y: y,
+                    })
+                }
+            }
+        }
+    }
+
+    return out
+}
+
+func (model *CombatModel) IsLegalLocation(x int, y int) bool {
+    if model.ContainsWallTower(x, y) {
+        return false
+    }
+
+    if model.Zone.City != nil {
+        if x == TownCenterX && y == TownCenterY {
+            return false
+        }
+    }
+
+    return true
 }
 
 // do N rolls (n=strength) where each roll has 'chance' success. return number of successful rolls
@@ -2660,7 +2730,7 @@ func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTravers
                     // can't move through a city wall
                     if canMove && !canTraverseWall && model.InsideCityWall(cx, cy) != model.InsideCityWall(x, y) {
                         // FIXME: handle destroyed walls here
-                        if !model.IsCityWallGate(x, y) {
+                        if !model.IsCityWallGate(x, y) && !model.IsCityWallGate(cx, cy) {
                             canMove = false
                         }
                     }
@@ -3623,7 +3693,7 @@ func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     return true
 }
 
-func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
+func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit, considerWall bool) bool {
     if attacker == defender {
         return false
     }
@@ -3649,13 +3719,22 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
         return wall != nil && !wall.Contains(WallKindGate)
     }
 
+    containsGate := func(x int, y int) bool {
+        wall := model.Tiles[y][x].Wall
+        return wall != nil && wall.Contains(WallKindGate)
+    }
+
     // cannot attack through a wall
-    if model.InsideCityWall(attacker.X, attacker.Y) != model.InsideCityWall(defender.X, defender.Y) {
+    if considerWall && model.InsideCityWall(attacker.X, attacker.Y) != model.InsideCityWall(defender.X, defender.Y) {
         // if the attacker normally cannot move through the wall, then they can only attack if either the attacker or defender
         // is adjacent to the gate
         if !attacker.CanTraverseWall() {
             var insideWall *ArmyUnit
             var outsideWall *ArmyUnit
+
+            if containsGate(attacker.X, attacker.Y) || containsGate(defender.X, defender.Y) {
+                return true
+            }
 
             if model.InsideCityWall(attacker.X, attacker.Y) {
                 insideWall = attacker
@@ -3667,56 +3746,56 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
 
             // north
             if outsideWall.X == insideWall.X && outsideWall.Y + 1 == insideWall.Y {
-                if containsWall(outsideWall.X, outsideWall.Y + 1) {
+                if containsWall(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // north east
             if outsideWall.X + 1 == insideWall.X && outsideWall.Y + 1 == insideWall.Y {
-                if containsWall(attacker.X, attacker.Y + 1) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
+                if containsWall(insideWall.X, insideWall.Y) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // east
             if outsideWall.X + 1 == insideWall.X && outsideWall.Y == insideWall.Y {
-                if containsWall(outsideWall.X + 1, outsideWall.Y) {
+                if containsWall(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // south east
             if outsideWall.X + 1 == insideWall.X && outsideWall.Y - 1 == insideWall.Y {
-                if containsWall(outsideWall.X, outsideWall.Y - 1) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
+                if containsWall(insideWall.X, insideWall.Y) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // south
             if outsideWall.X == insideWall.X && outsideWall.Y - 1 == insideWall.Y {
-                if containsWall(outsideWall.X, outsideWall.Y - 1) {
+                if containsWall(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // south west
             if outsideWall.X - 1 == insideWall.X && outsideWall.Y - 1 == insideWall.Y {
-                if containsWall(outsideWall.X, outsideWall.Y - 1) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
+                if containsWall(insideWall.X, insideWall.Y) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // west
             if outsideWall.X - 1 == insideWall.X && outsideWall.Y == insideWall.Y {
-                if containsWall(outsideWall.X - 1, outsideWall.Y) {
+                if containsWall(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
 
             // north west
             if outsideWall.X - 1 == insideWall.X && outsideWall.Y + 1 == insideWall.Y {
-                if containsWall(outsideWall.X, outsideWall.Y + 1) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
+                if containsWall(insideWall.X, insideWall.Y) || model.ContainsWallTower(insideWall.X, insideWall.Y) {
                     return false
                 }
             }
@@ -4455,10 +4534,6 @@ func (model *CombatModel) DoAllUnitsSpell(army *Army, spell spellbook.Spell, tar
         units = model.DefendingArmy.units
     } else if army == model.AttackingArmy && targetKind == TargetFriend {
         units = model.AttackingArmy.units
-    }
-
-    model.Events <- &CombatPlaySound{
-        Sound: spell.Sound,
     }
 
     for _, unit := range units {
