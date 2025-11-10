@@ -350,16 +350,6 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             }
         }
 
-        /*
-        if zone.City.HasFortress() {
-            tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
-                Lbx: "cmbtcity.lbx",
-                Index: 17,
-                Alignment: TileAlignBottom,
-            }
-        }
-        */
-
         if zone.City.HasWallOfFire() {
             createWallOfFire(tiles, TownCenterX, TownCenterY, 4, 0)
         }
@@ -373,6 +363,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
         }
 
     } else {
+        // FIXME: maybe put these in the sorted list in the combat screen draw method
         switch zone.Encounter {
             case ZoneTower:
                 tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{

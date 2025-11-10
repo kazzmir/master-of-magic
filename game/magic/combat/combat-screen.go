@@ -2192,6 +2192,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                         player.UseMana(int(float64(spellCost) * army.Range.ToFloat()))
                         if success {
                             combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.GetWizard().Name, spell.Name))
+                            combat.PlaySound(spell)
                         }
                     })
                 }
@@ -2230,6 +2231,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                                     caster.Casted = true
                                     if success {
                                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
+                                        combat.PlaySound(spell)
                                     }
                                     caster.MovesLeft = fraction.FromInt(0)
                                     select {
@@ -4706,7 +4708,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         allDrawables = append(allDrawables, unitDrawable(unit))
     }
 
-    if combat.Model.Zone.City.HasFortress() {
+    if combat.Model.Zone.City != nil && combat.Model.Zone.City.HasFortress() {
         allDrawables = append(allDrawables, fortressDrawable())
     }
 
