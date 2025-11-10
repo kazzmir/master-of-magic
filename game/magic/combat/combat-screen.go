@@ -681,6 +681,7 @@ func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projec
         }
 
         combat.AddDamageIndicator(unit, damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -710,6 +711,7 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projecti
     explodeImages := images[3:]
 
     effect := func(unit *ArmyUnit) {
+        unit.TakeDamage(10, DamageNormal)
         combat.AddDamageIndicator(unit, 10)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
@@ -807,6 +809,7 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
         resistance := GetResistanceFor(unit, data.LifeMagic) - reduceResistance
         damage := rand.N(10) + 1 - resistance
         if damage > 0 {
+            unit.TakeDamage(damage, DamageUndead)
             combat.AddDamageIndicator(unit, damage)
             if unitCaster != nil {
                 unitCaster.Heal(damage)
@@ -1261,6 +1264,7 @@ func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit) *Projectil
         }
 
         // FIXME: do stoning damage, which is irreversable
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1384,6 +1388,7 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
         }
 
         combat.AddDamageIndicator(unit, damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1419,6 +1424,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projec
         }
 
         combat.AddDamageIndicator(unit, damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1442,6 +1448,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Proje
         }
 
         combat.AddDamageIndicator(unit, damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
@@ -1540,6 +1547,7 @@ func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResis
         }
 
         combat.AddDamageIndicator(unit, damage)
+        unit.TakeDamage(damage, DamageIrreversable)
         if unit.GetHealth() <= 0 {
             combat.Model.KillUnit(unit)
         }
