@@ -5994,6 +5994,119 @@ func createScenario65(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// town doesn't produce enough food for units, but has enough workers to rebalance
+func createScenario66(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 1")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Retorts: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+            data.RetortRunemaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, setup.NewGameSettings{LandSize: 0})
+
+    game.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+    player.Admin = true
+
+    player.TaxRate = fraction.Zero()
+
+    x, y, _ := game.FindValidCityLocation(game.Plane)
+
+    /*
+    x = 20
+    y = 20
+    */
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.Buildings.Insert(buildinglib.BuildingGranary)
+    city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
+    city.ProducingBuilding = buildinglib.BuildingBank
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 0
+    city.Workers = 16
+
+    city.ResetCitizens()
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 2600
+    player.CastingSkillPower = 10000
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    // log.Printf("City at %v, %v", x, y)
+
+    player.LiftFog(x, y, 30, data.PlaneArcanus)
+    player.LiftFog(x, y, 30, data.PlaneMyrror)
+
+    for i := 0; i < 9; i++ {
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    }
+
+    for i := 0; i < 9; i++ {
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    }
+
+
+    x, y, _ = game.FindValidCityLocation(game.Plane)
+
+    /*
+    x = 20
+    y = 20
+    */
+
+    city2 := citylib.MakeCity("City2", x, y, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
+    city2.Population = 8000
+    city2.Plane = data.PlaneArcanus
+    city2.ProducingBuilding = buildinglib.BuildingTradeGoods
+    city2.ProducingUnit = units.UnitNone
+    city2.Race = wizard.Race
+    city2.Farmers = 0
+    city2.Workers = 8
+
+    city2.ResetCitizens()
+
+    player.AddCity(city2)
+
+    // player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
+
+    /*
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
+    */
+
+    player.AddPowerHistory(playerlib.WizardPower{Army: 30, Magic: 4053, SpellResearch: 40})
+
+    // game.Camera.Center(stack.X(), stack.Y())
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -6065,10 +6178,13 @@ func NewEngine(scenario int) (*Engine, error) {
         case 63: game = createScenario63(cache)
         case 64: game = createScenario64(cache)
         case 65: game = createScenario65(cache)
+        case 66: game = createScenario66(cache)
         default: game = createScenario1(cache)
     }
 
-    game.DoNextTurn()
+    // game.DoNextTurn()
+    game.CurrentPlayer = 0
+    game.RefreshUI()
 
     run := func(yield coroutine.YieldFunc) error {
         for game.Update(yield) != gamelib.GameStateQuit {

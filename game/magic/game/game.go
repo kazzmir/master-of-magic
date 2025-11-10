@@ -7496,6 +7496,37 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     }
                 },
             })
+
+            foodAreaRect := image.Rect(245, 110, 245 + 69, 100 + 41)
+            elements = append(elements, &uilib.UIElement{
+                Rect: foodAreaRect,
+                /*
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    util.DrawRect(screen, scale.ScaleRect(foodAreaRect), color.RGBA{R: 255, A: 255})
+                },
+                */
+                LeftClick: func(this *uilib.UIElement){
+                    if foodPerTurn < 0 {
+                        if player.CanRebalanceFood() {
+                            yes := func(){
+                                player.RebalanceFood()
+                                game.RefreshUI()
+                            }
+                            no := func(){}
+
+                            ui.AddElements(uilib.MakeConfirmDialogWithLayer(ui, game.Cache, &game.ImageCache, 1, "Do you wish to rebalance food production?", true, yes, no))
+                        } else {
+                            message := GameEventNotice{
+                                Message: "There are no free workers to rebalance food production.",
+                            }
+                            select {
+                                case game.Events <- &message:
+                                default:
+                            }
+                        }
+                    }
+                },
+            })
         }
     }
 
