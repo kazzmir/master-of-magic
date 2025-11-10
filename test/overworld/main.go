@@ -6067,6 +6067,11 @@ func createScenario66(cache *lbx.LbxCache) *gamelib.Game {
         player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     }
 
+    for i := 0; i < 9; i++ {
+        player.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    }
+
+
     x, y, _ = game.FindValidCityLocation(game.Plane)
 
     /*

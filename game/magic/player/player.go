@@ -1584,13 +1584,16 @@ func (player *Player) CanRebalanceFood() bool {
     return false
 }
 
+// go through each city one at a time starting with the city with the most workers
+// and convert one worker to one farmer until eithere there are no more workers left
+// or food per turn becomes non-negative
 func (player *Player) RebalanceFood() {
     cities := slices.Collect(maps.Values(player.Cities))
 
     for player.FoodPerTurn() < 0 && len(cities) > 0 {
 
         // remove any cities with no workers
-        slices.DeleteFunc(cities, func (city *citylib.City) bool {
+        cities = slices.DeleteFunc(cities, func (city *citylib.City) bool {
             return city.Workers == 0
         })
 
@@ -1602,7 +1605,7 @@ func (player *Player) RebalanceFood() {
 
         for _, city := range cities {
             city.ConvertWorkerToFarmer()
-            fmt.Printf("Converted worker to farmer in city %v. Farmers=%v Workers=%v. Food per turn is now %v\n", city.Name, city.Farmers, city.Workers, player.FoodPerTurn())
+            // fmt.Printf("Converted worker to farmer in city %v. Farmers=%v Workers=%v. Food per turn is now %v\n", city.Name, city.Farmers, city.Workers, player.FoodPerTurn())
 
             // stop as soon as food per turn is non-negative
             if player.FoodPerTurn() >= 0 {
