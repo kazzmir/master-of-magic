@@ -350,6 +350,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
             }
         }
 
+        /*
         if zone.City.HasFortress() {
             tiles[TownCenterY][TownCenterX].ExtraObject = TileTop{
                 Lbx: "cmbtcity.lbx",
@@ -357,6 +358,7 @@ func makeTiles(width int, height int, landscape CombatLandscape, plane data.Plan
                 Alignment: TileAlignBottom,
             }
         }
+        */
 
         if zone.City.HasWallOfFire() {
             createWallOfFire(tiles, TownCenterX, TownCenterY, 4, 0)
@@ -2141,8 +2143,8 @@ func (army *Army) LayoutUnits(team Team, legalLocation LegalLocation){
             newY := cy
 
             if legalLocation.IsLegalLocation(newX, newY) {
-                unit.X = x + offsetX
-                unit.Y = cy
+                unit.X = newX
+                unit.Y = newY
                 unit.Facing = facing
                 accept = true
             }
@@ -2326,6 +2328,12 @@ func (model *CombatModel) WallTiles() []TilePoint {
 func (model *CombatModel) IsLegalLocation(x int, y int) bool {
     if model.ContainsWallTower(x, y) {
         return false
+    }
+
+    if model.Zone.City != nil {
+        if x == TownCenterX && y == TownCenterY {
+            return false
+        }
     }
 
     return true

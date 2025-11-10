@@ -4356,12 +4356,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         scale.DrawScaled(screen, clouds, &options)
     }
 
-    // then draw extra stuff on top
-    for _, point := range combat.TopDownOrder {
-        x := point.X
-        y := point.Y
-
-        extra := combat.Model.Tiles[y][x].ExtraObject
+    drawExtraObject := func(x int, y int, extra TileTop) {
         if extra.Drawer != nil {
             options.GeoM.Reset()
             tx, ty := tilePosition(float64(x), float64(y))
@@ -4398,6 +4393,15 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
 
             // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         }
+    }
+
+    // then draw extra stuff on top
+    for _, point := range combat.TopDownOrder {
+        x := point.X
+        y := point.Y
+
+        extra := combat.Model.Tiles[y][x].ExtraObject
+        drawExtraObject(x, y, extra)
     }
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.NRGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.NRGBA{R: 0, G: 0xef, B: 0xff, A: 255})
@@ -4671,6 +4675,26 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         }
     }
 
+    fortressDrawable := func() Drawable {
+        extra := TileTop{
+            Lbx: "cmbtcity.lbx",
+            Index: 17,
+            Alignment: TileAlignBottom,
+        }
+
+        return Drawable{
+            GetX: func() float64 {
+                return float64(TownCenterX)
+            },
+            GetY: func() float64 {
+                return float64(TownCenterY)
+            },
+            Render: func() {
+                drawExtraObject(TownCenterX, TownCenterY, extra)
+            },
+        }
+    }
+
     // sort units in top down order before drawing them
     allDrawables := make([]Drawable, 0, len(combat.Model.DefendingArmy.units) + len(combat.Model.AttackingArmy.units) + 100)
 
@@ -4682,22 +4706,18 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         allDrawables = append(allDrawables, unitDrawable(unit))
     }
 
-    /*
-    allUnits := make([]*ArmyUnit, 0, len(combat.Model.DefendingArmy.units) + len(combat.Model.AttackingArmy.units))
-    allUnits = append(allUnits, combat.Model.DefendingArmy.units...)
-    allUnits = append(allUnits, combat.Model.AttackingArmy.units...)
-    */
+    if combat.Model.Zone.City.HasFortress() {
+        allDrawables = append(allDrawables, fortressDrawable())
+    }
 
     for _, unit := range combat.Model.AttackingArmy.KilledUnits {
         if unit.LostUnitsTime > 0 {
-            // allUnits = append(allUnits, unit)
             allDrawables = append(allDrawables, unitDrawable(unit))
         }
     }
 
     for _, unit := range combat.Model.DefendingArmy.KilledUnits {
         if unit.LostUnitsTime > 0 {
-            // allUnits = append(allUnits, unit)
             allDrawables = append(allDrawables, unitDrawable(unit))
         }
     }
@@ -4707,11 +4727,6 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
     }
 
     compareDrawable := func(drawA Drawable, drawB Drawable) int {
-        /*
-        ax, ay := tilePosition(float64(unitA.X), float64(unitA.Y))
-        bx, by := tilePosition(float64(unitB.X), float64(unitB.Y))
-        */
-
         ax, ay := tilePosition(drawA.GetX(), drawA.GetY())
         bx, by := tilePosition(drawB.GetX(), drawB.GetY())
 
@@ -4738,7 +4753,6 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
 
     for _, drawable := range allDrawables {
         drawable.Render()
-        // renderUnit(unit)
     }
 
     for _, unit := range combat.Model.OtherUnits {
