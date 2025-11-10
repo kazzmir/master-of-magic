@@ -519,7 +519,8 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(defendingPlayer)
     // defendingArmy := createSettlerArmy(defendingPlayer, 3)
-    defendingArmy := createLizardmenArmy(defendingPlayer, 1)
+    // defendingArmy := createLizardmenArmy(defendingPlayer, 1)
+    defendingArmy := createArmyN(defendingPlayer, units.StagBeetle, 1)
 
     defendingPlayer.CastingSkillPower = 10000
     defendingPlayer.Mana = 10000
@@ -548,7 +549,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Darkness"))
 
-    attackingArmy := createArmyN(attackingPlayer, units.StagBeetle, 1)
+    attackingArmy := createArmyN(attackingPlayer, units.LizardSwordsmen, 3)
     // attackingArmy := createGreatDrakeArmy(attackingPlayer, 1)
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcCavalry, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()))
     // attackingArmy := createWeakArmy(attackingPlayer)
