@@ -1572,3 +1572,42 @@ func (player *Player) GetAllCatchmentArea() *set.Set[data.PlanePoint] {
 
     return catchment
 }
+
+// true if there are any workers that can be converted into farmers
+func (player *Player) CanRebalanceFood() bool {
+    for _, city := range player.Cities {
+        if city.Workers > 0 {
+            return true
+        }
+    }
+
+    return false
+}
+
+func (player *Player) RebalanceFood() {
+    cities := slices.Collect(maps.Values(player.Cities))
+
+    for player.FoodPerTurn() < 0 && len(cities) > 0 {
+
+        // remove any cities with no workers
+        slices.DeleteFunc(cities, func (city *citylib.City) bool {
+            return city.Workers == 0
+        })
+
+        // sort cities so that we operate on cities with the most workers first
+        slices.SortFunc(cities, func (a, b *citylib.City) int {
+            // negate for descending order
+            return -cmp.Compare(a.Workers, b.Workers)
+        })
+
+        for _, city := range cities {
+            city.ConvertWorkerToFarmer()
+            fmt.Printf("Converted worker to farmer in city %v. Farmers=%v Workers=%v. Food per turn is now %v\n", city.Name, city.Farmers, city.Workers, player.FoodPerTurn())
+
+            // stop as soon as food per turn is non-negative
+            if player.FoodPerTurn() >= 0 {
+                break
+            }
+        }
+    }
+}
