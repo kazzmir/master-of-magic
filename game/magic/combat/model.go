@@ -4536,10 +4536,6 @@ func (model *CombatModel) DoAllUnitsSpell(army *Army, spell spellbook.Spell, tar
         units = model.AttackingArmy.units
     }
 
-    model.Events <- &CombatPlaySound{
-        Sound: spell.Sound,
-    }
-
     for _, unit := range units {
         if canTarget(unit){
             onTarget(unit)
