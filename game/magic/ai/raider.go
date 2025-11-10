@@ -448,7 +448,7 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
         if makeUnit {
             decisions = append(decisions, &playerlib.AICreateUnitDecision{
                 // FIXME: use some sort of budget for the unit so that mostly low level units are created early in the game
-                Unit: units.ChooseRandomUnit(player.Wizard.Race),
+                Unit: units.ChooseRandomUnit(city.Race),
                 X: city.X,
                 Y: city.Y,
                 Plane: city.Plane,
