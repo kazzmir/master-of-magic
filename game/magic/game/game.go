@@ -122,6 +122,10 @@ type GameEventHistorian struct {
 type GameEventCastSpellBook struct {
 }
 
+type GameEventBuildRoad struct {
+    Stack *playerlib.UnitStack
+}
+
 type GameEventNotice struct {
     Message string
 }
@@ -3091,6 +3095,11 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         if runUI.Song != music.SongNone {
                             game.Music.PopSong()
                         }
+                    case *GameEventBuildRoad:
+                        road := event.(*GameEventBuildRoad)
+                        stack := road.Stack
+
+                        game.ShowRoadBuilder(yield, stack)
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)
                     case *GameEventSurveyor:
@@ -6284,40 +6293,61 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             powers = computeUnitBuildPowers(player.SelectedStack)
         }
 
+        // if a stack has multiple units with different build powers, only do the first legal one found
+
         if powers.CreateOutpost {
             // search for the settlers (the only unit with the create outpost ability
             for _, settlers := range player.SelectedStack.ActiveUnits() {
                 if game.IsSettlableLocation(settlers.GetX(), settlers.GetY(), settlers.GetPlane()) && settlers.HasAbility(data.AbilityCreateOutpost) {
                     game.CreateOutpost(settlers, player)
                     game.RefreshUI()
-                    break
+                    return
                 }
             }
-        } else if powers.Meld {
+        }
+
+        if powers.Meld {
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
-            for _, melder := range player.SelectedStack.ActiveUnits() {
-                if melder.HasAbility(data.AbilityMeld) && !node.Warped {
-                    game.DoMeld(melder, player, node)
-                    game.RefreshUI()
-                    break
+            if node != nil {
+                for _, melder := range player.SelectedStack.ActiveUnits() {
+                    if melder.HasAbility(data.AbilityMeld) && !node.Warped {
+                        game.DoMeld(melder, player, node)
+                        game.RefreshUI()
+                        return
+                    }
                 }
             }
-        } else if powers.Purify {
+        }
 
-            for _, unit := range player.SelectedStack.ActiveUnits() {
-                if unit.HasAbility(data.AbilityPurify) {
-                    unit.SetBusy(units.BusyStatusPurify)
-                    unit.SetMovesLeft(true, fraction.Zero())
+        if powers.Purify {
+
+            tile := game.GetMap(player.SelectedStack.Plane()).GetTile(player.SelectedStack.X(), player.SelectedStack.Y())
+            if tile.Corrupted() {
+                for _, unit := range player.SelectedStack.ActiveUnits() {
+                    if unit.HasAbility(data.AbilityPurify) {
+                        unit.SetBusy(units.BusyStatusPurify)
+                        unit.SetMovesLeft(true, fraction.Zero())
+                    }
                 }
+
+                player.SelectedStack.EnableMovers()
+
+                // player.SelectedStack.ExhaustMoves()
+                game.RefreshUI()
+                return
             }
 
-            player.SelectedStack.EnableMovers()
+        }
 
-            // player.SelectedStack.ExhaustMoves()
-            game.RefreshUI()
+        if powers.BuildRoad {
 
-        } else if powers.BuildRoad {
+            // ask the user to confirm where to build the road
+            select {
+                case game.Events <- &GameEventBuildRoad{Stack: player.SelectedStack}:
+                default:
+            }
 
+            /*
             for _, unit := range player.SelectedStack.ActiveUnits() {
                 if unit.HasAbility(data.AbilityConstruction) {
                     unit.SetBusy(units.BusyStatusBuildRoad)
@@ -6328,6 +6358,8 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             player.SelectedStack.EnableMovers()
 
             // player.SelectedStack.ExhaustMoves()
+            game.RefreshUI()
+            */
             game.RefreshUI()
         }
     }
