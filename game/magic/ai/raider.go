@@ -106,8 +106,8 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                     // log.Printf("ai stack %v found enemy city %v", stack, city)
 
                     path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
-                    if path != nil {
-                        if currentPath == nil {
+                    if len(path) > 0 {
+                        if len(currentPath) == 0 {
                             currentPath = path
                         } else {
                             if len(path) < len(currentPath) {
