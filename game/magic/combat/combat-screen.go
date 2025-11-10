@@ -4398,8 +4398,6 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
 
             // vector.DrawFilledCircle(screen, float32(tx), float32(ty), 2, color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         }
-
-        combat.DrawWall(screen, x, y, tilePosition, animationIndex)
     }
 
     combat.DrawHighlightedTile(screen, combat.MouseTileX, combat.MouseTileY, &useMatrix, color.NRGBA{R: 0, G: 0x67, B: 0x78, A: 255}, color.NRGBA{R: 0, G: 0xef, B: 0xff, A: 255})
@@ -4468,7 +4466,8 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         }
     }
 
-    renderUnit := func(unit *ArmyUnit, unitOptions ebiten.DrawImageOptions){
+    renderUnit := func(unit *ArmyUnit) {
+        var unitOptions ebiten.DrawImageOptions
         banner := unit.Unit.GetBanner()
         combatImages, _ := combat.ImageCache.GetImagesTransform(unit.Unit.GetCombatLbxFile(), unit.Unit.GetCombatIndex(unit.Facing), banner.String(), units.MakeUpdateUnitColorsFunc(banner))
 
@@ -4630,37 +4629,91 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         }
     }
 
-    // sort units in top down order before drawing them
-    allUnits := make([]*ArmyUnit, 0, len(combat.Model.DefendingArmy.units) + len(combat.Model.AttackingArmy.units))
+    type Drawable struct {
+        GetY func() float64
+        GetX func() float64
+        Render func()
+    }
 
+    unitDrawable := func(unit *ArmyUnit) Drawable {
+        return Drawable{
+            GetX: func() float64 {
+                return float64(unit.X)
+            },
+            GetY: func() float64 {
+                return float64(unit.Y)
+            },
+            Render: func() {
+                renderUnit(unit)
+            },
+        }
+    }
+
+    wallDrawable := func(tile TilePoint) Drawable {
+        var offset float64 = 0
+
+        if tile.Tile.HasEasternWall() || tile.Tile.HasSouthernWall() {
+            offset += 0.1
+        } else {
+            offset -= 0.1
+        }
+
+        return Drawable{
+            GetX: func() float64 {
+                return float64(tile.X)
+            },
+            GetY: func() float64 {
+                return float64(tile.Y) + offset
+            },
+            Render: func() {
+                combat.DrawWall(screen, tile.X, tile.Y, tilePosition, animationIndex)
+            },
+        }
+    }
+
+    // sort units in top down order before drawing them
+    allDrawables := make([]Drawable, 0, len(combat.Model.DefendingArmy.units) + len(combat.Model.AttackingArmy.units) + 100)
+
+    for _, unit := range combat.Model.AttackingArmy.units {
+        allDrawables = append(allDrawables, unitDrawable(unit))
+    }
+
+    for _, unit := range combat.Model.DefendingArmy.units {
+        allDrawables = append(allDrawables, unitDrawable(unit))
+    }
+
+    /*
+    allUnits := make([]*ArmyUnit, 0, len(combat.Model.DefendingArmy.units) + len(combat.Model.AttackingArmy.units))
     allUnits = append(allUnits, combat.Model.DefendingArmy.units...)
     allUnits = append(allUnits, combat.Model.AttackingArmy.units...)
+    */
 
     for _, unit := range combat.Model.AttackingArmy.KilledUnits {
         if unit.LostUnitsTime > 0 {
-            allUnits = append(allUnits, unit)
+            // allUnits = append(allUnits, unit)
+            allDrawables = append(allDrawables, unitDrawable(unit))
         }
     }
 
     for _, unit := range combat.Model.DefendingArmy.KilledUnits {
         if unit.LostUnitsTime > 0 {
-            allUnits = append(allUnits, unit)
+            // allUnits = append(allUnits, unit)
+            allDrawables = append(allDrawables, unitDrawable(unit))
         }
     }
 
-    /*
-    for _, unit := range combat.Model.DefendingArmy.units {
-        allUnits = append(allUnits, unit)
+    for _, tile := range combat.Model.WallTiles() {
+        allDrawables = append(allDrawables, wallDrawable(tile))
     }
 
-    for _, unit := range combat.Model.AttackingArmy.units {
-        allUnits = append(allUnits, unit)
-    }
-    */
-
-    compareUnit := func(unitA *ArmyUnit, unitB *ArmyUnit) int {
+    compareDrawable := func(drawA Drawable, drawB Drawable) int {
+        /*
         ax, ay := tilePosition(float64(unitA.X), float64(unitA.Y))
         bx, by := tilePosition(float64(unitB.X), float64(unitB.Y))
+        */
+
+        ax, ay := tilePosition(drawA.GetX(), drawA.GetY())
+        bx, by := tilePosition(drawB.GetX(), drawB.GetY())
 
         if ay < by {
             return -1
@@ -4679,14 +4732,13 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         }
 
         return 0
-
     }
 
-    slices.SortFunc(allUnits, compareUnit)
+    slices.SortFunc(allDrawables, compareDrawable)
 
-    for _, unit := range allUnits {
-        var options ebiten.DrawImageOptions
-        renderUnit(unit, options)
+    for _, drawable := range allDrawables {
+        drawable.Render()
+        // renderUnit(unit)
     }
 
     for _, unit := range combat.Model.OtherUnits {
@@ -4703,6 +4755,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         scale.DrawScaled(screen, frame, &unitOptions)
     }
 
+    /*
     for _, gib := range combat.Gibs {
         var gibOptions ebiten.DrawImageOptions
 
@@ -4722,6 +4775,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
 
         scale.DrawScaled(screen, gib.Image, &gibOptions)
     }
+    */
 
     if combat.ExtraHighlightedUnit != nil {
         getTilePoints := func(x int, y int) ([]image.Point){

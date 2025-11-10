@@ -519,7 +519,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
 
     // defendingArmy := createWarlockArmy(defendingPlayer)
     // defendingArmy := createSettlerArmy(defendingPlayer, 3)
-    defendingArmy := createLizardmenArmy(defendingPlayer, 3)
+    defendingArmy := createLizardmenArmy(defendingPlayer, 8)
 
     defendingPlayer.CastingSkillPower = 10000
     defendingPlayer.Mana = 10000

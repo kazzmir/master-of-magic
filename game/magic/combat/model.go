@@ -211,6 +211,24 @@ type Tile struct {
     InsideWall bool
 }
 
+func (tile *Tile) HasEasternWall() bool {
+    return (tile.Wall != nil && (tile.Wall.Contains(WallKindEast) || tile.Wall.Contains(WallKindGate))) ||
+           (tile.Fire != nil && tile.Fire.Contains(FireSideEast)) ||
+           (tile.Darkness != nil && tile.Darkness.Contains(DarknessSideEast))
+}
+
+func (tile *Tile) HasSouthernWall() bool {
+    return (tile.Wall != nil && (tile.Wall.Contains(WallKindSouth))) ||
+           (tile.Fire != nil && tile.Fire.Contains(FireSideSouth)) ||
+           (tile.Darkness != nil && tile.Darkness.Contains(DarknessSideSouth))
+}
+
+func (tile *Tile) HasAnyWall() bool {
+    return (tile.Wall != nil && !tile.Wall.IsEmpty()) ||
+           (tile.Fire != nil && !tile.Fire.IsEmpty()) ||
+           (tile.Darkness != nil && !tile.Darkness.IsEmpty())
+}
+
 type CombatLandscape int
 
 const (
@@ -2274,6 +2292,35 @@ func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingA
     model.SelectedUnit = model.ChooseNextUnit(TeamDefender)
 
     return model
+}
+
+type TilePoint struct {
+    Tile *Tile
+    X int
+    Y int
+}
+
+func (model *CombatModel) WallTiles() []TilePoint {
+    var out []TilePoint
+    for dx := -4; dx <= 4; dx++ {
+        for dy := -4; dy <= 4; dy++ {
+            x := TownCenterX + dx
+            y := TownCenterY + dy
+
+            if model.IsInsideMap(x, y) {
+                tile := &model.Tiles[y][x]
+                if tile.HasAnyWall() {
+                    out = append(out, TilePoint{
+                        Tile: tile,
+                        X: x,
+                        Y: y,
+                    })
+                }
+            }
+        }
+    }
+
+    return out
 }
 
 func (model *CombatModel) IsLegalLocation(x int, y int) bool {
