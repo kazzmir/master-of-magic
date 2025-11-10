@@ -598,6 +598,16 @@ func (city *City) ResetCitizens() {
     city.UpdateUnrest()
 }
 
+func (city *City) ConvertWorkerToFarmer() bool {
+    if city.Workers > 0 {
+        city.Workers -= 1
+        city.Farmers += 1
+        return true
+    }
+
+    return false
+}
+
 /* FIXME: take enchantments into account
  * https://masterofmagic.fandom.com/wiki/Farmer
  */
