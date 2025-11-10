@@ -150,7 +150,6 @@ type DeathAnimationType int
 const (
     DeathAnimationNone DeathAnimationType = iota
     DeathColorFade
-    DeathAnimationGibs
 )
 
 const (
@@ -233,7 +232,6 @@ type CombatScreen struct {
     // ScreenToTile ebiten.GeoM
     MouseState MouseState
 
-    // creating gibs and be optional
     DeathAnimation DeathAnimationType
 
     CameraScale float64
@@ -4546,28 +4544,6 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
 
         scale.DrawScaled(screen, frame, &unitOptions)
     }
-
-    /*
-    for _, gib := range combat.Gibs {
-        var gibOptions ebiten.DrawImageOptions
-
-        if gib.Life < 10 {
-            gibOptions.ColorScale.ScaleAlpha(float32(gib.Life) / 10)
-        }
-
-        gibOptions.GeoM.Translate(float64(-gib.Image.Bounds().Dx()/2), float64(-gib.Image.Bounds().Dy()/2))
-        gibOptions.GeoM.Rotate(gib.Rotation)
-
-        gibOptions.GeoM.Translate(0, float64(tile0.Bounds().Dy()/2))
-        gibOptions.GeoM.Translate(float64(gib.OffsetX), float64(gib.OffsetY - gib.Z))
-
-        tx, ty := tilePosition(float64(gib.X), float64(gib.Y))
-        gibOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
-        gibOptions.GeoM.Translate(tx, ty)
-
-        scale.DrawScaled(screen, gib.Image, &gibOptions)
-    }
-    */
 
     if combat.ExtraHighlightedUnit != nil {
         getTilePoints := func(x int, y int) ([]image.Point){
