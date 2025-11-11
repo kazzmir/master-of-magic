@@ -991,35 +991,40 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
         game.GetMap(plane).DrawMinimap(screen, use, x, y, 1, player.GetFog(plane), counter, false)
     }
 
-    var showCity *citylib.City
-    selectCity := func(city *citylib.City){
-        // ignore outpost
-        if city.Citizens() >= 1 {
-            showCity = city
+    quit := false
+    for !quit {
+        var showCity *citylib.City
+        selectCity := func(city *citylib.City){
+            // ignore outpost
+            if city.Citizens() >= 1 {
+                showCity = city
+            }
+            game.Plane = city.Plane
+            game.Camera.Center(city.X, city.Y)
         }
-        game.Plane = city.Plane
-        game.Camera.Center(city.X, city.Y)
-    }
 
-    view := citylistview.MakeCityListScreen(game.Cache, game.Players[0], drawMinimap, selectCity)
+        view := citylistview.MakeCityListScreen(game.Cache, game.Players[0], drawMinimap, selectCity)
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        view.Draw(screen)
-    }
+        game.Drawer = func (screen *ebiten.Image, game *Game){
+            view.Draw(screen)
+        }
 
-    for view.Update() == citylistview.CityListScreenStateRunning {
+        for view.Update() == citylistview.CityListScreenStateRunning {
+            yield()
+        }
+
+        // absorb most recent left click
+        yield()
+
+        if showCity != nil {
+            game.doCityScreen(yield, showCity, game.Players[0], buildinglib.BuildingNone)
+        } else {
+            quit = true
+        }
+
+        // absorb last click
         yield()
     }
-
-    // absorb most recent left click
-    yield()
-
-    if showCity != nil {
-        game.doCityScreen(yield, showCity, game.Players[0], buildinglib.BuildingNone)
-    }
-
-    // absorb last click
-    yield()
 
     game.RefreshUI()
 }
