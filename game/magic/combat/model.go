@@ -5215,6 +5215,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                             Select: func (target *ArmyUnit){
                                 doRaiseDead(target)
                             },
+                            Army: army,
                         }
                     }
                 }
@@ -5286,6 +5287,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                             doAnimateDead(target)
                             castedCallback(true)
                         },
+                        Army: army,
                     }
                 }
             } else {

@@ -1026,6 +1026,77 @@ func makeScenario14(cache *lbx.LbxCache) *combat.CombatScreen {
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, defendingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: city}, data.MagicNone, 0, 0)
 }
 
+// a bunch of weak units, which force the AI to cast reanimate dead
+func makeScenario15(cache *lbx.LbxCache) *combat.CombatScreen {
+    defendingPlayer := player.MakePlayer(setup.WizardCustom{
+            Name: "Lair",
+            Banner: data.BannerBrown,
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+    // defendingArmy := createWarlockArmy(&defendingPlayer)
+    // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
+    defendingArmy := createArmyN(defendingPlayer, units.Hydra, 1)
+
+    /*
+    defendingArmy.AddEnchantment(data.CombatEnchantmentCounterMagic)
+    defendingArmy.CounterMagic = 50
+    */
+
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        log.Printf("Unable to read spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+
+    attackingPlayer := player.MakePlayer(setup.WizardCustom{
+            Name: "Merlin",
+            Banner: data.BannerGreen,
+            Books: []data.WizardBook{
+                data.WizardBook{
+                    Magic: data.ChaosMagic,
+                    Count: 8,
+                },
+            },
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
+
+    fortressCity := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, &BasicCatchment{}, nil, attackingPlayer)
+    fortressCity.Buildings.Insert(buildinglib.BuildingFortress)
+    attackingPlayer.AddCity(fortressCity)
+
+    attackingPlayer.CastingSkillPower = 10000
+    attackingPlayer.Mana = 1000
+
+    // attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
+
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Animate Dead"))
+
+    // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
+    attackingArmy := createArmyN(attackingPlayer, units.LizardSwordsmen, 8)
+    // attackingArmy := createArmyN(attackingPlayer, units.HighElfMagician, 4)
+
+    /*
+    for range 2 {
+        attackingArmy.KillUnit(attackingArmy.GetUnits()[0])
+    }
+
+    attackingArmy.GetUnits()[0].TakeDamage(2, combat.DamageIrreversable)
+    attackingArmy.GetUnits()[1].TakeDamage(2, combat.DamageNormal)
+    */
+
+    /*
+    attackingArmy.GetUnits()[0].AddEnchantment(data.UnitEnchantmentTrueSight)
+    attackingArmy.GetUnits()[1].Unit.AddEnchantment(data.UnitEnchantmentLionHeart)
+    */
+
+    // attackingArmy.Units[0].AddCurse(data.UnitCurseConfusion)
+
+    // return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
+    combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25)
+
+    // combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
+    return combatScreen
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -1046,6 +1117,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 12: combatScreen = makeScenario12(cache)
         case 13: combatScreen = makeScenario13(cache)
         case 14: combatScreen = makeScenario14(cache)
+        case 15: combatScreen = makeScenario15(cache)
         default: combatScreen = makeScenario1(cache)
     }
 
