@@ -3,6 +3,7 @@ package game
 import (
     "fmt"
     "image"
+    "math"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     // "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -20,7 +21,33 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
 )
 
-func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *playerlib.UnitStack) {
+func (game *Game) ComputeRoadTime(path []image.Point, stack *playerlib.UnitStack) int {
+    turns := float64(0)
+
+    engineerCount := 0
+    for _, unit := range stack.Units() {
+        if unit.HasAbility(data.AbilityConstruction) {
+            engineerCount += 1
+
+            if unit.GetRace() == data.RaceDwarf {
+                engineerCount += 1
+            }
+
+            if unit.HasEnchantment(data.UnitEnchantmentEndurance) {
+                engineerCount += 1
+            }
+        }
+    }
+
+    for _, point := range path {
+        work := game.ComputeRoadBuildEffort(point.X, point.Y, stack.Plane())
+        turns += work.TotalWork / math.Pow(work.WorkPerEngineer, float64(engineerCount))
+    }
+
+    return int(turns)
+}
+
+func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *playerlib.UnitStack, player *playerlib.Player) {
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
@@ -76,7 +103,9 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
 
     cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
 
-    roadTurns := 1
+    currentPath := []image.Point{image.Pt(engineerStack.X(), engineerStack.Y())}
+
+    roadTurns := game.ComputeRoadTime(currentPath, engineerStack)
 
     ui := &uilib.UI{
         Cache: game.Cache,
@@ -195,9 +224,10 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
             if leftClick && selectedPoint != newPoint {
                 selectedPoint = newPoint
 
-                tile := game.CurrentMap().GetTile(newX, newY)
-                switch tile.Tile.TerrainType() {
-                    default: roadTurns = 5
+                newPath := game.FindPath(engineerStack.X(), engineerStack.Y(), newX, newY, player, engineerStack, player.GetFog(engineerStack.Plane()))
+
+                if len(newPath) > 0 {
+                    roadTurns = game.ComputeRoadTime(newPath, engineerStack)
                 }
             }
         }

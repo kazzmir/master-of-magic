@@ -3104,7 +3104,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         road := event.(*GameEventBuildRoad)
                         stack := road.Stack
 
-                        game.ShowRoadBuilder(yield, stack)
+                        game.ShowRoadBuilder(yield, stack, game.Players[0])
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)
                     case *GameEventSurveyor:
@@ -6373,16 +6373,13 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
     }
 }
 
-// find all engineers that are currently building a road
-// compute the work done by each engineer according to the terrain
-//   total work = work per engineer ^ engineers building on that tile
-// add total work to some counter, and when that total reaches the threshold for the terrain type
-// then set a road on that tile and make the engineers no longer busy
-func (game *Game) DoBuildRoads(player *playerlib.Player) {
-    type RoadWork struct {
-        WorkPerEngineer float64
-        TotalWork float64
-    }
+type RoadWork struct {
+    WorkPerEngineer float64
+    TotalWork float64
+}
+
+// returns how many turns it takes to build a road on the given tile with the given stack
+func (game *Game) ComputeRoadBuildEffort(x int, y int, plane data.Plane) RoadWork {
 
     computeWork := func (oneEngineerTurn int, twoEngineerTurn int) RoadWork {
         workPerEngineer := float64(oneEngineerTurn) / float64(twoEngineerTurn)
@@ -6404,6 +6401,17 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
     work[terrain.NatureNode] = computeWork(5, 2)
     work[terrain.SorceryNode] = computeWork(4, 2)
 
+    tile := game.GetMap(plane).GetTile(x, y)
+
+    return work[tile.Tile.TerrainType()]
+}
+
+// find all engineers that are currently building a road
+// compute the work done by each engineer according to the terrain
+//   total work = work per engineer ^ engineers building on that tile
+// add total work to some counter, and when that total reaches the threshold for the terrain type
+// then set a road on that tile and make the engineers no longer busy
+func (game *Game) DoBuildRoads(player *playerlib.Player) {
     arcanusBuilds := make(map[image.Point]struct{})
     myrrorBuilds := make(map[image.Point]struct{})
 
@@ -6438,7 +6446,7 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
                 amount = 0
             }
 
-            tileWork := work[game.GetMap(plane).GetTile(x, y).Tile.TerrainType()]
+            tileWork := game.ComputeRoadBuildEffort(x, y, plane) // just to get the work map
 
             amount += math.Pow(tileWork.WorkPerEngineer, float64(engineerCount))
             // log.Printf("  amount is now %v. total work is %v", amount, tileWork.TotalWork)
