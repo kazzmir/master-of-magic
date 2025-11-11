@@ -1,7 +1,7 @@
 package game
 
 import (
-    _ "fmt"
+    "fmt"
     "image"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
@@ -74,17 +74,9 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
 
     selectedPoint := image.Pt(-1, -1)
 
-    var cityInfoText font.WrappedText
-    type Resources struct {
-        Enabled bool
-        MaximumPopulation int
-        ProductionBonus int
-        GoldBonus int
-    }
-
-    var resources Resources
-
     cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
+
+    roadTurns := 1
 
     ui := &uilib.UI{
         Cache: game.Cache,
@@ -107,6 +99,8 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
 
             fonts.SurveyorFont.PrintCenter(screen, float64(280), float64(81), scale.ScaleAmount, ebiten.ColorScale{}, "Road")
             fonts.SurveyorFont.PrintCenter(screen, float64(280), float64(81 + fonts.SurveyorFont.Height()), scale.ScaleAmount, ebiten.ColorScale{}, "Building")
+
+            fonts.YellowFont.PrintWrap(screen, float64(249), float64(110), 68, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("It will take %d turns to complete the construction of this road.", roadTurns))
         },
     }
 
@@ -196,32 +190,16 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
                 game.doMoveCamera(yield, newX, newY)
             }
 
-            if selectedPoint != newPoint {
-                selectedPoint = newPoint
-                resources.Enabled = false
+            leftClick := inputmanager.LeftClick()
 
-                text := ""
+            if leftClick && selectedPoint != newPoint {
+                selectedPoint = newPoint
 
                 tile := game.CurrentMap().GetTile(newX, newY)
-
-                if !tile.Tile.IsLand() {
-                    text = "Cannot build cities on water."
-                } else if cityMap[newPoint] == nil && game.NearCity(newPoint, 3, game.Plane) {
-                    text = "Cities cannot be built less than 3 squares from any other city."
-                } else {
-                    text = "City Resources"
-                    resources.Enabled = true
-                    // FIXME: compute proper values for these
-                    resources.MaximumPopulation = game.ComputeMaximumPopulation(newX, newY, game.Plane)
-                    resources.ProductionBonus = game.CityProductionBonus(newX, newY, game.Plane)
-                    resources.GoldBonus = game.CityGoldBonus(newX, newY, game.Plane)
+                switch tile.Tile.TerrainType() {
+                    default: roadTurns = 5
                 }
-
-                cityInfoText = fonts.YellowFont.CreateWrappedText(float64(cancelBackground.Bounds().Dx() - 9), 1, text)
             }
-        } else {
-            cityInfoText.Clear()
-            resources.Enabled = false
         }
 
         yield()
