@@ -5153,6 +5153,9 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
             return out
         }
 
+        // cannot find the last spell in treasure
+        allSpells.RemoveSpell(allSpells.FindByName("Spell of Mastery"))
+
         treasure := makeTreasure(game.Cache, encounterType, budget, player.Wizard, player.KnownSpells, allSpells, heroes, makeArtifacts)
         // FIXME: show treasure ui for human, otherwise just apply treasure for AI
         select {
