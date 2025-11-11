@@ -230,13 +230,25 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
 
             leftClick := inputmanager.LeftClick()
 
-            if leftClick && selectedPoint != newPoint && player.IsExplored(newX, newY, engineerStack.Plane()) {
+            if leftClick && selectedPoint != newPoint {
                 selectedPoint = newPoint
 
                 newPath := game.FindPath(engineerStack.X(), engineerStack.Y(), newX, newY, player, engineerStack, player.GetFog(engineerStack.Plane()))
 
                 if len(newPath) > 0 {
-                    roadTurns = game.ComputeRoadTime(newPath, engineerStack)
+
+                    // if any point along the path is unexplored, we cannot build there
+                    ok := true
+                    for _, point := range newPath {
+                        if !player.IsExplored(point.X, point.Y, engineerStack.Plane()) {
+                            ok = false
+                            break
+                        }
+                    }
+
+                    if ok {
+                        roadTurns = game.ComputeRoadTime(newPath, engineerStack)
+                    }
                 }
             }
         }
