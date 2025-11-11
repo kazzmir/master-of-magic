@@ -105,7 +105,8 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
 
             // player := game.Players[0]
 
-            fonts.SurveyorFont.PrintCenter(screen, float64(280), float64(81), scale.ScaleAmount, ebiten.ColorScale{}, "Road Building")
+            fonts.SurveyorFont.PrintCenter(screen, float64(280), float64(81), scale.ScaleAmount, ebiten.ColorScale{}, "Road")
+            fonts.SurveyorFont.PrintCenter(screen, float64(280), float64(81 + fonts.SurveyorFont.Height()), scale.ScaleAmount, ebiten.ColorScale{}, "Building")
         },
     }
 
@@ -141,36 +142,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
     ui.AddElement(makeButton(6, 226, 4))
 
     // plane button
-    ui.AddElement((func () *uilib.UIElement {
-        buttons, _ := game.ImageCache.GetImages("main.lbx", 7)
-        x := 270
-        y := 4
-
-        clicked := false
-
-        var options ebiten.DrawImageOptions
-        options.GeoM.Translate(float64(x), float64(y))
-
-        return &uilib.UIElement{
-            Rect: util.ImageRect(x, y, buttons[0]),
-            PlaySoundLeftClick: true,
-            LeftClick: func(element *uilib.UIElement){
-                clicked = true
-            },
-            LeftClickRelease: func(element *uilib.UIElement){
-                clicked = false
-                game.SwitchPlane()
-                overworld = makeOverworld()
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                if clicked {
-                    scale.DrawScaled(screen, buttons[1], &options)
-                } else {
-                    scale.DrawScaled(screen, buttons[0], &options)
-                }
-            },
-        }
-    })())
+    ui.AddElement(makeButton(7, 270, 4))
 
     quit := false
 
