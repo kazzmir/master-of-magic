@@ -372,6 +372,17 @@ func makeTreasure(cache *lbx.LbxCache, encounterType maplib.EncounterType, budge
                         books = []data.MagicType{data.SorceryMagic}
                 }
 
+                // a wizard with life cannot receive death, and vice versa
+                if wizard.MagicLevel(data.LifeMagic) > 0 {
+                    books = slices.DeleteFunc(books, func(magic data.MagicType) bool {
+                        return magic == data.DeathMagic
+                    })
+                } else if wizard.MagicLevel(data.DeathMagic) > 0 {
+                    books = slices.DeleteFunc(books, func(magic data.MagicType) bool {
+                        return magic == data.LifeMagic
+                    })
+                }
+
                 if len(books) > 0 {
                     specialsRemaining -= 1
 
