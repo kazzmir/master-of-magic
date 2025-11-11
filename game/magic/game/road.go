@@ -170,13 +170,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
         overworld.Camera = game.Camera
 
         overworld.DrawOverworld(screen, ebiten.GeoM{})
-
-        var miniGeom ebiten.GeoM
-        miniGeom.Translate(float64(250), float64(20))
-        mx, my := miniGeom.Apply(0, 0)
-        miniWidth := 60
-        miniHeight := 31
-        mini := screen.SubImage(scale.ScaleRect(image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight))).(*ebiten.Image)
+        mini := screen.SubImage(game.GetMinimapRect()).(*ebiten.Image)
         overworld.DrawMinimap(mini)
 
         ui.Draw(ui, screen)
