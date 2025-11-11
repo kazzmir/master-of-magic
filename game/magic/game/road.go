@@ -39,7 +39,16 @@ func (game *Game) ComputeRoadTime(path []image.Point, stack *playerlib.UnitStack
         }
     }
 
+    mapUse := game.GetMap(stack.Plane())
+
     for _, point := range path {
+
+        // no cost if road is already there
+        // FIXME: take into account time to walk over road
+        if mapUse.ContainsRoad(point.X, point.Y) {
+            continue
+        }
+
         work := game.ComputeRoadBuildEffort(point.X, point.Y, stack.Plane())
         turns += work.TotalWork / math.Pow(work.WorkPerEngineer, float64(engineerCount))
     }
@@ -221,7 +230,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
 
             leftClick := inputmanager.LeftClick()
 
-            if leftClick && selectedPoint != newPoint {
+            if leftClick && selectedPoint != newPoint && player.IsExplored(newX, newY, engineerStack.Plane()) {
                 selectedPoint = newPoint
 
                 newPath := game.FindPath(engineerStack.X(), engineerStack.Y(), newX, newY, player, engineerStack, player.GetFog(engineerStack.Plane()))
