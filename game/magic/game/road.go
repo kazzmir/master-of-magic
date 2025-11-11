@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -115,6 +116,9 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
     currentPath := []image.Point{image.Pt(engineerStack.X(), engineerStack.Y())}
 
     roadTurns := game.ComputeRoadTime(currentPath, engineerStack)
+    var roadPath pathfinding.Path
+
+    roadPath = pathfinding.Path{image.Pt(engineerStack.X(), engineerStack.Y())}
 
     ui := &uilib.UI{
         Cache: game.Cache,
@@ -248,6 +252,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
 
                     if ok {
                         roadTurns = game.ComputeRoadTime(newPath, engineerStack)
+                        roadPath = newPath
                     }
                 }
             }
