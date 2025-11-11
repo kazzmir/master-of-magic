@@ -107,6 +107,7 @@ type CombatSelectTargets struct {
     Title string
     Targets []*ArmyUnit
     Select func (*ArmyUnit)
+    Army *Army
 }
 
 type CombatEventSummonUnit struct {
@@ -2773,7 +2774,14 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) CombatUpdat
                         combat.doCastEnchantment(yield, use.Caster, use.Magic, use.Name)
                     case *CombatSelectTargets:
                         use := event.(*CombatSelectTargets)
-                        combat.AddSelectTargetsElements(use.Targets, use.Title, use.Select)
+                        if use.Army.Auto {
+                            if len(use.Targets) > 0 {
+                                pick := use.Targets[rand.N(len(use.Targets))]
+                                use.Select(pick)
+                            }
+                        } else {
+                            combat.AddSelectTargetsElements(use.Targets, use.Title, use.Select)
+                        }
                     case *CombatEventMessage:
                         use := event.(*CombatEventMessage)
                         combat.UI.AddElement(uilib.MakeErrorElement(combat.UI, combat.Cache, &combat.ImageCache, use.Message, func(){ yield() }))
