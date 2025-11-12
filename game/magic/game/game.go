@@ -7594,6 +7594,10 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         }
     }
 
+    if player.SelectedStack != nil {
+        game.MaybeBuildRoads(player)
+    }
+
     if player.IsHuman() {
         /*
         if player.SelectedStack == nil {
@@ -7610,37 +7614,39 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
                     case game.Events<- &GameEventMoveUnit{Player: player}:
                     default:
                 }
-            } else {
-                var buildRoadUnits []units.StackUnit
-                for _, unit := range player.SelectedStack.Units() {
-                    if len(unit.GetBuildRoadPath()) > 0 {
-                        buildRoadUnits = append(buildRoadUnits, unit)
-                    }
-                }
-
-                if len(buildRoadUnits) > 0 {
-                    if len(buildRoadUnits) < len(player.SelectedStack.Units()) {
-                        engineerStack := player.SplitStack(player.SelectedStack, buildRoadUnits)
-                        player.SelectedStack = engineerStack
-                    }
-
-                    player.SelectedStack.EnableMovers()
-                    roadPath := buildRoadUnits[0].GetBuildRoadPath()
-                    player.SelectedStack.CurrentPath = roadPath[:1]
-                    for _, unit := range buildRoadUnits {
-                        unit.SetBuildRoadPath(roadPath[1:])
-                        unit.SetBusy(units.BusyStatusBuildRoad)
-                    }
-
-                    select {
-                        case game.Events<- &GameEventMoveUnit{Player: player}:
-                        default:
-                    }
-                }
             }
         }
 
         game.RefreshUI()
+    }
+}
+
+func (game *Game) MaybeBuildRoads(player *playerlib.Player) {
+    var buildRoadUnits []units.StackUnit
+    for _, unit := range player.SelectedStack.Units() {
+        if len(unit.GetBuildRoadPath()) > 0 {
+            buildRoadUnits = append(buildRoadUnits, unit)
+        }
+    }
+
+    if len(buildRoadUnits) > 0 {
+        if len(buildRoadUnits) < len(player.SelectedStack.Units()) {
+            engineerStack := player.SplitStack(player.SelectedStack, buildRoadUnits)
+            player.SelectedStack = engineerStack
+        }
+
+        player.SelectedStack.EnableMovers()
+        roadPath := buildRoadUnits[0].GetBuildRoadPath()
+        player.SelectedStack.CurrentPath = roadPath[:1]
+
+        hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(roadPath[0].X, roadPath[0].Y)
+
+        for _, unit := range buildRoadUnits {
+            unit.SetBuildRoadPath(roadPath[1:])
+            if !hasRoad {
+                unit.SetBusy(units.BusyStatusBuildRoad)
+            }
+        }
     }
 }
 
