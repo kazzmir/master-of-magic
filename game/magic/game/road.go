@@ -275,7 +275,8 @@ func (game *Game) FindRoadPath(oldX int, oldY int, newX int, newY int, player *p
     return nil
 }
 
-func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *playerlib.UnitStack, player *playerlib.Player) {
+// returns the path of road that the given engineers should build
+func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *playerlib.UnitStack, player *playerlib.Player) pathfinding.Path{
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
@@ -333,8 +334,6 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
 
     selectedPoint := image.Pt(-1, -1)
 
-    cancelBackground, _ := game.ImageCache.GetImage("main.lbx", 47, 0)
-
     currentPath := []image.Point{image.Pt(engineerStack.X(), engineerStack.Y())}
 
     roadTurns := game.ComputeRoadTime(currentPath, engineerStack)
@@ -352,9 +351,10 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
             options.GeoM.Translate(float64(240), float64(77))
             scale.DrawScaled(screen, landImage, &options)
 
+            button, _ := game.ImageCache.GetImage("main.lbx", 48, 0)
             options.GeoM.Reset()
-            options.GeoM.Translate(float64(240), float64(174))
-            scale.DrawScaled(screen, cancelBackground, &options)
+            options.GeoM.Translate(float64(240), float64(173))
+            scale.DrawScaled(screen, button, &options)
 
             ui.StandardDraw(screen)
 
@@ -402,11 +402,12 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
     ui.AddElement(makeButton(7, 270, 4))
 
     quit := false
+    success := false
 
     // cancel button at bottom
     cancel, _ := game.ImageCache.GetImages("main.lbx", 41)
     cancelIndex := 0
-    cancelRect := util.ImageRect(263, 182, cancel[0])
+    cancelRect := util.ImageRect(280, 181, cancel[0])
     ui.AddElement(&uilib.UIElement{
         Rect: cancelRect,
         LeftClick: func(element *uilib.UIElement){
@@ -423,6 +424,25 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
         },
     })
 
+    okImages, _ := game.ImageCache.GetImages("main.lbx", 46)
+    okIndex := 0
+    okRect := util.ImageRect(246, 181, okImages[0])
+    ui.AddElement(&uilib.UIElement{
+        Rect: okRect,
+        LeftClick: func(element *uilib.UIElement){
+            okIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            okIndex = 0
+            success = true
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(okRect.Min.X), float64(okRect.Min.Y))
+            scale.DrawScaled(screen, okImages[okIndex], &options)
+        },
+    })
+
     game.Drawer = func(screen *ebiten.Image, game *Game){
         overworld.Camera = game.Camera
 
@@ -433,7 +453,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
         ui.Draw(ui, screen)
     }
 
-    for !quit {
+    for !quit && !success {
         overworld.Counter += 1
         zoomed := game.doInputZoom(yield)
         _ = zoomed
@@ -481,4 +501,10 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
 
         yield()
     }
+
+    if success {
+        return roadMap.CurrentRoad
+    }
+
+    return nil
 }

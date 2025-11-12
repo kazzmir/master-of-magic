@@ -2748,6 +2748,9 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
     player.LiftFog(x, y, 4, city.Plane)
 
     nodes := findNodes(game.CurrentMap())
+    if len(nodes) == 0 {
+        panic("no nodes found")
+    }
     node := nodes[terrain.SorceryNode][0]
     game.CurrentMap().RemoveEncounter(node.X, node.Y)
 
@@ -2755,7 +2758,7 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, node.X + 1, node.Y + 1, game.Plane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
-    player.LiftFog(node.X, node.Y, 4, game.Plane)
+    player.LiftFog(node.X, node.Y, 30, game.Plane)
 
     game.CurrentMap().SetRoad(node.X+3, node.Y+1, true)
     game.CurrentMap().SetRoad(node.X+2, node.Y+1, true)
