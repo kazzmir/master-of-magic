@@ -3,12 +3,14 @@ package game
 import (
     "fmt"
     "image"
+    "image/color"
     "math"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     // "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
+    "github.com/kazzmir/master-of-magic/game/magic/camera"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
@@ -20,6 +22,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 func (game *Game) ComputeRoadTime(path []image.Point, stack *playerlib.UnitStack) int {
@@ -60,7 +63,37 @@ func (game *Game) ComputeRoadTime(path []image.Point, stack *playerlib.UnitStack
 type RoadMap struct {
     *maplib.Map
 
-    CurrentPath pathfinding.Path
+    CurrentRoad pathfinding.Path
+    Road map[image.Point]image.Point
+}
+
+func (roadMap *RoadMap) UpdateRoad(path pathfinding.Path) {
+    roadMap.CurrentRoad = path
+    roadMap.Road = make(map[image.Point]image.Point)
+
+    lastPoint := image.Pt(-1, -1)
+    for _, point := range path {
+        roadMap.Road[point] = lastPoint
+        lastPoint = point
+    }
+}
+
+func (roadMap *RoadMap) DrawLayer2(camera_ camera.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM) {
+    roadMap.DrawLayer2Internal(camera_, animationCounter, imageCache, screen, geom, roadMap)
+}
+
+func (roadMap *RoadMap) DrawTileLayer2(screen *ebiten.Image, imageCache *util.ImageCache, getOptions func() *ebiten.DrawImageOptions, animationCounter uint64, tileX int, tileY int){
+    roadMap.Map.DrawTileLayer2(screen, imageCache, getOptions, animationCounter, tileX, tileY)
+
+    lastPoint, ok := roadMap.Road[image.Pt(tileX, tileY)]
+    if ok {
+        options := getOptions()
+        _ = lastPoint
+
+        x, y := options.GeoM.Apply(float64(roadMap.TileWidth() / 2), float64(roadMap.TileHeight() / 2))
+
+        vector.FillCircle(screen, float32(scale.Scale(x)), float32(scale.Scale(y)), 6, color.RGBA{R: 255, A: 255}, true)
+    }
 }
 
 func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *playerlib.UnitStack, player *playerlib.Player) {
@@ -127,7 +160,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
 
     roadTurns := game.ComputeRoadTime(currentPath, engineerStack)
 
-    roadMap.CurrentPath = pathfinding.Path{image.Pt(engineerStack.X(), engineerStack.Y())}
+    roadMap.UpdateRoad(pathfinding.Path{image.Pt(engineerStack.X(), engineerStack.Y())})
 
     ui := &uilib.UI{
         Cache: game.Cache,
@@ -261,7 +294,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
 
                     if ok {
                         roadTurns = game.ComputeRoadTime(newPath, engineerStack)
-                        roadMap.CurrentPath = newPath
+                        roadMap.UpdateRoad(newPath)
                     }
                 }
             }
