@@ -983,3 +983,7 @@ func (unit *OverworldUnit) GetSightRange() int {
 func (unit *OverworldUnit) SetBuildRoadPath(path pathfinding.Path) {
     unit.BuildRoadPath = path
 }
+
+func (unit *OverworldUnit) GetBuildRoadPath() pathfinding.Path {
+    return unit.BuildRoadPath
+}

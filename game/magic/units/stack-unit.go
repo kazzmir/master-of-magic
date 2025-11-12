@@ -58,6 +58,7 @@ type StackUnit interface {
     SetX(int)
     SetY(int)
     SetBuildRoadPath(pathfinding.Path)
+    GetBuildRoadPath() pathfinding.Path
     IsHero() bool
     Move(int, int, fraction.Fraction, NormalizeCoordinateFunc)
     GetLbxFile() string

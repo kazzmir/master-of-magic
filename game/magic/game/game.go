@@ -3109,6 +3109,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                             for _, unit := range stack.Units() {
                                 if unit.HasAbility(data.AbilityConstruction) {
                                     unit.SetBuildRoadPath(path)
+                                    unit.SetBusy(units.BusyStatusBuildRoad)
+                                    stack.SetActive(unit, false)
                                 }
                             }
                         }
@@ -4334,7 +4336,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     }
 
     // only merge stacks if both stacks are stopped, otherwise they can move through each other
-    if len(stack.CurrentPath) == 0 && mergeStack != nil && mergeStack.X() == stack.X() && mergeStack.Y() == stack.Y() {
+    if len(stack.CurrentPath) == 0 && mergeStack != nil && mergeStack != stack && mergeStack.X() == stack.X() && mergeStack.Y() == stack.Y() {
         stack = player.MergeStacks(mergeStack, stack)
         player.SelectedStack = stack
         game.RefreshUI()
@@ -6363,19 +6365,6 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
                 default:
             }
 
-            /*
-            for _, unit := range player.SelectedStack.ActiveUnits() {
-                if unit.HasAbility(data.AbilityConstruction) {
-                    unit.SetBusy(units.BusyStatusBuildRoad)
-                    unit.SetMovesLeft(true, fraction.Zero())
-                }
-            }
-
-            player.SelectedStack.EnableMovers()
-
-            // player.SelectedStack.ExhaustMoves()
-            game.RefreshUI()
-            */
             game.RefreshUI()
         }
     }
@@ -7281,7 +7270,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
             buildRect := util.ImageRect(280, 186, buildImages[0])
             buildCounter := uint64(0)
 
-            hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
             hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
             isCorrupted := game.GetMap(player.SelectedStack.Plane()).HasCorruption(player.SelectedStack.X(), player.SelectedStack.Y())
@@ -7331,7 +7319,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         } else {
                             use = inactivePurify
                         }
-                    } else if powers.BuildRoad && !hasRoad && !hasCity {
+                    } else if powers.BuildRoad && !hasCity {
                         use = buildImages[buildIndex]
                     }
 
@@ -7368,7 +7356,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             buildIndex = 1
                         }
                     } else if powers.BuildRoad {
-                        if !hasRoad && !hasCity {
+                        if !hasCity {
                             buildIndex = 1
                         }
                     }
@@ -7616,10 +7604,39 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         }
         */
 
-        if player.SelectedStack != nil && len(player.SelectedStack.CurrentPath) > 0 {
-            select {
-                case game.Events<- &GameEventMoveUnit{Player: player}:
-                default:
+        if player.SelectedStack != nil {
+            if len(player.SelectedStack.CurrentPath) > 0 {
+                select {
+                    case game.Events<- &GameEventMoveUnit{Player: player}:
+                    default:
+                }
+            } else {
+                var buildRoadUnits []units.StackUnit
+                for _, unit := range player.SelectedStack.Units() {
+                    if len(unit.GetBuildRoadPath()) > 0 {
+                        buildRoadUnits = append(buildRoadUnits, unit)
+                    }
+                }
+
+                if len(buildRoadUnits) > 0 {
+                    if len(buildRoadUnits) < len(player.SelectedStack.Units()) {
+                        engineerStack := player.SplitStack(player.SelectedStack, buildRoadUnits)
+                        player.SelectedStack = engineerStack
+                    }
+
+                    player.SelectedStack.EnableMovers()
+                    roadPath := buildRoadUnits[0].GetBuildRoadPath()
+                    player.SelectedStack.CurrentPath = roadPath[:1]
+                    for _, unit := range buildRoadUnits {
+                        unit.SetBuildRoadPath(roadPath[1:])
+                        unit.SetBusy(units.BusyStatusBuildRoad)
+                    }
+
+                    select {
+                        case game.Events<- &GameEventMoveUnit{Player: player}:
+                        default:
+                    }
+                }
             }
         }
 

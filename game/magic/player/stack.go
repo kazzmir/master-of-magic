@@ -292,6 +292,13 @@ func (stack *UnitStack) AllActive() bool {
     return count == len(stack.units)
 }
 
+func (stack *UnitStack) SetActive(unit units.StackUnit, active bool){
+    _, ok := stack.active[unit]
+    if ok {
+        stack.active[unit] = active
+    }
+}
+
 func (stack *UnitStack) ToggleActive(unit units.StackUnit){
     value, ok := stack.active[unit]
     if ok {
