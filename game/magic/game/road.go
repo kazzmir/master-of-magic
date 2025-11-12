@@ -17,7 +17,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
-    _ "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
 
     "github.com/hajimehoshi/ebiten/v2"
 )
@@ -57,6 +57,12 @@ func (game *Game) ComputeRoadTime(path []image.Point, stack *playerlib.UnitStack
     return int(turns)
 }
 
+type RoadMap struct {
+    *maplib.Map
+
+    CurrentPath pathfinding.Path
+}
+
 func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *playerlib.UnitStack, player *playerlib.Player) {
     oldDrawer := game.Drawer
     defer func(){
@@ -66,6 +72,10 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
     fonts := fontslib.MakeSurveyorFonts(game.Cache)
 
     var cityMap map[image.Point]*citylib.City
+
+    roadMap := RoadMap{
+        Map: game.CurrentMap(),
+    }
 
     makeOverworld := func () Overworld {
         cityMap = make(map[image.Point]*citylib.City)
@@ -96,7 +106,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
         return Overworld{
             Camera: game.Camera,
             Counter: game.Counter,
-            Map: game.CurrentMap(),
+            Map: &roadMap,
             Cities: cities,
             Stacks: stacks,
             SelectedStack: nil,
@@ -116,9 +126,8 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
     currentPath := []image.Point{image.Pt(engineerStack.X(), engineerStack.Y())}
 
     roadTurns := game.ComputeRoadTime(currentPath, engineerStack)
-    var roadPath pathfinding.Path
 
-    roadPath = pathfinding.Path{image.Pt(engineerStack.X(), engineerStack.Y())}
+    roadMap.CurrentPath = pathfinding.Path{image.Pt(engineerStack.X(), engineerStack.Y())}
 
     ui := &uilib.UI{
         Cache: game.Cache,
@@ -252,7 +261,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
 
                     if ok {
                         roadTurns = game.ComputeRoadTime(newPath, engineerStack)
-                        roadPath = newPath
+                        roadMap.CurrentPath = newPath
                     }
                 }
             }

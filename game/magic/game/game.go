@@ -9187,10 +9187,25 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
 
 }
 
+type OverworldMap interface {
+    XDistance(x1 int, x2 int) int
+    DrawMinimap(screen *ebiten.Image, cities []maplib.MiniMapCity, centerX int, centerY int, zoom float64, fog data.FogMap, counter uint64, crosshairs bool)
+    Width() int
+    Height() int
+    WrapX(x int) int
+    TileWidth() int
+    TileHeight() int
+    GetTile(tileX int, tileY int) maplib.FullTile
+    GetBonusTile(x int, y int) data.BonusType
+    GetMagicNode(x int, y int) *maplib.ExtraMagicNode
+    DrawLayer1(cam camera.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM)
+    DrawLayer2(cam camera.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM)
+}
+
 type Overworld struct {
     Camera camera.Camera
     Counter uint64
-    Map *maplib.Map
+    Map OverworldMap
     Cities []*citylib.City
     CitiesMiniMap []maplib.MiniMapCity
     Stacks []*playerlib.UnitStack
