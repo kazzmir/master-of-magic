@@ -5,7 +5,7 @@ import (
     "image"
     "image/color"
     "math"
-    _ "log"
+    "log"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/functional"
@@ -88,6 +88,13 @@ func (roadMap *RoadMap) DrawTileLayer2(screen *ebiten.Image, imageCache *util.Im
     roadMap.Map.DrawTileLayer2(screen, imageCache, getOptions, animationCounter, tileX, tileY)
 
     index, ok := roadMap.Road[image.Pt(tileX, tileY)]
+    if !ok {
+        index, ok = roadMap.Road[image.Pt(tileX - roadMap.Width(), tileY)]
+        if !ok {
+            index, ok = roadMap.Road[image.Pt(tileX + roadMap.Width(), tileY)]
+        }
+    }
+
     if ok {
         options := getOptions()
 
@@ -96,9 +103,11 @@ func (roadMap *RoadMap) DrawTileLayer2(screen *ebiten.Image, imageCache *util.Im
         drawSegment := func(cx int, cy int) {
             x, y := middleX, middleY
 
-            if cx < tileX {
+            xDistance := roadMap.XDistance(tileX, cx)
+
+            if xDistance < 0 {
                 x = 0
-            } else if cx > tileX {
+            } else if xDistance > 0 {
                 x = float64(roadMap.TileWidth())
             }
             if cy < tileY {
