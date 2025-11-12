@@ -5,7 +5,7 @@ import (
     "image"
     "image/color"
     "math"
-    "log"
+    _ "log"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/functional"
