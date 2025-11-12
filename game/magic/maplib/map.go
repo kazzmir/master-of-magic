@@ -633,6 +633,11 @@ func (tile *FullTile) HasEncounter() bool {
     return ok
 }
 
+func (tile *FullTile) HasRoad() bool {
+    _, ok := tile.Extras[ExtraKindRoad]
+    return ok
+}
+
 func (tile *FullTile) FoodBonus() fraction.Fraction {
     if tile.Corrupted() {
         return fraction.Zero()

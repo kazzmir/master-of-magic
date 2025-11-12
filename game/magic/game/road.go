@@ -5,8 +5,10 @@ import (
     "image"
     "image/color"
     "math"
+    _ "log"
 
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/functional"
     // "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -64,17 +66,17 @@ type RoadMap struct {
     *maplib.Map
 
     CurrentRoad pathfinding.Path
-    Road map[image.Point]image.Point
+    // the value is an index into CurrentRoad of which path element this is
+    Road map[image.Point]int
 }
 
 func (roadMap *RoadMap) UpdateRoad(path pathfinding.Path) {
+    // log.Printf("New road: %v", path)
     roadMap.CurrentRoad = path
-    roadMap.Road = make(map[image.Point]image.Point)
+    roadMap.Road = make(map[image.Point]int)
 
-    lastPoint := image.Pt(-1, -1)
-    for _, point := range path {
-        roadMap.Road[point] = lastPoint
-        lastPoint = point
+    for i, point := range path {
+        roadMap.Road[point] = i
     }
 }
 
@@ -85,15 +87,192 @@ func (roadMap *RoadMap) DrawLayer2(camera_ camera.Camera, animationCounter uint6
 func (roadMap *RoadMap) DrawTileLayer2(screen *ebiten.Image, imageCache *util.ImageCache, getOptions func() *ebiten.DrawImageOptions, animationCounter uint64, tileX int, tileY int){
     roadMap.Map.DrawTileLayer2(screen, imageCache, getOptions, animationCounter, tileX, tileY)
 
-    lastPoint, ok := roadMap.Road[image.Pt(tileX, tileY)]
+    index, ok := roadMap.Road[image.Pt(tileX, tileY)]
     if ok {
         options := getOptions()
-        _ = lastPoint
 
-        x, y := options.GeoM.Apply(float64(roadMap.TileWidth() / 2), float64(roadMap.TileHeight() / 2))
+        middleX, middleY := float64(roadMap.TileWidth()) / 2, float64(roadMap.TileHeight()) / 2
 
-        vector.FillCircle(screen, float32(scale.Scale(x)), float32(scale.Scale(y)), 6, color.RGBA{R: 255, A: 255}, true)
+        drawSegment := func(cx int, cy int) {
+            x, y := middleX, middleY
+
+            if cx < tileX {
+                x = 0
+            } else if cx > tileX {
+                x = float64(roadMap.TileWidth())
+            }
+            if cy < tileY {
+                y = 0
+            } else if cy > tileY {
+                y = float64(roadMap.TileHeight())
+            }
+
+            x1, y1 := options.GeoM.Apply(middleX, middleY)
+            x2, y2 := options.GeoM.Apply(x, y)
+
+            vector.StrokeLine(screen, float32(scale.Scale(x1)), float32(scale.Scale(y1)), float32(scale.Scale(x2)), float32(scale.Scale(y2)), 1, color.RGBA{R: 255, A: 255}, true)
+        }
+
+        if index > 0 {
+            drawSegment(roadMap.CurrentRoad[index - 1].X, roadMap.CurrentRoad[index - 1].Y)
+        }
+        if index < len(roadMap.CurrentRoad) - 1 {
+            drawSegment(roadMap.CurrentRoad[index + 1].X, roadMap.CurrentRoad[index + 1].Y)
+        }
+
+        // x, y := options.GeoM.Apply(float64(roadMap.TileWidth() / 2), float64(roadMap.TileHeight() / 2))
+
+        mx, my := options.GeoM.Apply(middleX, middleY)
+        vector.FillCircle(screen, float32(scale.Scale(mx)), float32(scale.Scale(my)), 2, color.RGBA{R: 255, A: 255}, true)
     }
+}
+
+func (game *Game) FindRoadPath(oldX int, oldY int, newX int, newY int, player *playerlib.Player, stack playerlib.PathStack, fog data.FogMap) pathfinding.Path {
+    useMap := game.GetMap(stack.Plane())
+
+    if newY < 0 || newY >= useMap.Height() {
+        return nil
+    }
+
+    normalized := func (a image.Point) image.Point {
+        return image.Pt(useMap.WrapX(a.X), a.Y)
+    }
+
+    // check equality of two points taking wrapping into account
+    tileEqual := func (a image.Point, b image.Point) bool {
+        return normalized(a) == normalized(b)
+    }
+
+    // cache locations of enemies
+    enemyStacks := make(map[image.Point]struct{})
+    enemyCities := make(map[image.Point]struct{})
+
+    for _, enemy := range game.Players {
+        if enemy != player {
+            for _, enemyStack := range enemy.Stacks {
+                enemyStacks[image.Pt(enemyStack.X(), enemyStack.Y())] = struct{}{}
+            }
+            for _, enemyCity := range enemy.Cities {
+                enemyCities[image.Pt(enemyCity.X, enemyCity.Y)] = struct{}{}
+            }
+        }
+    }
+
+    // cache the containsEnemy result
+    // true if the given coordinates contain an enemy unit or city
+    containsEnemy := functional.Memoize2(func (x int, y int) bool {
+        _, ok := enemyStacks[image.Pt(x, y)]
+        if ok {
+            return true
+        }
+        _, ok = enemyCities[image.Pt(x, y)]
+        if ok {
+            return true
+        }
+
+        return false
+    })
+
+    tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
+        x1 = useMap.WrapX(x1)
+        x2 = useMap.WrapX(x2)
+
+        if x1 < 0 || x1 >= useMap.Width() || y1 < 0 || y1 >= useMap.Height() {
+            return pathfinding.Infinity
+        }
+
+        if x2 < 0 || x2 >= useMap.Width() || y2 < 0 || y2 >= useMap.Height() {
+            return pathfinding.Infinity
+        }
+
+        tile := useMap.GetTile(x2, y2)
+        if tile.Tile.IsWater() {
+            return pathfinding.Infinity
+        }
+
+        if tile.HasRoad() {
+            if stack.Plane() == data.PlaneMyrror {
+                return 0
+            }
+            return 0.5
+        }
+
+        // FIXME: it might be more optimal to put the infinity cases into the neighbors function instead
+
+        // avoid encounters
+        encounter := useMap.GetEncounter(x2, y2)
+        if encounter != nil {
+            if !tileEqual(image.Pt(x2, y2), image.Pt(newX, newY)) {
+                return pathfinding.Infinity
+            }
+        }
+
+        // avoid enemy units/cities
+        if !tileEqual(image.Pt(x2, y2), image.Pt(newX, newY)) && containsEnemy(x2, y2) {
+            return pathfinding.Infinity
+        }
+
+        if fog[x2][y2] == data.FogTypeUnexplored {
+            return pathfinding.Infinity
+        }
+
+        if x1 != x2 && y1 != y2 {
+            // make diagonals more expensive
+            return 1.1
+        }
+
+        return 1
+    }
+
+    neighbors := func (x int, y int) []image.Point {
+        out := make([]image.Point, 0, 8)
+
+        // cardinals first, followed by diagonals
+        // left
+        out = append(out, image.Pt(x - 1, y))
+
+        // up
+        if y > 0 {
+            out = append(out, image.Pt(x, y - 1))
+        }
+
+        // right
+        out = append(out, image.Pt(x + 1, y))
+
+        // down
+        if y < useMap.Height() - 1 {
+            out = append(out, image.Pt(x, y + 1))
+        }
+
+        // up left
+        if y > 0 {
+            out = append(out, image.Pt(x - 1, y - 1))
+        }
+
+        // down left
+        if y < useMap.Height() - 1 {
+            out = append(out, image.Pt(x - 1, y + 1))
+        }
+
+        // up right
+        if y > 0 {
+            out = append(out, image.Pt(x + 1, y - 1))
+        }
+
+        // down right
+        if y < useMap.Height() - 1 {
+            out = append(out, image.Pt(x + 1, y + 1))
+        }
+
+        return out
+    }
+
+    path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), 10000, tileCost, neighbors, tileEqual)
+    if ok {
+        return path
+    }
+
+    return nil
 }
 
 func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *playerlib.UnitStack, player *playerlib.Player) {
@@ -279,7 +458,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
             if leftClick && selectedPoint != newPoint {
                 selectedPoint = newPoint
 
-                newPath := game.FindPath(engineerStack.X(), engineerStack.Y(), newX, newY, player, engineerStack, player.GetFog(engineerStack.Plane()))
+                newPath := game.FindRoadPath(engineerStack.X(), engineerStack.Y(), newX, newY, player, engineerStack, player.GetFog(engineerStack.Plane()))
 
                 if len(newPath) > 0 {
 
