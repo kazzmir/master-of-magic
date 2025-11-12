@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -75,6 +76,9 @@ type OverworldUnit struct {
     Undead bool
 
     Busy BusyStatus
+
+    // for engineers to follow
+    BuildRoadPath pathfinding.Path
 
     Enchantments []data.UnitEnchantment
 
@@ -974,4 +978,8 @@ func (unit *OverworldUnit) GetSightRange() int {
     }
 
     return 1
+}
+
+func (unit *OverworldUnit) SetBuildRoadPath(path pathfinding.Path) {
+    unit.BuildRoadPath = path
 }

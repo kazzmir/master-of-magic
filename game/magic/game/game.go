@@ -3104,7 +3104,15 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         road := event.(*GameEventBuildRoad)
                         stack := road.Stack
 
-                        game.ShowRoadBuilder(yield, stack, game.Players[0])
+                        path := game.ShowRoadBuilder(yield, stack, game.Players[0])
+                        if len(path) > 0 {
+                            for _, unit := range stack.Units() {
+                                if unit.HasAbility(data.AbilityConstruction) {
+                                    unit.SetBuildRoadPath(path)
+                                }
+                            }
+                        }
+
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)
                     case *GameEventSurveyor:
