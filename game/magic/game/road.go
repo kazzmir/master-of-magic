@@ -194,16 +194,13 @@ func (game *Game) FindRoadPath(oldX int, oldY int, newX int, newY int, player *p
             return pathfinding.Infinity
         }
 
-        tile := useMap.GetTile(x2, y2)
-        if tile.Tile.IsWater() {
+        if fog[x2][y2] == data.FogTypeUnexplored {
             return pathfinding.Infinity
         }
 
-        if tile.HasRoad() {
-            if stack.Plane() == data.PlaneMyrror {
-                return 0
-            }
-            return 0.5
+        tile := useMap.GetTile(x2, y2)
+        if tile.Tile.IsWater() {
+            return pathfinding.Infinity
         }
 
         // FIXME: it might be more optimal to put the infinity cases into the neighbors function instead
@@ -221,8 +218,12 @@ func (game *Game) FindRoadPath(oldX int, oldY int, newX int, newY int, player *p
             return pathfinding.Infinity
         }
 
-        if fog[x2][y2] == data.FogTypeUnexplored {
-            return pathfinding.Infinity
+        if tile.HasRoad() {
+            if stack.Plane() == data.PlaneMyrror {
+                // should non-corporeal engineers take more than 0 time to cross a road?
+                return 0
+            }
+            return 0.5
         }
 
         if x1 != x2 && y1 != y2 {

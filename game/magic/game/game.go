@@ -3104,15 +3104,22 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         road := event.(*GameEventBuildRoad)
                         stack := road.Stack
 
-                        path := game.ShowRoadBuilder(yield, stack, game.Players[0])
+                        player := game.Players[0]
+
+                        path := game.ShowRoadBuilder(yield, stack, player)
                         if len(path) > 0 {
                             for _, unit := range stack.Units() {
                                 if unit.HasAbility(data.AbilityConstruction) {
                                     unit.SetBuildRoadPath(path)
+
+                                    /*
                                     unit.SetBusy(units.BusyStatusBuildRoad)
                                     stack.SetActive(unit, false)
+                                    */
                                 }
                             }
+
+                            game.MaybeBuildRoads(stack, player)
                         }
 
                     case *GameEventNextTurn:
@@ -4177,6 +4184,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     if stack == nil || len(stack.ActiveUnits()) == 0 {
         return
     }
+
+    log.Printf("Move selected unit: %v at %v, %v", stack, stack.X(), stack.Y())
 
     mapUse := game.GetMap(stack.Plane())
 
@@ -6412,7 +6421,7 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
     arcanusBuilds := make(map[image.Point]struct{})
     myrrorBuilds := make(map[image.Point]struct{})
 
-    for _, stack := range player.Stacks {
+    for _, stack := range slices.Clone(player.Stacks) {
         plane := stack.Plane()
 
         engineerCount := 0
@@ -6432,7 +6441,7 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
 
         if engineerCount > 0 {
             x, y := stack.X(), stack.Y()
-            // log.Printf("building a road at %v, %v with %v engineers", x, y, engineerCount)
+            log.Printf("building a road at %v, %v with %v engineers", x, y, engineerCount)
             roads := game.RoadWorkArcanus
             if plane == data.PlaneMyrror {
                 roads = game.RoadWorkMyrror
@@ -6446,7 +6455,7 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
             tileWork := game.ComputeRoadBuildEffort(x, y, plane) // just to get the work map
 
             amount += math.Pow(tileWork.WorkPerEngineer, float64(engineerCount))
-            // log.Printf("  amount is now %v. total work is %v", amount, tileWork.TotalWork)
+            log.Printf("  amount is now %v. total work is %v", amount, tileWork.TotalWork)
             if amount >= tileWork.TotalWork {
                 game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
 
@@ -6455,7 +6464,6 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
                         unit.SetBusy(units.BusyStatusNone)
                     }
                 }
-
             } else {
                 roads[image.Pt(x, y)] = amount
                 if plane == data.PlaneArcanus {
@@ -7560,54 +7568,52 @@ func (game *Game) MakeHudUI() *uilib.UI {
 }
 
 func (game *Game) DoNextUnit(player *playerlib.Player){
-    startingIndex := 0
-    if player.SelectedStack != nil {
-        for i, stack := range player.Stacks {
-            if stack == player.SelectedStack {
-                startingIndex = i + 1
+    choose := true
+    for choose {
+        choose = false
+        startingIndex := 0
+        if player.SelectedStack != nil {
+            for i, stack := range player.Stacks {
+                if stack == player.SelectedStack {
+                    startingIndex = i + 1
+                    break
+                }
+            }
+        }
+
+        player.SelectedStack = nil
+
+        for i := 0; i < len(player.Stacks); i++ {
+            index := (i + startingIndex) % len(player.Stacks)
+            stack := player.Stacks[index]
+            if stack.HasMoves() {
+                player.SelectedStack = stack
+                stack.EnableMovers()
+                stack.DisableNonTransport()
+
+                if player.IsHuman() {
+                    select {
+                        case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y(), Instant: true}:
+                        default:
+                    }
+                }
+                /*
+                game.Plane = stack.Plane()
+                game.Camera.Center(stack.X(), stack.Y())
+                */
                 break
             }
         }
-    }
 
-    player.SelectedStack = nil
-
-    for i := 0; i < len(player.Stacks); i++ {
-        index := (i + startingIndex) % len(player.Stacks)
-        stack := player.Stacks[index]
-        if stack.HasMoves() {
-            player.SelectedStack = stack
-            stack.EnableMovers()
-            stack.DisableNonTransport()
-
-            if player.IsHuman() {
-                select {
-                    case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y(), Instant: true}:
-                    default:
-                }
+        if player.SelectedStack != nil {
+            if game.MaybeBuildRoads(player.SelectedStack, player) {
+                log.Printf("Stack is building roads, choose another")
+                choose = true
             }
-            /*
-            game.Plane = stack.Plane()
-            game.Camera.Center(stack.X(), stack.Y())
-            */
-            break
         }
-    }
-
-    if player.SelectedStack != nil {
-        game.MaybeBuildRoads(player)
     }
 
     if player.IsHuman() {
-        /*
-        if player.SelectedStack == nil {
-            fortressCity := player.FindFortressCity()
-            if fortressCity != nil {
-                game.CenterCamera(fortressCity.X, fortressCity.Y)
-            }
-        }
-        */
-
         if player.SelectedStack != nil {
             if len(player.SelectedStack.CurrentPath) > 0 {
                 select {
@@ -7621,33 +7627,42 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
     }
 }
 
-func (game *Game) MaybeBuildRoads(player *playerlib.Player) {
+func (game *Game) MaybeBuildRoads(stack *playerlib.UnitStack, player *playerlib.Player) bool {
     var buildRoadUnits []units.StackUnit
-    for _, unit := range player.SelectedStack.Units() {
+    for _, unit := range stack.Units() {
         if len(unit.GetBuildRoadPath()) > 0 {
             buildRoadUnits = append(buildRoadUnits, unit)
         }
     }
 
     if len(buildRoadUnits) > 0 {
-        if len(buildRoadUnits) < len(player.SelectedStack.Units()) {
-            engineerStack := player.SplitStack(player.SelectedStack, buildRoadUnits)
-            player.SelectedStack = engineerStack
+        if len(buildRoadUnits) < len(stack.Units()) {
+            stack = player.SplitStack(stack, buildRoadUnits)
         }
 
-        player.SelectedStack.EnableMovers()
+        stack.EnableMovers()
         roadPath := buildRoadUnits[0].GetBuildRoadPath()
-        player.SelectedStack.CurrentPath = roadPath[:1]
+        // move a single step along the road path
+        stack.CurrentPath = roadPath[:1]
 
-        hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(roadPath[0].X, roadPath[0].Y)
+        hasRoad := game.GetMap(stack.Plane()).ContainsRoad(stack.X(), stack.Y())
+
+        log.Printf("Unit stack %v is building road along path %v. Current %v, %v hasRoad=%v", stack, roadPath, stack.X(), stack.Y(), hasRoad)
 
         for _, unit := range buildRoadUnits {
-            unit.SetBuildRoadPath(roadPath[1:])
             if !hasRoad {
                 unit.SetBusy(units.BusyStatusBuildRoad)
+                stack.SetActive(unit, false)
+                unit.SetBuildRoadPath(roadPath[1:])
             }
         }
+
+        log.Printf("  update road build path to %v", buildRoadUnits[0].GetBuildRoadPath())
+
+        return !hasRoad
     }
+
+    return false
 }
 
 /* return a tuple of booleans where each boolean is true if the corresponding resource is not enough
@@ -9540,11 +9555,9 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     game.HudUI.Draw(game.HudUI, screen)
 
     // DEBUGGING: show tile coordinates on screen
-    /*
     mouseX, mouseY := inputmanager.MousePosition()
     tileX, tileY := game.ScreenToTile(float64(mouseX), float64(mouseY))
     game.Fonts.WhiteFont.PrintOptions(screen, float64(mouseX), float64(mouseY - 10), font.FontOptions{}, fmt.Sprintf("%d, %d", tileX, tileY))
-    */
 }
 
 func (game *Game) GetMinimapRect() image.Rectangle {
