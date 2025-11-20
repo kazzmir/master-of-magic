@@ -4,6 +4,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -56,6 +57,8 @@ type StackUnit interface {
     GetY() int
     SetX(int)
     SetY(int)
+    SetBuildRoadPath(pathfinding.Path)
+    GetBuildRoadPath() pathfinding.Path
     IsHero() bool
     Move(int, int, fraction.Fraction, NormalizeCoordinateFunc)
     GetLbxFile() string

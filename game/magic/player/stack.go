@@ -51,6 +51,12 @@ func MakeUnitStackFromUnits(units []units.StackUnit) *UnitStack {
     return stack
 }
 
+func (stack *UnitStack) SetBuildRoadPath(path pathfinding.Path) {
+    for _, unit := range stack.units {
+        unit.SetBuildRoadPath(path)
+    }
+}
+
 func (stack *UnitStack) ResetMoves(){
     for _, unit := range stack.units {
         unit.ResetMoves()
@@ -290,6 +296,13 @@ func (stack *UnitStack) AllActive() bool {
     }
 
     return count == len(stack.units)
+}
+
+func (stack *UnitStack) SetActive(unit units.StackUnit, active bool){
+    _, ok := stack.active[unit]
+    if ok {
+        stack.active[unit] = active
+    }
 }
 
 func (stack *UnitStack) ToggleActive(unit units.StackUnit){

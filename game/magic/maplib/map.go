@@ -633,6 +633,11 @@ func (tile *FullTile) HasEncounter() bool {
     return ok
 }
 
+func (tile *FullTile) HasRoad() bool {
+    _, ok := tile.Extras[ExtraKindRoad]
+    return ok
+}
+
 func (tile *FullTile) FoodBonus() fraction.Fraction {
     if tile.Corrupted() {
         return fraction.Zero()
@@ -2056,8 +2061,16 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
     }
 }
 
-// give the extra nodes a chance to draw on top of cities/units, but still under the fog
 func (mapObject *Map) DrawLayer2(camera cameralib.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
+    mapObject.DrawLayer2Internal(camera, animationCounter, imageCache, screen, geom, mapObject)
+}
+
+type DrawTile interface {
+    DrawTileLayer2(screen *ebiten.Image, imageCache *util.ImageCache, getOptions func() *ebiten.DrawImageOptions, animationCounter uint64, tileX int, tileY int)
+}
+
+// give the extra nodes a chance to draw on top of cities/units, but still under the fog
+func (mapObject *Map) DrawLayer2Internal(camera cameralib.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM, drawer DrawTile){
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
 
@@ -2078,21 +2091,33 @@ func (mapObject *Map) DrawLayer2(camera cameralib.Camera, animationCounter uint6
                 continue
             }
 
-            if len(mapObject.ExtraMap[image.Pt(tileX, tileY)]) == 0 {
-                continue
+            getOptions := func() *ebiten.DrawImageOptions {
+                options.GeoM.Reset()
+                options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
+                options.GeoM.Concat(geom)
+                return &options
             }
 
-            options.GeoM.Reset()
-            options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
-            options.GeoM.Concat(geom)
+            drawer.DrawTileLayer2(screen, imageCache, getOptions, animationCounter, tileX, tileY)
+        }
+    }
+}
 
-            for _, extraKind := range ExtraDrawOrder {
-                extra, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)][extraKind]
-                if ok {
-                    extra.DrawLayer2(screen, imageCache, &options, animationCounter, tileWidth, tileHeight)
-                }
-            }
+// draw a single tile
+func (mapObject *Map) DrawTileLayer2(screen *ebiten.Image, imageCache *util.ImageCache, getOptions func() *ebiten.DrawImageOptions, animationCounter uint64, tileX int, tileY int){
+    use, ok := mapObject.ExtraMap[image.Pt(tileX, tileY)]
+    if !ok || len(use) == 0 {
+        return
+    }
 
+    options := getOptions()
+    tileWidth := mapObject.TileWidth()
+    tileHeight := mapObject.TileHeight()
+
+    for _, extraKind := range ExtraDrawOrder {
+        extra, ok := use[extraKind]
+        if ok {
+            extra.DrawLayer2(screen, imageCache, options, animationCounter, tileWidth, tileHeight)
         }
     }
 }

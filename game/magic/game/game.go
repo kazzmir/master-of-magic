@@ -122,6 +122,10 @@ type GameEventHistorian struct {
 type GameEventCastSpellBook struct {
 }
 
+type GameEventBuildRoad struct {
+    Stack *playerlib.UnitStack
+}
+
 type GameEventNotice struct {
     Message string
 }
@@ -1810,6 +1814,10 @@ func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sou
     }
     */
 
+    if sourceX == destX && sourceY == destY {
+        return fraction.Zero(), true
+    }
+
     tileFrom := mapUse.GetTile(sourceX, sourceY)
     tileTo := mapUse.GetTile(destX, destY)
 
@@ -3096,6 +3104,33 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         if runUI.Song != music.SongNone {
                             game.Music.PopSong()
                         }
+                    case *GameEventBuildRoad:
+                        road := event.(*GameEventBuildRoad)
+                        stack := road.Stack
+
+                        player := game.Players[0]
+
+                        path := game.ShowRoadBuilder(yield, stack, player)
+                        if len(path) > 0 {
+                            for _, unit := range stack.Units() {
+                                if unit.HasAbility(data.AbilityConstruction) {
+                                    unit.SetBuildRoadPath(path)
+
+                                    /*
+                                    unit.SetBusy(units.BusyStatusBuildRoad)
+                                    stack.SetActive(unit, false)
+                                    */
+                                }
+                            }
+
+                            if !game.MaybeBuildRoads(stack, player) && stack == player.SelectedStack {
+                                select {
+                                    case game.Events <- &GameEventMoveUnit{Player: player}:
+                                    default:
+                                }
+                            }
+                        }
+
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)
                     case *GameEventSurveyor:
@@ -4188,6 +4223,12 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         oldX := stack.X()
         oldY := stack.Y()
 
+        // already at this location, just skip it
+        if oldX == step.X && oldY == step.Y {
+            stepsTaken = i + 1
+            continue
+        }
+
         city := entityInfo.FindCity(step.X, step.Y, stack.Plane())
         if city != nil {
             // units might not be able to enter a city if the city has spell wards in effect
@@ -4304,6 +4345,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
     if stopMoving {
         stack.CurrentPath = nil
+        // if any engineeers were following a path then force them to stop building
+        stack.SetBuildRoadPath(nil)
     } else if stepsTaken > 0 {
         stack.CurrentPath = stack.CurrentPath[stepsTaken:]
     }
@@ -4317,7 +4360,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     }
 
     // only merge stacks if both stacks are stopped, otherwise they can move through each other
-    if len(stack.CurrentPath) == 0 && mergeStack != nil && mergeStack.X() == stack.X() && mergeStack.Y() == stack.Y() {
+    if len(stack.CurrentPath) == 0 && mergeStack != nil && mergeStack != stack && mergeStack.X() == stack.X() && mergeStack.Y() == stack.Y() {
         stack = player.MergeStacks(mergeStack, stack)
         player.SelectedStack = stack
         game.RefreshUI()
@@ -4455,6 +4498,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                     inactiveStack.CurrentPath = stack.CurrentPath
                                 }
                                 stack.CurrentPath = path
+                                stack.SetBuildRoadPath(nil)
 
                                 select {
                                     case game.Events <- &GameEventMoveUnit{Player: player}:
@@ -4470,6 +4514,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                         game.blinkRed(yield)
                     } else {
                         stack.CurrentPath = path
+                        stack.SetBuildRoadPath(nil)
                     }
                 }
             } else if leftClick && game.InOverworldArea(mouseX, mouseY) {
@@ -6292,65 +6337,72 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             powers = computeUnitBuildPowers(player.SelectedStack)
         }
 
+        // if a stack has multiple units with different build powers, only do the first legal one found
+
         if powers.CreateOutpost {
             // search for the settlers (the only unit with the create outpost ability
             for _, settlers := range player.SelectedStack.ActiveUnits() {
                 if game.IsSettlableLocation(settlers.GetX(), settlers.GetY(), settlers.GetPlane()) && settlers.HasAbility(data.AbilityCreateOutpost) {
                     game.CreateOutpost(settlers, player)
                     game.RefreshUI()
-                    break
+                    return
                 }
             }
-        } else if powers.Meld {
+        }
+
+        if powers.Meld {
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
-            for _, melder := range player.SelectedStack.ActiveUnits() {
-                if melder.HasAbility(data.AbilityMeld) && !node.Warped {
-                    game.DoMeld(melder, player, node)
-                    game.RefreshUI()
-                    break
+            if node != nil {
+                for _, melder := range player.SelectedStack.ActiveUnits() {
+                    if melder.HasAbility(data.AbilityMeld) && !node.Warped {
+                        game.DoMeld(melder, player, node)
+                        game.RefreshUI()
+                        return
+                    }
                 }
             }
-        } else if powers.Purify {
+        }
 
-            for _, unit := range player.SelectedStack.ActiveUnits() {
-                if unit.HasAbility(data.AbilityPurify) {
-                    unit.SetBusy(units.BusyStatusPurify)
-                    unit.SetMovesLeft(true, fraction.Zero())
+        if powers.Purify {
+
+            tile := game.GetMap(player.SelectedStack.Plane()).GetTile(player.SelectedStack.X(), player.SelectedStack.Y())
+            if tile.Corrupted() {
+                for _, unit := range player.SelectedStack.ActiveUnits() {
+                    if unit.HasAbility(data.AbilityPurify) {
+                        unit.SetBusy(units.BusyStatusPurify)
+                        unit.SetMovesLeft(true, fraction.Zero())
+                    }
                 }
+
+                player.SelectedStack.EnableMovers()
+
+                // player.SelectedStack.ExhaustMoves()
+                game.RefreshUI()
+                return
             }
 
-            player.SelectedStack.EnableMovers()
+        }
 
-            // player.SelectedStack.ExhaustMoves()
-            game.RefreshUI()
+        if powers.BuildRoad {
 
-        } else if powers.BuildRoad {
-
-            for _, unit := range player.SelectedStack.ActiveUnits() {
-                if unit.HasAbility(data.AbilityConstruction) {
-                    unit.SetBusy(units.BusyStatusBuildRoad)
-                    unit.SetMovesLeft(true, fraction.Zero())
-                }
+            // ask the user to confirm where to build the road
+            select {
+                case game.Events <- &GameEventBuildRoad{Stack: player.SelectedStack}:
+                default:
             }
 
-            player.SelectedStack.EnableMovers()
-
-            // player.SelectedStack.ExhaustMoves()
             game.RefreshUI()
         }
     }
 }
 
-// find all engineers that are currently building a road
-// compute the work done by each engineer according to the terrain
-//   total work = work per engineer ^ engineers building on that tile
-// add total work to some counter, and when that total reaches the threshold for the terrain type
-// then set a road on that tile and make the engineers no longer busy
-func (game *Game) DoBuildRoads(player *playerlib.Player) {
-    type RoadWork struct {
-        WorkPerEngineer float64
-        TotalWork float64
-    }
+type RoadWork struct {
+    WorkPerEngineer float64
+    TotalWork float64
+}
+
+// returns how many turns it takes to build a road on the given tile with the given stack
+func (game *Game) ComputeRoadBuildEffort(x int, y int, plane data.Plane) RoadWork {
 
     computeWork := func (oneEngineerTurn int, twoEngineerTurn int) RoadWork {
         workPerEngineer := float64(oneEngineerTurn) / float64(twoEngineerTurn)
@@ -6372,30 +6424,27 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
     work[terrain.NatureNode] = computeWork(5, 2)
     work[terrain.SorceryNode] = computeWork(4, 2)
 
+    tile := game.GetMap(plane).GetTile(x, y)
+
+    return work[tile.Tile.TerrainType()]
+}
+
+// find all engineers that are currently building a road
+// compute the work done by each engineer according to the terrain
+//   total work = work per engineer ^ engineers building on that tile
+// add total work to some counter, and when that total reaches the threshold for the terrain type
+// then set a road on that tile and make the engineers no longer busy
+func (game *Game) DoBuildRoads(player *playerlib.Player) {
     arcanusBuilds := make(map[image.Point]struct{})
     myrrorBuilds := make(map[image.Point]struct{})
 
-    for _, stack := range player.Stacks {
+    for _, stack := range slices.Clone(player.Stacks) {
         plane := stack.Plane()
 
-        engineerCount := 0
-        for _, unit := range stack.Units() {
-            if unit.GetBusy() == units.BusyStatusBuildRoad {
-                engineerCount += 1
-
-                if unit.GetRace() == data.RaceDwarf {
-                    engineerCount += 1
-                }
-
-                if unit.HasEnchantment(data.UnitEnchantmentEndurance) {
-                    engineerCount += 1
-                }
-            }
-        }
+        engineerCount := ComputeEngineerCount(stack, true)
 
         if engineerCount > 0 {
             x, y := stack.X(), stack.Y()
-            // log.Printf("building a road at %v, %v with %v engineers", x, y, engineerCount)
             roads := game.RoadWorkArcanus
             if plane == data.PlaneMyrror {
                 roads = game.RoadWorkMyrror
@@ -6406,10 +6455,9 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
                 amount = 0
             }
 
-            tileWork := work[game.GetMap(plane).GetTile(x, y).Tile.TerrainType()]
+            tileWork := game.ComputeRoadBuildEffort(x, y, plane) // just to get the work map
 
             amount += math.Pow(tileWork.WorkPerEngineer, float64(engineerCount))
-            // log.Printf("  amount is now %v. total work is %v", amount, tileWork.TotalWork)
             if amount >= tileWork.TotalWork {
                 game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
 
@@ -6418,7 +6466,6 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
                         unit.SetBusy(units.BusyStatusNone)
                     }
                 }
-
             } else {
                 roads[image.Pt(x, y)] = amount
                 if plane == data.PlaneArcanus {
@@ -7233,7 +7280,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
             buildRect := util.ImageRect(280, 186, buildImages[0])
             buildCounter := uint64(0)
 
-            hasRoad := game.GetMap(player.SelectedStack.Plane()).ContainsRoad(player.SelectedStack.X(), player.SelectedStack.Y())
             hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
             isCorrupted := game.GetMap(player.SelectedStack.Plane()).HasCorruption(player.SelectedStack.X(), player.SelectedStack.Y())
@@ -7283,7 +7329,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         } else {
                             use = inactivePurify
                         }
-                    } else if powers.BuildRoad && !hasRoad && !hasCity {
+                    } else if powers.BuildRoad && !hasCity {
                         use = buildImages[buildIndex]
                     }
 
@@ -7320,7 +7366,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             buildIndex = 1
                         }
                     } else if powers.BuildRoad {
-                        if !hasRoad && !hasCity {
+                        if !hasCity {
                             buildIndex = 1
                         }
                     }
@@ -7524,59 +7570,124 @@ func (game *Game) MakeHudUI() *uilib.UI {
 }
 
 func (game *Game) DoNextUnit(player *playerlib.Player){
-    startingIndex := 0
-    if player.SelectedStack != nil {
-        for i, stack := range player.Stacks {
-            if stack == player.SelectedStack {
-                startingIndex = i + 1
+    choose := true
+    for choose {
+        choose = false
+        startingIndex := 0
+        if player.SelectedStack != nil {
+            for i, stack := range player.Stacks {
+                if stack == player.SelectedStack {
+                    startingIndex = i + 1
+                    break
+                }
+            }
+        }
+
+        player.SelectedStack = nil
+
+        for i := 0; i < len(player.Stacks); i++ {
+            index := (i + startingIndex) % len(player.Stacks)
+            stack := player.Stacks[index]
+            if stack.HasMoves() {
+                player.SelectedStack = stack
+                stack.EnableMovers()
+                stack.DisableNonTransport()
+
+                if player.IsHuman() {
+                    select {
+                        case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y(), Instant: true}:
+                        default:
+                    }
+                }
+                /*
+                game.Plane = stack.Plane()
+                game.Camera.Center(stack.X(), stack.Y())
+                */
                 break
             }
         }
-    }
 
-    player.SelectedStack = nil
-
-    for i := 0; i < len(player.Stacks); i++ {
-        index := (i + startingIndex) % len(player.Stacks)
-        stack := player.Stacks[index]
-        if stack.HasMoves() {
-            player.SelectedStack = stack
-            stack.EnableMovers()
-            stack.DisableNonTransport()
-
-            if player.IsHuman() {
-                select {
-                    case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y(), Instant: true}:
-                    default:
-                }
+        if player.SelectedStack != nil && len(player.SelectedStack.CurrentPath) == 0 {
+            if game.MaybeBuildRoads(player.SelectedStack, player) {
+                choose = true
             }
-            /*
-            game.Plane = stack.Plane()
-            game.Camera.Center(stack.X(), stack.Y())
-            */
-            break
         }
     }
 
     if player.IsHuman() {
-        /*
-        if player.SelectedStack == nil {
-            fortressCity := player.FindFortressCity()
-            if fortressCity != nil {
-                game.CenterCamera(fortressCity.X, fortressCity.Y)
-            }
-        }
-        */
-
-        if player.SelectedStack != nil && len(player.SelectedStack.CurrentPath) > 0 {
-            select {
-                case game.Events<- &GameEventMoveUnit{Player: player}:
-                default:
+        if player.SelectedStack != nil {
+            if len(player.SelectedStack.CurrentPath) > 0 {
+                select {
+                    case game.Events<- &GameEventMoveUnit{Player: player}:
+                    default:
+                }
             }
         }
 
         game.RefreshUI()
     }
+}
+
+// return true if the stack is going to build a road this turn
+func (game *Game) MaybeBuildRoads(stack *playerlib.UnitStack, player *playerlib.Player) bool {
+    var buildRoadUnits []units.StackUnit
+    for _, unit := range stack.Units() {
+        if len(unit.GetBuildRoadPath()) > 0 {
+            buildRoadUnits = append(buildRoadUnits, unit)
+        }
+    }
+
+    if len(buildRoadUnits) > 0 {
+        if len(buildRoadUnits) < len(stack.Units()) {
+            stack = player.SplitStack(stack, buildRoadUnits)
+        }
+
+        stack.EnableMovers()
+        roadPath := buildRoadUnits[0].GetBuildRoadPath()
+        stack.CurrentPath = nil
+
+        useMap := game.GetMap(stack.Plane())
+
+        hasRoad := useMap.ContainsRoad(stack.X(), stack.Y())
+
+        // build a road here
+        if !hasRoad {
+            for _, unit := range buildRoadUnits {
+                unit.SetBusy(units.BusyStatusBuildRoad)
+                stack.SetActive(unit, false)
+                unit.SetBuildRoadPath(roadPath[1:])
+            }
+
+            return true
+        } else {
+
+            // i=1
+            // [R, X, X]
+            // path = [R, X]
+            // roadPath = [X, X]
+
+            // move along the road path until we find a point that doesn't have a road
+            i := 0
+            for i < len(roadPath) {
+                point := roadPath[i]
+                hasRoad := useMap.ContainsRoad(point.X, point.Y)
+                if !hasRoad {
+                    break
+                }
+
+                i += 1
+
+                // log.Printf("Unit stack %v is building road along path %v. Current %v, %v hasRoad=%v", stack, roadPath, stack.X(), stack.Y(), hasRoad)
+            }
+
+            stack.CurrentPath = roadPath[:i+1]
+            for _, unit := range buildRoadUnits {
+                unit.SetBuildRoadPath(roadPath[i:])
+            }
+        }
+    }
+
+    return false
 }
 
 /* return a tuple of booleans where each boolean is true if the corresponding resource is not enough
@@ -9147,10 +9258,25 @@ func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
 
 }
 
+type OverworldMap interface {
+    XDistance(x1 int, x2 int) int
+    DrawMinimap(screen *ebiten.Image, cities []maplib.MiniMapCity, centerX int, centerY int, zoom float64, fog data.FogMap, counter uint64, crosshairs bool)
+    Width() int
+    Height() int
+    WrapX(x int) int
+    TileWidth() int
+    TileHeight() int
+    GetTile(tileX int, tileY int) maplib.FullTile
+    GetBonusTile(x int, y int) data.BonusType
+    GetMagicNode(x int, y int) *maplib.ExtraMagicNode
+    DrawLayer1(cam camera.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM)
+    DrawLayer2(cam camera.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM)
+}
+
 type Overworld struct {
     Camera camera.Camera
     Counter uint64
-    Map *maplib.Map
+    Map OverworldMap
     Cities []*citylib.City
     CitiesMiniMap []maplib.MiniMapCity
     Stacks []*playerlib.UnitStack

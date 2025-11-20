@@ -2085,7 +2085,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                 switch locationType {
                     case LocationTypeAny: return tileX, tileY, false
                     case LocationTypeLand:
-                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
+                        if tileY >= 0 && tileY < overworld.Map.Height() {
                             tileX = overworld.Map.WrapX(tileX)
                             if player.IsTileExplored(tileX, tileY, game.Plane) {
                                 if overworld.Map.GetTile(tileX, tileY).Tile.IsLand() {
@@ -2094,7 +2094,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             }
                         }
                     case LocationTypeEmptyWater:
-                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
+                        if tileY >= 0 && tileY < overworld.Map.Height() {
                             tileX = overworld.Map.WrapX(tileX)
                             if player.IsTileExplored(tileX, tileY, game.Plane) {
                                 if overworld.Map.GetTile(tileX, tileY).Tile.IsWater() {
@@ -2118,7 +2118,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             return tileX, tileY, false
                         }
                     case LocationTypeChangeTerrain:
-                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
+                        if tileY >= 0 && tileY < overworld.Map.Height() {
                             tileX = overworld.Map.WrapX(tileX)
 
                             if player.IsTileExplored(tileX, tileY, game.Plane) {
@@ -2132,7 +2132,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             }
                         }
                     case LocationTypeTransmute:
-                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
+                        if tileY >= 0 && tileY < overworld.Map.Height() {
                             tileX = overworld.Map.WrapX(tileX)
 
                             if player.IsTileExplored(tileX, tileY, game.Plane) {
@@ -2145,7 +2145,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             }
                         }
                     case LocationTypeRaiseVolcano:
-                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
+                        if tileY >= 0 && tileY < overworld.Map.Height() {
                             tileX = overworld.Map.WrapX(tileX)
 
                             if player.IsTileExplored(tileX, tileY, game.Plane) {
@@ -2157,7 +2157,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             }
                         }
                     case LocationTypeEnemyMeldedNode:
-                        if tileY >= 0 && tileY < overworld.Map.Map.Rows() {
+                        if tileY >= 0 && tileY < overworld.Map.Height() {
                             tileX = overworld.Map.WrapX(tileX)
 
                             if player.IsTileExplored(tileX, tileY, game.Plane) {
