@@ -17,6 +17,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -27,12 +28,10 @@ import (
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-func (game *Game) ComputeRoadTime(path []image.Point, stack *playerlib.UnitStack) int {
-    turns := float64(0)
-
+func ComputeEngineerCount(stack *playerlib.UnitStack) int {
     engineerCount := 0
     for _, unit := range stack.Units() {
-        if unit.HasAbility(data.AbilityConstruction) {
+        if unit.GetBusy() == units.BusyStatusBuildRoad {
             engineerCount += 1
 
             if unit.GetRace() == data.RaceDwarf {
@@ -44,6 +43,14 @@ func (game *Game) ComputeRoadTime(path []image.Point, stack *playerlib.UnitStack
             }
         }
     }
+
+    return engineerCount
+}
+
+func (game *Game) ComputeRoadTime(path []image.Point, stack *playerlib.UnitStack) int {
+    turns := float64(0)
+
+    engineerCount := ComputeEngineerCount(stack)
 
     mapUse := game.GetMap(stack.Plane())
 

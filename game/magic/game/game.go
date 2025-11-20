@@ -4194,8 +4194,6 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         return
     }
 
-    log.Printf("Move selected unit: %v at %v, %v", stack, stack.X(), stack.Y())
-
     mapUse := game.GetMap(stack.Plane())
 
     stepsTaken := 0
@@ -6443,24 +6441,10 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
     for _, stack := range slices.Clone(player.Stacks) {
         plane := stack.Plane()
 
-        engineerCount := 0
-        for _, unit := range stack.Units() {
-            if unit.GetBusy() == units.BusyStatusBuildRoad {
-                engineerCount += 1
-
-                if unit.GetRace() == data.RaceDwarf {
-                    engineerCount += 1
-                }
-
-                if unit.HasEnchantment(data.UnitEnchantmentEndurance) {
-                    engineerCount += 1
-                }
-            }
-        }
+        engineerCount := ComputeEngineerCount(stack)
 
         if engineerCount > 0 {
             x, y := stack.X(), stack.Y()
-            log.Printf("building a road at %v, %v with %v engineers", x, y, engineerCount)
             roads := game.RoadWorkArcanus
             if plane == data.PlaneMyrror {
                 roads = game.RoadWorkMyrror
@@ -6474,7 +6458,6 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
             tileWork := game.ComputeRoadBuildEffort(x, y, plane) // just to get the work map
 
             amount += math.Pow(tileWork.WorkPerEngineer, float64(engineerCount))
-            log.Printf("  amount is now %v. total work is %v", amount, tileWork.TotalWork)
             if amount >= tileWork.TotalWork {
                 game.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
 
@@ -7626,7 +7609,6 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
 
         if player.SelectedStack != nil && len(player.SelectedStack.CurrentPath) == 0 {
             if game.MaybeBuildRoads(player.SelectedStack, player) {
-                log.Printf("Stack is building roads, choose another")
                 choose = true
             }
         }
@@ -7702,8 +7684,6 @@ func (game *Game) MaybeBuildRoads(stack *playerlib.UnitStack, player *playerlib.
             for _, unit := range buildRoadUnits {
                 unit.SetBuildRoadPath(roadPath[i:])
             }
-
-            log.Printf("  current path %v update road build path to %v", stack.CurrentPath, buildRoadUnits[0].GetBuildRoadPath())
         }
     }
 
