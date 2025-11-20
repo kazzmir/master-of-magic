@@ -51,6 +51,12 @@ func MakeUnitStackFromUnits(units []units.StackUnit) *UnitStack {
     return stack
 }
 
+func (stack *UnitStack) SetBuildRoadPath(path pathfinding.Path) {
+    for _, unit := range stack.units {
+        unit.SetBuildRoadPath(path)
+    }
+}
+
 func (stack *UnitStack) ResetMoves(){
     for _, unit := range stack.units {
         unit.ResetMoves()

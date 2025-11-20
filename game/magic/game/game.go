@@ -1814,6 +1814,10 @@ func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sou
     }
     */
 
+    if sourceX == destX && sourceY == destY {
+        return fraction.Zero(), true
+    }
+
     tileFrom := mapUse.GetTile(sourceX, sourceY)
     tileTo := mapUse.GetTile(destX, destY)
 
@@ -3119,7 +3123,12 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                                 }
                             }
 
-                            game.MaybeBuildRoads(stack, player)
+                            if !game.MaybeBuildRoads(stack, player) && stack == player.SelectedStack {
+                                select {
+                                    case game.Events <- &GameEventMoveUnit{Player: player}:
+                                    default:
+                                }
+                            }
                         }
 
                     case *GameEventNextTurn:
@@ -4216,6 +4225,12 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         oldX := stack.X()
         oldY := stack.Y()
 
+        // already at this location, just skip it
+        if oldX == step.X && oldY == step.Y {
+            stepsTaken = i + 1
+            continue
+        }
+
         city := entityInfo.FindCity(step.X, step.Y, stack.Plane())
         if city != nil {
             // units might not be able to enter a city if the city has spell wards in effect
@@ -4332,6 +4347,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
 
     if stopMoving {
         stack.CurrentPath = nil
+        // if any engineeers were following a path then force them to stop building
+        stack.SetBuildRoadPath(nil)
     } else if stepsTaken > 0 {
         stack.CurrentPath = stack.CurrentPath[stepsTaken:]
     }
@@ -4483,6 +4500,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                     inactiveStack.CurrentPath = stack.CurrentPath
                                 }
                                 stack.CurrentPath = path
+                                stack.SetBuildRoadPath(nil)
 
                                 select {
                                     case game.Events <- &GameEventMoveUnit{Player: player}:
@@ -4498,6 +4516,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                         game.blinkRed(yield)
                     } else {
                         stack.CurrentPath = path
+                        stack.SetBuildRoadPath(nil)
                     }
                 }
             } else if leftClick && game.InOverworldArea(mouseX, mouseY) {
@@ -7605,7 +7624,7 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
             }
         }
 
-        if player.SelectedStack != nil {
+        if player.SelectedStack != nil && len(player.SelectedStack.CurrentPath) == 0 {
             if game.MaybeBuildRoads(player.SelectedStack, player) {
                 log.Printf("Stack is building roads, choose another")
                 choose = true
@@ -7627,6 +7646,7 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
     }
 }
 
+// return true if the stack is going to build a road this turn
 func (game *Game) MaybeBuildRoads(stack *playerlib.UnitStack, player *playerlib.Player) bool {
     var buildRoadUnits []units.StackUnit
     for _, unit := range stack.Units() {
@@ -7642,24 +7662,49 @@ func (game *Game) MaybeBuildRoads(stack *playerlib.UnitStack, player *playerlib.
 
         stack.EnableMovers()
         roadPath := buildRoadUnits[0].GetBuildRoadPath()
-        // move a single step along the road path
-        stack.CurrentPath = roadPath[:1]
+        stack.CurrentPath = nil
 
-        hasRoad := game.GetMap(stack.Plane()).ContainsRoad(stack.X(), stack.Y())
+        useMap := game.GetMap(stack.Plane())
 
-        log.Printf("Unit stack %v is building road along path %v. Current %v, %v hasRoad=%v", stack, roadPath, stack.X(), stack.Y(), hasRoad)
+        hasRoad := useMap.ContainsRoad(stack.X(), stack.Y())
 
-        for _, unit := range buildRoadUnits {
-            if !hasRoad {
+        // build a road here
+        if !hasRoad {
+            for _, unit := range buildRoadUnits {
                 unit.SetBusy(units.BusyStatusBuildRoad)
                 stack.SetActive(unit, false)
                 unit.SetBuildRoadPath(roadPath[1:])
             }
+
+            return true
+        } else {
+
+            // i=1
+            // [R, X, X]
+            // path = [R, X]
+            // roadPath = [X, X]
+
+            // move along the road path until we find a point that doesn't have a road
+            i := 0
+            for i < len(roadPath) {
+                point := roadPath[i]
+                hasRoad := useMap.ContainsRoad(point.X, point.Y)
+                if !hasRoad {
+                    break
+                }
+
+                i += 1
+
+                // log.Printf("Unit stack %v is building road along path %v. Current %v, %v hasRoad=%v", stack, roadPath, stack.X(), stack.Y(), hasRoad)
+            }
+
+            stack.CurrentPath = roadPath[:i+1]
+            for _, unit := range buildRoadUnits {
+                unit.SetBuildRoadPath(roadPath[i:])
+            }
+
+            log.Printf("  current path %v update road build path to %v", stack.CurrentPath, buildRoadUnits[0].GetBuildRoadPath())
         }
-
-        log.Printf("  update road build path to %v", buildRoadUnits[0].GetBuildRoadPath())
-
-        return !hasRoad
     }
 
     return false

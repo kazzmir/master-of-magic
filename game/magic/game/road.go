@@ -286,7 +286,7 @@ func (game *Game) FindRoadPath(oldX int, oldY int, newX int, newY int, player *p
 }
 
 // returns the path of road that the given engineers should build
-func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *playerlib.UnitStack, player *playerlib.Player) pathfinding.Path{
+func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *playerlib.UnitStack, player *playerlib.Player) pathfinding.Path {
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
