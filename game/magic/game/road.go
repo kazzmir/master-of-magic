@@ -28,10 +28,11 @@ import (
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-func ComputeEngineerCount(stack *playerlib.UnitStack) int {
+// return the number of engineers in the stack. only consider ones currently building a road if buildingRoad is true
+func ComputeEngineerCount(stack *playerlib.UnitStack, buildingRoad bool) int {
     engineerCount := 0
     for _, unit := range stack.Units() {
-        if unit.GetBusy() == units.BusyStatusBuildRoad {
+        if unit.HasAbility(data.AbilityConstruction) && (!buildingRoad || unit.GetBusy() == units.BusyStatusBuildRoad) {
             engineerCount += 1
 
             if unit.GetRace() == data.RaceDwarf {
@@ -50,7 +51,7 @@ func ComputeEngineerCount(stack *playerlib.UnitStack) int {
 func (game *Game) ComputeRoadTime(path []image.Point, stack *playerlib.UnitStack) int {
     turns := float64(0)
 
-    engineerCount := ComputeEngineerCount(stack)
+    engineerCount := ComputeEngineerCount(stack, false)
 
     mapUse := game.GetMap(stack.Plane())
 

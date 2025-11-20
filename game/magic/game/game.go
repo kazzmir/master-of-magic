@@ -6441,7 +6441,7 @@ func (game *Game) DoBuildRoads(player *playerlib.Player) {
     for _, stack := range slices.Clone(player.Stacks) {
         plane := stack.Plane()
 
-        engineerCount := ComputeEngineerCount(stack)
+        engineerCount := ComputeEngineerCount(stack, true)
 
         if engineerCount > 0 {
             x, y := stack.X(), stack.Y()
