@@ -1644,7 +1644,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
         Cost: 300,
     }
 
-    player.VaultEquipment[1] = game.ArtifactPool["Pummel Mace"]
+    player.VaultEquipment[1] = game.Model.ArtifactPool["Pummel Mace"]
 
     testArtifact := artifact.Artifact{
         Name: "Sword",
@@ -2450,7 +2450,7 @@ func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
     }, false)
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.KlackonSpearmen, x + 1, y + 1, data.PlaneArcanus, enemy.Wizard.Banner, enemy.MakeExperienceInfo(), enemy.MakeUnitEnchantmentProvider()))
 
-    artifact := game.ArtifactPool["Pummel Mace"]
+    artifact := game.Model.ArtifactPool["Pummel Mace"]
 
     game.Events <- &gamelib.GameEventMerchant{
         Player: player,

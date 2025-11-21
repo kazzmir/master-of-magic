@@ -367,8 +367,6 @@ type Game struct {
     Drawer func (*ebiten.Image, *Game)
     State GameState
 
-    ArtifactPool map[string]*artifact.Artifact
-
     MouseData *mouselib.MouseData
 
     Events chan GameEvent
@@ -560,7 +558,6 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Settings: settings,
         ImageCache: imageCache,
         Fonts: fonts,
-        ArtifactPool: createArtifactPool(lbxCache),
         BuildingInfo: buildingInfo,
         CurrentPlayer: -1,
         Camera: camera.MakeCamera(),
@@ -573,7 +570,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     }
 
     heroNames := herolib.ReadNamesPerWizard(game.Cache)
-    game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game, heroNames, game.AllSpells())
+    game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game, heroNames, game.AllSpells(), createArtifactPool(lbxCache))
 
     game.HudUI = game.MakeHudUI()
     game.Drawer = func(screen *ebiten.Image, game *Game){
@@ -2241,7 +2238,7 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     }
 
     var artifactCandidates []*artifact.Artifact
-    for _, artifact := range game.ArtifactPool {
+    for _, artifact := range game.Model.ArtifactPool {
         requirementsMet := true
         for _, requirement := range artifact.Requirements {
             if requirement.Amount > 12 {
@@ -2288,7 +2285,7 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     result := func(bought bool) {
         quit = true
         if bought {
-            delete(game.ArtifactPool, artifact.Name)
+            delete(game.Model.ArtifactPool, artifact.Name)
             player.Gold -= cost
             game.doVault(yield, artifact)
         }
@@ -4653,7 +4650,7 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
 
         makeArtifacts := func () []*artifact.Artifact {
             var out []*artifact.Artifact
-            for _, artifact := range game.ArtifactPool {
+            for _, artifact := range game.Model.ArtifactPool {
                 out = append(out, artifact)
             }
             return out
@@ -4762,7 +4759,7 @@ func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Pla
                     // FIXME: ai should get the vault item
                 }
                 // if the treasure was one of the premade artifacts, then remove it from the pool
-                delete(game.ArtifactPool, magicalItem.Artifact.Name)
+                delete(game.Model.ArtifactPool, magicalItem.Artifact.Name)
             case *TreasurePrisonerHero:
                 hero := item.(*TreasurePrisonerHero)
                 if player.IsHuman() {
@@ -7990,7 +7987,7 @@ func (game *Game) DoRandomEvents() {
                         return MakePiracyEvent(game.Model.TurnNumber, gold, target), nil
                     case RandomEventGift:
                         var out []*artifact.Artifact
-                        for _, artifact := range game.ArtifactPool {
+                        for _, artifact := range game.Model.ArtifactPool {
                             if canUseArtifact(artifact, target.Wizard) {
                                 out = append(out, artifact)
                             }
@@ -8003,7 +8000,7 @@ func (game *Game) DoRandomEvents() {
 
                         use := out[rand.N(len(out))]
 
-                        delete(game.ArtifactPool, use.Name)
+                        delete(game.Model.ArtifactPool, use.Name)
 
                         // returning GameEventVault here is ugly but we need a way to have the vault event
                         // be added to game.Events after the random event

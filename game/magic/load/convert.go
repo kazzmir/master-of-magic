@@ -1433,9 +1433,9 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
             continue
         }
 
-        _, ok := game.ArtifactPool[artifact.Name]
+        _, ok := game.Model.ArtifactPool[artifact.Name]
         if ok {
-            delete(game.ArtifactPool, artifact.Name)
+            delete(game.Model.ArtifactPool, artifact.Name)
         }
     }
 

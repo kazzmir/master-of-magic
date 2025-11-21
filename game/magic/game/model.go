@@ -10,6 +10,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -24,6 +25,8 @@ type GameModel struct {
     Players []*playerlib.Player
     Plane data.Plane
 
+    ArtifactPool map[string]*artifact.Artifact
+
     Settings setup.NewGameSettings
 
     heroNames map[int]map[herolib.HeroType]string
@@ -37,13 +40,18 @@ type GameModel struct {
     TurnNumber uint64
 }
 
-func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSettings, startingPlane data.Plane, cityProvider maplib.CityProvider, heroNames map[int]map[herolib.HeroType]string, allSpells spellbook.Spells) *GameModel {
+func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSettings,
+                   startingPlane data.Plane, cityProvider maplib.CityProvider,
+                   heroNames map[int]map[herolib.HeroType]string, allSpells spellbook.Spells,
+                   artifactPool map[string]*artifact.Artifact,
+               ) *GameModel {
 
     planeTowers := maplib.GeneratePlaneTowerPositions(settings.LandSize, 6)
 
     return &GameModel{
         ArcanusMap: maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, cityProvider, planeTowers),
         MyrrorMap: maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneMyrror, cityProvider, planeTowers),
+        ArtifactPool: artifactPool,
         Settings: settings,
         heroNames: heroNames,
         allSpells: allSpells,
