@@ -1421,7 +1421,7 @@ func setupRelations(player *playerlib.Player, index int, playerData *PlayerData,
 
 func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     game := gamelib.MakeGame(cache, saveGame.convertSettings())
-    game.TurnNumber = uint64(saveGame.Turn)
+    game.Model.TurnNumber = uint64(saveGame.Turn)
 
     artifacts := saveGame.convertArtifacts(game.AllSpells())
     // artifacts that are in the game are removed from the pool
@@ -1476,7 +1476,7 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
         defer func(){
             for stack, destination := range stackMoves {
                 // FIXME: associate the player with the stack
-                path := game.FindPath(stack.X(), stack.Y(), destination.X, destination.Y, player, stack, player.GetFog(stack.Plane()))
+                path := game.Model.FindPath(stack.X(), stack.Y(), destination.X, destination.Y, player, stack, player.GetFog(stack.Plane()))
                 if path != nil {
                     stack.CurrentPath = path
                 }

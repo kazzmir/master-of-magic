@@ -184,7 +184,7 @@ func euclideanDistance(x1, y1, x2, y2 int) float64 {
 }
 
 func findCityLocation(game *gamelib.Game, startingPlane data.Plane, cityArea gamelib.CityValidArea) (int, int) {
-    allCities := game.AllCities()
+    allCities := game.Model.AllCities()
 
     closestDistance := func(x, y int) int {
         distance := -1

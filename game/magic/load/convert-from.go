@@ -30,9 +30,9 @@ func CreateSaveGame(game *gamelib.Game) (*SaveGame, error) {
     out.LandSize = int16(game.Settings.LandSize)
     out.Magic = int16(game.Settings.Magic)
     out.Difficulty = int16(game.Settings.Difficulty)
-    out.NumCities = int16(len(game.AllCities()))
+    out.NumCities = int16(len(game.Model.AllCities()))
     out.NumUnits = int16(len(game.AllUnits()))
-    out.Turn = int16(game.TurnNumber)
+    out.Turn = int16(game.Model.TurnNumber)
 
     // FIXME
     // out.Unit = 0

@@ -52,7 +52,6 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/fraction"
-    "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
@@ -368,13 +367,6 @@ type Game struct {
     Drawer func (*ebiten.Image, *Game)
     State GameState
 
-    TurnNumber uint64
-
-    // water bodies holds all the points that are part of the same body of water.
-    // a plane can have mulitple bodies of water if some bodies are landlocked (enclosed entirely by a continent)
-    // this is lazily initialized on first use
-    WaterBodies map[data.Plane][]*set.Set[image.Point]
-
     ArtifactPool map[string]*artifact.Artifact
 
     MouseData *mouselib.MouseData
@@ -418,12 +410,7 @@ func (game *Game) GetFogImage() *ebiten.Image {
 }
 
 func (game *Game) GetMap(plane data.Plane) *maplib.Map {
-    switch plane {
-        case data.PlaneArcanus: return game.Model.ArcanusMap
-        case data.PlaneMyrror: return game.Model.MyrrorMap
-    }
-
-    return nil
+    return game.Model.GetMap(plane)
 }
 
 type UnitBuildPowers struct {
@@ -575,7 +562,6 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         Fonts: fonts,
         ArtifactPool: createArtifactPool(lbxCache),
         BuildingInfo: buildingInfo,
-        TurnNumber: 0,
         CurrentPlayer: -1,
         Camera: camera.MakeCamera(),
 
@@ -597,10 +583,6 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     game.Music.PushSongs(music.SongBackground1, music.SongBackground2, music.SongBackground3)
 
     return game
-}
-
-func (game *Game) GetDifficulty() data.DifficultySetting {
-    return game.Settings.Difficulty
 }
 
 func (game *Game) Shutdown() {
@@ -632,55 +614,9 @@ func (game *Game) GetPlayerByBanner(banner data.BannerType) *playerlib.Player {
     return nil
 }
 
-// return the city and its owner
-func (game *Game) FindCity(x int, y int, plane data.Plane) (*citylib.City, *playerlib.Player) {
-    for _, player := range game.Model.Players {
-        city := player.FindCity(x, y, plane)
-        if city != nil {
-            return city, player
-        }
-    }
-
-    return nil, nil
-}
-
-func (game *Game) FindStack(x int, y int, plane data.Plane) (*playerlib.UnitStack, *playerlib.Player) {
-    for _, player := range game.Model.Players {
-        stack := player.FindStack(x, y, plane)
-        if stack != nil {
-            return stack, player
-        }
-    }
-
-    return nil, nil
-}
-
 func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
-    city, _ := game.FindCity(x, y, plane)
+    city, _ := game.Model.FindCity(x, y, plane)
     return city != nil
-}
-
-func (game *Game) NearCity(point image.Point, squares int, plane data.Plane) bool {
-    for _, city := range game.AllCities() {
-        if city.Plane == plane {
-            xDiff := game.Model.CurrentMap().XDistance(city.X, point.X)
-            yDiff := city.Y - point.Y
-
-            if xDiff < 0 {
-                xDiff = -xDiff
-            }
-
-            if yDiff < 0 {
-                yDiff = -yDiff
-            }
-
-            if xDiff <= squares && yDiff <= squares {
-                return true
-            }
-        }
-    }
-
-    return false
 }
 
 type CityValidArea map[image.Point]bool
@@ -837,7 +773,7 @@ func chooseCityName(allNames []string, choices []string) string {
 }
 
 func (game *Game) SuggestCityName(race data.Race) (string) {
-    allCities := game.AllCities()
+    allCities := game.Model.AllCities()
     fallback := fmt.Sprintf("City %d", len(allCities)+1)
 
     predefinedNames, err := citylib.ReadCityNames(game.Cache)
@@ -892,25 +828,13 @@ func (game *Game) AllUnits() []units.StackUnit{
     return out
 }
 
-func (game *Game) AllCities() []*citylib.City {
-    var out []*citylib.City
-
-    for _, player := range game.Model.Players {
-        for _, city := range player.Cities {
-            out = append(out, city)
-        }
-    }
-
-    return out
-}
-
 func (game *Game) doCityListView(yield coroutine.YieldFunc) {
     oldDrawer := game.Drawer
     defer func(){
         game.Drawer = oldDrawer
     }()
 
-    cities := game.AllCities()
+    cities := game.Model.AllCities()
 
     var arcanusCities []maplib.MiniMapCity
     var myrrorCities []maplib.MiniMapCity
@@ -977,7 +901,7 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
         game.Drawer = oldDrawer
     }()
 
-    cities := game.AllCities()
+    cities := game.Model.AllCities()
 
     citiesMiniMap := make([]maplib.MiniMapCity, 0, len(cities))
     for _, city := range cities {
@@ -1129,7 +1053,7 @@ func (game *Game) EnterDiplomacy(player *playerlib.Player, enemy *playerlib.Play
 }
 
 func (game *Game) doDiplomacy(yield coroutine.YieldFunc, player *playerlib.Player, enemy *playerlib.Player) {
-    logic, draw := diplomacy.ShowDiplomacyScreen(game.Cache, player, enemy, 1400 + int(game.TurnNumber / 12))
+    logic, draw := diplomacy.ShowDiplomacyScreen(game.Cache, player, enemy, 1400 + int(game.Model.TurnNumber / 12))
 
     oldDrawer := game.Drawer
     game.Drawer = func (screen *ebiten.Image, game *Game){
@@ -1740,136 +1664,6 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
     }
 }
 
-/* return the cost to move from the current position the stack is on to the new given coordinates.
- * also return true/false if the move is even possible
- * FIXME: some values used by this logic could be precomputed and passed in as an argument. Things like 'containsFriendlyCity' could be a map of all cities
- * on the same plane as the unit, thus avoiding the expensive player.FindCity() call
- */
-func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sourceY int, destX int, destY int, mapUse *maplib.Map, getStack func(int, int) (playerlib.PathStack, bool)) (fraction.Fraction, bool) {
-    /*
-    if stack.OutOfMoves() {
-        return fraction.Zero(), false
-    }
-    */
-
-    if sourceX == destX && sourceY == destY {
-        return fraction.Zero(), true
-    }
-
-    tileFrom := mapUse.GetTile(sourceX, sourceY)
-    tileTo := mapUse.GetTile(destX, destY)
-
-    if !tileTo.Valid() {
-        return fraction.Zero(), false
-    }
-
-    if stack.AllFlyers() {
-        return fraction.FromInt(1), true
-    }
-
-    // can't move from land to ocean unless all units are flyers or swimmers
-    if /* tileFrom.Tile.IsLand() && */ !tileTo.Tile.IsLand() {
-        // a land walker can move onto a friendly stack on the ocean if that stack has sailing units
-        if stack.AnyLandWalkers() {
-            // if the stack already contains a sailing unit, then it is legal to move into water
-            if stack.HasSailingUnits(true) {
-                return fraction.FromInt(1), true
-            }
-
-            maybeStack, ok := getStack(destX, destY)
-            if ok && maybeStack.HasSailingUnits(false) {
-                return fraction.FromInt(1), true
-            }
-            return fraction.Zero(), false
-        }
-        /*
-        if !stack.AllFlyers() && !stack.AllSwimmers() {
-            return fraction.Zero(), false
-        }
-        */
-    }
-
-    containsFriendlyCity := func (x int, y int) bool {
-        for _, player := range game.Model.Players {
-            if player.GetBanner() == stack.GetBanner() {
-                if player.FindCity(x, y, stack.Plane()) != nil {
-                    return true
-                }
-            }
-        }
-
-        return false
-    }
-
-    // sailing units cannot move onto land
-    if tileTo.Tile.IsLand() {
-        if !stack.CanMoveOnLand(true) {
-            return fraction.Zero(), false
-        }
-    }
-
-    // this feels like it can be improved
-    if tileFrom.Tile.IsWater() && tileTo.Tile.IsWater() && !stack.CanMoveOnLand(true) {
-        dx := mapUse.XDistance(sourceX, destX)
-        dy := destY - sourceY
-        if !tileFrom.CanTraverse(terrain.ToDirection(dx, dy), maplib.TraverseWater) {
-            return fraction.Zero(), false
-        }
-    }
-
-    road_v, ok := tileTo.Extras[maplib.ExtraKindRoad]
-    if ok {
-        road := road_v.(*maplib.ExtraRoad)
-        if road.Enchanted {
-            if stack.ActiveUnitsDoesntHaveAbility(data.AbilityNonCorporeal) {
-                return fraction.Zero(), true
-            }
-        }
-
-        return fraction.Make(1, 2), true
-    }
-
-    if containsFriendlyCity(destX, destY) {
-        return fraction.Make(1, 2), true
-    }
-
-    if stack.HasPathfinding() {
-        return fraction.Make(1, 2), true
-    }
-
-    // FIXME: handle swimming, sailing properties
-    switch tileTo.Tile.TerrainType() {
-        case terrain.Desert: return fraction.FromInt(1), true
-        case terrain.SorceryNode: return fraction.FromInt(1), true
-        case terrain.Grass: return fraction.FromInt(1), true
-        case terrain.Forest:
-            if stack.ActiveUnitsHasAbility(data.AbilityForester) {
-                return fraction.FromInt(1), true
-            }
-            return fraction.FromInt(2), true
-        case terrain.River: return fraction.FromInt(2), true
-        case terrain.Tundra: return fraction.FromInt(2), true
-        case terrain.Hill:
-            if stack.ActiveUnitsHasAbility(data.AbilityMountaineer) {
-                return fraction.FromInt(1), true
-            }
-            return fraction.FromInt(3), true
-        case terrain.Swamp: return fraction.FromInt(3), true
-        case terrain.Mountain:
-            if stack.ActiveUnitsHasAbility(data.AbilityMountaineer) {
-                return fraction.FromInt(1), true
-            }
-            return fraction.FromInt(4), true
-        case terrain.Volcano:
-            if stack.ActiveUnitsHasAbility(data.AbilityMountaineer) {
-                return fraction.FromInt(1), true
-            }
-
-            return fraction.FromInt(4), true
-    }
-
-    return fraction.FromInt(1), true
-}
 
 /* blink the game screen red to indicate the user attempted to do something invalid
  */
@@ -1948,7 +1742,7 @@ func (game *Game) FindRoadConnectedCities(city *citylib.City) []*citylib.City {
 
     var out []*citylib.City
 
-    for _, otherCity := range game.AllCities() {
+    for _, otherCity := range game.Model.AllCities() {
         if otherCity == city {
             continue
         }
@@ -2010,279 +1804,6 @@ func (game *Game) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.Ci
     _, ok := pathfinding.FindPath(image.Pt(fromCity.X, fromCity.Y), image.Pt(toCity.X, toCity.Y), 10000, tileCost, neighbors, tileEqual)
 
     return ok
-}
-
-func (game *Game) GetWaterBody(mapUse *maplib.Map, x int, y int) *set.Set[image.Point] {
-    if game.WaterBodies == nil {
-        game.WaterBodies = make(map[data.Plane][]*set.Set[image.Point])
-    }
-
-    sets, ok := game.WaterBodies[mapUse.Plane]
-    if !ok {
-        sets = mapUse.GetWaterBodies()
-
-        // log.Printf("Found %d water bodies on plane %d", len(sets), mapUse.Plane)
-
-        game.WaterBodies[mapUse.Plane] = sets
-    }
-
-    find := image.Pt(mapUse.WrapX(x), y)
-
-    // find the body of water that contains the given tile
-    for _, set := range sets {
-        if set.Contains(find) {
-            return set
-        }
-    }
-
-    return nil
-}
-
-func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playerlib.Player, stack playerlib.PathStack, fog data.FogMap) pathfinding.Path {
-
-    useMap := game.GetMap(stack.Plane())
-
-    if newY < 0 || newY >= useMap.Height() {
-        return nil
-    }
-
-    allFlyers := stack.AllFlyers()
-
-    // this is to avoid doing path finding at all so that we don't spend time trying to compute an impossible path
-    // such as a water unit trying to move to land
-    if fog.GetFog(useMap.WrapX(newX), newY) != data.FogTypeUnexplored {
-        tileTo := useMap.GetTile(newX, newY)
-        tileFrom := useMap.GetTile(oldX, oldY)
-
-        // if this is a water unit that cannot walk on land then just return nil immediately since the move is impossible
-        if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(true) {
-            return nil
-        }
-
-        // if this is a water unit and it is moving from water to more water, but the destination water tile
-        // is landlocked and the origin tile is not part of the same body of water, then there cannot be a valid
-        // path between the two water tiles
-        if tileTo.Tile.IsWater() && tileFrom.Tile.IsWater() && !stack.CanMoveOnLand(true) {
-            if game.GetWaterBody(useMap, newX, newY) != game.GetWaterBody(useMap, oldX, oldY) {
-                return nil
-            }
-        }
-
-        /*
-        if !tileTo.Tile.IsLand() && !allFlyers && stack.AnyLandWalkers() {
-
-            // the stack might already contain a sailing unit
-            if !stack.HasSailingUnits(true) {
-                maybeStack := player.FindStack(useMap.WrapX(newX), newY, stack.Plane())
-                if maybeStack != nil && maybeStack.HasSailingUnits(false) {
-                    // ok, can move there because there is a ship
-                } else {
-                    return nil
-                }
-            }
-        }
-        */
-    }
-
-    normalized := func (a image.Point) image.Point {
-        return image.Pt(useMap.WrapX(a.X), a.Y)
-    }
-
-    // check equality of two points taking wrapping into account
-    tileEqual := func (a image.Point, b image.Point) bool {
-        return normalized(a) == normalized(b)
-    }
-
-    getStack := func (x int, y int) (playerlib.PathStack, bool) {
-        found := player.FindStack(x, y, stack.Plane())
-        return found, found != nil
-    }
-
-    // cache locations of enemies
-    enemyStacks := make(map[image.Point]struct{})
-    enemyCities := make(map[image.Point]struct{})
-
-    for _, enemy := range game.Model.Players {
-        if enemy != player {
-            for _, enemyStack := range enemy.Stacks {
-                enemyStacks[image.Pt(enemyStack.X(), enemyStack.Y())] = struct{}{}
-            }
-            for _, enemyCity := range enemy.Cities {
-                enemyCities[image.Pt(enemyCity.X, enemyCity.Y)] = struct{}{}
-            }
-        }
-    }
-
-    // cache the containsEnemy result
-    // true if the given coordinates contain an enemy unit or city
-    containsEnemy := functional.Memoize2(func (x int, y int) bool {
-        _, ok := enemyStacks[image.Pt(x, y)]
-        if ok {
-            return true
-        }
-        _, ok = enemyCities[image.Pt(x, y)]
-        if ok {
-            return true
-        }
-
-        return false
-    })
-
-    tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
-        x1 = useMap.WrapX(x1)
-        x2 = useMap.WrapX(x2)
-
-        if x1 < 0 || x1 >= useMap.Width() || y1 < 0 || y1 >= useMap.Height() {
-            return pathfinding.Infinity
-        }
-
-        if x2 < 0 || x2 >= useMap.Width() || y2 < 0 || y2 >= useMap.Height() {
-            return pathfinding.Infinity
-        }
-
-        // FIXME: it might be more optimal to put the infinity cases into the neighbors function instead
-
-        // avoid encounters
-        encounter := useMap.GetEncounter(x2, y2)
-        if encounter != nil {
-            if !tileEqual(image.Pt(x2, y2), image.Pt(newX, newY)) {
-                return pathfinding.Infinity
-            }
-        }
-
-        // avoid enemy units/cities
-        if !tileEqual(image.Pt(x2, y2), image.Pt(newX, newY)) && containsEnemy(x2, y2) {
-            return pathfinding.Infinity
-        }
-
-        baseCost := float64(1)
-
-        if x1 != x2 && y1 != y2 {
-            baseCost = 1.5
-        }
-
-        // don't know what the cost is, assume we can move there
-        // FIXME: how should this behave for different FogTypes?
-        // flying stacks can move anywhere, so don't penalize them
-        if !allFlyers && x2 >= 0 && x2 < len(fog) && y2 >= 0 && y2 < len(fog[x2]) && fog[x2][y2] == data.FogTypeUnexplored {
-            // increase cost of unknown tile by a lot so we prefer to move to known tiles
-            return baseCost + 3
-        }
-
-        cost, ok := game.ComputeTerrainCost(stack, x1, y1, x2, y2, useMap, getStack)
-        if !ok {
-            return pathfinding.Infinity
-        }
-
-        return cost.ToFloat()
-    }
-
-    neighbors := func (x int, y int) []image.Point {
-        out := make([]image.Point, 0, 8)
-
-        // cardinals first, followed by diagonals
-        // left
-        out = append(out, image.Pt(x - 1, y))
-
-        // up
-        if y > 0 {
-            out = append(out, image.Pt(x, y - 1))
-        }
-
-        // right
-        out = append(out, image.Pt(x + 1, y))
-
-        // down
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x, y + 1))
-        }
-
-        // up left
-        if y > 0 {
-            out = append(out, image.Pt(x - 1, y - 1))
-        }
-
-        // down left
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x - 1, y + 1))
-        }
-
-        // up right
-        if y > 0 {
-            out = append(out, image.Pt(x + 1, y - 1))
-        }
-
-        // down right
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x + 1, y + 1))
-        }
-
-        return out
-    }
-
-    path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), 10000, tileCost, neighbors, tileEqual)
-    if ok {
-        return path[1:]
-    }
-
-    return nil
-}
-
-/* true if a settler can build a city here
- * a tile must be land, not corrupted, not have an encounter, not have a magic node, and not be too close to another city
- */
-func (game *Game) IsSettlableLocation(x int, y int, plane data.Plane) bool {
-    if !game.NearCity(image.Pt(x, y), 3, plane) {
-        mapUse := game.GetMap(plane)
-        if mapUse.HasCorruption(x, y) || mapUse.GetEncounter(x, y) != nil || mapUse.GetMagicNode(x, y) != nil {
-            return false
-        }
-
-        return mapUse.GetTile(x, y).Tile.IsLand()
-    }
-
-    return false
-}
-
-func (game *Game) FindSettlableLocations(x int, y int, plane data.Plane, fog data.FogMap) []image.Point {
-    tiles := game.GetMap(plane).GetContinentTiles(x, y)
-
-    // compute all pointes that we can't build a city on because they are too close to another city
-    unavailable := make(map[image.Point]bool)
-    for _, city := range game.AllCities() {
-        if city.Plane == plane {
-            // keep a distance of 5 tiles from any other city
-            for dx := -5; dx <= 5; dx++ {
-                for dy := -5; dy <= 5; dy++ {
-                    cx := game.Model.CurrentMap().WrapX(city.X + dx)
-                    cy := city.Y + dy
-
-                    unavailable[image.Pt(cx, cy)] = true
-                }
-            }
-        }
-    }
-
-    var out []image.Point
-
-    for _, tile := range tiles {
-        _, ok := unavailable[image.Pt(tile.X, tile.Y)]
-        if ok {
-            continue
-        }
-
-        if fog[tile.X][tile.Y] == data.FogTypeUnexplored {
-            continue
-        }
-
-        if tile.Corrupted() || tile.HasEncounter() || tile.Tile.IsMagic() {
-            continue
-        }
-
-        out = append(out, image.Pt(tile.X, tile.Y))
-    }
-
-    return out
 }
 
 func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summon) {
@@ -2548,7 +2069,7 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
 /* random chance to create a hire mercenaries event
  */
 func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
-    if game.TurnNumber <= 30 {
+    if game.Model.TurnNumber <= 30 {
         return
     }
 
@@ -3226,16 +2747,13 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     }
 }
 
-func (game *Game) GetTurnNumber() uint64 {
-    return game.TurnNumber
-}
 
 // the turn as a readable date, such as June 1450
 func (game *Game) TurnDate() string {
     base := uint64(1400)
 
-    month := game.TurnNumber % 12
-    years := game.TurnNumber / 12
+    month := game.Model.TurnNumber % 12
+    years := game.Model.TurnNumber / 12
 
     monthNames := []string{
         "January",
@@ -3318,7 +2836,7 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
 
         dates := uint64(10)
 
-        maxYear := game.TurnNumber / 12
+        maxYear := game.Model.TurnNumber / 12
         if maxYear < dates {
             maxYear = dates
         }
@@ -3351,7 +2869,7 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
 
             nameFont.PrintOptions(mainImage, float64(10), float64(30 + i * nameFont.Height()), font.FontOptions{DropShadow: true, Scale: 1, Justify: font.FontJustifyLeft, Options: &options}, player.Wizard.Name)
 
-            maxTurn := game.TurnNumber
+            maxTurn := game.Model.TurnNumber
             if maxTurn < maxYear * 12 {
                 maxTurn = maxYear * 12
             }
@@ -3370,7 +2888,7 @@ func (game *Game) ShowHistorian(yield coroutine.YieldFunc) {
             // is the power at that turn
             for x := range xEnd - xStart {
                 turn := uint64(float64(x) * float64(maxTurn) / float64(xEnd - xStart))
-                if turn >= game.TurnNumber {
+                if turn >= game.Model.TurnNumber {
                     break
                 }
 
@@ -3571,7 +3089,7 @@ func (game *Game) doCartographer(yield coroutine.YieldFunc) {
 
     knownPlayers := append([]*playerlib.Player{game.GetHumanPlayer()}, game.GetHumanPlayer().GetKnownPlayers()...)
 
-    logic, draw := cartographer.MakeCartographer(game.Cache, game.AllCities(), stacks, knownPlayers, game.Model.ArcanusMap, game.GetHumanPlayer().GetFog(data.PlaneArcanus), game.Model.MyrrorMap, game.GetHumanPlayer().GetFog(data.PlaneMyrror))
+    logic, draw := cartographer.MakeCartographer(game.Cache, game.Model.AllCities(), stacks, knownPlayers, game.Model.ArcanusMap, game.GetHumanPlayer().GetFog(data.PlaneArcanus), game.Model.MyrrorMap, game.GetHumanPlayer().GetFog(data.PlaneMyrror))
 
     yield()
     oldDrawer := game.Drawer
@@ -3956,7 +3474,7 @@ func (game *Game) FindEscapePosition(player *playerlib.Player, unit units.StackU
 }
 
 func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
-    stack, player := game.FindStack(x, y, plane)
+    stack, player := game.Model.FindStack(x, y, plane)
     if stack == nil {
         return
     }
@@ -4150,7 +3668,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         return found, found != nil
     }
 
-    entityInfo := game.ComputeCityStackInfo()
+    entityInfo := game.Model.ComputeCityStackInfo()
 
     quitMoving:
     for i, step := range stack.CurrentPath {
@@ -4179,7 +3697,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             }
         }
 
-        terrainCost, canMove := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), step.X, step.Y, mapUse, getStack)
+        terrainCost, canMove := game.Model.ComputeTerrainCost(stack, stack.X(), stack.Y(), step.X, step.Y, mapUse, getStack)
 
         if canMove {
 
@@ -4424,7 +3942,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                                 game.RefreshUI()
                             }
                         } else {
-                            path := game.FindPath(oldX, oldY, newX, newY, player, stack, player.GetFog(game.Model.Plane))
+                            path := game.Model.FindPath(oldX, oldY, newX, newY, player, stack, player.GetFog(game.Model.Plane))
                             if len(path) == 0 {
                                 game.blinkRed(yield)
                                 if inactiveStack != nil {
@@ -4447,7 +3965,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                     }
                 } else {
                     // make a copy of the unit stack to activate all units, because path finding only checks active units for terrain constraints
-                    path := game.FindPath(oldX, oldY, newX, newY, player, playerlib.MakeUnitStackFromUnits(stack.Units()), player.GetFog(game.Model.Plane))
+                    path := game.Model.FindPath(oldX, oldY, newX, newY, player, playerlib.MakeUnitStackFromUnits(stack.Units()), player.GetFog(game.Model.Plane))
                     if len(path) == 0 {
                         game.blinkRed(yield)
                     } else {
@@ -4596,7 +4114,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
         found := player.FindStack(x, y, stack.Plane())
         return found, found != nil
     }
-    terrainCost, ok := game.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()), getStack)
+    terrainCost, ok := game.Model.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, game.GetMap(stack.Plane()), getStack)
     if ok {
         oldX := stack.X()
         oldY := stack.Y()
@@ -4611,7 +4129,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
             }
         }
 
-        newCity, _ := game.FindCity(to.X, to.Y, stack.Plane())
+        newCity, _ := game.Model.FindCity(to.X, to.Y, stack.Plane())
         if newCity != nil {
             for _, unit := range stack.ActiveUnits() {
                 if !newCity.CanEnter(unit) {
@@ -4680,12 +4198,12 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
 }
 
 func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
-    log.Printf("AI %v year %v: make decisions", player.Wizard.Name, game.TurnNumber)
+    log.Printf("AI %v year %v: make decisions", player.Wizard.Name, game.Model.TurnNumber)
 
     var decisions []playerlib.AIDecision
 
     if player.AIBehavior != nil {
-        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game, player.ManaPerTurn(game.ComputePower(player), game))
+        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game.Model, player.ManaPerTurn(game.ComputePower(player), game))
         log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
         for _, decision := range decisions {
@@ -6162,7 +5680,7 @@ func (game *Game) ComputeMaximumPopulation(x int, y int, plane data.Plane) int {
     // find catchment area of x, y
     // for each square, compute food production
     // maximum pop is food production
-    maybeCity, _ := game.FindCity(x, y, plane)
+    maybeCity, _ := game.Model.FindCity(x, y, plane)
     if maybeCity != nil {
         return maybeCity.MaximumCitySize()
     }
@@ -6258,7 +5776,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
         if powers.CreateOutpost {
             // search for the settlers (the only unit with the create outpost ability
             for _, settlers := range player.SelectedStack.ActiveUnits() {
-                if game.IsSettlableLocation(settlers.GetX(), settlers.GetY(), settlers.GetPlane()) && settlers.HasAbility(data.AbilityCreateOutpost) {
+                if game.Model.IsSettlableLocation(settlers.GetX(), settlers.GetY(), settlers.GetPlane()) && settlers.HasAbility(data.AbilityCreateOutpost) {
                     game.CreateOutpost(settlers, player)
                     game.RefreshUI()
                     return
@@ -6520,32 +6038,6 @@ func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
     })
 }
 
-func (game *Game) ComputeCityStackInfo() playerlib.CityStackInfo {
-    out := playerlib.CityStackInfo{
-        ArcanusStacks: make(map[image.Point]*playerlib.UnitStack),
-        MyrrorStacks: make(map[image.Point]*playerlib.UnitStack),
-        ArcanusCities: make(map[image.Point]*citylib.City),
-        MyrrorCities: make(map[image.Point]*citylib.City),
-    }
-
-    for _, player := range game.Model.Players {
-        for _, stack := range player.Stacks {
-            switch stack.Plane() {
-                case data.PlaneArcanus: out.ArcanusStacks[image.Pt(stack.X(), stack.Y())] = stack
-                case data.PlaneMyrror: out.MyrrorStacks[image.Pt(stack.X(), stack.Y())] = stack
-            }
-        }
-
-        for _, city := range player.Cities {
-            switch city.Plane {
-                case data.PlaneArcanus: out.ArcanusCities[image.Pt(city.X, city.Y)] = city
-                case data.PlaneMyrror: out.MyrrorCities[image.Pt(city.X, city.Y)] = city
-            }
-        }
-    }
-
-    return out
-}
 
 func (game *Game) GetHumanPlayer() *playerlib.Player {
     return game.Model.Players[0]
@@ -6583,7 +6075,7 @@ func (game *Game) PlaneShift(stack *playerlib.UnitStack, player *playerlib.Playe
         canMove = false
     }
 
-    cityStackInfo := game.ComputeCityStackInfo()
+    cityStackInfo := game.Model.ComputeCityStackInfo()
 
     if cityStackInfo.ContainsEnemy(stack.X(), stack.Y(), stack.Plane().Opposite(), player) {
         canMove = false
@@ -7192,7 +6684,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
             isCorrupted := game.GetMap(player.SelectedStack.Plane()).HasCorruption(player.SelectedStack.X(), player.SelectedStack.Y())
-            canSettle := player.SelectedStack.ActiveUnitsHasAbility(data.AbilityCreateOutpost) && game.IsSettlableLocation(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
+            canSettle := player.SelectedStack.ActiveUnitsHasAbility(data.AbilityCreateOutpost) && game.Model.IsSettlableLocation(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
 
             elements = append(elements, &uilib.UIElement{
                 Rect: buildRect,
@@ -7920,7 +7412,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                 }
             }
         }
-    } else if game.TurnNumber > 0 {
+    } else if game.Model.TurnNumber > 0 {
 
         if player.IsHuman() {
             select {
@@ -8149,7 +7641,7 @@ func (game *Game) doEarthquake(city *citylib.City, player *playerlib.Player) (in
 
 // At the beginning of each turn, Awareness clears the fog from all cities for enchantment's owner (newly built included)
 func (game *Game) doExploreFogForAwareness(awarenessOwner *playerlib.Player) {
-    for _, city := range game.AllCities() {
+    for _, city := range game.Model.AllCities() {
         if city.GetBanner() == awarenessOwner.GetBanner() {
             continue // No need, those cities do already provide vision
         }
@@ -8222,7 +7714,7 @@ func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (i
 
 // raises 4 to 6 volcanoes on random tiles
 func (game *Game) doArmageddon() {
-    info := game.ComputeCityStackInfo()
+    info := game.Model.ComputeCityStackInfo()
     for _, player := range game.Model.Players {
         if player.GlobalEnchantments.Contains(data.EnchantmentArmageddon) {
             // get a list of valid map tiles on both planes
@@ -8259,7 +7751,7 @@ func (game *Game) doArmageddon() {
 
 // corrupts 3-6 random tiles
 func (game *Game) doGreatWasting() {
-    info := game.ComputeCityStackInfo()
+    info := game.Model.ComputeCityStackInfo()
     for _, player := range game.Model.Players {
         if player.GlobalEnchantments.Contains(data.EnchantmentGreatWasting) {
             // get a list of valid map tiles on both planes
@@ -8393,8 +7885,8 @@ func (game *Game) DoRandomEvents() {
     // for testing purposes
     // eventModifier = fraction.FromInt(10)
 
-    eventProbability := fraction.FromInt(int(game.TurnNumber - game.LastEventTurn)).Multiply(eventModifier)
-    if game.TurnNumber < 50 || game.TurnNumber - game.LastEventTurn < 5 {
+    eventProbability := fraction.FromInt(int(game.Model.TurnNumber - game.LastEventTurn)).Multiply(eventModifier)
+    if game.Model.TurnNumber < 50 || game.Model.TurnNumber - game.LastEventTurn < 5 {
         eventProbability = fraction.Zero()
     }
 
@@ -8435,7 +7927,7 @@ func (game *Game) DoRandomEvents() {
             }
         }
 
-        if game.TurnNumber < 150 {
+        if game.Model.TurnNumber < 150 {
             choices.Remove(RandomEventDiplomaticMarriage)
             choices.Remove(RandomEventGreatMeteor)
         }
@@ -8453,12 +7945,12 @@ func (game *Game) DoRandomEvents() {
                 }
 
                 switch choice {
-                    case RandomEventBadMoon: return MakeBadMoonEvent(game.TurnNumber), nil
-                    case RandomEventGoodMoon: return MakeGoodMoonEvent(game.TurnNumber), nil
-                    case RandomEventConjunctionChaos: return MakeConjunctionChaosEvent(game.TurnNumber), nil
-                    case RandomEventConjunctionNature: return MakeConjunctionNatureEvent(game.TurnNumber), nil
-                    case RandomEventConjunctionSorcery: return MakeConjunctionSorceryEvent(game.TurnNumber), nil
-                    case RandomEventManaShort: return MakeManaShortEvent(game.TurnNumber), nil
+                    case RandomEventBadMoon: return MakeBadMoonEvent(game.Model.TurnNumber), nil
+                    case RandomEventGoodMoon: return MakeGoodMoonEvent(game.Model.TurnNumber), nil
+                    case RandomEventConjunctionChaos: return MakeConjunctionChaosEvent(game.Model.TurnNumber), nil
+                    case RandomEventConjunctionNature: return MakeConjunctionNatureEvent(game.Model.TurnNumber), nil
+                    case RandomEventConjunctionSorcery: return MakeConjunctionSorceryEvent(game.Model.TurnNumber), nil
+                    case RandomEventManaShort: return MakeManaShortEvent(game.Model.TurnNumber), nil
                     case RandomEventDisjunction:
                         // there must be at least one global enchantment for this event to occur
                         hasGlobalEnchantment := false
@@ -8479,13 +7971,13 @@ func (game *Game) DoRandomEvents() {
                             player.GlobalEnchantments.Clear()
                         }
 
-                        return MakeDisjunctionEvent(game.TurnNumber), nil
+                        return MakeDisjunctionEvent(game.Model.TurnNumber), nil
                     case RandomEventDonation:
                         // FIXME: what are the bounds here?
                         gold := rand.N(2000) + 100
                         target.Gold += gold
 
-                        return MakeDonationEvent(game.TurnNumber, gold, target), nil
+                        return MakeDonationEvent(game.Model.TurnNumber, gold, target), nil
                     case RandomEventPiracy:
                         if target.Gold < 100 {
                             return nil, nil
@@ -8495,7 +7987,7 @@ func (game *Game) DoRandomEvents() {
                         gold := rand.N(target.Gold / 5) + target.Gold * 3 / 10
                         target.Gold = max(0, target.Gold - gold)
 
-                        return MakePiracyEvent(game.TurnNumber, gold, target), nil
+                        return MakePiracyEvent(game.Model.TurnNumber, gold, target), nil
                     case RandomEventGift:
                         var out []*artifact.Artifact
                         for _, artifact := range game.ArtifactPool {
@@ -8515,7 +8007,7 @@ func (game *Game) DoRandomEvents() {
 
                         // returning GameEventVault here is ugly but we need a way to have the vault event
                         // be added to game.Events after the random event
-                        return MakeGiftEvent(game.TurnNumber, use.Name, target), &GameEventVault{CreatedArtifact: use, Player: target}
+                        return MakeGiftEvent(game.Model.TurnNumber, use.Name, target), &GameEventVault{CreatedArtifact: use, Player: target}
                     case RandomEventDepletion:
                         // choose a random town that has a mineral bonus in its catchment area,
                         // and then remove the bonus from the map
@@ -8536,7 +8028,7 @@ func (game *Game) DoRandomEvents() {
                             if len(choices) > 0 {
                                 tile := choices[rand.N(len(choices))]
                                 mapUse.RemoveBonus(tile.X, tile.Y)
-                                return MakeDepletionEvent(game.TurnNumber, tile.GetBonus(), city.Name), nil
+                                return MakeDepletionEvent(game.Model.TurnNumber, tile.GetBonus(), city.Name), nil
                             }
                         }
 
@@ -8558,7 +8050,7 @@ func (game *Game) DoRandomEvents() {
 
                                     ChangeCityOwner(city, player, target, ChangeCityRemoveAllEnchantments)
 
-                                    return MakeDiplomaticMarriageEvent(game.TurnNumber, city), nil
+                                    return MakeDiplomaticMarriageEvent(game.Model.TurnNumber, city), nil
                                 }
                             }
                         }
@@ -8566,7 +8058,7 @@ func (game *Game) DoRandomEvents() {
                         return nil, nil
 
                     case RandomEventEarthquake:
-                        choices := game.AllCities()
+                        choices := game.Model.AllCities()
                         if len(choices) == 0 {
                             return nil, nil
                         }
@@ -8575,10 +8067,10 @@ func (game *Game) DoRandomEvents() {
 
                         people, units, buildings := game.doEarthquake(city, target)
 
-                        return MakeEarthquakeEvent(game.TurnNumber, city.Name, people, units, len(buildings)), nil
+                        return MakeEarthquakeEvent(game.Model.TurnNumber, city.Name, people, units, len(buildings)), nil
 
                     case RandomEventGreatMeteor:
-                        choices := game.AllCities()
+                        choices := game.Model.AllCities()
                         if len(choices) == 0 {
                             return nil, nil
                         }
@@ -8587,7 +8079,7 @@ func (game *Game) DoRandomEvents() {
 
                         people, units, buildings := game.doCallTheVoid(city, target)
 
-                        return MakeGreatMeteorEvent(game.TurnNumber, city.Name, people, units, buildings), nil
+                        return MakeGreatMeteorEvent(game.Model.TurnNumber, city.Name, people, units, buildings), nil
 
                     case RandomEventNewMinerals:
                         cities := target.GetCities()
@@ -8610,7 +8102,7 @@ func (game *Game) DoRandomEvents() {
                                 bonus := bonusChoices[rand.N(len(bonusChoices))]
 
                                 mapUse.SetBonus(tile.X, tile.Y, bonus)
-                                return MakeNewMineralsEvent(game.TurnNumber, bonus, city), nil
+                                return MakeNewMineralsEvent(game.Model.TurnNumber, bonus, city), nil
                             }
                         }
 
@@ -8619,7 +8111,7 @@ func (game *Game) DoRandomEvents() {
                         for _, cityIndex := range rand.Perm(len(cities)) {
                             city := cities[cityIndex]
                             if !usedCities.Contains(city) {
-                                return MakePlagueEvent(game.TurnNumber, city), nil
+                                return MakePlagueEvent(game.Model.TurnNumber, city), nil
                             }
                         }
 
@@ -8630,7 +8122,7 @@ func (game *Game) DoRandomEvents() {
                         for _, cityIndex := range rand.Perm(len(cities)) {
                             city := cities[cityIndex]
                             if !usedCities.Contains(city) {
-                                return MakePopulationBoomEvent(game.TurnNumber, city), nil
+                                return MakePopulationBoomEvent(game.Model.TurnNumber, city), nil
                             }
                         }
 
@@ -8684,7 +8176,7 @@ func (game *Game) DoRandomEvents() {
 
                                 // plague/population boom might still be active for the city. just leave them for now
 
-                                return MakeRebellionEvent(game.TurnNumber, city), nil
+                                return MakeRebellionEvent(game.Model.TurnNumber, city), nil
                             }
                         }
 
@@ -8697,7 +8189,7 @@ func (game *Game) DoRandomEvents() {
             targetWizard := game.Model.Players[rand.N(len(game.Model.Players))]
             newEvent, extraEvent := makeEvent(choice, targetWizard)
             if newEvent != nil {
-                game.LastEventTurn = game.TurnNumber
+                game.LastEventTurn = game.Model.TurnNumber
 
                 // log.Printf("Random event occurred: %+v", newEvent)
 
@@ -8729,7 +8221,7 @@ func (game *Game) DoRandomEvents() {
         }
 
         // a random event can end after 5 turns, and the chances of it ending are 5% per turn
-        turns := game.TurnNumber - event.BirthYear
+        turns := game.Model.TurnNumber - event.BirthYear
         if turns < 5 {
             keep = append(keep, event)
             continue
@@ -8753,11 +8245,11 @@ func (game *Game) DoRandomEvents() {
 }
 
 func (game *Game) doChaosRift() {
-    for _, city := range game.AllCities() {
+    for _, city := range game.Model.AllCities() {
         if city.HasEnchantment(data.CityEnchantmentChaosRift) {
 
             // do 5 magical attacks of strength 8 to units in the city
-            stack, player := game.FindStack(city.X, city.Y, city.Plane)
+            stack, player := game.Model.FindStack(city.X, city.Y, city.Plane)
             if stack != nil && !stack.IsEmpty() {
                 stackUnits := stack.Units()
                 for range 5 {
@@ -8827,7 +8319,7 @@ func (game *Game) doMeteorStorm() {
         }
     }
 
-    entityInfo := game.ComputeCityStackInfo()
+    entityInfo := game.Model.ComputeCityStackInfo()
 
     for _, player := range game.Model.Players {
         if player.Defeated {
@@ -8940,7 +8432,7 @@ func (game *Game) EndOfTurn() {
 
     game.doMeteorStorm()
 
-    game.TurnNumber += 1
+    game.Model.TurnNumber += 1
 
     game.DoRandomEvents()
 

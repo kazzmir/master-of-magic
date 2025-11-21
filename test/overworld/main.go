@@ -3799,7 +3799,7 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Camera.Center(x, y)
 
-    game.TurnNumber = 300
+    game.Model.TurnNumber = 300
 
     game.Events <- &gamelib.GameEventShowRandomEvent{
         // Event: gamelib.MakeDisjunctionEvent(0),
@@ -5613,7 +5613,7 @@ func createScenario61(cache *lbx.LbxCache) *gamelib.Game {
         Banner: data.BannerRed,
     }, false)
 
-    game.TurnNumber = 300
+    game.Model.TurnNumber = 300
     power := playerlib.WizardPower{
         Army: 5,
         Magic: 5,
@@ -5626,7 +5626,7 @@ func createScenario61(cache *lbx.LbxCache) *gamelib.Game {
         SpellResearch: 5,
     }
 
-    for range game.TurnNumber {
+    for range game.Model.TurnNumber {
         player.AddPowerHistory(power)
         V := 10
         power.Army = max(0, power.Army + rand.N(V*2) - V)

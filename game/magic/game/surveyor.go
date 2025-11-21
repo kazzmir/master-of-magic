@@ -393,7 +393,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
                 if !tile.Tile.IsLand() {
                     text = "Cannot build cities on water."
-                } else if cityMap[newPoint] == nil && game.NearCity(newPoint, 3, game.Model.Plane) {
+                } else if cityMap[newPoint] == nil && game.Model.NearCity(newPoint, 3, game.Model.Plane) {
                     text = "Cities cannot be built less than 3 squares from any other city."
                 } else {
                     text = "City Resources"

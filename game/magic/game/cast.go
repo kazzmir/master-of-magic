@@ -475,7 +475,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         case "Death Wish":
             after := func() {
-                cityStackInfo := game.ComputeCityStackInfo()
+                cityStackInfo := game.Model.ComputeCityStackInfo()
 
                 for _, owner := range game.Model.Players {
                     if owner == player {
@@ -515,11 +515,11 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         case "Black Wind":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                stack, owner := game.FindStack(tileX, tileY, game.Model.Plane)
+                stack, owner := game.Model.FindStack(tileX, tileY, game.Model.Plane)
                 if stack != nil {
 
                     // FIXME: I think this check isn't needed because the SelectLocationForSpell should prevent selecting a city tile
-                    city, _ := game.FindCity(tileX, tileY, game.Model.Plane)
+                    city, _ := game.Model.FindCity(tileX, tileY, game.Model.Plane)
                     if city != nil && !city.CanTarget(spell) {
                         game.ShowFizzleSpell(spell, player)
                         return
@@ -543,11 +543,11 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         case "Stasis":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                stack, _ := game.FindStack(tileX, tileY, game.Model.Plane)
+                stack, _ := game.Model.FindStack(tileX, tileY, game.Model.Plane)
                 if stack != nil {
 
                     // FIXME: I think this check isn't needed because the SelectLocationForSpell should prevent selecting a city tile
-                    city, _ := game.FindCity(tileX, tileY, game.Model.Plane)
+                    city, _ := game.Model.FindCity(tileX, tileY, game.Model.Plane)
                     if city != nil && !city.CanTarget(spell) {
                         game.ShowFizzleSpell(spell, player)
                         return
@@ -579,7 +579,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         case "Great Unsummoning":
             after := func(){
-                cityStackInfo := game.ComputeCityStackInfo()
+                cityStackInfo := game.Model.ComputeCityStackInfo()
 
                 for _, player := range game.Model.Players {
                     for _, stack := range player.Stacks {
@@ -645,7 +645,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         case "Earthquake":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                city, owner := game.FindCity(tileX, tileY, game.Model.Plane)
+                city, owner := game.Model.FindCity(tileX, tileY, game.Model.Plane)
                 if city != nil {
                     sound, err := audio.LoadSound(game.Cache, spell.Sound)
                     if err == nil {
@@ -662,7 +662,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         case "Ice Storm":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                city, _ := game.FindCity(tileX, tileY, game.Model.Plane)
+                city, _ := game.Model.FindCity(tileX, tileY, game.Model.Plane)
                 if city != nil {
                     if city.CheckDispel(spell) {
                         game.ShowFizzleSpell(spell, player)
@@ -670,7 +670,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                     }
                 }
 
-                enemyStack, enemy := game.FindStack(tileX, tileY, game.Model.Plane)
+                enemyStack, enemy := game.Model.FindStack(tileX, tileY, game.Model.Plane)
 
                 game.doCastOnMap(yield, tileX, tileY, 10, spell.Sound, func (x int, y int, animationFrame int) {})
 
@@ -687,13 +687,13 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyUnit, SelectedFunc: selected}
         case "Fire Storm":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                city, _ := game.FindCity(tileX, tileY, game.Model.Plane)
+                city, _ := game.Model.FindCity(tileX, tileY, game.Model.Plane)
                 if city != nil && city.CheckDispel(spell) {
                     game.ShowFizzleSpell(spell, player)
                     return
                 }
 
-                enemyStack, enemy := game.FindStack(tileX, tileY, game.Model.Plane)
+                enemyStack, enemy := game.Model.FindStack(tileX, tileY, game.Model.Plane)
 
                 game.doCastOnMap(yield, tileX, tileY, 6, spell.Sound, func (x int, y int, animationFrame int) {})
 
@@ -729,7 +729,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: selected}
         case "Call the Void":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                chosenCity, owner := game.FindCity(tileX, tileY, game.Model.Plane)
+                chosenCity, owner := game.Model.FindCity(tileX, tileY, game.Model.Plane)
 
                 if chosenCity.CheckDispel(spell) {
                     game.ShowFizzleSpell(spell, player)
@@ -752,7 +752,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeTransmute, SelectedFunc: game.doCastTransmute}
         case "Raise Volcano":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                chosenCity, _ := game.FindCity(tileX, tileY, game.Model.Plane)
+                chosenCity, _ := game.Model.FindCity(tileX, tileY, game.Model.Plane)
 
                 // unclear if chaos ward makes the spell fizzle or if this tile just can't be selected
                 if chosenCity != nil && chosenCity.CheckDispel(spell) {
@@ -769,7 +769,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeAny, SelectedFunc: game.doCastEnchantRoad}
         case "Corruption":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
-                chosenCity, _ := game.FindCity(tileX, tileY, game.Model.Plane)
+                chosenCity, _ := game.Model.FindCity(tileX, tileY, game.Model.Plane)
 
                 // FIXME: it's not obvious if Chaos Ward prevents Corruption from being cast on city center. Left it here because it sounds logical
                 if chosenCity != nil && chosenCity.CheckDispel(spell) {
@@ -1499,7 +1499,7 @@ func (game *Game) doCastSpellWard(player *playerlib.Player, spell spellbook.Spel
     selectCity = func (yield coroutine.YieldFunc, tileX int, tileY int) {
         // FIXME: Show this only for enemies if detect magic is active and the city is known to the human player
         game.doMoveCamera(yield, tileX, tileY)
-        chosenCity, _ := game.FindCity(tileX, tileY, game.Model.Plane)
+        chosenCity, _ := game.Model.FindCity(tileX, tileY, game.Model.Plane)
         if chosenCity == nil {
             return
         }
@@ -1566,7 +1566,7 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
 
     allSpells := game.AllSpells()
 
-    city, _ := game.FindCity(tileX, tileY, game.Model.Plane)
+    city, _ := game.Model.FindCity(tileX, tileY, game.Model.Plane)
     if city != nil {
         for _, enchantment := range city.Enchantments.Values() {
             if enchantment.Owner != player.GetBanner() {
@@ -1580,7 +1580,7 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
         }
     }
 
-    stack, owner := game.FindStack(tileX, tileY, game.Model.Plane)
+    stack, owner := game.Model.FindStack(tileX, tileY, game.Model.Plane)
     if stack != nil && owner != player {
         for _, unit := range stack.Units() {
             var toRemove []data.UnitEnchantment
@@ -2060,7 +2060,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         ui.Draw(ui, screen)
     }
 
-    entityInfo := game.ComputeCityStackInfo()
+    entityInfo := game.Model.ComputeCityStackInfo()
 
     for !quit {
         overworld.Counter += 1
@@ -2248,7 +2248,7 @@ func (game *Game) doCastCityEnchantmentFull(spell spellbook.Spell, player *playe
     selected = func (yield coroutine.YieldFunc, tileX int, tileY int) {
         // FIXME: Show this only for enemies if detect magic is active and the city is known to the human player
         game.doMoveCamera(yield, tileX, tileY)
-        chosenCity, _ := game.FindCity(tileX, tileY, game.Model.Plane)
+        chosenCity, _ := game.Model.FindCity(tileX, tileY, game.Model.Plane)
         if chosenCity == nil {
             return
         }
@@ -2276,7 +2276,7 @@ func (game *Game) doCastNewCityBuilding(spell spellbook.Spell, player *playerlib
     selected = func (yield coroutine.YieldFunc, tileX int, tileY int) {
         // FIXME: Show this only for enemies if detect magic is active and the city is known to the human player
         game.doMoveCamera(yield, tileX, tileY)
-        chosenCity, _ := game.FindCity(tileX, tileY, game.Model.Plane)
+        chosenCity, _ := game.Model.FindCity(tileX, tileY, game.Model.Plane)
         if chosenCity == nil {
             return
         }

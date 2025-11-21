@@ -14,7 +14,7 @@ import (
 )
 
 func TestPathBasic(test *testing.T) {
-    var game Game
+    var model GameModel
 
     // just have two tiles, land and ocean
     terrainData := terrain.MakeTerrainData([]image.Image{nil, nil}, []terrain.TerrainTile{
@@ -34,7 +34,7 @@ func TestPathBasic(test *testing.T) {
     xmap.Map.Terrain[2][0] = 0
     xmap.Map.Terrain[3][0] = 0
 
-    game.Model.ArcanusMap = &xmap
+    model.ArcanusMap = &xmap
 
     makeFog := func(width int, height int, visibility data.FogType) data.FogMap {
         fog := make(data.FogMap, width)
@@ -52,14 +52,14 @@ func TestPathBasic(test *testing.T) {
     fogUnknown := makeFog(3, 1, data.FogTypeUnexplored)
 
     checkValidPathOverworldUnit := func (fromX, toX int, fog data.FogMap, unit... *units.OverworldUnit) bool {
-        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, game.Model)
+        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &model)
         for _, u := range unit {
             newUnit := player1.AddUnit(u)
             newUnit.SetX(fromX)
             newUnit.SetY(0)
         }
 
-        return len(game.FindPath(fromX, 0, toX, 0, player1, player1.FindStack(fromX, 0, data.PlaneArcanus), fog)) > 0
+        return len(model.FindPath(fromX, 0, toX, 0, player1, player1.FindStack(fromX, 0, data.PlaneArcanus), fog)) > 0
     }
 
     checkValidPath := func (fromX, toX int, unit... units.Unit) bool {
@@ -161,7 +161,7 @@ func TestPathBasic(test *testing.T) {
 
     // land walking unit can move onto sailing unit if sailing unit is in water
     func() {
-        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, game.Model)
+        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &model)
 
         // warship in water
         player1.AddUnit(units.MakeOverworldUnit(units.Warship, 1, 0, data.PlaneArcanus))
@@ -171,7 +171,7 @@ func TestPathBasic(test *testing.T) {
         stack := player1.FindStack(2, 0, data.PlaneArcanus)
 
         // swordsmen should be able to move onto warship
-        path := game.FindPath(2, 0, 1, 0, player1, stack, fog)
+        path := model.FindPath(2, 0, 1, 0, player1, stack, fog)
         if len(path) == 0 {
             test.Errorf("Land unit should be able to move onto sailing unit in water")
         }
@@ -179,7 +179,7 @@ func TestPathBasic(test *testing.T) {
 
     // land walking unit as part of a stack with a sailing unit that has flight can move into water
     func() {
-        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, game.Model)
+        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &model)
 
         flyingWarship := units.MakeOverworldUnit(units.Warship, 2, 0, data.PlaneArcanus)
         flyingWarship.AddEnchantment(data.UnitEnchantmentFlight)
@@ -188,7 +188,7 @@ func TestPathBasic(test *testing.T) {
 
         stack := player1.FindStack(2, 0, data.PlaneArcanus)
 
-        path := game.FindPath(2, 0, 1, 0, player1, stack, fog)
+        path := model.FindPath(2, 0, 1, 0, player1, stack, fog)
         if len(path) == 0 {
             test.Errorf("Land unit in stack with flying sailing unit should be able to move into water")
         }
