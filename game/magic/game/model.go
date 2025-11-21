@@ -2,8 +2,11 @@ package game
 
 import (
     "image"
+    "slices"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -38,6 +41,10 @@ type GameModel struct {
     WaterBodies map[data.Plane][]*set.Set[image.Point]
 
     TurnNumber uint64
+
+    // FIXME: maybe put these in the Map object?
+    RoadWorkArcanus map[image.Point]float64
+    RoadWorkMyrror map[image.Point]float64
 }
 
 func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSettings,
@@ -56,6 +63,8 @@ func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSetti
         heroNames: heroNames,
         allSpells: allSpells,
         Plane: startingPlane,
+        RoadWorkArcanus: make(map[image.Point]float64),
+        RoadWorkMyrror: make(map[image.Point]float64),
     }
 }
 
@@ -648,4 +657,110 @@ func (model *GameModel) NearCity(point image.Point, squares int, plane data.Plan
     }
 
     return false
+}
+
+// find all engineers that are currently building a road
+// compute the work done by each engineer according to the terrain
+//   total work = work per engineer ^ engineers building on that tile
+// add total work to some counter, and when that total reaches the threshold for the terrain type
+// then set a road on that tile and make the engineers no longer busy
+func (model *GameModel) DoBuildRoads(player *playerlib.Player) {
+    arcanusBuilds := make(map[image.Point]struct{})
+    myrrorBuilds := make(map[image.Point]struct{})
+
+    for _, stack := range slices.Clone(player.Stacks) {
+        plane := stack.Plane()
+
+        engineerCount := ComputeEngineerCount(stack, true)
+
+        if engineerCount > 0 {
+            x, y := stack.X(), stack.Y()
+            roads := model.RoadWorkArcanus
+            if plane == data.PlaneMyrror {
+                roads = model.RoadWorkMyrror
+            }
+
+            amount, ok := roads[image.Pt(x, y)]
+            if !ok {
+                amount = 0
+            }
+
+            tileWork := model.ComputeRoadBuildEffort(x, y, plane) // just to get the work map
+
+            amount += math.Pow(tileWork.WorkPerEngineer, float64(engineerCount))
+            if amount >= tileWork.TotalWork {
+                model.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
+
+                for _, unit := range stack.Units() {
+                    if unit.GetBusy() == units.BusyStatusBuildRoad {
+                        unit.SetBusy(units.BusyStatusNone)
+                    }
+                }
+            } else {
+                roads[image.Pt(x, y)] = amount
+                if plane == data.PlaneArcanus {
+                    arcanusBuilds[image.Pt(x, y)] = struct{}{}
+                } else {
+                    myrrorBuilds[image.Pt(x, y)] = struct{}{}
+                }
+            }
+        }
+    }
+
+    // remove all points that are no longer being built
+
+    var toDelete []image.Point
+    for point, _ := range model.RoadWorkArcanus {
+        _, ok := arcanusBuilds[point]
+        if !ok {
+            toDelete = append(toDelete, point)
+        }
+    }
+
+    for _, point := range toDelete {
+        // log.Printf("remove point %v", point)
+        delete(model.RoadWorkArcanus, point)
+    }
+
+    toDelete = nil
+    for point, _ := range model.RoadWorkMyrror {
+        _, ok := myrrorBuilds[point]
+        if !ok {
+            toDelete = append(toDelete, point)
+        }
+    }
+
+    for _, point := range toDelete {
+        // log.Printf("remove point %v", point)
+        delete(model.RoadWorkMyrror, point)
+    }
+
+}
+
+// returns how many turns it takes to build a road on the given tile with the given stack
+func (model *GameModel) ComputeRoadBuildEffort(x int, y int, plane data.Plane) RoadWork {
+
+    computeWork := func (oneEngineerTurn int, twoEngineerTurn int) RoadWork {
+        workPerEngineer := float64(oneEngineerTurn) / float64(twoEngineerTurn)
+        totalWork := float64(oneEngineerTurn) * workPerEngineer
+        return RoadWork{WorkPerEngineer: workPerEngineer, TotalWork: totalWork}
+    }
+
+    work := make(map[terrain.TerrainType]RoadWork)
+    work[terrain.Grass] = computeWork(3, 1)
+    work[terrain.Desert] = computeWork(4, 2)
+    work[terrain.River] = computeWork(5, 2)
+    work[terrain.Forest] = computeWork(6, 3)
+    work[terrain.Tundra] = computeWork(6, 3)
+    work[terrain.Hill] = computeWork(6, 3)
+    work[terrain.Swamp] = computeWork(8, 4)
+    work[terrain.Mountain] = computeWork(8, 4)
+    work[terrain.Volcano] = computeWork(8, 4)
+    work[terrain.ChaosNode] = computeWork(8, 4)
+    work[terrain.NatureNode] = computeWork(5, 2)
+    work[terrain.SorceryNode] = computeWork(4, 2)
+
+    tile := model.GetMap(plane).GetTile(x, y)
+
+    return work[tile.Tile.TerrainType()]
 }

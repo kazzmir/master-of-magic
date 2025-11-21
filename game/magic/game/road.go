@@ -63,7 +63,7 @@ func (game *Game) ComputeRoadTime(path []image.Point, stack *playerlib.UnitStack
             continue
         }
 
-        work := game.ComputeRoadBuildEffort(point.X, point.Y, stack.Plane())
+        work := game.Model.ComputeRoadBuildEffort(point.X, point.Y, stack.Plane())
         turns += work.TotalWork / math.Pow(work.WorkPerEngineer, float64(engineerCount))
     }
 
