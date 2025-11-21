@@ -65,19 +65,19 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     game := gamelib.MakeGame(cache, setup.NewGameSettings{})
 
-    game.Plane = data.PlaneArcanus
+    game.Model.Plane = data.PlaneArcanus
 
     player := game.AddPlayer(wizard, true)
     player.TaxRate = fraction.Zero()
 
-    x, y, _ := game.FindValidCityLocation(game.Plane)
+    x, y, _ := game.FindValidCityLocation(game.Model.Plane)
 
     /*
     x = 20
     y = 20
     */
 
-    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.BuildingInfo, game.CurrentMap(), game, player)
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.BuildingInfo, game.Model.CurrentMap(), game, player)
     city.Population = 16190
     city.Plane = data.PlaneArcanus
     city.ProducingBuilding = buildinglib.BuildingGranary

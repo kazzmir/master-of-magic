@@ -184,7 +184,7 @@ func euclideanDistance(x1, y1, x2, y2 int) float64 {
 }
 
 func findCityLocation(game *gamelib.Game, startingPlane data.Plane, cityArea gamelib.CityValidArea) (int, int) {
-    allCities := game.AllCities()
+    allCities := game.Model.AllCities()
 
     closestDistance := func(x, y int) int {
         distance := -1
@@ -300,7 +300,7 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
     if isHuman {
         game.Events <- gamelib.StartingCityEvent(introCity)
         game.Camera.Center(cityX, cityY)
-        game.Plane = startingPlane
+        game.Model.Plane = startingPlane
     }
 
     return player
@@ -421,7 +421,7 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
                 game.Shutdown()
                 game = newGame
                 game.GameLoader = gameLoader
-                game.CurrentPlayer = 0
+                game.Model.CurrentPlayer = 0
                 game.RefreshUI()
 
                 magic.Drawer = func(screen *ebiten.Image) {
@@ -463,7 +463,7 @@ func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizar
 
     // hack
     // human.Admin = true
-    game.CurrentPlayer = 0
+    game.Model.CurrentPlayer = 0
     game.StartPlayerTurn(human)
 
     // game.DoNextTurn()
@@ -576,7 +576,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                 if newGame != nil {
                     music.Stop()
                     // FIXME: should this go here?
-                    newGame.CurrentPlayer = 0
+                    newGame.Model.CurrentPlayer = 0
                     err := runGameInstance(newGame, yield, game, gameLoader)
                     if err != nil {
                         game.Drawer = shutdown

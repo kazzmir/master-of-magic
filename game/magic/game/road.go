@@ -63,7 +63,7 @@ func (game *Game) ComputeRoadTime(path []image.Point, stack *playerlib.UnitStack
             continue
         }
 
-        work := game.ComputeRoadBuildEffort(point.X, point.Y, stack.Plane())
+        work := game.Model.ComputeRoadBuildEffort(point.X, point.Y, stack.Plane())
         turns += work.TotalWork / math.Pow(work.WorkPerEngineer, float64(engineerCount))
     }
 
@@ -164,7 +164,7 @@ func (game *Game) FindRoadPath(oldX int, oldY int, newX int, newY int, player *p
     enemyStacks := make(map[image.Point]struct{})
     enemyCities := make(map[image.Point]struct{})
 
-    for _, enemy := range game.Players {
+    for _, enemy := range game.Model.Players {
         if enemy != player {
             for _, enemyStack := range enemy.Stacks {
                 enemyStacks[image.Pt(enemyStack.X(), enemyStack.Y())] = struct{}{}
@@ -305,7 +305,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
     var cityMap map[image.Point]*citylib.City
 
     roadMap := RoadMap{
-        Map: game.CurrentMap(),
+        Map: game.Model.CurrentMap(),
     }
 
     makeOverworld := func () Overworld {
@@ -315,22 +315,22 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
         var stacks []*playerlib.UnitStack
         var fog data.FogMap
 
-        for i, player := range game.Players {
+        for i, player := range game.Model.Players {
             for _, city := range player.Cities {
-                if city.Plane == game.Plane {
+                if city.Plane == game.Model.Plane {
                     cities = append(cities, city)
                     cityMap[image.Pt(city.X, city.Y)] = city
                 }
             }
 
             for _, stack := range player.Stacks {
-                if stack.Plane() == game.Plane {
+                if stack.Plane() == game.Model.Plane {
                     stacks = append(stacks, stack)
                 }
             }
 
             if i == 0 {
-                fog = player.GetFog(game.Plane)
+                fog = player.GetFog(game.Model.Plane)
             }
         }
 

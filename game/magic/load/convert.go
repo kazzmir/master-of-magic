@@ -513,9 +513,9 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
         }
 
         // log.Printf("City data: %+v", cityData)
-        catchmentProvider := game.ArcanusMap
+        catchmentProvider := game.Model.ArcanusMap
         if plane == data.PlaneMyrror {
-            catchmentProvider = game.MyrrorMap
+            catchmentProvider = game.Model.MyrrorMap
         }
 
         city := citylib.City{
@@ -782,7 +782,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         // FIXME: CastingSkillPower
         // FIXME: RemainingCastingSkill
         GlobalEnchantments: globalEnchantments,
-        GlobalEnchantmentsProvider: game,
+        GlobalEnchantmentsProvider: game.Model,
         PlayerRelations: playerRelations,
         // FIXME: HeroPool createHeroes(herolib.ReadNamesPerWizard(game.Cache))
         // FIXME: Heroes
@@ -1012,7 +1012,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     player.UpdateFogVisibility()
 
     updateCities := func() {
-        for _, city := range saveGame.convertCities(&player, playerIndex, wizards, game, game.ArcanusMap, game.MyrrorMap) {
+        for _, city := range saveGame.convertCities(&player, playerIndex, wizards, game, game.Model.ArcanusMap, game.Model.MyrrorMap) {
             player.AddCity(city)
         }
     }
@@ -1421,7 +1421,7 @@ func setupRelations(player *playerlib.Player, index int, playerData *PlayerData,
 
 func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     game := gamelib.MakeGame(cache, saveGame.convertSettings())
-    game.TurnNumber = uint64(saveGame.Turn)
+    game.Model.TurnNumber = uint64(saveGame.Turn)
 
     artifacts := saveGame.convertArtifacts(game.AllSpells())
     // artifacts that are in the game are removed from the pool
@@ -1433,9 +1433,9 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
             continue
         }
 
-        _, ok := game.ArtifactPool[artifact.Name]
+        _, ok := game.Model.ArtifactPool[artifact.Name]
         if ok {
-            delete(game.ArtifactPool, artifact.Name)
+            delete(game.Model.ArtifactPool, artifact.Name)
         }
     }
 
@@ -1469,14 +1469,14 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
 
     for playerIndex := range saveGame.NumPlayers {
         player, stackMoves, deferred := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
-        game.Players = append(game.Players, player)
+        game.Model.Players = append(game.Model.Players, player)
 
         playerDefers = append(playerDefers, deferred)
 
         defer func(){
             for stack, destination := range stackMoves {
                 // FIXME: associate the player with the stack
-                path := game.FindPath(stack.X(), stack.Y(), destination.X, destination.Y, player, stack, player.GetFog(stack.Plane()))
+                path := game.Model.FindPath(stack.X(), stack.Y(), destination.X, destination.Y, player, stack, player.GetFog(stack.Plane()))
                 if path != nil {
                     stack.CurrentPath = path
                 }
@@ -1487,13 +1487,13 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // now set up player relations
     for playerIndex := range saveGame.NumPlayers {
         data := &saveGame.PlayerData[playerIndex]
-        player := game.Players[playerIndex]
-        setupRelations(player, int(playerIndex), data, game.Players)
+        player := game.Model.Players[playerIndex]
+        setupRelations(player, int(playerIndex), data, game.Model.Players)
     }
 
     // the players must exist before we can convert the maps
-    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
-    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
+    game.Model.ArcanusMap = saveGame.ConvertMap(game.Model.ArcanusMap.Data, data.PlaneArcanus, game, game.Model.Players)
+    game.Model.MyrrorMap = saveGame.ConvertMap(game.Model.MyrrorMap.Data, data.PlaneMyrror, game, game.Model.Players)
 
     // any initialization that needs the maps to occur can now run
     for _, f := range playerDefers {
@@ -1540,7 +1540,7 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     game.Camera.Center(20, 20)
 
     // center on some random city
-    for _, city := range game.Players[0].Cities {
+    for _, city := range game.Model.Players[0].Cities {
         game.Events <- &gamelib.GameEventMoveCamera{
             Instant: true,
             Plane: city.Plane,

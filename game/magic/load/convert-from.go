@@ -17,7 +17,7 @@ func CreateSaveGame(game *gamelib.Game) (*SaveGame, error) {
 
     var out SaveGame
 
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if player == nil {
             continue
         }
@@ -30,9 +30,9 @@ func CreateSaveGame(game *gamelib.Game) (*SaveGame, error) {
     out.LandSize = int16(game.Settings.LandSize)
     out.Magic = int16(game.Settings.Magic)
     out.Difficulty = int16(game.Settings.Difficulty)
-    out.NumCities = int16(len(game.AllCities()))
+    out.NumCities = int16(len(game.Model.AllCities()))
     out.NumUnits = int16(len(game.AllUnits()))
-    out.Turn = int16(game.TurnNumber)
+    out.Turn = int16(game.Model.TurnNumber)
 
     // FIXME
     // out.Unit = 0
@@ -40,7 +40,7 @@ func CreateSaveGame(game *gamelib.Game) (*SaveGame, error) {
     allSpells := game.AllSpells()
 
     out.HeroData = make([][]HeroData, out.NumPlayers)
-    for i, player := range game.Players {
+    for i, player := range game.Model.Players {
         if player == nil {
             continue
         }
@@ -50,7 +50,7 @@ func CreateSaveGame(game *gamelib.Game) (*SaveGame, error) {
         out.HeroData[i] = makeHeroData(player, &allSpells)
     }
 
-    for i, player := range game.Players {
+    for i, player := range game.Model.Players {
         out.PlayerData = append(out.PlayerData, makePlayerData(i, game, player))
     }
 
@@ -146,7 +146,7 @@ func makePlayerData(id int, game *gamelib.Game, player *playerlib.Player) Player
         MasteryResearch: uint16(player.SpellOfMasteryCost),
         Fame: uint16(player.Fame),
         PowerBase: uint16(game.ComputePower(player)),
-        Volcanoes: uint16(len(game.ArcanusMap.GetCastedVolcanoes(player)) + len(game.MyrrorMap.GetCastedVolcanoes(player))),
+        Volcanoes: uint16(len(game.Model.ArcanusMap.GetCastedVolcanoes(player)) + len(game.Model.MyrrorMap.GetCastedVolcanoes(player))),
         ResearchRatio: uint8(player.PowerDistribution.Research * 100),
         ManaRatio: uint8(player.PowerDistribution.Mana * 100),
         SkillRatio: uint8(player.PowerDistribution.Skill * 100),
