@@ -52,7 +52,7 @@ func TestPathBasic(test *testing.T) {
     fogUnknown := makeFog(3, 1, data.FogTypeUnexplored)
 
     checkValidPathOverworldUnit := func (fromX, toX int, fog data.FogMap, unit... *units.OverworldUnit) bool {
-        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &game)
+        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, game.Model)
         for _, u := range unit {
             newUnit := player1.AddUnit(u)
             newUnit.SetX(fromX)
@@ -161,7 +161,7 @@ func TestPathBasic(test *testing.T) {
 
     // land walking unit can move onto sailing unit if sailing unit is in water
     func() {
-        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &game)
+        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, game.Model)
 
         // warship in water
         player1.AddUnit(units.MakeOverworldUnit(units.Warship, 1, 0, data.PlaneArcanus))
@@ -179,7 +179,7 @@ func TestPathBasic(test *testing.T) {
 
     // land walking unit as part of a stack with a sailing unit that has flight can move into water
     func() {
-        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &game)
+        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, game.Model)
 
         flyingWarship := units.MakeOverworldUnit(units.Warship, 2, 0, data.PlaneArcanus)
         flyingWarship.AddEnchantment(data.UnitEnchantmentFlight)

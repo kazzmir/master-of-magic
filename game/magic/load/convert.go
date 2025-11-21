@@ -782,7 +782,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
         // FIXME: CastingSkillPower
         // FIXME: RemainingCastingSkill
         GlobalEnchantments: globalEnchantments,
-        GlobalEnchantmentsProvider: game,
+        GlobalEnchantmentsProvider: game.Model,
         PlayerRelations: playerRelations,
         // FIXME: HeroPool createHeroes(herolib.ReadNamesPerWizard(game.Cache))
         // FIXME: Heroes

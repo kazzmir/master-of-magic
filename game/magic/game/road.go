@@ -305,7 +305,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
     var cityMap map[image.Point]*citylib.City
 
     roadMap := RoadMap{
-        Map: game.CurrentMap(),
+        Map: game.Model.CurrentMap(),
     }
 
     makeOverworld := func () Overworld {
@@ -317,20 +317,20 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
 
         for i, player := range game.Model.Players {
             for _, city := range player.Cities {
-                if city.Plane == game.Plane {
+                if city.Plane == game.Model.Plane {
                     cities = append(cities, city)
                     cityMap[image.Pt(city.X, city.Y)] = city
                 }
             }
 
             for _, stack := range player.Stacks {
-                if stack.Plane() == game.Plane {
+                if stack.Plane() == game.Model.Plane {
                     stacks = append(stacks, stack)
                 }
             }
 
             if i == 0 {
-                fog = player.GetFog(game.Plane)
+                fog = player.GetFog(game.Model.Plane)
             }
         }
 

@@ -300,7 +300,7 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
     if isHuman {
         game.Events <- gamelib.StartingCityEvent(introCity)
         game.Camera.Center(cityX, cityY)
-        game.Plane = startingPlane
+        game.Model.Plane = startingPlane
     }
 
     return player

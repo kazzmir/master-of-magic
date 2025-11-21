@@ -39,27 +39,27 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
         for i, player := range game.Model.Players {
             for _, city := range player.Cities {
-                if city.Plane == game.Plane {
+                if city.Plane == game.Model.Plane {
                     cities = append(cities, city)
                     cityMap[image.Pt(city.X, city.Y)] = city
                 }
             }
 
             for _, stack := range player.Stacks {
-                if stack.Plane() == game.Plane {
+                if stack.Plane() == game.Model.Plane {
                     stacks = append(stacks, stack)
                 }
             }
 
             if i == 0 {
-                fog = player.GetFog(game.Plane)
+                fog = player.GetFog(game.Model.Plane)
             }
         }
 
         return Overworld{
             Camera: game.Camera,
             Counter: game.Counter,
-            Map: game.CurrentMap(),
+            Map: game.Model.CurrentMap(),
             Cities: cities,
             Stacks: stacks,
             SelectedStack: nil,
@@ -120,9 +120,9 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
             fonts.SurveyorFont.PrintCenter(screen, float64(280), float64(81), scale.ScaleAmount, ebiten.ColorScale{}, "Surveyor")
 
-            if selectedPoint.X >= 0 && selectedPoint.X < game.CurrentMap().Width() && selectedPoint.Y >= 0 && selectedPoint.Y < game.CurrentMap().Height() {
+            if selectedPoint.X >= 0 && selectedPoint.X < game.Model.CurrentMap().Width() && selectedPoint.Y >= 0 && selectedPoint.Y < game.Model.CurrentMap().Height() {
                 if overworld.Fog[selectedPoint.X][selectedPoint.Y] != data.FogTypeUnexplored {
-                    mapObject := game.CurrentMap()
+                    mapObject := game.Model.CurrentMap()
                     tile := mapObject.GetTile(selectedPoint.X, selectedPoint.Y)
                     node := mapObject.GetMagicNode(selectedPoint.X, selectedPoint.Y)
 
@@ -314,7 +314,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
             },
             LeftClickRelease: func(element *uilib.UIElement){
                 clicked = false
-                game.SwitchPlane()
+                game.Model.SwitchPlane()
                 overworld = makeOverworld()
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -389,19 +389,19 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
                 text := ""
 
-                tile := game.CurrentMap().GetTile(newX, newY)
+                tile := game.Model.CurrentMap().GetTile(newX, newY)
 
                 if !tile.Tile.IsLand() {
                     text = "Cannot build cities on water."
-                } else if cityMap[newPoint] == nil && game.NearCity(newPoint, 3, game.Plane) {
+                } else if cityMap[newPoint] == nil && game.NearCity(newPoint, 3, game.Model.Plane) {
                     text = "Cities cannot be built less than 3 squares from any other city."
                 } else {
                     text = "City Resources"
                     resources.Enabled = true
                     // FIXME: compute proper values for these
-                    resources.MaximumPopulation = game.ComputeMaximumPopulation(newX, newY, game.Plane)
-                    resources.ProductionBonus = game.CityProductionBonus(newX, newY, game.Plane)
-                    resources.GoldBonus = game.CityGoldBonus(newX, newY, game.Plane)
+                    resources.MaximumPopulation = game.ComputeMaximumPopulation(newX, newY, game.Model.Plane)
+                    resources.ProductionBonus = game.CityProductionBonus(newX, newY, game.Model.Plane)
+                    resources.GoldBonus = game.CityGoldBonus(newX, newY, game.Model.Plane)
                 }
 
                 cityInfoText = fonts.YellowFont.CreateWrappedText(float64(cancelBackground.Bounds().Dx() - 9), 1, text)
