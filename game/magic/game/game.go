@@ -362,6 +362,8 @@ type Game struct {
 
     Settings setup.NewGameSettings
 
+    Model *GameModel
+
     Counter uint64
     Fog *ebiten.Image
     Drawer func (*ebiten.Image, *Game)
@@ -390,9 +392,6 @@ type Game struct {
 
     HudUI *uilib.UI
     Help helplib.Help
-
-    ArcanusMap *maplib.Map
-    MyrrorMap *maplib.Map
 
     // FIXME: maybe put these in the Map object?
     RoadWorkArcanus map[image.Point]float64
@@ -423,8 +422,8 @@ func (game *Game) GetFogImage() *ebiten.Image {
 
 func (game *Game) GetMap(plane data.Plane) *maplib.Map {
     switch plane {
-        case data.PlaneArcanus: return game.ArcanusMap
-        case data.PlaneMyrror: return game.MyrrorMap
+        case data.PlaneArcanus: return game.Model.ArcanusMap
+        case data.PlaneMyrror: return game.Model.MyrrorMap
     }
 
     return nil
@@ -432,10 +431,10 @@ func (game *Game) GetMap(plane data.Plane) *maplib.Map {
 
 func (game *Game) CurrentMap() *maplib.Map {
     if game.Plane == data.PlaneArcanus {
-        return game.ArcanusMap
+        return game.Model.ArcanusMap
     }
 
-    return game.MyrrorMap
+    return game.Model.MyrrorMap
 }
 
 type UnitBuildPowers struct {
@@ -646,10 +645,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         PurifyWorkMyrror: make(map[image.Point]float64),
     }
 
-    planeTowers := maplib.GeneratePlaneTowerPositions(settings.LandSize, 6)
-
-    game.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, game, planeTowers)
-    game.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneMyrror, game, planeTowers)
+    game.Model = MakeGameModel(terrainData, settings, game)
 
     game.HudUI = game.MakeHudUI()
     game.Drawer = func(screen *ebiten.Image, game *Game){
@@ -672,8 +668,8 @@ func (game *Game) Shutdown() {
 func (game *Game) UpdateImages() {
     game.ImageCache = util.MakeImageCache(game.Cache)
     game.Fog = nil
-    game.ArcanusMap.ResetCache()
-    game.MyrrorMap.ResetCache()
+    game.Model.ArcanusMap.ResetCache()
+    game.Model.MyrrorMap.ResetCache()
 
     mouseData, err := mouselib.MakeMouseData(game.Cache, &game.ImageCache)
     if err != nil {
@@ -1150,16 +1146,16 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
         return nodePower * multiplier
     }
 
-    for _, node := range game.ArcanusMap.GetMeldedNodes(player) {
+    for _, node := range game.Model.ArcanusMap.GetMeldedNodes(player) {
         power += applyConjunction(node)
     }
 
-    for _, node := range game.MyrrorMap.GetMeldedNodes(player) {
+    for _, node := range game.Model.MyrrorMap.GetMeldedNodes(player) {
         power += applyConjunction(node)
     }
 
-    power += float64(len(game.ArcanusMap.GetCastedVolcanoes(player)))
-    power += float64(len(game.MyrrorMap.GetCastedVolcanoes(player)))
+    power += float64(len(game.Model.ArcanusMap.GetCastedVolcanoes(player)))
+    power += float64(len(game.Model.MyrrorMap.GetCastedVolcanoes(player)))
 
     if power < 0 {
         power = 0
@@ -3633,7 +3629,7 @@ func (game *Game) doCartographer(yield coroutine.YieldFunc) {
 
     knownPlayers := append([]*playerlib.Player{game.GetHumanPlayer()}, game.GetHumanPlayer().GetKnownPlayers()...)
 
-    logic, draw := cartographer.MakeCartographer(game.Cache, game.AllCities(), stacks, knownPlayers, game.ArcanusMap, game.GetHumanPlayer().GetFog(data.PlaneArcanus), game.MyrrorMap, game.GetHumanPlayer().GetFog(data.PlaneMyrror))
+    logic, draw := cartographer.MakeCartographer(game.Cache, game.AllCities(), stacks, knownPlayers, game.Model.ArcanusMap, game.GetHumanPlayer().GetFog(data.PlaneArcanus), game.Model.MyrrorMap, game.GetHumanPlayer().GetFog(data.PlaneMyrror))
 
     yield()
     oldDrawer := game.Drawer
@@ -8186,7 +8182,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 }
 
 func (game *Game) revertVolcanos() {
-    mapObjects := []*maplib.Map{game.ArcanusMap, game.MyrrorMap}
+    mapObjects := []*maplib.Map{game.Model.ArcanusMap, game.Model.MyrrorMap}
     for _, mapObject := range mapObjects {
         for location, _ := range mapObject.ExtraMap {
             if mapObject.HasVolcano(location.X, location.Y) {
@@ -8319,7 +8315,7 @@ func (game *Game) doArmageddon() {
             // get a list of valid map tiles on both planes
             var points []data.PlanePoint
             catchment := player.GetAllCatchmentArea()
-            mapObjects := []*maplib.Map{game.ArcanusMap, game.MyrrorMap}
+            mapObjects := []*maplib.Map{game.Model.ArcanusMap, game.Model.MyrrorMap}
             for _, mapObject := range mapObjects {
                 for x := range mapObject.Map.Columns() {
                     for y := range mapObject.Map.Rows() {
@@ -8356,7 +8352,7 @@ func (game *Game) doGreatWasting() {
             // get a list of valid map tiles on both planes
             var points []data.PlanePoint
             catchment := player.GetAllCatchmentArea()
-            mapObjects := []*maplib.Map{game.ArcanusMap, game.MyrrorMap}
+            mapObjects := []*maplib.Map{game.Model.ArcanusMap, game.Model.MyrrorMap}
             for _, mapObject := range mapObjects {
                 for x := range mapObject.Map.Columns() {
                     for y := range mapObject.Map.Rows() {

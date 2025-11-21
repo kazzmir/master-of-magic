@@ -4785,8 +4785,8 @@ func createScenario51_52(cache *lbx.LbxCache, kill bool) *gamelib.Game {
         Race: data.RaceDraconian,
     }
     enemy := game.AddPlayer(enemyWizard, false)
-    x1 := game.ArcanusMap.WrapX(x-1)
-    x2 := game.ArcanusMap.WrapX(x+1)
+    x1 := game.Model.ArcanusMap.WrapX(x-1)
+    x2 := game.Model.ArcanusMap.WrapX(x+1)
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x1, y-1, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo(), enemy.MakeUnitEnchantmentProvider()))
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x1, y, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo(), enemy.MakeUnitEnchantmentProvider()))
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.DraconianSpearmen, x1, y+1, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo(), enemy.MakeUnitEnchantmentProvider()))
@@ -4871,7 +4871,7 @@ func createScenario53(cache *lbx.LbxCache) *gamelib.Game {
         Race: data.RaceBeastmen,
     }
     enemy := game.AddPlayer(enemyWizard, false)
-    x1 := game.ArcanusMap.WrapX(x-1)
+    x1 := game.Model.ArcanusMap.WrapX(x-1)
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.BeastmenSpearmen, x1, y-1, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo(), enemy.MakeUnitEnchantmentProvider()))
 
     x, y, _ = game.FindValidCityLocation(game.Plane)
@@ -4952,7 +4952,7 @@ func createScenario54(cache *lbx.LbxCache) *gamelib.Game {
         Race: data.RaceBeastmen,
     }
     enemy := game.AddPlayer(enemyWizard, false)
-    x1 := game.ArcanusMap.WrapX(x-1)
+    x1 := game.Model.ArcanusMap.WrapX(x-1)
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.BeastmenSpearmen, x1, y-1, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo(), enemy.MakeUnitEnchantmentProvider()))
     enemy.Mana = 10000
     enemy.GlobalEnchantments.Insert(data.EnchantmentNaturesWrath)
@@ -5035,7 +5035,7 @@ func createScenario55(cache *lbx.LbxCache) *gamelib.Game {
         Race: data.RaceBeastmen,
     }
     enemy := game.AddPlayer(enemyWizard, false)
-    x1 := game.ArcanusMap.WrapX(x-1)
+    x1 := game.Model.ArcanusMap.WrapX(x-1)
     enemy.AddUnit(units.MakeOverworldUnitFromUnit(units.BeastmenSpearmen, x1, y-1, data.PlaneArcanus, enemyWizard.Banner, enemy.MakeExperienceInfo(), enemy.MakeUnitEnchantmentProvider()))
     enemy.Mana = 10000
     enemy.GlobalEnchantments.Insert(data.EnchantmentSuppressMagic)

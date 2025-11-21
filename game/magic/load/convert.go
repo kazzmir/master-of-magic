@@ -513,9 +513,9 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
         }
 
         // log.Printf("City data: %+v", cityData)
-        catchmentProvider := game.ArcanusMap
+        catchmentProvider := game.Model.ArcanusMap
         if plane == data.PlaneMyrror {
-            catchmentProvider = game.MyrrorMap
+            catchmentProvider = game.Model.MyrrorMap
         }
 
         city := citylib.City{
@@ -1012,7 +1012,7 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
     player.UpdateFogVisibility()
 
     updateCities := func() {
-        for _, city := range saveGame.convertCities(&player, playerIndex, wizards, game, game.ArcanusMap, game.MyrrorMap) {
+        for _, city := range saveGame.convertCities(&player, playerIndex, wizards, game, game.Model.ArcanusMap, game.Model.MyrrorMap) {
             player.AddCity(city)
         }
     }
@@ -1492,8 +1492,8 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     }
 
     // the players must exist before we can convert the maps
-    game.ArcanusMap = saveGame.ConvertMap(game.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
-    game.MyrrorMap = saveGame.ConvertMap(game.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
+    game.Model.ArcanusMap = saveGame.ConvertMap(game.Model.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
+    game.Model.MyrrorMap = saveGame.ConvertMap(game.Model.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
 
     // any initialization that needs the maps to occur can now run
     for _, f := range playerDefers {

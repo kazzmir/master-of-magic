@@ -34,7 +34,7 @@ func TestPathBasic(test *testing.T) {
     xmap.Map.Terrain[2][0] = 0
     xmap.Map.Terrain[3][0] = 0
 
-    game.ArcanusMap = &xmap
+    game.Model.ArcanusMap = &xmap
 
     makeFog := func(width int, height int, visibility data.FogType) data.FogMap {
         fog := make(data.FogMap, width)
