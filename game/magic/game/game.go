@@ -401,7 +401,6 @@ type Game struct {
     PurifyWorkArcanus map[image.Point]float64
     PurifyWorkMyrror map[image.Point]float64
 
-    Players []*playerlib.Player
     CurrentPlayer int
 
     // the scroll events that occurred this turn
@@ -522,7 +521,7 @@ func (game *Game) AllSpells() spellbook.Spells {
 
 func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Player{
     heroNames := herolib.ReadNamesPerWizard(game.Cache)
-    useNames := heroNames[len(game.Players)]
+    useNames := heroNames[len(game.Model.Players)]
     if useNames == nil {
         useNames = make(map[herolib.HeroType]string)
     }
@@ -567,7 +566,7 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
         newPlayer.Fame += 10
     }
 
-    game.Players = append(game.Players, newPlayer)
+    game.Model.AddPlayer(newPlayer)
     return newPlayer
 }
 
@@ -681,7 +680,7 @@ func (game *Game) UpdateImages() {
 }
 
 func (game *Game) GetPlayerByBanner(banner data.BannerType) *playerlib.Player {
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if player.GetBanner() == banner {
             return player
         }
@@ -692,7 +691,7 @@ func (game *Game) GetPlayerByBanner(banner data.BannerType) *playerlib.Player {
 
 // return the city and its owner
 func (game *Game) FindCity(x int, y int, plane data.Plane) (*citylib.City, *playerlib.Player) {
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         city := player.FindCity(x, y, plane)
         if city != nil {
             return city, player
@@ -703,7 +702,7 @@ func (game *Game) FindCity(x int, y int, plane data.Plane) (*citylib.City, *play
 }
 
 func (game *Game) FindStack(x int, y int, plane data.Plane) (*playerlib.UnitStack, *playerlib.Player) {
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         stack := player.FindStack(x, y, plane)
         if stack != nil {
             return stack, player
@@ -941,7 +940,7 @@ func (game *Game) SuggestCityName(race data.Race) (string) {
 func (game *Game) AllUnits() []units.StackUnit{
     var out []units.StackUnit
 
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         for _, unit := range player.Units {
             out = append(out, unit)
         }
@@ -953,7 +952,7 @@ func (game *Game) AllUnits() []units.StackUnit{
 func (game *Game) AllCities() []*citylib.City {
     var out []*citylib.City
 
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         for _, city := range player.Cities {
             out = append(out, city)
         }
@@ -981,7 +980,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
         }
     }
 
-    player := game.Players[0]
+    player := game.Model.Players[0]
 
     drawMinimap := func (screen *ebiten.Image, x int, y int, plane data.Plane, counter uint64){
         use := arcanusCities
@@ -1003,7 +1002,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
             game.Camera.Center(city.X, city.Y)
         }
 
-        view := citylistview.MakeCityListScreen(game.Cache, game.Players[0], drawMinimap, selectCity)
+        view := citylistview.MakeCityListScreen(game.Cache, game.Model.Players[0], drawMinimap, selectCity)
 
         game.Drawer = func (screen *ebiten.Image, game *Game){
             view.Draw(screen)
@@ -1017,7 +1016,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
         yield()
 
         if showCity != nil {
-            game.doCityScreen(yield, showCity, game.Players[0], buildinglib.BuildingNone)
+            game.doCityScreen(yield, showCity, game.Model.Players[0], buildinglib.BuildingNone)
         } else {
             quit = true
         }
@@ -1050,7 +1049,7 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
         game.doVault(yield, nil)
     }
 
-    army := armyview.MakeArmyScreen(game.Cache, game.Players[0], drawMinimap, showVault)
+    army := armyview.MakeArmyScreen(game.Cache, game.Model.Players[0], drawMinimap, showVault)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         army.Draw(screen)
@@ -1168,7 +1167,7 @@ func (game *Game) ComputePower(player *playerlib.Player) int {
 func (game *Game) GetEnemyWizards() []*playerlib.Player {
     var out []*playerlib.Player
 
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if !player.IsHuman() && player.Wizard.Banner != data.BannerBrown {
             out = append(out, player)
         }
@@ -1207,7 +1206,7 @@ func (game *Game) doDiplomacy(yield coroutine.YieldFunc, player *playerlib.Playe
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
 
     oldDrawer := game.Drawer
-    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Players[0], game.GetEnemies(game.Players[0]), game.ComputePower(game.Players[0]), game)
+    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Model.Players[0], game.GetEnemies(game.Model.Players[0]), game.ComputePower(game.Model.Players[0]), game)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         magicScreen.Draw(screen)
@@ -1848,7 +1847,7 @@ func (game *Game) ComputeTerrainCost(stack playerlib.PathStack, sourceX int, sou
     }
 
     containsFriendlyCity := func (x int, y int) bool {
-        for _, player := range game.Players {
+        for _, player := range game.Model.Players {
             if player.GetBanner() == stack.GetBanner() {
                 if player.FindCity(x, y, stack.Plane()) != nil {
                     return true
@@ -2160,7 +2159,7 @@ func (game *Game) FindPath(oldX int, oldY int, newX int, newY int, player *playe
     enemyStacks := make(map[image.Point]struct{})
     enemyCities := make(map[image.Point]struct{})
 
-    for _, enemy := range game.Players {
+    for _, enemy := range game.Model.Players {
         if enemy != player {
             for _, enemyStack := range enemy.Stacks {
                 enemyStacks[image.Pt(enemyStack.X(), enemyStack.Y())] = struct{}{}
@@ -2481,7 +2480,7 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
         game.Drawer = drawer
     }()
 
-    vaultLogic, vaultDrawer := game.showVaultScreen(newArtifact, game.Players[0])
+    vaultLogic, vaultDrawer := game.showVaultScreen(newArtifact, game.Model.Players[0])
 
     if newArtifact != nil {
         itemLogic, itemDrawer := game.showItemPopup(newArtifact, game.Cache, &game.ImageCache, nil)
@@ -2878,7 +2877,7 @@ func (game *Game) doNotice(yield coroutine.YieldFunc, ui *uilib.UI, message stri
  * but first do some checks on disbanding units to confirm the player really wants to end the turn.
  */
 func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
-    player := game.Players[0]
+    player := game.Model.Players[0]
     goldIssue, foodIssue, manaIssue := game.CheckDisband(player)
 
     if goldIssue || foodIssue || manaIssue {
@@ -3104,7 +3103,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         road := event.(*GameEventBuildRoad)
                         stack := road.Stack
 
-                        player := game.Players[0]
+                        player := game.Model.Players[0]
 
                         path := game.ShowRoadBuilder(yield, stack, player)
                         if len(path) > 0 {
@@ -3138,7 +3137,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventHistorian:
                         game.ShowHistorian(yield)
                     case *GameEventApprenticeUI:
-                        game.ShowApprenticeUI(yield, game.Players[0])
+                        game.ShowApprenticeUI(yield, game.Model.Players[0])
                     case *GameEventArmyView:
                         game.doArmyView(yield)
                     case *GameEventShowBanish:
@@ -3148,7 +3147,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         notice := event.(*GameEventNotice)
                         game.doNotice(yield, game.HudUI, notice.Message)
                     case *GameEventCastSpellBook:
-                        game.ShowSpellBookCastUI(yield, game.Players[0])
+                        game.ShowSpellBookCastUI(yield, game.Model.Players[0])
                     case *GameEventCityListView:
                         game.doCityListView(yield)
                     case *GameEventNewOutpost:
@@ -3166,8 +3165,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventShowRandomEvent:
                         randomEvent := event.(*GameEventShowRandomEvent)
                         target := randomEvent.Event.TargetPlayer
-                        if target == nil || target == game.Players[0] {
-                            game.doRandomEvent(yield, randomEvent.Event, randomEvent.Starting, game.Players[0].Wizard)
+                        if target == nil || target == game.Model.Players[0] {
+                            game.doRandomEvent(yield, randomEvent.Event, randomEvent.Starting, game.Model.Players[0].Wizard)
                         }
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
@@ -3621,7 +3620,7 @@ func (game *Game) ShowAstrologer(yield coroutine.YieldFunc) {
 func (game *Game) doCartographer(yield coroutine.YieldFunc) {
 
     var stacks []*playerlib.UnitStack
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if !player.Defeated {
             stacks = append(stacks, player.Stacks...)
         }
@@ -3770,7 +3769,7 @@ func ChooseUniqueWizard(players []*playerlib.Player, allSpells spellbook.Spells)
 /* returns a wizard definition and true if successful, otherwise false if no more wizards can be created
  */
 func (game *Game) ChooseWizard() (setup.WizardCustom, bool) {
-    return ChooseUniqueWizard(game.Players, game.AllSpells())
+    return ChooseUniqueWizard(game.Model.Players, game.AllSpells())
 }
 
 func (game *Game) RefreshUI() {
@@ -4165,7 +4164,7 @@ func (game *Game) doBanish(yield coroutine.YieldFunc, attacker *playerlib.Player
 }
 
 func (game *Game) GetStackOwner(stack *playerlib.UnitStack) *playerlib.Player {
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if player.OwnsStack(stack) {
             return player
         }
@@ -4175,7 +4174,7 @@ func (game *Game) GetStackOwner(stack *playerlib.UnitStack) *playerlib.Player {
 }
 
 func (game *Game) GetCityOwner(city *citylib.City) *playerlib.Player {
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if player.OwnsCity(city) {
             return player
         }
@@ -4553,7 +4552,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
                         player.SelectedStack = stack
                         game.RefreshUI()
                     } else if player.IsExplored(tileX, tileY, game.Plane) {
-                        for _, otherPlayer := range game.Players {
+                        for _, otherPlayer := range game.Model.Players {
                             if otherPlayer == player {
                                 continue
                             }
@@ -4611,8 +4610,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
             game.HudUI.StandardUpdate()
 
             // kind of a hack to not allow player to interact with anything other than the current ui modal
-            if len(game.Players) > 0 && game.CurrentPlayer >= 0 {
-                player := game.Players[game.CurrentPlayer]
+            if len(game.Model.Players) > 0 && game.CurrentPlayer >= 0 {
+                player := game.Model.Players[game.CurrentPlayer]
 
                 if player.IsHuman() {
                     if game.HudUI.GetHighestLayerValue() == 0 {
@@ -4819,7 +4818,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
 // get all alive players that are not the current player
 func (game *Game) GetEnemies(player *playerlib.Player) []*playerlib.Player {
     var out []*playerlib.Player
-    for _, enemy := range game.Players {
+    for _, enemy := range game.Model.Players {
         if enemy != player && len(enemy.Cities) > 0 {
             out = append(out, enemy)
         }
@@ -4856,7 +4855,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     var stacks []*playerlib.UnitStack
     var fog data.FogMap
 
-    for i, player := range game.Players {
+    for i, player := range game.Model.Players {
         for _, city := range player.Cities {
             if city.Plane == game.Plane {
                 cities = append(cities, city)
@@ -5367,7 +5366,7 @@ func (game *Game) GetInfluenceMagic(x int, y int, plane data.Plane) data.MagicTy
 
 // true if any alive player has the given enchantment enabled
 func (game *Game) HasEnchantment(enchantment data.Enchantment) bool {
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if !player.Defeated && player.HasEnchantment(enchantment) {
             return true
         }
@@ -5378,7 +5377,7 @@ func (game *Game) HasEnchantment(enchantment data.Enchantment) bool {
 
 // true if any alive player that is not the given one has the given enchantment enabled
 func (game *Game) HasRivalEnchantment(original *playerlib.Player, enchantment data.Enchantment) bool {
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if !player.Defeated && player != original && player.HasEnchantment(enchantment) {
             return true
         }
@@ -5473,7 +5472,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-        combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Players[0], landscape, attackerStack.Plane(), zone, game.GetInfluenceMagic(attackerStack.X(), attackerStack.Y(), attackerStack.Plane()), attackerStack.X(), attackerStack.Y())
+        combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Model.Players[0], landscape, attackerStack.Plane(), zone, game.GetInfluenceMagic(attackerStack.X(), attackerStack.Y(), attackerStack.Plane()), attackerStack.X(), attackerStack.Y())
 
         if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentHeavenlyLight) {
             combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentTrueLight)
@@ -5872,7 +5871,7 @@ func (game *Game) makeTranquilityFizzleUI(tranquilityOwner *playerlib.Player, ca
     right, _ := game.ImageCache.GetImage("resource.lbx", 44, 0)
 
     owner := ""
-    if tranquilityOwner == game.Players[0] {
+    if tranquilityOwner == game.Model.Players[0] {
         owner = "Your"
     } else {
         owner = tranquilityOwner.Wizard.Name + "'s"
@@ -5954,7 +5953,7 @@ func (game *Game) ShowGrandVizierUI(){
 }
 
 func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
-    player := game.Players[0]
+    player := game.Model.Players[0]
 
     // put a * on the value that is currently selected
     selected := func(s string, use bool) string {
@@ -6076,8 +6075,8 @@ func (game *Game) DoChancellor(){
 }
 
 func (game *Game) ShowMirror() {
-    if len(game.Players) > 0 {
-        game.HudUI.AddElement(mirror.MakeMirrorUI(game.Cache, game.Players[0], game.HudUI))
+    if len(game.Model.Players) > 0 {
+        game.HudUI.AddElement(mirror.MakeMirrorUI(game.Cache, game.Model.Players[0], game.HudUI))
     }
 }
 
@@ -6595,7 +6594,7 @@ func (game *Game) DoPurify(player *playerlib.Player) {
 }
 
 func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
-    return slices.ContainsFunc(game.Players, func (player *playerlib.Player) bool {
+    return slices.ContainsFunc(game.Model.Players, func (player *playerlib.Player) bool {
         return player.GlobalEnchantments.Contains(enchantment)
     })
 }
@@ -6608,7 +6607,7 @@ func (game *Game) ComputeCityStackInfo() playerlib.CityStackInfo {
         MyrrorCities: make(map[image.Point]*citylib.City),
     }
 
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         for _, stack := range player.Stacks {
             switch stack.Plane() {
                 case data.PlaneArcanus: out.ArcanusStacks[image.Pt(stack.X(), stack.Y())] = stack
@@ -6628,7 +6627,7 @@ func (game *Game) ComputeCityStackInfo() playerlib.CityStackInfo {
 }
 
 func (game *Game) GetHumanPlayer() *playerlib.Player {
-    return game.Players[0]
+    return game.Model.Players[0]
 }
 
 func (game *Game) PlaneShift(stack *playerlib.UnitStack, player *playerlib.Player) error {
@@ -6690,7 +6689,7 @@ func (game *Game) PlaneShift(stack *playerlib.UnitStack, player *playerlib.Playe
 func (game *Game) doPlanarTraval() {
     // no switching planes if the global enchantment planar seal is in effect
     if !game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
-        player := game.Players[0]
+        player := game.Model.Players[0]
 
         stack := player.SelectedStack
 
@@ -6766,13 +6765,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
             ui.StandardDraw(screen)
         },
         HandleKeys: func(keys []ebiten.Key){
-            player := game.Players[game.CurrentPlayer]
+            player := game.Model.Players[game.CurrentPlayer]
             if player.IsHuman() {
                 if game.HudUI.GetHighestLayerValue() == 0 {
                     for _, key := range keys {
                         switch key {
                             case ebiten.KeySpace:
-                                stack := game.Players[0].SelectedStack
+                                stack := game.Model.Players[0].SelectedStack
 
                                 if stack != nil {
                                     select {
@@ -6781,7 +6780,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                                     }
                                 }
                             case ebiten.KeyN:
-                                stack := game.Players[0].SelectedStack
+                                stack := game.Model.Players[0].SelectedStack
 
                                 if stack == nil || stack.OutOfMoves() {
                                     select {
@@ -6966,8 +6965,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
         },
     })
 
-    if len(game.Players) > 0 && game.Players[0].SelectedStack != nil {
-        player := game.Players[0]
+    if len(game.Model.Players) > 0 && game.Model.Players[0].SelectedStack != nil {
+        player := game.Model.Players[0]
         // stack := player.SelectedStack
 
         unitX1 := 246
@@ -7461,8 +7460,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
         })
 
-        if len(game.Players) > 0 {
-            player := game.Players[0]
+        if len(game.Model.Players) > 0 {
+            player := game.Model.Players[0]
 
             goldPerTurn := player.GoldPerTurn()
             foodPerTurn := player.FoodPerTurn()
@@ -7550,13 +7549,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.Fonts.WhiteFont.PrintOptions(screen, 276, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v GP", game.Players[0].Gold))
+            game.Fonts.WhiteFont.PrintOptions(screen, 276, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v GP", game.Model.Players[0].Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.Fonts.WhiteFont.PrintOptions(screen, 314, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.Fonts.WhiteFont.PrintOptions(screen, 314, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v MP", game.Model.Players[0].Mana))
         },
     })
 
@@ -7828,7 +7827,7 @@ func (game *Game) GetExperienceBonus(stack *playerlib.UnitStack) int {
 func (game *Game) GetCityEnchantmentsByBanner(banner data.BannerType) []playerlib.CityEnchantment {
     var result []playerlib.CityEnchantment
 
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         for _, city := range player.Cities {
             for _, enchantment := range city.GetEnchantmentsCastBy(banner) {
                 result = append(result, playerlib.CityEnchantment{City: city, Enchantment: enchantment})
@@ -8310,7 +8309,7 @@ func (game *Game) doCallTheVoid(city *citylib.City, player *playerlib.Player) (i
 // raises 4 to 6 volcanoes on random tiles
 func (game *Game) doArmageddon() {
     info := game.ComputeCityStackInfo()
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if player.GlobalEnchantments.Contains(data.EnchantmentArmageddon) {
             // get a list of valid map tiles on both planes
             var points []data.PlanePoint
@@ -8347,7 +8346,7 @@ func (game *Game) doArmageddon() {
 // corrupts 3-6 random tiles
 func (game *Game) doGreatWasting() {
     info := game.ComputeCityStackInfo()
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if player.GlobalEnchantments.Contains(data.EnchantmentGreatWasting) {
             // get a list of valid map tiles on both planes
             var points []data.PlanePoint
@@ -8550,7 +8549,7 @@ func (game *Game) DoRandomEvents() {
                         // there must be at least one global enchantment for this event to occur
                         hasGlobalEnchantment := false
 
-                        for _, player := range game.Players {
+                        for _, player := range game.Model.Players {
                             if player.GlobalEnchantments.Size() > 0 {
                                 hasGlobalEnchantment = true
                                 break
@@ -8562,7 +8561,7 @@ func (game *Game) DoRandomEvents() {
                         }
 
                         // remove all global enchantments
-                        for _, player := range game.Players {
+                        for _, player := range game.Model.Players {
                             player.GlobalEnchantments.Clear()
                         }
 
@@ -8630,7 +8629,7 @@ func (game *Game) DoRandomEvents() {
                         return nil, nil
 
                     case RandomEventDiplomaticMarriage:
-                        for _, player := range game.Players {
+                        for _, player := range game.Model.Players {
                             if player.GetBanner() == data.BannerBrown {
                                 if len(player.Cities) > 0 {
                                     cities := target.GetCities()
@@ -8729,7 +8728,7 @@ func (game *Game) DoRandomEvents() {
                         }
 
                         var neutralPlayer *playerlib.Player
-                        for _, neutral := range game.Players {
+                        for _, neutral := range game.Model.Players {
                             if neutral.GetBanner() == data.BannerBrown {
                                 neutralPlayer = neutral
                                 break
@@ -8781,7 +8780,7 @@ func (game *Game) DoRandomEvents() {
                 return nil, nil
             }
 
-            targetWizard := game.Players[rand.N(len(game.Players))]
+            targetWizard := game.Model.Players[rand.N(len(game.Model.Players))]
             newEvent, extraEvent := makeEvent(choice, targetWizard)
             if newEvent != nil {
                 game.LastEventTurn = game.TurnNumber
@@ -8897,7 +8896,7 @@ func (game *Game) doMeteorStorm() {
     }
 
     affectedPlayers := set.NewSet[*playerlib.Player]()
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if player.Defeated {
             continue
         }
@@ -8906,7 +8905,7 @@ func (game *Game) doMeteorStorm() {
         // if another player also cast meteor storm, then ultimately the current player will also
         // be added to the set, meaning both players' meteor storms affects the other
         if player.HasEnchantment(data.EnchantmentMeteorStorm) {
-            for _, otherPlayer := range game.Players {
+            for _, otherPlayer := range game.Model.Players {
                 if otherPlayer != player {
                     affectedPlayers.Insert(otherPlayer)
                 }
@@ -8916,7 +8915,7 @@ func (game *Game) doMeteorStorm() {
 
     entityInfo := game.ComputeCityStackInfo()
 
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if player.Defeated {
             continue
         }
@@ -9007,7 +9006,7 @@ func (game *Game) ComputeWizardPower(player *playerlib.Player) playerlib.WizardP
 func (game *Game) EndOfTurn() {
     // put stuff here that should happen when all players have taken their turn
 
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if !player.Defeated {
             player.AddPowerHistory(game.ComputeWizardPower(player))
         }
@@ -9031,7 +9030,7 @@ func (game *Game) EndOfTurn() {
 
     game.DoRandomEvents()
 
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if player.Defeated || player.Banished {
             continue
         }
@@ -9043,19 +9042,19 @@ func (game *Game) EndOfTurn() {
 
 func (game *Game) DoNextTurn(){
     // if time stop is enabled then don't move to the other players, just keep doing the current player
-    if game.CurrentPlayer >= 0 && game.Players[game.CurrentPlayer].HasEnchantment(data.EnchantmentTimeStop) {
+    if game.CurrentPlayer >= 0 && game.Model.Players[game.CurrentPlayer].HasEnchantment(data.EnchantmentTimeStop) {
         game.EndOfTurn()
     } else {
         game.CurrentPlayer += 1
-        if game.CurrentPlayer >= len(game.Players) {
+        if game.CurrentPlayer >= len(game.Model.Players) {
             // all players did their turn, so the next global turn starts
             game.EndOfTurn()
             game.CurrentPlayer = 0
         }
     }
 
-    if len(game.Players) > 0 {
-        player := game.Players[game.CurrentPlayer]
+    if len(game.Model.Players) > 0 {
+        player := game.Model.Players[game.CurrentPlayer]
 
         if player.Wizard.Banner != data.BannerBrown {
             game.StartPlayerTurn(player)
@@ -9068,7 +9067,7 @@ func (game *Game) DoNextTurn(){
             }
         }
 
-        aiPlayer := game.Players[game.CurrentPlayer]
+        aiPlayer := game.Model.Players[game.CurrentPlayer]
         if aiPlayer.AIBehavior != nil {
             aiPlayer.AIBehavior.NewTurn(aiPlayer)
         }
@@ -9508,7 +9507,7 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     var selectedStack *playerlib.UnitStack
     var fog data.FogMap
 
-    for i, player := range game.Players {
+    for i, player := range game.Model.Players {
         for _, city := range player.Cities {
             if city.Plane == game.Plane {
                 cities = append(cities, city)
@@ -9594,14 +9593,14 @@ func (game *Game) GetMinimapRect() image.Rectangle {
 
 func (game *Game) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment] {
     enchantments := make(map[data.BannerType]*set.Set[data.Enchantment])
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         enchantments[player.GetBanner()] = player.GlobalEnchantments.Clone()
     }
     return enchantments
 }
 
 func (game *Game) CastingDetectableByHuman(caster *playerlib.Player) bool {
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if player.IsHuman() {
             if player.GlobalEnchantments.Contains(data.EnchantmentDetectMagic) {
                 for _, enemy := range player.GetKnownPlayers() {

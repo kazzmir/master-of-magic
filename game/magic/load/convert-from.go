@@ -17,7 +17,7 @@ func CreateSaveGame(game *gamelib.Game) (*SaveGame, error) {
 
     var out SaveGame
 
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         if player == nil {
             continue
         }
@@ -40,7 +40,7 @@ func CreateSaveGame(game *gamelib.Game) (*SaveGame, error) {
     allSpells := game.AllSpells()
 
     out.HeroData = make([][]HeroData, out.NumPlayers)
-    for i, player := range game.Players {
+    for i, player := range game.Model.Players {
         if player == nil {
             continue
         }
@@ -50,7 +50,7 @@ func CreateSaveGame(game *gamelib.Game) (*SaveGame, error) {
         out.HeroData[i] = makeHeroData(player, &allSpells)
     }
 
-    for i, player := range game.Players {
+    for i, player := range game.Model.Players {
         out.PlayerData = append(out.PlayerData, makePlayerData(i, game, player))
     }
 

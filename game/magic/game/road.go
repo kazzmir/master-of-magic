@@ -164,7 +164,7 @@ func (game *Game) FindRoadPath(oldX int, oldY int, newX int, newY int, player *p
     enemyStacks := make(map[image.Point]struct{})
     enemyCities := make(map[image.Point]struct{})
 
-    for _, enemy := range game.Players {
+    for _, enemy := range game.Model.Players {
         if enemy != player {
             for _, enemyStack := range enemy.Stacks {
                 enemyStacks[image.Pt(enemyStack.X(), enemyStack.Y())] = struct{}{}
@@ -315,7 +315,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
         var stacks []*playerlib.UnitStack
         var fog data.FogMap
 
-        for i, player := range game.Players {
+        for i, player := range game.Model.Players {
             for _, city := range player.Cities {
                 if city.Plane == game.Plane {
                     cities = append(cities, city)

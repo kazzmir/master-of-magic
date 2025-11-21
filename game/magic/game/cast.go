@@ -477,7 +477,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             after := func() {
                 cityStackInfo := game.ComputeCityStackInfo()
 
-                for _, owner := range game.Players {
+                for _, owner := range game.Model.Players {
                     if owner == player {
                         continue
                     }
@@ -581,7 +581,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
             after := func(){
                 cityStackInfo := game.ComputeCityStackInfo()
 
-                for _, player := range game.Players {
+                for _, player := range game.Model.Players {
                     for _, stack := range player.Stacks {
 
                         city := cityStackInfo.FindCity(stack.X(), stack.Y(), stack.Plane())
@@ -888,11 +888,11 @@ func (game *Game) ApplyGlobalEnchantment(enchantment data.Enchantment, player *p
             player.LiftFogAll(data.PlaneArcanus)
             player.LiftFogAll(data.PlaneMyrror)
         case data.EnchantmentGreatWasting:
-            for _, player := range game.Players {
+            for _, player := range game.Model.Players {
                 player.UpdateUnrest()
             }
         case data.EnchantmentArmageddon:
-            for _, player := range game.Players {
+            for _, player := range game.Model.Players {
                 player.UpdateUnrest()
             }
         case data.EnchantmentJustCause:
@@ -1405,7 +1405,7 @@ func (game *Game) MakeSubversionUI(caster *playerlib.Player, spell spellbook.Spe
             return false, ""
         }
 
-        for _, player := range game.Players {
+        for _, player := range game.Model.Players {
             // ignore the wizard that cast subversion
             if player == caster {
                 continue
@@ -1417,7 +1417,7 @@ func (game *Game) MakeSubversionUI(caster *playerlib.Player, spell spellbook.Spe
         return true, fmt.Sprintf("%s has been subverted", targetPlayer.Wizard.Name)
     }
 
-    playersInGame := len(game.Players)
+    playersInGame := len(game.Model.Players)
     quit, cancel := context.WithCancel(context.Background())
     wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, "Choose target for a Subversion spell", 43, spell.Sound, caster, playersInGame, onTargetSelectCallback)
     return wizSelectionUiGroup, quit, nil
@@ -1458,7 +1458,7 @@ func (game *Game) MakeSubversionUI(caster *playerlib.Player, spell spellbook.Spe
 func (game *Game) checkInstantFizzleForCastSpell(player *playerlib.Player, spell spellbook.Spell) (bool, FizzleReason) {
     var dispelChances []FizzleReason
 
-    for _, checkingPlayer := range game.Players {
+    for _, checkingPlayer := range game.Model.Players {
 
         // Tranquility effect: if it's a chaos spell, it should either resist a strength 500 dispel check or fizzle right away.
         if spell.IsOfRealm(data.ChaosMagic) {
@@ -1890,7 +1890,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         var stacks []*playerlib.UnitStack
         var fog data.FogMap
 
-        for i, player := range game.Players {
+        for i, player := range game.Model.Players {
             for _, city := range player.Cities {
                 if city.Plane == game.Plane {
                     cities = append(cities, city)
@@ -1964,8 +1964,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
             ui.StandardDraw(screen)
 
-            game.Fonts.WhiteFont.PrintRight(screen, float64(276), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Players[0].Gold))
-            game.Fonts.WhiteFont.PrintRight(screen, float64(313), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Players[0].Mana))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(276), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Model.Players[0].Gold))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(313), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Model.Players[0].Mana))
 
             castingFont.PrintCenter(screen, float64(280), float64(81), scale.ScaleAmount, ebiten.ColorScale{}, "Casting")
 
@@ -2444,7 +2444,7 @@ func (game *Game) doCastRaiseVolcano(yield coroutine.YieldFunc, tileX int, tileY
     mapObject.SetVolcano(tileX, tileY, player)
 
     // volcanoes may destroy buildings if cast in a city
-    for _, player := range game.Players {
+    for _, player := range game.Model.Players {
         city := player.FindCity(tileX, tileY, mapObject.Plane)
         if city != nil {
             for _, building := range city.Buildings.Values() {
@@ -2483,7 +2483,7 @@ func (game *Game) doCastSpellBlast(player *playerlib.Player) {
         targetPlayer.InterruptCastingSpell()
         return true
     }
-    playersInGame := len(game.Players)
+    playersInGame := len(game.Model.Players)
     quit, cancel := context.WithCancel(context.Background())
     wizSelectionUiGroup = makeSelectSpellBlastTargetUI(cancel, game.Cache, &game.ImageCache, player, playersInGame, onTargetSelectCallback)
     game.Events <- &GameEventRunUI{
@@ -2505,7 +2505,7 @@ func (game *Game) doCastCruelUnminding(player *playerlib.Player, spell spellbook
         actuallyReduced := targetPlayer.ReduceCastingSkill(reduction)
         return true, fmt.Sprintf("%s loses %d points of casting ability", targetPlayer.Wizard.Name, actuallyReduced)
     }
-    playersInGame := len(game.Players)
+    playersInGame := len(game.Model.Players)
     quit, cancel := context.WithCancel(context.Background())
     wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, "Select target for Cruel Unminding spell", 41, spell.Sound, player, playersInGame, onTargetSelectCallback)
     game.Events <- &GameEventRunUI{
@@ -2523,7 +2523,7 @@ func (game *Game) doCastDrainPower(player *playerlib.Player, spell spellbook.Spe
         targetPlayer.Mana -= drainAmount
         return true, fmt.Sprintf("%s loses %d points of mana", targetPlayer.Wizard.Name, drainAmount)
     }
-    playersInGame := len(game.Players)
+    playersInGame := len(game.Model.Players)
     quit, cancel := context.WithCancel(context.Background())
     wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, "Select target for Drain Power spell", 42, spell.Sound, player, playersInGame, onTargetSelectCallback)
     game.Events <- &GameEventRunUI{

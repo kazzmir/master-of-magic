@@ -1469,7 +1469,7 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
 
     for playerIndex := range saveGame.NumPlayers {
         player, stackMoves, deferred := saveGame.convertPlayer(int(playerIndex), wizards, artifacts, game)
-        game.Players = append(game.Players, player)
+        game.Model.Players = append(game.Model.Players, player)
 
         playerDefers = append(playerDefers, deferred)
 
@@ -1487,13 +1487,13 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     // now set up player relations
     for playerIndex := range saveGame.NumPlayers {
         data := &saveGame.PlayerData[playerIndex]
-        player := game.Players[playerIndex]
-        setupRelations(player, int(playerIndex), data, game.Players)
+        player := game.Model.Players[playerIndex]
+        setupRelations(player, int(playerIndex), data, game.Model.Players)
     }
 
     // the players must exist before we can convert the maps
-    game.Model.ArcanusMap = saveGame.ConvertMap(game.Model.ArcanusMap.Data, data.PlaneArcanus, game, game.Players)
-    game.Model.MyrrorMap = saveGame.ConvertMap(game.Model.MyrrorMap.Data, data.PlaneMyrror, game, game.Players)
+    game.Model.ArcanusMap = saveGame.ConvertMap(game.Model.ArcanusMap.Data, data.PlaneArcanus, game, game.Model.Players)
+    game.Model.MyrrorMap = saveGame.ConvertMap(game.Model.MyrrorMap.Data, data.PlaneMyrror, game, game.Model.Players)
 
     // any initialization that needs the maps to occur can now run
     for _, f := range playerDefers {
@@ -1540,7 +1540,7 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     game.Camera.Center(20, 20)
 
     // center on some random city
-    for _, city := range game.Players[0].Cities {
+    for _, city := range game.Model.Players[0].Cities {
         game.Events <- &gamelib.GameEventMoveCamera{
             Instant: true,
             Plane: city.Plane,

@@ -37,7 +37,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         var stacks []*playerlib.UnitStack
         var fog data.FogMap
 
-        for i, player := range game.Players {
+        for i, player := range game.Model.Players {
             for _, city := range player.Cities {
                 if city.Plane == game.Plane {
                     cities = append(cities, city)
@@ -113,7 +113,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
             ui.StandardDraw(screen)
 
-            player := game.Players[0]
+            player := game.Model.Players[0]
 
             game.Fonts.WhiteFont.PrintRight(screen, float64(276), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v GP", player.Gold))
             game.Fonts.WhiteFont.PrintRight(screen, float64(313), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v MP", player.Mana))

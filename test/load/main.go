@@ -68,11 +68,11 @@ func NewEngine(saveGame *load.SaveGame, admin bool) (*Engine, error) {
     // game.DoNextTurn()
 
     if admin {
-        player := game.Players[0]
+        player := game.Model.Players[0]
         player.Admin = true
         player.LiftFogAll(data.PlaneArcanus)
         player.LiftFogAll(data.PlaneMyrror)
-        for _, other := range game.Players {
+        for _, other := range game.Model.Players {
             if player != other {
                 player.AwarePlayer(other)
             }
