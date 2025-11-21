@@ -6186,7 +6186,7 @@ func NewEngine(scenario int) (*Engine, error) {
     }
 
     // game.DoNextTurn()
-    game.CurrentPlayer = 0
+    game.Model.CurrentPlayer = 0
     game.RefreshUI()
 
     run := func(yield coroutine.YieldFunc) error {

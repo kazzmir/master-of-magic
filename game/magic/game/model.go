@@ -40,6 +40,8 @@ type GameModel struct {
     // this is lazily initialized on first use
     WaterBodies map[data.Plane][]*set.Set[image.Point]
 
+    CurrentPlayer int
+
     TurnNumber uint64
 
     // FIXME: maybe put these in the Map object?
@@ -67,6 +69,8 @@ func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSetti
         heroNames: heroNames,
         allSpells: allSpells,
         Plane: startingPlane,
+        CurrentPlayer: -1,
+
         RoadWorkArcanus: make(map[image.Point]float64),
         RoadWorkMyrror: make(map[image.Point]float64),
 

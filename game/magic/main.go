@@ -421,7 +421,7 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
                 game.Shutdown()
                 game = newGame
                 game.GameLoader = gameLoader
-                game.CurrentPlayer = 0
+                game.Model.CurrentPlayer = 0
                 game.RefreshUI()
 
                 magic.Drawer = func(screen *ebiten.Image) {
@@ -463,7 +463,7 @@ func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizar
 
     // hack
     // human.Admin = true
-    game.CurrentPlayer = 0
+    game.Model.CurrentPlayer = 0
     game.StartPlayerTurn(human)
 
     // game.DoNextTurn()
@@ -576,7 +576,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                 if newGame != nil {
                     music.Stop()
                     // FIXME: should this go here?
-                    newGame.CurrentPlayer = 0
+                    newGame.Model.CurrentPlayer = 0
                     err := runGameInstance(newGame, yield, game, gameLoader)
                     if err != nil {
                         game.Drawer = shutdown

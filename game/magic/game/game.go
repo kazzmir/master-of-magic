@@ -381,8 +381,6 @@ type Game struct {
     HudUI *uilib.UI
     Help helplib.Help
 
-    CurrentPlayer int
-
     // the scroll events that occurred this turn
     ScrollEvents []*GameEventScroll
 
@@ -551,7 +549,6 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         ImageCache: imageCache,
         Fonts: fonts,
         BuildingInfo: buildingInfo,
-        CurrentPlayer: -1,
         Camera: camera.MakeCamera(),
     }
 
@@ -4054,8 +4051,8 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
             game.HudUI.StandardUpdate()
 
             // kind of a hack to not allow player to interact with anything other than the current ui modal
-            if len(game.Model.Players) > 0 && game.CurrentPlayer >= 0 {
-                player := game.Model.Players[game.CurrentPlayer]
+            if len(game.Model.Players) > 0 && game.Model.CurrentPlayer >= 0 {
+                player := game.Model.Players[game.Model.CurrentPlayer]
 
                 if player.IsHuman() {
                     if game.HudUI.GetHighestLayerValue() == 0 {
@@ -5952,7 +5949,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             ui.StandardDraw(screen)
         },
         HandleKeys: func(keys []ebiten.Key){
-            player := game.Model.Players[game.CurrentPlayer]
+            player := game.Model.Players[game.Model.CurrentPlayer]
             if player.IsHuman() {
                 if game.HudUI.GetHighestLayerValue() == 0 {
                     for _, key := range keys {
@@ -8229,19 +8226,19 @@ func (game *Game) EndOfTurn() {
 
 func (game *Game) DoNextTurn(){
     // if time stop is enabled then don't move to the other players, just keep doing the current player
-    if game.CurrentPlayer >= 0 && game.Model.Players[game.CurrentPlayer].HasEnchantment(data.EnchantmentTimeStop) {
+    if game.Model.CurrentPlayer >= 0 && game.Model.Players[game.Model.CurrentPlayer].HasEnchantment(data.EnchantmentTimeStop) {
         game.EndOfTurn()
     } else {
-        game.CurrentPlayer += 1
-        if game.CurrentPlayer >= len(game.Model.Players) {
+        game.Model.CurrentPlayer += 1
+        if game.Model.CurrentPlayer >= len(game.Model.Players) {
             // all players did their turn, so the next global turn starts
             game.EndOfTurn()
-            game.CurrentPlayer = 0
+            game.Model.CurrentPlayer = 0
         }
     }
 
     if len(game.Model.Players) > 0 {
-        player := game.Model.Players[game.CurrentPlayer]
+        player := game.Model.Players[game.Model.CurrentPlayer]
 
         if player.Wizard.Banner != data.BannerBrown {
             game.StartPlayerTurn(player)
@@ -8254,7 +8251,7 @@ func (game *Game) DoNextTurn(){
             }
         }
 
-        aiPlayer := game.Model.Players[game.CurrentPlayer]
+        aiPlayer := game.Model.Players[game.Model.CurrentPlayer]
         if aiPlayer.AIBehavior != nil {
             aiPlayer.AIBehavior.NewTurn(aiPlayer)
         }

@@ -63,7 +63,7 @@ func NewEngine(saveGame *load.SaveGame, admin bool) (*Engine, error) {
     cache := lbx.AutoCache()
 
     game := saveGame.Convert(cache)
-    game.CurrentPlayer = 0
+    game.Model.CurrentPlayer = 0
     game.RefreshUI()
     // game.DoNextTurn()
 
