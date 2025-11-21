@@ -45,6 +45,10 @@ type GameModel struct {
     // FIXME: maybe put these in the Map object?
     RoadWorkArcanus map[image.Point]float64
     RoadWorkMyrror map[image.Point]float64
+
+    // work done on purifying tiles
+    PurifyWorkArcanus map[image.Point]float64
+    PurifyWorkMyrror map[image.Point]float64
 }
 
 func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSettings,
@@ -65,6 +69,9 @@ func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSetti
         Plane: startingPlane,
         RoadWorkArcanus: make(map[image.Point]float64),
         RoadWorkMyrror: make(map[image.Point]float64),
+
+        PurifyWorkArcanus: make(map[image.Point]float64),
+        PurifyWorkMyrror: make(map[image.Point]float64),
     }
 }
 
@@ -737,6 +744,11 @@ func (model *GameModel) DoBuildRoads(player *playerlib.Player) {
 
 }
 
+type RoadWork struct {
+    WorkPerEngineer float64
+    TotalWork float64
+}
+
 // returns how many turns it takes to build a road on the given tile with the given stack
 func (model *GameModel) ComputeRoadBuildEffort(x int, y int, plane data.Plane) RoadWork {
 
@@ -763,4 +775,95 @@ func (model *GameModel) ComputeRoadBuildEffort(x int, y int, plane data.Plane) R
     tile := model.GetMap(plane).GetTile(x, y)
 
     return work[tile.Tile.TerrainType()]
+}
+
+func (model *GameModel) DoPurify(player *playerlib.Player) {
+    type PurifyWork struct {
+        WorkPerUnit float64
+        TotalWork float64
+    }
+
+    computeWork := func (oneUnitTurn int, twoUnitTurns int) PurifyWork {
+        workPerUnit := float64(oneUnitTurn) / float64(twoUnitTurns)
+        totalWork := float64(oneUnitTurn) * workPerUnit
+        return PurifyWork{WorkPerUnit: workPerUnit, TotalWork: totalWork}
+    }
+
+    work := computeWork(5, 3)
+
+    arcanusBuilds := make(map[image.Point]struct{})
+    myrrorBuilds := make(map[image.Point]struct{})
+
+    for _, stack := range player.Stacks {
+        plane := stack.Plane()
+
+        unitCount := 0
+        for _, unit := range stack.Units() {
+            if unit.GetBusy() == units.BusyStatusPurify {
+                unitCount += 1
+            }
+        }
+
+        if unitCount > 0 {
+            x, y := stack.X(), stack.Y()
+            // log.Printf("building a road at %v, %v with %v engineers", x, y, engineerCount)
+            purify := model.PurifyWorkArcanus
+            if plane == data.PlaneMyrror {
+                purify = model.PurifyWorkMyrror
+            }
+
+            amount, ok := purify[image.Pt(x, y)]
+            if !ok {
+                amount = 0
+            }
+
+            amount += math.Pow(work.WorkPerUnit, float64(unitCount))
+            // log.Printf("  amount is now %v. total work is %v", amount, tileWork.TotalWork)
+            if amount >= work.TotalWork {
+                model.GetMap(plane).RemoveCorruption(x, y)
+
+                for _, unit := range stack.Units() {
+                    if unit.GetBusy() == units.BusyStatusPurify {
+                        unit.SetBusy(units.BusyStatusNone)
+                    }
+                }
+
+            } else {
+                purify[image.Pt(x, y)] = amount
+                if plane == data.PlaneArcanus {
+                    arcanusBuilds[image.Pt(x, y)] = struct{}{}
+                } else {
+                    myrrorBuilds[image.Pt(x, y)] = struct{}{}
+                }
+            }
+        }
+    }
+
+    // remove all points that are no longer being built
+
+    var toDelete []image.Point
+    for point, _ := range model.PurifyWorkArcanus {
+        _, ok := arcanusBuilds[point]
+        if !ok {
+            toDelete = append(toDelete, point)
+        }
+    }
+
+    for _, point := range toDelete {
+        // log.Printf("remove point %v", point)
+        delete(model.PurifyWorkArcanus, point)
+    }
+
+    toDelete = nil
+    for point, _ := range model.PurifyWorkMyrror {
+        _, ok := myrrorBuilds[point]
+        if !ok {
+            toDelete = append(toDelete, point)
+        }
+    }
+
+    for _, point := range toDelete {
+        // log.Printf("remove point %v", point)
+        delete(model.PurifyWorkMyrror, point)
+    }
 }

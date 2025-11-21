@@ -381,10 +381,6 @@ type Game struct {
     HudUI *uilib.UI
     Help helplib.Help
 
-    // work done on purifying tiles
-    PurifyWorkArcanus map[image.Point]float64
-    PurifyWorkMyrror map[image.Point]float64
-
     CurrentPlayer int
 
     // the scroll events that occurred this turn
@@ -557,9 +553,6 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         BuildingInfo: buildingInfo,
         CurrentPlayer: -1,
         Camera: camera.MakeCamera(),
-
-        PurifyWorkArcanus: make(map[image.Point]float64),
-        PurifyWorkMyrror: make(map[image.Point]float64),
     }
 
     heroNames := herolib.ReadNamesPerWizard(game.Cache)
@@ -5820,102 +5813,6 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
     }
 }
 
-type RoadWork struct {
-    WorkPerEngineer float64
-    TotalWork float64
-}
-
-func (game *Game) DoPurify(player *playerlib.Player) {
-    type PurifyWork struct {
-        WorkPerUnit float64
-        TotalWork float64
-    }
-
-    computeWork := func (oneUnitTurn int, twoUnitTurns int) PurifyWork {
-        workPerUnit := float64(oneUnitTurn) / float64(twoUnitTurns)
-        totalWork := float64(oneUnitTurn) * workPerUnit
-        return PurifyWork{WorkPerUnit: workPerUnit, TotalWork: totalWork}
-    }
-
-    work := computeWork(5, 3)
-
-    arcanusBuilds := make(map[image.Point]struct{})
-    myrrorBuilds := make(map[image.Point]struct{})
-
-    for _, stack := range player.Stacks {
-        plane := stack.Plane()
-
-        unitCount := 0
-        for _, unit := range stack.Units() {
-            if unit.GetBusy() == units.BusyStatusPurify {
-                unitCount += 1
-            }
-        }
-
-        if unitCount > 0 {
-            x, y := stack.X(), stack.Y()
-            // log.Printf("building a road at %v, %v with %v engineers", x, y, engineerCount)
-            purify := game.PurifyWorkArcanus
-            if plane == data.PlaneMyrror {
-                purify = game.PurifyWorkMyrror
-            }
-
-            amount, ok := purify[image.Pt(x, y)]
-            if !ok {
-                amount = 0
-            }
-
-            amount += math.Pow(work.WorkPerUnit, float64(unitCount))
-            // log.Printf("  amount is now %v. total work is %v", amount, tileWork.TotalWork)
-            if amount >= work.TotalWork {
-                game.GetMap(plane).RemoveCorruption(x, y)
-
-                for _, unit := range stack.Units() {
-                    if unit.GetBusy() == units.BusyStatusPurify {
-                        unit.SetBusy(units.BusyStatusNone)
-                    }
-                }
-
-            } else {
-                purify[image.Pt(x, y)] = amount
-                if plane == data.PlaneArcanus {
-                    arcanusBuilds[image.Pt(x, y)] = struct{}{}
-                } else {
-                    myrrorBuilds[image.Pt(x, y)] = struct{}{}
-                }
-            }
-        }
-    }
-
-    // remove all points that are no longer being built
-
-    var toDelete []image.Point
-    for point, _ := range game.PurifyWorkArcanus {
-        _, ok := arcanusBuilds[point]
-        if !ok {
-            toDelete = append(toDelete, point)
-        }
-    }
-
-    for _, point := range toDelete {
-        // log.Printf("remove point %v", point)
-        delete(game.PurifyWorkArcanus, point)
-    }
-
-    toDelete = nil
-    for point, _ := range game.PurifyWorkMyrror {
-        _, ok := myrrorBuilds[point]
-        if !ok {
-            toDelete = append(toDelete, point)
-        }
-    }
-
-    for _, point := range toDelete {
-        // log.Printf("remove point %v", point)
-        delete(game.PurifyWorkMyrror, point)
-    }
-}
-
 func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
     return slices.ContainsFunc(game.Model.Players, func (player *playerlib.Player) bool {
         return player.GlobalEnchantments.Contains(enchantment)
@@ -7398,7 +7295,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     }
 
     game.Model.DoBuildRoads(player)
-    game.DoPurify(player)
+    game.Model.DoPurify(player)
 
     for _, stack := range player.Stacks {
 
