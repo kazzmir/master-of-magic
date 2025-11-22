@@ -94,6 +94,27 @@ func (model *GameModel) SwitchPlane() {
     }
 }
 
+/* initial casting skill power is computed as follows:
+ * skill = total number of magic books * 2
+ * power = (skill-1)^2 + skill
+ */
+func computeInitialCastingSkillPower(books []data.WizardBook) int {
+    total := 0
+    for _, book := range books {
+        total += book.Count
+    }
+
+    if total == 0 {
+        return 0
+    }
+
+    total *= 2
+
+    v := total - 1
+
+    return v * v + total
+}
+
 func (model *GameModel) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Player {
     useNames := model.heroNames[len(model.Players)]
     if useNames == nil {
@@ -871,3 +892,6 @@ func (model *GameModel) DoPurify(player *playerlib.Player) {
         delete(model.PurifyWorkMyrror, point)
     }
 }
+
+
+

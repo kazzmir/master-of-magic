@@ -453,27 +453,6 @@ func computeUnitBuildPowers(stack *playerlib.UnitStack) UnitBuildPowers {
     return powers
 }
 
-/* initial casting skill power is computed as follows:
- * skill = total number of magic books * 2
- * power = (skill-1)^2 + skill
- */
-func computeInitialCastingSkillPower(books []data.WizardBook) int {
-    total := 0
-    for _, book := range books {
-        total += book.Count
-    }
-
-    if total == 0 {
-        return 0
-    }
-
-    total *= 2
-
-    v := total - 1
-
-    return v * v + total
-}
-
 func (game *Game) AllSpells() spellbook.Spells {
     spells, err := spellbook.ReadSpellsFromCache(game.Cache)
     if err != nil {
