@@ -374,10 +374,6 @@ type Game struct {
 
     MovingStack *playerlib.UnitStack
 
-    // https://masterofmagic.fandom.com/wiki/Event
-    RandomEvents []*RandomEvent
-    LastEventTurn uint64
-
     HudUI *uilib.UI
     Help helplib.Help
 
@@ -532,7 +528,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     }
 
     heroNames := herolib.ReadNamesPerWizard(game.Cache)
-    game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game, heroNames, game.AllSpells(), createArtifactPool(lbxCache))
+    game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, heroNames, game.AllSpells(), createArtifactPool(lbxCache))
 
     game.HudUI = game.MakeHudUI()
     game.Drawer = func(screen *ebiten.Image, game *Game){
@@ -571,11 +567,6 @@ func (game *Game) GetPlayerByBanner(banner data.BannerType) *playerlib.Player {
     }
 
     return nil
-}
-
-func (game *Game) ContainsCity(x int, y int, plane data.Plane) bool {
-    city, _ := game.Model.FindCity(x, y, plane)
-    return city != nil
 }
 
 type CityValidArea map[image.Point]bool
@@ -630,7 +621,7 @@ func (game *Game) FindValidCityLocation(plane data.Plane) (int, int, bool) {
             y := points[index].Y
 
             tile := terrain.GetTile(mapUse.Map.Terrain[x][y])
-            if y > 3 && y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
+            if y > 3 && y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.Model.ContainsCity(x, y, plane) {
                 return x, y, true
             }
         }
@@ -653,7 +644,7 @@ func (game *Game) FindValidCityLocationOnShore(plane data.Plane) (int, int, bool
                 x := point.X
                 y := point.Y
                 tile := terrain.GetTile(mapUse.Map.Terrain[x][y])
-                if y > 3 && y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.ContainsCity(x, y, plane) {
+                if y > 3 && y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(x, y) == nil && !game.Model.ContainsCity(x, y, plane) {
 
                     found := false
                     for dx := -1; dx <= 1; dx++ {
@@ -899,96 +890,6 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
     yield()
 }
 
-/* how much power the player has.
- * add up all melded node tiles, all buildings that produce power, etc
- */
-func (game *Game) ComputePower(player *playerlib.Player) int {
-    if game.ManaShortActive() {
-        return 0
-    }
-
-    power := float64(0)
-
-    for _, city := range player.Cities {
-        power += float64(city.ComputePower())
-    }
-
-    magicBonus := float64(1)
-
-    switch game.Settings.Magic {
-        case data.MagicSettingWeak: magicBonus = 0.5
-        case data.MagicSettingNormal: magicBonus = 1
-        case data.MagicSettingPowerful: magicBonus = 1.5
-    }
-
-    // the active conjunction type
-    magicConjunction := maplib.MagicNodeNone
-
-    if game.ConjunctionChaosActive() {
-        magicConjunction = maplib.MagicNodeChaos
-    }
-    if game.ConjunctionNatureActive() {
-        magicConjunction = maplib.MagicNodeNature
-    }
-    if game.ConjunctionSorceryActive() {
-        magicConjunction = maplib.MagicNodeSorcery
-    }
-
-    // compute the power a node gives off taking active conjunctions into account
-    applyConjunction := func (node *maplib.ExtraMagicNode) float64 {
-        nodePower := node.GetPower(magicBonus)
-
-        if nodePower < 0 {
-            return nodePower
-        }
-
-        multiplier := 1.0
-
-        if magicConjunction != maplib.MagicNodeNone {
-            if magicConjunction != node.Kind {
-                multiplier *= 0.5
-            } else {
-                multiplier *= 2
-            }
-        }
-
-        if player.Wizard.RetortEnabled(data.RetortNodeMastery) {
-            multiplier *= 2
-        }
-
-        if player.Wizard.RetortEnabled(data.RetortChaosMastery) && node.Kind == maplib.MagicNodeChaos {
-            multiplier *= 2
-        }
-
-        if player.Wizard.RetortEnabled(data.RetortNatureMastery) && node.Kind == maplib.MagicNodeNature {
-            multiplier *= 2
-        }
-
-        if player.Wizard.RetortEnabled(data.RetortSorceryMastery) && node.Kind == maplib.MagicNodeSorcery {
-            multiplier *= 2
-        }
-
-        return nodePower * multiplier
-    }
-
-    for _, node := range game.Model.ArcanusMap.GetMeldedNodes(player) {
-        power += applyConjunction(node)
-    }
-
-    for _, node := range game.Model.MyrrorMap.GetMeldedNodes(player) {
-        power += applyConjunction(node)
-    }
-
-    power += float64(len(game.Model.ArcanusMap.GetCastedVolcanoes(player)))
-    power += float64(len(game.Model.MyrrorMap.GetCastedVolcanoes(player)))
-
-    if power < 0 {
-        power = 0
-    }
-
-    return int(power)
-}
-
 // enemy wizards, but not including the raider ai
 func (game *Game) GetEnemyWizards() []*playerlib.Player {
     var out []*playerlib.Player
@@ -1032,7 +933,7 @@ func (game *Game) doDiplomacy(yield coroutine.YieldFunc, player *playerlib.Playe
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
 
     oldDrawer := game.Drawer
-    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Model.Players[0], game.GetEnemies(game.Model.Players[0]), game.ComputePower(game.Model.Players[0]), game)
+    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Model.Players[0], game.GetEnemies(game.Model.Players[0]), game.Model.ComputePower(game.Model.Players[0]), game)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         magicScreen.Draw(screen)
@@ -1663,106 +1564,6 @@ func (game *Game) GetNormalizeCoordinateFunc() units.NormalizeCoordinateFunc {
     return func (x int, y int) (int, int) {
         return game.Model.CurrentMap().WrapX(x), y
     }
-}
-
-// returns all cities that are connected to this one via roads
-func (game *Game) FindRoadConnectedCities(city *citylib.City) []*citylib.City {
-
-    // first check if there is at least one tile around the city that is a road
-
-    hasRoad := false
-
-    mapUse := game.GetMap(city.Plane)
-
-    road_check:
-    for dx := -1; dx <= 1; dx++ {
-        for dy := -1; dy <= 1; dy++ {
-            if dx == 0 && dy == 0 {
-                continue
-            }
-
-            cx := mapUse.WrapX(city.X + dx)
-            cy := city.Y + dy
-
-            if dy < 0 || dy >= mapUse.Height() {
-                continue
-            }
-
-            if mapUse.ContainsRoad(cx, cy) {
-                hasRoad = true
-                break road_check
-            }
-        }
-    }
-
-    if !hasRoad {
-        return nil
-    }
-
-    var out []*citylib.City
-
-    for _, otherCity := range game.Model.AllCities() {
-        if otherCity == city {
-            continue
-        }
-
-        if otherCity.Plane == city.Plane && game.IsCityRoadConnected(city, otherCity) {
-            out = append(out, otherCity)
-        }
-    }
-
-    return out
-}
-
-// returns true if the two cities are connected by a road
-func (game *Game) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.City) bool {
-    if fromCity.Plane != toCity.Plane {
-        return false
-    }
-
-    mapUse := game.GetMap(fromCity.Plane)
-
-    normalized := func (a image.Point) image.Point {
-        return image.Pt(mapUse.WrapX(a.X), a.Y)
-    }
-
-    // check equality of two points taking wrapping into account
-    tileEqual := func (a image.Point, b image.Point) bool {
-        return normalized(a) == normalized(b)
-    }
-
-    // cost doesn't matter
-    tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
-        return 1
-    }
-
-    neighbors := func (x int, y int) []image.Point {
-        var out []image.Point
-        for dx := -1; dx <= 1; dx++ {
-            for dy := -1; dy <= 1; dy++ {
-                if dx == 0 && dy == 0 {
-                    continue
-                }
-
-                cx := mapUse.WrapX(x + dx)
-                cy := y + dy
-
-                if cy < 0 || cy >= mapUse.Height() {
-                    continue
-                }
-
-                if mapUse.ContainsRoad(cx, cy) || game.ContainsCity(cx, cy, fromCity.Plane) {
-                    out = append(out, image.Pt(cx, cy))
-                }
-            }
-        }
-
-        return out
-    }
-
-    _, ok := pathfinding.FindPath(image.Pt(fromCity.X, fromCity.Y), image.Pt(toCity.X, toCity.Y), 10000, tileCost, neighbors, tileEqual)
-
-    return ok
 }
 
 func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summon) {
@@ -4162,7 +3963,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
     var decisions []playerlib.AIDecision
 
     if player.AIBehavior != nil {
-        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game.Model, player.ManaPerTurn(game.ComputePower(player), game))
+        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game.Model, player.ManaPerTurn(game.Model.ComputePower(player), game))
         log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
         for _, decision := range decisions {
@@ -4878,7 +4679,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentCloudOfShadow) {
             combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
         } else {
-            for _, enchantments := range game.GetAllGlobalEnchantments() {
+            for _, enchantments := range game.Model.GetAllGlobalEnchantments() {
                 if enchantments.Contains(data.EnchantmentEternalNight) {
                     combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
                     break
@@ -5428,7 +5229,7 @@ func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc, player *playerlib.
         newDrawer(screen)
     }
 
-    power := game.ComputePower(player)
+    power := game.Model.ComputePower(player)
     spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, player.ResearchingSpell, player.ResearchProgress, player.SpellResearchPerTurn(power), player.ComputeOverworldCastingSkill(), spellbook.Spell{}, false, nil, player, &newDrawer)
 }
 
@@ -5446,7 +5247,7 @@ func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.
     }
 
     if len(player.ResearchCandidateSpells.Spells) > 0 {
-        power := game.ComputePower(player)
+        power := game.Model.ComputePower(player)
         spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, spellbook.Spell{}, 0, player.SpellResearchPerTurn(power), player.ComputeOverworldCastingSkill(), spellbook.Spell{}, true, &player.ResearchingSpell, player, &newDrawer)
     }
 }
@@ -5573,7 +5374,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
         player: player,
         remainingCastingSkill: player.RemainingCastingSkill,
         castingSkill: player.ComputeOverworldCastingSkill(),
-        manaPerTurn: player.ManaPerTurn(game.ComputePower(player), game),
+        manaPerTurn: player.ManaPerTurn(game.Model.ComputePower(player), game),
         mana: player.Mana,
     }
 
@@ -5682,20 +5483,10 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
     return production
 }
 
-// FIXME: cache the spells
-func (game *Game) GetSpellByName(name string) spellbook.Spell {
-    spells, err := spellbook.ReadSpellsFromCache(game.Cache)
-    if err != nil {
-        return spellbook.Spell{}
-    }
-
-    return spells.FindByName(name)
-}
-
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
     cityName := game.SuggestCityName(settlers.GetRace())
 
-    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), game.BuildingInfo, game.GetMap(settlers.GetPlane()), game, player)
+    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), game.BuildingInfo, game.GetMap(settlers.GetPlane()), game.Model, player)
     newCity.Plane = settlers.GetPlane()
     newCity.Population = 300
     newCity.Outpost = true
@@ -6438,7 +6229,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             buildRect := util.ImageRect(280, 186, buildImages[0])
             buildCounter := uint64(0)
 
-            hasCity := game.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
+            hasCity := game.Model.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
             isCorrupted := game.GetMap(player.SelectedStack.Plane()).HasCorruption(player.SelectedStack.X(), player.SelectedStack.Y())
             canSettle := player.SelectedStack.ActiveUnitsHasAbility(data.AbilityCreateOutpost) && game.Model.IsSettlableLocation(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
@@ -6628,7 +6419,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
             goldPerTurn := player.GoldPerTurn()
             foodPerTurn := player.FoodPerTurn()
-            manaPerTurn := player.ManaPerTurn(game.ComputePower(player), game)
+            manaPerTurn := player.ManaPerTurn(game.Model.ComputePower(player), game)
 
             conjunction, conjunctionColor := game.ActiveConjunctionName()
 
@@ -6876,7 +6667,7 @@ func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
     foodIssue := player.FoodPerTurn() < 0 && unitsNeedFood
 
     // FIXME: can the power be passed in so it doesn't have to be computed multiple times?
-    manaPerTurn := player.ManaPerTurn(game.ComputePower(player), game)
+    manaPerTurn := player.ManaPerTurn(game.Model.ComputePower(player), game)
 
     manaIssue := player.Mana + manaPerTurn < 0 && unitsNeedMana
 
@@ -7100,7 +6891,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         }
     }
 
-    power := game.ComputePower(player)
+    power := game.Model.ComputePower(player)
 
     game.DissipateEnchantments(player, power)
 
@@ -7563,57 +7354,10 @@ func ChangeCityOwner(city *citylib.City, owner *playerlib.Player, newOwner *play
     city.UpdateUnrest()
 }
 
-func (game *Game) ManaShortActive() bool {
-    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
-        return event.Type == RandomEventManaShort
-    })
-}
-
-func (game *Game) PopulationBoomActive(city *citylib.City) bool {
-    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
-        return event.Type == RandomEventPopulationBoom && event.TargetCity == city
-    })
-}
-
-func (game *Game) PlagueActive(city *citylib.City) bool {
-    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
-        return event.Type == RandomEventPlague && event.TargetCity == city
-    })
-}
-
-func (game *Game) GoodMoonActive() bool {
-    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
-        return event.Type == RandomEventGoodMoon
-    })
-}
-
-func (game *Game) BadMoonActive() bool {
-    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
-        return event.Type == RandomEventBadMoon
-    })
-}
-
-func (game *Game) ConjunctionChaosActive() bool {
-    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
-        return event.Type == RandomEventConjunctionChaos
-    })
-}
-
-func (game *Game) ConjunctionNatureActive() bool {
-    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
-        return event.Type == RandomEventConjunctionNature
-    })
-}
-
-func (game *Game) ConjunctionSorceryActive() bool {
-    return slices.ContainsFunc(game.RandomEvents, func(event *RandomEvent) bool {
-        return event.Type == RandomEventConjunctionSorcery
-    })
-}
 
 func (game *Game) ActiveConjunctionName() (string, color.Color) {
 
-    for _, event := range game.RandomEvents {
+    for _, event := range game.Model.RandomEvents {
         switch event.Type {
             case RandomEventConjunctionChaos: return "Conjunction", color.RGBA{R: 255, G: 0, B: 0, A: 255}
             case RandomEventConjunctionNature: return "Conjunction", color.RGBA{R: 0, G: 255, B: 0, A: 255}
@@ -7642,8 +7386,8 @@ func (game *Game) DoRandomEvents() {
     // for testing purposes
     // eventModifier = fraction.FromInt(10)
 
-    eventProbability := fraction.FromInt(int(game.Model.TurnNumber - game.LastEventTurn)).Multiply(eventModifier)
-    if game.Model.TurnNumber < 50 || game.Model.TurnNumber - game.LastEventTurn < 5 {
+    eventProbability := fraction.FromInt(int(game.Model.TurnNumber - game.Model.LastEventTurn)).Multiply(eventModifier)
+    if game.Model.TurnNumber < 50 || game.Model.TurnNumber - game.Model.LastEventTurn < 5 {
         eventProbability = fraction.Zero()
     }
 
@@ -7671,7 +7415,7 @@ func (game *Game) DoRandomEvents() {
 
         // remove events that can't occur because they are already occurring or
         // there is some mutually exclusive other event
-        for _, event := range game.RandomEvents {
+        for _, event := range game.Model.RandomEvents {
             choices.Remove(event.Type)
             // remove all conjunctions because only one conjunction can be active at a time
             if event.IsConjunction {
@@ -7695,7 +7439,7 @@ func (game *Game) DoRandomEvents() {
             // return a RandomEvent object to show, and also cause the event to occur (if instant)
             makeEvent := func (choice RandomEventType, target *playerlib.Player) (*RandomEvent, GameEvent) {
                 usedCities := set.NewSet[*citylib.City]()
-                for _, event := range game.RandomEvents {
+                for _, event := range game.Model.RandomEvents {
                     if event.TargetCity != nil {
                         usedCities.Insert(event.TargetCity)
                     }
@@ -7946,12 +7690,12 @@ func (game *Game) DoRandomEvents() {
             targetWizard := game.Model.Players[rand.N(len(game.Model.Players))]
             newEvent, extraEvent := makeEvent(choice, targetWizard)
             if newEvent != nil {
-                game.LastEventTurn = game.Model.TurnNumber
+                game.Model.LastEventTurn = game.Model.TurnNumber
 
                 // log.Printf("Random event occurred: %+v", newEvent)
 
                 if !newEvent.Instant {
-                    game.RandomEvents = append(game.RandomEvents, newEvent)
+                    game.Model.RandomEvents = append(game.Model.RandomEvents, newEvent)
                 }
 
                 // FIXME: if the event is targeting an AI wizard then the event message should change slightly
@@ -7969,7 +7713,7 @@ func (game *Game) DoRandomEvents() {
 
     var keep []*RandomEvent
     // add events to the 'keep' array to keep them for the next turn
-    for _, event := range game.RandomEvents {
+    for _, event := range game.Model.RandomEvents {
 
         // once citizens has reached 2, plague will dissipate automatically
         if event.Type == RandomEventPlague && event.TargetCity.Citizens() <= 2 {
@@ -7998,7 +7742,7 @@ func (game *Game) DoRandomEvents() {
         }
     }
 
-    game.RandomEvents = keep
+    game.Model.RandomEvents = keep
 }
 
 func (game *Game) doChaosRift() {
@@ -8152,7 +7896,7 @@ func (game *Game) ComputeWizardPower(player *playerlib.Player) playerlib.WizardP
         }
     }
 
-    manaPerTurn := player.ManaPerTurn(game.ComputePower(player), game)
+    manaPerTurn := player.ManaPerTurn(game.Model.ComputePower(player), game)
 
     research := 0
     for _, spell := range player.KnownSpells.Spells {
@@ -8752,14 +8496,6 @@ func (game *Game) GetMinimapRect() image.Rectangle {
     miniWidth := scale.Scale(60)
     miniHeight := scale.Scale(31)
     return image.Rect(int(mx), int(my), int(mx) + miniWidth, int(my) + miniHeight)
-}
-
-func (game *Game) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment] {
-    enchantments := make(map[data.BannerType]*set.Set[data.Enchantment])
-    for _, player := range game.Model.Players {
-        enchantments[player.GetBanner()] = player.GlobalEnchantments.Clone()
-    }
-    return enchantments
 }
 
 func (game *Game) CastingDetectableByHuman(caster *playerlib.Player) bool {

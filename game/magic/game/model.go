@@ -44,6 +44,10 @@ type GameModel struct {
 
     TurnNumber uint64
 
+    // https://masterofmagic.fandom.com/wiki/Event
+    RandomEvents []*RandomEvent
+    LastEventTurn uint64
+
     // FIXME: maybe put these in the Map object?
     RoadWorkArcanus map[image.Point]float64
     RoadWorkMyrror map[image.Point]float64
@@ -54,16 +58,14 @@ type GameModel struct {
 }
 
 func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSettings,
-                   startingPlane data.Plane, cityProvider maplib.CityProvider,
+                   startingPlane data.Plane,
                    heroNames map[int]map[herolib.HeroType]string, allSpells spellbook.Spells,
                    artifactPool map[string]*artifact.Artifact,
                ) *GameModel {
 
     planeTowers := maplib.GeneratePlaneTowerPositions(settings.LandSize, 6)
 
-    return &GameModel{
-        ArcanusMap: maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, cityProvider, planeTowers),
-        MyrrorMap: maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneMyrror, cityProvider, planeTowers),
+    model := GameModel{
         ArtifactPool: artifactPool,
         Settings: settings,
         heroNames: heroNames,
@@ -77,6 +79,10 @@ func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSetti
         PurifyWorkArcanus: make(map[image.Point]float64),
         PurifyWorkMyrror: make(map[image.Point]float64),
     }
+
+    model.ArcanusMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneArcanus, &model, planeTowers)
+    model.MyrrorMap = maplib.MakeMap(terrainData, settings.LandSize, settings.Magic, settings.Difficulty, data.PlaneMyrror, &model, planeTowers)
+    return &model
 }
 
 func (model *GameModel) CurrentMap() *maplib.Map {
@@ -893,5 +899,258 @@ func (model *GameModel) DoPurify(player *playerlib.Player) {
     }
 }
 
+func (model *GameModel) ManaShortActive() bool {
+    return slices.ContainsFunc(model.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventManaShort
+    })
+}
 
+func (model *GameModel) PopulationBoomActive(city *citylib.City) bool {
+    return slices.ContainsFunc(model.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventPopulationBoom && event.TargetCity == city
+    })
+}
+
+func (model *GameModel) PlagueActive(city *citylib.City) bool {
+    return slices.ContainsFunc(model.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventPlague && event.TargetCity == city
+    })
+}
+
+func (model *GameModel) GoodMoonActive() bool {
+    return slices.ContainsFunc(model.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventGoodMoon
+    })
+}
+
+func (model *GameModel) BadMoonActive() bool {
+    return slices.ContainsFunc(model.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventBadMoon
+    })
+}
+
+func (model *GameModel) ConjunctionChaosActive() bool {
+    return slices.ContainsFunc(model.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventConjunctionChaos
+    })
+}
+
+func (model *GameModel) ConjunctionNatureActive() bool {
+    return slices.ContainsFunc(model.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventConjunctionNature
+    })
+}
+
+func (model *GameModel) ConjunctionSorceryActive() bool {
+    return slices.ContainsFunc(model.RandomEvents, func(event *RandomEvent) bool {
+        return event.Type == RandomEventConjunctionSorcery
+    })
+}
+
+/* how much power the player has.
+ * add up all melded node tiles, all buildings that produce power, etc
+ */
+func (model *GameModel) ComputePower(player *playerlib.Player) int {
+    if model.ManaShortActive() {
+        return 0
+    }
+
+    power := float64(0)
+
+    for _, city := range player.Cities {
+        power += float64(city.ComputePower())
+    }
+
+    magicBonus := float64(1)
+
+    switch model.Settings.Magic {
+        case data.MagicSettingWeak: magicBonus = 0.5
+        case data.MagicSettingNormal: magicBonus = 1
+        case data.MagicSettingPowerful: magicBonus = 1.5
+    }
+
+    // the active conjunction type
+    magicConjunction := maplib.MagicNodeNone
+
+    if model.ConjunctionChaosActive() {
+        magicConjunction = maplib.MagicNodeChaos
+    }
+    if model.ConjunctionNatureActive() {
+        magicConjunction = maplib.MagicNodeNature
+    }
+    if model.ConjunctionSorceryActive() {
+        magicConjunction = maplib.MagicNodeSorcery
+    }
+
+    // compute the power a node gives off taking active conjunctions into account
+    applyConjunction := func (node *maplib.ExtraMagicNode) float64 {
+        nodePower := node.GetPower(magicBonus)
+
+        if nodePower < 0 {
+            return nodePower
+        }
+
+        multiplier := 1.0
+
+        if magicConjunction != maplib.MagicNodeNone {
+            if magicConjunction != node.Kind {
+                multiplier *= 0.5
+            } else {
+                multiplier *= 2
+            }
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortNodeMastery) {
+            multiplier *= 2
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortChaosMastery) && node.Kind == maplib.MagicNodeChaos {
+            multiplier *= 2
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortNatureMastery) && node.Kind == maplib.MagicNodeNature {
+            multiplier *= 2
+        }
+
+        if player.Wizard.RetortEnabled(data.RetortSorceryMastery) && node.Kind == maplib.MagicNodeSorcery {
+            multiplier *= 2
+        }
+
+        return nodePower * multiplier
+    }
+
+    for _, node := range model.ArcanusMap.GetMeldedNodes(player) {
+        power += applyConjunction(node)
+    }
+
+    for _, node := range model.MyrrorMap.GetMeldedNodes(player) {
+        power += applyConjunction(node)
+    }
+
+    power += float64(len(model.ArcanusMap.GetCastedVolcanoes(player)))
+    power += float64(len(model.MyrrorMap.GetCastedVolcanoes(player)))
+
+    if power < 0 {
+        power = 0
+    }
+
+    return int(power)
+}
+
+// returns all cities that are connected to this one via roads
+func (model *GameModel) FindRoadConnectedCities(city *citylib.City) []*citylib.City {
+    // first check if there is at least one tile around the city that is a road
+
+    hasRoad := false
+
+    mapUse := model.GetMap(city.Plane)
+
+    road_check:
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            if dx == 0 && dy == 0 {
+                continue
+            }
+
+            cx := mapUse.WrapX(city.X + dx)
+            cy := city.Y + dy
+
+            if dy < 0 || dy >= mapUse.Height() {
+                continue
+            }
+
+            if mapUse.ContainsRoad(cx, cy) {
+                hasRoad = true
+                break road_check
+            }
+        }
+    }
+
+    if !hasRoad {
+        return nil
+    }
+
+    var out []*citylib.City
+
+    for _, otherCity := range model.AllCities() {
+        if otherCity == city {
+            continue
+        }
+
+        if otherCity.Plane == city.Plane && model.IsCityRoadConnected(city, otherCity) {
+            out = append(out, otherCity)
+        }
+    }
+
+    return out
+}
+
+// returns true if the two cities are connected by a road
+func (model *GameModel) IsCityRoadConnected(fromCity *citylib.City, toCity *citylib.City) bool {
+    if fromCity.Plane != toCity.Plane {
+        return false
+    }
+
+    mapUse := model.GetMap(fromCity.Plane)
+
+    normalized := func (a image.Point) image.Point {
+        return image.Pt(mapUse.WrapX(a.X), a.Y)
+    }
+
+    // check equality of two points taking wrapping into account
+    tileEqual := func (a image.Point, b image.Point) bool {
+        return normalized(a) == normalized(b)
+    }
+
+    // cost doesn't matter
+    tileCost := func (x1 int, y1 int, x2 int, y2 int) float64 {
+        return 1
+    }
+
+    neighbors := func (x int, y int) []image.Point {
+        var out []image.Point
+        for dx := -1; dx <= 1; dx++ {
+            for dy := -1; dy <= 1; dy++ {
+                if dx == 0 && dy == 0 {
+                    continue
+                }
+
+                cx := mapUse.WrapX(x + dx)
+                cy := y + dy
+
+                if cy < 0 || cy >= mapUse.Height() {
+                    continue
+                }
+
+                if mapUse.ContainsRoad(cx, cy) || model.ContainsCity(cx, cy, fromCity.Plane) {
+                    out = append(out, image.Pt(cx, cy))
+                }
+            }
+        }
+
+        return out
+    }
+
+    _, ok := pathfinding.FindPath(image.Pt(fromCity.X, fromCity.Y), image.Pt(toCity.X, toCity.Y), 10000, tileCost, neighbors, tileEqual)
+
+    return ok
+}
+
+func (model *GameModel) ContainsCity(x int, y int, plane data.Plane) bool {
+    city, _ := model.FindCity(x, y, plane)
+    return city != nil
+}
+
+func (model *GameModel) GetAllGlobalEnchantments() map[data.BannerType]*set.Set[data.Enchantment] {
+    enchantments := make(map[data.BannerType]*set.Set[data.Enchantment])
+    for _, player := range model.Players {
+        enchantments[player.GetBanner()] = player.GlobalEnchantments.Clone()
+    }
+    return enchantments
+}
+
+
+func (model *GameModel) GetSpellByName(name string) spellbook.Spell {
+    return model.allSpells.FindByName(name)
+}
 
