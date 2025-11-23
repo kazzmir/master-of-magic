@@ -64,6 +64,76 @@ func (spell Spell) IsSummoning() bool {
     return spell.Section == SectionSummoning
 }
 
+// the unit enchantment this spell would apply to a unit if any, or UnitEnchantmentNone if none
+func (spell Spell) GetUnitEnchantment() data.UnitEnchantment {
+    switch spell.Name {
+        case "Giant Strength": return data.UnitEnchantmentGiantStrength
+        case "Lionheart": return data.UnitEnchantmentLionHeart
+        case "Haste": return data.UnitEnchantmentHaste
+        case "Immolation": return data.UnitEnchantmentImmolation
+        case "Resist Elements": return data.UnitEnchantmentResistElements
+        case "Resist Magic": return data.UnitEnchantmentResistMagic
+        case "Elemental Armor": return data.UnitEnchantmentElementalArmor
+        case "Bless": return data.UnitEnchantmentBless
+        /*
+    UnitEnchantmentRighteousness
+    UnitEnchantmentCloakOfFear
+    UnitEnchantmentTrueSight
+    UnitEnchantmentPathFinding
+    UnitEnchantmentFlight
+    UnitEnchantmentChaosChannelsDemonWings
+    UnitEnchantmentChaosChannelsDemonSkin
+    UnitEnchantmentChaosChannelsFireBreath
+    UnitEnchantmentEndurance
+    UnitEnchantmentHeroism
+    UnitEnchantmentHolyArmor
+    UnitEnchantmentHolyWeapon
+    UnitEnchantmentInvulnerability
+    UnitEnchantmentPlanarTravel
+    UnitEnchantmentIronSkin
+    UnitEnchantmentRegeneration
+    UnitEnchantmentStoneSkin
+    UnitEnchantmentWaterWalking
+    UnitEnchantmentGuardianWind
+    UnitEnchantmentInvisibility
+    UnitEnchantmentMagicImmunity
+    UnitEnchantmentSpellLock
+    UnitEnchantmentWindWalking
+    UnitEnchantmentEldritchWeapon
+    UnitEnchantmentFlameBlade
+    UnitEnchantmentBerserk
+    UnitEnchantmentBlackChannels
+    UnitEnchantmentWraithForm
+    */
+
+    }
+
+    return data.UnitEnchantmentNone
+}
+
+// the curse that this spell would apply to a unit
+func (spell Spell) GetUnitCurse() data.UnitEnchantment {
+    switch spell.Name {
+        /*
+UnitCurseConfusion
+    UnitCurseCreatureBinding
+    UnitCurseMindStorm
+    UnitCurseVertigo
+    UnitCurseShatter
+    UnitCurseWarpCreatureMelee
+    UnitCurseWarpCreatureDefense
+    UnitCurseWarpCreatureResistance
+    UnitCurseBlackSleep
+    UnitCursePossession
+    UnitCurseWeakness
+    UnitCurseWeb
+    */
+
+    }
+
+    return data.UnitEnchantmentNone
+}
+
 // overland=true if casting in overland, otherwise casting in combat
 // this does not include any additional costs for the spell
 func (spell Spell) BaseCost(overland bool) int {

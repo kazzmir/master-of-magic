@@ -5686,6 +5686,9 @@ func (model *CombatModel) shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spe
             return false
         case "Chaos Channels":
             return true
+        case "Web":
+            // its always ok to re-web a unit
+            return true
     }
 
     // any enchantment/curse should not be cast on a unit that already has the enchantment/curse
