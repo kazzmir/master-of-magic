@@ -768,7 +768,7 @@ func TestLeadershipBonus(test *testing.T){
     leaderHero.AddExperience(units.ExperienceLord.ExperienceRequired(false, false))
 
     units1 := attackingArmy.AddUnit(attacker1)
-    attackingArmy.AddUnit(leaderHero)
+    valana := attackingArmy.AddUnit(leaderHero)
 
     model := CombatModel{
         SelectedUnit: nil,
@@ -783,4 +783,10 @@ func TestLeadershipBonus(test *testing.T){
     if units1.GetMeleeAttackPower() != units.LizardSpearmen.MeleeAttackPower + 2 {
         test.Errorf("Error: melee attack power should be %d, got %d", units.LizardSpearmen.MeleeAttackPower + 2, units1.GetMeleeAttackPower())
     }
+
+    // +5 for lord level, +2 for leadership
+    if valana.GetMeleeAttackPower() != units.HeroValana.MeleeAttackPower + 5 + 2 {
+        test.Errorf("Error: melee attack power should be %d, got %d", units.HeroValana.MeleeAttackPower + 5 + 2, valana.GetMeleeAttackPower())
+    }
+
 }
