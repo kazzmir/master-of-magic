@@ -769,6 +769,7 @@ func TestLeadershipBonus(test *testing.T){
     boulder := units.MakeOverworldUnitFromUnit(units.Catapult, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
     thrown := units.MakeOverworldUnitFromUnit(units.Berserkers, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
     fireBreath := units.MakeOverworldUnitFromUnit(units.DraconianSwordsmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    spirit := units.MakeOverworldUnitFromUnit(units.MagicSpirit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
     // valana has regular leadership
     leaderHero := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroValana, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}), herolib.HeroValana, "Valana")
     leaderHero.AddExperience(units.ExperienceLord.ExperienceRequired(false, false))
@@ -778,6 +779,7 @@ func TestLeadershipBonus(test *testing.T){
     boulder1 := attackingArmy.AddUnit(boulder)
     thrown1 := attackingArmy.AddUnit(thrown)
     fireBreath1 := attackingArmy.AddUnit(fireBreath)
+    spirit1 := attackingArmy.AddUnit(spirit)
     valana := attackingArmy.AddUnit(leaderHero)
 
     model := CombatModel{
@@ -810,6 +812,10 @@ func TestLeadershipBonus(test *testing.T){
 
     if int(fireBreath1.GetAbilityValue(data.AbilityFireBreath)) != int(units.DraconianSwordsmen.GetAbilityValue(data.AbilityFireBreath)) + leadershipBonus / 2 {
         test.Errorf("Error: fire breath attack power should be %d, got %d", int(units.DraconianSwordsmen.GetAbilityValue(data.AbilityFireBreath)) + leadershipBonus / 2, int(fireBreath1.GetAbilityValue(data.AbilityFireBreath)))
+    }
+
+    if spirit1.GetMeleeAttackPower() != units.MagicSpirit.MeleeAttackPower {
+        test.Errorf("Error: magic spirit melee attack power should be %d, got %d", units.MagicSpirit.MeleeAttackPower, spirit1.GetMeleeAttackPower())
     }
 
     // +5 for lord level, +2 for leadership
