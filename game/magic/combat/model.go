@@ -953,6 +953,8 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                 }
             }
 
+            modifier += float32(unit.Model.GetLeadershipBonus(unit))
+
             final := value + modifier
 
             if shattered && final > 0 {
@@ -987,6 +989,8 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                     case data.LifeMagic: modifier -= 1
                 }
             }
+
+            modifier += float32(unit.Model.GetLeadershipBonus(unit))
 
             final := value + modifier
 
