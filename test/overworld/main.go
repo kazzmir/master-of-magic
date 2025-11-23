@@ -2033,7 +2033,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
     player.AddCity(city)
 
     player.Gold = 1283
-    player.Mana = 26
+    player.Mana = 8600
 
     // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
 
@@ -2048,6 +2048,9 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
     spear3.AddExperience(60)
     spear4.AddExperience(100)
     spear5.AddExperience(200)
+
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
     stack := player.FindStackByUnit(spear1)
     player.SetSelectedStack(stack)

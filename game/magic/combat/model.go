@@ -5684,6 +5684,19 @@ func (model *CombatModel) shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spe
         case "Word of Recall":
             // FIXME: figure out when its a good idea for AI to cast this
             return false
+        case "Chaos Channels":
+            return true
+    }
+
+    // any enchantment/curse should not be cast on a unit that already has the enchantment/curse
+    enchantment := spell.GetUnitEnchantment()
+    if enchantment != data.UnitEnchantmentNone {
+        return !unit.HasEnchantment(enchantment)
+    }
+
+    curse := spell.GetUnitCurse()
+    if curse != data.UnitEnchantmentNone {
+        return !unit.HasCurse(curse)
     }
 
     return true
