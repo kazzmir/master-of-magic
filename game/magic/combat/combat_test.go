@@ -762,12 +762,16 @@ func TestLeadershipBonus(test *testing.T){
         Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
     }
 
+    // melee only
     attacker1 := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    // ranged attack
+    ranged := units.MakeOverworldUnitFromUnit(units.LizardJavelineers, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
     // valana has regular leadership
     leaderHero := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroValana, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}), herolib.HeroValana, "Valana")
     leaderHero.AddExperience(units.ExperienceLord.ExperienceRequired(false, false))
 
     units1 := attackingArmy.AddUnit(attacker1)
+    ranged1 := attackingArmy.AddUnit(ranged)
     valana := attackingArmy.AddUnit(leaderHero)
 
     model := CombatModel{
@@ -782,6 +786,10 @@ func TestLeadershipBonus(test *testing.T){
 
     if units1.GetMeleeAttackPower() != units.LizardSpearmen.MeleeAttackPower + 2 {
         test.Errorf("Error: melee attack power should be %d, got %d", units.LizardSpearmen.MeleeAttackPower + 2, units1.GetMeleeAttackPower())
+    }
+
+    if ranged1.GetRangedAttackPower() != units.LizardJavelineers.RangedAttackPower + 2 {
+        test.Errorf("Error: ranged attack power should be %d, got %d", units.LizardJavelineers.RangedAttackPower + 2, ranged1.GetRangedAttackPower())
     }
 
     // +5 for lord level, +2 for leadership
