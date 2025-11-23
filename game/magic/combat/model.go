@@ -953,7 +953,7 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                 }
             }
 
-            modifier += float32(unit.Model.GetLeadershipBonus(unit))
+            modifier += float32(unit.Model.GetLeadershipBonus(unit)) / 2
 
             final := value + modifier
 
@@ -990,7 +990,7 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                 }
             }
 
-            modifier += float32(unit.Model.GetLeadershipBonus(unit))
+            modifier += float32(unit.Model.GetLeadershipBonus(unit)) / 2
 
             final := value + modifier
 
@@ -1309,7 +1309,7 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
         }
     }
 
-    modifier += unit.Model.GetLeadershipBonus(unit)
+    modifier += unit.Model.GetLeadershipBonus(unit) / 2
 
     final := unit.Unit.GetRangedAttackPower() + modifier
 
@@ -5885,7 +5885,7 @@ func (model *CombatModel) GetHumanArmy() *Army {
 // there is an alive hero on the team with the leadership ability
 // dont apply bonus to fantastic creatures or units that already have leadership ability
 func (model *CombatModel) GetLeadershipBonus(unit *ArmyUnit) int {
-    if unit.GetRace() == data.RaceFantastic || unit.HasAbility(data.AbilityLeadership) || unit.HasAbility(data.AbilitySuperLeadership) {
+    if unit.GetRace() == data.RaceFantastic {
         return 0
     }
 

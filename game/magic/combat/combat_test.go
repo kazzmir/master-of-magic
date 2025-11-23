@@ -796,25 +796,75 @@ func TestLeadershipBonus(test *testing.T){
         test.Errorf("Error: melee attack power should be %d, got %d", units.LizardSpearmen.MeleeAttackPower + leadershipBonus, units1.GetMeleeAttackPower())
     }
 
-    if ranged1.GetRangedAttackPower() != units.LizardJavelineers.RangedAttackPower + leadershipBonus {
-        test.Errorf("Error: ranged attack power should be %d, got %d", units.LizardJavelineers.RangedAttackPower + leadershipBonus, ranged1.GetRangedAttackPower())
+    if ranged1.GetRangedAttackPower() != units.LizardJavelineers.RangedAttackPower + leadershipBonus / 2 {
+        test.Errorf("Error: ranged attack power should be %d, got %d", units.LizardJavelineers.RangedAttackPower + leadershipBonus / 2, ranged1.GetRangedAttackPower())
     }
 
-    if boulder1.GetRangedAttackPower() != units.Catapult.RangedAttackPower + leadershipBonus {
-        test.Errorf("Error: boulder attack power should be %d, got %d", units.Catapult.RangedAttackPower + leadershipBonus, boulder1.GetRangedAttackPower())
+    if boulder1.GetRangedAttackPower() != units.Catapult.RangedAttackPower + leadershipBonus / 2 {
+        test.Errorf("Error: boulder attack power should be %d, got %d", units.Catapult.RangedAttackPower + leadershipBonus / 2, boulder1.GetRangedAttackPower())
     }
 
-    if int(thrown1.GetAbilityValue(data.AbilityThrown)) != int(units.Berserkers.GetAbilityValue(data.AbilityThrown)) + leadershipBonus {
-        test.Errorf("Error: thrown attack power should be %d, got %d", int(units.Berserkers.GetAbilityValue(data.AbilityThrown)) + leadershipBonus, int(thrown1.GetAbilityValue(data.AbilityThrown)))
+    if int(thrown1.GetAbilityValue(data.AbilityThrown)) != int(units.Berserkers.GetAbilityValue(data.AbilityThrown)) + leadershipBonus / 2 {
+        test.Errorf("Error: thrown attack power should be %d, got %d", int(units.Berserkers.GetAbilityValue(data.AbilityThrown)) + leadershipBonus / 2, int(thrown1.GetAbilityValue(data.AbilityThrown)))
     }
 
-    if int(fireBreath1.GetAbilityValue(data.AbilityFireBreath)) != int(units.DraconianSwordsmen.GetAbilityValue(data.AbilityFireBreath)) + leadershipBonus {
-        test.Errorf("Error: fire breath attack power should be %d, got %d", int(units.DraconianSwordsmen.GetAbilityValue(data.AbilityFireBreath)) + leadershipBonus, int(fireBreath1.GetAbilityValue(data.AbilityFireBreath)))
+    if int(fireBreath1.GetAbilityValue(data.AbilityFireBreath)) != int(units.DraconianSwordsmen.GetAbilityValue(data.AbilityFireBreath)) + leadershipBonus / 2 {
+        test.Errorf("Error: fire breath attack power should be %d, got %d", int(units.DraconianSwordsmen.GetAbilityValue(data.AbilityFireBreath)) + leadershipBonus / 2, int(fireBreath1.GetAbilityValue(data.AbilityFireBreath)))
     }
 
     // +5 for lord level, +2 for leadership
     if valana.GetMeleeAttackPower() != units.HeroValana.MeleeAttackPower + 5 + leadershipBonus {
         test.Errorf("Error: melee attack power should be %d, got %d", units.HeroValana.MeleeAttackPower + 5 + leadershipBonus, valana.GetMeleeAttackPower())
+    }
+}
+
+// two heroes both with leadership
+func TestLeadershipBonusMultiple(test *testing.T){
+    defendingArmy := Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    attackingArmy := Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    // melee only
+    attacker1 := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    // valana has regular leadership
+    hero1 := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroValana, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}), herolib.HeroValana, "Valana")
+    hero1.AddExperience(units.ExperienceLord.ExperienceRequired(false, false))
+
+    hero2 := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}), herolib.HeroTorin, "Torin")
+    hero2.AddExperience(units.ExperienceLord.ExperienceRequired(false, false))
+
+    units1 := attackingArmy.AddUnit(attacker1)
+    valana := attackingArmy.AddUnit(hero1)
+    torin := attackingArmy.AddUnit(hero2)
+
+    model := CombatModel{
+        SelectedUnit: nil,
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Turn: TeamDefender,
+        DefendingArmy: &defendingArmy,
+        AttackingArmy: &attackingArmy,
+    }
+
+    model.Initialize(spellbook.Spells{}, 0, 0)
+
+    leadershipBonus := 3
+
+    if units1.GetMeleeAttackPower() != units.LizardSpearmen.MeleeAttackPower + leadershipBonus {
+        test.Errorf("Error: spearmen melee attack power should be %d, got %d", units.LizardSpearmen.MeleeAttackPower + leadershipBonus, units1.GetMeleeAttackPower())
+    }
+
+    // +5 for lord level, +3 for leadership from torin
+    if valana.GetMeleeAttackPower() != units.HeroValana.MeleeAttackPower + 5 + leadershipBonus {
+        test.Errorf("Error: valana melee attack power should be %d, got %d", units.HeroValana.MeleeAttackPower + 5 + leadershipBonus, valana.GetMeleeAttackPower())
+    }
+
+    // base melee + 5 for lord, + 9 for supermight, + 3 for leadership from torin
+    if torin.GetMeleeAttackPower() != units.HeroTorin.MeleeAttackPower + 5 + 9 + leadershipBonus {
+        test.Errorf("Error: torin melee attack power should be %d, got %d", units.HeroTorin.MeleeAttackPower + 5 + 9 + leadershipBonus, torin.GetMeleeAttackPower())
     }
 
 }
