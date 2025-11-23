@@ -4461,7 +4461,7 @@ func (model *CombatModel) DoAITargetUnitSpell(player ArmyPlayer, spell spellbook
 
     for _, i := range rand.Perm(len(units)) {
         unit := units[i]
-        if model.shouldAITargetUnit(unit, spell) && canTarget(unit) {
+        if shouldAITargetUnit(unit, spell) && canTarget(unit) {
             onTarget(unit)
             return
         }
@@ -5677,7 +5677,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
     }
 }
 
-func (model *CombatModel) shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spell) bool {
+func shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spell) bool {
     switch spell.Name {
         case "Healing":
             return unit.GetHealth() > 0 && float64(unit.GetHealth()) < float64(unit.GetMaxHealth()) * 4 / 5
