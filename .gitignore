@@ -6,6 +6,7 @@
 
 # Data files
 data/data/*.zip
+data/data/*.LBX
 
 # Executables
 /lbxdump

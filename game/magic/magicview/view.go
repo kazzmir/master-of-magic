@@ -350,6 +350,8 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
     centerShadow := font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true, Scale: scale.ScaleAmount}
     rightShadow := font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}
 
+	changingStaffValueNow := false // Used for continuous staff adjustment while LMB is held
+
     helpLbx, err := magic.Cache.GetLbxFile("help.lbx")
     if err != nil {
         return nil
@@ -579,7 +581,6 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
 
         manaStaff, _ := magic.ImageCache.GetImage("magic.lbx", 7, 0)
 
-        posY := 0
         manaPowerStaff, _ := magic.ImageCache.GetImage("magic.lbx", 8, 0)
         staffRect := image.Rect(33, 102, 38, 102 + manaPowerStaff.Bounds().Dy())
 
@@ -587,12 +588,11 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
             Rect: staffRect,
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
-                if !magic.ManaLocked {
-                    // log.Printf("click mana staff at %v", manaStaff.Bounds().Dy() - posY)
-                    amount := manaPowerStaff.Bounds().Dy() - posY
-                    adjustManaPercent(float64(amount) / float64(manaPowerStaff.Bounds().Dy()))
-                }
+				changingStaffValueNow = true
             },
+			LeftClickRelease: func(element *uilib.UIElement) {
+				changingStaffValueNow = false
+			},
             Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
                 return fmt.Sprintf("%v%%", int(player.PowerDistribution.Mana * 100)), fonts.SmallerFont
             },
@@ -603,7 +603,11 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 }
             },
             Inside: func(element *uilib.UIElement, x, y int){
-                posY = y
+                if changingStaffValueNow && !magic.ManaLocked {
+                    // log.Printf("click mana staff at %v", manaStaff.Bounds().Dy() - posY)
+                    amount := manaPowerStaff.Bounds().Dy() - y
+                    adjustManaPercent(float64(amount) / float64(manaPowerStaff.Bounds().Dy()))
+                }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
@@ -685,19 +689,17 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         })
 
         researchPowerStaff, _ := magic.ImageCache.GetImage("magic.lbx", 10, 0)
-        posY := 0
         staffRect := image.Rect(79, 102, 86, 102 + researchPowerStaff.Bounds().Dy())
 
         group.AddElement(&uilib.UIElement{
             Rect: staffRect,
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
-                if !magic.ResearchLocked {
-                    // log.Printf("click mana staff at %v", manaStaff.Bounds().Dy() - posY)
-                    amount := researchPowerStaff.Bounds().Dy() - posY
-                    adjustResearchPercent(float64(amount) / float64(researchPowerStaff.Bounds().Dy()))
-                }
+				changingStaffValueNow = true
             },
+			LeftClickRelease: func(element *uilib.UIElement) {
+				changingStaffValueNow = false
+			},
             Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
                 return fmt.Sprintf("%v%%", int(player.PowerDistribution.Research * 100)), fonts.SmallerFont
             },
@@ -708,7 +710,11 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 }
             },
             Inside: func(element *uilib.UIElement, x, y int){
-                posY = y
+                if changingStaffValueNow && !magic.ResearchLocked {
+                    // log.Printf("click mana staff at %v", manaStaff.Bounds().Dy() - posY)
+                    amount := researchPowerStaff.Bounds().Dy() - y
+                    adjustResearchPercent(float64(amount) / float64(researchPowerStaff.Bounds().Dy()))
+                }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 var options ebiten.DrawImageOptions
@@ -750,19 +756,17 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
         })
 
         skillPowerStaff, _ := magic.ImageCache.GetImage("magic.lbx", 10, 0)
-        posY := 0
         staffRect := image.Rect(126, 102, 132, 102 + skillPowerStaff.Bounds().Dy())
 
         group.AddElement(&uilib.UIElement{
             Rect: staffRect,
             PlaySoundLeftClick: true,
             LeftClick: func(element *uilib.UIElement){
-                if !magic.SkillLocked {
-                    // log.Printf("click mana staff at %v", manaStaff.Bounds().Dy() - posY)
-                    amount := skillPowerStaff.Bounds().Dy() - posY
-                    adjustSkillPercent(float64(amount) / float64(skillPowerStaff.Bounds().Dy()))
-                }
+				changingStaffValueNow = true
             },
+			LeftClickRelease: func(element *uilib.UIElement) {
+				changingStaffValueNow = false
+			},
             Tooltip: func (element *uilib.UIElement) (string, *font.Font) {
                 return fmt.Sprintf("%v%%", int(player.PowerDistribution.Skill * 100)), fonts.SmallerFont
             },
@@ -773,7 +777,11 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 }
             },
             Inside: func(element *uilib.UIElement, x, y int){
-                posY = y
+                if changingStaffValueNow && !magic.SkillLocked {
+                    // log.Printf("click mana staff at %v", manaStaff.Bounds().Dy() - posY)
+                    amount := skillPowerStaff.Bounds().Dy() - y
+                    adjustSkillPercent(float64(amount) / float64(skillPowerStaff.Bounds().Dy()))
+                }
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 skillStaff, err := magic.ImageCache.GetImage("magic.lbx", 11, 0)
