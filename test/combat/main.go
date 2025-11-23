@@ -877,8 +877,11 @@ func makeScenario11(cache *lbx.LbxCache) *combat.CombatScreen {
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disrupt"))
 
+    /*
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Darkness"))
+    */
+    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Giant Strength"))
 
     attackingArmy := createGreatWyrmArmy(attackingPlayer, 1)
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcCavalry, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()))
