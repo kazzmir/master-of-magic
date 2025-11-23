@@ -358,8 +358,6 @@ type Game struct {
 
     Fonts *GameFonts
 
-    Settings setup.NewGameSettings
-
     Model *GameModel
 
     Counter uint64
@@ -517,7 +515,6 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
         State: GameStateRunning,
-        Settings: settings,
         ImageCache: imageCache,
         Fonts: fonts,
         BuildingInfo: buildingInfo,
