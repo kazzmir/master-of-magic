@@ -507,6 +507,8 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createHeroArmy(attackingPlayer, cache)
 
+    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSwordsmen, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: city}, data.MagicNone, 0, 0)
 }
 

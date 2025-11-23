@@ -953,6 +953,8 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                 }
             }
 
+            modifier += float32(unit.Model.GetLeadershipBonus(unit)) / 2
+
             final := value + modifier
 
             if shattered && final > 0 {
@@ -987,6 +989,8 @@ func (unit *ArmyUnit) GetAbilityValue(ability data.AbilityType) float32 {
                     case data.LifeMagic: modifier -= 1
                 }
             }
+
+            modifier += float32(unit.Model.GetLeadershipBonus(unit)) / 2
 
             final := value + modifier
 
@@ -1305,6 +1309,8 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
         }
     }
 
+    modifier += unit.Model.GetLeadershipBonus(unit) / 2
+
     final := unit.Unit.GetRangedAttackPower() + modifier
 
     if shattered && final > 0 {
@@ -1375,6 +1381,8 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
     if unit.HasEnchantment(data.UnitEnchantmentBerserk) {
         berserkModifier = 2
     }
+
+    modifier += unit.Model.GetLeadershipBonus(unit)
 
     final := (unit.Unit.GetMeleeAttackPower() + modifier) * berserkModifier
 
@@ -2073,7 +2081,7 @@ func (army *Army) IsAI() bool {
 /* must call LayoutUnits() some time after invoking AddUnit() to ensure
  * the units are laid out correctly
  */
-func (army *Army) AddUnit(unit units.StackUnit){
+func (army *Army) AddUnit(unit units.StackUnit) *ArmyUnit {
     armyUnit := &ArmyUnit{
         Unit: unit,
         Facing: units.FacingDownRight,
@@ -2085,6 +2093,7 @@ func (army *Army) AddUnit(unit units.StackUnit){
         unit.SetEnchantmentProvider(nil)
     })
     army.AddArmyUnit(armyUnit)
+    return armyUnit
 }
 
 func (army *Army) AddArmyUnit(unit *ArmyUnit){
@@ -5870,4 +5879,21 @@ func (model *CombatModel) GetHumanArmy() *Army {
     } else {
         return model.DefendingArmy
     }
+}
+
+// get leadership bonus for the given team, which is some positive integer if
+// there is an alive hero on the team with the leadership ability
+// dont apply bonus to fantastic creatures or units that already have leadership ability
+func (model *CombatModel) GetLeadershipBonus(unit *ArmyUnit) int {
+    if unit.GetRace() == data.RaceFantastic {
+        return 0
+    }
+
+    army := model.GetArmy(unit)
+    bonus := 0
+    for _, unit := range army.units {
+        bonus = max(bonus, int(unit.GetAbilityValue(data.AbilityLeadership)), int(unit.GetAbilityValue(data.AbilitySuperLeadership)))
+    }
+
+    return bonus
 }

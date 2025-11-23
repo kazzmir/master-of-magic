@@ -668,7 +668,7 @@ func (unit *OverworldUnit) GetBaseMeleeAttackPower() int {
         return 0
     }
 
-    level := unit.GetExperienceLevel()
+    level := unit.Parent.GetExperienceLevel()
     switch level {
         case ExperienceRecruit:
         case ExperienceRegular: power += 1

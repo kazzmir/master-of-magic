@@ -760,9 +760,7 @@ func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
             modifier += 2
         }
 
-        abilityBonus := hero.GetAbilityLeadership()
-        // FIXME: maybe only apply the leadership bonus in combat
-        return float32(value) + float32(abilityBonus) / 2 + modifier
+        return float32(value) + modifier
     }
 
     if ability == data.AbilityFireBreath {
@@ -777,13 +775,15 @@ func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
             modifier += 2
         }
 
-        // FIXME: maybe only apply the leadership bonus in combat
-        abilityBonus := hero.GetAbilityLeadership()
-        return float32(value) + float32(abilityBonus) / 2 + modifier
+        return float32(value) + modifier
     }
 
     if ability == data.AbilityCaster {
         return hero.GetCasterValue()
+    }
+
+    if ability == data.AbilityLeadership || ability == data.AbilitySuperLeadership {
+        return float32(hero.GetAbilityLeadership())
     }
 
     heroAbility, ok := hero.Abilities[ability]
@@ -969,7 +969,7 @@ func (hero *Hero) GetAbilityBonus(ability data.AbilityType) int {
         case data.AbilitySage, data.AbilitySuperSage: return hero.GetAbilityResearch()
         case data.AbilityPrayermaster, data.AbilitySuperPrayermaster: return hero.GetAbilityResistance()
         case data.AbilityArcanePower, data.AbilitySuperArcanePower: return hero.GetAbilityMagicRangedAttack()
-        case data.AbilityMight, data.AbilitySuperMight: return hero.GetAbilityMelee() - hero.GetAbilityLeadership() // hack because GetAbilityMelee() includes leadership
+        case data.AbilityMight, data.AbilitySuperMight: return hero.GetAbilityMelee()
         case data.AbilityArmsmaster, data.AbilitySuperArmsmaster: return hero.GetAbilityExperienceBonus()
         case data.AbilityBlademaster, data.AbilitySuperBlademaster: return hero.GetAbilityToHit()
         case data.AbilityLegendary, data.AbilitySuperLegendary: return hero.GetAbilityFame()
@@ -1234,7 +1234,7 @@ func (hero *Hero) GetAbilityMelee() int {
         extra = int(float64(level.ToInt() + 1) * 1.5)
     }
 
-    return extra + hero.GetAbilityLeadership()
+    return extra
 }
 
 func (hero *Hero) GetAbilityRangedAttack() int {
