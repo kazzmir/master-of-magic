@@ -786,6 +786,10 @@ func (hero *Hero) GetAbilityValue(ability data.AbilityType) float32 {
         return hero.GetCasterValue()
     }
 
+    if ability == data.AbilityLeadership || ability == data.AbilitySuperLeadership {
+        return float32(hero.GetAbilityLeadership())
+    }
+
     heroAbility, ok := hero.Abilities[ability]
     if ok {
         return heroAbility.Value

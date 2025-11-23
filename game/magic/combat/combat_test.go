@@ -763,10 +763,11 @@ func TestLeadershipBonus(test *testing.T){
     }
 
     attacker1 := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
-    leaderHero := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}), herolib.HeroTorin, "Torin")
+    // valana has regular leadership
+    leaderHero := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroValana, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}), herolib.HeroValana, "Valana")
     leaderHero.AddExperience(units.ExperienceLord.ExperienceRequired(false, false))
 
-    attackingArmy.AddUnit(attacker1)
+    units1 := attackingArmy.AddUnit(attacker1)
     attackingArmy.AddUnit(leaderHero)
 
     model := CombatModel{
@@ -779,7 +780,6 @@ func TestLeadershipBonus(test *testing.T){
 
     model.Initialize(spellbook.Spells{}, 0, 0)
 
-    units1 := attackingArmy.units[0]
     if units1.GetMeleeAttackPower() != units.LizardSpearmen.MeleeAttackPower + 2 {
         test.Errorf("Error: melee attack power should be %d, got %d", units.LizardSpearmen.MeleeAttackPower + 2, units1.GetMeleeAttackPower())
     }
