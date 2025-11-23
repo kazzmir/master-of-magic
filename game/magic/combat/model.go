@@ -5694,7 +5694,20 @@ func (model *CombatModel) shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spe
     // any enchantment/curse should not be cast on a unit that already has the enchantment/curse
     enchantment := spell.GetUnitEnchantment()
     if enchantment != data.UnitEnchantmentNone {
-        return !unit.HasEnchantment(enchantment)
+        if unit.HasEnchantment(enchantment) {
+            return false
+        }
+
+        // if the enchantment provides an ability and the unit has all those abilities then no need to cast it
+        hasAll := true
+        for _, ability := range enchantment.Abilities() {
+            if !unit.HasAbility(ability.Ability) {
+                // if the unit is missing any ability then it is still useful to cast the spell
+                hasAll = false
+            }
+        }
+
+        return !hasAll
     }
 
     curse := spell.GetUnitCurse()
