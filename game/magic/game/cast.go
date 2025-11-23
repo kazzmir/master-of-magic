@@ -738,7 +738,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 // FIXME: verify the animation and sound. The spell index is 102
                 game.doCastOnMap(yield, tileX, tileY, 12, 72, func (x int, y int, animationFrame int) {})
-                game.doCallTheVoid(chosenCity, owner)
+                game.Model.doCallTheVoid(chosenCity, owner)
             }
 
             game.Events <- &GameEventSelectLocationForSpell{Spell: spell, Player: player, LocationType: LocationTypeEnemyCity, SelectedFunc: selected}
@@ -1823,7 +1823,7 @@ func (game *Game) showCityEarthquake(yield coroutine.YieldFunc, city *citylib.Ci
         }
     }
 
-    _, _, buildings := game.doEarthquake(city, player)
+    _, _, buildings := game.Model.doEarthquake(city, player)
     destroyed := set.NewSet(buildings...)
 
     updateDestroyed(destroyed)

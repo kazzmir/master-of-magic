@@ -535,7 +535,7 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
             Production: float32(cityData.Production),
             ProducingBuilding: producingBuilding,
             ProducingUnit: producingUnit,
-            CityServices: game,
+            CityServices: game.Model,
             CatchmentProvider: catchmentProvider,
             ReignProvider: player,
             BuildingInfo: game.BuildingInfo,
@@ -1492,8 +1492,8 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     }
 
     // the players must exist before we can convert the maps
-    game.Model.ArcanusMap = saveGame.ConvertMap(game.Model.ArcanusMap.Data, data.PlaneArcanus, game, game.Model.Players)
-    game.Model.MyrrorMap = saveGame.ConvertMap(game.Model.MyrrorMap.Data, data.PlaneMyrror, game, game.Model.Players)
+    game.Model.ArcanusMap = saveGame.ConvertMap(game.Model.ArcanusMap.Data, data.PlaneArcanus, game.Model, game.Model.Players)
+    game.Model.MyrrorMap = saveGame.ConvertMap(game.Model.MyrrorMap.Data, data.PlaneMyrror, game.Model, game.Model.Players)
 
     // any initialization that needs the maps to occur can now run
     for _, f := range playerDefers {

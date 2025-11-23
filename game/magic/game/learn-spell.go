@@ -132,7 +132,7 @@ func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Play
         newDrawer(screen)
     }
 
-    power := game.ComputePower(player)
+    power := game.Model.ComputePower(player)
     // show new spell being learned
     spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, spellbook.Spell{}, 0, player.SpellResearchPerTurn(power), player.ComputeCastingSkill(), learnedSpell, false, nil, player, &newDrawer)
 }

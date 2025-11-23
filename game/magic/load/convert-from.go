@@ -27,9 +27,9 @@ func CreateSaveGame(game *gamelib.Game) (*SaveGame, error) {
         out.NumPlayers += 1
     }
 
-    out.LandSize = int16(game.Settings.LandSize)
-    out.Magic = int16(game.Settings.Magic)
-    out.Difficulty = int16(game.Settings.Difficulty)
+    out.LandSize = int16(game.Model.Settings.LandSize)
+    out.Magic = int16(game.Model.Settings.Magic)
+    out.Difficulty = int16(game.Model.Settings.Difficulty)
     out.NumCities = int16(len(game.Model.AllCities()))
     out.NumUnits = int16(len(game.AllUnits()))
     out.Turn = int16(game.Model.TurnNumber)
@@ -145,7 +145,7 @@ func makePlayerData(id int, game *gamelib.Game, player *playerlib.Player) Player
         // AverageUnitCost: 0,
         MasteryResearch: uint16(player.SpellOfMasteryCost),
         Fame: uint16(player.Fame),
-        PowerBase: uint16(game.ComputePower(player)),
+        PowerBase: uint16(game.Model.ComputePower(player)),
         Volcanoes: uint16(len(game.Model.ArcanusMap.GetCastedVolcanoes(player)) + len(game.Model.MyrrorMap.GetCastedVolcanoes(player))),
         ResearchRatio: uint8(player.PowerDistribution.Research * 100),
         ManaRatio: uint8(player.PowerDistribution.Mana * 100),
