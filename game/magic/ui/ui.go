@@ -197,7 +197,7 @@ type UI struct {
 
     doubleClickCandidates []doubleClick
 
-    // fires when the left mouse button is clicked, even if no element is clicked
+    // fires when the left mouse button is clicked and there is no element under the cursor right now
     LeftClick func()
 
     LeftClickedElements []*UIElement
