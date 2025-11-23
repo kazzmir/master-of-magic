@@ -723,3 +723,64 @@ func TestRangedAttack(test *testing.T){
         test.Errorf("Error: ranged damage should be %d, got %d", attackerUnit.RangedAttackPower, damage)
     }
 }
+
+func TestAttackPower(test *testing.T){
+    defendingArmy := Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    attackingArmy := Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    attacker1 := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+
+    attackingArmy.AddUnit(attacker1)
+
+    model := CombatModel{
+        SelectedUnit: nil,
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Turn: TeamDefender,
+        DefendingArmy: &defendingArmy,
+        AttackingArmy: &attackingArmy,
+    }
+
+    model.Initialize(spellbook.Spells{}, 0, 0)
+
+    units1 := attackingArmy.units[0]
+    if units1.GetMeleeAttackPower() != units.LizardSpearmen.MeleeAttackPower {
+        test.Errorf("Error: melee attack power should be %d, got %d", units.LizardSpearmen.MeleeAttackPower, units1.GetMeleeAttackPower())
+    }
+}
+
+func TestLeadershipBonus(test *testing.T){
+    defendingArmy := Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    attackingArmy := Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    attacker1 := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    leaderHero := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroTorin, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}), herolib.HeroTorin, "Torin")
+    leaderHero.AddExperience(units.ExperienceLord.ExperienceRequired(false, false))
+
+    attackingArmy.AddUnit(attacker1)
+    attackingArmy.AddUnit(leaderHero)
+
+    model := CombatModel{
+        SelectedUnit: nil,
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Turn: TeamDefender,
+        DefendingArmy: &defendingArmy,
+        AttackingArmy: &attackingArmy,
+    }
+
+    model.Initialize(spellbook.Spells{}, 0, 0)
+
+    units1 := attackingArmy.units[0]
+    if units1.GetMeleeAttackPower() != units.LizardSpearmen.MeleeAttackPower + 2 {
+        test.Errorf("Error: melee attack power should be %d, got %d", units.LizardSpearmen.MeleeAttackPower + 2, units1.GetMeleeAttackPower())
+    }
+}
