@@ -49,6 +49,9 @@ type GameModel struct {
     // for communication with the UI
     Events chan GameEvent
 
+    // the scroll events that occurred this turn
+    ScrollEvents []*GameEventScroll
+
     // https://masterofmagic.fandom.com/wiki/Event
     RandomEvents []*RandomEvent
     LastEventTurn uint64

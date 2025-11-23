@@ -377,9 +377,6 @@ type Game struct {
     HudUI *uilib.UI
     Help helplib.Help
 
-    // the scroll events that occurred this turn
-    ScrollEvents []*GameEventScroll
-
     Camera camera.Camera
 }
 
@@ -2396,7 +2393,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         scroll := event.(*GameEventScroll)
                         game.showScroll(yield, scroll.Title, scroll.Text)
                         if !scroll.Old {
-                            game.ScrollEvents = append(game.ScrollEvents, scroll)
+                            game.Model.ScrollEvents = append(game.Model.ScrollEvents, scroll)
                         }
                     case *GameEventLearnedSpell:
                         learnedSpell := event.(*GameEventLearnedSpell)
@@ -5254,7 +5251,7 @@ func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.
 
 // show all scroll events for this turn, or a message that no events occurred
 func (game *Game) DoChancellor(){
-    if len(game.ScrollEvents) == 0 {
+    if len(game.Model.ScrollEvents) == 0 {
         event := &GameEventScroll{
             Title: "NO EVENTS THIS MONTH",
         }
@@ -5263,7 +5260,7 @@ func (game *Game) DoChancellor(){
             default:
         }
     } else {
-        for _, event := range game.ScrollEvents {
+        for _, event := range game.Model.ScrollEvents {
             event.Old = true
             select {
                 case game.Events <- event:
@@ -6879,7 +6876,7 @@ func handleStasis(stack *playerlib.UnitStack) {
 
 func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     if player.IsHuman() {
-        game.ScrollEvents = nil
+        game.Model.ScrollEvents = nil
     }
 
     disbandedMessages := game.DisbandUnits(player)
