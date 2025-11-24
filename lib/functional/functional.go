@@ -1,5 +1,19 @@
 package functional
 
+func Memoize0[Value any](f func() Value) func() Value {
+    var cached bool
+    var cache Value
+    return func() Value {
+        if cached {
+            return cache
+        }
+
+        cache = f()
+        cached = true
+        return cache
+    }
+}
+
 // higher order function that takes a function 'f' and returns a new function that caches the results of 'f'
 func Memoize[Key comparable, Value any](f func(Key) Value) func(Key) Value {
     cache := make(map[Key]Value)

@@ -113,12 +113,15 @@ type AIResearchSpellDecision struct {
 
 // implemented by the Game object
 type AIServices interface {
+    CityEnchantmentsProvider
+
     FindPath(oldX int, oldY int, newX int, newY int, player *Player, stack PathStack, fog data.FogMap) pathfinding.Path
     FindSettlableLocations(x int, y int, plane data.Plane, fog data.FogMap) []image.Point
     IsSettlableLocation(x int, y int, plane data.Plane) bool
     GetDifficulty() data.DifficultySetting
     GetMap(data.Plane) *maplib.Map
     GetTurnNumber() uint64
+    ComputePower(player *Player) int
     AllCities() []*citylib.City
     FindStack(x int, y int, plane data.Plane) (*UnitStack, *Player)
     FindCity(x int, y int, plane data.Plane) (*citylib.City, *Player)
@@ -127,7 +130,7 @@ type AIServices interface {
 
 type AIBehavior interface {
     // return a list of decisions to make for the current turn
-    Update(*Player, []*Player, AIServices, int) []AIDecision
+    Update(*Player, []*Player, AIServices) []AIDecision
 
     // called after all decisions have been processed for an AI player
     PostUpdate(*Player, []*Player)

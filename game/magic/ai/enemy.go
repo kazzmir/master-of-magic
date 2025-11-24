@@ -47,7 +47,7 @@ func (ai *EnemyAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
     city.ProducingUnit = units.UnitNone
 }
 
-func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices, manaPerTurn int) []playerlib.AIDecision {
+func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
     // FIXME: create settlers, build cities
@@ -67,6 +67,10 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
         }
     }
 
+    manaPerTurn := functional.Memoize0(func() int {
+        return self.ManaPerTurn(aiServices.ComputePower(self), aiServices)
+    })
+
     // not casting a spell
     if self.CastingSpell.Invalid() && rand.N(10) == 0 {
         // just search for summoning spells for now
@@ -77,7 +81,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                 chosen := summoningSpells.Spells[i]
                 summonUnit := units.GetUnitByName(chosen.Name)
                 // check unit.UpkeepMana to see if it is affordable
-                if !summonUnit.IsNone() && manaPerTurn >= summonUnit.UpkeepMana {
+                if !summonUnit.IsNone() && manaPerTurn() >= summonUnit.UpkeepMana {
                     decisions = append(decisions, &playerlib.AICastSpellDecision{
                         Spell: chosen,
                     })

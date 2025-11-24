@@ -1646,3 +1646,17 @@ func (model *GameModel) doCallTheVoid(city *citylib.City, player *playerlib.Play
 
     return killedCitizens, killedUnits, len(destroyedBuildings)
 }
+
+func (model *GameModel) GetCityEnchantmentsByBanner(banner data.BannerType) []playerlib.CityEnchantment {
+    var result []playerlib.CityEnchantment
+
+    for _, player := range model.Players {
+        for _, city := range player.Cities {
+            for _, enchantment := range city.GetEnchantmentsCastBy(banner) {
+                result = append(result, playerlib.CityEnchantment{City: city, Enchantment: enchantment})
+            }
+        }
+    }
+
+    return result
+}

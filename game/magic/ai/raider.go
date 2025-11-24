@@ -476,7 +476,7 @@ func (raider *RaiderAI) UpdateCities(self *playerlib.Player) []playerlib.AIDecis
     return decisions
 }
 
-func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices, manaPerTurn int) []playerlib.AIDecision {
+func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
     decisions = append(decisions, raider.MoveStacks(player, enemies, aiServices)...)

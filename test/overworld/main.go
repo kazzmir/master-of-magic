@@ -47,7 +47,7 @@ type Engine struct {
 type DummyAI struct {
 }
 
-func (ai *DummyAI) Update(self *playerlib.Player, players []*playerlib.Player, services playerlib.AIServices, x int) []playerlib.AIDecision {
+func (ai *DummyAI) Update(self *playerlib.Player, players []*playerlib.Player, services playerlib.AIServices) []playerlib.AIDecision {
     return nil
 }
 

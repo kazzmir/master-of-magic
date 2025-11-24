@@ -3957,7 +3957,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
     var decisions []playerlib.AIDecision
 
     if player.AIBehavior != nil {
-        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game.Model, player.ManaPerTurn(game.Model.ComputePower(player), game))
+        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game.Model)
         log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
         for _, decision := range decisions {
@@ -5368,7 +5368,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
         player: player,
         remainingCastingSkill: player.RemainingCastingSkill,
         castingSkill: player.ComputeOverworldCastingSkill(),
-        manaPerTurn: player.ManaPerTurn(game.Model.ComputePower(player), game),
+        manaPerTurn: player.ManaPerTurn(game.Model.ComputePower(player), game.Model),
         mana: player.Mana,
     }
 
@@ -6413,7 +6413,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
             goldPerTurn := player.GoldPerTurn()
             foodPerTurn := player.FoodPerTurn()
-            manaPerTurn := player.ManaPerTurn(game.Model.ComputePower(player), game)
+            manaPerTurn := player.ManaPerTurn(game.Model.ComputePower(player), game.Model)
 
             conjunction, conjunctionColor := game.ActiveConjunctionName()
 
@@ -6661,7 +6661,7 @@ func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
     foodIssue := player.FoodPerTurn() < 0 && unitsNeedFood
 
     // FIXME: can the power be passed in so it doesn't have to be computed multiple times?
-    manaPerTurn := player.ManaPerTurn(game.Model.ComputePower(player), game)
+    manaPerTurn := player.ManaPerTurn(game.Model.ComputePower(player), game.Model)
 
     manaIssue := player.Mana + manaPerTurn < 0 && unitsNeedMana
 
@@ -6772,20 +6772,6 @@ func (game *Game) GetExperienceBonus(stack *playerlib.UnitStack) int {
 }
 
 
-func (game *Game) GetCityEnchantmentsByBanner(banner data.BannerType) []playerlib.CityEnchantment {
-    var result []playerlib.CityEnchantment
-
-    for _, player := range game.Model.Players {
-        for _, city := range player.Cities {
-            for _, enchantment := range city.GetEnchantmentsCastBy(banner) {
-                result = append(result, playerlib.CityEnchantment{City: city, Enchantment: enchantment})
-            }
-        }
-    }
-
-    return result
-}
-
 // turn off enchantments that can not be afforded
 func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
     // if time stop is in effect then only check that spell for dissipation, all other spells have no upkeep
@@ -6798,7 +6784,7 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
     }
 
     isManaIssue := func() bool {
-        manaPerTurn := player.ManaPerTurn(power, game)
+        manaPerTurn := player.ManaPerTurn(power, game.Model)
         return player.Mana + manaPerTurn < 0
     }
 
@@ -6811,7 +6797,7 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
 
     // keep removing city enchantments until there is no more mana issue
     for {
-        enchantments := game.GetCityEnchantmentsByBanner(player.GetBanner())
+        enchantments := game.Model.GetCityEnchantmentsByBanner(player.GetBanner())
         if len(enchantments) == 0 || !isManaIssue() {
             break
         }
@@ -6897,7 +6883,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         player.Gold = 0
     }
 
-    player.Mana += player.ManaPerTurn(power, game)
+    player.Mana += player.ManaPerTurn(power, game.Model)
 
     if timeStop {
         player.Mana -= data.EnchantmentTimeStop.UpkeepMana()
@@ -7414,7 +7400,7 @@ func (game *Game) ComputeWizardPower(player *playerlib.Player) playerlib.WizardP
         }
     }
 
-    manaPerTurn := player.ManaPerTurn(game.Model.ComputePower(player), game)
+    manaPerTurn := player.ManaPerTurn(game.Model.ComputePower(player), game.Model)
 
     research := 0
     for _, spell := range player.KnownSpells.Spells {
