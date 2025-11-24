@@ -5689,6 +5689,10 @@ func shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spell) bool {
         case "Web":
             // its always ok to re-web a unit
             return true
+        case "Flight":
+            if unit.IsFlying() {
+                return false
+            }
     }
 
     // any enchantment/curse should not be cast on a unit that already has the enchantment/curse
@@ -5699,15 +5703,16 @@ func shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spell) bool {
         }
 
         // if the enchantment provides an ability and the unit has all those abilities then no need to cast it
-        hasAll := true
-        for _, ability := range enchantment.Abilities() {
-            if !unit.HasAbility(ability.Ability) {
-                // if the unit is missing any ability then it is still useful to cast the spell
-                hasAll = false
+        count := 0
+        abilities := enchantment.Abilities()
+        for _, ability := range abilities {
+            if unit.HasAbility(ability.Ability) {
+                count += 1
             }
         }
 
-        return !hasAll
+        // if the unit is missing abilities
+        return len(abilities) == 0 || count < len(abilities)
     }
 
     curse := spell.GetUnitCurse()
