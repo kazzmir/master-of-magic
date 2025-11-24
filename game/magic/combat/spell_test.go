@@ -331,3 +331,36 @@ func TestFireballSpell(test *testing.T){
         test.Errorf("Error: fireball should have created a projectile")
     }
 }
+
+func TestAITarget(test *testing.T) {
+    makeUnit := func(unitType units.Unit, enchantments... data.UnitEnchantment) *ArmyUnit {
+        unit := &ArmyUnit{
+            Unit: units.MakeOverworldUnit(unitType, 0, 0, data.PlaneArcanus),
+        }
+
+        for _, enchantment := range enchantments {
+            unit.AddEnchantment(enchantment)
+        }
+
+        return unit
+    }
+
+    // can target a basic unit without bless
+    if !shouldAITargetUnit(makeUnit(units.LizardSwordsmen), spellbook.Spell{Name: "Bless"}) {
+        test.Errorf("Expected AI to target basic unit without bless")
+    }
+
+    // can not target a basic unit with bless
+    if shouldAITargetUnit(makeUnit(units.LizardSwordsmen, data.UnitEnchantmentBless), spellbook.Spell{Name: "Bless"}) {
+        test.Errorf("Expected AI not to target basic unit with bless")
+    }
+
+    // can not target a basic flying unit with flight
+    if shouldAITargetUnit(makeUnit(units.DraconianSwordsmen), spellbook.Spell{Name: "Flight"}) {
+        test.Errorf("Expected AI not to target flying unit with flight")
+    }
+
+    if shouldAITargetUnit(makeUnit(units.Wraith), spellbook.Spell{Name: "Wraith Form"}) {
+        test.Errorf("Expected AI not to target wraith with wraith form")
+    }
+}

@@ -4461,7 +4461,7 @@ func (model *CombatModel) DoAITargetUnitSpell(player ArmyPlayer, spell spellbook
 
     for _, i := range rand.Perm(len(units)) {
         unit := units[i]
-        if model.shouldAITargetUnit(unit, spell) && canTarget(unit) {
+        if shouldAITargetUnit(unit, spell) && canTarget(unit) {
             onTarget(unit)
             return
         }
@@ -5677,13 +5677,47 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
     }
 }
 
-func (model *CombatModel) shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spell) bool {
+func shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spell) bool {
     switch spell.Name {
         case "Healing":
             return unit.GetHealth() > 0 && float64(unit.GetHealth()) < float64(unit.GetMaxHealth()) * 4 / 5
         case "Word of Recall":
             // FIXME: figure out when its a good idea for AI to cast this
             return false
+        case "Chaos Channels":
+            return true
+        case "Web":
+            // its always ok to re-web a unit
+            return true
+        case "Flight":
+            if unit.IsFlying() {
+                return false
+            }
+    }
+
+    // any enchantment/curse should not be cast on a unit that already has the enchantment/curse
+    enchantment := spell.GetUnitEnchantment()
+    if enchantment != data.UnitEnchantmentNone {
+        if unit.HasEnchantment(enchantment) {
+            return false
+        }
+
+        // if the enchantment provides an ability and the unit has all those abilities then no need to cast it
+        count := 0
+        abilities := enchantment.Abilities()
+        for _, ability := range abilities {
+            if unit.HasAbility(ability.Ability) {
+                count += 1
+            }
+        }
+
+        // if the unit is missing abilities
+        return len(abilities) == 0 || count < len(abilities)
+    }
+
+    curse := spell.GetUnitCurse()
+    if curse != data.UnitEnchantmentNone {
+        return !unit.HasCurse(curse)
     }
 
     return true

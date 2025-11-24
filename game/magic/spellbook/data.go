@@ -64,6 +64,78 @@ func (spell Spell) IsSummoning() bool {
     return spell.Section == SectionSummoning
 }
 
+// the unit enchantment this spell would apply to a unit if any, or UnitEnchantmentNone if none
+func (spell Spell) GetUnitEnchantment() data.UnitEnchantment {
+    switch spell.Name {
+        case "Giant Strength": return data.UnitEnchantmentGiantStrength
+        case "Lionheart": return data.UnitEnchantmentLionHeart
+        case "Haste": return data.UnitEnchantmentHaste
+        case "Immolation": return data.UnitEnchantmentImmolation
+        case "Resist Elements": return data.UnitEnchantmentResistElements
+        case "Resist Magic": return data.UnitEnchantmentResistMagic
+        case "Elemental Armor": return data.UnitEnchantmentElementalArmor
+        case "Bless": return data.UnitEnchantmentBless
+        case "Righteousness": return data.UnitEnchantmentRighteousness
+        case "Cloak of Fear": return data.UnitEnchantmentCloakOfFear
+        case "True Sight": return data.UnitEnchantmentTrueSight
+        case "Pathfinding": return data.UnitEnchantmentPathFinding
+        case "Flight": return data.UnitEnchantmentFlight
+        /*
+        // this is chaos channels, but we can only return one unit enchantment per spell
+        UnitEnchantmentChaosChannelsDemonWings
+        UnitEnchantmentChaosChannelsDemonSkin
+        UnitEnchantmentChaosChannelsFireBreath
+        */
+        case "Endurance": return data.UnitEnchantmentEndurance
+        case "Heroism": return data.UnitEnchantmentHeroism
+        case "Holy Armor": return data.UnitEnchantmentHolyArmor
+        case "Holy Weapon": return data.UnitEnchantmentHolyWeapon
+        case "Invulnerability": return data.UnitEnchantmentInvulnerability
+        case "Planar Travel": return data.UnitEnchantmentPlanarTravel
+        case "Iron Skin": return data.UnitEnchantmentIronSkin
+        case "Regeneration": return data.UnitEnchantmentRegeneration
+        case "Stone Skin": return data.UnitEnchantmentStoneSkin
+        case "Water Walking": return data.UnitEnchantmentWaterWalking
+        case "Guardian Wind": return data.UnitEnchantmentGuardianWind
+        case "Invisiblity": return data.UnitEnchantmentInvisibility
+        case "Magic Immunity": return data.UnitEnchantmentMagicImmunity
+        case "Spell Lock": return data.UnitEnchantmentSpellLock
+        case "Wind Walking": return data.UnitEnchantmentWindWalking
+        case "Eldritch Weapon": return data.UnitEnchantmentEldritchWeapon
+        case "Flame Blade": return data.UnitEnchantmentFlameBlade
+        case "Berserk": return data.UnitEnchantmentBerserk
+        case "Black Channels": return data.UnitEnchantmentBlackChannels
+        case "Wraith Form": return data.UnitEnchantmentWraithForm
+    }
+
+    return data.UnitEnchantmentNone
+}
+
+// the curse that this spell would apply to a unit
+func (spell Spell) GetUnitCurse() data.UnitEnchantment {
+    switch spell.Name {
+        case "Confusion": return data.UnitCurseConfusion
+        case "Creature Binding": return data.UnitCurseCreatureBinding
+        case "Mind Storm": return data.UnitCurseMindStorm
+        case "Vertigo": return data.UnitCurseVertigo
+        case "Shatter": return data.UnitCurseShatter
+
+        /*
+        // these are warp creature
+        UnitCurseWarpCreatureMelee
+        UnitCurseWarpCreatureDefense
+        UnitCurseWarpCreatureResistance
+        */
+
+        case "Black Sleep": return data.UnitCurseBlackSleep
+        case "Possession": return data.UnitCursePossession
+        case "Weakness": return data.UnitCurseWeakness
+        case "Web": return data.UnitCurseWeb
+    }
+
+    return data.UnitEnchantmentNone
+}
+
 // overland=true if casting in overland, otherwise casting in combat
 // this does not include any additional costs for the spell
 func (spell Spell) BaseCost(overland bool) int {
