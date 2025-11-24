@@ -476,8 +476,10 @@ func (raider *RaiderAI) UpdateCities(self *playerlib.Player) []playerlib.AIDecis
     return decisions
 }
 
-func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
+func (raider *RaiderAI) Update(player *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
+
+    enemies := aiServices.GetEnemies(player)
 
     decisions = append(decisions, raider.MoveStacks(player, enemies, aiServices)...)
     decisions = append(decisions, raider.CreateUnits(player, aiServices)...)
@@ -486,7 +488,7 @@ func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Pl
     return decisions
 }
 
-func (raider *RaiderAI) PostUpdate(self *playerlib.Player, enemies []*playerlib.Player) {
+func (raider *RaiderAI) PostUpdate(self *playerlib.Player, aiServices playerlib.AIServices) {
 }
 
 func (raider *RaiderAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {

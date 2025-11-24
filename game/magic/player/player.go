@@ -126,14 +126,15 @@ type AIServices interface {
     FindStack(x int, y int, plane data.Plane) (*UnitStack, *Player)
     FindCity(x int, y int, plane data.Plane) (*citylib.City, *Player)
     ComputeCityStackInfo() CityStackInfo
+    GetEnemies(player *Player) []*Player
 }
 
 type AIBehavior interface {
     // return a list of decisions to make for the current turn
-    Update(*Player, []*Player, AIServices) []AIDecision
+    Update(*Player, AIServices) []AIDecision
 
     // called after all decisions have been processed for an AI player
-    PostUpdate(*Player, []*Player)
+    PostUpdate(*Player, AIServices)
 
     // reset any state that needs to be reset at the start of a new turn
     NewTurn(*Player)

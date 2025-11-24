@@ -927,7 +927,7 @@ func (game *Game) doDiplomacy(yield coroutine.YieldFunc, player *playerlib.Playe
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
 
     oldDrawer := game.Drawer
-    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Model.Players[0], game.GetEnemies(game.Model.Players[0]), game.Model.ComputePower(game.Model.Players[0]), game)
+    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Model.Players[0], game.Model.GetEnemies(game.Model.Players[0]), game.Model.ComputePower(game.Model.Players[0]), game)
 
     game.Drawer = func (screen *ebiten.Image, game *Game){
         magicScreen.Draw(screen)
@@ -3190,7 +3190,7 @@ func (game *Game) FindEscapePosition(player *playerlib.Player, unit units.StackU
 
             // can not contain an enemy stack or city
             occupied := false
-            for _, enemy := range game.GetEnemies(player) {
+            for _, enemy := range game.Model.GetEnemies(player) {
 
                 if enemy.FindStack(cx, cy, plane) != nil {
                     occupied = true
@@ -3908,7 +3908,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
             return nil
         }
 
-        for _, enemy := range game.GetEnemies(player) {
+        for _, enemy := range game.Model.GetEnemies(player) {
             // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
             enemyStack := enemy.FindStack(stack.X(), stack.Y(), stack.Plane())
             if enemyStack != nil {
@@ -3957,7 +3957,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
     var decisions []playerlib.AIDecision
 
     if player.AIBehavior != nil {
-        decisions = player.AIBehavior.Update(player, game.GetEnemies(player), game.Model)
+        decisions = player.AIBehavior.Update(player, game.Model)
         log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
         for _, decision := range decisions {
@@ -4022,23 +4022,12 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
             }
         }
 
-        player.AIBehavior.PostUpdate(player, game.GetEnemies(player))
+        player.AIBehavior.PostUpdate(player, game.Model)
     }
 
     // if len(decisions) == 0 {
         game.DoNextTurn()
     // }
-}
-
-// get all alive players that are not the current player
-func (game *Game) GetEnemies(player *playerlib.Player) []*playerlib.Player {
-    var out []*playerlib.Player
-    for _, enemy := range game.Model.Players {
-        if enemy != player && len(enemy.Cities) > 0 {
-            out = append(out, enemy)
-        }
-    }
-    return out
 }
 
 func (game *Game) doEnemyCityView(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, otherPlayer *playerlib.Player){

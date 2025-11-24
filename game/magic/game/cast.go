@@ -2099,7 +2099,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                             if player.IsTileExplored(tileX, tileY, game.Model.Plane) {
                                 if overworld.Map.GetTile(tileX, tileY).Tile.IsWater() {
                                     empty := true
-                                    for _, enemy := range game.GetEnemies(player) {
+                                    for _, enemy := range game.Model.GetEnemies(player) {
                                         if enemy.FindStack(tileX, tileY, game.Model.Plane) != nil {
                                             empty = false
                                             break
@@ -2179,7 +2179,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
                         }
 
                     case LocationTypeEnemyCity:
-                        for _, enemy := range game.GetEnemies(player) {
+                        for _, enemy := range game.Model.GetEnemies(player) {
                             city := enemy.FindCity(tileX, tileY, game.Model.Plane)
                             if city != nil {
                                 if !city.CanTarget(spell) {

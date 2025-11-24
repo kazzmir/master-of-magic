@@ -1660,3 +1660,14 @@ func (model *GameModel) GetCityEnchantmentsByBanner(banner data.BannerType) []pl
 
     return result
 }
+
+// get all alive players that are not the current player
+func (model *GameModel) GetEnemies(player *playerlib.Player) []*playerlib.Player {
+    var out []*playerlib.Player
+    for _, enemy := range model.Players {
+        if enemy != player && len(enemy.Cities) > 0 {
+            out = append(out, enemy)
+        }
+    }
+    return out
+}

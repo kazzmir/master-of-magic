@@ -47,7 +47,7 @@ func (ai *EnemyAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
     city.ProducingUnit = units.UnitNone
 }
 
-func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
+func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
     // FIXME: create settlers, build cities
@@ -285,7 +285,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
     return decisions
 }
 
-func (ai *EnemyAI) PostUpdate(self *playerlib.Player, enemies []*playerlib.Player) {
+func (ai *EnemyAI) PostUpdate(self *playerlib.Player, aiServices playerlib.AIServices) {
 
     // merge stacks that are on top of each other
     type Location struct {
