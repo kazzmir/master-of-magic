@@ -2512,17 +2512,19 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
     city.ResetCitizens()
     player.AddCity(city)
 
-    gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther")
-    reywind := hero.MakeHero(units.MakeOverworldUnit(units.HeroReywind, 0, 0, data.PlaneArcanus), hero.HeroReywind, "Reywind")
-    mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX, 0, 0, data.PlaneArcanus), hero.HeroMysticX, "Mystic X")
+    gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, city.X, city.Y, data.PlaneArcanus), hero.HeroGunther, "Gunther")
+    taki := hero.MakeHero(units.MakeOverworldUnit(units.HeroTaki, city.X, city.Y, data.PlaneArcanus), hero.HeroTaki, "Taki")
+    mysticX := hero.MakeHero(units.MakeOverworldUnit(units.HeroMysticX, city.X, city.Y, data.PlaneArcanus), hero.HeroMysticX, "Mystic X")
     mysticX.SetExtraAbilities()
     player.AddHeroToFortress(mysticX)
+    player.AddHeroToFortress(taki)
+    player.AddHeroToFortress(gunther)
     // player.AddHero(gunther)
     // player.AddHero(reywind)
     gunther.AddExperience(19)
     gunther.Status = hero.StatusEmployed
-    reywind.AddExperience(58)
-    reywind.Status = hero.StatusEmployed
+    taki.AddExperience(58)
+    taki.Status = hero.StatusEmployed
     mysticX.AddExperience(19)
     mysticX.Status = hero.StatusEmployed
 
