@@ -29,6 +29,35 @@ func MakeEnemyAI() *EnemyAI {
     return &EnemyAI{}
 }
 
+type GoalType int
+
+const (
+    GoalNone GoalType = iota
+    GoalDefeatEnemies // defeat enemy wizards
+    GoalExpandTerritory // build new cities
+    GoalExploreTerritory // explore the map
+    GoalResearchMagic // research spells
+    GoalCastSpellOfMastery
+    GoalDefendTerritory
+    GoalBuildArmy
+    GoalIncreasePower
+    GoalMeldNodes
+)
+
+type EnemyGoal struct {
+    Goal GoalType
+    Weight float32 // normalized between 0 and 1
+
+    // subgoals that must be satisfied for the current goal before an action
+    // can be taken towards the current goal
+    SubGoals []EnemyGoal
+}
+
+// weight of this goal, higher weight means higher priority
+func (goal *EnemyGoal) GetWeight() float32 {
+    return goal.Weight
+}
+
 // true if the city is producing some other than trade goods or housing
 func isMakingSomething(city *citylib.City) bool {
     if !city.ProducingUnit.Equals(units.UnitNone) {
@@ -39,6 +68,43 @@ func isMakingSomething(city *citylib.City) bool {
         case buildinglib.BuildingHousing, buildinglib.BuildingTradeGoods, buildinglib.BuildingNone: return false
         default: return true
     }
+}
+
+func (ai *EnemyAI) ComputeGoals(self *playerlib.Player, aiServices playerlib.AIServices) []EnemyGoal {
+    var goals []EnemyGoal
+
+    exploreGoal := EnemyGoal{
+        Goal: GoalExploreTerritory,
+    }
+
+    goals = append(goals, EnemyGoal{
+        Goal: GoalDefeatEnemies,
+        SubGoals: []EnemyGoal{
+            exploreGoal,
+            EnemyGoal{
+                Goal: GoalBuildArmy,
+            },
+        },
+    })
+
+    goals = append(goals, EnemyGoal{
+        Goal: GoalCastSpellOfMastery,
+        SubGoals: []EnemyGoal{
+            EnemyGoal{
+                Goal: GoalResearchMagic,
+            },
+            EnemyGoal{
+                Goal: GoalIncreasePower,
+                SubGoals: []EnemyGoal{
+                    EnemyGoal{
+                        Goal: GoalMeldNodes,
+                    },
+                },
+            },
+        },
+    })
+
+    return goals
 }
 
 // stop producing that unit

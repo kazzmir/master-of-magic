@@ -2008,7 +2008,9 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
 
     game := gamelib.MakeGame(cache, setup.NewGameSettings{LandSize: 0})
 
-    game.Model.Plane = data.PlaneArcanus
+    usePlane := data.PlaneMyrror
+
+    game.Model.Plane = usePlane
 
     player := game.AddPlayer(wizard, true)
 
@@ -2019,7 +2021,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.BuildingInfo, game.Model.CurrentMap(), game.Model, player)
     city.Population = 10190
-    city.Plane = data.PlaneArcanus
+    city.Plane = usePlane
     city.Buildings.Insert(buildinglib.BuildingFortress)
     city.Buildings.Insert(buildinglib.BuildingWizardsGuild)
     city.ProducingBuilding = buildinglib.BuildingGranary
@@ -2039,23 +2041,23 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    spear1 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
-    spear2 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
-    spear3 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
-    spear4 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
-    spear5 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    spear1 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, usePlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    spear2 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, usePlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    spear3 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, usePlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    spear4 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, usePlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    spear5 := player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, x+1, y, usePlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     spear2.AddExperience(30)
     spear3.AddExperience(60)
     spear4.AddExperience(100)
     spear5.AddExperience(200)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, usePlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, usePlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
     stack := player.FindStackByUnit(spear1)
     player.SetSelectedStack(stack)
 
-    player.LiftFog(stack.X(), stack.Y(), 20, data.PlaneArcanus)
+    player.LiftFog(stack.X(), stack.Y(), 20, stack.Plane())
     player.Admin = true
 
     enemyWizard := setup.WizardCustom{
@@ -2073,7 +2075,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("enemy city at %v, %v", x2, y2)
     city2 := citylib.MakeCity("Test City", x2, y2, enemy.Wizard.Race, game.BuildingInfo, game.Model.CurrentMap(), game.Model, enemy)
     city2.Population = 8000
-    city2.Plane = data.PlaneArcanus
+    city2.Plane = usePlane
     city2.ProducingBuilding = buildinglib.BuildingHousing
     city2.ProducingUnit = units.UnitNone
     city2.Farmers = city2.Citizens() - 1
@@ -2087,7 +2089,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
     city2.Workers = 2
     city2.Rebels = 1
 
-    enemy.LiftFog(city2.X, city2.Y, 10, data.PlaneArcanus)
+    enemy.LiftFog(city2.X, city2.Y, 10, city2.Plane)
 
     /*
     for range 8 {
