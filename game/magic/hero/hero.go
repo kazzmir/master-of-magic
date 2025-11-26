@@ -1064,7 +1064,7 @@ func (hero *Hero) GetDefense() int {
         base += hero.DefenseEnchantmentBonus(enchantment)
     }
 
-    return base
+    return base + hero.GetAbilityDefense()
 }
 
 func (hero *Hero) GetBaseResistance() int {

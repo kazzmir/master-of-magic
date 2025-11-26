@@ -33,6 +33,18 @@ func TestHero(test *testing.T){
         test.Errorf("taki should have 2 abilities")
     }
 
+    // 5 base + 1 from super agility
+    if taki.GetDefense() != 6 {
+        test.Errorf("taki should have 6 defense but was %v", taki.GetDefense())
+    }
+
+    taki.AddExperience(units.ExperienceChampionHero.ExperienceRequired(false, false))
+
+    // 5 base, 2 from champion, 7 from super agility
+    if taki.GetDefense() != 5 + 2 + 7 {
+        test.Errorf("taki should have 14 defense but was %v", taki.GetDefense())
+    }
+
     theria := MakeHeroSimple(HeroTheria)
     if len(theria.GetAbilities()) != 2 {
         test.Errorf("Theria should have 2 abilities")
