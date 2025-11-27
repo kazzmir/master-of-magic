@@ -38,3 +38,14 @@ func (wrapper *UnitDamageWrapper) Figures() int {
     health_per_figure := float64(wrapper.GetMaxHealth()) / float64(wrapper.GetCount())
     return int(math.Ceil(float64(wrapper.GetHealth()) / health_per_figure))
 }
+
+func (wrapper *UnitDamageWrapper) GetLeadUnitHealth() int {
+    health := wrapper.GetHealth()
+    health_per_figure := wrapper.GetMaxHealth() / wrapper.GetCount()
+
+    remaining := health % health_per_figure
+    if remaining == 0 {
+        return health_per_figure
+    }
+    return remaining
+}

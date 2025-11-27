@@ -806,6 +806,17 @@ func (unit *ArmyUnit) GetCount() int {
     return unit.Unit.GetCount()
 }
 
+func (unit *ArmyUnit) GetLeadUnitHealth() int {
+    health := unit.GetHealth()
+    health_per_figure := unit.GetMaxHealth() / unit.GetCount()
+
+    remaining := health % health_per_figure
+    if remaining == 0 {
+        return health_per_figure
+    }
+    return remaining
+}
+
 func (unit *ArmyUnit) GetVisibleCount() int {
     return unit.Unit.GetVisibleCount()
 }
@@ -1600,6 +1611,8 @@ type UnitDamage interface {
     // returns the number of figures lost
     TakeDamage(damage int, damageType DamageType) int
     ReduceInvulnerability(damage int) int
+    // how much health the lead unit has
+    GetLeadUnitHealth() int
     GetHealth() int
     GetMaxHealth() int
     GetCount() int
@@ -1813,12 +1826,7 @@ func ApplyDamage(unit UnitDamage, damageRolls []int, damageType units.Damage, so
 
             if damage > 0 {
                 // log.Printf("Applying %v damage to %v. Max health %v, count %v, figures %v", damage, unit, unit.GetMaxHealth(), unit.GetCount(), unit.Figures())
-                health_per_figure := unit.GetMaxHealth() / unit.GetCount()
-                healthLeft := unit.GetHealth() % unit.Figures()
-                if healthLeft == 0 {
-                    healthLeft = health_per_figure
-                }
-
+                healthLeft := unit.GetLeadUnitHealth()
                 take := min(healthLeft, damage)
                 lost += unit.TakeDamage(take, modifiers.DamageType)
                 damage -= take
