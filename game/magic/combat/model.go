@@ -1826,12 +1826,7 @@ func ApplyDamage(unit UnitDamage, damageRolls []int, damageType units.Damage, so
 
             if damage > 0 {
                 // log.Printf("Applying %v damage to %v. Max health %v, count %v, figures %v", damage, unit, unit.GetMaxHealth(), unit.GetCount(), unit.Figures())
-                health_per_figure := unit.GetMaxHealth() / unit.GetCount()
-                healthLeft := unit.GetHealth() % unit.Figures()
-                if healthLeft == 0 {
-                    healthLeft = health_per_figure
-                }
-
+                healthLeft := unit.GetLeadUnitHealth()
                 take := min(healthLeft, damage)
                 lost += unit.TakeDamage(take, modifiers.DamageType)
                 damage -= take
