@@ -64,6 +64,10 @@ func TestUnitHealth(test *testing.T) {
         Unit: unit,
     }
 
+    if armyUnit.GetLeadUnitHealth() != 2 {
+        test.Errorf("Error: lead unit health should be 2")
+    }
+
     if armyUnit.Figures() != 8 {
         test.Errorf("Error: figures should be 8")
     }
@@ -75,6 +79,10 @@ func TestUnitHealth(test *testing.T) {
     // each figure has 2 hp, so taking one damage should keep 8 figures
     armyUnit.TakeDamage(1, DamageNormal)
 
+    if armyUnit.GetLeadUnitHealth() != 1 {
+        test.Errorf("Error: lead unit health should be 1")
+    }
+
     if armyUnit.Figures() != 8 {
         test.Errorf("Error: figures should be 8")
     }
@@ -85,6 +93,10 @@ func TestUnitHealth(test *testing.T) {
 
     // kill one figure
     armyUnit.TakeDamage(1, DamageNormal)
+
+    if armyUnit.GetLeadUnitHealth() != 2 {
+        test.Errorf("Error: lead unit health should be 2")
+    }
 
     if armyUnit.Figures() != 7 {
         test.Errorf("Error: figures should be 7")
