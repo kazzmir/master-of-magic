@@ -22,32 +22,86 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
 )
 
-type EnemyAI struct {
+type Enemy2AI struct {
 }
 
-func MakeEnemyAI() *EnemyAI {
-    return &EnemyAI{}
+func MakeEnemy2AI() *Enemy2AI {
+    return &Enemy2AI{}
 }
 
-// true if the city is producing some other than trade goods or housing
-func isMakingSomething(city *citylib.City) bool {
-    if !city.ProducingUnit.Equals(units.UnitNone) {
-        return true
+type GoalType int
+
+const (
+    GoalNone GoalType = iota
+    GoalDefeatEnemies // defeat enemy wizards
+    GoalExpandTerritory // build new cities
+    GoalExploreTerritory // explore the map
+    GoalResearchMagic // research spells
+    GoalCastSpellOfMastery
+    GoalDefendTerritory
+    GoalBuildArmy
+    GoalIncreasePower
+    GoalMeldNodes
+)
+
+type EnemyGoal struct {
+    Goal GoalType
+    Weight float32 // normalized between 0 and 1
+
+    // subgoals that must be satisfied for the current goal before an action
+    // can be taken towards the current goal
+    SubGoals []EnemyGoal
+}
+
+// weight of this goal, higher weight means higher priority
+func (goal *EnemyGoal) GetWeight() float32 {
+    return goal.Weight
+}
+
+func (ai *Enemy2AI) ComputeGoals(self *playerlib.Player, aiServices playerlib.AIServices) []EnemyGoal {
+    var goals []EnemyGoal
+
+    exploreGoal := EnemyGoal{
+        Goal: GoalExploreTerritory,
     }
 
-    switch city.ProducingBuilding {
-        case buildinglib.BuildingHousing, buildinglib.BuildingTradeGoods, buildinglib.BuildingNone: return false
-        default: return true
-    }
+    goals = append(goals, EnemyGoal{
+        Goal: GoalDefeatEnemies,
+        SubGoals: []EnemyGoal{
+            exploreGoal,
+            EnemyGoal{
+                Goal: GoalBuildArmy,
+            },
+        },
+    })
+
+    goals = append(goals, EnemyGoal{
+        Goal: GoalCastSpellOfMastery,
+        SubGoals: []EnemyGoal{
+            EnemyGoal{
+                Goal: GoalResearchMagic,
+            },
+            EnemyGoal{
+                Goal: GoalIncreasePower,
+                SubGoals: []EnemyGoal{
+                    EnemyGoal{
+                        Goal: GoalMeldNodes,
+                    },
+                },
+            },
+        },
+    })
+
+    return goals
 }
 
 // stop producing that unit
-func (ai *EnemyAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
+func (ai *Enemy2AI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
     city.ProducingBuilding = buildinglib.BuildingTradeGoods
     city.ProducingUnit = units.UnitNone
 }
 
-func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
+func (ai *Enemy2AI) Update(self *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
     // FIXME: create settlers, build cities
@@ -285,7 +339,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIService
     return decisions
 }
 
-func (ai *EnemyAI) PostUpdate(self *playerlib.Player, aiServices playerlib.AIServices) {
+func (ai *Enemy2AI) PostUpdate(self *playerlib.Player, aiServices playerlib.AIServices) {
 
     // merge stacks that are on top of each other
     type Location struct {
@@ -308,7 +362,7 @@ func (ai *EnemyAI) PostUpdate(self *playerlib.Player, aiServices playerlib.AISer
     }
 }
 
-func (ai *EnemyAI) NewTurn(player *playerlib.Player) {
+func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {
     // make sure cities have enough farmers
     for _, city := range player.Cities {
         city.ResetCitizens()
@@ -338,11 +392,11 @@ func (ai *EnemyAI) NewTurn(player *playerlib.Player) {
     }
 }
 
-func (ai *EnemyAI) ConfirmRazeTown(city *citylib.City) bool {
+func (ai *Enemy2AI) ConfirmRazeTown(city *citylib.City) bool {
     return false
 }
 
-func (ai *EnemyAI) HandleMerchantItem(self *playerlib.Player, item *artifact.Artifact, cost int) bool {
+func (ai *Enemy2AI) HandleMerchantItem(self *playerlib.Player, item *artifact.Artifact, cost int) bool {
     if self.Gold >= cost {
         for _, hero := range self.Heroes {
             if hero != nil && hero.Status == herolib.StatusEmployed {
