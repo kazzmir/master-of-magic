@@ -1,6 +1,15 @@
 package ai
 
 /* EnemyAI is the AI for enemy wizards
+ * Actions an enemy can take:
+ *  research new spell
+ *  cast spell
+ *  each city can be producing something, or housing/trade goods
+ *  each unit can patrol to defend an area, move to attack an enemy, or move to explore
+ *  diplomacy with other wizards
+ *
+ * given a goal, create a plan. each turn the AI will try to execute part of the plan
+ * after exploration, the AI may need to replan
  */
 
 import (

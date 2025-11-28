@@ -3957,6 +3957,9 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
     var decisions []playerlib.AIDecision
 
     if player.AIBehavior != nil {
+        // always rebalance food production
+        player.RebalanceFood()
+
         decisions = player.AIBehavior.Update(player, game.Model)
         log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
