@@ -377,24 +377,7 @@ func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {
         city.ResetCitizens()
     }
 
-    // keep going as long as there is more food available
-    moreFood := true
-    for moreFood && player.FoodPerTurn() < 0 {
-        // try to update farmers in cities
-
-        moreFood = false
-        for _, city := range player.Cities {
-            if player.FoodPerTurn() >= 0 {
-                break
-            }
-
-            if city.Workers > 0 {
-                moreFood = true
-                city.Farmers += 1
-                city.Workers -= 1
-            }
-        }
-    }
+    player.RebalanceFood()
 
     for _, city := range player.Cities {
         log.Printf("ai %v city %v farmer=%v worker=%v rebel=%v", player.Wizard.Name, city.Name, city.Farmers, city.Workers, city.Rebels)
