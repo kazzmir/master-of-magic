@@ -74,6 +74,9 @@ func (ai *Enemy2AI) ComputeGoals(self *playerlib.Player, aiServices playerlib.AI
         Goal: GoalExploreTerritory,
     }
 
+    goals = append(goals, exploreGoal)
+
+    /*
     goals = append(goals, EnemyGoal{
         Goal: GoalDefeatEnemies,
         SubGoals: []EnemyGoal{
@@ -100,6 +103,7 @@ func (ai *Enemy2AI) ComputeGoals(self *playerlib.Player, aiServices playerlib.AI
             },
         },
     })
+    */
 
     return goals
 }
@@ -111,6 +115,84 @@ func (ai *Enemy2AI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
 }
 
 func (ai *Enemy2AI) Update(self *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
+    var decisions []playerlib.AIDecision
+    goals := ai.ComputeGoals(self, aiServices)
+
+    for _, goal := range goals {
+        switch goal.Goal {
+            case GoalExploreTerritory:
+                // in order to explore territory we need units available that are not busy
+
+                // if there are units that are not busy and not moving, then move them to some unexplored location nearby
+                // if there are no units available, then see if we can produce more units
+                // if we can't sustain more units then cities should wait to grow in population via housing
+                // or create more cities with settlers
+
+                // goal 1 might want to take one action for a city, but goal 2 might want to take a conflicting action
+                // choose the goal that has a higher weight
+
+                for _, stack := range self.Stacks {
+                    if stack.HasMoves() {
+
+                        if len(stack.CurrentPath) > 0 {
+                            decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                                Stack: stack,
+                                Path: stack.CurrentPath,
+                                ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
+                                    return false
+                                },
+                            })
+                            continue
+                        }
+
+                        if len(stack.CurrentPath) == 0 {
+                            var path pathfinding.Path
+                            fog := self.GetFog(stack.Plane())
+                            useMap := aiServices.GetMap(stack.Plane())
+
+                            // try upto 5 times to find a path
+                            distance := 3
+                            for range 5 {
+                                distance += 2
+                                newX, newY := stack.X() + rand.N(distance) - distance / 2, stack.Y() + rand.N(distance) - distance / 2
+
+                                tile := useMap.GetTile(newX, newY)
+                                if !tile.Valid() || self.IsExplored(newX, newY, stack.Plane()) {
+                                    continue
+                                }
+
+                                path = aiServices.FindPath(stack.X(), stack.Y(), newX, newY, self, stack, fog)
+                                if len(path) != 0 {
+                                    log.Printf("Explore new location %v,%v via %v", newX, newY, path)
+                                    break
+                                }
+                            }
+
+                            // just go somewhere random
+                            if len(path) == 0 {
+                                newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
+                                path = aiServices.FindPath(stack.X(), stack.Y(), newX, newY, self, stack, fog)
+                            }
+
+                            if len(path) > 0 {
+                                decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                                    Stack: stack,
+                                    Path: path,
+                                    ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
+                                        return false
+                                    },
+                                })
+                            }
+                        }
+                    }
+                }
+        }
+    }
+
+    return decisions
+}
+
+func (ai *Enemy2AI) Update2(self *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
     // FIXME: create settlers, build cities

@@ -3308,7 +3308,7 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy1.TaxRate = fraction.Zero()
 
-    enemy1.AIBehavior = ai.MakeEnemyAI()
+    enemy1.AIBehavior = ai.MakeEnemy2AI()
 
     x, y, _ := game.FindValidCityLocation(game.Model.Plane)
 
@@ -3332,7 +3332,8 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy1.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSettlers, x, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
+    // enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSettlers, x, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSwordsmen, x, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
 
     // allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 
