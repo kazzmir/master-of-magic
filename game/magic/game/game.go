@@ -3843,18 +3843,17 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
 // FIXME: can this just use doMoveSelectedUnit?
 // returns the rest of the path the stack should walk (nil if the path ends)
-func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Player, move *playerlib.AIMoveStackDecision) pathfinding.Path {
-    stack := move.Stack
-
-    if len(move.Units) > 0 {
-        stack = player.SplitStack(stack, move.Units)
+func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack) pathfinding.Path {
+    if len(stack.Units()) > 0 {
+        stack = player.SplitStack(stack, stack.Units())
         for _, unit := range stack.Units() {
             unit.SetBusy(units.BusyStatusNone)
         }
     }
 
     // FIXME: split the stack into just the active units in case some are busy or out of moves
-    path := move.Path
+    // path := move.Path
+    path := stack.CurrentPath
 
     if len(path) == 0 {
         return nil
@@ -3877,8 +3876,8 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
 
         encounter := mapUse.GetEncounter(mapUse.WrapX(to.X), to.Y)
         if encounter != nil {
-            if !move.ConfirmEncounter(encounter) {
-                move.Invalid()
+            if !player.AIBehavior.ConfirmEncounter(stack, encounter) {
+                player.AIBehavior.InvalidMove(stack)
                 return nil
             }
         }
@@ -3887,7 +3886,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
         if newCity != nil {
             for _, unit := range stack.ActiveUnits() {
                 if !newCity.CanEnter(unit) {
-                    move.Invalid()
+                    player.AIBehavior.InvalidMove(stack)
                     return nil
                 }
             }
@@ -3899,7 +3898,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
             game.showMovement(yield, oldX, oldY, stack, false)
         }
 
-        move.Moved()
+        player.AIBehavior.MovedStack(stack)
 
         player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
@@ -3944,7 +3943,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
             }
         }
     } else {
-        move.Invalid()
+        player.AIBehavior.InvalidMove(stack)
         return nil
     }
 
@@ -3964,8 +3963,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
             switch decision.(type) {
                 case *playerlib.AIMoveStackDecision:
                     moveDecision := decision.(*playerlib.AIMoveStackDecision)
-                    newPath := game.doAiMoveUnit(yield, player, moveDecision)
-                    moveDecision.Stack.CurrentPath = newPath
+                    moveDecision.Stack.CurrentPath = moveDecision.Path
 
                 // mainly for the raider ai
                 case *playerlib.AICreateUnitDecision:
@@ -4017,6 +4015,10 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                         player.CastingSpell = cast.Spell
                     }
             }
+        }
+
+        for _, stack := range slices.Clone(player.Stacks) {
+            stack.CurrentPath = game.doAiMoveUnit(yield, player, stack)
         }
 
         player.AIBehavior.PostUpdate(player, game.Model)

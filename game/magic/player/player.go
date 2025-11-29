@@ -56,37 +56,10 @@ type AIMoveStackDecision struct {
     Path pathfinding.Path
     // only move these specific units within the stack
     Units []units.StackUnit
-    // invoked if the move was unable to be completed
-    invalid func()
-    // invoked if the move succeeded
-    moved func()
-    // invoked when the stack moves onto a tile with an encounter. this function should return true
-    // if the army should initiate combat with the encounter
-    ConfirmEncounter_ func(*maplib.ExtraEncounter) bool
 }
 
 func (move *AIMoveStackDecision) String() string {
     return fmt.Sprintf("MoveStack %v", move.Stack)
-}
-
-func (move *AIMoveStackDecision) Invalid() {
-    if move.invalid != nil {
-        move.invalid()
-    }
-}
-
-func (move *AIMoveStackDecision) ConfirmEncounter(encounter *maplib.ExtraEncounter) bool {
-    if move.ConfirmEncounter_ != nil {
-        return move.ConfirmEncounter_(encounter)
-    }
-
-    return false
-}
-
-func (move *AIMoveStackDecision) Moved() {
-    if move.moved != nil {
-        move.moved()
-    }
 }
 
 type AICastSpellDecision struct {
@@ -146,6 +119,15 @@ type AIBehavior interface {
     ConfirmRazeTown(*citylib.City) bool
 
     HandleMerchantItem(*Player, *artifact.Artifact, int) bool
+
+    // invoked if the move was unable to be completed
+    InvalidMove(*UnitStack)
+
+    // invoked if the move succeeded
+    MovedStack(*UnitStack)
+    // invoked when the stack moves onto a tile with an encounter. this function should return true
+    // if the army should initiate combat with the encounter
+    ConfirmEncounter(*UnitStack, *maplib.ExtraEncounter) bool
 }
 
 type Hostility int

@@ -60,6 +60,16 @@ func (ai *DummyAI) NewTurn(self *playerlib.Player) {
 func (ai *DummyAI) ProducedUnit(city *citylib.City, self *playerlib.Player) {
 }
 
+func (ai *DummyAI) ConfirmEncounter(stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter) bool {
+    return false
+}
+
+func (ai *DummyAI) MovedStack(stack *playerlib.UnitStack) {
+}
+
+func (ai *DummyAI) InvalidMove(stack *playerlib.UnitStack) {
+}
+
 func (ai *DummyAI) ConfirmRazeTown(city *citylib.City) bool {
     return false
 }

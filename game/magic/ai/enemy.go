@@ -47,6 +47,16 @@ func (ai *EnemyAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
     city.ProducingUnit = units.UnitNone
 }
 
+func (ai *EnemyAI) ConfirmEncounter(stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter) bool {
+    return false
+}
+
+func (ai *EnemyAI) InvalidMove(stack *playerlib.UnitStack) {
+}
+
+func (ai *EnemyAI) MovedStack(stack *playerlib.UnitStack) {
+}
+
 func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
@@ -178,9 +188,6 @@ func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIService
                 decisions = append(decisions, &playerlib.AIMoveStackDecision{
                     Stack: stack,
                     Path: stack.CurrentPath,
-                    ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
-                        return true
-                    },
                 })
                 continue
             } else {
@@ -273,9 +280,6 @@ func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIService
                     decisions = append(decisions, &playerlib.AIMoveStackDecision{
                         Stack: stack,
                         Path: path,
-                        ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
-                            return true
-                        },
                     })
                 }
             }

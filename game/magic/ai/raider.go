@@ -46,6 +46,16 @@ func randomRange(low int, high int) int {
     return rand.N(high-low+1) + low
 }
 
+func (raider *RaiderAI) ConfirmEncounter(stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter) bool {
+    return false
+}
+
+func (raider *RaiderAI) InvalidMove(stack *playerlib.UnitStack) {
+}
+
+func (raider *RaiderAI) MovedStack(stack *playerlib.UnitStack) {
+}
+
 func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     cityStackInfo := aiServices.ComputeCityStackInfo()
 
@@ -80,9 +90,6 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                     decisions = append(decisions, &playerlib.AIMoveStackDecision{
                         Stack: stack,
                         Path: stack.CurrentPath,
-                        ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
-                            return false
-                        },
                     })
                     // raider.MovedStacks[stack] = true
                     continue
@@ -152,10 +159,6 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                 decisions = append(decisions, &playerlib.AIMoveStackDecision{
                     Stack: stack,
                     Path: currentPath,
-                    // never enter an encounter
-                    ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
-                        return false
-                    },
                 })
 
             } else {

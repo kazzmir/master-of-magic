@@ -74,7 +74,16 @@ func (ai *Enemy2AI) ComputeGoals(self *playerlib.Player, aiServices playerlib.AI
         Goal: GoalExploreTerritory,
     }
 
-    goals = append(goals, exploreGoal)
+    goals = []EnemyGoal{
+        EnemyGoal{
+            Goal: GoalDefeatEnemies,
+            SubGoals: []EnemyGoal{
+                exploreGoal,
+            },
+        },
+    }
+
+    // goals = append(goals, exploreGoal)
 
     /*
     goals = append(goals, EnemyGoal{
@@ -114,112 +123,164 @@ func (ai *Enemy2AI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
     city.ProducingUnit = units.UnitNone
 }
 
+// the decisions to make for this goal
+func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.AIServices, goal EnemyGoal) []playerlib.AIDecision {
+    var decisions []playerlib.AIDecision
+
+    // recursively satisfy subgoals first
+    for _, subGoal := range goal.SubGoals {
+        decisions = append(decisions, ai.GoalDecisions(self, aiServices, subGoal)...)
+    }
+
+    switch goal.Goal {
+        case GoalDefeatEnemies:
+            // find possible enemy targets
+            for _, enemyPlayer := range aiServices.GetEnemies(self) {
+                var possibleTarget []*playerlib.UnitStack
+                for _, enemyStack := range enemyPlayer.Stacks {
+                    if self.IsVisible(enemyStack.X(), enemyStack.Y(), enemyStack.Plane()) {
+                        possibleTarget = append(possibleTarget, enemyStack)
+                    }
+                }
+
+                if len(possibleTarget) > 0 {
+                    for _, stack := range self.Stacks {
+                        if stack.HasMoves() {
+
+                            for _, target := range possibleTarget {
+                                if aiServices.FindPath(stack.X(), stack.Y(), target.X(), target.Y(), self, stack, self.GetFog(stack.Plane())) != nil {
+                                    decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                                    })
+                                }
+                            }
+                        }
+                    }
+                }
+
+                for _, enemyCity := range enemyPlayer.Cities {
+                    // in theory we can see cities that on tiles that we have explored in the past
+                    if self.IsVisible(enemyCity.X, enemyCity.Y, enemyCity.Plane) {
+                    }
+                }
+            }
+
+        case GoalExploreTerritory:
+            // in order to explore territory we need units available that are not busy
+
+            // if there are units that are not busy and not moving, then move them to some unexplored location nearby
+            // if there are no units available, then see if we can produce more units
+            // if we can't sustain more units then cities should wait to grow in population via housing
+            // or create more cities with settlers
+
+            // goal 1 might want to take one action for a city, but goal 2 might want to take a conflicting action
+            // choose the goal that has a higher weight
+
+            for _, stack := range slices.Clone(self.Stacks) {
+                if stack.HasMoves() {
+
+                    if len(stack.CurrentPath) > 0 {
+                        decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                            Stack: stack,
+                            Path: stack.CurrentPath,
+                        })
+                        continue
+                    }
+
+                    if len(stack.CurrentPath) == 0 {
+
+                        // split the stack in half
+                        /*
+                        if len(stack.Units()) > 1 && rand.N(4) == 0 {
+                            stackUnits := stack.Units()
+                            stack = self.SplitStack(stack, stackUnits[0:len(stackUnits) / 2])
+                        }
+                        */
+                        // FIXME: maybe emite SplitStack decision
+
+                        var path pathfinding.Path
+                        fog := self.GetFog(stack.Plane())
+                        useMap := aiServices.GetMap(stack.Plane())
+
+                        // try upto 5 times to find a path
+                        distance := 3
+                        for range 5 {
+                            distance += 3
+                            newX, newY := stack.X() + rand.N(distance) - distance / 2, stack.Y() + rand.N(distance) - distance / 2
+
+                            tile := useMap.GetTile(newX, newY)
+                            if !tile.Valid() || self.IsExplored(newX, newY, stack.Plane()) {
+                                continue
+                            }
+
+                            path = aiServices.FindPath(stack.X(), stack.Y(), newX, newY, self, stack, fog)
+                            if len(path) != 0 {
+                                log.Printf("Explore new location %v,%v via %v", newX, newY, path)
+                                break
+                            }
+                        }
+
+                        // just go somewhere random
+                        if len(path) == 0 {
+                            newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
+                            path = aiServices.FindPath(stack.X(), stack.Y(), newX, newY, self, stack, fog)
+                        }
+
+                        if len(path) > 0 {
+                            decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                                Stack: stack,
+                                Path: path,
+                            })
+                        }
+                    }
+                }
+            }
+
+            foodPerTurn := self.FoodPerTurn()
+
+            for _, city := range self.Cities {
+                if !isMakingSomething(city) && foodPerTurn > 0 {
+                    possibleUnits := city.ComputePossibleUnits()
+
+                    possibleUnits = slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
+                        if unit.IsSettlers() {
+                            return true
+                        }
+                        return false
+                    })
+
+                    if len(possibleUnits) > 0 {
+                        decisions = append(decisions, &playerlib.AIProduceDecision{
+                            City: city,
+                            Building: buildinglib.BuildingNone,
+                            Unit: possibleUnits[rand.N(len(possibleUnits))],
+                        })
+                    }
+                }
+            }
+    }
+
+    return decisions
+}
+
 func (ai *Enemy2AI) Update(self *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
     goals := ai.ComputeGoals(self, aiServices)
 
     for _, goal := range goals {
-        switch goal.Goal {
-            case GoalExploreTerritory:
-                // in order to explore territory we need units available that are not busy
-
-                // if there are units that are not busy and not moving, then move them to some unexplored location nearby
-                // if there are no units available, then see if we can produce more units
-                // if we can't sustain more units then cities should wait to grow in population via housing
-                // or create more cities with settlers
-
-                // goal 1 might want to take one action for a city, but goal 2 might want to take a conflicting action
-                // choose the goal that has a higher weight
-
-                for _, stack := range slices.Clone(self.Stacks) {
-                    if stack.HasMoves() {
-
-                        if len(stack.CurrentPath) > 0 {
-                            decisions = append(decisions, &playerlib.AIMoveStackDecision{
-                                Stack: stack,
-                                Path: stack.CurrentPath,
-                                ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
-                                    return false
-                                },
-                            })
-                            continue
-                        }
-
-                        if len(stack.CurrentPath) == 0 {
-
-                            // split the stack in half
-                            if len(stack.Units()) > 1 && rand.N(4) == 0 {
-                                stackUnits := stack.Units()
-                                stack = self.SplitStack(stack, stackUnits[0:len(stackUnits) / 2])
-                            }
-
-                            var path pathfinding.Path
-                            fog := self.GetFog(stack.Plane())
-                            useMap := aiServices.GetMap(stack.Plane())
-
-                            // try upto 5 times to find a path
-                            distance := 3
-                            for range 5 {
-                                distance += 3
-                                newX, newY := stack.X() + rand.N(distance) - distance / 2, stack.Y() + rand.N(distance) - distance / 2
-
-                                tile := useMap.GetTile(newX, newY)
-                                if !tile.Valid() || self.IsExplored(newX, newY, stack.Plane()) {
-                                    continue
-                                }
-
-                                path = aiServices.FindPath(stack.X(), stack.Y(), newX, newY, self, stack, fog)
-                                if len(path) != 0 {
-                                    log.Printf("Explore new location %v,%v via %v", newX, newY, path)
-                                    break
-                                }
-                            }
-
-                            // just go somewhere random
-                            if len(path) == 0 {
-                                newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
-                                path = aiServices.FindPath(stack.X(), stack.Y(), newX, newY, self, stack, fog)
-                            }
-
-                            if len(path) > 0 {
-                                decisions = append(decisions, &playerlib.AIMoveStackDecision{
-                                    Stack: stack,
-                                    Path: path,
-                                    ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
-                                        return false
-                                    },
-                                })
-                            }
-                        }
-                    }
-                }
-
-                foodPerTurn := self.FoodPerTurn()
-
-                for _, city := range self.Cities {
-                    if !isMakingSomething(city) && foodPerTurn > 0 {
-                        possibleUnits := city.ComputePossibleUnits()
-
-                        possibleUnits = slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
-                            if unit.IsSettlers() {
-                                return true
-                            }
-                            return false
-                        })
-
-                        if len(possibleUnits) > 0 {
-                            decisions = append(decisions, &playerlib.AIProduceDecision{
-                                City: city,
-                                Building: buildinglib.BuildingNone,
-                                Unit: possibleUnits[rand.N(len(possibleUnits))],
-                            })
-                        }
-                    }
-                }
-        }
+        decisions = append(decisions, ai.GoalDecisions(self, aiServices, goal)...)
     }
 
     return decisions
+}
+
+func (ai *Enemy2AI) ConfirmEncounter(stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter) bool {
+    return false
+}
+
+func (ai *Enemy2AI) InvalidMove(stack *playerlib.UnitStack) {
+}
+
+func (ai *Enemy2AI) MovedStack(stack *playerlib.UnitStack) {
 }
 
 func (ai *Enemy2AI) Update2(self *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
@@ -353,9 +414,6 @@ func (ai *Enemy2AI) Update2(self *playerlib.Player, aiServices playerlib.AIServi
                 decisions = append(decisions, &playerlib.AIMoveStackDecision{
                     Stack: stack,
                     Path: stack.CurrentPath,
-                    ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
-                        return true
-                    },
                 })
                 continue
             } else {
@@ -448,9 +506,6 @@ func (ai *Enemy2AI) Update2(self *playerlib.Player, aiServices playerlib.AIServi
                     decisions = append(decisions, &playerlib.AIMoveStackDecision{
                         Stack: stack,
                         Path: path,
-                        ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
-                            return true
-                        },
                     })
                 }
             }
