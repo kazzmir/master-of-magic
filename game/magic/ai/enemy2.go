@@ -160,7 +160,7 @@ func (ai *Enemy2AI) Update(self *playerlib.Player, aiServices playerlib.AIServic
                             // try upto 5 times to find a path
                             distance := 3
                             for range 5 {
-                                distance += 2
+                                distance += 3
                                 newX, newY := stack.X() + rand.N(distance) - distance / 2, stack.Y() + rand.N(distance) - distance / 2
 
                                 tile := useMap.GetTile(newX, newY)
@@ -190,6 +190,29 @@ func (ai *Enemy2AI) Update(self *playerlib.Player, aiServices playerlib.AIServic
                                     },
                                 })
                             }
+                        }
+                    }
+                }
+
+                foodPerTurn := self.FoodPerTurn()
+
+                for _, city := range self.Cities {
+                    if !isMakingSomething(city) && foodPerTurn > 0 {
+                        possibleUnits := city.ComputePossibleUnits()
+
+                        possibleUnits = slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
+                            if unit.IsSettlers() {
+                                return true
+                            }
+                            return false
+                        })
+
+                        if len(possibleUnits) > 0 {
+                            decisions = append(decisions, &playerlib.AIProduceDecision{
+                                City: city,
+                                Building: buildinglib.BuildingNone,
+                                Unit: possibleUnits[rand.N(len(possibleUnits))],
+                            })
                         }
                     }
                 }

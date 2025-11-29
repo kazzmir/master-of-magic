@@ -4002,11 +4002,8 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 case *playerlib.AIProduceDecision:
                     produce := decision.(*playerlib.AIProduceDecision)
                     log.Printf("ai %v producing %v %v", player.Wizard.Name, game.BuildingInfo.Name(produce.Building), produce.Unit.Name)
-                    if produce.Building != buildinglib.BuildingNone {
-                        produce.City.ProducingBuilding = produce.Building
-                    } else {
-                        produce.City.ProducingUnit = produce.Unit
-                    }
+                    produce.City.ProducingBuilding = produce.Building
+                    produce.City.ProducingUnit = produce.Unit
                 case *playerlib.AIResearchSpellDecision:
                     research := decision.(*playerlib.AIResearchSpellDecision)
                     if player.ResearchingSpell.Invalid() {

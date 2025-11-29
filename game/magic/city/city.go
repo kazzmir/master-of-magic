@@ -391,6 +391,7 @@ func (city *City) ComputePossibleUnits() []units.Unit {
             for _, building := range unit.RequiredBuildings {
                 if !city.Buildings.Contains(building) {
                     canBuild = false
+                    break
                 }
             }
 
