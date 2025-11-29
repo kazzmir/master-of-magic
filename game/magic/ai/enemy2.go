@@ -131,7 +131,7 @@ func (ai *Enemy2AI) Update(self *playerlib.Player, aiServices playerlib.AIServic
                 // goal 1 might want to take one action for a city, but goal 2 might want to take a conflicting action
                 // choose the goal that has a higher weight
 
-                for _, stack := range self.Stacks {
+                for _, stack := range slices.Clone(self.Stacks) {
                     if stack.HasMoves() {
 
                         if len(stack.CurrentPath) > 0 {
@@ -146,6 +146,13 @@ func (ai *Enemy2AI) Update(self *playerlib.Player, aiServices playerlib.AIServic
                         }
 
                         if len(stack.CurrentPath) == 0 {
+
+                            // split the stack in half
+                            if len(stack.Units()) > 1 && rand.N(4) == 0 {
+                                stackUnits := stack.Units()
+                                stack = self.SplitStack(stack, stackUnits[0:len(stackUnits) / 2])
+                            }
+
                             var path pathfinding.Path
                             fog := self.GetFog(stack.Plane())
                             useMap := aiServices.GetMap(stack.Plane())
