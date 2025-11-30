@@ -3898,7 +3898,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
             game.showMovement(yield, oldX, oldY, stack, false)
         }
 
-        player.AIBehavior.MovedStack(stack)
+        path = player.AIBehavior.MovedStack(stack, path)
 
         player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 

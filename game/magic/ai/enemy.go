@@ -54,7 +54,8 @@ func (ai *EnemyAI) ConfirmEncounter(stack *playerlib.UnitStack, encounter *mapli
 func (ai *EnemyAI) InvalidMove(stack *playerlib.UnitStack) {
 }
 
-func (ai *EnemyAI) MovedStack(stack *playerlib.UnitStack) {
+func (ai *EnemyAI) MovedStack(stack *playerlib.UnitStack, path pathfinding.Path) pathfinding.Path {
+    return path
 }
 
 func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {

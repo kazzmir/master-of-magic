@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -64,7 +65,8 @@ func (ai *DummyAI) ConfirmEncounter(stack *playerlib.UnitStack, encounter *mapli
     return false
 }
 
-func (ai *DummyAI) MovedStack(stack *playerlib.UnitStack) {
+func (ai *DummyAI) MovedStack(stack *playerlib.UnitStack, path pathfinding.Path) pathfinding.Path {
+    return path
 }
 
 func (ai *DummyAI) InvalidMove(stack *playerlib.UnitStack) {

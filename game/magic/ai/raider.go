@@ -53,7 +53,8 @@ func (raider *RaiderAI) ConfirmEncounter(stack *playerlib.UnitStack, encounter *
 func (raider *RaiderAI) InvalidMove(stack *playerlib.UnitStack) {
 }
 
-func (raider *RaiderAI) MovedStack(stack *playerlib.UnitStack) {
+func (raider *RaiderAI) MovedStack(stack *playerlib.UnitStack, path pathfinding.Path) pathfinding.Path {
+    return path
 }
 
 func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {

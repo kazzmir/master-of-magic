@@ -32,6 +32,8 @@ import (
 )
 
 type Enemy2AI struct {
+    // units that are currently moving towards an enemy
+    Attacking map[*playerlib.UnitStack]bool
 }
 
 func MakeEnemy2AI() *Enemy2AI {
@@ -165,6 +167,8 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                                     Stack: stack,
                                     Path: shortestPath,
                                 })
+
+                                ai.Attacking[stack] = true
                             }
                         }
                     }
@@ -293,7 +297,15 @@ func (ai *Enemy2AI) ConfirmEncounter(stack *playerlib.UnitStack, encounter *mapl
 func (ai *Enemy2AI) InvalidMove(stack *playerlib.UnitStack) {
 }
 
-func (ai *Enemy2AI) MovedStack(stack *playerlib.UnitStack) {
+func (ai *Enemy2AI) MovedStack(stack *playerlib.UnitStack, path pathfinding.Path) pathfinding.Path {
+    // after moving towards an enemy, clear the current path so a new path can be computed next turn
+    // maybe the enemy is no longer there, so there is no point in moving towards it
+    _, ok := ai.Attacking[stack]
+    if ok {
+        return nil
+    }
+
+    return path
 }
 
 func (ai *Enemy2AI) Update2(self *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
@@ -558,6 +570,8 @@ func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {
     }
 
     player.RebalanceFood()
+
+    ai.Attacking = make(map[*playerlib.UnitStack]bool)
 
     for _, city := range player.Cities {
         log.Printf("ai %v city %v farmer=%v worker=%v rebel=%v", player.Wizard.Name, city.Name, city.Farmers, city.Workers, city.Rebels)

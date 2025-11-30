@@ -124,7 +124,7 @@ type AIBehavior interface {
     InvalidMove(*UnitStack)
 
     // invoked if the move succeeded
-    MovedStack(*UnitStack)
+    MovedStack(*UnitStack, pathfinding.Path) pathfinding.Path
     // invoked when the stack moves onto a tile with an encounter. this function should return true
     // if the army should initiate combat with the encounter
     ConfirmEncounter(*UnitStack, *maplib.ExtraEncounter) bool
