@@ -209,12 +209,16 @@ func (model *GameModel) GetMap(plane data.Plane) *maplib.Map {
     return nil
 }
 
-func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player *playerlib.Player, stack playerlib.PathStack, fog data.FogMap) pathfinding.Path {
+func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player *playerlib.Player, stack playerlib.PathStack, fog data.FogMap) (pathfinding.Path, bool) {
 
     useMap := model.GetMap(stack.Plane())
 
     if newY < 0 || newY >= useMap.Height() {
-        return nil
+        return nil, false
+    }
+
+    if oldX == newX && oldY == newY {
+        return nil, true
     }
 
     allFlyers := stack.AllFlyers()
@@ -227,7 +231,7 @@ func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player 
 
         // if this is a water unit that cannot walk on land then just return nil immediately since the move is impossible
         if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(true) {
-            return nil
+            return nil, false
         }
 
         // if this is a water unit and it is moving from water to more water, but the destination water tile
@@ -235,7 +239,7 @@ func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player 
         // path between the two water tiles
         if tileTo.Tile.IsWater() && tileFrom.Tile.IsWater() && !stack.CanMoveOnLand(true) {
             if model.GetWaterBody(useMap, newX, newY) != model.GetWaterBody(useMap, oldX, oldY) {
-                return nil
+                return nil, false
             }
         }
 
@@ -393,10 +397,11 @@ func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player 
 
     path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), 10000, tileCost, neighbors, tileEqual)
     if ok {
-        return path[1:]
+        // ignore the start point
+        return path[1:], true
     }
 
-    return nil
+    return nil, false
 }
 
 func (model *GameModel) AllCities() []*citylib.City {

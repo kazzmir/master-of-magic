@@ -1476,8 +1476,8 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
         defer func(){
             for stack, destination := range stackMoves {
                 // FIXME: associate the player with the stack
-                path := game.Model.FindPath(stack.X(), stack.Y(), destination.X, destination.Y, player, stack, player.GetFog(stack.Plane()))
-                if path != nil {
+                path, _ := game.Model.FindPath(stack.X(), stack.Y(), destination.X, destination.Y, player, stack, player.GetFog(stack.Plane()))
+                if len(path) > 0 {
                     stack.CurrentPath = path
                 }
             }

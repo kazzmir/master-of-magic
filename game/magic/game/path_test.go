@@ -59,7 +59,8 @@ func TestPathBasic(test *testing.T) {
             newUnit.SetY(0)
         }
 
-        return len(model.FindPath(fromX, 0, toX, 0, player1, player1.FindStack(fromX, 0, data.PlaneArcanus), fog)) > 0
+        path, ok := model.FindPath(fromX, 0, toX, 0, player1, player1.FindStack(fromX, 0, data.PlaneArcanus), fog)
+        return ok && len(path) > 0
     }
 
     checkValidPath := func (fromX, toX int, unit... units.Unit) bool {
@@ -171,8 +172,8 @@ func TestPathBasic(test *testing.T) {
         stack := player1.FindStack(2, 0, data.PlaneArcanus)
 
         // swordsmen should be able to move onto warship
-        path := model.FindPath(2, 0, 1, 0, player1, stack, fog)
-        if len(path) == 0 {
+        path, ok := model.FindPath(2, 0, 1, 0, player1, stack, fog)
+        if !ok || len(path) == 0 {
             test.Errorf("Land unit should be able to move onto sailing unit in water")
         }
     }()
@@ -188,8 +189,8 @@ func TestPathBasic(test *testing.T) {
 
         stack := player1.FindStack(2, 0, data.PlaneArcanus)
 
-        path := model.FindPath(2, 0, 1, 0, player1, stack, fog)
-        if len(path) == 0 {
+        path, ok := model.FindPath(2, 0, 1, 0, player1, stack, fog)
+        if !ok || len(path) == 0 {
             test.Errorf("Land unit in stack with flying sailing unit should be able to move into water")
         }
     }()

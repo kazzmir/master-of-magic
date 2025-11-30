@@ -78,7 +78,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                     for dy := -sightRange; dy <= sightRange; dy += sightRange {
                         city := cityStackInfo.FindCity(map_.WrapX(stack.X() + dx), stack.Y() + dy, stack.Plane())
                         if city != nil && city.GetBanner() != player.GetBanner() {
-                            path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
+                            path, _ := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
                             if len(path) > 0 {
                                 foundCity = true
                                 break check
@@ -113,7 +113,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
 
                     // log.Printf("ai stack %v found enemy city %v", stack, city)
 
-                    path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
+                    path, _ := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
                     if len(path) > 0 {
                         if len(currentPath) == 0 {
                             currentPath = path
@@ -140,7 +140,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                                 break
                             }
 
-                            currentPath = aiServices.FindPath(stack.X(), stack.Y(), tile.X, tile.Y, player, stack, fog)
+                            currentPath, _ = aiServices.FindPath(stack.X(), stack.Y(), tile.X, tile.Y, player, stack, fog)
                             if len(currentPath) > 0 {
                                 break
                             }
@@ -152,7 +152,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                     // just move randomly because all tiles have been explored
                     whereX := stack.X() + randomRange(-5, 5)
                     whereY := stack.Y() + randomRange(-5, 5)
-                    currentPath = aiServices.FindPath(stack.X(), stack.Y(), whereX, whereY, player, stack, fog)
+                    currentPath, _ = aiServices.FindPath(stack.X(), stack.Y(), whereX, whereY, player, stack, fog)
                 }
             }
 
@@ -195,7 +195,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                             if dx == 0 && dy == 0 {
                                 continue
                             }
-                            path := aiServices.FindPath(stack.X(), stack.Y(), stack.X() + dx, stack.Y() + dy, player, stack, fog)
+                            path, _ := aiServices.FindPath(stack.X(), stack.Y(), stack.X() + dx, stack.Y() + dy, player, stack, fog)
                             if len(path) > 0 {
                                 paths = append(paths, path)
                             }

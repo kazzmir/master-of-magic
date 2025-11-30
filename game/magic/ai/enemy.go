@@ -229,7 +229,8 @@ func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIService
                             // just go back to a town?
                             var candidateCities []*citylib.City
                             for _, city := range self.Cities {
-                                if city.Plane == stack.Plane() && len(aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, self, stack, self.GetFog(stack.Plane()))) > 0 {
+                                _, ok := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, self, stack, self.GetFog(stack.Plane()))
+                                if city.Plane == stack.Plane() && ok {
                                     candidateCities = append(candidateCities, city)
                                 }
                             }
@@ -239,8 +240,8 @@ func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIService
                                 infinity := 999999
 
                                 getDistance := functional.Memoize(func (city *citylib.City) int {
-                                    path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, self, stack, self.GetFog(stack.Plane()))
-                                    if len(path) == 0 {
+                                    _, ok := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, self, stack, self.GetFog(stack.Plane()))
+                                    if !ok {
                                         return infinity
                                     }
                                     return len(path)
@@ -250,7 +251,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIService
                                     return cmp.Compare(getDistance(a), getDistance(b))
                                 })
 
-                                path = aiServices.FindPath(stack.X(), stack.Y(), candidateCities[0].X, candidateCities[0].Y, self, stack, self.GetFog(stack.Plane()))
+                                path, _ = aiServices.FindPath(stack.X(), stack.Y(), candidateCities[0].X, candidateCities[0].Y, self, stack, self.GetFog(stack.Plane()))
                             } else {
                                 // do nothing
                             }
@@ -259,8 +260,9 @@ func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIService
                         // FIXME: choose a location with a high population maximum and near bonuses. Possibly also near a shore so we can build water units
                         // choose a random location
                         location := candidateLocations[rand.N(len(candidateLocations))]
-                        path = aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, self, stack, self.GetFog(stack.Plane()))
-                        if len(path) > 0 {
+                        var ok bool
+                        path, ok = aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, self, stack, self.GetFog(stack.Plane()))
+                        if ok {
                             log.Printf("Settler going to %v, %v via %v", location.X, location.Y, path)
                         }
                     }
@@ -270,7 +272,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIService
                     // try upto 3 times to find a path
                     for range 3 {
                         newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
-                        path = aiServices.FindPath(stack.X(), stack.Y(), newX, newY, self, stack, self.GetFog(stack.Plane()))
+                        path, _ = aiServices.FindPath(stack.X(), stack.Y(), newX, newY, self, stack, self.GetFog(stack.Plane()))
                         if len(path) != 0 {
                             break
                         }

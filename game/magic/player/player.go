@@ -88,7 +88,7 @@ type AIResearchSpellDecision struct {
 type AIServices interface {
     CityEnchantmentsProvider
 
-    FindPath(oldX int, oldY int, newX int, newY int, player *Player, stack PathStack, fog data.FogMap) pathfinding.Path
+    FindPath(oldX int, oldY int, newX int, newY int, player *Player, stack PathStack, fog data.FogMap) (pathfinding.Path, bool)
     FindSettlableLocations(x int, y int, plane data.Plane, fog data.FogMap) []image.Point
     IsSettlableLocation(x int, y int, plane data.Plane) bool
     GetDifficulty() data.DifficultySetting
