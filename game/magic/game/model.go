@@ -1665,7 +1665,8 @@ func (model *GameModel) GetCityEnchantmentsByBanner(banner data.BannerType) []pl
 func (model *GameModel) GetEnemies(player *playerlib.Player) []*playerlib.Player {
     var out []*playerlib.Player
     for _, enemy := range model.Players {
-        if enemy != player && len(enemy.Cities) > 0 {
+        // if enemy != player && len(enemy.Cities) > 0 {
+        if enemy != player && !enemy.Defeated {
             out = append(out, enemy)
         }
     }

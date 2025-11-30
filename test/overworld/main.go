@@ -3334,6 +3334,9 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
 
     city.ResetCitizens()
 
+    humanX, humanY := game.FindValidCityLocationOnContinent(city.Plane, city.X, city.Y)
+    human.AddUnit(units.MakeOverworldUnitFromUnit(units.WarBear, humanX, humanY, city.Plane, human.Wizard.Banner, human.MakeExperienceInfo(), human.MakeUnitEnchantmentProvider()))
+
     enemy1.AddCity(city)
 
     enemy1.Gold = 830

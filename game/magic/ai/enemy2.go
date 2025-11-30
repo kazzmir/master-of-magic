@@ -147,11 +147,24 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                     for _, stack := range self.Stacks {
                         if stack.HasMoves() {
 
+                            var shortestPath pathfinding.Path
                             for _, target := range possibleTarget {
-                                if aiServices.FindPath(stack.X(), stack.Y(), target.X(), target.Y(), self, stack, self.GetFog(stack.Plane())) != nil {
-                                    decisions = append(decisions, &playerlib.AIMoveStackDecision{
-                                    })
+                                if target.Plane() == stack.Plane() {
+                                    pathToEnemy := aiServices.FindPath(stack.X(), stack.Y(), target.X(), target.Y(), self, stack, self.GetFog(stack.Plane()))
+                                    if len(pathToEnemy) > 0 {
+                                        if len(shortestPath) == 0 || len(pathToEnemy) < len(shortestPath) {
+                                            shortestPath = pathToEnemy
+                                        }
+                                    }
                                 }
+                            }
+
+                            if len(shortestPath) > 0 {
+                                log.Printf("AI %v moving stack at %v,%v to attack enemy via %v", self.Wizard.Name, stack.X(), stack.Y(), shortestPath)
+                                decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                                    Stack: stack,
+                                    Path: shortestPath,
+                                })
                             }
                         }
                     }
