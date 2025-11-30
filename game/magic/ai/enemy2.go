@@ -20,6 +20,7 @@ import (
     "image"
 
     "github.com/kazzmir/master-of-magic/lib/functional"
+    "github.com/kazzmir/master-of-magic/lib/set"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -70,11 +71,24 @@ func (goal *EnemyGoal) GetWeight() float32 {
     return goal.Weight
 }
 
+func chance(percent int) bool {
+    return rand.N(100) < percent
+}
+
 func (ai *Enemy2AI) ComputeGoals(self *playerlib.Player, aiServices playerlib.AIServices) []EnemyGoal {
     var goals []EnemyGoal
 
     exploreGoal := EnemyGoal{
         Goal: GoalExploreTerritory,
+    }
+
+    buildArmyGoal := EnemyGoal{
+        Goal: GoalBuildArmy,
+    }
+
+    // only build an army if we have few stacks compared to the turn number
+    if uint64(len(self.Stacks)) < max(5, aiServices.GetTurnNumber() / 5) {
+        exploreGoal.SubGoals = append(exploreGoal.SubGoals, buildArmyGoal)
     }
 
     goals = []EnemyGoal{
@@ -86,6 +100,9 @@ func (ai *Enemy2AI) ComputeGoals(self *playerlib.Player, aiServices playerlib.AI
         },
         EnemyGoal{
             Goal: GoalBuildCities,
+        },
+        EnemyGoal{
+            Goal: GoalIncreasePower,
         },
     }
 
@@ -129,13 +146,26 @@ func (ai *Enemy2AI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
     city.ProducingUnit = units.UnitNone
 }
 
+type AIData struct {
+    FoodPerTurn func() int
+    GoldPerTurn func() int
+}
+
 // the decisions to make for this goal
-func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.AIServices, goal EnemyGoal) []playerlib.AIDecision {
+// seenGoals is a set used to avoid computing the same goal twice
+func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.AIServices, goal EnemyGoal, seenGoals *set.Set[GoalType], aiData *AIData) []playerlib.AIDecision {
+    // if we've seen this goal then just return nil
+    if seenGoals.Contains(goal.Goal) {
+        return nil
+    }
+
+    seenGoals.Insert(goal.Goal)
+
     var decisions []playerlib.AIDecision
 
     // recursively satisfy subgoals first
     for _, subGoal := range goal.SubGoals {
-        decisions = append(decisions, ai.GoalDecisions(self, aiServices, subGoal)...)
+        decisions = append(decisions, ai.GoalDecisions(self, aiServices, subGoal, seenGoals, aiData)...)
     }
 
     switch goal.Goal {
@@ -235,12 +265,10 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                 }
             }
 
-            foodPerTurn := self.FoodPerTurn()
-
             for _, city := range self.Cities {
-                if !isMakingSomething(city) {
+                if !isMakingSomething(city) && chance(60) {
                     locations := aiServices.FindSettlableLocations(city.X, city.Y, city.Plane, self.GetFog(city.Plane))
-                    if len(locations) > 0 && foodPerTurn > 0 {
+                    if len(locations) > 0 && aiData.FoodPerTurn() > 0 && chance(len(locations) * 5) {
                         decisions = append(decisions, &playerlib.AIProduceDecision{
                             City: city,
                             Building: buildinglib.BuildingNone,
@@ -322,10 +350,9 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                 }
             }
 
-            foodPerTurn := self.FoodPerTurn()
-
+        case GoalBuildArmy:
             for _, city := range self.Cities {
-                if !isMakingSomething(city) && foodPerTurn > 0 {
+                if !isMakingSomething(city) && aiData.FoodPerTurn() > 0 && aiData.GoldPerTurn() > 0 && self.Gold > 50 && chance(30) {
                     possibleUnits := city.ComputePossibleUnits()
 
                     possibleUnits = slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
@@ -344,6 +371,42 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                     }
                 }
             }
+        case GoalIncreasePower:
+            // feels awkward to build buildings in cities here
+            for _, city := range self.Cities {
+                if !isMakingSomething(city) {
+                    // create housing
+                    switch {
+                        case city.Citizens() < 3:
+                            decisions = append(decisions, &playerlib.AIProduceDecision{
+                                City: city,
+                                Building: buildinglib.BuildingHousing,
+                                Unit: units.UnitNone,
+                            })
+                        case aiData.GoldPerTurn() < 0 || self.Gold < 100:
+                            decisions = append(decisions, &playerlib.AIProduceDecision{
+                                City: city,
+                                Building: buildinglib.BuildingTradeGoods,
+                                Unit: units.UnitNone,
+                            })
+                        case chance(40):
+                            possibleBuildings := city.ComputePossibleBuildings()
+                            possibleBuildings.RemoveMany(buildinglib.BuildingTradeGoods, buildinglib.BuildingHousing)
+                            if possibleBuildings.Size() > 0 {
+                                // choose a random building to create
+                                values := possibleBuildings.Values()
+                                decisions = append(decisions, &playerlib.AIProduceDecision{
+                                    City: city,
+                                    Building: values[rand.N(len(values))],
+                                    Unit: units.UnitNone,
+                                })
+                            }
+                    }
+                }
+            }
+
+        default:
+            log.Printf("WARNING: unhandled goal %v", goal.Goal)
     }
 
     return decisions
@@ -353,8 +416,19 @@ func (ai *Enemy2AI) Update(self *playerlib.Player, aiServices playerlib.AIServic
     var decisions []playerlib.AIDecision
     goals := ai.ComputeGoals(self, aiServices)
 
+    // compute these values once for all goals
+    aiData := AIData{
+        FoodPerTurn: functional.Memoize0(func() int {
+            return self.FoodPerTurn()
+        }),
+        GoldPerTurn: functional.Memoize0(func() int {
+            return self.GoldPerTurn()
+        }),
+    }
+
+    seenGoals := set.MakeSet[GoalType]()
     for _, goal := range goals {
-        decisions = append(decisions, ai.GoalDecisions(self, aiServices, goal)...)
+        decisions = append(decisions, ai.GoalDecisions(self, aiServices, goal, seenGoals, &aiData)...)
     }
 
     return decisions
@@ -631,6 +705,9 @@ func (ai *Enemy2AI) PostUpdate(self *playerlib.Player, aiServices playerlib.AISe
             stacks = self.FindAllStacks(location.X, location.Y, location.Plane)
         }
     }
+
+    // make sure food is balanced at the end
+    self.RebalanceFood()
 }
 
 func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {
