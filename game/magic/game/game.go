@@ -6374,9 +6374,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
             LeftClickRelease: func(this *uilib.UIElement){
                 nextTurnClicked = false
-                select {
-                    case game.Events <- &GameEventNextTurn{}:
-                    default:
+                if game.Model.CurrentPlayer == 0 {
+                    select {
+                        case game.Events <- &GameEventNextTurn{}:
+                        default:
+                    }
                 }
             },
             RightClick: func(this *uilib.UIElement){
@@ -6387,6 +6389,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
+                // FIXME: try to draw the next turn button in grey or something, but the problem is that
+                // the next turn image contains the entire hud background in it
                 options.GeoM.Translate(240, 174)
                 scale.DrawScaled(screen, nextTurnImage, &options)
                 if nextTurnClicked {
