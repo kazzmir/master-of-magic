@@ -262,6 +262,10 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                             return cmp.Compare(maximumPopulation(b), maximumPopulation(a))
                         })
 
+                        // FIXME: also prioritize locations on shore in case we need to build a navy
+                        // if there are no cities on this continent already adjacent to a shore
+                        // then possibly prefer shore locations
+
                         log.Printf("AI possible settlable locations: %v", locations)
 
                         if len(locations) > 0 {
