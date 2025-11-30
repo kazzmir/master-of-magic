@@ -1672,3 +1672,31 @@ func (model *GameModel) GetEnemies(player *playerlib.Player) []*playerlib.Player
     }
     return out
 }
+
+func (model *GameModel) ComputeMaximumPopulation(x int, y int, plane data.Plane) int {
+    // find catchment area of x, y
+    // for each square, compute food production
+    // maximum pop is food production
+    maybeCity, _ := model.FindCity(x, y, plane)
+    if maybeCity != nil {
+        return maybeCity.MaximumCitySize()
+    }
+
+    mapUse := model.GetMap(plane)
+    catchment := mapUse.GetCatchmentArea(x, y)
+
+    food := fraction.Zero()
+
+    for _, tile := range catchment {
+        food = food.Add(tile.FoodBonus())
+        bonus := tile.GetBonus()
+        food = food.Add(fraction.FromInt(bonus.FoodBonus()))
+    }
+
+    maximum := int(food.ToFloat())
+    if maximum > 25 {
+        maximum = 25
+    }
+
+    return maximum
+}

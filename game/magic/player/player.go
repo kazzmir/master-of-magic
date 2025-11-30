@@ -94,6 +94,7 @@ type AIServices interface {
     GetDifficulty() data.DifficultySetting
     GetMap(data.Plane) *maplib.Map
     GetTurnNumber() uint64
+    ComputeMaximumPopulation(int, int, data.Plane) int
     ComputePower(player *Player) int
     AllCities() []*citylib.City
     FindStack(x int, y int, plane data.Plane) (*UnitStack, *Player)

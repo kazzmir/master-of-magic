@@ -5418,34 +5418,6 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
     }))
 }
 
-func (game *Game) ComputeMaximumPopulation(x int, y int, plane data.Plane) int {
-    // find catchment area of x, y
-    // for each square, compute food production
-    // maximum pop is food production
-    maybeCity, _ := game.Model.FindCity(x, y, plane)
-    if maybeCity != nil {
-        return maybeCity.MaximumCitySize()
-    }
-
-    mapUse := game.GetMap(plane)
-    catchment := mapUse.GetCatchmentArea(x, y)
-
-    food := fraction.Zero()
-
-    for _, tile := range catchment {
-        food = food.Add(tile.FoodBonus())
-        bonus := tile.GetBonus()
-        food = food.Add(fraction.FromInt(bonus.FoodBonus()))
-    }
-
-    maximum := int(food.ToFloat())
-    if maximum > 25 {
-        maximum = 25
-    }
-
-    return maximum
-}
-
 func (game *Game) CityGoldBonus(x int, y int, plane data.Plane) int {
     mapObject := game.GetMap(plane)
     tile := mapObject.GetTile(x, y)

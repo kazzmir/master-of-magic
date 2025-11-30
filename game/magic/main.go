@@ -220,7 +220,7 @@ func findCityLocation(game *gamelib.Game, startingPlane data.Plane, cityArea gam
             distance := closestDistance(x, y)
             // either there are no other cities nearby (distance=0) or the closest city is farther than 10 squares away
             if distance == 0 || distance > 10 {
-                locations = append(locations, CityLocation{X: x, Y: y, Distance: distance, Population: game.ComputeMaximumPopulation(x, y, startingPlane)})
+                locations = append(locations, CityLocation{X: x, Y: y, Distance: distance, Population: game.Model.ComputeMaximumPopulation(x, y, startingPlane)})
             }
         }
     }

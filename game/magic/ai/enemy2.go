@@ -17,6 +17,7 @@ import (
     "slices"
     "cmp"
     "math/rand/v2"
+    "image"
 
     "github.com/kazzmir/master-of-magic/lib/functional"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
@@ -45,7 +46,7 @@ type GoalType int
 const (
     GoalNone GoalType = iota
     GoalDefeatEnemies // defeat enemy wizards
-    GoalExpandTerritory // build new cities
+    GoalBuildCities
     GoalExploreTerritory // explore the map
     GoalResearchMagic // research spells
     GoalCastSpellOfMastery
@@ -82,6 +83,9 @@ func (ai *Enemy2AI) ComputeGoals(self *playerlib.Player, aiServices playerlib.AI
             SubGoals: []EnemyGoal{
                 exploreGoal,
             },
+        },
+        EnemyGoal{
+            Goal: GoalBuildCities,
         },
     }
 
@@ -177,6 +181,56 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                 for _, enemyCity := range enemyPlayer.Cities {
                     // in theory we can see cities that on tiles that we have explored in the past
                     if self.IsVisible(enemyCity.X, enemyCity.Y, enemyCity.Plane) {
+                    }
+                }
+            }
+
+        case GoalBuildCities:
+            // to achieve this goal the AI should move settlers towards settlable locations
+            // if a settler is at a settlable location, build an outpost
+            // if there are no settlers and there is enough food, produce more settlers
+
+            for _, stack := range self.Stacks {
+                if stack.HasMoves() && stack.ActiveUnitsHasAbility(data.AbilityCreateOutpost) {
+                    // found a stack with a settler that is not currently moving
+                    if len(stack.CurrentPath) == 0 {
+                        if aiServices.IsSettlableLocation(stack.X(), stack.Y(), stack.Plane()) {
+                            decisions = append(decisions, &playerlib.AIBuildOutpostDecision{
+                                Stack: stack,
+                            })
+                        } else {
+                            // search through all explored locations on the current continent for settlable locations
+
+                            fog := self.GetFog(stack.Plane())
+                            locations := aiServices.FindSettlableLocations(stack.X(), stack.Y(), stack.Plane(), fog)
+
+                            pathTo := functional.Memoize(func(location image.Point) pathfinding.Path {
+                                return aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, self, stack, fog)
+                            })
+
+                            maximumPopulation := functional.Memoize(func(location image.Point) int {
+                                return aiServices.ComputeMaximumPopulation(location.X, location.Y, stack.Plane())
+                            })
+
+                            // filter out all locations we cannot reach
+                            locations = slices.DeleteFunc(locations, func(location image.Point) bool {
+                                return len(pathTo(location)) == 0
+                            })
+
+                            slices.SortFunc(locations, func(a, b image.Point) int {
+                                return cmp.Compare(maximumPopulation(b), maximumPopulation(a))
+                            })
+
+                            log.Printf("AI possible settlable locations: %v", locations)
+
+                            if len(locations) > 0 {
+                                path := pathTo(locations[len(locations) - 1])
+                                decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                                    Stack: stack,
+                                    Path: path,
+                                })
+                            }
+                        }
                     }
                 }
             }
