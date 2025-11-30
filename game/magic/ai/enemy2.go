@@ -235,6 +235,22 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                 }
             }
 
+            foodPerTurn := self.FoodPerTurn()
+
+            for _, city := range self.Cities {
+                if !isMakingSomething(city) {
+                    locations := aiServices.FindSettlableLocations(city.X, city.Y, city.Plane, self.GetFog(city.Plane))
+                    if len(locations) > 0 && foodPerTurn > 0 {
+                        decisions = append(decisions, &playerlib.AIProduceDecision{
+                            City: city,
+                            Building: buildinglib.BuildingNone,
+                            Unit: units.GetSettlerUnit(city.Race),
+                        })
+
+                    }
+                }
+            }
+
         case GoalExploreTerritory:
             // in order to explore territory we need units available that are not busy
 

@@ -5445,6 +5445,17 @@ func UnitsByRealm(realm data.MagicType) []Unit {
     return units
 }
 
+func GetSettlerUnit(race data.Race) Unit {
+    // a bit lazy to search through the entire list
+    for _, unit := range AllUnits {
+        if unit.Race == race && unit.Name == "Settlers" {
+            return unit
+        }
+    }
+
+    return UnitNone
+}
+
 func ChooseRandomUnit(race data.Race) Unit {
     var units []Unit
     for _, unit := range AllUnits {
