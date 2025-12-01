@@ -566,6 +566,21 @@ func (ai *Enemy2AI) Update(self *playerlib.Player, aiServices playerlib.AIServic
         decisions = append(decisions, ai.GoalDecisions(self, aiServices, goal, seenGoals, &aiData)...)
     }
 
+    if self.ResearchingSpell.Invalid() {
+        if len(self.ResearchCandidateSpells.Spells) > 0 {
+            // choose cheapest research cost spell
+            choice := self.ResearchCandidateSpells.Spells[0]
+            for _, spell := range self.ResearchCandidateSpells.Spells {
+                if spell.ResearchCost < choice.ResearchCost {
+                    choice = spell
+                }
+            }
+            decisions = append(decisions, &playerlib.AIResearchSpellDecision{
+                Spell: choice,
+            })
+        }
+    }
+
     return decisions
 }
 

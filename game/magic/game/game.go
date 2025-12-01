@@ -6892,7 +6892,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     }
                 }
 
-                // log.Printf("wizard %v learned %v", player.Wizard.Name, player.ResearchingSpell.Name)
+                log.Printf("wizard %v learned %v", player.Wizard.Name, player.ResearchingSpell.Name)
 
                 player.LearnSpell(player.ResearchingSpell)
 
