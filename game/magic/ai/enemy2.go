@@ -266,13 +266,9 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                         // if there are no cities on this continent already adjacent to a shore
                         // then possibly prefer shore locations
 
-                        log.Printf("AI possible settlable locations: %v", locations)
+                        // log.Printf("AI possible settlable locations: %v", locations)
 
                         if len(locations) > 0 {
-                            for _, location := range locations {
-                                log.Printf("Location: %v max pop=%v", location, maximumPopulation(location))
-                            }
-
                             // search through locations and either return a decision to build an output
                             // because the stack is already at that location, or return a decision to move to that location
                             getDecision := func() (playerlib.AIDecision, bool) {
