@@ -238,6 +238,18 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                         // search through all explored locations on the current continent for settlable locations
                         fog := self.GetFog(stack.Plane())
                         locations := aiServices.FindSettlableLocations(stack.X(), stack.Y(), stack.Plane(), fog)
+                        citiesOnContinent := aiServices.FindCitiesOnContinent(stack.X(), stack.Y(), stack.Plane(), self)
+
+                        // determine if there are any cities on this continent adjacent to a shore,
+                        // which means we can build a navy on this continent
+                        hasShoreCity := false
+                        useMap := aiServices.GetMap(stack.Plane())
+                        for _, city := range citiesOnContinent {
+                            if useMap.OnShore(city.X, city.Y) {
+                                hasShoreCity = true
+                                break
+                            }
+                        }
 
                         type PathResult struct {
                             Path pathfinding.Path
@@ -258,8 +270,19 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                             return pathTo(location).Ok == false
                         })
 
+                        score := func(location image.Point) int {
+                            total := maximumPopulation(location)
+
+                            // prioritize shore locations if we don't have a city on this continent adjacent to a shore
+                            if !hasShoreCity && useMap.OnShore(location.X, location.Y) {
+                                total += 10
+                            }
+
+                            return total
+                        }
+
                         slices.SortFunc(locations, func(a, b image.Point) int {
-                            return cmp.Compare(maximumPopulation(b), maximumPopulation(a))
+                            return cmp.Compare(score(b), score(a))
                         })
 
                         // FIXME: also prioritize locations on shore in case we need to build a navy

@@ -1705,3 +1705,21 @@ func (model *GameModel) ComputeMaximumPopulation(x int, y int, plane data.Plane)
 
     return maximum
 }
+
+func (model *GameModel) FindCitiesOnContinent(x int, y int, plane data.Plane, player *playerlib.Player) []*citylib.City {
+    tiles := model.GetMap(plane).GetContinentTiles(x, y)
+    tileSet := set.NewSet[image.Point]()
+    for _, tile := range tiles {
+        tileSet.Insert(image.Pt(tile.X, tile.Y))
+    }
+
+    var out []*citylib.City
+
+    for _, city := range player.Cities {
+        if city.Plane == plane && tileSet.Contains(image.Pt(city.X, city.Y)) {
+            out = append(out, city)
+        }
+    }
+
+    return out
+}

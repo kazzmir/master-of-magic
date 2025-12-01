@@ -93,6 +93,10 @@ type AIServices interface {
     IsSettlableLocation(x int, y int, plane data.Plane) bool
     GetDifficulty() data.DifficultySetting
     GetMap(data.Plane) *maplib.Map
+
+    // get friendly cities on the same continent as the given point
+    FindCitiesOnContinent(x int, y int, plane data.Plane, player *Player) []*citylib.City
+
     GetTurnNumber() uint64
     ComputeMaximumPopulation(int, int, data.Plane) int
     ComputePower(player *Player) int
