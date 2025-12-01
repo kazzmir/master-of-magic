@@ -1605,3 +1605,15 @@ func (player *Player) RebalanceFood() {
         }
     }
 }
+
+// count of the number of units with the transport ability on the given place
+func (player *Player) TransportUnits(plane data.Plane) int {
+    count := 0
+    for _, unit := range player.Units {
+        if unit.GetPlane() == plane && unit.HasAbility(data.AbilityTransport) {
+            count += 1
+        }
+    }
+
+    return count
+}

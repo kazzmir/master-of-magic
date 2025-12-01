@@ -416,23 +416,94 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
             }
 
         case GoalBuildArmy:
+
+            computeTransportUnits := functional.Memoize(func(plane data.Plane) int {
+                return self.TransportUnits(plane)
+            })
+
             for _, city := range self.Cities {
-                if !isMakingSomething(city) && aiData.FoodPerTurn() > 0 && aiData.GoldPerTurn() > 0 && self.Gold > 50 && chance(30) {
-                    possibleUnits := city.ComputePossibleUnits()
+                if !isMakingSomething(city) {
 
-                    possibleUnits = slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
-                        if unit.IsSettlers() {
-                            return true
+                    useMap := aiServices.GetMap(city.Plane)
+                    buildNavy := useMap.OnShore(city.X, city.Y) && computeTransportUnits(city.Plane) < 2
+
+                    cityDecision := func() (playerlib.AIDecision, bool) {
+                        if buildNavy && chance(50) {
+                            // build buildings towards a ship building if necessary
+                            // otherwise if this city can build a ship then do so
+                            possibleUnits := city.ComputePossibleUnits()
+                            possibleUnits = slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
+                                return !unit.HasAbility(data.AbilityTransport)
+                            })
+
+                            // FIXME: sort the transport units by their strength. prefer warship over trieme
+
+                            if len(possibleUnits) > 0 {
+                                // log.Printf("AI %v building navy unit in city %v", self.Wizard.Name, city.Name)
+                                return &playerlib.AIProduceDecision{
+                                    City: city,
+                                    Building: buildinglib.BuildingNone,
+                                    Unit: possibleUnits[rand.N(len(possibleUnits))],
+                                }, true
+                            } else {
+                                transportBuildings := set.NewSet(
+                                    buildinglib.BuildingShipYard,
+                                    buildinglib.BuildingShipwrightsGuild,
+                                    buildinglib.BuildingMaritimeGuild,
+                                )
+
+                                // shipyard for draconian builds an airship, which does not have transport
+                                if city.Race == data.RaceDraconian {
+                                    transportBuildings.Remove(buildinglib.BuildingShipYard)
+                                }
+
+                                // get full set of dependencies
+                                for _, building := range transportBuildings.Values() {
+                                    dependencies := city.BuildingInfo.Dependencies(building)
+                                    transportBuildings.InsertMany(dependencies...)
+                                }
+
+                                // try to choose one of the transport buildings or one of its dependencies to build
+                                possibleBuildings := city.ComputePossibleBuildings(true)
+                                for _, building := range possibleBuildings.Values() {
+                                    if transportBuildings.Contains(building) {
+                                        // log.Printf("AI %v building transport building %v in city %v", self.Wizard.Name, building, city.Name)
+                                        return &playerlib.AIProduceDecision{
+                                            City: city,
+                                            Building: building,
+                                            Unit: units.UnitNone,
+                                        }, true
+                                    }
+                                }
+
+                            }
                         }
-                        return false
-                    })
 
-                    if len(possibleUnits) > 0 {
-                        decisions = append(decisions, &playerlib.AIProduceDecision{
-                            City: city,
-                            Building: buildinglib.BuildingNone,
-                            Unit: possibleUnits[rand.N(len(possibleUnits))],
-                        })
+                        if aiData.FoodPerTurn() > 0 && aiData.GoldPerTurn() > 0 && self.Gold > 50 && chance(30) {
+                            possibleUnits := city.ComputePossibleUnits()
+
+                            possibleUnits = slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
+                                if unit.IsSettlers() {
+                                    return true
+                                }
+                                return false
+                            })
+
+                            if len(possibleUnits) > 0 {
+                                return &playerlib.AIProduceDecision{
+                                    City: city,
+                                    Building: buildinglib.BuildingNone,
+                                    Unit: possibleUnits[rand.N(len(possibleUnits))],
+                                }, true
+                            }
+                        }
+
+                        return nil, false
+                    }
+
+                    decision, ok := cityDecision()
+                    if ok {
+                        decisions = append(decisions, decision)
                     }
                 }
             }
@@ -455,8 +526,7 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                                 Unit: units.UnitNone,
                             })
                         case chance(40):
-                            possibleBuildings := city.ComputePossibleBuildings()
-                            possibleBuildings.RemoveMany(buildinglib.BuildingTradeGoods, buildinglib.BuildingHousing)
+                            possibleBuildings := city.ComputePossibleBuildings(true)
                             if possibleBuildings.Size() > 0 {
                                 // choose a random building to create
                                 values := possibleBuildings.Values()

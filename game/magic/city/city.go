@@ -242,7 +242,7 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
 
     // remove all buildings that depend on being near a shore
     if !city.OnShore() {
-        out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingMaritimeGuild)
+        out.RemoveMany(buildinglib.BuildingShipYard, buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingMerchantsGuild)
     }
 
     hasForest := false
@@ -348,8 +348,9 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
 }
 
 /* return the buildings that can be built, based on what the city already has and what dependencies are met
+ * concrete=true, don't include trade goods or housing
  */
-func (city *City) ComputePossibleBuildings() *set.Set[buildinglib.Building] {
+func (city *City) ComputePossibleBuildings(concrete bool) *set.Set[buildinglib.Building] {
     possibleBuildings := set.NewSet[buildinglib.Building]()
 
     allowedBuildings := city.GetBuildableBuildings()
@@ -376,8 +377,10 @@ func (city *City) ComputePossibleBuildings() *set.Set[buildinglib.Building] {
         }
     }
 
-    possibleBuildings.Insert(buildinglib.BuildingTradeGoods)
-    possibleBuildings.Insert(buildinglib.BuildingHousing)
+    if !concrete {
+        possibleBuildings.Insert(buildinglib.BuildingTradeGoods)
+        possibleBuildings.Insert(buildinglib.BuildingHousing)
+    }
 
     return possibleBuildings
 }

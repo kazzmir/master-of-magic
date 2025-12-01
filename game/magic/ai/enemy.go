@@ -128,9 +128,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIService
                 return false
             })
 
-            possibleBuildings := city.ComputePossibleBuildings()
-
-            possibleBuildings.RemoveMany(buildinglib.BuildingTradeGoods, buildinglib.BuildingHousing)
+            possibleBuildings := city.ComputePossibleBuildings(true)
 
             type Choice int
             const ChooseUnit Choice = 0
