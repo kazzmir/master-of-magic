@@ -173,6 +173,19 @@ func stackAttackPower(stack *playerlib.UnitStack) int {
 
 // return a subset of moveUnits that can move while still leaving minimumAttackPower behind
 func getMoveableUnits(moveUnits []units.StackUnit, minimumAttackPower int) []units.StackUnit {
+
+    // mostly settlers
+    var weakUnits []units.StackUnit
+    nonWeakUnits := make([]units.StackUnit, 0, len(moveUnits))
+    for _, unit := range moveUnits {
+        if unitAttackPower(unit) == 0 {
+            weakUnits = append(weakUnits, unit)
+        } else {
+            nonWeakUnits = append(nonWeakUnits, unit)
+        }
+    }
+    moveUnits = nonWeakUnits
+
     lessUnits := make([]units.StackUnit, 0, len(moveUnits))
     for i := len(moveUnits) - 1; i > 0; i-- {
         lessUnits = lessUnits[:0]
@@ -183,11 +196,11 @@ func getMoveableUnits(moveUnits []units.StackUnit, minimumAttackPower int) []uni
         }
 
         if unitAttackPower(moveUnits...) - unitAttackPower(lessUnits...) >= minimumAttackPower {
-            return lessUnits
+            return append(weakUnits, lessUnits...)
         }
     }
 
-    return nil
+    return weakUnits
 }
 
 // the decisions to make for this goal
