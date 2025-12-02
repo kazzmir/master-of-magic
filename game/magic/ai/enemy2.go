@@ -172,6 +172,8 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
         case GoalDefeatEnemies:
             // find possible enemy targets
             for _, enemyPlayer := range aiServices.GetEnemies(self) {
+                // FIXME: if there is a diplomatic treaty with the enemy then do not attack them
+
                 var possibleTarget []*playerlib.UnitStack
                 for _, enemyStack := range enemyPlayer.Stacks {
                     if self.IsVisible(enemyStack.X(), enemyStack.Y(), enemyStack.Plane()) {
@@ -284,10 +286,6 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                         slices.SortFunc(locations, func(a, b image.Point) int {
                             return cmp.Compare(score(b), score(a))
                         })
-
-                        // FIXME: also prioritize locations on shore in case we need to build a navy
-                        // if there are no cities on this continent already adjacent to a shore
-                        // then possibly prefer shore locations
 
                         // log.Printf("AI possible settlable locations: %v", locations)
 
