@@ -1708,6 +1708,7 @@ func (model *GameModel) ComputeMaximumPopulation(x int, y int, plane data.Plane)
     return maximum
 }
 
+// all the cities on the continent containing the given x, y with the given plane, beloning to the given player
 func (model *GameModel) FindCitiesOnContinent(x int, y int, plane data.Plane, player *playerlib.Player) []*citylib.City {
     tiles := model.GetMap(plane).GetContinentTiles(x, y)
     tileSet := set.NewSet[image.Point]()
@@ -1720,6 +1721,25 @@ func (model *GameModel) FindCitiesOnContinent(x int, y int, plane data.Plane, pl
     for _, city := range player.Cities {
         if city.Plane == plane && tileSet.Contains(image.Pt(city.X, city.Y)) {
             out = append(out, city)
+        }
+    }
+
+    return out
+}
+
+// all the stacks on the continent containing the given x, y with the given plane, beloning to the given player
+func (model *GameModel) FindStacksOnContinent(x int, y int, plane data.Plane, player *playerlib.Player) []*playerlib.UnitStack {
+    tiles := model.GetMap(plane).GetContinentTiles(x, y)
+    tileSet := set.NewSet[image.Point]()
+    for _, tile := range tiles {
+        tileSet.Insert(image.Pt(tile.X, tile.Y))
+    }
+
+    var out []*playerlib.UnitStack
+
+    for _, stack := range player.Stacks {
+        if stack.Plane() == plane && tileSet.Contains(image.Pt(stack.X(), stack.Y())) {
+            out = append(out, stack)
         }
     }
 

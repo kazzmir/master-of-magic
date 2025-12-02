@@ -96,6 +96,7 @@ type AIServices interface {
 
     // get friendly cities on the same continent as the given point
     FindCitiesOnContinent(x int, y int, plane data.Plane, player *Player) []*citylib.City
+    FindStacksOnContinent(x int, y int, plane data.Plane, player *Player) []*UnitStack
 
     GetTurnNumber() uint64
     ComputeMaximumPopulation(int, int, data.Plane) int
@@ -1187,10 +1188,9 @@ func (player *Player) OwnsCity(city *citylib.City) bool {
 }
 
 func (player *Player) FindCity(x int, y int, plane data.Plane) *citylib.City {
-    for _, city := range player.Cities {
-        if city.X == x && city.Y == y && city.Plane == plane {
-            return city
-        }
+    city, ok := player.Cities[data.PlanePoint{X: x, Y: y, Plane: plane}]
+    if ok {
+        return city
     }
 
     return nil

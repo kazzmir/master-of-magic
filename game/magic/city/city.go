@@ -1022,6 +1022,10 @@ func (city *City) InteracialUnrest() float64 {
     return unrest[city.Race][city.ReignProvider.GetRulingRace()]
 }
 
+func (city *City) GetGarrison() []units.StackUnit {
+    return city.ReignProvider.GetUnits(city.X, city.Y, city.Plane)
+}
+
 func (city *City) ComputeUnrest() int {
 
     if city.HasEnchantment(data.CityEnchantmentStreamOfLife) {

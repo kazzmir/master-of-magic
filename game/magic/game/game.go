@@ -3785,7 +3785,13 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
             switch decision.(type) {
                 case *playerlib.AIMoveStackDecision:
                     moveDecision := decision.(*playerlib.AIMoveStackDecision)
-                    moveDecision.Stack.CurrentPath = moveDecision.Path
+                    useStack := moveDecision.Stack
+
+                    if len(moveDecision.Units) > 0 && len(moveDecision.Units) != len(moveDecision.Stack.Units()) {
+                        useStack = player.SplitStack(moveDecision.Stack, moveDecision.Units)
+                    }
+
+                    useStack.CurrentPath = moveDecision.Path
 
                 // mainly for the raider ai
                 case *playerlib.AICreateUnitDecision:

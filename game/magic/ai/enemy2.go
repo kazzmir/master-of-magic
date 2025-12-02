@@ -51,7 +51,7 @@ const (
     GoalExploreTerritory // explore the map
     GoalResearchMagic // research spells
     GoalCastSpellOfMastery
-    GoalDefendTerritory
+    GoalDefendCities
     GoalBuildArmy
     GoalIncreasePower
     GoalMeldNodes
@@ -104,6 +104,9 @@ func (ai *Enemy2AI) ComputeGoals(self *playerlib.Player, aiServices playerlib.AI
         EnemyGoal{
             Goal: GoalIncreasePower,
         },
+        EnemyGoal{
+            Goal: GoalDefendCities,
+        },
     }
 
     // goals = append(goals, exploreGoal)
@@ -151,9 +154,48 @@ type AIData struct {
     GoldPerTurn func() int
 }
 
+func rawUnitAttackPower(unit units.Unit) int {
+    return (unit.GetMeleeAttackPower() + unit.GetRangedAttackPower()) * unit.GetCount()
+}
+
+func unitAttackPower(unit ...units.StackUnit) int {
+    total := 0
+    for _, u := range unit {
+        total += (u.GetMeleeAttackPower() + u.GetRangedAttackPower()) * u.GetCount()
+    }
+
+    return total
+}
+
+func stackAttackPower(stack *playerlib.UnitStack) int {
+    return unitAttackPower(stack.Units()...)
+}
+
+// return a subset of moveUnits that can move while still leaving minimumAttackPower behind
+func getMoveableUnits(moveUnits []units.StackUnit, minimumAttackPower int) []units.StackUnit {
+    lessUnits := make([]units.StackUnit, 0, len(moveUnits))
+    for i := len(moveUnits) - 1; i > 0; i-- {
+        lessUnits = lessUnits[:0]
+
+        // choose random elements from i
+        for _, j := range rand.Perm(i)[:i] {
+            lessUnits = append(lessUnits, moveUnits[j])
+        }
+
+        if unitAttackPower(moveUnits...) - unitAttackPower(lessUnits...) >= minimumAttackPower {
+            return lessUnits
+        }
+    }
+
+    return nil
+}
+
 // the decisions to make for this goal
 // seenGoals is a set used to avoid computing the same goal twice
 func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.AIServices, goal EnemyGoal, seenGoals *set.Set[GoalType], aiData *AIData) []playerlib.AIDecision {
+    // 10 is an arbitrary choice, but make sure we have enough attack power to defend against weak enemies
+    const MINIMUM_GARRISON_ATTACK_POWER = 10
+
     // if we've seen this goal then just return nil
     if seenGoals.Contains(goal.Goal) {
         return nil
@@ -213,6 +255,81 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                 for _, enemyCity := range enemyPlayer.Cities {
                     // in theory we can see cities that on tiles that we have explored in the past
                     if self.IsVisible(enemyCity.X, enemyCity.Y, enemyCity.Plane) {
+                    }
+                }
+            }
+
+        case GoalDefendCities:
+
+            stacksOnContinent := functional.Memoize3(func(x int, y int, plane data.Plane) []*playerlib.UnitStack {
+                return aiServices.FindStacksOnContinent(x, y, plane, self)
+            })
+
+            for _, city := range self.Cities {
+                garrison := city.GetGarrison()
+                totalAttackPower := 0
+                for _, unit := range garrison {
+                    totalAttackPower += unitAttackPower(unit)
+                }
+
+                if totalAttackPower < MINIMUM_GARRISON_ATTACK_POWER {
+                    // 1. find a roaming unit that can reach this city and enter patrol
+                    // 2. produce a defending unit in this city
+
+                    var candidates []*playerlib.UnitStack
+                    for _, stack := range stacksOnContinent(city.X, city.Y, city.Plane) {
+                        // stack is already on a city
+                        if self.FindCity(stack.X(), stack.Y(), stack.Plane()) != nil {
+                            continue
+                        }
+
+                        path := stack.CurrentPath
+                        if len(path) > 0 {
+                            last := path[len(path) - 1]
+                            // stack is headed towards a city
+                            if self.FindCity(last.X, last.Y, stack.Plane()) != nil {
+                                continue
+                            }
+                        }
+
+                        if stackAttackPower(stack) > 0 && stack.HasMoves() {
+                            candidates = append(candidates, stack)
+                        }
+                    }
+
+                    if len(candidates) > 0 {
+                        // choose a random stack to come save us
+                        choice := candidates[rand.N(len(candidates))]
+
+                        path, ok := aiServices.FindPath(choice.X(), choice.Y(), city.X, city.Y, self, choice, self.GetFog(choice.Plane()))
+                        if ok {
+                            decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                                Stack: choice,
+                                Path: path,
+                            })
+                        }
+                    } else {
+                        // have to build a unit
+                        if aiData.FoodPerTurn() > 0 && aiData.GoldPerTurn() > 0 && self.Gold > 5 {
+                            possibleUnits := city.ComputePossibleUnits()
+
+                            possibleUnits = slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
+                                if rawUnitAttackPower(unit) == 0 {
+                                    return true
+                                }
+                                return false
+                            })
+
+                            if len(possibleUnits) > 0 {
+                                decisions = append(decisions, &playerlib.AIProduceDecision{
+                                    City: city,
+                                    Building: buildinglib.BuildingNone,
+                                    Unit: possibleUnits[rand.N(len(possibleUnits))],
+                                })
+                            }
+
+                            // if there are no possible units to build then the city is going to be undefended..
+                        }
                     }
                 }
             }
@@ -353,7 +470,7 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
             // goal 1 might want to take one action for a city, but goal 2 might want to take a conflicting action
             // choose the goal that has a higher weight
 
-            for _, stack := range slices.Clone(self.Stacks) {
+            for _, stack := range self.Stacks {
                 if stack.HasMoves() {
 
                     if len(stack.CurrentPath) > 0 {
@@ -365,6 +482,19 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                     }
 
                     if len(stack.CurrentPath) == 0 {
+                        moveUnits := stack.ActiveUnits()
+
+                        maybeCity := self.FindCity(stack.X(), stack.Y(), stack.Plane())
+                        if maybeCity != nil {
+                            // if this stack leaving would cause the city to be considered undefended, then stay still
+                            log.Printf("city stack before: %v", moveUnits)
+                            moveUnits = getMoveableUnits(moveUnits, MINIMUM_GARRISON_ATTACK_POWER)
+                            log.Printf("city stack after: %v", moveUnits)
+                        }
+
+                        if len(moveUnits) == 0 {
+                            continue
+                        }
 
                         // split the stack in half
                         /*
@@ -407,6 +537,7 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                             decisions = append(decisions, &playerlib.AIMoveStackDecision{
                                 Stack: stack,
                                 Path: path,
+                                Units: moveUnits,
                             })
                         }
                     }
@@ -517,7 +648,7 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                                 Building: buildinglib.BuildingHousing,
                                 Unit: units.UnitNone,
                             })
-                        case aiData.GoldPerTurn() < 0 || self.Gold < 100:
+                        case aiData.GoldPerTurn() < 0 || self.Gold < 10 - aiData.GoldPerTurn():
                             decisions = append(decisions, &playerlib.AIProduceDecision{
                                 City: city,
                                 Building: buildinglib.BuildingTradeGoods,
