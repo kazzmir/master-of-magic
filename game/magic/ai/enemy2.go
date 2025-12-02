@@ -203,11 +203,17 @@ func getMoveableUnits(moveUnits []units.StackUnit, minimumAttackPower int) []uni
     return weakUnits
 }
 
+func getCityMinimumAttackPower(city *citylib.City) int {
+    // this number is an arbitrary choice, but make sure we have enough attack power to defend against weak enemies
+    const attack_power_per_citizen = 3
+
+    // cities with more population should have more defense
+    return city.Citizens() * attack_power_per_citizen
+}
+
 // the decisions to make for this goal
 // seenGoals is a set used to avoid computing the same goal twice
 func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.AIServices, goal EnemyGoal, seenGoals *set.Set[GoalType], aiData *AIData) []playerlib.AIDecision {
-    // 10 is an arbitrary choice, but make sure we have enough attack power to defend against weak enemies
-    const MINIMUM_GARRISON_ATTACK_POWER = 10
 
     // if we've seen this goal then just return nil
     if seenGoals.Contains(goal.Goal) {
@@ -285,7 +291,7 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                     totalAttackPower += unitAttackPower(unit)
                 }
 
-                if totalAttackPower < MINIMUM_GARRISON_ATTACK_POWER {
+                if totalAttackPower < getCityMinimumAttackPower(city) {
                     // 1. find a roaming unit that can reach this city and enter patrol
                     // 2. produce a defending unit in this city
 
@@ -501,7 +507,7 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                         if maybeCity != nil {
                             // if this stack leaving would cause the city to be considered undefended, then stay still
                             log.Printf("city stack before: %v", moveUnits)
-                            moveUnits = getMoveableUnits(moveUnits, MINIMUM_GARRISON_ATTACK_POWER)
+                            moveUnits = getMoveableUnits(moveUnits, getCityMinimumAttackPower(maybeCity))
                             log.Printf("city stack after: %v", moveUnits)
                         }
 
