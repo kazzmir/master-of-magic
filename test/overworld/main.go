@@ -2627,7 +2627,7 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenCavalry, x + 2, y + 2, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
     stack2 := player.FindStack(x + 2, y + 2, data.PlaneArcanus)
-    stack2.Move(-1, -1, fraction.Zero(), game.GetNormalizeCoordinateFunc())
+    stack2.Move(-1, -1, fraction.Zero(), game.Model.GetNormalizeCoordinateFunc())
 
     // player.SetSelectedStack(stack)
 
