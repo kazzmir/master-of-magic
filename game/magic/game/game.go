@@ -3841,9 +3841,16 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     return game.State
 }
 
+type MovementHandler interface {
+    ShowMovement(x int, y int, stack *playerlib.UnitStack, center bool)
+    DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int)
+    DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState
+    DefeatCity(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, city *citylib.City) (bool, int)
+}
+
 // FIXME: can this just use doMoveSelectedUnit?
 // returns the rest of the path the stack should walk (nil if the path ends)
-func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack) pathfinding.Path {
+func (game *Game) doAiMoveUnit(handlers MovementHandler, player *playerlib.Player, stack *playerlib.UnitStack) pathfinding.Path {
     if len(stack.Units()) > 0 {
         stack = player.SplitStack(stack, stack.Units())
         for _, unit := range stack.Units() {
@@ -3895,7 +3902,7 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
         stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, game.GetNormalizeCoordinateFunc())
 
         if game.GetHumanPlayer().IsVisible(oldX, oldY, stack.Plane()) {
-            game.showMovement(yield, oldX, oldY, stack, false)
+            handlers.ShowMovement(oldX, oldY, stack, false)
         }
 
         path = player.AIBehavior.MovedStack(stack, path)
@@ -3903,7 +3910,8 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
         player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
 
         if encounter != nil {
-            game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
+            // game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
+            handlers.DoEncounter(player, stack, encounter, mapUse, stack.X(), stack.Y())
             return nil
         }
 
@@ -3915,7 +3923,9 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
                 zone := combat.ZoneType{
                     City: city,
                 }
-                state := game.doCombat(yield, player, stack, enemy, enemyStack, zone)
+
+                // state := game.doCombat(yield, player, stack, enemy, enemyStack, zone)
+                state := handlers.DoCombat(player, stack, enemy, enemyStack, zone)
 
                 if state == combat.CombatStateAttackerFlee {
                     stack.SetX(oldX)
@@ -3929,7 +3939,8 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
 
             city := enemy.FindCity(stack.X(), stack.Y(), stack.Plane())
             if city != nil {
-                raze, gold := game.defeatCity(yield, player, stack, enemy, city)
+                // raze, gold := game.defeatCity(yield, player, stack, enemy, city)
+                raze, gold := handlers.DefeatCity(player, stack, enemy, city)
 
                 player.Fame = max(0, player.Fame + city.FameForCaptureOrRaze(!raze))
                 enemy.Fame = max(0, enemy.Fame + city.FameForCaptureOrRaze(false))
@@ -3948,6 +3959,34 @@ func (game *Game) doAiMoveUnit(yield coroutine.YieldFunc, player *playerlib.Play
     }
 
     return path
+}
+
+type GameMoveHandlers struct {
+    Game *Game
+    Yield coroutine.YieldFunc
+}
+
+func (handlers *GameMoveHandlers) ShowMovement(x int, y int, stack *playerlib.UnitStack, center bool) {
+    handlers.Game.showMovement(handlers.Yield, x, y, stack, center)
+}
+
+func (handlers *GameMoveHandlers) DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) {
+    handlers.Game.doEncounter(handlers.Yield, player, stack, encounter, map_, x, y)
+}
+
+func (handlers *GameMoveHandlers) DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
+    return handlers.Game.doCombat(handlers.Yield, player, stack, enemy, enemyStack, zone)
+}
+
+func (handlers *GameMoveHandlers) DefeatCity(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, city *citylib.City) (bool, int) {
+    return handlers.Game.defeatCity(handlers.Yield, player, stack, enemy, city)
+}
+
+func MakeMoveHandlers(game *Game, yield coroutine.YieldFunc) MovementHandler {
+    return &GameMoveHandlers{
+        Game: game,
+        Yield: yield,
+    }
 }
 
 func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
@@ -4017,8 +4056,10 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
             }
         }
 
+        moveHandlers := MakeMoveHandlers(game, yield)
+
         for _, stack := range slices.Clone(player.Stacks) {
-            stack.CurrentPath = game.doAiMoveUnit(yield, player, stack)
+            stack.CurrentPath = game.doAiMoveUnit(moveHandlers, player, stack)
         }
 
         player.AIBehavior.PostUpdate(player, game.Model)
