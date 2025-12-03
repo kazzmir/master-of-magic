@@ -9,6 +9,7 @@ import (
     "math"
 
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/algorithm"
     "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
@@ -153,30 +154,6 @@ func MakeMap(rows int, columns int) *Map {
     }
 }
 
-func chooseRandomElement[T any](values []T) T {
-    index := rand.IntN(len(values))
-    return values[index]
-}
-
-func choseRandomWeightedElement[T any](values []T, weights []int) T {
-    totalWeight := 0
-    for _, weight := range weights {
-        totalWeight += weight
-    }
-
-    totalWeight = rand.IntN(totalWeight)
-
-    for index, value := range values {
-        weight := weights[index]
-        if totalWeight < weight {
-            return value
-        }
-        totalWeight -= weight
-    }
-
-    return values[0]
-}
-
 func makeCells(rows int, columns int) [][]bool {
     out := make([][]bool, columns)
     for i := 0; i < columns; i++ {
@@ -314,7 +291,7 @@ func (map_ *Map) placeRandomTerrainTiles(plane data.Plane, continents []Continen
 
         weights := []int{1, 1, 1, 1, tundraWeight, desertWeight}
 
-        return choseRandomWeightedElement(choices, weights)
+        return algorithm.ChoseRandomWeightedElement(choices, weights)
     }
 
     randomForest := func() int {
@@ -324,14 +301,14 @@ func (map_ *Map) placeRandomTerrainTiles(plane data.Plane, continents []Continen
             TileForest3.Index(plane),
         }
 
-        return chooseRandomElement(choices)
+        return algorithm.ChooseRandomElement(choices)
     }
 
     for _, continent := range continents {
 
         points := continent.Values()
         for i := 0; i < continent.Size() * 2; i++ {
-            point := chooseRandomElement(points)
+            point := algorithm.ChooseRandomElement(points)
 
             choices := []int{
                 randomGrasslands(point.Y),
@@ -342,7 +319,7 @@ func (map_ *Map) placeRandomTerrainTiles(plane data.Plane, continents []Continen
             }
             weights := []int{20, 10, 1, 10, 5}
 
-            map_.Terrain[point.X][point.Y] = choseRandomWeightedElement(choices, weights)
+            map_.Terrain[point.X][point.Y] = algorithm.ChoseRandomWeightedElement(choices, weights)
         }
 
         magicTiles := []int{TileSorceryLake.Index(plane), TileNatureForest.Index(plane), TileChaosVolcano.Index(plane)}
@@ -376,7 +353,7 @@ func (map_ *Map) placeRandomTerrainTiles(plane data.Plane, continents []Continen
 
             point := points[index]
             if magicNodeOk(point) {
-                map_.Terrain[point.X][point.Y] = chooseRandomElement(magicTiles)
+                map_.Terrain[point.X][point.Y] = algorithm.ChooseRandomElement(magicTiles)
                 maxNodes -= 1
             }
         }
@@ -535,7 +512,7 @@ func (map_ *Map) placeRivers(area int, data *TerrainData, plane data.Plane, cont
     for _, continent := range continents {
         points := continent.Values()
         for i := 0; i < continent.Size() / area; i++ {
-            point := chooseRandomElement(points)
+            point := algorithm.ChooseRandomElement(points)
             successful, path := walk(point)
             if successful {
                 for _, point := range path {

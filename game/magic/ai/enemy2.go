@@ -646,6 +646,8 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                                 return false
                             })
 
+                            // weight the units by their attack power
+
                             if len(possibleUnits) > 0 {
                                 return &playerlib.AIProduceDecision{
                                     City: city,
