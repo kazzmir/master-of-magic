@@ -22,6 +22,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/algorithm"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -156,13 +157,27 @@ type AIData struct {
 }
 
 func rawUnitAttackPower(unit units.Unit) int {
-    return (unit.GetMeleeAttackPower() + unit.GetRangedAttackPower()) * unit.GetCount()
+    meleePower := float32(unit.GetMeleeAttackPower())
+    rangedPower := float32(unit.GetRangedAttackPower())
+    if unit.GetRangedAttackDamageType() == units.DamageRangedMagical {
+        rangedPower *= 1.5
+    }
+
+    return int(max(meleePower, rangedPower)) * unit.GetCount()
 }
 
 func unitAttackPower(unit ...units.StackUnit) int {
     total := 0
     for _, u := range unit {
-        total += (u.GetMeleeAttackPower() + u.GetRangedAttackPower()) * u.GetCount()
+        meleePower := float32(u.GetMeleeAttackPower())
+        rangedPower := float32(u.GetRangedAttackPower())
+        if u.GetRangedAttackDamageType() == units.DamageRangedMagical {
+            rangedPower *= 1.5
+        }
+
+        power := int(max(meleePower, rangedPower)) * u.GetCount()
+
+        total += power
     }
 
     return total
@@ -646,13 +661,17 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                                 return false
                             })
 
-                            // weight the units by their attack power
+                            // bias towards stronger units
+                            attacks := make([]int, 0, len(possibleUnits))
+                            for _, unit := range possibleUnits {
+                                attacks = append(attacks, rawUnitAttackPower(unit))
+                            }
 
                             if len(possibleUnits) > 0 {
                                 return &playerlib.AIProduceDecision{
                                     City: city,
                                     Building: buildinglib.BuildingNone,
-                                    Unit: possibleUnits[rand.N(len(possibleUnits))],
+                                    Unit: algorithm.ChoseRandomWeightedElement(possibleUnits, attacks),
                                 }, true
                             }
                         }
@@ -685,6 +704,12 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                                 Unit: units.UnitNone,
                             })
                         case chance(40):
+
+                            // FIXME: if unrest is high then build a shrine/temple/etc
+                            // if money production is low then build a marketplace/bank/etc
+                            // if food production/population growth is low then build a granary/farmers market/etc
+                            // otherwise build a random building
+
                             possibleBuildings := city.ComputePossibleBuildings(true)
                             if possibleBuildings.Size() > 0 {
                                 // choose a random building to create
