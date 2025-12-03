@@ -3318,7 +3318,10 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy1 := game.AddPlayer(wizard1, false)
 
-    enemy1.TaxRate = fraction.Zero()
+    enemy1.Gold = 830
+    enemy1.Mana = 26557
+    enemy1.CastingSkillPower = 10000
+    enemy1.TaxRate = fraction.FromInt(1)
 
     enemy1.AIBehavior = ai.MakeEnemy2AI()
 
@@ -3341,13 +3344,12 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy1.AddCity(city)
 
-    enemy1.Gold = 830
-    enemy1.Mana = 26557
-    enemy1.CastingSkillPower = 10000
-
     enemy1.LiftFog(x, y, 3, data.PlaneArcanus)
 
-    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSettlers, x+1, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
+    for range 1 {
+        enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSettlers, x+1, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
+    }
+
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSwordsmen, x, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSwordsmen, x, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSwordsmen, x, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))

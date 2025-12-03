@@ -21,6 +21,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -246,13 +247,21 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                     for _, stack := range self.Stacks {
                         if stack.HasMoves() {
 
+                            stackPower := stackAttackPower(stack)
+
                             var shortestPath pathfinding.Path
                             for _, target := range possibleTarget {
                                 if target.Plane() == stack.Plane() {
-                                    pathToEnemy, ok := aiServices.FindPath(stack.X(), stack.Y(), target.X(), target.Y(), self, stack, self.GetFog(stack.Plane()))
-                                    if ok {
-                                        if len(shortestPath) == 0 || len(pathToEnemy) < len(shortestPath) {
-                                            shortestPath = pathToEnemy
+
+                                    targetPower := stackAttackPower(target)
+
+                                    if stackPower > 0 && stackPower > targetPower - rand.N(10) {
+
+                                        pathToEnemy, ok := aiServices.FindPath(stack.X(), stack.Y(), target.X(), target.Y(), self, stack, self.GetFog(stack.Plane()))
+                                        if ok {
+                                            if len(shortestPath) == 0 || len(pathToEnemy) < len(shortestPath) {
+                                                shortestPath = pathToEnemy
+                                            }
                                         }
                                     }
                                 }
@@ -777,6 +786,9 @@ func (ai *Enemy2AI) PostUpdate(self *playerlib.Player, aiServices playerlib.AISe
 }
 
 func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {
+    // maybe make this dynamic based on gold and current unrest levels
+    player.TaxRate = fraction.FromInt(1)
+
     // make sure cities have enough farmers
     for _, city := range player.Cities {
         city.ResetCitizens()
