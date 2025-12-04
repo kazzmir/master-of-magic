@@ -248,29 +248,55 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
     switch goal.Goal {
         case GoalDefeatEnemies:
             // find possible enemy targets
+            var possibleTarget []*playerlib.UnitStack
+            var possibleCities []*citylib.City
             for _, enemyPlayer := range aiServices.GetEnemies(self) {
                 // FIXME: if there is a diplomatic treaty with the enemy then do not attack them
 
-                var possibleTarget []*playerlib.UnitStack
                 for _, enemyStack := range enemyPlayer.Stacks {
                     if self.IsVisible(enemyStack.X(), enemyStack.Y(), enemyStack.Plane()) {
                         possibleTarget = append(possibleTarget, enemyStack)
                     }
                 }
 
-                if len(possibleTarget) > 0 {
-                    for _, stack := range self.Stacks {
-                        if stack.HasMoves() {
+                for _, enemyCity := range enemyPlayer.Cities {
+                    // in theory we can see cities that on tiles that we have explored in the past
+                    if self.IsVisible(enemyCity.X, enemyCity.Y, enemyCity.Plane) {
+                        possibleCities = append(possibleCities, enemyCity)
+                    }
+                }
+            }
 
-                            stackPower := stackAttackPower(stack)
+            if len(possibleTarget) > 0 {
+                for _, stack := range self.Stacks {
+                    stackPower := stackAttackPower(stack)
 
-                            var shortestPath pathfinding.Path
+                    if stackPower > 0 && stack.HasMoves() {
+
+                        var shortestPath pathfinding.Path
+
+                        for _, city := range possibleCities {
+                            if city.Plane == stack.Plane() {
+                                // just assume the city has some power in it
+                                targetPower := 15
+                                if stackPower > targetPower - rand.N(10) {
+                                    pathToCity, ok := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, self, stack, self.GetFog(stack.Plane()))
+                                    if ok {
+                                        if len(shortestPath) == 0 || len(pathToCity) < len(shortestPath) {
+                                            shortestPath = pathToCity
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if len(shortestPath) == 0 {
                             for _, target := range possibleTarget {
                                 if target.Plane() == stack.Plane() {
 
                                     targetPower := stackAttackPower(target)
 
-                                    if stackPower > 0 && stackPower > targetPower - rand.N(10) {
+                                    if stackPower > targetPower - rand.N(10) {
 
                                         pathToEnemy, ok := aiServices.FindPath(stack.X(), stack.Y(), target.X(), target.Y(), self, stack, self.GetFog(stack.Plane()))
                                         if ok {
@@ -281,23 +307,17 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                                     }
                                 }
                             }
-
-                            if len(shortestPath) > 0 {
-                                log.Printf("AI %v moving stack at %v,%v to attack enemy via %v", self.Wizard.Name, stack.X(), stack.Y(), shortestPath)
-                                decisions = append(decisions, &playerlib.AIMoveStackDecision{
-                                    Stack: stack,
-                                    Path: shortestPath,
-                                })
-
-                                ai.Attacking[stack] = true
-                            }
                         }
-                    }
-                }
 
-                for _, enemyCity := range enemyPlayer.Cities {
-                    // in theory we can see cities that on tiles that we have explored in the past
-                    if self.IsVisible(enemyCity.X, enemyCity.Y, enemyCity.Plane) {
+                        if len(shortestPath) > 0 {
+                            // log.Printf("AI %v moving stack at %v,%v to attack enemy via %v", self.Wizard.Name, stack.X(), stack.Y(), shortestPath)
+                            decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                                Stack: stack,
+                                Path: shortestPath,
+                            })
+
+                            ai.Attacking[stack] = true
+                        }
                     }
                 }
             }
@@ -475,7 +495,7 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                                 // otherwise move towards the best settlable location
                                 for _, location := range locations {
                                     path := pathTo(location)
-                                    log.Printf("AI moving settler stack at %v,%v to settlable location %v,%v via %v", stack.X(), stack.Y(), location.X, location.Y, path)
+                                    // log.Printf("AI moving settler stack at %v,%v to settlable location %v,%v via %v", stack.X(), stack.Y(), location.X, location.Y, path)
                                     return &playerlib.AIMoveStackDecision{
                                         Stack: stack,
                                         Path: path.Path,
@@ -533,12 +553,19 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                     if len(stack.CurrentPath) == 0 {
                         moveUnits := stack.ActiveUnits()
 
-                        maybeCity := self.FindCity(stack.X(), stack.Y(), stack.Plane())
-                        if maybeCity != nil {
-                            // if this stack leaving would cause the city to be considered undefended, then stay still
-                            log.Printf("city stack before: %v", moveUnits)
-                            moveUnits = getMoveableUnits(moveUnits, getCityMinimumAttackPower(maybeCity))
-                            log.Printf("city stack after: %v", moveUnits)
+                        useMap := aiServices.GetMap(stack.Plane())
+
+                        // FIXME: its probably also ok if all units can fly
+                        if useMap.IsWater(stack.X(), stack.Y()) {
+                            moveUnits = stack.Units()
+                        } else {
+                            maybeCity := self.FindCity(stack.X(), stack.Y(), stack.Plane())
+                            if maybeCity != nil {
+                                // if this stack leaving would cause the city to be considered undefended, then stay still
+                                // log.Printf("city stack before: %v", moveUnits)
+                                moveUnits = getMoveableUnits(moveUnits, getCityMinimumAttackPower(maybeCity))
+                                // log.Printf("city stack after: %v", moveUnits)
+                            }
                         }
 
                         if len(moveUnits) == 0 {
@@ -556,7 +583,6 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
 
                         var path pathfinding.Path
                         fog := self.GetFog(stack.Plane())
-                        useMap := aiServices.GetMap(stack.Plane())
 
                         // try upto 5 times to find a path
                         distance := 3
