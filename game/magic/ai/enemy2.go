@@ -327,12 +327,18 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                         }
 
                         path := stack.CurrentPath
+                        /*
                         if len(path) > 0 {
                             last := path[len(path) - 1]
                             // stack is headed towards a city
                             if self.FindCity(last.X, last.Y, stack.Plane()) != nil {
                                 continue
                             }
+                        }
+                        */
+                        // ignore stacks that are going somewhere
+                        if len(path) > 0 {
+                            continue
                         }
 
                         if stackAttackPower(stack) > 0 && stack.HasMoves() {
