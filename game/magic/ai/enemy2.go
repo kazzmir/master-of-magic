@@ -597,7 +597,7 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
 
                             path, _ = aiServices.FindPath(stack.X(), stack.Y(), newX, newY, self, stack, fog)
                             if len(path) != 0 {
-                                log.Printf("Explore new location %v,%v via %v", newX, newY, path)
+                                // log.Printf("Explore new location %v,%v via %v", newX, newY, path)
                                 break
                             }
                         }
