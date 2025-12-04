@@ -3775,10 +3775,32 @@ func MakeMoveHandlers(game *Game, yield coroutine.YieldFunc) MovementHandler {
 func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
     log.Printf("AI %v year %v: make decisions", player.Wizard.Name, game.Model.TurnNumber)
 
-    var decisions []playerlib.AIDecision
-
     if player.AIBehavior != nil {
-        decisions = player.AIBehavior.Update(player, game.Model)
+        decisionResult := make(chan []playerlib.AIDecision)
+        go func() {
+            // run AI in background so the UI doesn't totally freeze
+            out := player.AIBehavior.Update(player, game.Model)
+            decisionResult <- out
+            close(decisionResult)
+        }()
+
+        log.Printf("AI %v waiting for decisions", player.Wizard.Name)
+        var decisions []playerlib.AIDecision
+        done := false
+        for !done {
+            game.Counter += 1
+
+            if yield() != nil {
+                return
+            }
+
+            select {
+                case decisions = <-decisionResult:
+                    done = true
+                default:
+            }
+        }
+
         log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
         for _, decision := range decisions {
