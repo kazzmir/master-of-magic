@@ -743,12 +743,38 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                             // otherwise build a random building
 
                             possibleBuildings := city.ComputePossibleBuildings(true)
+                            values := possibleBuildings.Values()
+
+                            goldSurplus := city.GoldSurplus()
+
+                            needsFood := city.Citizens() < city.MaximumCitySize() / 2 || city.PopulationGrowthRate() < 30
+
+                            weights := make([]int, 0, possibleBuildings.Size())
+                            for _, building := range values {
+                                weight := 1
+
+                                if city.Rebels > 0 && building.IsReligious() {
+                                    weight += 2
+                                }
+
+                                if goldSurplus < 0 && building.IsEconomic() {
+                                    weight += 2
+                                }
+
+                                if needsFood && building.ProducesFood() {
+                                    weight += 2
+                                }
+
+                                // FIXME: also consider dependencies of buildings that produce religion/gold/food
+
+                                weights = append(weights, weight)
+                            }
+
                             if possibleBuildings.Size() > 0 {
                                 // choose a random building to create
-                                values := possibleBuildings.Values()
                                 decisions = append(decisions, &playerlib.AIProduceDecision{
                                     City: city,
-                                    Building: values[rand.N(len(values))],
+                                    Building: algorithm.ChoseRandomWeightedElement(values, weights),
                                     Unit: units.UnitNone,
                                 })
                             }

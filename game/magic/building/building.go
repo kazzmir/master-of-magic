@@ -207,9 +207,30 @@ func (building Building) Size() (int, int) {
     return 0, 0
 }
 
-func (building Building) IsReligous() bool {
+// buildings that reduce unrest
+func (building Building) IsReligious() bool {
     switch building {
         case BuildingShrine, BuildingTemple, BuildingParthenon, BuildingCathedral:
+            return true
+    }
+
+    return false
+}
+
+// buildings that produce gold
+func (building Building) IsEconomic() bool {
+    switch building {
+        case BuildingMarketplace, BuildingBank, BuildingMerchantsGuild:
+            return true
+    }
+
+    return false
+}
+
+// buildings that produce food
+func (building Building) ProducesFood() bool {
+    switch building {
+        case BuildingGranary, BuildingFarmersMarket, BuildingForestersGuild:
             return true
     }
 

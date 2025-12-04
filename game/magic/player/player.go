@@ -1394,6 +1394,7 @@ func (player *Player) SplitActiveStack(stack *UnitStack) *UnitStack {
 
 // stack2 gets absorbed into stack1
 func (player *Player) MergeStacks(stack1 *UnitStack, stack2 *UnitStack) *UnitStack {
+    // FIXME: if a transport unit is in the stack then always put it in front
     stack1.units = append(stack1.units, stack2.units...)
 
     for unit, active := range stack2.active {
