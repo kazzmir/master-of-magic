@@ -718,6 +718,29 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                 }
             }
         case GoalIncreasePower:
+            type DependencyFunc func(d data.Race, building buildinglib.Building) bool
+            type BuildingCheckFunc func(building buildinglib.Building) bool
+
+            checkDependency := func(kind BuildingCheckFunc) DependencyFunc { 
+
+                return func(race data.Race, building buildinglib.Building) bool {
+                    infos := aiServices.GetBuildingInfos()
+
+                    dependencies := set.NewSet[buildinglib.Building]()
+                    for _, building := range buildinglib.RacialBuildings(race).Values() {
+                        if kind(building) {
+                            dependencies.InsertMany(infos.Dependencies(building)...)
+                        }
+                    }
+
+                    return dependencies.Contains(building)
+                }
+            }
+
+            isReligiousDependency := functional.Memoize2(checkDependency(buildinglib.Building.IsReligious))
+            isEconomicDependency := functional.Memoize2(checkDependency(buildinglib.Building.IsEconomic))
+            isFoodDependency := functional.Memoize2(checkDependency(buildinglib.Building.ProducesFood))
+
             // feels awkward to build buildings in cities here
             for _, city := range self.Cities {
                 if !isMakingSomething(city) {
@@ -753,16 +776,28 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                             for _, building := range values {
                                 weight := 1
 
-                                if city.Rebels > 0 && building.IsReligious() {
-                                    weight += 2
+                                if city.Rebels > 0 {
+                                    if building.IsReligious() {
+                                        weight += 2
+                                    } else if isReligiousDependency(city.Race, building) {
+                                        weight += 1
+                                    }
                                 }
 
-                                if goldSurplus < 0 && building.IsEconomic() {
-                                    weight += 2
+                                if goldSurplus < 0 {
+                                    if building.IsEconomic() {
+                                        weight += 2
+                                    } else if isEconomicDependency(city.Race, building) {
+                                        weight += 1
+                                    }
                                 }
 
-                                if needsFood && building.ProducesFood() {
-                                    weight += 2
+                                if needsFood {
+                                    if building.ProducesFood() {
+                                        weight += 2
+                                    } else if isFoodDependency(city.Race, building) {
+                                        weight += 1
+                                    }
                                 }
 
                                 // FIXME: also consider dependencies of buildings that produce religion/gold/food

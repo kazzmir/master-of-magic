@@ -51,6 +51,8 @@ type GameModel struct {
     // for communication with the UI
     Events chan GameEvent
 
+    BuildingInfo buildinglib.BuildingInfos
+
     // the scroll events that occurred this turn
     ScrollEvents []*GameEventScroll
 
@@ -71,6 +73,7 @@ func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSetti
                    startingPlane data.Plane, events chan GameEvent,
                    heroNames map[int]map[herolib.HeroType]string, allSpells spellbook.Spells,
                    artifactPool map[string]*artifact.Artifact,
+                   buildingInfo buildinglib.BuildingInfos,
                ) *GameModel {
 
     planeTowers := maplib.GeneratePlaneTowerPositions(settings.LandSize, 6)
@@ -83,6 +86,7 @@ func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSetti
         Plane: startingPlane,
         CurrentPlayer: -1,
         Events: events,
+        BuildingInfo: buildingInfo,
 
         RoadWorkArcanus: make(map[image.Point]float64),
         RoadWorkMyrror: make(map[image.Point]float64),
@@ -1964,4 +1968,8 @@ func (model *GameModel) GetNormalizeCoordinateFunc() units.NormalizeCoordinateFu
 
 func (model *GameModel) GetHumanPlayer() *playerlib.Player {
     return model.Players[0]
+}
+
+func (model *GameModel) GetBuildingInfos() buildinglib.BuildingInfos {
+    return model.BuildingInfo
 }

@@ -367,7 +367,6 @@ type Game struct {
     MouseData *mouselib.MouseData
 
     Events chan GameEvent
-    BuildingInfo buildinglib.BuildingInfos
 
     MovingStack *playerlib.UnitStack
 
@@ -516,12 +515,11 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
         State: GameStateRunning,
         ImageCache: imageCache,
         Fonts: fonts,
-        BuildingInfo: buildingInfo,
         Camera: camera.MakeCamera(),
     }
 
     heroNames := herolib.ReadNamesPerWizard(game.Cache)
-    game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache))
+    game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache), buildingInfo)
 
     game.HudUI = game.MakeHudUI()
     game.Drawer = func(screen *ebiten.Image, game *Game){
@@ -1088,7 +1086,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
 
     animal := game.GetWizardAnimal(player.Wizard)
 
-    wrappedText := fonts.BigFont.CreateWrappedText(float64(175), 1, fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.BuildingInfo.Name(building)))
+    wrappedText := fonts.BigFont.CreateWrappedText(float64(175), 1, fmt.Sprintf("The %s of %s has completed the construction of a %s.", city.GetSize(), city.Name, game.Model.BuildingInfo.Name(building)))
 
     rightSide, _ := game.ImageCache.GetImage("resource.lbx", 41, 0)
 
@@ -1097,7 +1095,7 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
     buildingPics, err := game.ImageCache.GetImagesTransform("cityscap.lbx", building.Index(), "crop", util.AutoCrop)
 
     if err != nil {
-        log.Printf("Error: Unable to get building picture for %v: %v", game.BuildingInfo.Name(building), err)
+        log.Printf("Error: Unable to get building picture for %v: %v", game.Model.BuildingInfo.Name(building), err)
         return
     }
 
@@ -3849,7 +3847,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     }
                 case *playerlib.AIProduceDecision:
                     produce := decision.(*playerlib.AIProduceDecision)
-                    log.Printf("ai %v city %v producing %v %v", player.Wizard.Name, produce.City.Name, game.BuildingInfo.Name(produce.Building), produce.Unit.Name)
+                    log.Printf("ai %v city %v producing %v %v", player.Wizard.Name, produce.City.Name, game.Model.BuildingInfo.Name(produce.Building), produce.Unit.Name)
                     produce.City.ProducingBuilding = produce.Building
                     produce.City.ProducingUnit = produce.Unit
                 case *playerlib.AIResearchSpellDecision:
@@ -5292,7 +5290,7 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
 func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
     cityName := game.SuggestCityName(settlers.GetRace())
 
-    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), game.BuildingInfo, game.GetMap(settlers.GetPlane()), game.Model, player)
+    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), game.Model.BuildingInfo, game.GetMap(settlers.GetPlane()), game.Model, player)
     newCity.Plane = settlers.GetPlane()
     newCity.Population = 300
     newCity.Outpost = true
@@ -6809,7 +6807,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                             default:
                         }
                     } else {
-                        log.Printf("ai created %v", game.BuildingInfo.Name(newBuilding.Building))
+                        log.Printf("ai created %v", game.Model.BuildingInfo.Name(newBuilding.Building))
                     }
                 case *citylib.CityEventOutpostDestroyed:
                     removeCities = append(removeCities, city)
@@ -7092,7 +7090,7 @@ func (game *Game) doChaosRift() {
             // each building has a 5% chance of being destroyed
             var destroyedBuildings []buildinglib.Building
             for _, building := range city.Buildings.Values() {
-                if game.BuildingInfo.ProductionCost(building) != 0 {
+                if game.Model.BuildingInfo.ProductionCost(building) != 0 {
                     if rand.N(100) < 5 {
                         destroyedBuildings = append(destroyedBuildings, building)
                     }

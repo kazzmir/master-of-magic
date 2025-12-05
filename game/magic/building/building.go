@@ -2,6 +2,7 @@ package building
 
 import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/lib/set"
 )
 
 type Building int
@@ -245,4 +246,103 @@ func EnchantmentBuildings() map[data.CityEnchantment]Building {
     buildings[data.CityEnchantmentEarthGate] = BuildingEarthGate
     buildings[data.CityEnchantmentDarkRituals] = BuildingDarkRituals
     return buildings
+}
+
+func RacialBuildings(race data.Race) *set.Set[Building] {
+    // add all buildings at first
+    out := set.NewSet[Building](
+        BuildingBarracks, BuildingArmory, BuildingFightersGuild,
+        BuildingArmorersGuild, BuildingWarCollege, BuildingSmithy,
+        BuildingStables, BuildingAnimistsGuild, BuildingFantasticStable,
+        BuildingShipwrightsGuild, BuildingShipYard, BuildingMaritimeGuild,
+        BuildingSawmill, BuildingLibrary, BuildingSagesGuild,
+        BuildingOracle, BuildingAlchemistsGuild, BuildingUniversity,
+        BuildingWizardsGuild, BuildingShrine, BuildingTemple,
+        BuildingParthenon, BuildingCathedral, BuildingMarketplace,
+        BuildingBank, BuildingMerchantsGuild, BuildingGranary,
+        BuildingFarmersMarket, BuildingForestersGuild, BuildingBuildersHall,
+        BuildingMechaniciansGuild, BuildingMinersGuild, BuildingCityWalls,
+    )
+
+    switch race {
+        case data.RaceLizard:
+            out.RemoveMany(
+                BuildingAnimistsGuild, BuildingUniversity, BuildingFantasticStable,
+                BuildingMechaniciansGuild, BuildingWizardsGuild, BuildingMaritimeGuild,
+                BuildingOracle, BuildingWarCollege, BuildingBank, BuildingMerchantsGuild,
+                BuildingShipYard, BuildingAlchemistsGuild, BuildingShipwrightsGuild,
+                BuildingCathedral, BuildingParthenon, BuildingSagesGuild,
+                BuildingSawmill, BuildingForestersGuild, BuildingMinersGuild,
+            )
+        case data.RaceNomad:
+            out.RemoveMany(BuildingWizardsGuild, BuildingMaritimeGuild)
+
+        case data.RaceOrc:
+
+        case data.RaceTroll:
+            out.RemoveMany(
+                BuildingAlchemistsGuild, BuildingUniversity, BuildingFantasticStable, BuildingMechaniciansGuild,
+                BuildingWizardsGuild, BuildingMaritimeGuild, BuildingOracle, BuildingWarCollege,
+                BuildingBank, BuildingMerchantsGuild, BuildingShipYard, BuildingSagesGuild,
+                BuildingMinersGuild,
+            )
+
+        case data.RaceBarbarian:
+            out.RemoveMany(
+                BuildingAnimistsGuild, BuildingUniversity, BuildingFantasticStable, BuildingMechaniciansGuild,
+                BuildingWizardsGuild, BuildingCathedral, BuildingOracle, BuildingWarCollege,
+                BuildingBank, BuildingMerchantsGuild,
+            )
+
+        case data.RaceBeastmen:
+            out.RemoveMany(BuildingFantasticStable, BuildingMerchantsGuild, BuildingShipYard, BuildingMaritimeGuild)
+
+        case data.RaceDarkElf:
+            out.RemoveMany(BuildingCathedral, BuildingMaritimeGuild)
+
+        case data.RaceDraconian:
+            out.RemoveMany(BuildingMechaniciansGuild, BuildingMaritimeGuild, BuildingFantasticStable)
+
+        case data.RaceDwarf:
+            out.RemoveMany(
+                BuildingAnimistsGuild, BuildingUniversity, BuildingFantasticStable, BuildingMechaniciansGuild,
+                BuildingWizardsGuild, BuildingMaritimeGuild, BuildingOracle, BuildingWarCollege,
+                BuildingBank, BuildingMerchantsGuild, BuildingShipYard, BuildingStables,
+                BuildingParthenon, BuildingCathedral,
+            )
+
+        case data.RaceGnoll:
+            out.RemoveMany(
+                BuildingMaritimeGuild, BuildingArmorersGuild, BuildingSagesGuild, BuildingAnimistsGuild,
+                BuildingUniversity, BuildingFantasticStable, BuildingParthenon, BuildingAlchemistsGuild,
+                BuildingCathedral, BuildingOracle, BuildingWarCollege, BuildingBank,
+                BuildingMerchantsGuild, BuildingMechaniciansGuild, BuildingWizardsGuild,
+            )
+
+        case data.RaceHalfling:
+            out.RemoveMany(
+                BuildingAnimistsGuild, BuildingUniversity, BuildingFantasticStable, BuildingMechaniciansGuild,
+                BuildingWizardsGuild, BuildingMaritimeGuild, BuildingOracle, BuildingWarCollege,
+                BuildingBank, BuildingMerchantsGuild, BuildingShipYard, BuildingArmorersGuild,
+                BuildingStables,
+            )
+
+        case data.RaceHighElf:
+            out.RemoveMany(
+                BuildingParthenon, BuildingMaritimeGuild, BuildingOracle, BuildingCathedral,
+            )
+
+        case data.RaceHighMen:
+            out.RemoveMany(BuildingFantasticStable)
+
+        case data.RaceKlackon:
+            out.RemoveMany(
+                BuildingAnimistsGuild, BuildingUniversity, BuildingFantasticStable, BuildingMechaniciansGuild,
+                BuildingWizardsGuild, BuildingMaritimeGuild, BuildingOracle, BuildingWarCollege,
+                BuildingBank, BuildingMerchantsGuild, BuildingShipYard, BuildingAlchemistsGuild,
+                BuildingTemple, BuildingCathedral, BuildingParthenon, BuildingSagesGuild,
+            )
+    }
+
+    return out
 }

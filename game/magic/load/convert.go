@@ -538,7 +538,7 @@ func (saveGame *SaveGame) convertCities(player *playerlib.Player, playerIndex in
             CityServices: game.Model,
             CatchmentProvider: catchmentProvider,
             ReignProvider: player,
-            BuildingInfo: game.BuildingInfo,
+            BuildingInfo: game.Model.BuildingInfo,
         }
 
         city.UpdateUnrest()

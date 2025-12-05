@@ -225,20 +225,7 @@ func (city *City) TileDistance(x int, y int) int {
 /* returns the set of buildings that could possibly be built by this city, taking terrain dependencies into account
  */
 func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
-    // add all buildings at first
-    out := set.NewSet[buildinglib.Building](
-        buildinglib.BuildingBarracks, buildinglib.BuildingArmory, buildinglib.BuildingFightersGuild,
-        buildinglib.BuildingArmorersGuild, buildinglib.BuildingWarCollege, buildinglib.BuildingSmithy,
-        buildinglib.BuildingStables, buildinglib.BuildingAnimistsGuild, buildinglib.BuildingFantasticStable,
-        buildinglib.BuildingShipwrightsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild,
-        buildinglib.BuildingSawmill, buildinglib.BuildingLibrary, buildinglib.BuildingSagesGuild,
-        buildinglib.BuildingOracle, buildinglib.BuildingAlchemistsGuild, buildinglib.BuildingUniversity,
-        buildinglib.BuildingWizardsGuild, buildinglib.BuildingShrine, buildinglib.BuildingTemple,
-        buildinglib.BuildingParthenon, buildinglib.BuildingCathedral, buildinglib.BuildingMarketplace,
-        buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingGranary,
-        buildinglib.BuildingFarmersMarket, buildinglib.BuildingForestersGuild, buildinglib.BuildingBuildersHall,
-        buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingMinersGuild, buildinglib.BuildingCityWalls,
-    )
+    out := buildinglib.RacialBuildings(city.Race)
 
     // remove all buildings that depend on being near a shore
     if !city.OnShore() {
@@ -262,86 +249,6 @@ func (city *City) GetBuildableBuildings() *set.Set[buildinglib.Building] {
 
     if !hasForest {
         out.RemoveMany(buildinglib.BuildingSawmill)
-    }
-
-    switch city.Race {
-        case data.RaceLizard:
-            out.RemoveMany(
-                buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable,
-                buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild,
-                buildinglib.BuildingOracle, buildinglib.BuildingWarCollege, buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild,
-                buildinglib.BuildingShipYard, buildinglib.BuildingAlchemistsGuild, buildinglib.BuildingShipwrightsGuild,
-                buildinglib.BuildingCathedral, buildinglib.BuildingParthenon, buildinglib.BuildingSagesGuild,
-                buildinglib.BuildingSawmill, buildinglib.BuildingForestersGuild, buildinglib.BuildingMinersGuild,
-            )
-        case data.RaceNomad:
-            out.RemoveMany(buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild)
-
-        case data.RaceOrc:
-
-        case data.RaceTroll:
-            out.RemoveMany(
-                buildinglib.BuildingAlchemistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
-                buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege,
-                buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingSagesGuild,
-                buildinglib.BuildingMinersGuild,
-            )
-
-        case data.RaceBarbarian:
-            out.RemoveMany(
-                buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
-                buildinglib.BuildingWizardsGuild, buildinglib.BuildingCathedral, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege,
-                buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild,
-            )
-
-        case data.RaceBeastmen:
-            out.RemoveMany(buildinglib.BuildingFantasticStable, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingMaritimeGuild)
-
-        case data.RaceDarkElf:
-            out.RemoveMany(buildinglib.BuildingCathedral, buildinglib.BuildingMaritimeGuild)
-
-        case data.RaceDraconian:
-            out.RemoveMany(buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingFantasticStable)
-
-        case data.RaceDwarf:
-            out.RemoveMany(
-                buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
-                buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege,
-                buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingStables,
-                buildinglib.BuildingParthenon, buildinglib.BuildingCathedral,
-            )
-
-        case data.RaceGnoll:
-            out.RemoveMany(
-                buildinglib.BuildingMaritimeGuild, buildinglib.BuildingArmorersGuild, buildinglib.BuildingSagesGuild, buildinglib.BuildingAnimistsGuild,
-                buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingParthenon, buildinglib.BuildingAlchemistsGuild,
-                buildinglib.BuildingCathedral, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege, buildinglib.BuildingBank,
-                buildinglib.BuildingMerchantsGuild, buildinglib.BuildingMechaniciansGuild, buildinglib.BuildingWizardsGuild,
-            )
-
-        case data.RaceHalfling:
-            out.RemoveMany(
-                buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
-                buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege,
-                buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingArmorersGuild,
-                buildinglib.BuildingStables,
-            )
-
-        case data.RaceHighElf:
-            out.RemoveMany(
-                buildinglib.BuildingParthenon, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingOracle, buildinglib.BuildingCathedral,
-            )
-
-        case data.RaceHighMen:
-            out.RemoveMany(buildinglib.BuildingFantasticStable)
-
-        case data.RaceKlackon:
-            out.RemoveMany(
-                buildinglib.BuildingAnimistsGuild, buildinglib.BuildingUniversity, buildinglib.BuildingFantasticStable, buildinglib.BuildingMechaniciansGuild,
-                buildinglib.BuildingWizardsGuild, buildinglib.BuildingMaritimeGuild, buildinglib.BuildingOracle, buildinglib.BuildingWarCollege,
-                buildinglib.BuildingBank, buildinglib.BuildingMerchantsGuild, buildinglib.BuildingShipYard, buildinglib.BuildingAlchemistsGuild,
-                buildinglib.BuildingTemple, buildinglib.BuildingCathedral, buildinglib.BuildingParthenon, buildinglib.BuildingSagesGuild,
-            )
     }
 
     return out

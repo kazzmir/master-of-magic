@@ -106,6 +106,7 @@ type AIServices interface {
     FindCity(x int, y int, plane data.Plane) (*citylib.City, *Player)
     ComputeCityStackInfo() CityStackInfo
     GetEnemies(player *Player) []*Player
+    GetBuildingInfos() buildinglib.BuildingInfos
 }
 
 type AIBehavior interface {
