@@ -145,7 +145,7 @@ func (model *GameModel) AddPlayer(wizard setup.WizardCustom, human bool) *player
     newPlayer := playerlib.MakePlayer(wizard, human, model.CurrentMap().Width(), model.CurrentMap().Height(), useNames, model)
 
     if !human {
-        newPlayer.AIBehavior = ai.MakeEnemyAI()
+        newPlayer.AIBehavior = ai.MakeEnemy2AI()
         newPlayer.StrategicCombat = true
     }
 
