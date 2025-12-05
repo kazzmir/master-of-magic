@@ -60,6 +60,8 @@ func (raider *RaiderAI) MovedStack(stack *playerlib.UnitStack, path pathfinding.
 func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     cityStackInfo := aiServices.ComputeCityStackInfo()
 
+    // log.Printf("Raider stacks: %v", len(player.Stacks))
+
     var decisions []playerlib.AIDecision
     for _, stack := range player.Stacks {
         fog := player.GetFog(stack.Plane())
@@ -404,11 +406,9 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
     var decisions []playerlib.AIDecision
 
     // don't create too many stacks
-    /*
-    if len(player.Stacks) > 5 {
+    if len(player.Stacks) > 20 {
         return decisions
     }
-    */
 
     /*
     getContinent := functional.Memoize3(func(x int, y int, plane data.Plane) []maplib.FullTile {
