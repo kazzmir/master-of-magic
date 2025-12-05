@@ -911,6 +911,8 @@ func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {
 
     // make sure cities have enough farmers
     for _, city := range player.Cities {
+        // try to maximize the number of workers
+        city.Workers = city.Citizens()
         city.ResetCitizens()
     }
 
