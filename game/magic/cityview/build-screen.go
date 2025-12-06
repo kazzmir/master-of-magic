@@ -142,16 +142,14 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
     fonts := MakeBuildScreenFonts(cache)
 
     // var elements []*uilib.UIElement
+    mainInfo, _ := imageCache.GetImage("unitview.lbx", 0, 0)
 
     ui := &uilib.UI{
         Cache: cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
-            mainInfo, err := imageCache.GetImage("unitview.lbx", 0, 0)
-            if err == nil {
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(75), 0)
-                scale.DrawScaled(screen, mainInfo, &options)
-            }
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(75), 0)
+            scale.DrawScaled(screen, mainInfo, &options)
 
             ui.StandardDraw(screen)
         },
@@ -289,7 +287,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
         var defaultOptions ebiten.DrawImageOptions
         defaultOptions.GeoM.Translate(float64(85), float64(48))
 
-        mainGroup.AddElements(unitview.CreateUnitInfoStatsElements(imageCache, bannerUnit, 10, fonts.DescriptionFont, fonts.SmallFont, defaultOptions, &getAlpha, 0))
+        mainGroup.AddElements(unitview.CreateUnitInfoStatsElements(imageCache, bannerUnit, 10, fonts.DescriptionFont, fonts.SmallFont, defaultOptions, &getAlpha, mainInfo, 0))
 
         mainGroup.AddElements(unitview.MakeUnitAbilitiesElements(mainGroup, cache, imageCache, bannerUnit, fonts.MediumFont, 85, 108, &ui.Counter, 0, &getAlpha, true, 0, false))
         // ui.AddElements(mainElements)

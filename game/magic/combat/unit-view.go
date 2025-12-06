@@ -50,6 +50,8 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
 
     var layer uilib.UILayer = 1
 
+    background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
+
     group.AddElement(&uilib.UIElement{
         Layer: layer,
         Order: -1,
@@ -60,7 +62,6 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
             })
         },
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(float64(31), float64(6))
             options.ColorScale.ScaleAlpha(getAlpha())
@@ -104,7 +105,7 @@ func MakeUnitView(cache *lbx.LbxCache, ui *uilib.UI, unit *ArmyUnit) *uilib.UIEl
     defaultOptions.GeoM.Translate(float64(31), float64(6))
     defaultOptions.GeoM.Translate(float64(10), float64(50))
 
-    group.AddElements(unitview.CreateUnitInfoStatsElements(&imageCache, unit, 15, fonts.DescriptionFont, fonts.SmallFont, defaultOptions, &getAlpha, layer))
+    group.AddElements(unitview.CreateUnitInfoStatsElements(&imageCache, unit, 15, fonts.DescriptionFont, fonts.SmallFont, defaultOptions, &getAlpha, background, layer))
 
     group.AddElements(unitview.MakeUnitAbilitiesElements(group, cache, &imageCache, unit, fonts.MediumFont, 40, 114, &ui.Counter, layer, &getAlpha, false, 0, false))
 
