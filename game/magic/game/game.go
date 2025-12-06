@@ -3785,6 +3785,9 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
         log.Printf("AI %v waiting for decisions", player.Wizard.Name)
         var decisions []playerlib.AIDecision
         done := false
+
+        // FIXME: print "AI thinking #..." message on screen
+        // where # is a counter that increments every second or so
         for !done {
             game.Counter += 1
 

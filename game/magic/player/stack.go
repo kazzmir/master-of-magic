@@ -7,6 +7,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/set"
 )
 
 type ActiveMap map[units.StackUnit]bool
@@ -96,10 +97,17 @@ func (stack *UnitStack) Units() []units.StackUnit {
 
 // remove the given units from this stack and put them in a new stack, then return the new stack
 func (stack *UnitStack) SplitUnits(newUnits []units.StackUnit) *UnitStack {
+    if len(newUnits) == 0 {
+        return stack
+    }
+
     var out []units.StackUnit
     var oldUnits []units.StackUnit
+
+    newUnitSet := set.NewSet(newUnits...)
+
     for _, unit := range stack.units {
-        if slices.Contains(newUnits, unit) {
+        if newUnitSet.Contains(unit) {
             out = append(out, unit)
         } else {
             oldUnits = append(oldUnits, unit)
