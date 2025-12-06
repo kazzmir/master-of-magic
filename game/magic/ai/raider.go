@@ -71,7 +71,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
 
         if !stack.OutOfMoves() {
             // FIXME: if the unit walked by a previously unknown city, they should stop their current path and possibly attack the city
-            if stack.CurrentPath != nil {
+            if len(stack.CurrentPath) > 0 {
 
                 foundCity := false
                 sightRange := stack.GetSightRange()
@@ -132,7 +132,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
             if len(currentPath) == 0 {
                 // allow flying/swimming units to walk randomly over the map
                 if stack.AnyLandWalkers() {
-                    continent := aiServices.GetMap(stack.Plane()).GetContinentTiles(stack.X(), stack.Y())
+                    continent := map_.GetContinentTiles(stack.X(), stack.Y())
                     attempts := 6
                     for _, tileIndex := range rand.Perm(len(continent)) {
                         tile := &continent[tileIndex]
@@ -152,9 +152,15 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
 
                 if len(currentPath) == 0 {
                     // just move randomly because all tiles have been explored
-                    whereX := stack.X() + randomRange(-5, 5)
-                    whereY := stack.Y() + randomRange(-5, 5)
-                    currentPath, _ = aiServices.FindPath(stack.X(), stack.Y(), whereX, whereY, player, stack, fog)
+                    for range 3 {
+                        whereX := stack.X() + randomRange(-5, 5)
+                        whereY := stack.Y() + randomRange(-5, 5)
+                        var ok bool
+                        currentPath, ok = aiServices.FindPath(stack.X(), stack.Y(), whereX, whereY, player, stack, fog)
+                        if ok {
+                            break
+                        }
+                    }
                 }
             }
 
