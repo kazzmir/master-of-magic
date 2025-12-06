@@ -3788,8 +3788,25 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
 
         // FIXME: print "AI thinking #..." message on screen
         // where # is a counter that increments every second or so
+
+        oldDrawer := game.Drawer
+
+        getAlpha := util.MakeFadeIn(20, &game.Counter)
+
+        var thinkingCounter uint64
+
+        var options ebiten.DrawImageOptions
+        game.Drawer = func(screen *ebiten.Image, game *Game){
+            oldDrawer(screen, game)
+
+            options.ColorScale = ebiten.ColorScale{}
+            options.ColorScale.ScaleAlpha(getAlpha())
+            game.Fonts.WhiteFont.PrintOptions(screen, 40, 30, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Options: &options}, fmt.Sprintf("AI thinking %v...", thinkingCounter / 60))
+        }
+
         for !done {
             game.Counter += 1
+            thinkingCounter += 1
 
             if yield() != nil {
                 return
@@ -3801,6 +3818,8 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 default:
             }
         }
+
+        game.Drawer = oldDrawer
 
         log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
