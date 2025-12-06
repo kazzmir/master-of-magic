@@ -331,7 +331,8 @@ func RenderUnitInfoStats(screen *ebiten.Image, imageCache *util.ImageCache, unit
 }
 */
 
-func CreateUnitInfoStatsElements(imageCache *util.ImageCache, unit UnitStats, maxIconsPerLine int, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions, getAlpha *util.AlphaFadeFunc, layer uilib.UILayer) []*uilib.UIElement {
+// the background could just be a rect instead
+func CreateUnitInfoStatsElements(imageCache *util.ImageCache, unit UnitStats, maxIconsPerLine int, descriptionFont *font.Font, smallFont *font.Font, defaultOptions ebiten.DrawImageOptions, getAlpha *util.AlphaFadeFunc, background *ebiten.Image, layer uilib.UILayer) []*uilib.UIElement {
     type statsRender struct {
         Render func(*ebiten.Image, *util.ImageCache, UnitStats, int, *font.Font, *font.Font, ebiten.DrawImageOptions, float64, float64, float64)
         Value func() int
@@ -345,7 +346,7 @@ func CreateUnitInfoStatsElements(imageCache *util.ImageCache, unit UnitStats, ma
         statsRender{Render: RenderHitpointsStats, Value: unit.GetFullHitPoints},
     }
 
-    background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
+    // background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
     width := descriptionFont.MeasureTextWidth("Armor", 1)
     x, y := defaultOptions.GeoM.Apply(0, 0)
 

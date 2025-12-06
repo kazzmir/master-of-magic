@@ -133,11 +133,12 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
 
     getAlpha := ui.MakeFadeIn(fadeSpeed)
 
+    background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
+
     uiGroup.AddElement(&uilib.UIElement{
         Layer: 1,
         Order: -1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            background, _ := imageCache.GetImage("unitview.lbx", 1, 0)
             var options ebiten.DrawImageOptions
             options.GeoM.Translate(31, 6)
             options.ColorScale.ScaleAlpha(getAlpha())
@@ -181,7 +182,7 @@ func MakeGenericContextMenu(cache *lbx.LbxCache, ui *uilib.UI, unit UnitView, di
     defaultOptions.GeoM.Translate(31, 6)
     defaultOptions.GeoM.Translate(10, 50)
 
-    uiGroup.AddElements(CreateUnitInfoStatsElements(&imageCache, unit, 15, fonts.Description, fonts.Small, defaultOptions, &getAlpha, 1))
+    uiGroup.AddElements(CreateUnitInfoStatsElements(&imageCache, unit, 15, fonts.Description, fonts.Small, defaultOptions, &getAlpha, background, 1))
 
     uiGroup.AddElements(MakeUnitAbilitiesElements(uiGroup, cache, &imageCache, unit, fonts.Medium, 40, 114, &ui.Counter, 1, &getAlpha, false, 0, true))
 
