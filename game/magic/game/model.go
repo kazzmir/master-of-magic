@@ -1761,7 +1761,7 @@ type MovementHandler interface {
 // returns the rest of the path the stack should walk (nil if the path ends)
 func (model *GameModel) doAiMoveUnit(handlers MovementHandler, player *playerlib.Player, stack *playerlib.UnitStack) pathfinding.Path {
     if len(stack.Units()) > 0 {
-        stack = player.SplitStack(stack, stack.Units())
+        // stack = player.SplitStack(stack, stack.ActiveUnits())
         for _, unit := range stack.Units() {
             unit.SetBusy(units.BusyStatusNone)
         }

@@ -3871,7 +3871,10 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
         moveHandlers := MakeMoveHandlers(game, yield)
 
         for _, stack := range slices.Clone(player.Stacks) {
-            stack.CurrentPath = game.Model.doAiMoveUnit(moveHandlers, player, stack)
+            // stop moving once any unit in the stack has no moves left
+            for !stack.AnyOutOfMoves() && len(stack.CurrentPath) > 0 {
+                stack.CurrentPath = game.Model.doAiMoveUnit(moveHandlers, player, stack)
+            }
         }
 
         player.AIBehavior.PostUpdate(player, game.Model)
