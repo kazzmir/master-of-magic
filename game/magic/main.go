@@ -220,7 +220,7 @@ func findCityLocation(game *gamelib.Game, startingPlane data.Plane, cityArea gam
             distance := closestDistance(x, y)
             // either there are no other cities nearby (distance=0) or the closest city is farther than 10 squares away
             if distance == 0 || distance > 10 {
-                locations = append(locations, CityLocation{X: x, Y: y, Distance: distance, Population: game.ComputeMaximumPopulation(x, y, startingPlane)})
+                locations = append(locations, CityLocation{X: x, Y: y, Distance: distance, Population: game.Model.ComputeMaximumPopulation(x, y, startingPlane)})
             }
         }
     }
@@ -271,7 +271,7 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
     cityX, cityY := findCityLocation(game, startingPlane, area)
     area[image.Pt(cityX, cityY)] = false
 
-    introCity := citylib.MakeCity(cityName, cityX, cityY, player.Wizard.Race, game.BuildingInfo, game.GetMap(startingPlane), game.Model, player)
+    introCity := citylib.MakeCity(cityName, cityX, cityY, player.Wizard.Race, game.Model.BuildingInfo, game.GetMap(startingPlane), game.Model, player)
     introCity.Population = 4000
     introCity.Plane = startingPlane
 
@@ -339,7 +339,7 @@ func initializeNeutralPlayer(game *gamelib.Game, arcanusCityArea gamelib.CityVal
             // should every neutral town be a random race, or should they all be related?
             race := randomRace()
             cityName := game.SuggestCityName(race)
-            city := citylib.MakeCity(cityName, cityX, cityY, race, game.BuildingInfo, game.GetMap(plane), game.Model, player)
+            city := citylib.MakeCity(cityName, cityX, cityY, race, game.Model.BuildingInfo, game.GetMap(plane), game.Model, player)
             city.Population = rand.N(5) * 1000 + 2000
             city.ProducingBuilding = buildinglib.BuildingHousing
             city.Plane = plane

@@ -1078,6 +1078,11 @@ func (mapObject *Map) GetContinentTiles(x int, y int) []FullTile {
     return out
 }
 
+func (mapObject *Map) IsWater(x int, y int) bool {
+    tile := mapObject.GetTile(x, y)
+    return tile.Tile.IsWater()
+}
+
 func (mapObject *Map) GetWaterBodies() []*set.Set[image.Point] {
     var sets []*set.Set[image.Point]
     // compute bodies of water by choosing a water tile and doing a flood fill to find all connected water tiles

@@ -296,7 +296,7 @@ func makeBuildUI(cache *lbx.LbxCache, imageCache *util.ImageCache, city *citylib
     }
 
     if err == nil {
-        possibleBuildings := city.ComputePossibleBuildings()
+        possibleBuildings := city.ComputePossibleBuildings(false)
         for i, building := range slices.SortedFunc(slices.Values(possibleBuildings.Values()), func (a, b buildinglib.Building) int {
             return cmp.Compare(city.BuildingInfo.GetBuildingIndex(a), city.BuildingInfo.GetBuildingIndex(b))
         }) {

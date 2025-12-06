@@ -39,6 +39,12 @@ func (set *Set[T]) Insert(v T){
     set.data[v] = true
 }
 
+func (set *Set[T]) InsertMany(values ...T) {
+    for _, value := range values {
+        set.data[value] = true
+    }
+}
+
 func (set *Set[T]) Clear() {
     set.data = make(map[T]bool)
 }

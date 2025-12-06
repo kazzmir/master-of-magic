@@ -46,8 +46,21 @@ func randomRange(low int, high int) int {
     return rand.N(high-low+1) + low
 }
 
+func (raider *RaiderAI) ConfirmEncounter(stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter) bool {
+    return false
+}
+
+func (raider *RaiderAI) InvalidMove(stack *playerlib.UnitStack) {
+}
+
+func (raider *RaiderAI) MovedStack(stack *playerlib.UnitStack, path pathfinding.Path) pathfinding.Path {
+    return path
+}
+
 func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     cityStackInfo := aiServices.ComputeCityStackInfo()
+
+    // log.Printf("Raider stacks: %v", len(player.Stacks))
 
     var decisions []playerlib.AIDecision
     for _, stack := range player.Stacks {
@@ -58,7 +71,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
 
         if !stack.OutOfMoves() {
             // FIXME: if the unit walked by a previously unknown city, they should stop their current path and possibly attack the city
-            if stack.CurrentPath != nil {
+            if len(stack.CurrentPath) > 0 {
 
                 foundCity := false
                 sightRange := stack.GetSightRange()
@@ -67,7 +80,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                     for dy := -sightRange; dy <= sightRange; dy += sightRange {
                         city := cityStackInfo.FindCity(map_.WrapX(stack.X() + dx), stack.Y() + dy, stack.Plane())
                         if city != nil && city.GetBanner() != player.GetBanner() {
-                            path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
+                            path, _ := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
                             if len(path) > 0 {
                                 foundCity = true
                                 break check
@@ -80,9 +93,6 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                     decisions = append(decisions, &playerlib.AIMoveStackDecision{
                         Stack: stack,
                         Path: stack.CurrentPath,
-                        ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
-                            return false
-                        },
                     })
                     // raider.MovedStacks[stack] = true
                     continue
@@ -105,7 +115,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
 
                     // log.Printf("ai stack %v found enemy city %v", stack, city)
 
-                    path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
+                    path, _ := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, player, stack, fog)
                     if len(path) > 0 {
                         if len(currentPath) == 0 {
                             currentPath = path
@@ -122,7 +132,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
             if len(currentPath) == 0 {
                 // allow flying/swimming units to walk randomly over the map
                 if stack.AnyLandWalkers() {
-                    continent := aiServices.GetMap(stack.Plane()).GetContinentTiles(stack.X(), stack.Y())
+                    continent := map_.GetContinentTiles(stack.X(), stack.Y())
                     attempts := 6
                     for _, tileIndex := range rand.Perm(len(continent)) {
                         tile := &continent[tileIndex]
@@ -132,7 +142,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                                 break
                             }
 
-                            currentPath = aiServices.FindPath(stack.X(), stack.Y(), tile.X, tile.Y, player, stack, fog)
+                            currentPath, _ = aiServices.FindPath(stack.X(), stack.Y(), tile.X, tile.Y, player, stack, fog)
                             if len(currentPath) > 0 {
                                 break
                             }
@@ -142,9 +152,15 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
 
                 if len(currentPath) == 0 {
                     // just move randomly because all tiles have been explored
-                    whereX := stack.X() + randomRange(-5, 5)
-                    whereY := stack.Y() + randomRange(-5, 5)
-                    currentPath = aiServices.FindPath(stack.X(), stack.Y(), whereX, whereY, player, stack, fog)
+                    for range 3 {
+                        whereX := stack.X() + randomRange(-5, 5)
+                        whereY := stack.Y() + randomRange(-5, 5)
+                        var ok bool
+                        currentPath, ok = aiServices.FindPath(stack.X(), stack.Y(), whereX, whereY, player, stack, fog)
+                        if ok {
+                            break
+                        }
+                    }
                 }
             }
 
@@ -152,10 +168,6 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                 decisions = append(decisions, &playerlib.AIMoveStackDecision{
                     Stack: stack,
                     Path: currentPath,
-                    // never enter an encounter
-                    ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
-                        return false
-                    },
                 })
 
             } else {
@@ -191,7 +203,7 @@ func (raider *RaiderAI) MoveStacks(player *playerlib.Player, enemies []*playerli
                             if dx == 0 && dy == 0 {
                                 continue
                             }
-                            path := aiServices.FindPath(stack.X(), stack.Y(), stack.X() + dx, stack.Y() + dy, player, stack, fog)
+                            path, _ := aiServices.FindPath(stack.X(), stack.Y(), stack.X() + dx, stack.Y() + dy, player, stack, fog)
                             if len(path) > 0 {
                                 paths = append(paths, path)
                             }
@@ -400,11 +412,9 @@ func (raider *RaiderAI) CreateUnits(player *playerlib.Player, aiServices playerl
     var decisions []playerlib.AIDecision
 
     // don't create too many stacks
-    /*
-    if len(player.Stacks) > 5 {
+    if len(player.Stacks) > 20 {
         return decisions
     }
-    */
 
     /*
     getContinent := functional.Memoize3(func(x int, y int, plane data.Plane) []maplib.FullTile {
@@ -476,8 +486,10 @@ func (raider *RaiderAI) UpdateCities(self *playerlib.Player) []playerlib.AIDecis
     return decisions
 }
 
-func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices, manaPerTurn int) []playerlib.AIDecision {
+func (raider *RaiderAI) Update(player *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
+
+    enemies := aiServices.GetEnemies(player)
 
     decisions = append(decisions, raider.MoveStacks(player, enemies, aiServices)...)
     decisions = append(decisions, raider.CreateUnits(player, aiServices)...)
@@ -486,7 +498,7 @@ func (raider *RaiderAI) Update(player *playerlib.Player, enemies []*playerlib.Pl
     return decisions
 }
 
-func (raider *RaiderAI) PostUpdate(self *playerlib.Player, enemies []*playerlib.Player) {
+func (raider *RaiderAI) PostUpdate(self *playerlib.Player, aiServices playerlib.AIServices) {
 }
 
 func (raider *RaiderAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {

@@ -47,7 +47,18 @@ func (ai *EnemyAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
     city.ProducingUnit = units.UnitNone
 }
 
-func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, aiServices playerlib.AIServices, manaPerTurn int) []playerlib.AIDecision {
+func (ai *EnemyAI) ConfirmEncounter(stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter) bool {
+    return false
+}
+
+func (ai *EnemyAI) InvalidMove(stack *playerlib.UnitStack) {
+}
+
+func (ai *EnemyAI) MovedStack(stack *playerlib.UnitStack, path pathfinding.Path) pathfinding.Path {
+    return path
+}
+
+func (ai *EnemyAI) Update(self *playerlib.Player, aiServices playerlib.AIServices) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
     // FIXME: create settlers, build cities
@@ -67,6 +78,10 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
         }
     }
 
+    manaPerTurn := functional.Memoize0(func() int {
+        return self.ManaPerTurn(aiServices.ComputePower(self), aiServices)
+    })
+
     // not casting a spell
     if self.CastingSpell.Invalid() && rand.N(10) == 0 {
         // just search for summoning spells for now
@@ -77,7 +92,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                 chosen := summoningSpells.Spells[i]
                 summonUnit := units.GetUnitByName(chosen.Name)
                 // check unit.UpkeepMana to see if it is affordable
-                if !summonUnit.IsNone() && manaPerTurn >= summonUnit.UpkeepMana {
+                if !summonUnit.IsNone() && manaPerTurn() >= summonUnit.UpkeepMana {
                     decisions = append(decisions, &playerlib.AICastSpellDecision{
                         Spell: chosen,
                     })
@@ -113,9 +128,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                 return false
             })
 
-            possibleBuildings := city.ComputePossibleBuildings()
-
-            possibleBuildings.RemoveMany(buildinglib.BuildingTradeGoods, buildinglib.BuildingHousing)
+            possibleBuildings := city.ComputePossibleBuildings(true)
 
             type Choice int
             const ChooseUnit Choice = 0
@@ -174,9 +187,6 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                 decisions = append(decisions, &playerlib.AIMoveStackDecision{
                     Stack: stack,
                     Path: stack.CurrentPath,
-                    ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
-                        return true
-                    },
                 })
                 continue
             } else {
@@ -217,7 +227,8 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                             // just go back to a town?
                             var candidateCities []*citylib.City
                             for _, city := range self.Cities {
-                                if city.Plane == stack.Plane() && len(aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, self, stack, self.GetFog(stack.Plane()))) > 0 {
+                                _, ok := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, self, stack, self.GetFog(stack.Plane()))
+                                if city.Plane == stack.Plane() && ok {
                                     candidateCities = append(candidateCities, city)
                                 }
                             }
@@ -227,8 +238,8 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                                 infinity := 999999
 
                                 getDistance := functional.Memoize(func (city *citylib.City) int {
-                                    path := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, self, stack, self.GetFog(stack.Plane()))
-                                    if len(path) == 0 {
+                                    _, ok := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, self, stack, self.GetFog(stack.Plane()))
+                                    if !ok {
                                         return infinity
                                     }
                                     return len(path)
@@ -238,7 +249,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                                     return cmp.Compare(getDistance(a), getDistance(b))
                                 })
 
-                                path = aiServices.FindPath(stack.X(), stack.Y(), candidateCities[0].X, candidateCities[0].Y, self, stack, self.GetFog(stack.Plane()))
+                                path, _ = aiServices.FindPath(stack.X(), stack.Y(), candidateCities[0].X, candidateCities[0].Y, self, stack, self.GetFog(stack.Plane()))
                             } else {
                                 // do nothing
                             }
@@ -247,8 +258,9 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                         // FIXME: choose a location with a high population maximum and near bonuses. Possibly also near a shore so we can build water units
                         // choose a random location
                         location := candidateLocations[rand.N(len(candidateLocations))]
-                        path = aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, self, stack, self.GetFog(stack.Plane()))
-                        if len(path) > 0 {
+                        var ok bool
+                        path, ok = aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, self, stack, self.GetFog(stack.Plane()))
+                        if ok {
                             log.Printf("Settler going to %v, %v via %v", location.X, location.Y, path)
                         }
                     }
@@ -258,7 +270,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                     // try upto 3 times to find a path
                     for range 3 {
                         newX, newY := stack.X() + rand.N(5) - 2, stack.Y() + rand.N(5) - 2
-                        path = aiServices.FindPath(stack.X(), stack.Y(), newX, newY, self, stack, self.GetFog(stack.Plane()))
+                        path, _ = aiServices.FindPath(stack.X(), stack.Y(), newX, newY, self, stack, self.GetFog(stack.Plane()))
                         if len(path) != 0 {
                             break
                         }
@@ -269,9 +281,6 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
                     decisions = append(decisions, &playerlib.AIMoveStackDecision{
                         Stack: stack,
                         Path: path,
-                        ConfirmEncounter_: func (encounter *maplib.ExtraEncounter) bool {
-                            return true
-                        },
                     })
                 }
             }
@@ -281,7 +290,7 @@ func (ai *EnemyAI) Update(self *playerlib.Player, enemies []*playerlib.Player, a
     return decisions
 }
 
-func (ai *EnemyAI) PostUpdate(self *playerlib.Player, enemies []*playerlib.Player) {
+func (ai *EnemyAI) PostUpdate(self *playerlib.Player, aiServices playerlib.AIServices) {
 
     // merge stacks that are on top of each other
     type Location struct {

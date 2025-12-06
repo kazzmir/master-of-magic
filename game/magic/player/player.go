@@ -56,37 +56,10 @@ type AIMoveStackDecision struct {
     Path pathfinding.Path
     // only move these specific units within the stack
     Units []units.StackUnit
-    // invoked if the move was unable to be completed
-    invalid func()
-    // invoked if the move succeeded
-    moved func()
-    // invoked when the stack moves onto a tile with an encounter. this function should return true
-    // if the army should initiate combat with the encounter
-    ConfirmEncounter_ func(*maplib.ExtraEncounter) bool
 }
 
 func (move *AIMoveStackDecision) String() string {
     return fmt.Sprintf("MoveStack %v", move.Stack)
-}
-
-func (move *AIMoveStackDecision) Invalid() {
-    if move.invalid != nil {
-        move.invalid()
-    }
-}
-
-func (move *AIMoveStackDecision) ConfirmEncounter(encounter *maplib.ExtraEncounter) bool {
-    if move.ConfirmEncounter_ != nil {
-        return move.ConfirmEncounter_(encounter)
-    }
-
-    return false
-}
-
-func (move *AIMoveStackDecision) Moved() {
-    if move.moved != nil {
-        move.moved()
-    }
 }
 
 type AICastSpellDecision struct {
@@ -113,24 +86,35 @@ type AIResearchSpellDecision struct {
 
 // implemented by the Game object
 type AIServices interface {
-    FindPath(oldX int, oldY int, newX int, newY int, player *Player, stack PathStack, fog data.FogMap) pathfinding.Path
+    CityEnchantmentsProvider
+
+    FindPath(oldX int, oldY int, newX int, newY int, player *Player, stack PathStack, fog data.FogMap) (pathfinding.Path, bool)
     FindSettlableLocations(x int, y int, plane data.Plane, fog data.FogMap) []image.Point
     IsSettlableLocation(x int, y int, plane data.Plane) bool
     GetDifficulty() data.DifficultySetting
     GetMap(data.Plane) *maplib.Map
+
+    // get friendly cities on the same continent as the given point
+    FindCitiesOnContinent(x int, y int, plane data.Plane, player *Player) []*citylib.City
+    FindStacksOnContinent(x int, y int, plane data.Plane, player *Player) []*UnitStack
+
     GetTurnNumber() uint64
+    ComputeMaximumPopulation(int, int, data.Plane) int
+    ComputePower(player *Player) int
     AllCities() []*citylib.City
     FindStack(x int, y int, plane data.Plane) (*UnitStack, *Player)
     FindCity(x int, y int, plane data.Plane) (*citylib.City, *Player)
     ComputeCityStackInfo() CityStackInfo
+    GetEnemies(player *Player) []*Player
+    GetBuildingInfos() buildinglib.BuildingInfos
 }
 
 type AIBehavior interface {
     // return a list of decisions to make for the current turn
-    Update(*Player, []*Player, AIServices, int) []AIDecision
+    Update(*Player, AIServices) []AIDecision
 
     // called after all decisions have been processed for an AI player
-    PostUpdate(*Player, []*Player)
+    PostUpdate(*Player, AIServices)
 
     // reset any state that needs to be reset at the start of a new turn
     NewTurn(*Player)
@@ -142,6 +126,15 @@ type AIBehavior interface {
     ConfirmRazeTown(*citylib.City) bool
 
     HandleMerchantItem(*Player, *artifact.Artifact, int) bool
+
+    // invoked if the move was unable to be completed
+    InvalidMove(*UnitStack)
+
+    // invoked if the move succeeded
+    MovedStack(*UnitStack, pathfinding.Path) pathfinding.Path
+    // invoked when the stack moves onto a tile with an encounter. this function should return true
+    // if the army should initiate combat with the encounter
+    ConfirmEncounter(*UnitStack, *maplib.ExtraEncounter) bool
 }
 
 type Hostility int
@@ -1196,10 +1189,9 @@ func (player *Player) OwnsCity(city *citylib.City) bool {
 }
 
 func (player *Player) FindCity(x int, y int, plane data.Plane) *citylib.City {
-    for _, city := range player.Cities {
-        if city.X == x && city.Y == y && city.Plane == plane {
-            return city
-        }
+    city, ok := player.Cities[data.PlanePoint{X: x, Y: y, Plane: plane}]
+    if ok {
+        return city
     }
 
     return nil
@@ -1403,6 +1395,7 @@ func (player *Player) SplitActiveStack(stack *UnitStack) *UnitStack {
 
 // stack2 gets absorbed into stack1
 func (player *Player) MergeStacks(stack1 *UnitStack, stack2 *UnitStack) *UnitStack {
+    // FIXME: if a transport unit is in the stack then always put it in front
     stack1.units = append(stack1.units, stack2.units...)
 
     for unit, active := range stack2.active {
@@ -1613,4 +1606,16 @@ func (player *Player) RebalanceFood() {
             }
         }
     }
+}
+
+// count of the number of units with the transport ability on the given place
+func (player *Player) TransportUnits(plane data.Plane) int {
+    count := 0
+    for _, unit := range player.Units {
+        if unit.GetPlane() == plane && unit.HasAbility(data.AbilityTransport) {
+            count += 1
+        }
+    }
+
+    return count
 }

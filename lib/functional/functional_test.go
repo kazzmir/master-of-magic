@@ -49,6 +49,22 @@ func TestMemoize(test *testing.T) {
     if count != 2 {
         test.Errorf("Expected 2 calls to f2, got %d", count)
     }
+
+    f0_count := 0
+    f0 := func() int {
+        f0_count += 1
+        return 8
+    }
+
+    f0_v1 := f0()
+    f0_v2 := f0()
+    if f0_v1 != 8 || f0_v2 != 8 {
+        test.Errorf("Expected 8")
+    }
+
+    if f0_count != 2 {
+        test.Errorf("Expected 2 calls to f0, got %d", f0_count)
+    }
 }
 
 func TestCurry(test *testing.T) {

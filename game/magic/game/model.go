@@ -5,6 +5,7 @@ import (
     "slices"
     "math"
     "math/rand/v2"
+    "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -15,6 +16,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/combat"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -49,6 +51,8 @@ type GameModel struct {
     // for communication with the UI
     Events chan GameEvent
 
+    BuildingInfo buildinglib.BuildingInfos
+
     // the scroll events that occurred this turn
     ScrollEvents []*GameEventScroll
 
@@ -69,6 +73,7 @@ func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSetti
                    startingPlane data.Plane, events chan GameEvent,
                    heroNames map[int]map[herolib.HeroType]string, allSpells spellbook.Spells,
                    artifactPool map[string]*artifact.Artifact,
+                   buildingInfo buildinglib.BuildingInfos,
                ) *GameModel {
 
     planeTowers := maplib.GeneratePlaneTowerPositions(settings.LandSize, 6)
@@ -81,6 +86,7 @@ func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSetti
         Plane: startingPlane,
         CurrentPlayer: -1,
         Events: events,
+        BuildingInfo: buildingInfo,
 
         RoadWorkArcanus: make(map[image.Point]float64),
         RoadWorkMyrror: make(map[image.Point]float64),
@@ -139,7 +145,7 @@ func (model *GameModel) AddPlayer(wizard setup.WizardCustom, human bool) *player
     newPlayer := playerlib.MakePlayer(wizard, human, model.CurrentMap().Width(), model.CurrentMap().Height(), useNames, model)
 
     if !human {
-        newPlayer.AIBehavior = ai.MakeEnemyAI()
+        newPlayer.AIBehavior = ai.MakeEnemy2AI()
         newPlayer.StrategicCombat = true
     }
 
@@ -209,12 +215,16 @@ func (model *GameModel) GetMap(plane data.Plane) *maplib.Map {
     return nil
 }
 
-func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player *playerlib.Player, stack playerlib.PathStack, fog data.FogMap) pathfinding.Path {
+func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player *playerlib.Player, stack playerlib.PathStack, fog data.FogMap) (pathfinding.Path, bool) {
 
     useMap := model.GetMap(stack.Plane())
 
     if newY < 0 || newY >= useMap.Height() {
-        return nil
+        return nil, false
+    }
+
+    if oldX == newX && oldY == newY {
+        return nil, true
     }
 
     allFlyers := stack.AllFlyers()
@@ -227,7 +237,7 @@ func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player 
 
         // if this is a water unit that cannot walk on land then just return nil immediately since the move is impossible
         if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(true) {
-            return nil
+            return nil, false
         }
 
         // if this is a water unit and it is moving from water to more water, but the destination water tile
@@ -235,7 +245,7 @@ func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player 
         // path between the two water tiles
         if tileTo.Tile.IsWater() && tileFrom.Tile.IsWater() && !stack.CanMoveOnLand(true) {
             if model.GetWaterBody(useMap, newX, newY) != model.GetWaterBody(useMap, oldX, oldY) {
-                return nil
+                return nil, false
             }
         }
 
@@ -393,10 +403,11 @@ func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player 
 
     path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), 10000, tileCost, neighbors, tileEqual)
     if ok {
-        return path[1:]
+        // ignore the start point
+        return path[1:], true
     }
 
-    return nil
+    return nil, false
 }
 
 func (model *GameModel) AllCities() []*citylib.City {
@@ -1645,4 +1656,320 @@ func (model *GameModel) doCallTheVoid(city *citylib.City, player *playerlib.Play
     }
 
     return killedCitizens, killedUnits, len(destroyedBuildings)
+}
+
+func (model *GameModel) GetCityEnchantmentsByBanner(banner data.BannerType) []playerlib.CityEnchantment {
+    var result []playerlib.CityEnchantment
+
+    for _, player := range model.Players {
+        for _, city := range player.Cities {
+            for _, enchantment := range city.GetEnchantmentsCastBy(banner) {
+                result = append(result, playerlib.CityEnchantment{City: city, Enchantment: enchantment})
+            }
+        }
+    }
+
+    return result
+}
+
+// get all alive players that are not the current player
+func (model *GameModel) GetEnemies(player *playerlib.Player) []*playerlib.Player {
+    var out []*playerlib.Player
+    for _, enemy := range model.Players {
+        // if enemy != player && len(enemy.Cities) > 0 {
+        if enemy != player && !enemy.Defeated {
+            out = append(out, enemy)
+        }
+    }
+    return out
+}
+
+func (model *GameModel) ComputeMaximumPopulation(x int, y int, plane data.Plane) int {
+    // find catchment area of x, y
+    // for each square, compute food production
+    // maximum pop is food production
+    maybeCity, _ := model.FindCity(x, y, plane)
+    if maybeCity != nil {
+        return maybeCity.MaximumCitySize()
+    }
+
+    mapUse := model.GetMap(plane)
+    catchment := mapUse.GetCatchmentArea(x, y)
+
+    food := fraction.Zero()
+
+    for _, tile := range catchment {
+        food = food.Add(tile.FoodBonus())
+        bonus := tile.GetBonus()
+        food = food.Add(fraction.FromInt(bonus.FoodBonus()))
+    }
+
+    maximum := int(food.ToFloat())
+    if maximum > 25 {
+        maximum = 25
+    }
+
+    return maximum
+}
+
+// all the cities on the continent containing the given x, y with the given plane, beloning to the given player
+func (model *GameModel) FindCitiesOnContinent(x int, y int, plane data.Plane, player *playerlib.Player) []*citylib.City {
+    tiles := model.GetMap(plane).GetContinentTiles(x, y)
+    tileSet := set.NewSet[image.Point]()
+    for _, tile := range tiles {
+        tileSet.Insert(image.Pt(tile.X, tile.Y))
+    }
+
+    var out []*citylib.City
+
+    for _, city := range player.Cities {
+        if city.Plane == plane && tileSet.Contains(image.Pt(city.X, city.Y)) {
+            out = append(out, city)
+        }
+    }
+
+    return out
+}
+
+// all the stacks on the continent containing the given x, y with the given plane, beloning to the given player
+func (model *GameModel) FindStacksOnContinent(x int, y int, plane data.Plane, player *playerlib.Player) []*playerlib.UnitStack {
+    tiles := model.GetMap(plane).GetContinentTiles(x, y)
+    tileSet := set.NewSet[image.Point]()
+    for _, tile := range tiles {
+        tileSet.Insert(image.Pt(tile.X, tile.Y))
+    }
+
+    var out []*playerlib.UnitStack
+
+    for _, stack := range player.Stacks {
+        if stack.Plane() == plane && tileSet.Contains(image.Pt(stack.X(), stack.Y())) {
+            out = append(out, stack)
+        }
+    }
+
+    return out
+}
+
+type MovementHandler interface {
+    ShowMovement(x int, y int, stack *playerlib.UnitStack, center bool)
+    DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int)
+    DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState
+    DefeatCity(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, city *citylib.City) (bool, int)
+}
+
+// FIXME: can this just use doMoveSelectedUnit?
+// returns the rest of the path the stack should walk (nil if the path ends)
+func (model *GameModel) doAiMoveUnit(handlers MovementHandler, player *playerlib.Player, stack *playerlib.UnitStack) pathfinding.Path {
+    if len(stack.Units()) > 0 {
+        // stack = player.SplitStack(stack, stack.ActiveUnits())
+        for _, unit := range stack.Units() {
+            unit.SetBusy(units.BusyStatusNone)
+        }
+    }
+
+    // FIXME: split the stack into just the active units in case some are busy or out of moves
+    // path := move.Path
+    path := stack.CurrentPath
+
+    if len(path) == 0 {
+        return nil
+    }
+
+    to := path[0]
+    path = path[1:]
+
+    log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
+    getStack := func(x int, y int) (playerlib.PathStack, bool) {
+        found := player.FindStack(x, y, stack.Plane())
+        return found, found != nil
+    }
+    terrainCost, ok := model.ComputeTerrainCost(stack, stack.X(), stack.Y(), to.X, to.Y, model.GetMap(stack.Plane()), getStack)
+    if ok {
+        oldX := stack.X()
+        oldY := stack.Y()
+
+        mapUse := model.GetMap(stack.Plane())
+
+        encounter := mapUse.GetEncounter(mapUse.WrapX(to.X), to.Y)
+        if encounter != nil {
+            if !player.AIBehavior.ConfirmEncounter(stack, encounter) {
+                player.AIBehavior.InvalidMove(stack)
+                return nil
+            }
+        }
+
+        newCity, _ := model.FindCity(to.X, to.Y, stack.Plane())
+        if newCity != nil {
+            for _, unit := range stack.ActiveUnits() {
+                if !newCity.CanEnter(unit) {
+                    player.AIBehavior.InvalidMove(stack)
+                    return nil
+                }
+            }
+        }
+
+        stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, model.GetNormalizeCoordinateFunc())
+
+        if model.GetHumanPlayer().IsVisible(oldX, oldY, stack.Plane()) {
+            handlers.ShowMovement(oldX, oldY, stack, false)
+        }
+
+        path = player.AIBehavior.MovedStack(stack, path)
+
+        player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
+
+        if encounter != nil {
+            // game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
+            handlers.DoEncounter(player, stack, encounter, mapUse, stack.X(), stack.Y())
+            return nil
+        }
+
+        for _, enemy := range model.GetEnemies(player) {
+            // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
+            enemyStack := enemy.FindStack(stack.X(), stack.Y(), stack.Plane())
+            if enemyStack != nil {
+                city := enemy.FindCity(stack.X(), stack.Y(), stack.Plane())
+                zone := combat.ZoneType{
+                    City: city,
+                }
+
+                // state := game.doCombat(yield, player, stack, enemy, enemyStack, zone)
+                state := handlers.DoCombat(player, stack, enemy, enemyStack, zone)
+
+                if state == combat.CombatStateAttackerFlee {
+                    stack.SetX(oldX)
+                    stack.SetY(oldY)
+                } else if state == combat.CombatStateDefenderFlee {
+                    model.doMoveFleeingDefender(enemy, enemyStack)
+                }
+
+                return nil
+            }
+
+            city := enemy.FindCity(stack.X(), stack.Y(), stack.Plane())
+            if city != nil {
+                // raze, gold := game.defeatCity(yield, player, stack, enemy, city)
+                raze, gold := handlers.DefeatCity(player, stack, enemy, city)
+
+                player.Fame = max(0, player.Fame + city.FameForCaptureOrRaze(!raze))
+                enemy.Fame = max(0, enemy.Fame + city.FameForCaptureOrRaze(false))
+                player.Gold += gold
+                enemy.Gold -= gold
+
+                // FIXME: if the wizard is neutral and decides to raze the town, then the town could become
+                // an encounter zone
+
+                return nil
+            }
+        }
+    } else {
+        player.AIBehavior.InvalidMove(stack)
+        return nil
+    }
+
+    return path
+}
+
+// try to relocate a fleeing stack, kills units that are unable
+func (model *GameModel) doMoveFleeingDefender(player *playerlib.Player, stack *playerlib.UnitStack) {
+    stackUnits := stack.Units()
+
+    for _, i := range rand.Perm(len(stackUnits)) {
+        unit := stackUnits[i]
+        positions := model.FindEscapePosition(player, unit)
+
+        // kill unit if it can not move
+        if len(positions) == 0 {
+            player.RemoveUnit(unit)
+            continue
+        }
+
+        // set to a random position
+        position := positions[rand.IntN(len(positions))]
+        unit.SetX(position.X)
+        unit.SetY(position.Y)
+
+        // merge stacks
+        stack.RemoveUnit(unit)
+        player.AddStack(playerlib.MakeUnitStackFromUnits([]units.StackUnit{unit}))
+        allStacks := player.FindAllStacks(position.X, position.Y, unit.GetPlane())
+        for i := 1; i < len(allStacks); i++ {
+            player.MergeStacks(allStacks[0], allStacks[i])
+        }
+    }
+}
+
+// try to find a nearby position that the given unit can move to
+func (model *GameModel) FindEscapePosition(player *playerlib.Player, unit units.StackUnit) []image.Point {
+    x := unit.GetX()
+    y := unit.GetY()
+    plane := unit.GetPlane()
+    mapUse := model.GetMap(plane)
+    canMoveToWater := unit.IsFlying() || unit.IsSwimmer() || unit.IsSailing()
+
+    var positions []image.Point
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+            if dx == 0 && dy == 0 {
+                continue
+            }
+
+            cx := mapUse.WrapX(x + dx)
+            cy := y + dy
+
+            if dy < 0 || dy >= mapUse.Height() {
+                continue
+            }
+
+            // can not contain an enemy stack or city
+            occupied := false
+            for _, enemy := range model.GetEnemies(player) {
+
+                if enemy.FindStack(cx, cy, plane) != nil {
+                    occupied = true
+                    break
+                }
+
+                if enemy.FindCity(cx, cy, plane) != nil {
+                    occupied = true
+                    break
+                }
+            }
+
+            if occupied {
+                continue
+            }
+
+            // can not contain a friendly full stack
+            existing := player.FindStack(cx, cy, plane)
+            if existing != nil && len(existing.Units()) >= data.MaxUnitsInStack {
+                continue
+            }
+
+            // can not countain encounter
+            if mapUse.GetEncounter(cx, cy) != nil {
+                continue
+            }
+
+            if !mapUse.GetTile(cx, cy).Tile.IsWater() || canMoveToWater {
+                positions = append(positions, image.Pt(cx, cy))
+            }
+        }
+    }
+
+    return positions
+}
+
+func (model *GameModel) GetNormalizeCoordinateFunc() units.NormalizeCoordinateFunc {
+    return func (x int, y int) (int, int) {
+        return model.CurrentMap().WrapX(x), y
+    }
+}
+
+func (model *GameModel) GetHumanPlayer() *playerlib.Player {
+    return model.Players[0]
+}
+
+func (model *GameModel) GetBuildingInfos() buildinglib.BuildingInfos {
+    return model.BuildingInfo
 }
