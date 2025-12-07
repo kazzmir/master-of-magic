@@ -82,4 +82,13 @@ func TestCurry(test *testing.T) {
     if f2(6) != 11 {
         test.Errorf("Expected 11")
     }
+
+    g := func(a int, b string, c int) int {
+        return a * c + 3
+    }
+
+    g2 := Curry3_1(g)(2, "test")
+    if g2(4) != 11 {
+        test.Errorf("Expected 7")
+    }
 }
