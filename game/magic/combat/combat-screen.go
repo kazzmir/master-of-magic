@@ -1210,7 +1210,7 @@ func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) *Project
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 21)
     explodeImages := images
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, combat.Model.CreateMindStormProjectileEffect(target))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, combat.Model.CreateMindStormProjectileEffect())
 }
 
 func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) *Projectile {

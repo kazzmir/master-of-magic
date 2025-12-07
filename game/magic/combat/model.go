@@ -5971,8 +5971,8 @@ func (model *CombatModel) CreateBanishProjectileEffect(target *ArmyUnit, reduceR
 
 }
 
-func (model *CombatModel) CreateMindStormProjectileEffect(target *ArmyUnit) func (*ArmyUnit) {
-    return func (*ArmyUnit){
+func (model *CombatModel) CreateMindStormProjectileEffect() func (*ArmyUnit) {
+    return func (target *ArmyUnit){
         target.AddCurse(data.UnitCurseMindStorm)
     }
 }

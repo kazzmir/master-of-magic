@@ -894,6 +894,11 @@ func TestSpellEffects(test *testing.T){
         return unit
     }
 
+    highResistance := func(unit units.Unit) units.Unit {
+        unit.Resistance = 1000
+        return unit
+    }
+
     testEffect := func (unitBase units.Unit, doTest func(*CombatModel, *ArmyUnit)) {
 
         defendingArmy := Army{
@@ -924,5 +929,75 @@ func TestSpellEffects(test *testing.T){
         }
 
     })
+
+    testEffect(highResistance(units.LizardSpearmen), func (model *CombatModel, unit *ArmyUnit) {
+        model.CreateMindStormProjectileEffect()(unit)
+        if !unit.HasCurse(data.UnitCurseMindStorm) {
+            test.Errorf("Error: unit should have black sleep curse")
+        }
+    })
+
+
+    /*
+func (model *CombatModel) CreateBanishProjectileEffect(target *ArmyUnit, reduceResistance int, damageIndicator AddDamageIndicators) func (*ArmyUnit) {
+func (model *CombatModel) CreateIceBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateFireBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateFireballProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateStarFiresProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreatePsionicBlastProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateDoomBoltProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateLightningBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateWarpLightningProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateLifeDrainProjectileEffect(reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateFlameStrikeProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateRecallHeroProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateHealingProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateHeroismProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateHolyArmorProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateInvulnerabilityProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateLionHeartProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateTrueSightProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateElementalArmorProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateGiantStrengthProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateIronSkinProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateStoneSkinProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateRegenerationProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateResistElementsProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateRighteousnessProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateHolyWeaponProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateFlightProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateGuardianWindProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateHasteProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateInvisibilityProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateMagicImmunityProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateResistMagicProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateSpellLockProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateEldritchWeaponProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateFlameBladeProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateImmolationProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateBerserkProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateCloakOfFearProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateWraithFormProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateChaosChannelsProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateBlessProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateWeaknessProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateVertigoProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateShatterProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateWarpCreatureProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateConfusionProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreatePossessionProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateCreatureBindingProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreatePetrifyProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateWebProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateDeathSpellProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateWordOfDeathProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateWarpWoodProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateDisintegrateProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateWordOfRecallProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateDispelMagicProjectileEffect(caster ArmyPlayer, dispelStrength int) func(*ArmyUnit) {
+func (model *CombatModel) CreateCracksCallProjectileEffect() func(*ArmyUnit) {
+     */
 
 }
