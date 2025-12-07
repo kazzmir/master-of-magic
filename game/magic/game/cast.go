@@ -1617,7 +1617,14 @@ func (game *Game) doCastOnUnit(player *playerlib.Player, spell spellbook.Spell, 
     selected = func (yield coroutine.YieldFunc, tileX int, tileY int){
         game.doMoveCamera(yield, tileX, tileY)
         stack := player.FindStack(tileX, tileY, game.Model.Plane)
-        unit := game.doSelectUnit(yield, player, stack)
+
+        var unit units.StackUnit
+
+        if len(stack.Units()) == 1 {
+            unit = stack.Units()[0]
+        } else {
+            unit = game.doSelectUnit(yield, player, stack)
+        }
 
         // player didn't select a unit, let them pick a different stack
         if unit == nil {
