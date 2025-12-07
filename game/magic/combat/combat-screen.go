@@ -595,15 +595,9 @@ func (combat *CombatScreen) CreateIceBoltProjectile(target *ArmyUnit, strength i
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    damage := func(unit *ArmyUnit) {
-        hurt, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
-        combat.AddDamageIndicator(unit, hurt)
-        if unit.GetHealth() <= 0 {
-            combat.Model.KillUnit(unit)
-        }
-    }
+    effect := combat.Model.CreateIceBoltProjectileEffect(strength, combat)
 
-    return combat.createSkyProjectile(target, loopImages, explodeImages, damage)
+    return combat.createSkyProjectile(target, loopImages, explodeImages, effect)
 }
 
 func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength int) *Projectile {
@@ -611,18 +605,9 @@ func (combat *CombatScreen) CreateFireBoltProjectile(target *ArmyUnit, strength 
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    damage := func(unit *ArmyUnit) {
-        fireDamage, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
-        combat.AddDamageIndicator(unit, fireDamage)
+    effect := combat.Model.CreateFireBoltProjectileEffect(strength, combat)
 
-        combat.Model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
-        if unit.GetHealth() <= 0 {
-            combat.Model.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
-            combat.Model.KillUnit(unit)
-        }
-    }
-
-    return combat.createSkyProjectile(target, loopImages, explodeImages, damage)
+    return combat.createSkyProjectile(target, loopImages, explodeImages, effect)
 }
 
 func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength int) *Projectile {
@@ -631,77 +616,36 @@ func (combat *CombatScreen) CreateFireballProjectile(target *ArmyUnit, strength 
     loopImages := images[0:11]
     explodeImages := images[11:]
 
-    damage := func(unit *ArmyUnit) {
-        hurt := combat.Model.ApplyImmolationDamage(unit, strength)
-        combat.AddDamageIndicator(unit, hurt)
-        if unit.GetHealth() <= 0 {
-            combat.Model.KillUnit(unit)
-        }
-    }
+    effect := combat.Model.CreateFireballProjectileEffect(strength, combat)
 
-    return combat.createSkyProjectile(target, loopImages, explodeImages, damage)
+    return combat.createSkyProjectile(target, loopImages, explodeImages, effect)
 }
 
 func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 9)
     explodeImages := images
 
-    damage := func (unit *ArmyUnit) {
-        hurt, _ := ApplyDamage(unit, []int{15}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
-        combat.AddDamageIndicator(unit, hurt)
-        if unit.GetHealth() <= 0 {
-            combat.Model.KillUnit(unit)
-        }
-    }
+    effect := combat.Model.CreateStarFiresProjectileEffect(combat)
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
 func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 10)
     explodeImages := images
 
-    damage := func (unit *ArmyUnit) {
-        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
-            return
-        }
+    effect := combat.Model.CreateDispelEvilProjectileEffect(combat)
 
-        modifier := 4
-        if unit.Unit.IsUndead() {
-            modifier = 9
-        }
-
-        defenderResistance := GetResistanceFor(unit, data.LifeMagic) - modifier
-        damage := 0
-        for range unit.Figures() {
-            if rand.N(10) + 1 > defenderResistance {
-                damage += unit.Unit.GetHitPoints()
-            }
-        }
-
-        combat.AddDamageIndicator(unit, damage)
-        unit.TakeDamage(damage, DamageIrreversable)
-        if unit.GetHealth() <= 0 {
-            combat.Model.KillUnit(unit)
-        }
-    }
-
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
 func (combat *CombatScreen) CreatePsionicBlastProjectile(target *ArmyUnit, strength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 16)
     explodeImages := images
 
-    damage := func (unit *ArmyUnit) {
-        hurt, _ := ApplyDamage(unit, []int{ComputeRoll(15, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
-        combat.AddDamageIndicator(unit, hurt)
-        if unit.GetHealth() <= 0 {
-            combat.Model.KillUnit(unit)
-        }
-    }
+    effect := combat.Model.CreatePsionicBlastProjectileEffect(strength, combat)
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
 func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projectile {
@@ -709,13 +653,7 @@ func (combat *CombatScreen) CreateDoomBoltProjectile(target *ArmyUnit) *Projecti
     loopImages := images[0:3]
     explodeImages := images[3:]
 
-    effect := func(unit *ArmyUnit) {
-        unit.TakeDamage(10, DamageNormal)
-        combat.AddDamageIndicator(unit, 10)
-        if unit.GetHealth() <= 0 {
-            combat.Model.KillUnit(unit)
-        }
-    }
+    effect := combat.Model.CreateDoomBoltProjectileEffect(combat)
 
     return combat.createVerticalSkyProjectile(target, loopImages, explodeImages, effect)
 }
@@ -731,6 +669,8 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
     screenY -= float64(images[0].Bounds().Dy())/2
     screenX += float64(images[0].Bounds().Dx())/2
 
+    effect := combat.Model.CreateLightningBoltProjectileEffect(strength, combat)
+
     projectile := &Projectile{
         X: screenX,
         Y: screenY,
@@ -742,13 +682,7 @@ func (combat *CombatScreen) CreateLightningBoltProjectile(target *ArmyUnit, stre
         Animation: util.MakeAnimation(images, true),
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
-        Effect: func(unit *ArmyUnit) {
-            hurt, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
-            combat.AddDamageIndicator(unit, hurt)
-            if unit.GetHealth() <= 0 {
-                combat.Model.KillUnit(unit)
-            }
-        },
+        Effect: effect,
     }
 
     return projectile
@@ -766,6 +700,8 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Pro
 
     // screenY -= float64(images[0].Bounds().Dy())
 
+    effect := combat.Model.CreateWarpLightningProjectileEffect(combat)
+
     projectile := &Projectile{
         X: screenX,
         Y: screenY,
@@ -777,22 +713,7 @@ func (combat *CombatScreen) CreateWarpLightningProjectile(target *ArmyUnit) *Pro
         Animation: util.MakeAnimation(images, true),
         Explode: util.MakeRepeatAnimation(explodeImages, 2),
         Exploding: true,
-        Effect: func(unit *ArmyUnit) {
-
-            lost := 0
-            damage := 0
-            // 10 separate attacks are different than a single 55-point attack due to defense
-            for strength := range 10 {
-                hurt, more := ApplyDamage(unit, []int{ComputeRoll(strength + 1, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
-                lost += more
-                damage += hurt
-            }
-            combat.AddDamageIndicator(unit, damage)
-
-            if unit.GetHealth() <= 0 {
-                combat.Model.KillUnit(unit)
-            }
-        },
+        Effect: effect,
     }
 
     return projectile
@@ -804,53 +725,27 @@ func (combat *CombatScreen) CreateLifeDrainProjectile(target *ArmyUnit, reduceRe
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 6)
     explodeImages := images
 
-    damage := func (unit *ArmyUnit) {
-        resistance := GetResistanceFor(unit, data.LifeMagic) - reduceResistance
-        damage := rand.N(10) + 1 - resistance
-        if damage > 0 {
-            unit.TakeDamage(damage, DamageUndead)
-            combat.AddDamageIndicator(unit, damage)
-            if unitCaster != nil {
-                unitCaster.Heal(damage)
-            } else {
-                // add casting skill to player
-                army := combat.Model.GetArmyForPlayer(player)
-                army.ManaPool += damage * 3
-            }
+    effect := combat.Model.CreateLifeDrainProjectileEffect(reduceResistance, player, unitCaster, combat)
 
-            if unit.GetHealth() <= 0 {
-                combat.Model.KillUnit(unit)
-            }
-        }
-    }
-
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
 func (combat *CombatScreen) CreateFlameStrikeProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 33)
     explodeImages := images
 
-    damage := func (unit *ArmyUnit) {
-        hurt := combat.Model.ApplyImmolationDamage(unit, 15)
-        combat.AddDamageIndicator(unit, hurt)
-        if unit.GetHealth() <= 0 {
-            combat.Model.KillUnit(unit)
-        }
-    }
+    effect := combat.Model.CreateFlameStrikeProjectileEffect(combat)
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
 func (combat *CombatScreen) CreateRecallHeroProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
     explodeImages := images
 
-    recall := func(unit *ArmyUnit) {
-        combat.Model.RecallUnit(unit)
-    }
+    effect := combat.Model.CreateRecallHeroProjectileEffect()
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, recall)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
 func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) *Projectile {
@@ -858,11 +753,9 @@ func (combat *CombatScreen) CreateHealingProjectile(target *ArmyUnit) *Projectil
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
 
-    heal := func (unit *ArmyUnit){
-        unit.Heal(5)
-    }
+    effect := combat.Model.CreateHealingProjectileEffect()
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, heal)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
 func (combat *CombatScreen) CreateHeroismProjectile(target *ArmyUnit) *Projectile {
@@ -870,9 +763,7 @@ func (combat *CombatScreen) CreateHeroismProjectile(target *ArmyUnit) *Projectil
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentHeroism)
-    }
+    effect := combat.Model.CreateHeroismProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -882,9 +773,7 @@ func (combat *CombatScreen) CreateHolyArmorProjectile(target *ArmyUnit) *Project
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentHolyArmor)
-    }
+    effect := combat.Model.CreateHolyArmorProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -894,9 +783,7 @@ func (combat *CombatScreen) CreateInvulnerabilityProjectile(target *ArmyUnit) *P
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentInvulnerability)
-    }
+    effect := combat.Model.CreateInvulnerabilityProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -906,9 +793,7 @@ func (combat *CombatScreen) CreateLionHeartProjectile(target *ArmyUnit) *Project
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentLionHeart)
-    }
+    effect := combat.Model.CreateLionHeartProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -918,9 +803,7 @@ func (combat *CombatScreen) CreateTrueSightProjectile(target *ArmyUnit) *Project
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentTrueSight)
-    }
+    effect := combat.Model.CreateTrueSightProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -930,9 +813,7 @@ func (combat *CombatScreen) CreateElementalArmorProjectile(target *ArmyUnit) *Pr
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 0)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentElementalArmor)
-    }
+    effect := combat.Model.CreateElementalArmorProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -942,9 +823,7 @@ func (combat *CombatScreen) CreateGiantStrengthProjectile(target *ArmyUnit) *Pro
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 0)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentGiantStrength)
-    }
+    effect := combat.Model.CreateGiantStrengthProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -954,9 +833,7 @@ func (combat *CombatScreen) CreateIronSkinProjectile(target *ArmyUnit) *Projecti
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 0)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentIronSkin)
-    }
+    effect := combat.Model.CreateIronSkinProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -966,9 +843,7 @@ func (combat *CombatScreen) CreateStoneSkinProjectile(target *ArmyUnit) *Project
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 0)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentStoneSkin)
-    }
+    effect := combat.Model.CreateStoneSkinProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -978,9 +853,7 @@ func (combat *CombatScreen) CreateRegenerationProjectile(target *ArmyUnit) *Proj
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 0)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentRegeneration)
-    }
+    effect := combat.Model.CreateRegenerationProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -990,9 +863,7 @@ func (combat *CombatScreen) CreateResistElementsProjectile(target *ArmyUnit) *Pr
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 0)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentResistElements)
-    }
+    effect := combat.Model.CreateResistElementsProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1002,9 +873,7 @@ func (combat *CombatScreen) CreateRighteousnessProjectile(target *ArmyUnit) *Pro
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentRighteousness)
-    }
+    effect := combat.Model.CreateRighteousnessProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1014,9 +883,7 @@ func (combat *CombatScreen) CreateHolyWeaponProjectile(target *ArmyUnit) *Projec
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentHolyWeapon)
-    }
+    effect := combat.Model.CreateHolyWeaponProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1026,9 +893,7 @@ func (combat *CombatScreen) CreateFlightProjectile(target *ArmyUnit) *Projectile
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentFlight)
-    }
+    effect := combat.Model.CreateFlightProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1038,9 +903,7 @@ func (combat *CombatScreen) CreateGuardianWindProjectile(target *ArmyUnit) *Proj
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentGuardianWind)
-    }
+    effect := combat.Model.CreateGuardianWindProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1050,9 +913,7 @@ func (combat *CombatScreen) CreateHasteProjectile(target *ArmyUnit) *Projectile 
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentHaste)
-    }
+    effect := combat.Model.CreateHasteProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1062,9 +923,7 @@ func (combat *CombatScreen) CreateInvisibilityProjectile(target *ArmyUnit) *Proj
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentInvisibility)
-    }
+    effect := combat.Model.CreateInvisibilityProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1074,9 +933,7 @@ func (combat *CombatScreen) CreateMagicImmunityProjectile(target *ArmyUnit) *Pro
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentMagicImmunity)
-    }
+    effect := combat.Model.CreateMagicImmunityProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1086,9 +943,7 @@ func (combat *CombatScreen) CreateResistMagicProjectile(target *ArmyUnit) *Proje
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentResistMagic)
-    }
+    effect := combat.Model.CreateResistMagicProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1098,9 +953,7 @@ func (combat *CombatScreen) CreateSpellLockProjectile(target *ArmyUnit) *Project
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentSpellLock)
-    }
+    effect := combat.Model.CreateSpellLockProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1110,9 +963,7 @@ func (combat *CombatScreen) CreateEldritchWeaponProjectile(target *ArmyUnit) *Pr
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentEldritchWeapon)
-    }
+    effect := combat.Model.CreateEldritchWeaponProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1122,9 +973,7 @@ func (combat *CombatScreen) CreateFlameBladeProjectile(target *ArmyUnit) *Projec
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentFlameBlade)
-    }
+    effect := combat.Model.CreateFlameBladeProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1134,9 +983,7 @@ func (combat *CombatScreen) CreateImmolationProjectile(target *ArmyUnit) *Projec
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentImmolation)
-    }
+    effect := combat.Model.CreateImmolationProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1146,9 +993,7 @@ func (combat *CombatScreen) CreateBerserkProjectile(target *ArmyUnit) *Projectil
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 4)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentBerserk)
-    }
+    effect := combat.Model.CreateBerserkProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1158,9 +1003,7 @@ func (combat *CombatScreen) CreateCloakOfFearProjectile(target *ArmyUnit) *Proje
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 4)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentCloakOfFear)
-    }
+    effect := combat.Model.CreateCloakOfFearProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1170,9 +1013,7 @@ func (combat *CombatScreen) CreateWraithFormProjectile(target *ArmyUnit) *Projec
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 4)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentWraithForm)
-    }
+    effect := combat.Model.CreateWraithFormProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1181,32 +1022,7 @@ func (combat *CombatScreen) CreateChaosChannelsProjectile(target *ArmyUnit) *Pro
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 2)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        choices := []data.UnitEnchantment{
-            data.UnitEnchantmentChaosChannelsDemonSkin,
-            data.UnitEnchantmentChaosChannelsDemonWings,
-            data.UnitEnchantmentChaosChannelsFireBreath,
-        }
-
-        for _, i := range rand.Perm(len(choices)) {
-            choice := choices[i]
-            if unit.HasEnchantment(choice) {
-                continue
-            }
-
-            if choice == data.UnitEnchantmentChaosChannelsDemonWings {
-                // FIXME: check sailing
-                if unit.IsFlying() /* || unit.Unit.IsSailing() */ {
-                    continue
-                }
-            }
-
-            // probably other things to check here
-
-            unit.Unit.AddEnchantment(choice)
-            break
-        }
-    }
+    effect := combat.Model.CreateChaosChannelsProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1216,11 +1032,9 @@ func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) *Projectile 
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
 
-    bless := func (unit *ArmyUnit){
-        unit.AddEnchantment(data.UnitEnchantmentBless)
-    }
+    effect := combat.Model.CreateBlessProjectileEffect()
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, bless)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
 func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) *Projectile {
@@ -1228,24 +1042,16 @@ func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) *Projecti
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
     explodeImages := images
 
-    weakness := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > GetResistanceFor(unit, data.DeathMagic) - 2 {
-            unit.AddCurse(data.UnitCurseWeakness)
-        }
-    }
+    effect := combat.Model.CreateWeaknessProjectileEffect()
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, weakness)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
 func (combat *CombatScreen) CreateCreatureBindingProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > GetResistanceFor(target, data.SorceryMagic) - 2 {
-            combat.Model.ApplyCreatureBinding(target)
-        }
-    }
+    effect := combat.Model.CreateCreatureBindingProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1254,20 +1060,7 @@ func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit) *Projectil
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 12)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        damage := 0
-        for range unit.Figures() {
-            if rand.N(10) + 1 > GetResistanceFor(target, data.NatureMagic) {
-                damage += unit.Unit.GetHitPoints()
-            }
-        }
-
-        // FIXME: do stoning damage, which is irreversable
-        unit.TakeDamage(damage, DamageIrreversable)
-        if unit.GetHealth() <= 0 {
-            combat.Model.KillUnit(unit)
-        }
-    }
+    effect := combat.Model.CreatePetrifyProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1277,11 +1070,7 @@ func (combat *CombatScreen) CreatePossessionProjectile(target *ArmyUnit) *Projec
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 8)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > GetResistanceFor(unit, data.DeathMagic) - 1 {
-            combat.Model.ApplyPossession(unit)
-        }
-    }
+    effect := combat.Model.CreatePossessionProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1290,11 +1079,7 @@ func (combat *CombatScreen) CreateConfusionProjectile(target *ArmyUnit) *Project
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 20)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > GetResistanceFor(unit, data.SorceryMagic) - 4 {
-            unit.AddCurse(data.UnitCurseConfusion)
-        }
-    }
+    effect := combat.Model.CreateConfusionProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1304,13 +1089,9 @@ func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) *Projec
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
     explodeImages := images
 
-    sleep := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > GetResistanceFor(unit, data.DeathMagic) - 2 {
-            unit.AddCurse(data.UnitCurseBlackSleep)
-        }
-    }
+    effect := combat.Model.CreateBlackSleepProjectileEffect()
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, sleep)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
 func (combat *CombatScreen) CreateVertigoProjectile(target *ArmyUnit) *Projectile {
@@ -1318,11 +1099,7 @@ func (combat *CombatScreen) CreateVertigoProjectile(target *ArmyUnit) *Projectil
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 17)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > GetResistanceFor(unit, data.SorceryMagic) {
-            unit.AddCurse(data.UnitCurseVertigo)
-        }
-    }
+    effect := combat.Model.CreateVertigoProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1332,11 +1109,7 @@ func (combat *CombatScreen) CreateShatterProjectile(target *ArmyUnit) *Projectil
     images, _ := combat.ImageCache.GetImages("resource.lbx", 79)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > GetResistanceFor(unit, data.ChaosMagic) {
-            unit.AddCurse(data.UnitCurseShatter)
-        }
-    }
+    effect := combat.Model.CreateShatterProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1346,18 +1119,7 @@ func (combat *CombatScreen) CreateWarpCreatureProjectile(target *ArmyUnit) *Proj
     images, _ := combat.ImageCache.GetImages("resource.lbx", 81)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        if rand.N(10) + 1 > GetResistanceFor(unit, data.ChaosMagic) - 1 {
-            choices := set.NewSet(data.UnitCurseWarpCreatureMelee, data.UnitCurseWarpCreatureDefense, data.UnitCurseWarpCreatureResistance)
-            choices.RemoveMany(unit.GetCurses()...)
-
-            if choices.Size() > 0 {
-                values := choices.Values()
-                use := values[rand.N(len(values))]
-                unit.AddCurse(use)
-            }
-        }
-    }
+    effect := combat.Model.CreateWarpCreatureProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1367,43 +1129,16 @@ func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projecti
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
 
-    damage := func (unit *ArmyUnit){
-        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
-            return
-        }
+    effect := combat.Model.CreateHolyWordProjectileEffect(combat)
 
-        modifier := 2
-        if unit.Unit.IsUndead() {
-            modifier = 7
-        }
-
-        resistance := GetResistanceFor(unit, data.LifeMagic) - modifier
-
-        damage := 0
-        for range unit.Figures() {
-            if rand.N(10) + 1 > resistance {
-                damage += unit.Unit.GetHitPoints()
-            }
-        }
-
-        combat.AddDamageIndicator(unit, damage)
-        unit.TakeDamage(damage, DamageIrreversable)
-        if unit.GetHealth() <= 0 {
-            combat.Model.KillUnit(unit)
-        }
-    }
-
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, damage)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
 func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 13)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.AddCurse(data.UnitCurseWeb)
-        unit.WebHealth = 12
-    }
+    effect := combat.Model.CreateWebProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1412,22 +1147,7 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projec
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 14)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        resistance := GetResistanceFor(unit, data.DeathMagic) - 2
-        damage := 0
-
-        for range unit.Figures() {
-            if rand.N(10) + 1 > resistance {
-                damage += unit.Unit.GetHitPoints()
-            }
-        }
-
-        combat.AddDamageIndicator(unit, damage)
-        unit.TakeDamage(damage, DamageIrreversable)
-        if unit.GetHealth() <= 0 {
-            combat.Model.KillUnit(unit)
-        }
-    }
+    effect := combat.Model.CreateDeathSpellProjectileEffect(combat)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1436,22 +1156,7 @@ func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Proje
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 14)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        resistance := GetResistanceFor(unit, data.DeathMagic) - 5
-        damage := 0
-
-        for range unit.Figures() {
-            if rand.N(10) + 1 > resistance {
-                damage += unit.Unit.GetHitPoints()
-            }
-        }
-
-        combat.AddDamageIndicator(unit, damage)
-        unit.TakeDamage(damage, DamageIrreversable)
-        if unit.GetHealth() <= 0 {
-            combat.Model.KillUnit(unit)
-        }
-    }
+    effect := combat.Model.CreateWordOfDeathProjectileEffect(combat)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1460,9 +1165,7 @@ func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) *Projecti
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 2)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        unit.SetRangedAttacks(0)
-    }
+    effect := combat.Model.CreateWarpWoodProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1471,12 +1174,7 @@ func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) *Proj
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 4)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        if GetResistanceFor(unit, data.ChaosMagic) <= 9 {
-            // FIXME: does irreversable damage
-            combat.Model.RemoveUnit(unit)
-        }
-    }
+    effect := combat.Model.CreateDisintegrateProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1485,29 +1183,16 @@ func (combat *CombatScreen) CreateWordOfRecallProjectile(target *ArmyUnit) *Proj
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
     explodeImages := images
 
-    recall := func(unit *ArmyUnit) {
-        combat.Model.RecallUnit(unit)
-    }
+    effect := combat.Model.CreateWordOfRecallProjectileEffect()
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, recall)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
 func (combat *CombatScreen) CreateDispelMagicProjectile(target *ArmyUnit, caster ArmyPlayer, dispelStrength int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 26)
     explodeImages := images
 
-    effect := func (unit *ArmyUnit){
-        // if the unit is owned by the player then disenchant curses, otherwise disenchant enchantments
-
-        playerArmy := combat.Model.GetArmyForPlayer(caster)
-        unitArmy := combat.Model.GetArmy(unit)
-
-        if playerArmy == unitArmy {
-            combat.Model.DoDisenchantUnitCurses(combat.AllSpells, unit, unitArmy.Player, dispelStrength)
-        } else {
-            combat.Model.DoDisenchantUnit(combat.AllSpells, unit, unitArmy.Player, dispelStrength)
-        }
-    }
+    effect := combat.Model.CreateDispelMagicProjectileEffect(caster, dispelStrength)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1516,13 +1201,7 @@ func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) *Projec
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 15)
     explodeImages := images
 
-    // 25% chance to destroy the target
-    effect := func (unit *ArmyUnit){
-        if rand.N(4) == 0 {
-            // FIXME: apply irreversable damage, unit cannot be revived or turned into undead
-            combat.Model.RemoveUnit(unit)
-        }
-    }
+    effect := combat.Model.CreateCracksCallProjectileEffect()
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, effect)
 }
@@ -1537,9 +1216,7 @@ func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) *Project
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 21)
     explodeImages := images
 
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, func (*ArmyUnit){
-        target.AddCurse(data.UnitCurseMindStorm)
-    })
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, combat.Model.CreateMindStormProjectileEffect(target))
 }
 
 func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) *Projectile {

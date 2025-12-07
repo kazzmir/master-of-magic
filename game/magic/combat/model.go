@@ -2275,6 +2275,9 @@ type CombatModel struct {
     // enchantments applied to the battle usually by a town enchantment (heavenly light or cloud of darkness)
     // these enchantments cannot be removed by Dispel, but can be removed by Disenchant Area/True
     GlobalEnchantments []data.CombatEnchantment
+
+    // cache of all spells so projectile effects that need spell data (like Dispel Magic) can access it
+    AllSpells spellbook.Spells
 }
 
 func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
@@ -2403,6 +2406,7 @@ func (model *CombatModel) MaxHeight() int {
 }
 
 func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int, overworldY int) {
+    model.AllSpells = allSpells
     model.AttackingArmy.ManaPool = min(model.AttackingArmy.Player.GetMana(), model.AttackingArmy.Player.ComputeCastingSkill())
     model.DefendingArmy.ManaPool = min(model.DefendingArmy.Player.GetMana(), model.DefendingArmy.Player.ComputeCastingSkill())
 
@@ -5966,4 +5970,559 @@ func (model *CombatModel) CreateBanishProjectileEffect(target *ArmyUnit, reduceR
         }
     }
 
+}
+
+func (model *CombatModel) CreateMindStormProjectileEffect(target *ArmyUnit) func (*ArmyUnit) {
+    return func (*ArmyUnit){
+        target.AddCurse(data.UnitCurseMindStorm)
+    }
+}
+
+func (model *CombatModel) CreateIceBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        hurt, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
+        damageIndicator.AddDamageIndicator(unit, hurt)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateFireBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        fireDamage, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
+        damageIndicator.AddDamageIndicator(unit, fireDamage)
+
+        model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
+        if unit.GetHealth() <= 0 {
+            model.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateFireballProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        hurt := model.ApplyImmolationDamage(unit, strength)
+        damageIndicator.AddDamageIndicator(unit, hurt)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateStarFiresProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        hurt, _ := ApplyDamage(unit, []int{15}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
+        damageIndicator.AddDamageIndicator(unit, hurt)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+            return
+        }
+
+        modifier := 4
+        if unit.Unit.IsUndead() {
+            modifier = 9
+        }
+
+        defenderResistance := GetResistanceFor(unit, data.LifeMagic) - modifier
+        damage := 0
+        for range unit.Figures() {
+            if rand.N(10)+1 > defenderResistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        damageIndicator.AddDamageIndicator(unit, damage)
+        unit.TakeDamage(damage, DamageIrreversable)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreatePsionicBlastProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        _ = strength // strength currently unused; damage is fixed by spell rules
+        hurt, _ := ApplyDamage(unit, []int{ComputeRoll(15, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
+        damageIndicator.AddDamageIndicator(unit, hurt)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateDoomBoltProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.TakeDamage(10, DamageNormal)
+        damageIndicator.AddDamageIndicator(unit, 10)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateLightningBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        hurt, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+        damageIndicator.AddDamageIndicator(unit, hurt)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateWarpLightningProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        damage := 0
+        // 10 separate attacks are different than a single 55-point attack due to defense
+        for strength := range 10 {
+            hurt, _ := ApplyDamage(unit, []int{ComputeRoll(strength + 1, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+            damage += hurt
+        }
+
+        damageIndicator.AddDamageIndicator(unit, damage)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateLifeDrainProjectileEffect(reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        resistance := GetResistanceFor(unit, data.LifeMagic) - reduceResistance
+        damage := rand.N(10) + 1 - resistance
+        if damage > 0 {
+            unit.TakeDamage(damage, DamageUndead)
+            damageIndicator.AddDamageIndicator(unit, damage)
+            if unitCaster != nil {
+                unitCaster.Heal(damage)
+            } else {
+                army := model.GetArmyForPlayer(player)
+                army.ManaPool += damage * 3
+            }
+
+            if unit.GetHealth() <= 0 {
+                model.KillUnit(unit)
+            }
+        }
+    }
+}
+
+func (model *CombatModel) CreateFlameStrikeProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        hurt := model.ApplyImmolationDamage(unit, 15)
+        damageIndicator.AddDamageIndicator(unit, hurt)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateRecallHeroProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        model.RecallUnit(unit)
+    }
+}
+
+func (model *CombatModel) CreateHealingProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.Heal(5)
+    }
+}
+
+func (model *CombatModel) CreateHeroismProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentHeroism)
+    }
+}
+
+func (model *CombatModel) CreateHolyArmorProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentHolyArmor)
+    }
+}
+
+func (model *CombatModel) CreateInvulnerabilityProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentInvulnerability)
+    }
+}
+
+func (model *CombatModel) CreateLionHeartProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentLionHeart)
+    }
+}
+
+func (model *CombatModel) CreateTrueSightProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentTrueSight)
+    }
+}
+
+func (model *CombatModel) CreateElementalArmorProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentElementalArmor)
+    }
+}
+
+func (model *CombatModel) CreateGiantStrengthProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentGiantStrength)
+    }
+}
+
+func (model *CombatModel) CreateIronSkinProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentIronSkin)
+    }
+}
+
+func (model *CombatModel) CreateStoneSkinProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentStoneSkin)
+    }
+}
+
+func (model *CombatModel) CreateRegenerationProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentRegeneration)
+    }
+}
+
+func (model *CombatModel) CreateResistElementsProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentResistElements)
+    }
+}
+
+func (model *CombatModel) CreateRighteousnessProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentRighteousness)
+    }
+}
+
+func (model *CombatModel) CreateHolyWeaponProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentHolyWeapon)
+    }
+}
+
+func (model *CombatModel) CreateFlightProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentFlight)
+    }
+}
+
+func (model *CombatModel) CreateGuardianWindProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentGuardianWind)
+    }
+}
+
+func (model *CombatModel) CreateHasteProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentHaste)
+    }
+}
+
+func (model *CombatModel) CreateInvisibilityProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentInvisibility)
+    }
+}
+
+func (model *CombatModel) CreateMagicImmunityProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentMagicImmunity)
+    }
+}
+
+func (model *CombatModel) CreateResistMagicProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentResistMagic)
+    }
+}
+
+func (model *CombatModel) CreateSpellLockProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentSpellLock)
+    }
+}
+
+func (model *CombatModel) CreateEldritchWeaponProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentEldritchWeapon)
+    }
+}
+
+func (model *CombatModel) CreateFlameBladeProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentFlameBlade)
+    }
+}
+
+func (model *CombatModel) CreateImmolationProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentImmolation)
+    }
+}
+
+func (model *CombatModel) CreateBerserkProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentBerserk)
+    }
+}
+
+func (model *CombatModel) CreateCloakOfFearProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentCloakOfFear)
+    }
+}
+
+func (model *CombatModel) CreateWraithFormProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentWraithForm)
+    }
+}
+
+func (model *CombatModel) CreateChaosChannelsProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        choices := []data.UnitEnchantment{
+            data.UnitEnchantmentChaosChannelsDemonSkin,
+            data.UnitEnchantmentChaosChannelsDemonWings,
+            data.UnitEnchantmentChaosChannelsFireBreath,
+        }
+
+        for _, i := range rand.Perm(len(choices)) {
+            choice := choices[i]
+            if unit.HasEnchantment(choice) {
+                continue
+            }
+
+            if choice == data.UnitEnchantmentChaosChannelsDemonWings {
+                if unit.IsFlying() {
+                    continue
+                }
+            }
+
+            unit.Unit.AddEnchantment(choice)
+            break
+        }
+    }
+}
+
+func (model *CombatModel) CreateBlessProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddEnchantment(data.UnitEnchantmentBless)
+    }
+}
+
+func (model *CombatModel) CreateWeaknessProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.DeathMagic)-2 {
+            unit.AddCurse(data.UnitCurseWeakness)
+        }
+    }
+}
+
+func (model *CombatModel) CreateBlackSleepProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.DeathMagic)-2 {
+            unit.AddCurse(data.UnitCurseBlackSleep)
+        }
+    }
+}
+
+func (model *CombatModel) CreateVertigoProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.SorceryMagic) {
+            unit.AddCurse(data.UnitCurseVertigo)
+        }
+    }
+}
+
+func (model *CombatModel) CreateShatterProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.ChaosMagic) {
+            unit.AddCurse(data.UnitCurseShatter)
+        }
+    }
+}
+
+func (model *CombatModel) CreateWarpCreatureProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.ChaosMagic)-1 {
+            choices := set.NewSet(data.UnitCurseWarpCreatureMelee, data.UnitCurseWarpCreatureDefense, data.UnitCurseWarpCreatureResistance)
+            choices.RemoveMany(unit.GetCurses()...)
+
+            if choices.Size() > 0 {
+                values := choices.Values()
+                use := values[rand.N(len(values))]
+                unit.AddCurse(use)
+            }
+        }
+    }
+}
+
+func (model *CombatModel) CreateConfusionProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.SorceryMagic)-4 {
+            unit.AddCurse(data.UnitCurseConfusion)
+        }
+    }
+}
+
+func (model *CombatModel) CreatePossessionProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.DeathMagic)-1 {
+            model.ApplyPossession(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateCreatureBindingProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.SorceryMagic)-2 {
+            model.ApplyCreatureBinding(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreatePetrifyProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        damage := 0
+        for range unit.Figures() {
+            if rand.N(10)+1 > GetResistanceFor(unit, data.NatureMagic) {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        unit.TakeDamage(damage, DamageIrreversable)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+            return
+        }
+
+        modifier := 2
+        if unit.Unit.IsUndead() {
+            modifier = 7
+        }
+
+        resistance := GetResistanceFor(unit, data.LifeMagic) - modifier
+
+        damage := 0
+        for range unit.Figures() {
+            if rand.N(10)+1 > resistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        damageIndicator.AddDamageIndicator(unit, damage)
+        unit.TakeDamage(damage, DamageIrreversable)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateWebProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.AddCurse(data.UnitCurseWeb)
+        unit.WebHealth = 12
+    }
+}
+
+func (model *CombatModel) CreateDeathSpellProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        resistance := GetResistanceFor(unit, data.DeathMagic) - 2
+        damage := 0
+
+        for range unit.Figures() {
+            if rand.N(10)+1 > resistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        damageIndicator.AddDamageIndicator(unit, damage)
+        unit.TakeDamage(damage, DamageIrreversable)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateWordOfDeathProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        resistance := GetResistanceFor(unit, data.DeathMagic) - 5
+        damage := 0
+
+        for range unit.Figures() {
+            if rand.N(10)+1 > resistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        damageIndicator.AddDamageIndicator(unit, damage)
+        unit.TakeDamage(damage, DamageIrreversable)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateWarpWoodProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        unit.SetRangedAttacks(0)
+    }
+}
+
+func (model *CombatModel) CreateDisintegrateProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if GetResistanceFor(unit, data.ChaosMagic) <= 9 {
+            model.RemoveUnit(unit)
+        }
+    }
+}
+
+func (model *CombatModel) CreateWordOfRecallProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        model.RecallUnit(unit)
+    }
+}
+
+func (model *CombatModel) CreateDispelMagicProjectileEffect(caster ArmyPlayer, dispelStrength int) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        playerArmy := model.GetArmyForPlayer(caster)
+        unitArmy := model.GetArmy(unit)
+
+        if playerArmy == unitArmy {
+            model.DoDisenchantUnitCurses(model.AllSpells, unit, unitArmy.Player, dispelStrength)
+        } else {
+            model.DoDisenchantUnit(model.AllSpells, unit, unitArmy.Player, dispelStrength)
+        }
+    }
+}
+
+func (model *CombatModel) CreateCracksCallProjectileEffect() func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if rand.N(4) == 0 {
+            model.RemoveUnit(unit)
+        }
+    }
 }
