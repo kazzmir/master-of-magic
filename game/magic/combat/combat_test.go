@@ -903,6 +903,11 @@ func TestSpellEffects(test *testing.T){
         return unit
     }
 
+    lowDefense := func(unit units.Unit) units.Unit {
+        unit.Defense = 0
+        return unit
+    }
+
     testEffect := func (unitBase units.Unit, doTest func(*CombatModel, *ArmyUnit)) {
 
         defendingArmy := Army{
@@ -949,10 +954,14 @@ func TestSpellEffects(test *testing.T){
         }
     })
 
+    testEffect(lowDefense(units.LizardSpearmen), func (model *CombatModel, unit *ArmyUnit) {
+        model.CreateIceBoltProjectileEffect(10000, &FakeDamageIndicator{})(unit)
+        if unit.GetHealth() != 0 {
+            test.Errorf("Error: unit should be killed by ice bolt")
+        }
+    })
 
     /*
-func (model *CombatModel) CreateBanishProjectileEffect(target *ArmyUnit, reduceResistance int, damageIndicator AddDamageIndicators) func (*ArmyUnit) {
-func (model *CombatModel) CreateIceBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
 func (model *CombatModel) CreateFireBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
 func (model *CombatModel) CreateFireballProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
 func (model *CombatModel) CreateStarFiresProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
