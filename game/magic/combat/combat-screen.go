@@ -225,7 +225,6 @@ type CombatScreen struct {
 
     DrawRoad bool
     DrawClouds bool
-    AllSpells spellbook.Spells
     // order to draw tiles in such that they are drawn from the top of the screen to the bottom (painter's order)
     TopDownOrder []image.Point
 
@@ -375,7 +374,6 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         Counter: 1000, // start at a high number so that existing wall of fire/darkness does not show as being newly cast
         AudioCache: audio.MakeAudioCache(cache),
         ImageCache: imageCache,
-        AllSpells: allSpells,
         Mouse: mouseData,
         CameraScale: 1,
         DrawRoad: zone.City != nil,
@@ -455,10 +453,6 @@ func (combat *CombatScreen) computeTopDownOrder() []image.Point {
 
     slices.SortFunc(points, compare)
     return points
-}
-
-func (combat *CombatScreen) GetAllSpells() spellbook.Spells {
-    return combat.AllSpells
 }
 
 /* a projectile that shoots down from the sky at an angle

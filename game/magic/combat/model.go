@@ -4608,7 +4608,6 @@ type SpellSystem interface {
     CreateCloakOfFearProjectile(target *ArmyUnit) *Projectile
     CreateWraithFormProjectile(target *ArmyUnit) *Projectile
 
-    GetAllSpells() spellbook.Spells
     PlaySound(spell spellbook.Spell)
 }
 
@@ -4935,7 +4934,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 disenchantStrength *= 2
             }
 
-            model.DoDisenchantArea(spellSystem.GetAllSpells(), army.Player, disenchantStrength)
+            model.DoDisenchantArea(model.AllSpells, army.Player, disenchantStrength)
 
             castedCallback(true)
 
