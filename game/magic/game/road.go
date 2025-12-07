@@ -461,7 +461,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
         },
     })
 
-    game.Drawer = func(screen *ebiten.Image, game *Game){
+    game.Drawer = func(screen *ebiten.Image){
         overworld.Camera = game.Camera
 
         overworld.DrawOverworld(screen, ebiten.GeoM{})

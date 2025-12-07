@@ -361,7 +361,7 @@ type Game struct {
 
     Counter uint64
     Fog *ebiten.Image
-    Drawer func (*ebiten.Image, *Game)
+    Drawer func (*ebiten.Image)
     State GameState
 
     MouseData *mouselib.MouseData
@@ -522,7 +522,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache), buildingInfo)
 
     game.HudUI = game.MakeHudUI()
-    game.Drawer = func(screen *ebiten.Image, game *Game){
+    game.Drawer = func(screen *ebiten.Image){
         game.DrawGame(screen)
     }
 
@@ -812,7 +812,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
 
         view := citylistview.MakeCityListScreen(game.Cache, game.Model.Players[0], drawMinimap, selectCity)
 
-        game.Drawer = func (screen *ebiten.Image, game *Game){
+        game.Drawer = func (screen *ebiten.Image){
             view.Draw(screen)
         }
 
@@ -859,7 +859,7 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
 
     army := armyview.MakeArmyScreen(game.Cache, game.Model.Players[0], drawMinimap, showVault)
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
+    game.Drawer = func (screen *ebiten.Image){
         army.Draw(screen)
     }
 
@@ -907,7 +907,7 @@ func (game *Game) doDiplomacy(yield coroutine.YieldFunc, player *playerlib.Playe
     logic, draw := diplomacy.ShowDiplomacyScreen(game.Cache, player, enemy, 1400 + int(game.Model.TurnNumber / 12))
 
     oldDrawer := game.Drawer
-    game.Drawer = func (screen *ebiten.Image, game *Game){
+    game.Drawer = func (screen *ebiten.Image){
         draw(screen)
     }
 
@@ -926,7 +926,7 @@ func (game *Game) doMagicView(yield coroutine.YieldFunc) {
     oldDrawer := game.Drawer
     magicScreen := magicview.MakeMagicScreen(game.Cache, game.Model.Players[0], game.Model.GetEnemies(game.Model.Players[0]), game.Model.ComputePower(game.Model.Players[0]), game)
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
+    game.Drawer = func (screen *ebiten.Image){
         magicScreen.Draw(screen)
     }
 
@@ -989,8 +989,8 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
     }
     ui.SetElementsFromArray(nil)
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        oldDrawer(screen, game)
+    game.Drawer = func (screen *ebiten.Image){
+        oldDrawer(screen)
 
         ui.Draw(ui, screen)
     }
@@ -1104,8 +1104,8 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
     // FIXME: pick background based on tile the land is on?
     landBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 4)
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        drawer(screen, game)
+    game.Drawer = func (screen *ebiten.Image){
+        drawer(screen)
 
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(getAlpha())
@@ -1215,8 +1215,8 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        drawer(screen, game)
+    game.Drawer = func (screen *ebiten.Image){
+        drawer(screen)
 
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(getAlpha())
@@ -1529,8 +1529,8 @@ func (game *Game) blinkRed(yield coroutine.YieldFunc) {
     counter := uint64(0)
     getAlpha := util.MakeFadeIn(fadeSpeed, &counter)
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        drawer(screen, game)
+    game.Drawer = func (screen *ebiten.Image){
+        drawer(screen)
 
         var scale colorm.ColorM
         scale.Scale(1, 1, 1, float64(getAlpha() / 2))
@@ -1557,8 +1557,8 @@ func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summo
         game.Drawer = drawer
     }()
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        drawer(screen, game)
+    game.Drawer = func (screen *ebiten.Image){
+        drawer(screen)
         summonObject.Draw(screen)
     }
 
@@ -1694,8 +1694,8 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
     if newArtifact != nil {
         itemLogic, itemDrawer := game.showItemPopup(newArtifact, game.Cache, &game.ImageCache, nil)
 
-        game.Drawer = func (screen *ebiten.Image, game *Game){
-            drawer(screen, game)
+        game.Drawer = func (screen *ebiten.Image){
+            drawer(screen)
             vaultDrawer(screen)
             itemDrawer(screen)
         }
@@ -1703,8 +1703,8 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
         itemLogic(yield)
     }
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        drawer(screen, game)
+    game.Drawer = func (screen *ebiten.Image){
+        drawer(screen)
         vaultDrawer(screen)
     }
 
@@ -2209,8 +2209,8 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
 
     defer game.Music.PopSong()
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        drawer(screen, game)
+    game.Drawer = func (screen *ebiten.Image){
+        drawer(screen)
 
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(getAlpha())
@@ -2842,8 +2842,8 @@ func (game *Game) doCartographer(yield coroutine.YieldFunc) {
         game.Drawer = oldDrawer
     }()
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        oldDrawer(screen, game)
+    game.Drawer = func (screen *ebiten.Image){
+        oldDrawer(screen)
         draw(screen)
     }
 
@@ -3270,7 +3270,7 @@ func (game *Game) doBanish(yield coroutine.YieldFunc, attacker *playerlib.Player
         game.Drawer = oldDrawer
     }()
 
-    game.Drawer = func(screen *ebiten.Image, game *Game){
+    game.Drawer = func(screen *ebiten.Image){
         banishDraw(screen)
     }
 
@@ -3796,8 +3796,8 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
         var thinkingCounter uint64
 
         var options ebiten.DrawImageOptions
-        game.Drawer = func(screen *ebiten.Image, game *Game){
-            oldDrawer(screen, game)
+        game.Drawer = func(screen *ebiten.Image){
+            oldDrawer(screen)
 
             options.ColorScale = ebiten.ColorScale{}
             options.ColorScale.ScaleAlpha(getAlpha())
@@ -3912,8 +3912,8 @@ func (game *Game) doEnemyCityView(yield coroutine.YieldFunc, city *citylib.City,
 
     logic, draw := cityview.SimplifiedView(game.Cache, city, player, otherPlayer)
 
-    game.Drawer = func(screen *ebiten.Image, game *Game){
-        drawer(screen, game)
+    game.Drawer = func(screen *ebiten.Image){
+        drawer(screen)
         draw(screen)
     }
 
@@ -3977,7 +3977,7 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
 
     oldDrawer := game.Drawer
     halfTile, _ := game.ImageCache.GetImage("backgrnd.lbx", 0, 0)
-    game.Drawer = func(screen *ebiten.Image, game *Game){
+    game.Drawer = func(screen *ebiten.Image){
         cityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
             overworld.DrawOverworld(mapView, geom)
 
@@ -4101,8 +4101,8 @@ func (game *Game) confirmRazeTown(yield coroutine.YieldFunc, city *citylib.City)
     ui.AddGroup(group)
 
     oldDrawer := game.Drawer
-    game.Drawer = func(screen *ebiten.Image, game *Game){
-        oldDrawer(screen, game)
+    game.Drawer = func(screen *ebiten.Image){
+        oldDrawer(screen)
         ui.Draw(ui, screen)
     }
     defer func(){
@@ -4546,7 +4546,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         // ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-        game.Drawer = func (screen *ebiten.Image, game *Game){
+        game.Drawer = func (screen *ebiten.Image){
             combatScreen.Draw(screen)
         }
 
@@ -4705,7 +4705,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         // FIXME: show how much gold was plundered (or lost)
         endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result, combatScreen.Model.DiedWhileFleeing, fame, cityPopulationLoss, len(cityBuildingLoss))
-        game.Drawer = func (screen *ebiten.Image, game *Game){
+        game.Drawer = func (screen *ebiten.Image){
             endScreen.Draw(screen)
         }
 
@@ -5082,7 +5082,7 @@ func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc, player *playerlib.
     newDrawer := func (screen *ebiten.Image){
     }
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
+    game.Drawer = func (screen *ebiten.Image){
         newDrawer(screen)
     }
 
@@ -5099,7 +5099,7 @@ func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.
     newDrawer := func (screen *ebiten.Image){
     }
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
+    game.Drawer = func (screen *ebiten.Image){
         newDrawer(screen)
     }
 
@@ -5244,7 +5244,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                 defer func(){
                     game.Drawer = oldDrawer
                 }()
-                game.Drawer = func(screen *ebiten.Image, game *Game){
+                game.Drawer = func(screen *ebiten.Image){
                     drawFunc(screen)
                 }
 
@@ -5269,7 +5269,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                 logic, draw := mastery.ShowSpellOfMasteryScreen(game.Cache, player.Wizard.Name)
 
                 oldDrawer := game.Drawer
-                game.Drawer = func(screen *ebiten.Image, game *Game){
+                game.Drawer = func(screen *ebiten.Image){
                     draw(screen)
                 }
 
@@ -7741,7 +7741,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
 }
 
 func (game *Game) Draw(screen *ebiten.Image){
-    game.Drawer(screen, game)
+    game.Drawer(screen)
 }
 
 func (game *Game) DrawGame(screen *ebiten.Image){

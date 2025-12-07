@@ -59,7 +59,7 @@ func (game *Game) wizlabAnimation(yield coroutine.YieldFunc, wizard setup.Wizard
 
     sparkles := util.MakeAnimation(sparkleImages, true)
 
-    game.Drawer = func(screen *ebiten.Image, game *Game){
+    game.Drawer = func(screen *ebiten.Image){
         background, _ := game.ImageCache.GetImage("wizlab.lbx", 19, 0)
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(fade())
@@ -128,7 +128,7 @@ func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Play
     newDrawer := func (screen *ebiten.Image){
     }
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
+    game.Drawer = func (screen *ebiten.Image){
         newDrawer(screen)
     }
 

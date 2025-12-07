@@ -438,8 +438,8 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
             game.Drawer = drawer
         }()
 
-        game.Drawer = func (screen *ebiten.Image, game *Game){
-            drawer(screen, game)
+        game.Drawer = func (screen *ebiten.Image){
+            drawer(screen)
             itemDraw(screen)
         }
 

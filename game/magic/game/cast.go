@@ -1709,8 +1709,8 @@ func (game *Game) doSelectUnit(yield coroutine.YieldFunc, player *playerlib.Play
 
     yield()
 
-    game.Drawer = func(screen *ebiten.Image, game *Game){
-        drawer(screen, game)
+    game.Drawer = func(screen *ebiten.Image){
+        drawer(screen)
         ui.Draw(&ui, screen)
     }
 
@@ -1813,8 +1813,8 @@ func (game *Game) showCityEarthquake(yield coroutine.YieldFunc, city *citylib.Ci
         game.Drawer = oldDrawer
     }()
 
-    game.Drawer = func(screen *ebiten.Image, game *Game){
-        oldDrawer(screen, game)
+    game.Drawer = func(screen *ebiten.Image){
+        oldDrawer(screen)
         ui.Draw(ui, screen)
     }
 
@@ -1862,8 +1862,8 @@ func (game *Game) showCastNewBuilding(yield coroutine.YieldFunc, city *citylib.C
         game.Drawer = oldDrawer
     }()
 
-    game.Drawer = func(screen *ebiten.Image, game *Game){
-        oldDrawer(screen, game)
+    game.Drawer = func(screen *ebiten.Image){
+        oldDrawer(screen)
         ui.Draw(ui, screen)
     }
 
@@ -2052,7 +2052,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         },
     })
 
-    game.Drawer = func(screen *ebiten.Image, game *Game){
+    game.Drawer = func(screen *ebiten.Image){
         overworld.Camera = game.Camera
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
@@ -2334,8 +2334,8 @@ func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, a
 
     x, y := game.TileToScreen(tileX, tileY)
 
-    game.Drawer = func(screen *ebiten.Image, game *Game) {
-        oldDrawer(screen, game)
+    game.Drawer = func(screen *ebiten.Image) {
+        oldDrawer(screen)
 
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
@@ -2667,8 +2667,8 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 
     offset := -35
 
-    game.Drawer = func(screen *ebiten.Image, game *Game){
-        oldDrawer(screen, game)
+    game.Drawer = func(screen *ebiten.Image){
+        oldDrawer(screen)
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2))
         options.GeoM.Translate(float64(offset), 0)

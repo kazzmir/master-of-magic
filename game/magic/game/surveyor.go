@@ -347,7 +347,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         },
     })
 
-    game.Drawer = func(screen *ebiten.Image, game *Game){
+    game.Drawer = func(screen *ebiten.Image){
         overworld.Camera = game.Camera
 
         overworld.DrawOverworld(screen, ebiten.GeoM{})

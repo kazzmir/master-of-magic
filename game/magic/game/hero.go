@@ -318,8 +318,8 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
-    game.Drawer = func (screen *ebiten.Image, game *Game){
-        drawer(screen, game)
+    game.Drawer = func (screen *ebiten.Image){
+        drawer(screen)
 
         var options ebiten.DrawImageOptions
 
