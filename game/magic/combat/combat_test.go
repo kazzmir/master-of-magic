@@ -887,6 +887,10 @@ func TestLeadershipBonusMultiple(test *testing.T){
 
 }
 
+type FakeDamageIndicator struct {}
+func (f *FakeDamageIndicator) AddDamageIndicator(attacker *ArmyUnit, damage int){
+}
+
 func TestSpellEffects(test *testing.T){
 
     zeroResistance := func(unit units.Unit) units.Unit {
@@ -915,6 +919,7 @@ func TestSpellEffects(test *testing.T){
         model := &CombatModel{
             DefendingArmy: &defendingArmy,
             AttackingArmy: &attackingArmy,
+            Tiles: makeTiles(1, 1, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
         }
 
         model.Initialize(spellbook.Spells{}, 0, 0)
@@ -934,6 +939,13 @@ func TestSpellEffects(test *testing.T){
         model.CreateMindStormProjectileEffect()(unit)
         if !unit.HasCurse(data.UnitCurseMindStorm) {
             test.Errorf("Error: unit should have black sleep curse")
+        }
+    })
+
+    testEffect(zeroResistance(units.LizardSpearmen), func (model *CombatModel, unit *ArmyUnit) {
+        model.CreateBanishProjectileEffect(unit, 0, &FakeDamageIndicator{})(unit)
+        if unit.GetHealth() != 0 {
+            test.Errorf("Error: unit should be banished")
         }
     })
 
