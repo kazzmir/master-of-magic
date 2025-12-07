@@ -948,7 +948,7 @@ func TestSpellEffects(test *testing.T){
     })
 
     testEffect(zeroResistance(units.LizardSpearmen), func (model *CombatModel, unit *ArmyUnit) {
-        model.CreateBanishProjectileEffect(unit, 0, &FakeDamageIndicator{})(unit)
+        model.CreateBanishProjectileEffect(0, &FakeDamageIndicator{})(unit)
         if unit.GetHealth() != 0 {
             test.Errorf("Error: unit should be banished")
         }

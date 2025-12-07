@@ -5947,7 +5947,7 @@ type AddDamageIndicators interface {
     AddDamageIndicator(unit *ArmyUnit, damage int)
 }
 
-func (model *CombatModel) CreateBanishProjectileEffect(target *ArmyUnit, reduceResistance int, damageIndicator AddDamageIndicators) func (*ArmyUnit) {
+func (model *CombatModel) CreateBanishProjectileEffect(reduceResistance int, damageIndicator AddDamageIndicators) func (*ArmyUnit) {
     return func (unit *ArmyUnit){
         if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
             return
