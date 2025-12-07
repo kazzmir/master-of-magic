@@ -886,3 +886,38 @@ func TestLeadershipBonusMultiple(test *testing.T){
     }
 
 }
+
+func TestSpellEffects(test *testing.T){
+
+    zeroResistance := func(unit units.Unit) units.Unit {
+        unit.Resistance = 0
+        return unit
+    }
+
+    defendingArmy := Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    attackingArmy := Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    unit := units.MakeOverworldUnitFromUnit(zeroResistance(units.LizardSpearmen), 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    armyUnit := defendingArmy.AddUnit(unit)
+
+    model := &CombatModel{
+        DefendingArmy: &defendingArmy,
+        AttackingArmy: &attackingArmy,
+    }
+
+    model.Initialize(spellbook.Spells{}, 0, 0)
+
+    blackSleepEffect := model.CreateBlackSleepProjectileEffect()
+
+    blackSleepEffect(armyUnit)
+
+    if !armyUnit.HasCurse(data.UnitCurseBlackSleep) {
+        test.Errorf("Error: unit should have black sleep curse")
+    }
+
+}
