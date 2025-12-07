@@ -1530,29 +1530,7 @@ func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) *Projec
 func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 19)
     explodeImages := images
-
-    effect := func (unit *ArmyUnit){
-        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
-            return
-        }
-
-        resistance := GetResistanceFor(unit, data.SorceryMagic) - reduceResistance - 3
-        damage := 0
-
-        for range unit.Figures() {
-            if rand.N(10) + 1 > resistance {
-                damage += unit.Unit.GetHitPoints()
-            }
-        }
-
-        combat.AddDamageIndicator(unit, damage)
-        unit.TakeDamage(damage, DamageIrreversable)
-        if unit.GetHealth() <= 0 {
-            combat.Model.KillUnit(unit)
-        }
-    }
-
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, effect)
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, combat.Model.CreateBanishProjectileEffect(combat, target, reduceResistance))
 }
 
 func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) *Projectile {

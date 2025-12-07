@@ -5939,3 +5939,31 @@ func (model *CombatModel) GetLeadershipBonus(unit *ArmyUnit) int {
 
     return bonus
 }
+
+type AddDamageIndicators interface {
+    AddDamageIndicator(unit *ArmyUnit, damage int)
+}
+
+func (model *CombatModel) CreateBanishProjectileEffect(damageIndicator AddDamageIndicators, target *ArmyUnit, reduceResistance int) func (*ArmyUnit) {
+    return func (unit *ArmyUnit){
+        if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
+            return
+        }
+
+        resistance := GetResistanceFor(unit, data.SorceryMagic) - reduceResistance - 3
+        damage := 0
+
+        for range unit.Figures() {
+            if rand.N(10) + 1 > resistance {
+                damage += unit.Unit.GetHitPoints()
+            }
+        }
+
+        damageIndicator.AddDamageIndicator(unit, damage)
+        unit.TakeDamage(damage, DamageIrreversable)
+        if unit.GetHealth() <= 0 {
+            model.KillUnit(unit)
+        }
+    }
+
+}
