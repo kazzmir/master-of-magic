@@ -77,6 +77,15 @@ func Curry2[Arg1 any, Arg2 any, Result any](f func(Arg1, Arg2) Result) func(Arg1
     }
 }
 
+// curry a 3-argument function to produce a 1-argument function
+func Curry3_1[Arg1 any, Arg2 any, Arg3 any, Result any](f func(Arg1, Arg2, Arg3) Result) func(Arg1, Arg2) func(Arg3) Result {
+    return func(arg1 Arg1, arg2 Arg2) func(Arg3) Result {
+        return func(arg3 Arg3) Result {
+            return f(arg1, arg2, arg3)
+        }
+    }
+}
+
 // curry a 1-argument function to produce a 0-argument function
 func Curry1[Arg1 any, Result any](f func(Arg1) Result) func(Arg1) func () Result {
     return func(arg Arg1) func () Result {

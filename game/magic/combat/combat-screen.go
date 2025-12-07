@@ -1530,7 +1530,7 @@ func (combat *CombatScreen) CreateCracksCallProjectile(target *ArmyUnit) *Projec
 func (combat *CombatScreen) CreateBanishProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 19)
     explodeImages := images
-    return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, combat.Model.CreateBanishProjectileEffect(combat, target, reduceResistance))
+    return combat.createUnitProjectile(target, explodeImages, UnitPositionUnder, combat.Model.CreateBanishProjectileEffect(target, reduceResistance, combat))
 }
 
 func (combat *CombatScreen) CreateMindStormProjectile(target *ArmyUnit) *Projectile {
