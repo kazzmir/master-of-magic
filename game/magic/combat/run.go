@@ -498,9 +498,6 @@ func (actions *ProxyActions) MoveUnit(mover *ArmyUnit, path pathfinding.Path) {
             return
         }
 
-        mover.MoveX = float64(targetX)
-        mover.MoveY = float64(targetY)
-
         path = path[1:]
     }
 
