@@ -6018,8 +6018,6 @@ type CombatActionsInterface interface {
     AIUnitActionsInterface
 
     DoProjectiles()
-    DoMelee(attacker *ArmyUnit, defender *ArmyUnit)
-    DoRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     DoTeleport(unit *ArmyUnit, x int, y int, merging bool)
 
     ExtraControl() bool
@@ -6110,10 +6108,10 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
            if defender != nil {
                // try a ranged attack first
                if model.withinArrowRange(attacker, defender) && model.canRangeAttack(attacker, defender) {
-                   actions.DoRangeAttack(attacker, defender)
+                   actions.RangeAttack(attacker, defender)
                // then fall back to melee
                } else if model.withinMeleeRange(attacker, defender) && model.canMeleeAttack(attacker, defender, true){
-                   actions.DoMelee(attacker, defender)
+                   actions.MeleeAttack(attacker, defender)
                    attacker.Paths = make(map[image.Point]pathfinding.Path)
                }
            }

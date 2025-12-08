@@ -300,12 +300,6 @@ func (actions *ProxyActions) Teleport(unit *ArmyUnit, x, y int, merge bool) {
 func (actiosn *ProxyActions) DoProjectiles() {
 }
 
-func (actions *ProxyActions) DoMelee(attacker *ArmyUnit, defender *ArmyUnit) {
-}
-
-func (actions *ProxyActions) DoRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
-}
-
 func (actions *ProxyActions) DoTeleport(unit *ArmyUnit, x int, y int, merging bool) {
 }
 
