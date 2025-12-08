@@ -6697,3 +6697,32 @@ func (model *CombatModel) CreateCracksCallProjectileEffect() func(*ArmyUnit) {
         }
     }
 }
+
+// returns true if the unit dies while moving (through a wall of fire)
+func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bool {
+
+    // tile where the unit came from is now empty
+    model.Tiles[mover.Y][mover.X].Unit = nil
+
+    mover.MovesLeft = mover.MovesLeft.Subtract(pathCost(image.Pt(mover.X, mover.Y), image.Pt(targetX, targetY)))
+    if mover.MovesLeft.LessThan(fraction.FromInt(0)) {
+        mover.MovesLeft = fraction.FromInt(0)
+    }
+
+    // unit moves from outside the wall of fire to inside
+    if !mover.IsFlying() && model.InsideWallOfFire(targetX, targetY) && !model.InsideWallOfFire(mover.X, mover.Y) {
+        model.ApplyWallOfFireDamage(mover)
+
+        if mover.GetHealth() <= 0 {
+            // this feels dangerous to do here but it seems to work
+            model.KillUnit(mover)
+            return true
+        }
+    }
+
+    mover.X = targetX
+    mover.Y = targetY
+    // new tile the unit landed on is now occupied
+    model.Tiles[mover.Y][mover.X].Unit = mover
+    return false
+}

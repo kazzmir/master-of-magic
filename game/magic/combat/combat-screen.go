@@ -2599,32 +2599,14 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
             // a stop gap to ensure the unit doesn't fly off the screen somehow
             distanceAboveRange(float64(mover.X), float64(mover.Y), float64(targetX), float64(targetY), 2.5) {
 
-                // tile where the unit came from is now empty
-                combat.Model.Tiles[mover.Y][mover.X].Unit = nil
-
-                mover.MovesLeft = mover.MovesLeft.Subtract(pathCost(image.Pt(mover.X, mover.Y), image.Pt(targetX, targetY)))
-                if mover.MovesLeft.LessThan(fraction.FromInt(0)) {
-                    mover.MovesLeft = fraction.FromInt(0)
+                died := combat.Model.MoveUnit(mover, targetX, targetY)
+                if died {
+                    return
                 }
 
-                // unit moves from outside the wall of fire to inside
-                if !mover.IsFlying() && combat.Model.InsideWallOfFire(targetX, targetY) && !combat.Model.InsideWallOfFire(mover.X, mover.Y) {
-                    combat.Model.ApplyWallOfFireDamage(mover)
-
-                    if mover.GetHealth() <= 0 {
-                        // this feels dangerous to do here but it seems to work
-                        combat.Model.KillUnit(mover)
-                        return
-                    }
-                }
-
-                mover.X = targetX
-                mover.Y = targetY
                 mover.MoveX = float64(targetX)
                 mover.MoveY = float64(targetY)
 
-                // new tile the unit landed on is now occupied
-                combat.Model.Tiles[mover.Y][mover.X].Unit = mover
                 path = path[1:]
                 reached = true
             }

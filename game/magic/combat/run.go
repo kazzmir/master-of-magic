@@ -1,0 +1,319 @@
+package combat
+
+import (
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+)
+
+type ProxySpellSystem struct {
+}
+
+func (system *ProxySpellSystem) CreateFireballProjectile(target *ArmyUnit, cost int) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateIceBoltProjectile(target *ArmyUnit, cost int) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateStarFiresProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreatePsionicBlastProjectile(target *ArmyUnit, cost int) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateDoomBoltProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateFireBoltProjectile(target *ArmyUnit, cost int) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateLightningBoltProjectile(target *ArmyUnit, cost int) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateWarpLightningProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateFlameStrikeProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateDispelEvilProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateHealingProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateRecallHeroProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateCracksCallProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateWebProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateBanishProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateDispelMagicProjectile(target *ArmyUnit, caster ArmyPlayer, dispelStrength int) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateWordOfRecallProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateDisintegrateProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateDisruptProjectile(x int, y int) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateMagicVortex(x int, y int) *OtherUnit {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateWarpWoodProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateDeathSpellProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateSummoningCircle(x int, y int) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateMindStormProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateBlessProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateWeaknessProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateBlackSleepProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateVertigoProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateShatterProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateWarpCreatureProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateConfusionProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreatePossessionProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateCreatureBindingProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreatePetrifyProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateHeroismProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateHolyArmorProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateHolyWeaponProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateInvulnerabilityProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateLionHeartProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateRighteousnessProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateTrueSightProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateElementalArmorProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateGiantStrengthProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateIronSkinProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateStoneSkinProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateRegenerationProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateResistElementsProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateFlightProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateGuardianWindProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateHasteProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateInvisibilityProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateMagicImmunityProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateResistMagicProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateSpellLockProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateFlameBladeProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateImmolationProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateBerserkProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateCloakOfFearProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) CreateWraithFormProjectile(target *ArmyUnit) *Projectile {
+    return nil
+}
+
+func (system *ProxySpellSystem) PlaySound(spell spellbook.Spell) {
+}
+
+type ProxyActions struct {
+}
+
+func (actions *ProxyActions) RangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+}
+
+func (actions *ProxyActions) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+}
+
+func (actions *ProxyActions) MoveUnit(unit *ArmyUnit, path pathfinding.Path) {
+}
+
+func (actions *ProxyActions) Teleport(unit *ArmyUnit, x, y int, merge bool) {
+}
+
+func (actions *ProxyActions) DoMoveUnit(unit *ArmyUnit, path pathfinding.Path) {
+}
+
+func (actiosn *ProxyActions) DoProjectiles() {
+}
+
+func (actions *ProxyActions) DoMelee(attacker *ArmyUnit, defender *ArmyUnit) {
+}
+
+func (actions *ProxyActions) DoRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+}
+
+func (actions *ProxyActions) DoTeleport(unit *ArmyUnit, x int, y int, merging bool) {
+}
+
+func (actions *ProxyActions) ExtraControl() bool {
+    return false
+}
+
+func (actions *ProxyActions) SingleAuto() bool {
+    return false
+}
+
+// Run combat without a UI, and no user input. This is useful for simulating combat
+// scenarios, running automated tests, or benchmarking performance.
+func Run(model *CombatModel) CombatState {
+
+    state := CombatStateRunning
+    for state == CombatStateRunning {
+        model.Update(&ProxySpellSystem{}, &ProxyActions{}, false, 0, 0)
+        state = model.FinalState()
+    }
+
+    return state
+}
