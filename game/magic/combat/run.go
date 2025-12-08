@@ -3,6 +3,7 @@ package combat
 import (
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/unitview"
 )
 
 type ProxySpellSystem struct {
@@ -267,11 +268,23 @@ func (system *ProxySpellSystem) CreateWraithFormProjectile(target *ArmyUnit) *Pr
 func (system *ProxySpellSystem) PlaySound(spell spellbook.Spell) {
 }
 
+type FakeDamageIndicators struct {
+}
+
+func (indicators *FakeDamageIndicators) AddDamageIndicator(unit *ArmyUnit, damage int) {
+    // nothing
+}
+
 type ProxyActions struct {
     Model *CombatModel
 }
 
 func (actions *ProxyActions) RangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+    effect := actions.Model.CreateRangeAttackEffect(attacker, &FakeDamageIndicators{})
+
+    for range unitview.CombatPoints(attacker.Figures()) {
+        effect(defender)
+    }
 }
 
 func (actions *ProxyActions) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) {

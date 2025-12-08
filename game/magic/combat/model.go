@@ -6739,7 +6739,6 @@ func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bo
 }
 
 func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndicators AddDamageIndicators) func(*ArmyUnit) {
-
     return func (defender *ArmyUnit){
         tileDistance := computeTileDistance(attacker.X, attacker.Y, defender.X, defender.Y)
         if defender.GetHealth() <= 0 {
