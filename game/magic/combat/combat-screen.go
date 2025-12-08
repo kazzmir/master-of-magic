@@ -2878,34 +2878,9 @@ func (combat *CombatScreen) UpdateDamageIndicators() {
 }
 
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
-    if combat.Model.CurrentTurn >= MAX_TURNS {
-        combat.Model.AddLogEvent("Combat exceeded maximum number of turns, defender wins")
-        combat.Model.FinishCombat(CombatStateDefenderWin)
-        return CombatStateDefenderWin
-    }
-
-    if combat.Model.AttackingArmy.Fled {
-        combat.Model.flee(combat.Model.AttackingArmy)
-        combat.Model.FinishCombat(CombatStateAttackerFlee)
-        return CombatStateAttackerFlee
-    }
-
-    if combat.Model.DefendingArmy.Fled {
-        combat.Model.flee(combat.Model.DefendingArmy)
-        combat.Model.FinishCombat(CombatStateDefenderFlee)
-        return CombatStateDefenderFlee
-    }
-
-    if len(combat.Model.AttackingArmy.units) == 0 {
-        combat.Model.AddLogEvent("Defender wins!")
-        combat.Model.FinishCombat(CombatStateDefenderWin)
-        return CombatStateDefenderWin
-    }
-
-    if len(combat.Model.DefendingArmy.units) == 0 {
-        combat.Model.AddLogEvent("Attacker wins!")
-        combat.Model.FinishCombat(CombatStateAttackerWin)
-        return CombatStateAttackerWin
+    finalState := combat.Model.FinalState()
+    if finalState != CombatStateRunning {
+        return finalState
     }
 
     combat.Counter += 1

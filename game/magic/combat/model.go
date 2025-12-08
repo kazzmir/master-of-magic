@@ -5943,6 +5943,41 @@ func (model *CombatModel) GetLeadershipBonus(unit *ArmyUnit) int {
     return bonus
 }
 
+func (model *CombatModel) FinalState() CombatState {
+
+    if model.CurrentTurn >= MAX_TURNS {
+        model.AddLogEvent("Combat exceeded maximum number of turns, defender wins")
+        model.FinishCombat(CombatStateDefenderWin)
+        return CombatStateDefenderWin
+    }
+
+    if model.AttackingArmy.Fled {
+        model.flee(model.AttackingArmy)
+        model.FinishCombat(CombatStateAttackerFlee)
+        return CombatStateAttackerFlee
+    }
+
+    if model.DefendingArmy.Fled {
+        model.flee(model.DefendingArmy)
+        model.FinishCombat(CombatStateDefenderFlee)
+        return CombatStateDefenderFlee
+    }
+
+    if len(model.AttackingArmy.units) == 0 {
+        model.AddLogEvent("Defender wins!")
+        model.FinishCombat(CombatStateDefenderWin)
+        return CombatStateDefenderWin
+    }
+
+    if len(model.DefendingArmy.units) == 0 {
+        model.AddLogEvent("Attacker wins!")
+        model.FinishCombat(CombatStateAttackerWin)
+        return CombatStateAttackerWin
+    }
+
+    return CombatStateRunning
+}
+
 type AddDamageIndicators interface {
     AddDamageIndicator(unit *ArmyUnit, damage int)
 }
