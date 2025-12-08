@@ -3,6 +3,8 @@ package main
 import (
     "log"
     "time"
+    "bytes"
+    _ "embed"
 
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -10,7 +12,20 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
 )
+
+//go:embed spelldat.lbx
+var spellDataLbx []byte
+
+func LoadSpellData() (spellbook.Spells, error) {
+    buffer := bytes.NewReader(spellDataLbx)
+    spellLbx, err := lbx.ReadLbx(buffer)
+    if err != nil {
+        return spellbook.Spells{}, err
+    }
+    return spellbook.ReadSpells(&spellLbx, 0)
+}
 
 type noGlobalEnchantments struct {
 }
@@ -53,9 +68,12 @@ func main() {
         defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.BeastmenPriest, 1, 1, data.PlaneArcanus, defendingPlayer.Wizard.Banner, defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
     }
 
-    var spells spellbook.Spells
+    allSpells, err := LoadSpellData()
+    if err != nil {
+        log.Fatalf("Failed to load spell data: %v", err)
+    }
 
-    model := combat.MakeCombatModel(spells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
 
     start := time.Now()
     state := combat.Run(model)

@@ -299,7 +299,7 @@ func (actions *ProxyActions) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
 }
 
 func (actions *ProxyActions) MoveUnit(mover *ArmyUnit, path pathfinding.Path) {
-    log.Printf("Move %v along path: %+v", mover.Unit.GetName(), path)
+    // log.Printf("Move %v along path: %+v", mover.Unit.GetName(), path)
     for len(path) > 0 && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {
         targetX, targetY := path[0].X, path[0].Y
         died := actions.Model.MoveUnit(mover, targetX, targetY)
