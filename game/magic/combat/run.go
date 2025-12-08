@@ -268,12 +268,14 @@ func (system *ProxySpellSystem) PlaySound(spell spellbook.Spell) {
 }
 
 type ProxyActions struct {
+    Model *CombatModel
 }
 
 func (actions *ProxyActions) RangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
 }
 
 func (actions *ProxyActions) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+    actions.Model.meleeAttack(attacker, defender)
 }
 
 func (actions *ProxyActions) MoveUnit(unit *ArmyUnit, path pathfinding.Path) {
@@ -306,9 +308,13 @@ func (actions *ProxyActions) SingleAuto() bool {
 // scenarios, running automated tests, or benchmarking performance.
 func Run(model *CombatModel) CombatState {
 
+    actions := &ProxyActions{
+        Model: model,
+    }
+
     state := CombatStateRunning
     for state == CombatStateRunning {
-        model.Update(&ProxySpellSystem{}, &ProxyActions{}, false, 0, 0)
+        model.Update(&ProxySpellSystem{}, actions, false, 0, 0)
         state = model.FinalState()
     }
 

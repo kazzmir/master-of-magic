@@ -3840,6 +3840,18 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit,
  * returns total damage done by attacker and total damage done by defender
  */
 func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (int, int){
+    // attacking takes 50% of movement points
+    // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
+    pointsUsed := attacker.GetMovementSpeed().Divide(fraction.FromInt(2))
+    if pointsUsed.LessThan(fraction.FromInt(1)) {
+        pointsUsed = fraction.FromInt(1)
+    }
+
+    attacker.MovesLeft = attacker.MovesLeft.Subtract(pointsUsed)
+    if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+        attacker.MovesLeft = fraction.FromInt(0)
+    }
+
     // for each figure in attacker, choose a random number from 1-100, if lower than the ToHit percent then
     // add 1 damage point. do this random roll for however much the melee attack power is
 
@@ -6724,4 +6736,47 @@ func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bo
     // new tile the unit landed on is now occupied
     model.Tiles[mover.Y][mover.X].Unit = mover
     return false
+}
+
+func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndicators AddDamageIndicators) func(*ArmyUnit) {
+
+    return func (defender *ArmyUnit){
+        tileDistance := computeTileDistance(attacker.X, attacker.Y, defender.X, defender.Y)
+        if defender.GetHealth() <= 0 {
+            return
+        }
+
+        damage := attacker.ComputeRangeDamage(defender, tileDistance)
+
+        // FIXME: for magical damage, set the Magic damage modifier for the proper realm
+        appliedDamage, _ := ApplyDamage(defender, []int{damage}, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: model.ComputeWallDefense(attacker, defender)})
+
+        totalDamage := appliedDamage
+
+        log.Printf("attacker %v rolled %v ranged damage to defender %v, applied %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), appliedDamage)
+
+        if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
+            funcs := model.doTouchAttack(attacker, defender, 0)
+            for _, f := range funcs {
+                totalDamage += f()
+            }
+        }
+
+        totalDamage += model.ApplyImmolationDamage(defender, model.immolationDamage(attacker, defender))
+
+        damageIndicators.AddDamageIndicator(defender, totalDamage)
+
+        // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
+
+        /*
+        damage -= defense
+        if damage < 0 {
+            damage = 0
+        }
+        target.TakeDamage(damage)
+        */
+        if defender.GetHealth() <= 0 {
+            model.KillUnit(defender)
+        }
+    }
 }

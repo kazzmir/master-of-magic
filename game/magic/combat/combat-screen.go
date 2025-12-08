@@ -2039,46 +2039,7 @@ func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *Army
     animation := images[0:3]
     explode := images[3:]
 
-    tileDistance := computeTileDistance(attacker.X, attacker.Y, defender.X, defender.Y)
-
-    effect := func (target *ArmyUnit){
-        if target.GetHealth() <= 0 {
-            return
-        }
-
-        damage := attacker.ComputeRangeDamage(target, tileDistance)
-
-        // FIXME: for magical damage, set the Magic damage modifier for the proper realm
-        appliedDamage, _ := ApplyDamage(target, []int{damage}, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: combat.Model.ComputeWallDefense(attacker, defender)})
-
-        totalDamage := appliedDamage
-
-        log.Printf("attacker %v rolled %v ranged damage to defender %v, applied %v", attacker.Unit.GetName(), damage, target.Unit.GetName(), appliedDamage)
-
-        if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
-            funcs := combat.Model.doTouchAttack(attacker, target, 0)
-            for _, f := range funcs {
-                totalDamage += f()
-            }
-        }
-
-        totalDamage += combat.Model.ApplyImmolationDamage(defender, combat.Model.immolationDamage(attacker, defender))
-
-        combat.AddDamageIndicator(target, totalDamage)
-
-        // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
-
-        /*
-        damage -= defense
-        if damage < 0 {
-            damage = 0
-        }
-        target.TakeDamage(damage)
-        */
-        if target.GetHealth() <= 0 {
-            combat.Model.KillUnit(target)
-        }
-    }
+    effect := combat.Model.CreateRangeAttackEffect(attacker, combat)
 
     for _, offset := range unitview.CombatPoints(attacker.Figures()) {
         combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitToUnitProjectile(attacker, defender, offset, animation, explode, effect))
@@ -2661,19 +2622,6 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
         attacker.Attacking = false
         defender.Defending = false
     }()
-
-    // attacking takes 50% of movement points
-    // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
-
-    pointsUsed := attacker.GetMovementSpeed().Divide(fraction.FromInt(2))
-    if pointsUsed.LessThan(fraction.FromInt(1)) {
-        pointsUsed = fraction.FromInt(1)
-    }
-
-    attacker.MovesLeft = attacker.MovesLeft.Subtract(pointsUsed)
-    if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
-        attacker.MovesLeft = fraction.FromInt(0)
-    }
 
     attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
     defender.Facing = faceTowards(defender.X, defender.Y, attacker.X, attacker.Y)
