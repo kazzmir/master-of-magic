@@ -10,6 +10,7 @@ import (
 )
 
 type ProxySpellSystem struct {
+    Model *CombatModel
 }
 
 func (system *ProxySpellSystem) CreateFireballProjectile(target *ArmyUnit, cost int) *Projectile {
@@ -57,7 +58,10 @@ func (system *ProxySpellSystem) CreateDispelEvilProjectile(target *ArmyUnit) *Pr
 }
 
 func (system *ProxySpellSystem) CreateHealingProjectile(target *ArmyUnit) *Projectile {
-    return nil
+    return &Projectile{
+        Target: target,
+        Effect: system.Model.CreateHealingProjectileEffect(),
+    }
 }
 
 func (system *ProxySpellSystem) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
@@ -346,9 +350,13 @@ func Run(model *CombatModel) CombatState {
         Model: model,
     }
 
+    spellSystem := &ProxySpellSystem{
+        Model: model,
+    }
+
     state := CombatStateRunning
     for state == CombatStateRunning {
-        model.Update(&ProxySpellSystem{}, actions, false, 0, 0)
+        model.Update(spellSystem, actions, false, 0, 0)
 
         stop := false
         for !stop {

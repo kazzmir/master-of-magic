@@ -6017,8 +6017,6 @@ func (model *CombatModel) TileIsEmpty(x int, y int) bool {
 type CombatActionsInterface interface {
     AIUnitActionsInterface
 
-    DoProjectiles()
-
     ExtraControl() bool
     SingleAuto() bool
 }

@@ -2761,16 +2761,16 @@ func (actions AIUnitActions) MoveUnit(unit *ArmyUnit, path pathfinding.Path) {
     actions.combat.doMoveUnit(actions.yield, unit, path)
 }
 
+func (actions AIUnitActions) DoProjectiles() {
+    actions.combat.doProjectiles(actions.yield)
+}
+
 type CombatActions struct {
     *AIUnitActions
     combat *CombatScreen
     yield coroutine.YieldFunc
     extraControl bool
     singleAuto bool
-}
-
-func (actions *CombatActions) DoProjectiles() {
-    actions.combat.doProjectiles(actions.yield)
 }
 
 func (actions *CombatActions) ExtraControl() bool {
