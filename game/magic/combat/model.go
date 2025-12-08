@@ -6005,7 +6005,6 @@ func (model *CombatModel) TileIsEmpty(x int, y int) bool {
 type CombatActionsInterface interface {
     AIUnitActionsInterface
 
-    DoMoveUnit(unit *ArmyUnit, path pathfinding.Path)
     DoProjectiles()
     DoMelee(attacker *ArmyUnit, defender *ArmyUnit)
     DoRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
@@ -6039,7 +6038,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                     path, _ := model.FindPath(confusedUnit, point.X, point.Y, false)
                     path = path[1:]
 
-                    actions.DoMoveUnit(confusedUnit, path)
+                    actions.MoveUnit(confusedUnit, path)
 
                     moved = true
                     break
@@ -6089,7 +6088,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
             } else {
                 path, _ := model.FindPath(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl())
                 path = path[1:]
-                actions.DoMoveUnit(model.SelectedUnit, path)
+                actions.MoveUnit(model.SelectedUnit, path)
             }
         } else {
 

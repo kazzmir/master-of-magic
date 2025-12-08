@@ -282,9 +282,6 @@ func (actions *ProxyActions) MoveUnit(unit *ArmyUnit, path pathfinding.Path) {
 func (actions *ProxyActions) Teleport(unit *ArmyUnit, x, y int, merge bool) {
 }
 
-func (actions *ProxyActions) DoMoveUnit(unit *ArmyUnit, path pathfinding.Path) {
-}
-
 func (actiosn *ProxyActions) DoProjectiles() {
 }
 
