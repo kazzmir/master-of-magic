@@ -2023,7 +2023,7 @@ func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, targe
     return projectile
 }
 
-func (combat *CombatScreen) createRangeAttack(attacker *ArmyUnit, defender *ArmyUnit){
+func (combat *CombatScreen) CreateRangeAttack(attacker *ArmyUnit, defender *ArmyUnit){
     index := attacker.Unit.GetCombatRangeIndex(attacker.Facing)
     images, err := combat.ImageCache.GetImages("cmbmagic.lbx", index)
     if err != nil {
@@ -2580,28 +2580,9 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
 }
 
 func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
-    attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(10))
-    if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
-        attacker.MovesLeft = fraction.FromInt(0)
-    }
-
     attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
 
-    attacks := 1
-    // haste does two ranged attacks
-    if attacker.HasEnchantment(data.UnitEnchantmentHaste) {
-        // caster's don't get to attack twice
-        if attacker.GetRangedAttackDamageType() == units.DamageRangedMagical {
-        } else {
-            attacks = min(2, attacker.RangedAttacks)
-        }
-    }
-
-    for range attacks {
-        attacker.UseRangeAttack()
-        // FIXME: could use a for/yield loop here to update projectiles
-        combat.createRangeAttack(attacker, defender)
-    }
+    combat.Model.rangeAttack(attacker, defender, combat)
 
     sound, err := combat.AudioCache.GetSound(attacker.Unit.GetRangeAttackSound().LbxIndex())
     if err == nil {

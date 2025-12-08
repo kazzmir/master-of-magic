@@ -6784,3 +6784,29 @@ func (model *CombatModel) Teleport(mover *ArmyUnit, x int, y int) {
     mover.MovesLeft = mover.MovesLeft.Subtract(fraction.FromInt(1))
     model.Tiles[mover.Y][mover.X].Unit = mover
 }
+
+type RangeAttackActions interface {
+    CreateRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
+}
+
+func (model *CombatModel) rangeAttack(attacker *ArmyUnit, defender *ArmyUnit, actions RangeAttackActions) {
+    attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(10))
+    if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+        attacker.MovesLeft = fraction.FromInt(0)
+    }
+
+    attacks := 1
+    // haste does two ranged attacks
+    if attacker.HasEnchantment(data.UnitEnchantmentHaste) {
+        // caster's don't get to attack twice
+        if attacker.GetRangedAttackDamageType() == units.DamageRangedMagical {
+        } else {
+            attacks = min(2, attacker.RangedAttacks)
+        }
+    }
+
+    for range attacks {
+        attacker.UseRangeAttack()
+        actions.CreateRangeAttack(attacker, defender)
+    }
+}
