@@ -5980,6 +5980,141 @@ func (model *CombatModel) FinalState() CombatState {
     return CombatStateRunning
 }
 
+func (model *CombatModel) TileIsEmpty(x int, y int) bool {
+    unit := model.GetUnit(x, y)
+    if unit != nil && unit.GetHealth() > 0 {
+        return false
+    }
+    /*
+    for _, unit := range combat.DefendingArmy.Units {
+        if unit.Health > 0 && unit.X == x && unit.Y == y {
+            return false
+        }
+    }
+
+    for _, unit := range combat.AttackingArmy.Units {
+        if unit.Health > 0 && unit.X == x && unit.Y == y {
+            return false
+        }
+    }
+    */
+
+    return true
+}
+
+type CombatActionsInterface interface {
+    AIUnitActionsInterface
+
+    DoMoveUnit(unit *ArmyUnit, path pathfinding.Path)
+    DoProjectiles()
+    DoMelee(attacker *ArmyUnit, defender *ArmyUnit)
+    DoRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
+    DoTeleport(unit *ArmyUnit, x int, y int, merging bool)
+
+    ExtraControl() bool
+    SingleAuto() bool
+}
+
+func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsInterface, actionSelect bool, actionTileX int, actionTileY int) {
+    if model.SelectedUnit != nil && model.SelectedUnit.ConfusionAction == ConfusionActionMoveRandomly {
+        confusedUnit := model.SelectedUnit
+
+        // keep moving randomly until the unit is out of moves
+        for confusedUnit.MovesLeft.GreaterThan(fraction.Zero()) {
+            var points []image.Point
+            for x := -1; x <= 1; x++ {
+                for y := -1; y <= 1; y++ {
+                    if x == 0 && y == 0 {
+                        continue
+                    }
+
+                    points = append(points, image.Pt(confusedUnit.X + x, confusedUnit.Y + y))
+                }
+            }
+
+            moved := false
+            for _, index := range rand.Perm(len(points)) {
+                point := points[index]
+                if model.TileIsEmpty(point.X, point.Y) && model.CanMoveTo(confusedUnit, point.X, point.Y, false) {
+                    path, _ := model.FindPath(confusedUnit, point.X, point.Y, false)
+                    path = path[1:]
+
+                    actions.DoMoveUnit(confusedUnit, path)
+
+                    moved = true
+                    break
+                }
+            }
+
+            // unable to move, just quit the loop
+            if !moved {
+                break
+            }
+        }
+
+        model.DoneTurn()
+
+        return
+    }
+
+    if model.SelectedUnit != nil && (model.IsAIControlled(model.SelectedUnit) || actions.SingleAuto()) {
+        aiUnit := model.SelectedUnit
+
+        aiArmy := model.GetArmy(aiUnit)
+
+        // don't let a single auto unit cast wizard spells
+        if model.IsAIControlled(aiUnit) {
+            casted := model.doAiCast(spellSystem, aiArmy)
+            if casted {
+                actions.DoProjectiles()
+            }
+        }
+
+        // keep making choices until the unit runs out of moves
+        for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) && aiUnit.GetHealth() > 0 {
+            doAI(model, spellSystem, actions, aiUnit)
+        }
+
+        aiUnit.LastTurn = model.CurrentTurn
+        model.NextUnit()
+        return
+    }
+
+    // dont allow clicks into the hud area
+    // also don't allow clicks into the game if the ui is showing some overlay
+    if actionSelect {
+        if model.TileIsEmpty(actionTileX, actionTileY) && model.CanMoveTo(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl()) {
+            if model.SelectedUnit.CanTeleport() {
+                actions.DoTeleport(model.SelectedUnit, actionTileX, actionTileY, model.SelectedUnit.HasAbility(data.AbilityMerging))
+            } else {
+                path, _ := model.FindPath(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl())
+                path = path[1:]
+                actions.DoMoveUnit(model.SelectedUnit, path)
+            }
+        } else {
+
+           defender := model.GetUnit(actionTileX, actionTileY)
+           attacker := model.SelectedUnit
+
+           if defender != nil {
+               // try a ranged attack first
+               if model.withinArrowRange(attacker, defender) && model.canRangeAttack(attacker, defender) {
+                   actions.DoRangeAttack(attacker, defender)
+               // then fall back to melee
+               } else if model.withinMeleeRange(attacker, defender) && model.canMeleeAttack(attacker, defender, true){
+                   actions.DoMelee(attacker, defender)
+                   attacker.Paths = make(map[image.Point]pathfinding.Path)
+               }
+           }
+       }
+    }
+
+    // the unit died or is out of moves
+    if model.SelectedUnit != nil && (model.SelectedUnit.GetHealth() <= 0 || model.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
+        model.DoneTurn()
+    }
+}
+
 type AddDamageIndicators interface {
     AddDamageIndicator(unit *ArmyUnit, damage int)
 }
