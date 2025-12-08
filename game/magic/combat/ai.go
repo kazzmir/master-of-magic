@@ -17,6 +17,7 @@ type AIUnitActionsInterface interface {
     MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     MoveUnit(unit *ArmyUnit, path pathfinding.Path)
     Teleport(unit *ArmyUnit, x, y int, merge bool)
+    DoProjectiles()
 }
 
 func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsInterface, aiUnit *ArmyUnit) {
@@ -50,6 +51,7 @@ func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsIn
 
                 if casted {
                     aiUnit.MovesLeft = fraction.FromInt(0)
+                    aiActions.DoProjectiles()
                     return
                 }
             }

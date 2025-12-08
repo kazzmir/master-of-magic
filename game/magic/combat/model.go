@@ -3840,6 +3840,18 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit,
  * returns total damage done by attacker and total damage done by defender
  */
 func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (int, int){
+    // attacking takes 50% of movement points
+    // FIXME: in some cases an extra 0.5 movements points is lost, possibly due to counter attacks?
+    pointsUsed := attacker.GetMovementSpeed().Divide(fraction.FromInt(2))
+    if pointsUsed.LessThan(fraction.FromInt(1)) {
+        pointsUsed = fraction.FromInt(1)
+    }
+
+    attacker.MovesLeft = attacker.MovesLeft.Subtract(pointsUsed)
+    if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+        attacker.MovesLeft = fraction.FromInt(0)
+    }
+
     // for each figure in attacker, choose a random number from 1-100, if lower than the ToHit percent then
     // add 1 damage point. do this random roll for however much the melee attack power is
 
@@ -4093,14 +4105,14 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
         doRound(round)
         end := false
         if defender.GetHealth() <= 0 {
-            model.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
+            model.AddLogEvent(fmt.Sprintf("%v %v is killed", defender.Unit.GetRace(), defender.Unit.GetName()))
             model.KillUnit(defender)
             end = true
             model.Observer.UnitKilled(defender)
         }
 
         if attacker.GetHealth() <= 0 {
-            model.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
+            model.AddLogEvent(fmt.Sprintf("%v %v is killed", attacker.Unit.GetRace(), attacker.Unit.GetName()))
             model.KillUnit(attacker)
             end = true
             model.Observer.UnitKilled(attacker)
@@ -4473,6 +4485,8 @@ func (model *CombatModel) DoAITargetUnitSpell(player ArmyPlayer, spell spellbook
 
     for _, i := range rand.Perm(len(units)) {
         unit := units[i]
+        // FIXME: check if unit is visible to the casting player
+        // check CanSee(unit) for each unit in the player's army
         if shouldAITargetUnit(unit, spell) && canTarget(unit) {
             onTarget(unit)
             return
@@ -5943,6 +5957,170 @@ func (model *CombatModel) GetLeadershipBonus(unit *ArmyUnit) int {
     return bonus
 }
 
+func (model *CombatModel) FinalState() CombatState {
+
+    if model.CurrentTurn >= MAX_TURNS {
+        model.AddLogEvent("Combat exceeded maximum number of turns, defender wins")
+        model.FinishCombat(CombatStateDefenderWin)
+        return CombatStateDefenderWin
+    }
+
+    if model.AttackingArmy.Fled {
+        model.flee(model.AttackingArmy)
+        model.FinishCombat(CombatStateAttackerFlee)
+        return CombatStateAttackerFlee
+    }
+
+    if model.DefendingArmy.Fled {
+        model.flee(model.DefendingArmy)
+        model.FinishCombat(CombatStateDefenderFlee)
+        return CombatStateDefenderFlee
+    }
+
+    if len(model.AttackingArmy.units) == 0 {
+        model.AddLogEvent("Defender wins!")
+        model.FinishCombat(CombatStateDefenderWin)
+        return CombatStateDefenderWin
+    }
+
+    if len(model.DefendingArmy.units) == 0 {
+        model.AddLogEvent("Attacker wins!")
+        model.FinishCombat(CombatStateAttackerWin)
+        return CombatStateAttackerWin
+    }
+
+    return CombatStateRunning
+}
+
+func (model *CombatModel) TileIsEmpty(x int, y int) bool {
+    unit := model.GetUnit(x, y)
+    if unit != nil && unit.GetHealth() > 0 {
+        return false
+    }
+    /*
+    for _, unit := range combat.DefendingArmy.Units {
+        if unit.Health > 0 && unit.X == x && unit.Y == y {
+            return false
+        }
+    }
+
+    for _, unit := range combat.AttackingArmy.Units {
+        if unit.Health > 0 && unit.X == x && unit.Y == y {
+            return false
+        }
+    }
+    */
+
+    return true
+}
+
+type CombatActionsInterface interface {
+    AIUnitActionsInterface
+
+    ExtraControl() bool
+    SingleAuto() bool
+}
+
+func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsInterface, actionSelect bool, actionTileX int, actionTileY int) {
+    if model.SelectedUnit != nil && model.SelectedUnit.ConfusionAction == ConfusionActionMoveRandomly {
+        confusedUnit := model.SelectedUnit
+
+        // keep moving randomly until the unit is out of moves
+        for confusedUnit.MovesLeft.GreaterThan(fraction.Zero()) {
+            var points []image.Point
+            for x := -1; x <= 1; x++ {
+                for y := -1; y <= 1; y++ {
+                    if x == 0 && y == 0 {
+                        continue
+                    }
+
+                    points = append(points, image.Pt(confusedUnit.X + x, confusedUnit.Y + y))
+                }
+            }
+
+            moved := false
+            for _, index := range rand.Perm(len(points)) {
+                point := points[index]
+                if model.TileIsEmpty(point.X, point.Y) && model.CanMoveTo(confusedUnit, point.X, point.Y, false) {
+                    path, _ := model.FindPath(confusedUnit, point.X, point.Y, false)
+                    path = path[1:]
+
+                    actions.MoveUnit(confusedUnit, path)
+
+                    moved = true
+                    break
+                }
+            }
+
+            // unable to move, just quit the loop
+            if !moved {
+                break
+            }
+        }
+
+        model.DoneTurn()
+
+        return
+    }
+
+    if model.SelectedUnit != nil && (model.IsAIControlled(model.SelectedUnit) || actions.SingleAuto()) {
+        aiUnit := model.SelectedUnit
+
+        aiArmy := model.GetArmy(aiUnit)
+
+        // don't let a single auto unit cast wizard spells
+        if model.IsAIControlled(aiUnit) {
+            casted := model.doAiCast(spellSystem, aiArmy)
+            if casted {
+                actions.DoProjectiles()
+            }
+        }
+
+        // keep making choices until the unit runs out of moves
+        for aiUnit.MovesLeft.GreaterThan(fraction.FromInt(0)) && aiUnit.GetHealth() > 0 {
+            doAI(model, spellSystem, actions, aiUnit)
+        }
+
+        aiUnit.LastTurn = model.CurrentTurn
+        model.NextUnit()
+        return
+    }
+
+    // dont allow clicks into the hud area
+    // also don't allow clicks into the game if the ui is showing some overlay
+    if actionSelect {
+        if model.TileIsEmpty(actionTileX, actionTileY) && model.CanMoveTo(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl()) {
+            if model.SelectedUnit.CanTeleport() {
+                actions.Teleport(model.SelectedUnit, actionTileX, actionTileY, model.SelectedUnit.HasAbility(data.AbilityMerging))
+            } else {
+                path, _ := model.FindPath(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl())
+                path = path[1:]
+                actions.MoveUnit(model.SelectedUnit, path)
+            }
+        } else {
+
+           defender := model.GetUnit(actionTileX, actionTileY)
+           attacker := model.SelectedUnit
+
+           if defender != nil {
+               // try a ranged attack first
+               if model.withinArrowRange(attacker, defender) && model.canRangeAttack(attacker, defender) {
+                   actions.RangeAttack(attacker, defender)
+               // then fall back to melee
+               } else if model.withinMeleeRange(attacker, defender) && model.canMeleeAttack(attacker, defender, true){
+                   actions.MeleeAttack(attacker, defender)
+                   attacker.Paths = make(map[image.Point]pathfinding.Path)
+               }
+           }
+       }
+    }
+
+    // the unit died or is out of moves
+    if model.SelectedUnit != nil && (model.SelectedUnit.GetHealth() <= 0 || model.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
+        model.DoneTurn()
+    }
+}
+
 type AddDamageIndicators interface {
     AddDamageIndicator(unit *ArmyUnit, damage int)
 }
@@ -5994,7 +6172,7 @@ func (model *CombatModel) CreateFireBoltProjectileEffect(strength int, damageInd
 
         model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.GetHealth() <= 0 {
-            model.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
+            model.AddLogEvent(fmt.Sprintf("%v %v is killed", unit.Unit.GetRace(), unit.Unit.GetName()))
             model.KillUnit(unit)
         }
     }
@@ -6523,5 +6701,111 @@ func (model *CombatModel) CreateCracksCallProjectileEffect() func(*ArmyUnit) {
         if rand.N(4) == 0 {
             model.RemoveUnit(unit)
         }
+    }
+}
+
+// returns true if the unit dies while moving (through a wall of fire)
+func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bool {
+
+    // tile where the unit came from is now empty
+    model.Tiles[mover.Y][mover.X].Unit = nil
+
+    mover.MovesLeft = mover.MovesLeft.Subtract(pathCost(image.Pt(mover.X, mover.Y), image.Pt(targetX, targetY)))
+    if mover.MovesLeft.LessThan(fraction.FromInt(0)) {
+        mover.MovesLeft = fraction.FromInt(0)
+    }
+
+    // unit moves from outside the wall of fire to inside
+    if !mover.IsFlying() && model.InsideWallOfFire(targetX, targetY) && !model.InsideWallOfFire(mover.X, mover.Y) {
+        model.ApplyWallOfFireDamage(mover)
+
+        if mover.GetHealth() <= 0 {
+            // this feels dangerous to do here but it seems to work
+            model.KillUnit(mover)
+            return true
+        }
+    }
+
+    mover.X = targetX
+    mover.Y = targetY
+    // new tile the unit landed on is now occupied
+    model.Tiles[mover.Y][mover.X].Unit = mover
+    return false
+}
+
+func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndicators AddDamageIndicators) func(*ArmyUnit) {
+    return func (defender *ArmyUnit){
+        tileDistance := computeTileDistance(attacker.X, attacker.Y, defender.X, defender.Y)
+        if defender.GetHealth() <= 0 {
+            return
+        }
+
+        damage := attacker.ComputeRangeDamage(defender, tileDistance)
+
+        // FIXME: for magical damage, set the Magic damage modifier for the proper realm
+        appliedDamage, _ := ApplyDamage(defender, []int{damage}, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: model.ComputeWallDefense(attacker, defender)})
+
+        totalDamage := appliedDamage
+
+        log.Printf("attacker %v %v rolled %v ranged damage to defender %v %v, applied %v", attacker.Unit.GetRace(), attacker.Unit.GetName(), damage, defender.Unit.GetRace(), defender.Unit.GetName(), appliedDamage)
+
+        if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
+            funcs := model.doTouchAttack(attacker, defender, 0)
+            for _, f := range funcs {
+                totalDamage += f()
+            }
+        }
+
+        totalDamage += model.ApplyImmolationDamage(defender, model.immolationDamage(attacker, defender))
+
+        damageIndicators.AddDamageIndicator(defender, totalDamage)
+
+        // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
+
+        /*
+        damage -= defense
+        if damage < 0 {
+            damage = 0
+        }
+        target.TakeDamage(damage)
+        */
+        if defender.GetHealth() <= 0 {
+            model.AddLogEvent(fmt.Sprintf("%v %v is killed", defender.Unit.GetRace(), defender.Unit.GetName()))
+            model.KillUnit(defender)
+        }
+    }
+}
+
+func (model *CombatModel) Teleport(mover *ArmyUnit, x int, y int) {
+    model.Tiles[mover.Y][mover.X].Unit = nil
+    mover.X = x
+    mover.Y = y
+    mover.MovesLeft = mover.MovesLeft.Subtract(fraction.FromInt(1))
+    model.Tiles[mover.Y][mover.X].Unit = mover
+}
+
+type RangeAttackActions interface {
+    CreateRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
+}
+
+func (model *CombatModel) rangeAttack(attacker *ArmyUnit, defender *ArmyUnit, actions RangeAttackActions) {
+    attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(10))
+    if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+        attacker.MovesLeft = fraction.FromInt(0)
+    }
+
+    attacks := 1
+    // haste does two ranged attacks
+    if attacker.HasEnchantment(data.UnitEnchantmentHaste) {
+        // caster's don't get to attack twice
+        if attacker.GetRangedAttackDamageType() == units.DamageRangedMagical {
+        } else {
+            attacks = min(2, attacker.RangedAttacks)
+        }
+    }
+
+    for range attacks {
+        attacker.UseRangeAttack()
+        actions.CreateRangeAttack(attacker, defender)
     }
 }
