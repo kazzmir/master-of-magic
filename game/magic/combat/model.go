@@ -4105,14 +4105,14 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
         doRound(round)
         end := false
         if defender.GetHealth() <= 0 {
-            model.AddLogEvent(fmt.Sprintf("%v is killed", defender.Unit.GetName()))
+            model.AddLogEvent(fmt.Sprintf("%v %v is killed", defender.Unit.GetRace(), defender.Unit.GetName()))
             model.KillUnit(defender)
             end = true
             model.Observer.UnitKilled(defender)
         }
 
         if attacker.GetHealth() <= 0 {
-            model.AddLogEvent(fmt.Sprintf("%v is killed", attacker.Unit.GetName()))
+            model.AddLogEvent(fmt.Sprintf("%v %v is killed", attacker.Unit.GetRace(), attacker.Unit.GetName()))
             model.KillUnit(attacker)
             end = true
             model.Observer.UnitKilled(attacker)
@@ -6172,7 +6172,7 @@ func (model *CombatModel) CreateFireBoltProjectileEffect(strength int, damageInd
 
         model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.GetHealth() <= 0 {
-            model.AddLogEvent(fmt.Sprintf("%v is killed", unit.Unit.GetName()))
+            model.AddLogEvent(fmt.Sprintf("%v %v is killed", unit.Unit.GetRace(), unit.Unit.GetName()))
             model.KillUnit(unit)
         }
     }
@@ -6747,7 +6747,7 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
 
         totalDamage := appliedDamage
 
-        log.Printf("attacker %v rolled %v ranged damage to defender %v, applied %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), appliedDamage)
+        log.Printf("attacker %v %v rolled %v ranged damage to defender %v %v, applied %v", attacker.Unit.GetRace(), attacker.Unit.GetName(), damage, defender.Unit.GetRace(), defender.Unit.GetName(), appliedDamage)
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
             funcs := model.doTouchAttack(attacker, defender, 0)
@@ -6770,6 +6770,7 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
         target.TakeDamage(damage)
         */
         if defender.GetHealth() <= 0 {
+            model.AddLogEvent(fmt.Sprintf("%v %v is killed", defender.Unit.GetRace(), defender.Unit.GetName()))
             model.KillUnit(defender)
         }
     }
