@@ -314,7 +314,13 @@ func (actions *ProxyActions) Teleport(unit *ArmyUnit, x, y int, merge bool) {
     actions.Model.Teleport(unit, x, y)
 }
 
-func (actiosn *ProxyActions) DoProjectiles() {
+func (actions *ProxyActions) DoProjectiles() {
+    // just immediately apply all projectiles to their target
+    for _, projectile := range actions.Model.Projectiles {
+        projectile.Effect(projectile.Target)
+    }
+
+    actions.Model.Projectiles = nil
 }
 
 func (actions *ProxyActions) ExtraControl() bool {
