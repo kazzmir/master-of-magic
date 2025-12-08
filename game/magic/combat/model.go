@@ -6776,3 +6776,11 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
         }
     }
 }
+
+func (model *CombatModel) Teleport(mover *ArmyUnit, x int, y int) {
+    model.Tiles[mover.Y][mover.X].Unit = nil
+    mover.X = x
+    mover.Y = y
+    mover.MovesLeft = mover.MovesLeft.Subtract(fraction.FromInt(1))
+    model.Tiles[mover.Y][mover.X].Unit = mover
+}

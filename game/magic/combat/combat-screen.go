@@ -2453,11 +2453,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
         }
     }
 
-    combat.Model.Tiles[mover.Y][mover.X].Unit = nil
-    mover.X = x
-    mover.Y = y
-    mover.MovesLeft = mover.MovesLeft.Subtract(fraction.FromInt(1))
-    combat.Model.Tiles[mover.Y][mover.X].Unit = mover
+    combat.Model.Teleport(mover, x, y)
 
     if merge {
         for i := range mergeCount {
@@ -2792,24 +2788,8 @@ type CombatActions struct {
     singleAuto bool
 }
 
-func (actions *CombatActions) DoMoveUnit(unit *ArmyUnit, path pathfinding.Path) {
-    actions.combat.doMoveUnit(actions.yield, unit, path)
-}
-
 func (actions *CombatActions) DoProjectiles() {
     actions.combat.doProjectiles(actions.yield)
-}
-
-func (actions *CombatActions) DoMelee(attacker *ArmyUnit, defender *ArmyUnit) {
-    actions.combat.doMelee(actions.yield, attacker, defender)
-}
-
-func (actions *CombatActions) DoRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
-    actions.combat.doRangeAttack(actions.yield, attacker, defender)
-}
-
-func (actions *CombatActions) DoTeleport(unit *ArmyUnit, x int, y int, merging bool) {
-    actions.combat.doTeleport(actions.yield, unit, x, y, merging)
 }
 
 func (actions *CombatActions) ExtraControl() bool {

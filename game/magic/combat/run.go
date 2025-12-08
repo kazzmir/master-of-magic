@@ -4,6 +4,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
 type ProxySpellSystem struct {
@@ -291,10 +292,26 @@ func (actions *ProxyActions) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     actions.Model.meleeAttack(attacker, defender)
 }
 
-func (actions *ProxyActions) MoveUnit(unit *ArmyUnit, path pathfinding.Path) {
+func (actions *ProxyActions) MoveUnit(mover *ArmyUnit, path pathfinding.Path) {
+    for len(path) > 0 && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {
+        targetX, targetY := path[0].X, path[0].Y
+        died := actions.Model.MoveUnit(mover, targetX, targetY)
+        if died {
+            return
+        }
+
+        mover.MoveX = float64(targetX)
+        mover.MoveY = float64(targetY)
+
+        path = path[1:]
+    }
+
+    // not really necessary as current path is only used when drawing the UI
+    mover.CurrentPath = nil
 }
 
 func (actions *ProxyActions) Teleport(unit *ArmyUnit, x, y int, merge bool) {
+    actions.Model.Teleport(unit, x, y)
 }
 
 func (actiosn *ProxyActions) DoProjectiles() {
