@@ -300,9 +300,6 @@ func (actions *ProxyActions) Teleport(unit *ArmyUnit, x, y int, merge bool) {
 func (actiosn *ProxyActions) DoProjectiles() {
 }
 
-func (actions *ProxyActions) DoTeleport(unit *ArmyUnit, x int, y int, merging bool) {
-}
-
 func (actions *ProxyActions) ExtraControl() bool {
     return false
 }

@@ -6018,7 +6018,6 @@ type CombatActionsInterface interface {
     AIUnitActionsInterface
 
     DoProjectiles()
-    DoTeleport(unit *ArmyUnit, x int, y int, merging bool)
 
     ExtraControl() bool
     SingleAuto() bool
@@ -6094,7 +6093,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
     if actionSelect {
         if model.TileIsEmpty(actionTileX, actionTileY) && model.CanMoveTo(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl()) {
             if model.SelectedUnit.CanTeleport() {
-                actions.DoTeleport(model.SelectedUnit, actionTileX, actionTileY, model.SelectedUnit.HasAbility(data.AbilityMerging))
+                actions.Teleport(model.SelectedUnit, actionTileX, actionTileY, model.SelectedUnit.HasAbility(data.AbilityMerging))
             } else {
                 path, _ := model.FindPath(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl())
                 path = path[1:]
