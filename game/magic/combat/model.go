@@ -4473,6 +4473,8 @@ func (model *CombatModel) DoAITargetUnitSpell(player ArmyPlayer, spell spellbook
 
     for _, i := range rand.Perm(len(units)) {
         unit := units[i]
+        // FIXME: check if unit is visible to the casting player
+        // check CanSee(unit) for each unit in the player's army
         if shouldAITargetUnit(unit, spell) && canTarget(unit) {
             onTarget(unit)
             return

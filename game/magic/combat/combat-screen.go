@@ -2909,6 +2909,46 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         combat.doProjectiles(yield)
     }
 
+    if combat.UI.GetHighestLayerValue() > 0 || mouseY >= scale.Scale(hudY) {
+        combat.MouseState = CombatClickHud
+    } else if combat.Model.SelectedUnit != nil && !combat.Model.IsAIControlled(combat.Model.SelectedUnit) && combat.Model.SelectedUnit.Moving {
+        combat.MouseState = CombatClickHud
+    } else if combat.Model.SelectedUnit != nil && !combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
+        who := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
+        if who == nil {
+            if combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl) {
+                combat.MouseState = CombatMoveOk
+            } else {
+                combat.MouseState = CombatNotOk
+            }
+        } else {
+            newState := CombatNotOk
+            // prioritize range attack over melee
+            if combat.Model.canRangeAttack(combat.Model.SelectedUnit, who) && combat.Model.withinArrowRange(combat.Model.SelectedUnit, who) {
+                newState = CombatRangeAttackOk
+            } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who, true) && combat.Model.withinMeleeRange(combat.Model.SelectedUnit, who) {
+                newState = CombatMeleeAttackOk
+            }
+
+            combat.MouseState = newState
+        }
+    }
+
+    // if there is no unit at the tile position then the highlighted unit will be nil
+    if combat.UI.GetHighestLayerValue() == 0 {
+        combat.Model.HighlightedUnit = combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
+    }
+
+    if combat.UI.GetHighestLayerValue() == 0 &&
+       inputmanager.RightClick() &&
+       mouseY < scale.Scale(hudY) {
+
+        showUnit := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
+        if showUnit != nil {
+            combat.UI.AddGroup(MakeUnitView(combat.Cache, combat.UI, showUnit))
+        }
+    }
+
     if combat.Model.SelectedUnit != nil && combat.Model.SelectedUnit.ConfusionAction == ConfusionActionMoveRandomly {
         confusedUnit := combat.Model.SelectedUnit
 
@@ -2971,36 +3011,6 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         return CombatStateRunning
     }
 
-    if combat.UI.GetHighestLayerValue() > 0 || mouseY >= scale.Scale(hudY) {
-        combat.MouseState = CombatClickHud
-    } else if combat.Model.SelectedUnit != nil && combat.Model.SelectedUnit.Moving {
-        combat.MouseState = CombatClickHud
-    } else if combat.Model.SelectedUnit != nil {
-        who := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
-        if who == nil {
-            if combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl) {
-                combat.MouseState = CombatMoveOk
-            } else {
-                combat.MouseState = CombatNotOk
-            }
-        } else {
-            newState := CombatNotOk
-            // prioritize range attack over melee
-            if combat.Model.canRangeAttack(combat.Model.SelectedUnit, who) && combat.Model.withinArrowRange(combat.Model.SelectedUnit, who) {
-                newState = CombatRangeAttackOk
-            } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who, true) && combat.Model.withinMeleeRange(combat.Model.SelectedUnit, who) {
-                newState = CombatMeleeAttackOk
-            }
-
-            combat.MouseState = newState
-        }
-    }
-
-    // if there is no unit at the tile position then the highlighted unit will be nil
-    if combat.UI.GetHighestLayerValue() == 0 {
-        combat.Model.HighlightedUnit = combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
-    }
-
     // dont allow clicks into the hud area
     // also don't allow clicks into the game if the ui is showing some overlay
     if combat.UI.GetHighestLayerValue() == 0 &&
@@ -3032,16 +3042,6 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
            }
        }
     }
-
-    if combat.UI.GetHighestLayerValue() == 0 &&
-       inputmanager.RightClick() &&
-       mouseY < scale.Scale(hudY) {
-
-       showUnit := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
-       if showUnit != nil {
-           combat.UI.AddGroup(MakeUnitView(combat.Cache, combat.UI, showUnit))
-       }
-   }
 
     // the unit died or is out of moves
     if combat.Model.SelectedUnit != nil && (combat.Model.SelectedUnit.GetHealth() <= 0 || combat.Model.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
