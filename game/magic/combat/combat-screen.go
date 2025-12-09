@@ -3272,8 +3272,13 @@ func (combat *CombatScreen) DrawWall(screen *ebiten.Image, x int, y int, tilePos
             // options.GeoM.Translate(tx, ty)
             options.GeoM.Translate(dx, dy)
 
+            use := 0
+            if tile.WallDestroyed {
+                use = 1
+            }
+
             // FIXME: a destroyed wall should use index 1 (last argument)
-            drawImage, _ := combat.ImageCache.GetImage("citywall.lbx", wallBase[currentWall] + index, 0)
+            drawImage, _ := combat.ImageCache.GetImage("citywall.lbx", wallBase[currentWall] + index, use)
             // use := animationIndex % uint64(len(images))
             // drawImage := images[use]
             options.GeoM.Translate(-float64(drawImage.Bounds().Dy())/2, -float64(drawImage.Bounds().Dy()/2))

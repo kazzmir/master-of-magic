@@ -200,6 +200,7 @@ type Tile struct {
     DarknessActive uint64
 
     Wall *set.Set[WallKind]
+    WallDestroyed bool
 
     // if combat is in a city with flying fortress then this tile might be flying (in the clouds)
     Flying bool
