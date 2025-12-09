@@ -2750,7 +2750,7 @@ func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTravers
                     }
 
                     // can't move through a city wall
-                    if canMove && !canTraverseWall && model.InsideCityWall(cx, cy) != model.InsideCityWall(x, y) && (model.IsCityWall(x, y) || model.IsCityWall(cx, cy)) {
+                    if canMove && !canTraverseWall && model.InsideCityWall(cx, cy) != model.InsideCityWall(x, y) && (model.ContainsWall(x, y) || model.ContainsWall(cx, cy)) {
                         // FIXME: handle destroyed walls here
                         if !model.IsCityWallGate(x, y) && !model.IsCityWallGate(cx, cy) {
                             canMove = false
@@ -3181,8 +3181,8 @@ func (model *CombatModel) ContainsWall(x int, y int) bool {
         return false
     }
 
-    wall := model.Tiles[y][x].Wall
-    if wall != nil && wall.Size() > 0 {
+    tile := &model.Tiles[y][x]
+    if tile.Wall != nil && !tile.WallDestroyed && tile.Wall.Size() > 0 {
         return true
     }
 
@@ -3198,20 +3198,6 @@ func (model *CombatModel) ContainsWallTower(x int, y int) bool {
     tile := &model.Tiles[y][x]
 
     if tile.Wall != nil && !tile.WallDestroyed && tile.Wall.Size() == 2 {
-        return true
-    }
-
-    return false
-}
-
-func (model *CombatModel) IsCityWall(x int, y int) bool {
-    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
-        return false
-    }
-
-    tile := &model.Tiles[y][x]
-
-    if tile.Wall != nil && !tile.WallDestroyed {
         return true
     }
 
@@ -6712,12 +6698,24 @@ func (model *CombatModel) CreateDispelMagicProjectileEffect(caster ArmyPlayer, d
     }
 }
 
+func (model *CombatModel) CreateDisruptProjectileEffect(x int, y int) func(*ArmyUnit) {
+    return func(_ *ArmyUnit) {
+        model.DestroyWall(x, y)
+    }
+}
+
 func (model *CombatModel) CreateCracksCallProjectileEffect() func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         if rand.N(4) == 0 {
             model.RemoveUnit(unit)
         }
     }
+}
+
+func (model *CombatModel) DestroyWall(x int, y int) {
+    tile := &model.Tiles[y][x]
+    // even if there was no wall here its still ok to set this flag
+    tile.WallDestroyed = true
 }
 
 // returns true if the unit dies while moving (through a wall of fire)

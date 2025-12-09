@@ -154,8 +154,15 @@ func (system *ProxySpellSystem) CreateDisintegrateProjectile(target *ArmyUnit) *
 }
 
 func (system *ProxySpellSystem) CreateDisruptProjectile(x int, y int) *Projectile {
-    // FIXME
-    return nil
+    fakeTarget := &ArmyUnit{
+        X: x,
+        Y: y,
+    }
+
+    return &Projectile{
+        Target: fakeTarget,
+        Effect: system.Model.CreateDisruptProjectileEffect(x, y),
+    }
 }
 
 func (system *ProxySpellSystem) CreateMagicVortex(x int, y int) *OtherUnit {

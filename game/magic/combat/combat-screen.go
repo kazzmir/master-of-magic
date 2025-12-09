@@ -1223,9 +1223,7 @@ func (combat *CombatScreen) CreateDisruptProjectile(x int, y int) *Projectile {
         Y: y,
     }
 
-    // TODO
-
-    return combat.createUnitProjectile(&fakeTarget, explodeImages, UnitPositionUnder, func (*ArmyUnit){})
+    return combat.createUnitProjectile(&fakeTarget, explodeImages, UnitPositionUnder, combat.Model.CreateDisruptProjectileEffect(x, y))
 }
 
 func (combat *CombatScreen) CreateSummoningCircle(x int, y int) *Projectile {
