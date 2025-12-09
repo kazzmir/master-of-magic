@@ -3613,9 +3613,9 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 func (model *CombatModel) ComputeWallDefense(attacker *ArmyUnit, defender *ArmyUnit) int {
     if model.InsideCityWall(defender.X, defender.Y) && !model.InsideCityWall(attacker.X, attacker.Y) {
 
-        wall := model.Tiles[defender.Y][defender.X].Wall
-        if wall != nil {
-            if wall.Contains(WallKindGate) {
+        tile := &model.Tiles[defender.Y][defender.X]
+        if tile.Wall != nil && !tile.WallDestroyed {
+            if tile.Wall.Contains(WallKindGate) {
                 return 1
             }
 
