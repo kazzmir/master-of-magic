@@ -4127,6 +4127,8 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
 
     defender.Attacked += 1
 
+    // FIXME: if attacker has WallCrusher ability and the defender is on a wall then 50% chance to destroy the wall
+
     return totalAttackerDamage, totalDefenderDamage
 }
 
@@ -6776,13 +6778,8 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
 
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 
-        /*
-        damage -= defense
-        if damage < 0 {
-            damage = 0
-        }
-        target.TakeDamage(damage)
-        */
+        // FIXME: if attacker has WallCrusher and defender is standing on a wall then 25% chance to destroy the wall
+
         if defender.GetHealth() <= 0 {
             model.AddLogEvent(fmt.Sprintf("%v %v is killed", defender.Unit.GetRace(), defender.Unit.GetName()))
             model.KillUnit(defender)
