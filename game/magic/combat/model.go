@@ -2750,7 +2750,7 @@ func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTravers
                     }
 
                     // can't move through a city wall
-                    if canMove && !canTraverseWall && model.InsideCityWall(cx, cy) != model.InsideCityWall(x, y) {
+                    if canMove && !canTraverseWall && model.InsideCityWall(cx, cy) != model.InsideCityWall(x, y) && (model.IsCityWall(x, y) || model.IsCityWall(cx, cy)) {
                         // FIXME: handle destroyed walls here
                         if !model.IsCityWallGate(x, y) && !model.IsCityWallGate(cx, cy) {
                             canMove = false
@@ -3195,8 +3195,23 @@ func (model *CombatModel) ContainsWallTower(x int, y int) bool {
         return false
     }
 
-    wall := model.Tiles[y][x].Wall
-    if wall != nil && wall.Size() == 2 {
+    tile := &model.Tiles[y][x]
+
+    if tile.Wall != nil && !tile.WallDestroyed && tile.Wall.Size() == 2 {
+        return true
+    }
+
+    return false
+}
+
+func (model *CombatModel) IsCityWall(x int, y int) bool {
+    if x < 0 || y < 0 || y >= len(model.Tiles) || x >= len(model.Tiles[0]) {
+        return false
+    }
+
+    tile := &model.Tiles[y][x]
+
+    if tile.Wall != nil && !tile.WallDestroyed {
         return true
     }
 
@@ -3208,9 +3223,9 @@ func (model *CombatModel) IsCityWallGate(x int, y int) bool {
         return false
     }
 
-    wall := model.Tiles[y][x].Wall
+    tile := &model.Tiles[y][x]
 
-    if wall != nil && wall.Contains(WallKindGate) {
+    if tile.Wall != nil && !tile.WallDestroyed && tile.Wall.Contains(WallKindGate) {
         return true
     }
 
@@ -3733,17 +3748,17 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit,
     }
 
     containsWall := func(x int, y int) bool {
-        wall := model.Tiles[y][x].Wall
-        return wall != nil && !wall.Contains(WallKindGate)
+        tile := &model.Tiles[y][x]
+        return tile.Wall != nil && !tile.WallDestroyed && !tile.Wall.Contains(WallKindGate)
     }
 
     containsGate := func(x int, y int) bool {
-        wall := model.Tiles[y][x].Wall
-        return wall != nil && wall.Contains(WallKindGate)
+        tile := &model.Tiles[y][x]
+        return tile.Wall != nil && !tile.WallDestroyed && tile.Wall.Contains(WallKindGate)
     }
 
     // cannot attack through a wall
-    if considerWall && model.InsideCityWall(attacker.X, attacker.Y) != model.InsideCityWall(defender.X, defender.Y) {
+    if considerWall && model.InsideCityWall(attacker.X, attacker.Y) != model.InsideCityWall(defender.X, defender.Y) && (model.ContainsWall(attacker.X, attacker.Y) || model.ContainsWall(defender.X, defender.Y)) {
         // if the attacker normally cannot move through the wall, then they can only attack if either the attacker or defender
         // is adjacent to the gate
         if !attacker.CanTraverseWall() {
