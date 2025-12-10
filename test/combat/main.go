@@ -551,7 +551,8 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Darkness"))
     */
 
-    attackingArmy := createArmyN(attackingPlayer, units.LizardSwordsmen, 3)
+    // attackingArmy := createArmyN(attackingPlayer, units.LizardSwordsmen, 3)
+    attackingArmy := createArmyN(attackingPlayer, units.Catapult, 2)
     // attackingArmy := createGreatDrakeArmy(attackingPlayer, 1)
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcCavalry, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()))
     // attackingArmy := createWeakArmy(attackingPlayer)
@@ -562,7 +563,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     city.Buildings.Insert(buildinglib.BuildingFortress)
     city.Buildings.Insert(buildinglib.BuildingCityWalls)
 
-    city.AddEnchantment(data.CityEnchantmentWallOfFire, defendingPlayer.Wizard.Banner)
+    // city.AddEnchantment(data.CityEnchantmentWallOfFire, defendingPlayer.Wizard.Banner)
     // city.AddEnchantment(data.CityEnchantmentFlyingFortress, defendingPlayer.GetBanner())
     // city.AddEnchantment(data.CityEnchantmentWallOfDarkness, defendingPlayer.Wizard.Banner)
 

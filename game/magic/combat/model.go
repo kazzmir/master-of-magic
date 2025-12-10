@@ -625,6 +625,13 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+// true if this unit can destroy walls with a ranged attack
+func (unit *ArmyUnit) CanDestroyWallsRangedAttack() bool {
+    attackType := unit.GetRangedAttackDamageType()
+
+    return (attackType == units.DamageRangedPhysical || attackType == units.DamageRangedBoulder) && unit.HasAbility(data.AbilityWallCrusher)
+}
+
 func (unit *ArmyUnit) CanTeleport() bool {
     return unit.HasAbility(data.AbilityTeleporting) || unit.HasAbility(data.AbilityMerging)
 }
@@ -6779,6 +6786,10 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 
         // FIXME: if attacker has WallCrusher and defender is standing on a wall then 25% chance to destroy the wall
+
+        if attacker.CanDestroyWallsRangedAttack() && rand.N(4) == 0 {
+            model.DestroyWall(defender.X, defender.Y)
+        }
 
         if defender.GetHealth() <= 0 {
             model.AddLogEvent(fmt.Sprintf("%v %v is killed", defender.Unit.GetRace(), defender.Unit.GetName()))
