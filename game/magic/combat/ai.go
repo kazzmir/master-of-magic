@@ -5,7 +5,7 @@ import (
     "slices"
     "cmp"
     "image"
-    "log"
+    _ "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -45,7 +45,7 @@ func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsIn
                     aiUnit.SpellCharges[spell] -= 1
 
                     if success {
-                        log.Printf("AI unit %v cast %v with strength %v", aiUnit.Unit.GetName(), spell.Name, spell.Cost(false))
+                        // log.Printf("AI unit %v cast %v with strength %v", aiUnit.Unit.GetName(), spell.Name, spell.Cost(false))
                         spellSystem.PlaySound(spell)
                     }
                 })

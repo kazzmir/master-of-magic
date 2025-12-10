@@ -1,7 +1,7 @@
 package combat
 
 import (
-    "log"
+    _ "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
@@ -565,7 +565,8 @@ func Run(model *CombatModel) CombatState {
         for !stop {
             select {
                 case event := <-model.Events:
-                    log.Printf("Discarding event: %+v", event)
+                    _ = event
+                    // log.Printf("Discarding event: %+v", event)
                 default:
                     stop = true
             }

@@ -3,6 +3,9 @@ package main
 import (
     "log"
     "time"
+    "cmp"
+    "fmt"
+    "sync"
     "bytes"
     "os"
     "runtime/pprof"
@@ -161,6 +164,118 @@ func RunCombat3(allSpells spellbook.Spells) {
     log.Printf("Final state: %+v", state)
 }
 
+func runBattle(allSpells spellbook.Spells, attacker units.Unit, defender units.Unit) combat.CombatState {
+    defendingPlayer := player.MakePlayer(setup.WizardCustom{
+        Name: "AI-1",
+        Banner: data.BannerBrown,
+    }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+    attackingPlayer := player.MakePlayer(setup.WizardCustom{
+        Name: "AI-2",
+        Banner: data.BannerRed,
+    }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+    attackingArmy := &combat.Army{
+        Player: attackingPlayer,
+    }
+
+    defendingArmy := &combat.Army{
+        Player: defendingPlayer,
+    }
+
+    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(attacker, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+
+    defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(defender, 1, 1, data.PlaneArcanus, defendingPlayer.Wizard.Banner, defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
+
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+
+    return combat.Run(model)
+}
+
+func RunAll(allSpells spellbook.Spells) {
+    type UnitKey struct {
+        LbxFile string
+        Index int
+    }
+
+    getKey := func(u units.Unit) UnitKey {
+        return UnitKey{
+            LbxFile: u.LbxFile,
+            Index: u.Index,
+        }
+    }
+
+    findUnit := func(key UnitKey) units.Unit {
+        for _, u := range units.AllUnits {
+            if u.LbxFile == key.LbxFile && u.Index == key.Index {
+                return u
+            }
+        }
+
+        return units.UnitNone
+    }
+
+    // useUnits := units.UnitsByRace(data.RaceOrc)
+    useUnits := units.AllUnits
+
+    unitResults := make(map[UnitKey]int)
+    var lock sync.Mutex
+    var group sync.WaitGroup
+
+    for _, attacker := range useUnits {
+        group.Add(1)
+        key := getKey(attacker)
+
+        go func(){
+            defer group.Done()
+            for _, defender := range useUnits {
+                value := 0
+                for range 5 {
+                    switch runBattle(allSpells, attacker, defender) {
+                        case combat.CombatStateAttackerWin:
+                            value += 1
+                        case combat.CombatStateDefenderWin:
+                            value -= 1
+                    }
+
+                }
+
+                lock.Lock()
+                unitResults[key] += value
+                lock.Unlock()
+            }
+
+            fmt.Printf(".")
+
+            // log.Printf("Attacker %v %v: score %v", attacker.Race, attacker.GetName(), unitResults[key])
+        }()
+    }
+
+    group.Wait()
+    fmt.Println()
+
+    type Result struct {
+        Unit units.Unit
+        Score int
+    }
+
+    var results []Result
+    for unit, score := range unitResults {
+        results = append(results, Result{
+            Unit: findUnit(unit),
+            Score: score,
+        })
+    }
+
+    slices.SortFunc(results, func(a, b Result) int {
+        return cmp.Compare(a.Score, b.Score)
+    })
+
+    for _, unit := range results {
+        log.Printf("Unit %v %v: score %v", unit.Unit.Race, unit.Unit.GetName(), unit.Score)
+    }
+}
+
 func main() {
     log.SetFlags(log.Lshortfile | log.Ldate | log.Lmicroseconds)
 
@@ -183,7 +298,8 @@ func main() {
         RunCombat1(allSpells)
     }
     */
-    RunCombat2(allSpells)
+    // RunCombat2(allSpells)
+    RunAll(allSpells)
 
     memoryProfile, err := os.Create("profile.mem.combat-run")
     if err != nil {

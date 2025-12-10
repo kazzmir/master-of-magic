@@ -2981,7 +2981,7 @@ func (model *CombatModel) IsEnchantmentActive(enchantment data.CombatEnchantment
 }
 
 func (model *CombatModel) AddLogEvent(text string) {
-    log.Print(text)
+    // log.Print(text)
     model.Log = append(model.Log, CombatLogEvent{
         Turn: model.CurrentTurn,
         Text: text,
@@ -6824,7 +6824,7 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
 
         totalDamage := appliedDamage
 
-        log.Printf("attacker %v %v rolled %v ranged damage to defender %v %v, applied %v", attacker.Unit.GetRace(), attacker.Unit.GetName(), damage, defender.Unit.GetRace(), defender.Unit.GetName(), appliedDamage)
+        // log.Printf("attacker %v %v rolled %v ranged damage to defender %v %v, applied %v", attacker.Unit.GetRace(), attacker.Unit.GetName(), damage, defender.Unit.GetRace(), defender.Unit.GetName(), appliedDamage)
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
             funcs := model.doTouchAttack(attacker, defender, 0)
