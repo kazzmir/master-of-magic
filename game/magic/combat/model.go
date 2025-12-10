@@ -6149,9 +6149,9 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                    actions.MeleeAttack(attacker, defender)
                    attacker.Paths = make(map[image.Point]pathfinding.Path)
                }
-           } else if attacker.GetRangedAttacks() > 0 && attacker.CanDestroyWallsRangedAttack() {
+           } else if attacker.GetRangedAttacks() > 0 && attacker.CanDestroyWallsRangedAttack() && model.ContainsWall(actionTileX, actionTileY) {
                actions.RangeAttack(attacker, &WallTarget{X: actionTileX, Y: actionTileY})
-           } else if attacker.HasAbility(data.AbilityWallCrusher) && model.ContainsWall(actionTileX, actionTileY) && computeTileDistance(attacker.X, attacker.Y, actionTileX, actionTileY) == 1 {
+           } else if attacker.GetMeleeAttackPower() > 0 && attacker.HasAbility(data.AbilityWallCrusher) && model.ContainsWall(actionTileX, actionTileY) && computeTileDistance(attacker.X, attacker.Y, actionTileX, actionTileY) == 1 {
                actions.MeleeAttackWall(attacker, actionTileX, actionTileY)
            }
        }

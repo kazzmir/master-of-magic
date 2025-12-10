@@ -2876,7 +2876,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
                 combat.MouseState = CombatMoveOk
             } else if attacker.GetRangedAttacks() > 0 && attacker.CanDestroyWallsRangedAttack() && combat.Model.ContainsWall(combat.MouseTileX, combat.MouseTileY) {
                 combat.MouseState = CombatRangeAttackOk
-            } else if combat.Model.ContainsWall(combat.MouseTileX, combat.MouseTileY) && computeTileDistance(attacker.X, attacker.Y, combat.MouseTileX, combat.MouseTileY) == 1 && attacker.HasAbility(data.AbilityWallCrusher) {
+            } else if attacker.GetMeleeAttackPower() > 0 && combat.Model.ContainsWall(combat.MouseTileX, combat.MouseTileY) && computeTileDistance(attacker.X, attacker.Y, combat.MouseTileX, combat.MouseTileY) == 1 && attacker.HasAbility(data.AbilityWallCrusher) {
                 combat.MouseState = CombatMeleeAttackOk
             } else {
                 combat.MouseState = CombatNotOk
