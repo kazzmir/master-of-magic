@@ -625,6 +625,14 @@ type ArmyUnit struct {
     Paths map[image.Point]pathfinding.Path
 }
 
+func (unit *ArmyUnit) GetX() int {
+    return unit.X
+}
+
+func (unit *ArmyUnit) GetY() int {
+    return unit.Y
+}
+
 // true if this unit can destroy walls with a ranged attack
 func (unit *ArmyUnit) CanDestroyWallsRangedAttack() bool {
     attackType := unit.GetRangedAttackDamageType()
@@ -6122,6 +6130,8 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                    actions.MeleeAttack(attacker, defender)
                    attacker.Paths = make(map[image.Point]pathfinding.Path)
                }
+           } else if attacker.GetRangedAttacks() > 0 && attacker.CanDestroyWallsRangedAttack() {
+               actions.RangeAttack(attacker, &WallTarget{X: actionTileX, Y: actionTileY})
            }
        }
     }
@@ -6727,6 +6737,19 @@ func (model *CombatModel) DestroyWall(x int, y int) {
     tile.WallDestroyed = true
 }
 
+type WallTarget struct {
+    X int
+    Y int
+}
+
+func (target *WallTarget) GetX() int {
+    return target.X
+}
+
+func (target *WallTarget) GetY() int {
+    return target.Y
+}
+
 // returns true if the unit dies while moving (through a wall of fire)
 func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bool {
 
@@ -6798,6 +6821,14 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
     }
 }
 
+func (model *CombatModel) CreateRangeAttackWallEffect(attacker *ArmyUnit, x int, y int) func(*ArmyUnit) {
+    return func(_ *ArmyUnit) {
+        if attacker.CanDestroyWallsRangedAttack() && rand.N(4) == 0 {
+            model.DestroyWall(x, y)
+        }
+    }
+}
+
 func (model *CombatModel) Teleport(mover *ArmyUnit, x int, y int) {
     model.Tiles[mover.Y][mover.X].Unit = nil
     mover.X = x
@@ -6807,10 +6838,15 @@ func (model *CombatModel) Teleport(mover *ArmyUnit, x int, y int) {
 }
 
 type RangeAttackActions interface {
-    CreateRangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
+    CreateRangeAttack(attacker *ArmyUnit, defender RangeTarget)
 }
 
-func (model *CombatModel) rangeAttack(attacker *ArmyUnit, defender *ArmyUnit, actions RangeAttackActions) {
+type RangeTarget interface {
+    GetX() int
+    GetY() int
+}
+
+func (model *CombatModel) rangeAttack(attacker *ArmyUnit, defender RangeTarget, actions RangeAttackActions) {
     attacker.MovesLeft = attacker.MovesLeft.Subtract(fraction.FromInt(10))
     if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
         attacker.MovesLeft = fraction.FromInt(0)

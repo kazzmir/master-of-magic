@@ -1944,6 +1944,11 @@ func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
     }
 }
 
+func (combat *CombatScreen) createUnitToTileProjectile(attacker *ArmyUnit, targetX int, targetY int, offset image.Point, images []*ebiten.Image, explodeImages []*ebiten.Image, effect ProjectileEffect) *Projectile {
+    // it is assumed that the effect will not use the instantiated ArmyUnit here
+    return combat.createUnitToUnitProjectile(attacker, &ArmyUnit{X: targetX, Y: targetY}, offset, images, explodeImages, effect)
+}
+
 func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, target *ArmyUnit, offset image.Point, images []*ebiten.Image, explodeImages []*ebiten.Image, effect ProjectileEffect) *Projectile {
     matrix := combat.GetCameraMatrix()
     // find where on the screen the unit is
@@ -2021,7 +2026,7 @@ func (combat *CombatScreen) createUnitToUnitProjectile(attacker *ArmyUnit, targe
     return projectile
 }
 
-func (combat *CombatScreen) CreateRangeAttack(attacker *ArmyUnit, defender *ArmyUnit){
+func (combat *CombatScreen) CreateRangeAttack(attacker *ArmyUnit, defender RangeTarget){
     index := attacker.Unit.GetCombatRangeIndex(attacker.Facing)
     images, err := combat.ImageCache.GetImages("cmbmagic.lbx", index)
     if err != nil {
@@ -2037,10 +2042,21 @@ func (combat *CombatScreen) CreateRangeAttack(attacker *ArmyUnit, defender *Army
     animation := images[0:3]
     explode := images[3:]
 
-    effect := combat.Model.CreateRangeAttackEffect(attacker, combat)
+    switch target := defender.(type) {
+        case *ArmyUnit:
+            effect := combat.Model.CreateRangeAttackEffect(attacker, combat)
 
-    for _, offset := range unitview.CombatPoints(attacker.Figures()) {
-        combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitToUnitProjectile(attacker, defender, offset, animation, explode, effect))
+            for _, offset := range unitview.CombatPoints(attacker.Figures()) {
+                combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitToUnitProjectile(attacker, target, offset, animation, explode, effect))
+            }
+        case *WallTarget:
+            effect := combat.Model.CreateRangeAttackWallEffect(attacker, target.X, target.Y)
+
+            for _, offset := range unitview.CombatPoints(attacker.Figures()) {
+                combat.Model.Projectiles = append(combat.Model.Projectiles, combat.createUnitToTileProjectile(attacker, target.X, target.Y, offset, animation, explode, effect))
+            }
+        default:
+            panic("Unknown range target type")
     }
 }
 
@@ -2577,8 +2593,8 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
     mover.Paths = make(map[image.Point]pathfinding.Path)
 }
 
-func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
-    attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.X, defender.Y)
+func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *ArmyUnit, defender RangeTarget){
+    attacker.Facing = faceTowards(attacker.X, attacker.Y, defender.GetX(), defender.GetY())
 
     combat.Model.rangeAttack(attacker, defender, combat)
 
@@ -2747,7 +2763,7 @@ func (actions AIUnitActions) Teleport(mover *ArmyUnit, x int, y int, merge bool)
     actions.combat.doTeleport(actions.yield, mover, x, y, merge)
 }
 
-func (actions AIUnitActions) RangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+func (actions AIUnitActions) RangeAttack(attacker *ArmyUnit, defender RangeTarget) {
     actions.combat.doRangeAttack(actions.yield, attacker, defender)
 }
 
@@ -2816,19 +2832,24 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     } else if combat.Model.SelectedUnit != nil && !combat.Model.IsAIControlled(combat.Model.SelectedUnit) && combat.Model.SelectedUnit.Moving {
         combat.MouseState = CombatClickHud
     } else if combat.Model.SelectedUnit != nil && !combat.Model.IsAIControlled(combat.Model.SelectedUnit) {
+        attacker := combat.Model.SelectedUnit
+
         who := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
         if who == nil {
-            if combat.Model.CanMoveTo(combat.Model.SelectedUnit, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl) {
+            if combat.Model.CanMoveTo(attacker, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl) {
                 combat.MouseState = CombatMoveOk
+            } else if attacker.GetRangedAttacks() > 0 && attacker.CanDestroyWallsRangedAttack() && combat.Model.ContainsWall(combat.MouseTileX, combat.MouseTileY) {
+                combat.MouseState = CombatRangeAttackOk
             } else {
                 combat.MouseState = CombatNotOk
             }
         } else {
             newState := CombatNotOk
+
             // prioritize range attack over melee
-            if combat.Model.canRangeAttack(combat.Model.SelectedUnit, who) && combat.Model.withinArrowRange(combat.Model.SelectedUnit, who) {
+            if combat.Model.canRangeAttack(attacker, who) && combat.Model.withinArrowRange(attacker, who) {
                 newState = CombatRangeAttackOk
-            } else if combat.Model.canMeleeAttack(combat.Model.SelectedUnit, who, true) && combat.Model.withinMeleeRange(combat.Model.SelectedUnit, who) {
+            } else if combat.Model.canMeleeAttack(attacker, who, true) && combat.Model.withinMeleeRange(attacker, who) {
                 newState = CombatMeleeAttackOk
             }
 

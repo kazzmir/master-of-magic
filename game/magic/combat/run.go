@@ -480,15 +480,23 @@ type ProxyActions struct {
     Model *CombatModel
 }
 
-func (actions *ProxyActions) CreateRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
-    effect := actions.Model.CreateRangeAttackEffect(attacker, &FakeDamageIndicators{})
+func (actions *ProxyActions) CreateRangeAttack(attacker *ArmyUnit, defender RangeTarget) {
+    switch target := defender.(type) {
+        case *ArmyUnit:
+            effect := actions.Model.CreateRangeAttackEffect(attacker, &FakeDamageIndicators{})
+            for range unitview.CombatPoints(attacker.Figures()) {
+                effect(target)
+            }
 
-    for range unitview.CombatPoints(attacker.Figures()) {
-        effect(defender)
+        case *WallTarget:
+            effect := actions.Model.CreateRangeAttackWallEffect(attacker, target.X, target.Y)
+            for range unitview.CombatPoints(attacker.Figures()) {
+                effect(nil)
+            }
     }
 }
 
-func (actions *ProxyActions) RangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+func (actions *ProxyActions) RangeAttack(attacker *ArmyUnit, defender RangeTarget) {
     actions.Model.rangeAttack(attacker, defender, actions)
 }
 
