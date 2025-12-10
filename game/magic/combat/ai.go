@@ -13,8 +13,9 @@ import (
 )
 
 type AIUnitActionsInterface interface {
-    RangeAttack(attacker *ArmyUnit, defender *ArmyUnit)
+    RangeAttack(attacker *ArmyUnit, defender RangeTarget)
     MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
+    MeleeAttackWall(attacker *ArmyUnit, x int, y int)
     MoveUnit(unit *ArmyUnit, path pathfinding.Path)
     Teleport(unit *ArmyUnit, x, y int, merge bool)
     DoProjectiles()

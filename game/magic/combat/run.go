@@ -154,8 +154,15 @@ func (system *ProxySpellSystem) CreateDisintegrateProjectile(target *ArmyUnit) *
 }
 
 func (system *ProxySpellSystem) CreateDisruptProjectile(x int, y int) *Projectile {
-    // FIXME
-    return nil
+    fakeTarget := &ArmyUnit{
+        X: x,
+        Y: y,
+    }
+
+    return &Projectile{
+        Target: fakeTarget,
+        Effect: system.Model.CreateDisruptProjectileEffect(x, y),
+    }
 }
 
 func (system *ProxySpellSystem) CreateMagicVortex(x int, y int) *OtherUnit {
@@ -473,20 +480,32 @@ type ProxyActions struct {
     Model *CombatModel
 }
 
-func (actions *ProxyActions) CreateRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
-    effect := actions.Model.CreateRangeAttackEffect(attacker, &FakeDamageIndicators{})
+func (actions *ProxyActions) CreateRangeAttack(attacker *ArmyUnit, defender RangeTarget) {
+    switch target := defender.(type) {
+        case *ArmyUnit:
+            effect := actions.Model.CreateRangeAttackEffect(attacker, &FakeDamageIndicators{})
+            for range unitview.CombatPoints(attacker.Figures()) {
+                effect(target)
+            }
 
-    for range unitview.CombatPoints(attacker.Figures()) {
-        effect(defender)
+        case *WallTarget:
+            effect := actions.Model.CreateRangeAttackWallEffect(attacker, target.X, target.Y)
+            for range unitview.CombatPoints(attacker.Figures()) {
+                effect(nil)
+            }
     }
 }
 
-func (actions *ProxyActions) RangeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
+func (actions *ProxyActions) RangeAttack(attacker *ArmyUnit, defender RangeTarget) {
     actions.Model.rangeAttack(attacker, defender, actions)
 }
 
 func (actions *ProxyActions) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) {
     actions.Model.meleeAttack(attacker, defender)
+}
+
+func (actions *ProxyActions) MeleeAttackWall(attacker *ArmyUnit, x int, y int) {
+    actions.Model.meleeAttackWall(attacker, x, y)
 }
 
 func (actions *ProxyActions) MoveUnit(mover *ArmyUnit, path pathfinding.Path) {
@@ -497,9 +516,6 @@ func (actions *ProxyActions) MoveUnit(mover *ArmyUnit, path pathfinding.Path) {
         if died {
             return
         }
-
-        mover.MoveX = float64(targetX)
-        mover.MoveY = float64(targetY)
 
         path = path[1:]
     }

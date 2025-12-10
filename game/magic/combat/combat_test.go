@@ -1022,3 +1022,52 @@ func (model *CombatModel) CreateCracksCallProjectileEffect() func(*ArmyUnit) {
      */
 
 }
+
+type noGlobalEnchantments struct {
+}
+
+func (*noGlobalEnchantments) HasEnchantment(enchantment data.Enchantment) bool {
+    return false
+}
+
+func (*noGlobalEnchantments) HasRivalEnchantment(player *playerlib.Player, enchantment data.Enchantment) bool {
+    return false
+}
+
+// run a full combat simulation
+func TestFullCombat(test *testing.T){
+    defendingPlayer := playerlib.MakePlayer(setup.WizardCustom{
+        Name: "AI-1",
+        Banner: data.BannerBrown,
+    }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+    attackingPlayer := playerlib.MakePlayer(setup.WizardCustom{
+        Name: "AI-2",
+        Banner: data.BannerRed,
+    }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+    attackingArmy := &Army{
+        Player: attackingPlayer,
+    }
+
+    defendingArmy := &Army{
+        Player: defendingPlayer,
+    }
+
+    for range 3 {
+        attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+    }
+
+    for range 3 {
+        defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSwordsmen, 1, 1, data.PlaneArcanus, defendingPlayer.Wizard.Banner, defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
+    }
+
+    var allSpells spellbook.Spells
+
+    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10))
+
+    state := Run(model)
+    if state != CombatStateAttackerWin {
+        test.Errorf("Error: attacker should have won the combat, got state %d", state)
+    }
+}

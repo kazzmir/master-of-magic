@@ -517,7 +517,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Enemy",
             Banner: data.BannerBlue,
-        }, true, 0, 0, nil, &noGlobalEnchantments{})
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(defendingPlayer)
     // defendingArmy := createSettlerArmy(defendingPlayer, 3)
@@ -537,21 +537,22 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
             Name: "Merlin",
             Banner: data.BannerRed,
             Race: data.RaceHighMen,
-        }, false, 0, 0, nil, &noGlobalEnchantments{})
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
 
     attackingPlayer.CastingSkillPower = 10000
     attackingPlayer.Mana = 1000
     attackingPlayer.TaxRate = fraction.Zero()
 
-    /*
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Fireball"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disrupt"))
-    */
 
+    /*
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
     defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Darkness"))
+    */
 
-    attackingArmy := createArmyN(attackingPlayer, units.LizardSwordsmen, 3)
+    // attackingArmy := createArmyN(attackingPlayer, units.LizardSwordsmen, 3)
+    attackingArmy := createArmyN(attackingPlayer, units.BarbarianCavalry, 1)
     // attackingArmy := createGreatDrakeArmy(attackingPlayer, 1)
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcCavalry, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()))
     // attackingArmy := createWeakArmy(attackingPlayer)
@@ -562,11 +563,11 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     city.Buildings.Insert(buildinglib.BuildingFortress)
     city.Buildings.Insert(buildinglib.BuildingCityWalls)
 
-    city.AddEnchantment(data.CityEnchantmentWallOfFire, defendingPlayer.Wizard.Banner)
+    // city.AddEnchantment(data.CityEnchantmentWallOfFire, defendingPlayer.Wizard.Banner)
     // city.AddEnchantment(data.CityEnchantmentFlyingFortress, defendingPlayer.GetBanner())
     // city.AddEnchantment(data.CityEnchantmentWallOfDarkness, defendingPlayer.Wizard.Banner)
 
-    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, defendingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, data.MagicNone, 0, 0)
+    return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, data.MagicNone, 0, 0)
 }
 
 // fight in a tower of wizardy
