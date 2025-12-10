@@ -504,6 +504,10 @@ func (actions *ProxyActions) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     actions.Model.meleeAttack(attacker, defender)
 }
 
+func (actions *ProxyActions) MeleeAttackWall(attacker *ArmyUnit, x int, y int) {
+    actions.Model.meleeAttackWall(attacker, x, y)
+}
+
 func (actions *ProxyActions) MoveUnit(mover *ArmyUnit, path pathfinding.Path) {
     // log.Printf("Move %v along path: %+v", mover.Unit.GetName(), path)
     for len(path) > 0 && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {

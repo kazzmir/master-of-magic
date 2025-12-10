@@ -2606,6 +2606,38 @@ func (combat *CombatScreen) doRangeAttack(yield coroutine.YieldFunc, attacker *A
     combat.doProjectiles(yield)
 }
 
+func (combat *CombatScreen) doMeleeWall(yield coroutine.YieldFunc, attacker *ArmyUnit, x int, y int){
+    attacker.Attacking = true
+    defer func(){
+        attacker.Attacking = false
+    }()
+
+    attacker.Facing = faceTowards(attacker.X, attacker.Y, x, y)
+
+    // FIXME: sound is based on attacker type, and possibly defender type
+    sound, err := combat.AudioCache.GetCombatSound(attacker.Unit.GetAttackSound().LbxIndex())
+    if err == nil {
+        sound.Play()
+    }
+
+    for i := range 60 {
+        combat.Counter += 1
+        combat.UpdateAnimations()
+        combat.UpdateDamageIndicators()
+        combat.ProcessInput()
+        combat.ProcessEvents(yield) // ignore return
+
+        // delay the actual melee computation to give time for the sound to play
+        if i == 20 {
+            combat.Model.meleeAttackWall(attacker, x, y)
+        }
+
+        if yield() != nil {
+            return
+        }
+    }
+}
+
 func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
     attacker.Attacking = true
     defender.Defending = true
@@ -2771,6 +2803,10 @@ func (actions AIUnitActions) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     actions.combat.doMelee(actions.yield, attacker, defender)
 }
 
+func (actions AIUnitActions) MeleeAttackWall(attacker *ArmyUnit, x int, y int) {
+    actions.combat.doMeleeWall(actions.yield, attacker, x, y)
+}
+
 func (actions AIUnitActions) MoveUnit(unit *ArmyUnit, path pathfinding.Path) {
     actions.combat.doMoveUnit(actions.yield, unit, path)
 }
@@ -2840,6 +2876,8 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
                 combat.MouseState = CombatMoveOk
             } else if attacker.GetRangedAttacks() > 0 && attacker.CanDestroyWallsRangedAttack() && combat.Model.ContainsWall(combat.MouseTileX, combat.MouseTileY) {
                 combat.MouseState = CombatRangeAttackOk
+            } else if combat.Model.ContainsWall(combat.MouseTileX, combat.MouseTileY) && computeTileDistance(attacker.X, attacker.Y, combat.MouseTileX, combat.MouseTileY) == 1 && attacker.HasAbility(data.AbilityWallCrusher) {
+                combat.MouseState = CombatMeleeAttackOk
             } else {
                 combat.MouseState = CombatNotOk
             }

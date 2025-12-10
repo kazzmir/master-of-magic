@@ -3853,6 +3853,25 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit,
     return true
 }
 
+func (model *CombatModel) meleeAttackWall(attacker *ArmyUnit, x int, y int) {
+    pointsUsed := attacker.GetMovementSpeed().Divide(fraction.FromInt(2))
+    if pointsUsed.LessThan(fraction.FromInt(1)) {
+        pointsUsed = fraction.FromInt(1)
+    }
+
+    attacker.MovesLeft = attacker.MovesLeft.Subtract(pointsUsed)
+    if attacker.MovesLeft.LessThan(fraction.FromInt(0)) {
+        attacker.MovesLeft = fraction.FromInt(0)
+    }
+
+    if attacker.HasAbility(data.AbilityWallCrusher) && rand.N(2) == 0 {
+        if model.DestroyWall(x, y) {
+            // since a wall went away, new paths need to be computed if the attacker still has moves left
+            attacker.Paths = make(map[image.Point]pathfinding.Path)
+        }
+    }
+}
+
 /* attacker is performing a physical melee attack against defender
  * returns total damage done by attacker and total damage done by defender
  */
@@ -4142,7 +4161,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
 
     defender.Attacked += 1
 
-    // FIXME: if attacker has WallCrusher ability and the defender is on a wall then 50% chance to destroy the wall
+    model.meleeAttackWall(attacker, defender.X, defender.Y)
 
     return totalAttackerDamage, totalDefenderDamage
 }
@@ -6132,6 +6151,8 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                }
            } else if attacker.GetRangedAttacks() > 0 && attacker.CanDestroyWallsRangedAttack() {
                actions.RangeAttack(attacker, &WallTarget{X: actionTileX, Y: actionTileY})
+           } else if attacker.HasAbility(data.AbilityWallCrusher) && model.ContainsWall(actionTileX, actionTileY) && computeTileDistance(attacker.X, attacker.Y, actionTileX, actionTileY) == 1 {
+               actions.MeleeAttackWall(attacker, actionTileX, actionTileY)
            }
        }
     }
@@ -6731,10 +6752,15 @@ func (model *CombatModel) CreateCracksCallProjectileEffect() func(*ArmyUnit) {
     }
 }
 
-func (model *CombatModel) DestroyWall(x int, y int) {
+// true if a wall was destroyed
+func (model *CombatModel) DestroyWall(x int, y int) bool {
     tile := &model.Tiles[y][x]
-    // even if there was no wall here its still ok to set this flag
-    tile.WallDestroyed = true
+    if tile.Wall != nil && !tile.WallDestroyed {
+        tile.WallDestroyed = true
+        return true
+    } else {
+        return false
+    }
 }
 
 type WallTarget struct {
@@ -6812,6 +6838,8 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
 
         if attacker.CanDestroyWallsRangedAttack() && rand.N(4) == 0 {
             model.DestroyWall(defender.X, defender.Y)
+            // since a wall went away, new paths need to be computed if the attacker still has moves left
+            attacker.Paths = make(map[image.Point]pathfinding.Path)
         }
 
         if defender.GetHealth() <= 0 {
