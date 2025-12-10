@@ -6740,7 +6740,12 @@ func (model *CombatModel) CreateDispelMagicProjectileEffect(caster ArmyPlayer, d
 
 func (model *CombatModel) CreateDisruptProjectileEffect(x int, y int) func(*ArmyUnit) {
     return func(_ *ArmyUnit) {
-        model.DestroyWall(x, y)
+        if model.DestroyWall(x, y) {
+            if model.SelectedUnit != nil {
+                // have to reset paths
+                model.SelectedUnit.Paths = make(map[image.Point]pathfinding.Path)
+            }
+        }
     }
 }
 

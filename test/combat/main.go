@@ -552,7 +552,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     */
 
     // attackingArmy := createArmyN(attackingPlayer, units.LizardSwordsmen, 3)
-    attackingArmy := createArmyN(attackingPlayer, units.Catapult, 1)
+    attackingArmy := createArmyN(attackingPlayer, units.BarbarianCavalry, 1)
     // attackingArmy := createGreatDrakeArmy(attackingPlayer, 1)
     // attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcCavalry, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo()))
     // attackingArmy := createWeakArmy(attackingPlayer)
