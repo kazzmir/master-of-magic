@@ -2,7 +2,6 @@ package combat
 
 import (
     "image"
-    "log"
     "fmt"
     "slices"
     "math"
@@ -11,6 +10,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/log"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -1907,7 +1907,7 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player ArmyPl
         if spell.Valid() {
             unit.Spells.AddSpell(spell)
         } else {
-            log.Printf("Error: unable to find spell %v for %v", knownSpell, unit.Unit.GetName())
+            log.Error("unable to find spell %v for %v", knownSpell, unit.Unit.GetName())
         }
     }
 
@@ -2981,7 +2981,7 @@ func (model *CombatModel) IsEnchantmentActive(enchantment data.CombatEnchantment
 }
 
 func (model *CombatModel) AddLogEvent(text string) {
-    // log.Print(text)
+    log.Info(text)
     model.Log = append(model.Log, CombatLogEvent{
         Turn: model.CurrentTurn,
         Text: text,
@@ -4307,7 +4307,7 @@ func DoStrategicCombat(attackingArmy *Army, defendingArmy *Army) (CombatState, i
     attackingPower := attackingArmy.GetPower()
     defendingPower := defendingArmy.GetPower()
 
-    log.Printf("strategic combat: attacking power: %v, defending power: %v", attackingPower, defendingPower)
+    log.Info("strategic combat: attacking power: %v, defending power: %v", attackingPower, defendingPower)
 
     // FIXME: Allow fleeing?
 
@@ -5325,7 +5325,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             doAnimateDead := func (killedUnit *ArmyUnit){
                 x, y, err := model.FindEmptyTile(model.GetSideForPlayer(army.Player))
                 if err != nil {
-                    log.Printf("Unable to find empty tile to animate unit")
+                    log.Warn("Unable to find empty tile to animate unit")
                     return
                 }
                 model.AddProjectile(spellSystem.CreateSummoningCircle(x, y))
@@ -5736,7 +5736,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             castedCallback(true)
 
         default:
-            log.Printf("Unhandled spell %v", spell.Name)
+            log.Error("Unhandled spell %v", spell.Name)
     }
 }
 
@@ -5922,7 +5922,7 @@ func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) bool {
                     casted = true
 
                     if success {
-                        log.Printf("AI cast %v with strength %v", spell.Name, spell.Cost(false))
+                        log.Info("AI cast %v with strength %v", spell.Name, spell.Cost(false))
                         spellSystem.PlaySound(spell)
                     }
                 })
@@ -6835,7 +6835,7 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
 
         totalDamage := appliedDamage
 
-        // log.Printf("attacker %v %v rolled %v ranged damage to defender %v %v, applied %v", attacker.Unit.GetRace(), attacker.Unit.GetName(), damage, defender.Unit.GetRace(), defender.Unit.GetName(), appliedDamage)
+        log.Info("attacker %v %v rolled %v ranged damage to defender %v %v, applied %v", attacker.Unit.GetRace(), attacker.Unit.GetName(), damage, defender.Unit.GetRace(), defender.Unit.GetName(), appliedDamage)
 
         if attacker.Unit.CanTouchAttack(attacker.Unit.GetRangedAttackDamageType()) {
             funcs := model.doTouchAttack(attacker, defender, 0)

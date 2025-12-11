@@ -1,12 +1,11 @@
 package combat
 
 import (
-    _ "log"
-
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/log"
 )
 
 type ProxySpellSystem struct {
@@ -566,7 +565,7 @@ func Run(model *CombatModel) CombatState {
             select {
                 case event := <-model.Events:
                     _ = event
-                    // log.Printf("Discarding event: %+v", event)
+                    log.Debug("Discarding event: %+v", event)
                 default:
                     stop = true
             }

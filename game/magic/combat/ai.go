@@ -5,11 +5,11 @@ import (
     "slices"
     "cmp"
     "image"
-    _ "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/log"
 )
 
 type AIUnitActionsInterface interface {
@@ -45,7 +45,7 @@ func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsIn
                     aiUnit.SpellCharges[spell] -= 1
 
                     if success {
-                        // log.Printf("AI unit %v cast %v with strength %v", aiUnit.Unit.GetName(), spell.Name, spell.Cost(false))
+                        log.Debug("AI unit %v cast %v with strength %v", aiUnit.Unit.GetName(), spell.Name, spell.Cost(false))
                         spellSystem.PlaySound(spell)
                     }
                 })
