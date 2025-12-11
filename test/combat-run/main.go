@@ -164,7 +164,7 @@ func RunCombat3(allSpells spellbook.Spells) {
     log.Printf("Final state: %+v", state)
 }
 
-func runBattle(allSpells spellbook.Spells, attacker units.Unit, defender units.Unit) combat.CombatState {
+func runBattle(allSpells spellbook.Spells, attacker units.Unit, defender units.Unit, count int) combat.CombatState {
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
         Name: "AI-1",
         Banner: data.BannerBrown,
@@ -183,9 +183,13 @@ func runBattle(allSpells spellbook.Spells, attacker units.Unit, defender units.U
         Player: defendingPlayer,
     }
 
-    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(attacker, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+    for range count {
+        attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(attacker, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+    }
 
-    defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(defender, 1, 1, data.PlaneArcanus, defendingPlayer.Wizard.Banner, defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
+    for range count {
+        defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(defender, 1, 1, data.PlaneArcanus, defendingPlayer.Wizard.Banner, defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
+    }
 
     model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
 
@@ -231,7 +235,7 @@ func RunAll(allSpells spellbook.Spells) {
             for _, defender := range useUnits {
                 value := 0
                 for range 5 {
-                    switch runBattle(allSpells, attacker, defender) {
+                    switch runBattle(allSpells, attacker, defender, 2) {
                         case combat.CombatStateAttackerWin:
                             value += 1
                         case combat.CombatStateDefenderWin:
@@ -271,9 +275,16 @@ func RunAll(allSpells spellbook.Spells) {
         return cmp.Compare(a.Score, b.Score)
     })
 
+    var strongestNormal Result
+
     for _, unit := range results {
         log.Printf("Unit %v %v: score %v", unit.Unit.Race, unit.Unit.GetName(), unit.Score)
+        if unit.Unit.Race != data.RaceFantastic && unit.Score > strongestNormal.Score {
+            strongestNormal = unit
+        }
     }
+
+    log.Printf("Strongest normal unit: %v %v with score %v", strongestNormal.Unit.Race, strongestNormal.Unit.GetName(), strongestNormal.Score)
 }
 
 func main() {

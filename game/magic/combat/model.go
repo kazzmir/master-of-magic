@@ -6819,8 +6819,19 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
 
         damage := attacker.ComputeRangeDamage(defender, tileDistance)
 
-        // FIXME: for magical damage, set the Magic damage modifier for the proper realm
-        appliedDamage, _ := ApplyDamage(defender, []int{damage}, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), DamageModifiers{WallDefense: model.ComputeWallDefense(attacker, defender)})
+        modifiers := DamageModifiers{
+            WallDefense: model.ComputeWallDefense(attacker, defender),
+            ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
+            Illusion: attacker.HasAbility(data.AbilityIllusion),
+            NegateWeaponImmunity: attacker.CanNegateWeaponImmunity(),
+            EldritchWeapon: attacker.HasEnchantment(data.UnitEnchantmentEldritchWeapon),
+        }
+
+        if attacker.GetRangedAttackDamageType() == units.DamageRangedMagical {
+            modifiers.Magic = attacker.GetRealm()
+        }
+
+        appliedDamage, _ := ApplyDamage(defender, []int{damage}, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), modifiers)
 
         totalDamage := appliedDamage
 
@@ -6838,8 +6849,6 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
         damageIndicators.AddDamageIndicator(defender, totalDamage)
 
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
-
-        // FIXME: if attacker has WallCrusher and defender is standing on a wall then 25% chance to destroy the wall
 
         if attacker.CanDestroyWallsRangedAttack() && rand.N(4) == 0 {
             model.DestroyWall(defender.X, defender.Y)
