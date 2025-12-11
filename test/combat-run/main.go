@@ -197,7 +197,7 @@ func runBattle(allSpells spellbook.Spells, attacker units.Unit, defender units.U
     return combat.Run(model)
 }
 
-func RunAll(allSpells spellbook.Spells) {
+func RunAll(allSpells spellbook.Spells, unitsPerSide int) {
     type UnitKey struct {
         LbxFile string
         Index int
@@ -213,18 +213,20 @@ func RunAll(allSpells spellbook.Spells) {
     // useUnits := units.UnitsByRace(data.RaceOrc)
     useUnits := units.AllUnits
 
-    unitsPerSide := 2
     battles := 5
 
     log.Printf("Units per side: %v, battles per matchup: %v", unitsPerSide, battles)
 
-    unitResults := make(map[UnitKey]int)
-    var lock sync.Mutex
+    unitResults := make(map[UnitKey]map[UnitKey]int)
     var group sync.WaitGroup
 
     for _, attacker := range useUnits {
         group.Add(1)
         key := getKey(attacker)
+
+        unitResults[key] = make(map[UnitKey]int)
+
+        useMap := unitResults[key]
 
         go func(){
             defer group.Done()
@@ -240,9 +242,7 @@ func RunAll(allSpells spellbook.Spells) {
 
                 }
 
-                lock.Lock()
-                unitResults[key] += value
-                lock.Unlock()
+                useMap[getKey(defender)] = value
             }
 
             fmt.Printf(".")
@@ -264,28 +264,67 @@ func RunAll(allSpells spellbook.Spells) {
         unitMap[getKey(unit)] = unit
     }
 
+    csvName := fmt.Sprintf("combat-results-%vv%v.csv", unitsPerSide, unitsPerSide)
+    csvFile, err := os.Create(csvName)
+    if err != nil {
+        log.Fatalf("Failed to create CSV file: %v", err)
+    }
+    defer csvFile.Close()
+
+    fmt.Fprintf(csvFile, "Unit,Total Score")
+
+    for _, unit := range useUnits {
+        fmt.Fprintf(csvFile, ",%v %v", unit.Race, unit.GetName())
+    }
+    fmt.Fprintln(csvFile)
+
     var results []Result
-    for unit, score := range unitResults {
+    for unitKey, scores := range unitResults {
+
+        totalScore := 0
+
+        unit := unitMap[unitKey]
+
+        for _, score := range scores {
+            totalScore += score
+        }
+
         results = append(results, Result{
-            Unit: unitMap[unit],
-            Score: score,
+            Unit: unit,
+            Score: totalScore,
         })
     }
 
     slices.SortFunc(results, func(a, b Result) int {
-        return cmp.Compare(a.Score, b.Score)
+        return cmp.Compare(b.Score, a.Score)
     })
 
-    var strongestNormal Result
+    // var strongestNormal Result
 
     for _, unit := range results {
+
+        fmt.Fprintf(csvFile, "%v %v", unit.Unit.Race, unit.Unit.GetName())
+
+        /*
         log.Printf("Unit %v %v: score %v", unit.Unit.Race, unit.Unit.GetName(), unit.Score)
         if unit.Unit.Race != data.RaceFantastic && unit.Score > strongestNormal.Score {
             strongestNormal = unit
         }
+        */
+
+        fmt.Fprintf(csvFile, ",%v", unit.Score)
+
+        // write all the columns, which is the score against that opponent
+        useMap := unitResults[getKey(unit.Unit)]
+        for _, opponent := range useUnits {
+            fmt.Fprintf(csvFile, ",%v", useMap[getKey(opponent)])
+        }
+        fmt.Fprintln(csvFile)
     }
 
-    log.Printf("Strongest normal unit: %v %v with score %v", strongestNormal.Unit.Race, strongestNormal.Unit.GetName(), strongestNormal.Score)
+    // log.Printf("Strongest normal unit: %v %v with score %v", strongestNormal.Unit.Race, strongestNormal.Unit.GetName(), strongestNormal.Score)
+
+    log.Printf("Results written to %v", csvName)
 }
 
 func main() {
@@ -313,7 +352,7 @@ func main() {
     }
     */
     // RunCombat2(allSpells)
-    RunAll(allSpells)
+    RunAll(allSpells, 4)
 
     memoryProfile, err := os.Create("profile.mem.combat-run")
     if err != nil {
