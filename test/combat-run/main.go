@@ -210,18 +210,13 @@ func RunAll(allSpells spellbook.Spells) {
         }
     }
 
-    findUnit := func(key UnitKey) units.Unit {
-        for _, u := range units.AllUnits {
-            if u.LbxFile == key.LbxFile && u.Index == key.Index {
-                return u
-            }
-        }
-
-        return units.UnitNone
-    }
-
     // useUnits := units.UnitsByRace(data.RaceOrc)
     useUnits := units.AllUnits
+
+    unitsPerSide := 2
+    battles := 5
+
+    log.Printf("Units per side: %v, battles per matchup: %v", unitsPerSide, battles)
 
     unitResults := make(map[UnitKey]int)
     var lock sync.Mutex
@@ -235,8 +230,8 @@ func RunAll(allSpells spellbook.Spells) {
             defer group.Done()
             for _, defender := range useUnits {
                 value := 0
-                for range 5 {
-                    switch runBattle(allSpells, attacker, defender, 2) {
+                for range battles {
+                    switch runBattle(allSpells, attacker, defender, unitsPerSide) {
                         case combat.CombatStateAttackerWin:
                             value += 1
                         case combat.CombatStateDefenderWin:
@@ -264,10 +259,15 @@ func RunAll(allSpells spellbook.Spells) {
         Score int
     }
 
+    unitMap := make(map[UnitKey]units.Unit)
+    for _, unit := range useUnits {
+        unitMap[getKey(unit)] = unit
+    }
+
     var results []Result
     for unit, score := range unitResults {
         results = append(results, Result{
-            Unit: findUnit(unit),
+            Unit: unitMap[unit],
             Score: score,
         })
     }
