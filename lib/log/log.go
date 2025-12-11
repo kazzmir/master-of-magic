@@ -7,11 +7,11 @@ import (
 
 type LogLevel int
 const (
-    LogLevelDebug LogLevel = iota
+    LogLevelDisabled LogLevel = iota
+    LogLevelDebug
     LogLevelInfo
     LogLevelWarn
     LogLevelError
-    LogLevelDisabled
 )
 
 var Level LogLevel = LogLevelInfo

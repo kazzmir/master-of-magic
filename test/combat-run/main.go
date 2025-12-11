@@ -20,6 +20,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    magiclog "github.com/kazzmir/master-of-magic/lib/log"
 )
 
 //go:embed spelldat.lbx
@@ -303,6 +304,8 @@ func main() {
         pprof.StartCPUProfile(profile)
         defer pprof.StopCPUProfile()
     }
+
+    magiclog.SetLevel(magiclog.LogLevelDisabled)
 
     /*
     for range 100 {
