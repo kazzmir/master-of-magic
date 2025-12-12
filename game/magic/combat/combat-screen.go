@@ -1238,10 +1238,10 @@ func (combat *CombatScreen) CreateSummoningCircle(x int, y int) *Projectile {
     return combat.createUnitProjectile(&fakeTarget, explodeImages, UnitPositionUnder, func (*ArmyUnit){})
 }
 
-func (combat *CombatScreen) CreateMagicVortex(x int, y int) *OtherUnit {
+func (combat *CombatScreen) CreateMagicVortex(x int, y int) *MagicVortex {
     images, _ := combat.ImageCache.GetImages("cmbmagic.lbx", 120)
 
-    unit := &OtherUnit{
+    unit := &MagicVortex{
         X: x,
         Y: y,
         Animation: util.MakeAnimation(images, true),
@@ -2121,11 +2121,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
     for !quit {
         combat.Counter += 1
 
-        for _, unit := range combat.Model.OtherUnits {
-            if combat.Counter % 6 == 0 {
-                unit.Animation.Next()
-            }
-        }
+        combat.UpdateAnimations()
 
         combat.UI.StandardUpdate()
         combat.ProcessInput()
@@ -2230,11 +2226,7 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
     for !quit {
         combat.Counter += 1
 
-        for _, unit := range combat.Model.OtherUnits {
-            if combat.Counter % 6 == 0 {
-                unit.Animation.Next()
-            }
-        }
+        combat.UpdateAnimations()
 
         combat.UI.StandardUpdate()
         combat.ProcessInput()
@@ -2415,7 +2407,7 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) CombatUpdat
 }
 
 func (combat *CombatScreen) UpdateAnimations(){
-    for _, unit := range combat.Model.OtherUnits {
+    for _, unit := range combat.Model.MagicVortexes {
         if combat.Counter % 6 == 0 {
             unit.Animation.Next()
         }
@@ -4058,7 +4050,7 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         drawable.Render()
     }
 
-    for _, unit := range combat.Model.OtherUnits {
+    for _, unit := range combat.Model.MagicVortexes {
         var unitOptions ebiten.DrawImageOptions
         frame := unit.Animation.Frame()
         unitOptions.GeoM.Translate(float64(-frame.Bounds().Dx()/2), float64(-frame.Bounds().Dy()))

@@ -164,9 +164,11 @@ func (system *ProxySpellSystem) CreateDisruptProjectile(x int, y int) *Projectil
     }
 }
 
-func (system *ProxySpellSystem) CreateMagicVortex(x int, y int) *OtherUnit {
-    // FIXME
-    return nil
+func (system *ProxySpellSystem) CreateMagicVortex(x int, y int) *MagicVortex {
+    return &MagicVortex{
+        X: x,
+        Y: y,
+    }
 }
 
 func (system *ProxySpellSystem) CreateWarpWoodProjectile(target *ArmyUnit) *Projectile {

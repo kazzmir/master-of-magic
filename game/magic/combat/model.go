@@ -2212,8 +2212,8 @@ func (army *Army) RemoveUnit(remove *ArmyUnit){
     })
 }
 
-// represents a unit that is not part of the army, for things like magic vortex, for things like magic vortex
-type OtherUnit struct {
+// a special kind of unit
+type MagicVortex struct {
     Animation *util.Animation
     X int
     Y int
@@ -2248,7 +2248,7 @@ type CombatModel struct {
     Tiles [][]Tile
     // when the user hovers over a unit, that unit should be shown in a little info box at the upper right
     HighlightedUnit *ArmyUnit
-    OtherUnits []*OtherUnit
+    MagicVortexes []*MagicVortex
     Projectiles []*Projectile
     Plane data.Plane
     Zone ZoneType
@@ -4616,7 +4616,7 @@ type SpellSystem interface {
     CreateWordOfRecallProjectile(target *ArmyUnit) *Projectile
     CreateDisintegrateProjectile(target *ArmyUnit) *Projectile
     CreateDisruptProjectile(x int, y int) *Projectile
-    CreateMagicVortex(x int, y int) *OtherUnit
+    CreateMagicVortex(x int, y int) *MagicVortex
     CreateWarpWoodProjectile(target *ArmyUnit) *Projectile
     CreateDeathSpellProjectile(target *ArmyUnit) *Projectile
     CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile
@@ -4902,7 +4902,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }
 
             model.DoTargetTileSpell(army, spell, unoccupied, func (x int, y int){
-                model.OtherUnits = append(model.OtherUnits, spellSystem.CreateMagicVortex(x, y))
+                model.MagicVortexes = append(model.MagicVortexes, spellSystem.CreateMagicVortex(x, y))
                 castedCallback(true)
             })
         case "Warp Wood":
