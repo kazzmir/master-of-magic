@@ -6791,22 +6791,56 @@ func (target *WallTarget) GetY() int {
 }
 
 func (model *CombatModel) MoveMagicVortex(vortex *MagicVortex, actions AIUnitActionsInterface) {
-    for range 3 {
-        dx := 0
-        dy := 0
+    lastX := -1
+    lastY := -1
 
-        if rand.N(2) == 0 {
-            // rand(2)*2 will be either 0 or 2, so subtracting 1 gives -1 or 1
-            dx = rand.N(2) * 2 - 1
-        } else {
-            dy = rand.N(2) * 2 - 1
-        }
+    for range 3 {
+        // move in one of the 4 cardinal directions
+        choices := []image.Point{image.Pt(-1,0), image.Pt(1,0), image.Pt(0,-1), image.Pt(0,1)}
+
+        choices = slices.DeleteFunc(choices, func(p image.Point) bool {
+            newX := vortex.X + p.X
+            newY := vortex.Y + p.Y
+
+            if newX < 0 || newY < 0 || newY >= len(model.Tiles) || newX >= len(model.Tiles[newY]) {
+                return true
+            }
+
+            // cant move back to the last position
+            if newX == lastX && newY == lastY {
+                return true
+            }
+
+            return false
+        })
+
+        choice := choices[rand.N(len(choices))]
+
+        dx := choice.X
+        dy := choice.Y
 
         path := pathfinding.Path{
             image.Pt(vortex.X + dx, vortex.Y + dy),
         }
 
+        lastX = vortex.X
+        lastY = vortex.Y
+
         actions.MoveMagicVortex(vortex, path)
+
+        // the unit at the new location takes 5 doom damage
+        // any adjacent damage has a 33% chance to take a 5 strength magic armor piercing attack
+
+        unit := model.GetUnit(vortex.X, vortex.Y)
+        if unit != nil {
+            immune := unit.HasAbility(data.AbilityMagicImmunity) || unit.HasEnchantment(data.UnitEnchantmentRighteousness)
+            if !immune {
+                unit.TakeDamage(5, DamageNormal)
+                if unit.GetHealth() <= 0 {
+                    model.KillUnit(unit)
+                }
+            }
+        }
     }
 }
 
