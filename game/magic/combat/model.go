@@ -609,7 +609,6 @@ type ArmyUnit struct {
     Attacking bool
     Defending bool
 
-    MovementTick uint64
     MoveX float64
     MoveY float64
     CurrentPath pathfinding.Path
@@ -2215,8 +2214,14 @@ func (army *Army) RemoveUnit(remove *ArmyUnit){
 // a special kind of unit
 type MagicVortex struct {
     Animation *util.Animation
+    Moved bool
+    Moving bool
+    Team Team
     X int
     Y int
+
+    MoveX float64
+    MoveY float64
 }
 
 type ProjectileEffect func(*ArmyUnit)
@@ -2563,6 +2568,10 @@ func (model *CombatModel) NextTurn() {
     model.AttackingArmy.Casted = false
 
     defenderLeakMana := false
+
+    for _, vortex := range model.MagicVortexes {
+        vortex.Moved = false
+    }
 
     if model.IsEnchantmentActive(data.CombatEnchantmentManaLeak, TeamAttacker) {
         model.DefendingArmy.ManaPool = max(0, model.DefendingArmy.ManaPool - 5)
@@ -4616,7 +4625,7 @@ type SpellSystem interface {
     CreateWordOfRecallProjectile(target *ArmyUnit) *Projectile
     CreateDisintegrateProjectile(target *ArmyUnit) *Projectile
     CreateDisruptProjectile(x int, y int) *Projectile
-    CreateMagicVortex(x int, y int) *MagicVortex
+    CreateMagicVortex(team Team, x int, y int) *MagicVortex
     CreateWarpWoodProjectile(target *ArmyUnit) *Projectile
     CreateDeathSpellProjectile(target *ArmyUnit) *Projectile
     CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile
@@ -4902,7 +4911,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }
 
             model.DoTargetTileSpell(army, spell, unoccupied, func (x int, y int){
-                model.MagicVortexes = append(model.MagicVortexes, spellSystem.CreateMagicVortex(x, y))
+                model.MagicVortexes = append(model.MagicVortexes, spellSystem.CreateMagicVortex(model.GetTeamForArmy(army), x, y))
                 castedCallback(true)
             })
         case "Warp Wood":
@@ -6779,6 +6788,26 @@ func (target *WallTarget) GetX() int {
 
 func (target *WallTarget) GetY() int {
     return target.Y
+}
+
+func (model *CombatModel) MoveMagicVortex(vortex *MagicVortex, actions AIUnitActionsInterface) {
+    for range 3 {
+        dx := 0
+        dy := 0
+
+        if rand.N(2) == 0 {
+            // rand(2)*2 will be either 0 or 2, so subtracting 1 gives -1 or 1
+            dx = rand.N(2) * 2 - 1
+        } else {
+            dy = rand.N(2) * 2 - 1
+        }
+
+        path := pathfinding.Path{
+            image.Pt(vortex.X + dx, vortex.Y + dy),
+        }
+
+        actions.MoveMagicVortex(vortex, path)
+    }
 }
 
 // returns true if the unit dies while moving (through a wall of fire)

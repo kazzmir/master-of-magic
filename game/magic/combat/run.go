@@ -164,10 +164,11 @@ func (system *ProxySpellSystem) CreateDisruptProjectile(x int, y int) *Projectil
     }
 }
 
-func (system *ProxySpellSystem) CreateMagicVortex(x int, y int) *MagicVortex {
+func (system *ProxySpellSystem) CreateMagicVortex(team Team, x int, y int) *MagicVortex {
     return &MagicVortex{
         X: x,
         Y: y,
+        Team: team,
     }
 }
 
@@ -507,6 +508,9 @@ func (actions *ProxyActions) MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
 
 func (actions *ProxyActions) MeleeAttackWall(attacker *ArmyUnit, x int, y int) {
     actions.Model.meleeAttackWall(attacker, x, y)
+}
+
+func (actions *ProxyActions) MoveMagicVortex(vortex *MagicVortex, path pathfinding.Path) {
 }
 
 func (actions *ProxyActions) MoveUnit(mover *ArmyUnit, path pathfinding.Path) {

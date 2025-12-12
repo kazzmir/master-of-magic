@@ -86,7 +86,7 @@ func (system *TestSpellSystem) CreateDisintegrateProjectile(target *ArmyUnit) *P
 func (system *TestSpellSystem) CreateDisruptProjectile(x int, y int) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateMagicVortex(x int, y int) *MagicVortex {
+func (system *TestSpellSystem) CreateMagicVortex(team Team, x int, y int) *MagicVortex {
     return nil
 }
 func (system *TestSpellSystem) CreateWarpWoodProjectile(target *ArmyUnit) *Projectile {
