@@ -511,6 +511,14 @@ func (actions *ProxyActions) MeleeAttackWall(attacker *ArmyUnit, x int, y int) {
 }
 
 func (actions *ProxyActions) MoveMagicVortex(vortex *MagicVortex, path pathfinding.Path) {
+    if len(path) == 0 {
+        return
+    }
+
+    last := path[len(path)-1]
+
+    vortex.X = last.X
+    vortex.Y = last.Y
 }
 
 func (actions *ProxyActions) MoveUnit(mover *ArmyUnit, path pathfinding.Path) {
