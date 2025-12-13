@@ -2222,6 +2222,7 @@ type MagicVortex struct {
 
     MoveX float64
     MoveY float64
+    Selected bool
 }
 
 type ProjectileEffect func(*ArmyUnit)

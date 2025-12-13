@@ -2926,6 +2926,11 @@ func abs(a int) int {
 
 // return a tile to move the vortex to. must be a cardinal direction (no diagonals)
 func (combat *CombatScreen) GetMagicVortexMoveTile(yield coroutine.YieldFunc, vortex *MagicVortex) (int, int) {
+    vortex.Selected = true
+    defer func(){
+        vortex.Selected = false
+    }()
+
     for {
         if yield() != nil {
             return vortex.X, vortex.Y
@@ -4210,22 +4215,28 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         drawable.Render()
     }
 
-    for _, unit := range combat.Model.MagicVortexes {
+    for _, vortex := range combat.Model.MagicVortexes {
         var unitOptions ebiten.DrawImageOptions
-        frame := unit.Animation.Frame()
+        frame := vortex.Animation.Frame()
         unitOptions.GeoM.Translate(float64(-frame.Bounds().Dx()/2), float64(-frame.Bounds().Dy()))
         // unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
         unitOptions.GeoM.Translate(0, float64(tile0.Bounds().Dy()/2))
 
         var tx float64
         var ty float64
-        if unit.Moving {
-            tx, ty = tilePosition(unit.MoveX, unit.MoveY)
+        if vortex.Moving {
+            tx, ty = tilePosition(vortex.MoveX, vortex.MoveY)
         } else {
-            tx, ty = tilePosition(float64(unit.X), float64(unit.Y))
+            tx, ty = tilePosition(float64(vortex.X), float64(vortex.Y))
         }
         unitOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
         unitOptions.GeoM.Translate(tx, ty)
+
+        if vortex.Selected {
+            minColor := color.NRGBA{R: 32, G: 0, B: 0, A: 255}
+            maxColor := color.NRGBA{R: 255, G: 0, B: 0, A: 255}
+            combat.DrawHighlightedTile(screen, vortex.X, vortex.Y, &useMatrix, minColor, maxColor)
+        }
 
         scale.DrawScaled(screen, frame, &unitOptions)
     }
