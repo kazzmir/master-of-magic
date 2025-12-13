@@ -13,6 +13,10 @@ type UnitDamageWrapper struct {
     units.StackUnit
 }
 
+func (wrapper *UnitDamageWrapper) IsMagicImmune(magic data.MagicType) bool {
+    return false
+}
+
 func (wrapper *UnitDamageWrapper) IsAsleep() bool {
     return false
 }

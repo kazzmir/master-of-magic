@@ -609,7 +609,6 @@ type ArmyUnit struct {
     Attacking bool
     Defending bool
 
-    MovementTick uint64
     MoveX float64
     MoveY float64
     CurrentPath pathfinding.Path
@@ -1624,6 +1623,7 @@ type UnitDamage interface {
     HasEnchantment(enchantment data.UnitEnchantment) bool
     GetDefense() int
     ToDefend(modifiers DamageModifiers) int
+    IsMagicImmune(magic data.MagicType) bool
     // returns the number of figures lost
     TakeDamage(damage int, damageType DamageType) int
     ReduceInvulnerability(damage int) int
@@ -1652,7 +1652,7 @@ func ComputeDefense(unit UnitDamage, damage units.Damage, source DamageSource, m
                 defenseRolls += 2
             }
 
-            if unit.HasAbility(data.AbilityMagicImmunity) {
+            if unit.IsMagicImmune(modifiers.Magic) {
                 hasImmunity = true
             }
         case units.DamageRangedPhysical:
@@ -2212,11 +2212,18 @@ func (army *Army) RemoveUnit(remove *ArmyUnit){
     })
 }
 
-// represents a unit that is not part of the army, for things like magic vortex, for things like magic vortex
-type OtherUnit struct {
+// a special kind of unit
+type MagicVortex struct {
     Animation *util.Animation
+    Moved bool
+    Moving bool
+    Team Team
     X int
     Y int
+
+    MoveX float64
+    MoveY float64
+    Selected bool
 }
 
 type ProjectileEffect func(*ArmyUnit)
@@ -2248,7 +2255,7 @@ type CombatModel struct {
     Tiles [][]Tile
     // when the user hovers over a unit, that unit should be shown in a little info box at the upper right
     HighlightedUnit *ArmyUnit
-    OtherUnits []*OtherUnit
+    MagicVortexes []*MagicVortex
     Projectiles []*Projectile
     Plane data.Plane
     Zone ZoneType
@@ -2564,6 +2571,10 @@ func (model *CombatModel) NextTurn() {
 
     defenderLeakMana := false
 
+    for _, vortex := range model.MagicVortexes {
+        vortex.Moved = false
+    }
+
     if model.IsEnchantmentActive(data.CombatEnchantmentManaLeak, TeamAttacker) {
         model.DefendingArmy.ManaPool = max(0, model.DefendingArmy.ManaPool - 5)
         model.DefendingArmy.Player.UseMana(5)
@@ -2700,8 +2711,14 @@ func (model *CombatModel) doCallLightning(army *Army) {
 
 func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTraverseWall bool, isFlying bool) (pathfinding.Path, bool) {
 
+    vortexTiles := make(map[image.Point]bool)
+    for _, vortex := range model.MagicVortexes {
+        vortexTiles[image.Pt(vortex.X, vortex.Y)] = true
+    }
+
     tileEmpty := func (x int, y int) bool {
-        return model.GetUnit(x, y) == nil
+        _, isVortex := vortexTiles[image.Pt(x, y)]
+        return model.GetUnit(x, y) == nil && !isVortex
     }
 
     // FIXME: take into account mud, hills, other types of terrain obstacles
@@ -2846,6 +2863,16 @@ func (model *CombatModel) GetUnit(x int, y int) *ArmyUnit {
     */
 
     return nil
+}
+
+func (model *CombatModel) ContainsMagicVortex(x int, y int) bool {
+    for _, vortex := range model.MagicVortexes {
+        if vortex.X == x && vortex.Y == y {
+            return true
+        }
+    }
+
+    return false
 }
 
 func (model *CombatModel) CanMoveTo(unit *ArmyUnit, x int, y int, infiniteMovement bool) bool {
@@ -4616,7 +4643,7 @@ type SpellSystem interface {
     CreateWordOfRecallProjectile(target *ArmyUnit) *Projectile
     CreateDisintegrateProjectile(target *ArmyUnit) *Projectile
     CreateDisruptProjectile(x int, y int) *Projectile
-    CreateMagicVortex(x int, y int) *OtherUnit
+    CreateMagicVortex(team Team, x int, y int) *MagicVortex
     CreateWarpWoodProjectile(target *ArmyUnit) *Projectile
     CreateDeathSpellProjectile(target *ArmyUnit) *Projectile
     CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile
@@ -4897,12 +4924,13 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Magic Vortex":
             // FIXME: should this also take walls into account?
+            side := model.GetSideForPlayer(army.Player)
             unoccupied := func (x int, y int) bool {
-                return model.GetUnit(x, y) == nil
+                return model.GetUnit(x, y) == nil && !model.ContainsMagicVortex(x, y) && model.IsOnSide(x, y, side)
             }
 
             model.DoTargetTileSpell(army, spell, unoccupied, func (x int, y int){
-                model.OtherUnits = append(model.OtherUnits, spellSystem.CreateMagicVortex(x, y))
+                model.MagicVortexes = append(model.MagicVortexes, spellSystem.CreateMagicVortex(model.GetTeamForArmy(army), x, y))
                 castedCallback(true)
             })
         case "Warp Wood":
@@ -6779,6 +6807,102 @@ func (target *WallTarget) GetX() int {
 
 func (target *WallTarget) GetY() int {
     return target.Y
+}
+
+func (model *CombatModel) MoveMagicVortex(vortex *MagicVortex, actions AIUnitActionsInterface, damageIndicators AddDamageIndicators, doMove bool, moveX int, moveY int) {
+    if doMove {
+        path := pathfinding.Path{
+            image.Pt(moveX, moveY),
+        }
+
+        actions.MoveMagicVortex(vortex, path)
+        model.ApplyMagicVortexDamage(vortex, damageIndicators)
+        return
+    }
+
+    lastX := -1
+    lastY := -1
+
+    for range 3 {
+        // move in one of the 4 cardinal directions
+        choices := []image.Point{image.Pt(-1,0), image.Pt(1,0), image.Pt(0,-1), image.Pt(0,1)}
+
+        choices = slices.DeleteFunc(choices, func(p image.Point) bool {
+            newX := vortex.X + p.X
+            newY := vortex.Y + p.Y
+
+            if newX < 0 || newY < 0 || newY >= len(model.Tiles) || newX >= len(model.Tiles[newY]) {
+                return true
+            }
+
+            // cant move back to the last position
+            if newX == lastX && newY == lastY {
+                return true
+            }
+
+            return false
+        })
+
+        choice := choices[rand.N(len(choices))]
+
+        dx := choice.X
+        dy := choice.Y
+
+        path := pathfinding.Path{
+            image.Pt(vortex.X + dx, vortex.Y + dy),
+        }
+
+        lastX = vortex.X
+        lastY = vortex.Y
+
+        actions.MoveMagicVortex(vortex, path)
+
+        model.ApplyMagicVortexDamage(vortex, damageIndicators)
+    }
+}
+
+func chance(percent int) bool {
+    return rand.N(100) < percent
+}
+
+func (model *CombatModel) ApplyMagicVortexDamage(vortex *MagicVortex, damageIndicators AddDamageIndicators) {
+    // the unit at the new location takes 5 doom damage
+    // any adjacent damage has a 33% chance to take a 5 strength magic armor piercing attack
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+
+            cx := vortex.X + dx
+            cy := vortex.Y + dy
+
+            unit := model.GetUnit(cx, cy)
+            if unit != nil {
+                switch {
+                    // the tile that the vortex is on applies 5 doom damage
+                    case dx == 0 && dy == 0:
+                        immune := unit.HasAbility(data.AbilityMagicImmunity) || unit.HasEnchantment(data.UnitEnchantmentRighteousness)
+                        if !immune {
+                            doomDamage := 5
+                            unit.TakeDamage(doomDamage, DamageNormal)
+                            damageIndicators.AddDamageIndicator(unit, doomDamage)
+                        }
+                    default:
+                        if chance(33) {
+                            appliedDamge, _ := ApplyDamage(unit, []int{5}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                            damageIndicators.AddDamageIndicator(unit, appliedDamge)
+                        }
+                }
+
+
+                if unit.GetHealth() <= 0 {
+                    model.KillUnit(unit)
+                }
+            }
+        }
+    }
+
+    if model.InsideTown(vortex.X, vortex.Y) {
+        model.CollateralDamage += 5
+    }
 }
 
 // returns true if the unit dies while moving (through a wall of fire)

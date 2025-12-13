@@ -503,6 +503,7 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
 
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Shadow"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Magic Vortex"))
 
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createHeroArmy(attackingPlayer, cache)

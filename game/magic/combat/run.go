@@ -164,9 +164,12 @@ func (system *ProxySpellSystem) CreateDisruptProjectile(x int, y int) *Projectil
     }
 }
 
-func (system *ProxySpellSystem) CreateMagicVortex(x int, y int) *OtherUnit {
-    // FIXME
-    return nil
+func (system *ProxySpellSystem) CreateMagicVortex(team Team, x int, y int) *MagicVortex {
+    return &MagicVortex{
+        X: x,
+        Y: y,
+        Team: team,
+    }
 }
 
 func (system *ProxySpellSystem) CreateWarpWoodProjectile(target *ArmyUnit) *Projectile {
@@ -507,6 +510,17 @@ func (actions *ProxyActions) MeleeAttackWall(attacker *ArmyUnit, x int, y int) {
     actions.Model.meleeAttackWall(attacker, x, y)
 }
 
+func (actions *ProxyActions) MoveMagicVortex(vortex *MagicVortex, path pathfinding.Path) {
+    if len(path) == 0 {
+        return
+    }
+
+    last := path[len(path)-1]
+
+    vortex.X = last.X
+    vortex.Y = last.Y
+}
+
 func (actions *ProxyActions) MoveUnit(mover *ArmyUnit, path pathfinding.Path) {
     // log.Printf("Move %v along path: %+v", mover.Unit.GetName(), path)
     for len(path) > 0 && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {
@@ -558,6 +572,15 @@ func Run(model *CombatModel) CombatState {
 
     state := CombatStateRunning
     for state == CombatStateRunning {
+
+        // let magic vortexes move around randomly, the ai won't move them on its own
+        for _, vortex := range model.MagicVortexes {
+            if !vortex.Moved {
+                model.MoveMagicVortex(vortex, actions, &FakeDamageIndicators{}, false, 0, 0)
+                vortex.Moved = true
+            }
+        }
+
         model.Update(spellSystem, actions, false, 0, 0)
 
         stop := false

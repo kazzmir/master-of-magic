@@ -16,6 +16,7 @@ type AIUnitActionsInterface interface {
     RangeAttack(attacker *ArmyUnit, defender RangeTarget)
     MeleeAttack(attacker *ArmyUnit, defender *ArmyUnit)
     MeleeAttackWall(attacker *ArmyUnit, x int, y int)
+    MoveMagicVortex(vortex *MagicVortex, path pathfinding.Path)
     MoveUnit(unit *ArmyUnit, path pathfinding.Path)
     Teleport(unit *ArmyUnit, x, y int, merge bool)
     DoProjectiles()
@@ -136,6 +137,10 @@ func doAIMovementTeleport(model *CombatModel, aiActions AIUnitActionsInterface, 
         if model.IsInsideMap(x, y) {
             distance := abs(x - aiUnit.X) + abs(y - aiUnit.Y)
             if distance > teleportDistance {
+                return false
+            }
+
+            if model.ContainsMagicVortex(x, y) {
                 return false
             }
 

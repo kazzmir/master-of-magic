@@ -1238,12 +1238,13 @@ func (combat *CombatScreen) CreateSummoningCircle(x int, y int) *Projectile {
     return combat.createUnitProjectile(&fakeTarget, explodeImages, UnitPositionUnder, func (*ArmyUnit){})
 }
 
-func (combat *CombatScreen) CreateMagicVortex(x int, y int) *OtherUnit {
+func (combat *CombatScreen) CreateMagicVortex(team Team, x int, y int) *MagicVortex {
     images, _ := combat.ImageCache.GetImages("cmbmagic.lbx", 120)
 
-    unit := &OtherUnit{
+    unit := &MagicVortex{
         X: x,
         Y: y,
+        Team: team,
         Animation: util.MakeAnimation(images, true),
     }
 
@@ -2121,11 +2122,7 @@ func (combat *CombatScreen) doSelectTile(yield coroutine.YieldFunc, selecter Tea
     for !quit {
         combat.Counter += 1
 
-        for _, unit := range combat.Model.OtherUnits {
-            if combat.Counter % 6 == 0 {
-                unit.Animation.Next()
-            }
-        }
+        combat.UpdateAnimations()
 
         combat.UI.StandardUpdate()
         combat.ProcessInput()
@@ -2230,11 +2227,7 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
     for !quit {
         combat.Counter += 1
 
-        for _, unit := range combat.Model.OtherUnits {
-            if combat.Counter % 6 == 0 {
-                unit.Animation.Next()
-            }
-        }
+        combat.UpdateAnimations()
 
         combat.UI.StandardUpdate()
         combat.ProcessInput()
@@ -2250,6 +2243,8 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
         if mouseY >= scale.Scale(hudY) {
             combat.MouseState = CombatClickHud
         } else {
+            // FIXME: in theory dispel magic and disenchant area can target magic vortexes
+
             unit := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
             if unit == nil || (selectTeam != TeamEither && unit.Team != selectTeam) || !canTargetMemo(unit){
                 combat.MouseState = CombatNotOk
@@ -2415,7 +2410,7 @@ func (combat *CombatScreen) ProcessEvents(yield coroutine.YieldFunc) CombatUpdat
 }
 
 func (combat *CombatScreen) UpdateAnimations(){
-    for _, unit := range combat.Model.OtherUnits {
+    for _, unit := range combat.Model.MagicVortexes {
         if combat.Counter % 6 == 0 {
             unit.Animation.Next()
         }
@@ -2492,12 +2487,102 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
     }
 }
 
+// generally the path should be of length 1
+func (combat *CombatScreen) doMoveMagicVortex(yield coroutine.YieldFunc, vortex *MagicVortex, path pathfinding.Path){
+    if len(path) == 0 {
+        return
+    }
+
+    vortex.Moving = true
+    defer func() {
+        vortex.Moving = false
+    }()
+    vortex.MoveX = float64(vortex.X)
+    vortex.MoveY = float64(vortex.Y)
+
+    quit, cancel := context.WithCancel(combat.Quit)
+    defer cancel()
+
+    // FIXME: find proper sound index
+    const VortexSound = 100
+
+    sound, err := combat.AudioCache.GetSound(VortexSound)
+    if err == nil {
+        // keep playing movement sound in a loop until the unit stops moving
+        go func(){
+            // defer sound.Pause()
+            for quit.Err() == nil {
+                err = sound.Rewind()
+                if err != nil {
+                    log.Printf("Unable to rewind sound for %v: %v", VortexSound, err)
+                }
+                sound.Play()
+                for sound.IsPlaying() {
+                    select {
+                        case <-quit.Done():
+                            sound.Pause()
+                            return
+                        case <-time.After(10 * time.Millisecond):
+                    }
+                }
+            }
+        }()
+    }
+
+    // FIXME: move some of this code into model.go
+    for len(path) > 0 {
+        targetX, targetY := path[0].X, path[0].Y
+
+        combat.Model.AddLogEvent(fmt.Sprintf("Moving magic vortex %v,%v -> %v,%v", vortex.X, vortex.Y, targetX, targetY))
+
+        angle := math.Atan2(float64(targetY) - vortex.MoveY, float64(targetX) - vortex.MoveX)
+
+        speed := float64(0.03)
+
+        reached := false
+        for !reached {
+            combat.UpdateAnimations()
+            combat.UpdateDamageIndicators()
+            combat.ProcessInput()
+            combat.Counter += 1
+
+            mouseX, mouseY := inputmanager.MousePosition()
+            tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
+            combat.MouseTileX = int(math.Round(tileX))
+            combat.MouseTileY = int(math.Round(tileY))
+
+            vortex.MoveX += math.Cos(angle) * speed
+            vortex.MoveY += math.Sin(angle) * speed
+
+            // log.Printf("Moving %v,%v -> %v,%v", combat.SelectedUnit.X, combat.SelectedUnit.Y, combat.SelectedUnit.MoveX, combat.SelectedUnit.MoveY)
+
+            // if math.Abs(combat.SelectedUnit.MoveX - float64(targetX)) < speed*2 && math.Abs(combat.SelectedUnit.MoveY - float64(targetY)) < 0.5 {
+            if distanceInRange(vortex.MoveX, vortex.MoveY, float64(targetX), float64(targetY), speed * 3) ||
+            // a stop gap to ensure the unit doesn't fly off the screen somehow
+            distanceAboveRange(float64(vortex.X), float64(vortex.Y), float64(targetX), float64(targetY), 2.5) {
+
+                vortex.X = targetX
+                vortex.Y = targetY
+
+                vortex.MoveX = float64(targetX)
+                vortex.MoveY = float64(targetY)
+
+                path = path[1:]
+                reached = true
+            }
+
+            if yield() != nil {
+                return
+            }
+        }
+    }
+}
+
 func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUnit, path pathfinding.Path){
     if len(path) == 0 {
         return
     }
 
-    mover.MovementTick = combat.Counter
     mover.Moving = true
     mover.MoveX = float64(mover.X)
     mover.MoveY = float64(mover.Y)
@@ -2807,6 +2892,10 @@ func (actions AIUnitActions) MeleeAttackWall(attacker *ArmyUnit, x int, y int) {
     actions.combat.doMeleeWall(actions.yield, attacker, x, y)
 }
 
+func (actions AIUnitActions) MoveMagicVortex(vortex *MagicVortex, path pathfinding.Path) {
+    actions.combat.doMoveMagicVortex(actions.yield, vortex, path)
+}
+
 func (actions AIUnitActions) MoveUnit(unit *ArmyUnit, path pathfinding.Path) {
     actions.combat.doMoveUnit(actions.yield, unit, path)
 }
@@ -2829,6 +2918,76 @@ func (actions *CombatActions) ExtraControl() bool {
 
 func (actions *CombatActions) SingleAuto() bool {
     return actions.singleAuto
+}
+
+func abs(a int) int {
+    if a < 0 {
+        return -a
+    }
+    return a
+}
+
+// return a tile to move the vortex to. must be a cardinal direction (no diagonals)
+func (combat *CombatScreen) GetMagicVortexMoveTile(yield coroutine.YieldFunc, vortex *MagicVortex) (int, int) {
+    vortex.Selected = true
+    defer func(){
+        vortex.Selected = false
+    }()
+
+    for {
+        if yield() != nil {
+            return vortex.X, vortex.Y
+        }
+
+        combat.Counter += 1
+        // combat.UI.StandardUpdate()
+        combat.UpdateMouseState()
+        mouseX, mouseY := inputmanager.MousePosition()
+        hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
+        tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
+        combat.MouseTileX = int(math.Round(tileX))
+        combat.MouseTileY = int(math.Round(tileY))
+
+        combat.UpdateDamageIndicators()
+        combat.UpdateAnimations()
+        combat.ProcessInput()
+
+        combat.MouseState = CombatNotOk
+
+        totalDistance := abs(vortex.X - combat.MouseTileX) + abs(vortex.Y - combat.MouseTileY)
+        if totalDistance == 1 && mouseY < scale.Scale(data.ScreenHeight - hudImage.Bounds().Dy()) {
+            combat.MouseState = CombatMoveOk
+
+            if inputmanager.LeftClick() {
+                return combat.MouseTileX, combat.MouseTileY
+            }
+        }
+    }
+}
+
+func (combat *CombatScreen) UpdateMagicVortexes(yield coroutine.YieldFunc, actions *AIUnitActions) {
+    // no selected unit while moving vortexes
+    selectedUnit := combat.Model.SelectedUnit
+    combat.Model.SelectedUnit = nil
+    defer func(){
+        combat.Model.SelectedUnit = selectedUnit
+    }()
+
+    for _, vortex := range combat.Model.MagicVortexes {
+        if !vortex.Moved {
+            combat.Model.MoveMagicVortex(vortex, actions, combat, false, 0, 0)
+
+            army := combat.Model.GetArmyForTeam(vortex.Team)
+
+            // FIXME: consider letting AI direct the magic vortex towards an enemy
+            if !army.Auto {
+                x, y := combat.GetMagicVortexMoveTile(yield, vortex)
+                combat.Model.MoveMagicVortex(vortex, actions, combat, true, x, y)
+            }
+
+            vortex.Moved = true
+        }
+    }
 }
 
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
@@ -2863,6 +3022,13 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         combat.doProjectiles(yield)
     }
 
+    actions := AIUnitActions{
+        yield: yield,
+        combat: combat,
+    }
+
+    combat.UpdateMagicVortexes(yield, &actions)
+
     if combat.UI.GetHighestLayerValue() > 0 || mouseY >= scale.Scale(hudY) {
         combat.MouseState = CombatClickHud
     } else if combat.Model.SelectedUnit != nil && !combat.Model.IsAIControlled(combat.Model.SelectedUnit) && combat.Model.SelectedUnit.Moving {
@@ -2872,7 +3038,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
         who := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
         if who == nil {
-            if combat.Model.CanMoveTo(attacker, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl) {
+            if combat.Model.CanMoveTo(attacker, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl) && !combat.Model.ContainsMagicVortex(combat.MouseTileX, combat.MouseTileY) {
                 combat.MouseState = CombatMoveOk
             } else if attacker.GetRangedAttacks() > 0 && attacker.CanDestroyWallsRangedAttack() && combat.Model.ContainsWall(combat.MouseTileX, combat.MouseTileY) {
                 combat.MouseState = CombatRangeAttackOk
@@ -2908,11 +3074,6 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         if showUnit != nil {
             combat.UI.AddGroup(MakeUnitView(combat.Cache, combat.UI, showUnit))
         }
-    }
-
-    actions := AIUnitActions{
-        yield: yield,
-        combat: combat,
     }
 
     leftClick := false
@@ -4058,16 +4219,28 @@ func (combat *CombatScreen) NormalDraw(screen *ebiten.Image) {
         drawable.Render()
     }
 
-    for _, unit := range combat.Model.OtherUnits {
+    for _, vortex := range combat.Model.MagicVortexes {
         var unitOptions ebiten.DrawImageOptions
-        frame := unit.Animation.Frame()
+        frame := vortex.Animation.Frame()
         unitOptions.GeoM.Translate(float64(-frame.Bounds().Dx()/2), float64(-frame.Bounds().Dy()))
         // unitOptions.GeoM.Translate(float64(tile0.Bounds().Dx()/2), float64(tile0.Bounds().Dy()/2))
         unitOptions.GeoM.Translate(0, float64(tile0.Bounds().Dy()/2))
 
-        tx, ty := tilePosition(float64(unit.X), float64(unit.Y))
+        var tx float64
+        var ty float64
+        if vortex.Moving {
+            tx, ty = tilePosition(vortex.MoveX, vortex.MoveY)
+        } else {
+            tx, ty = tilePosition(float64(vortex.X), float64(vortex.Y))
+        }
         unitOptions.GeoM.Scale(combat.CameraScale, combat.CameraScale)
         unitOptions.GeoM.Translate(tx, ty)
+
+        if vortex.Selected {
+            minColor := color.NRGBA{R: 32, G: 0, B: 0, A: 255}
+            maxColor := color.NRGBA{R: 255, G: 0, B: 0, A: 255}
+            combat.DrawHighlightedTile(screen, vortex.X, vortex.Y, &useMatrix, minColor, maxColor)
+        }
 
         scale.DrawScaled(screen, frame, &unitOptions)
     }
