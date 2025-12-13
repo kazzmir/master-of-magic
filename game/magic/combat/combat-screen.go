@@ -2972,13 +2972,13 @@ func (combat *CombatScreen) UpdateMagicVortexes(yield coroutine.YieldFunc, actio
 
     for _, vortex := range combat.Model.MagicVortexes {
         if !vortex.Moved {
-            combat.Model.MoveMagicVortex(vortex, actions, false, 0, 0)
+            combat.Model.MoveMagicVortex(vortex, actions, combat, false, 0, 0)
 
             army := combat.Model.GetArmyForTeam(vortex.Team)
 
             if !army.Auto {
                 x, y := combat.GetMagicVortexMoveTile(yield, vortex)
-                combat.Model.MoveMagicVortex(vortex, actions, true, x, y)
+                combat.Model.MoveMagicVortex(vortex, actions, combat, true, x, y)
             }
 
             vortex.Moved = true
