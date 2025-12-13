@@ -6898,6 +6898,10 @@ func (model *CombatModel) ApplyMagicVortexDamage(vortex *MagicVortex, damageIndi
             }
         }
     }
+
+    if model.InsideTown(vortex.X, vortex.Y) {
+        model.CollateralDamage += 5
+    }
 }
 
 // returns true if the unit dies while moving (through a wall of fire)
