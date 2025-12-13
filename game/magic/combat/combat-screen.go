@@ -2503,6 +2503,7 @@ func (combat *CombatScreen) doMoveMagicVortex(yield coroutine.YieldFunc, vortex 
     quit, cancel := context.WithCancel(combat.Quit)
     defer cancel()
 
+    // FIXME: find proper sound index
     const VortexSound = 100
 
     sound, err := combat.AudioCache.GetSound(VortexSound)
