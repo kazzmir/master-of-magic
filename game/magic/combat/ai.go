@@ -140,6 +140,10 @@ func doAIMovementTeleport(model *CombatModel, aiActions AIUnitActionsInterface, 
                 return false
             }
 
+            if model.ContainsMagicVortex(x, y) {
+                return false
+            }
+
             if model.ContainsWallTower(x, y) {
                 return false
             }

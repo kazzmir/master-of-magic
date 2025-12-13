@@ -1623,6 +1623,7 @@ type UnitDamage interface {
     HasEnchantment(enchantment data.UnitEnchantment) bool
     GetDefense() int
     ToDefend(modifiers DamageModifiers) int
+    IsMagicImmune(magic data.MagicType) bool
     // returns the number of figures lost
     TakeDamage(damage int, damageType DamageType) int
     ReduceInvulnerability(damage int) int
@@ -1651,7 +1652,7 @@ func ComputeDefense(unit UnitDamage, damage units.Damage, source DamageSource, m
                 defenseRolls += 2
             }
 
-            if unit.HasAbility(data.AbilityMagicImmunity) {
+            if unit.IsMagicImmune(modifiers.Magic) {
                 hasImmunity = true
             }
         case units.DamageRangedPhysical:
@@ -2710,8 +2711,14 @@ func (model *CombatModel) doCallLightning(army *Army) {
 
 func (model *CombatModel) computePath(x1 int, y1 int, x2 int, y2 int, canTraverseWall bool, isFlying bool) (pathfinding.Path, bool) {
 
+    vortexTiles := make(map[image.Point]bool)
+    for _, vortex := range model.MagicVortexes {
+        vortexTiles[image.Pt(vortex.X, vortex.Y)] = true
+    }
+
     tileEmpty := func (x int, y int) bool {
-        return model.GetUnit(x, y) == nil
+        _, isVortex := vortexTiles[image.Pt(x, y)]
+        return model.GetUnit(x, y) == nil && !isVortex
     }
 
     // FIXME: take into account mud, hills, other types of terrain obstacles
@@ -2856,6 +2863,16 @@ func (model *CombatModel) GetUnit(x int, y int) *ArmyUnit {
     */
 
     return nil
+}
+
+func (model *CombatModel) ContainsMagicVortex(x int, y int) bool {
+    for _, vortex := range model.MagicVortexes {
+        if vortex.X == x && vortex.Y == y {
+            return true
+        }
+    }
+
+    return false
 }
 
 func (model *CombatModel) CanMoveTo(unit *ArmyUnit, x int, y int, infiniteMovement bool) bool {

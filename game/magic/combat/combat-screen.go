@@ -3034,7 +3034,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
         who := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
         if who == nil {
-            if combat.Model.CanMoveTo(attacker, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl) {
+            if combat.Model.CanMoveTo(attacker, combat.MouseTileX, combat.MouseTileY, combat.ExtraControl) && !combat.Model.ContainsMagicVortex(combat.MouseTileX, combat.MouseTileY) {
                 combat.MouseState = CombatMoveOk
             } else if attacker.GetRangedAttacks() > 0 && attacker.CanDestroyWallsRangedAttack() && combat.Model.ContainsWall(combat.MouseTileX, combat.MouseTileY) {
                 combat.MouseState = CombatRangeAttackOk
