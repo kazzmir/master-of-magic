@@ -2485,6 +2485,7 @@ func (combat *CombatScreen) doTeleport(yield coroutine.YieldFunc, mover *ArmyUni
     }
 }
 
+// generally the path should be of length 1
 func (combat *CombatScreen) doMoveMagicVortex(yield coroutine.YieldFunc, vortex *MagicVortex, path pathfinding.Path){
     if len(path) == 0 {
         return
@@ -2916,6 +2917,70 @@ func (actions *CombatActions) SingleAuto() bool {
     return actions.singleAuto
 }
 
+func abs(a int) int {
+    if a < 0 {
+        return -a
+    }
+    return a
+}
+
+// return a tile to move the vortex to. must be a cardinal direction (no diagonals)
+func (combat *CombatScreen) GetMagicVortexMoveTile(yield coroutine.YieldFunc, vortex *MagicVortex) (int, int) {
+    for {
+        if yield() != nil {
+            return vortex.X, vortex.Y
+        }
+
+        combat.Counter += 1
+        combat.UI.StandardUpdate()
+        combat.UpdateMouseState()
+        mouseX, mouseY := inputmanager.MousePosition()
+        hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)
+        tileX, tileY := combat.ScreenToTile(float64(mouseX), float64(mouseY))
+        combat.MouseTileX = int(math.Round(tileX))
+        combat.MouseTileY = int(math.Round(tileY))
+
+        combat.UpdateDamageIndicators()
+        combat.UpdateAnimations()
+        combat.ProcessInput()
+
+        combat.MouseState = CombatNotOk
+
+        totalDistance := abs(vortex.X - combat.MouseTileX) + abs(vortex.Y - combat.MouseTileY)
+        if totalDistance == 1 && mouseY < scale.Scale(data.ScreenHeight - hudImage.Bounds().Dy()) {
+            combat.MouseState = CombatMoveOk
+
+            if inputmanager.LeftClick() {
+                return combat.MouseTileX, combat.MouseTileY
+            }
+        }
+    }
+}
+
+func (combat *CombatScreen) UpdateMagicVortexes(yield coroutine.YieldFunc, actions *AIUnitActions) {
+    // no selected unit while moving vortexes
+    selectedUnit := combat.Model.SelectedUnit
+    combat.Model.SelectedUnit = nil
+    defer func(){
+        combat.Model.SelectedUnit = selectedUnit
+    }()
+
+    for _, vortex := range combat.Model.MagicVortexes {
+        if !vortex.Moved {
+            combat.Model.MoveMagicVortex(vortex, actions, false, 0, 0)
+
+            army := combat.Model.GetArmyForTeam(vortex.Team)
+
+            if !army.Auto {
+                x, y := combat.GetMagicVortexMoveTile(yield, vortex)
+                combat.Model.MoveMagicVortex(vortex, actions, true, x, y)
+            }
+
+            vortex.Moved = true
+        }
+    }
+}
+
 func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
     finalState := combat.Model.FinalState()
     if finalState != CombatStateRunning {
@@ -2953,12 +3018,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         combat: combat,
     }
 
-    for _, vortex := range combat.Model.MagicVortexes {
-        if !vortex.Moved {
-            combat.Model.MoveMagicVortex(vortex, actions)
-            vortex.Moved = true
-        }
-    }
+    combat.UpdateMagicVortexes(yield, &actions)
 
     if combat.UI.GetHighestLayerValue() > 0 || mouseY >= scale.Scale(hudY) {
         combat.MouseState = CombatClickHud

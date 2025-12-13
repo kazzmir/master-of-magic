@@ -6790,7 +6790,17 @@ func (target *WallTarget) GetY() int {
     return target.Y
 }
 
-func (model *CombatModel) MoveMagicVortex(vortex *MagicVortex, actions AIUnitActionsInterface) {
+func (model *CombatModel) MoveMagicVortex(vortex *MagicVortex, actions AIUnitActionsInterface, doMove bool, moveX int, moveY int) {
+    if doMove {
+        path := pathfinding.Path{
+            image.Pt(moveX, moveY),
+        }
+
+        actions.MoveMagicVortex(vortex, path)
+        model.ApplyMagicVortexDamage(vortex)
+        return
+    }
+
     lastX := -1
     lastY := -1
 
@@ -6828,17 +6838,20 @@ func (model *CombatModel) MoveMagicVortex(vortex *MagicVortex, actions AIUnitAct
 
         actions.MoveMagicVortex(vortex, path)
 
-        // the unit at the new location takes 5 doom damage
-        // any adjacent damage has a 33% chance to take a 5 strength magic armor piercing attack
+        model.ApplyMagicVortexDamage(vortex)
+    }
+}
 
-        unit := model.GetUnit(vortex.X, vortex.Y)
-        if unit != nil {
-            immune := unit.HasAbility(data.AbilityMagicImmunity) || unit.HasEnchantment(data.UnitEnchantmentRighteousness)
-            if !immune {
-                unit.TakeDamage(5, DamageNormal)
-                if unit.GetHealth() <= 0 {
-                    model.KillUnit(unit)
-                }
+func (model *CombatModel) ApplyMagicVortexDamage(vortex *MagicVortex) {
+    // the unit at the new location takes 5 doom damage
+    // any adjacent damage has a 33% chance to take a 5 strength magic armor piercing attack
+    unit := model.GetUnit(vortex.X, vortex.Y)
+    if unit != nil {
+        immune := unit.HasAbility(data.AbilityMagicImmunity) || unit.HasEnchantment(data.UnitEnchantmentRighteousness)
+        if !immune {
+            unit.TakeDamage(5, DamageNormal)
+            if unit.GetHealth() <= 0 {
+                model.KillUnit(unit)
             }
         }
     }
