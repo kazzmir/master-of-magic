@@ -2937,7 +2937,7 @@ func (combat *CombatScreen) GetMagicVortexMoveTile(yield coroutine.YieldFunc, vo
         }
 
         combat.Counter += 1
-        combat.UI.StandardUpdate()
+        // combat.UI.StandardUpdate()
         combat.UpdateMouseState()
         mouseX, mouseY := inputmanager.MousePosition()
         hudImage, _ := combat.ImageCache.GetImage("cmbtfx.lbx", 28, 0)

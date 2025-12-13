@@ -6843,18 +6843,41 @@ func (model *CombatModel) MoveMagicVortex(vortex *MagicVortex, actions AIUnitAct
     }
 }
 
+func chance(percent int) bool {
+    return rand.N(100) < percent
+}
+
 func (model *CombatModel) ApplyMagicVortexDamage(vortex *MagicVortex, damageIndicators AddDamageIndicators) {
     // the unit at the new location takes 5 doom damage
     // any adjacent damage has a 33% chance to take a 5 strength magic armor piercing attack
-    unit := model.GetUnit(vortex.X, vortex.Y)
-    if unit != nil {
-        immune := unit.HasAbility(data.AbilityMagicImmunity) || unit.HasEnchantment(data.UnitEnchantmentRighteousness)
-        if !immune {
-            doomDamage := 5
-            unit.TakeDamage(doomDamage, DamageNormal)
-            damageIndicators.AddDamageIndicator(unit, doomDamage)
-            if unit.GetHealth() <= 0 {
-                model.KillUnit(unit)
+    for dx := -1; dx <= 1; dx++ {
+        for dy := -1; dy <= 1; dy++ {
+
+            cx := vortex.X + dx
+            cy := vortex.Y + dy
+
+            unit := model.GetUnit(cx, cy)
+            if unit != nil {
+                switch {
+                    // the tile that the vortex is on applies 5 doom damage
+                    case dx == 0 && dy == 0:
+                        immune := unit.HasAbility(data.AbilityMagicImmunity) || unit.HasEnchantment(data.UnitEnchantmentRighteousness)
+                        if !immune {
+                            doomDamage := 5
+                            unit.TakeDamage(doomDamage, DamageNormal)
+                            damageIndicators.AddDamageIndicator(unit, doomDamage)
+                        }
+                    default:
+                        if chance(33) {
+                            appliedDamge, _ := ApplyDamage(unit, []int{5}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                            damageIndicators.AddDamageIndicator(unit, appliedDamge)
+                        }
+                }
+
+
+                if unit.GetHealth() <= 0 {
+                    model.KillUnit(unit)
+                }
             }
         }
     }
