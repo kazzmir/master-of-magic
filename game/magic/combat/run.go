@@ -572,6 +572,15 @@ func Run(model *CombatModel) CombatState {
 
     state := CombatStateRunning
     for state == CombatStateRunning {
+
+        // let magic vortexes move around randomly, the ai won't move them on its own
+        for _, vortex := range model.MagicVortexes {
+            if !vortex.Moved {
+                model.MoveMagicVortex(vortex, actions, &FakeDamageIndicators{}, false, 0, 0)
+                vortex.Moved = true
+            }
+        }
+
         model.Update(spellSystem, actions, false, 0, 0)
 
         stop := false

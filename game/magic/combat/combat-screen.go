@@ -2243,6 +2243,8 @@ func (combat *CombatScreen) doSelectUnit(yield coroutine.YieldFunc, selecter Tea
         if mouseY >= scale.Scale(hudY) {
             combat.MouseState = CombatClickHud
         } else {
+            // FIXME: in theory dispel magic and disenchant area can target magic vortexes
+
             unit := combat.Model.GetUnit(combat.MouseTileX, combat.MouseTileY)
             if unit == nil || (selectTeam != TeamEither && unit.Team != selectTeam) || !canTargetMemo(unit){
                 combat.MouseState = CombatNotOk
@@ -2976,6 +2978,7 @@ func (combat *CombatScreen) UpdateMagicVortexes(yield coroutine.YieldFunc, actio
 
             army := combat.Model.GetArmyForTeam(vortex.Team)
 
+            // FIXME: consider letting AI direct the magic vortex towards an enemy
             if !army.Auto {
                 x, y := combat.GetMagicVortexMoveTile(yield, vortex)
                 combat.Model.MoveMagicVortex(vortex, actions, combat, true, x, y)

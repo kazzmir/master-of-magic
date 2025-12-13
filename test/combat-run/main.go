@@ -84,6 +84,8 @@ func RunCombat1(allSpells spellbook.Spells) {
 }
 
 func RunCombat2(allSpells spellbook.Spells) {
+    magiclog.SetLevel(magiclog.LogLevelError)
+
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
         Name: "AI-1",
         Banner: data.BannerBrown,
@@ -351,8 +353,8 @@ func main() {
         RunCombat1(allSpells)
     }
     */
-    // RunCombat2(allSpells)
-    RunAll(allSpells, 4)
+    RunCombat2(allSpells)
+    // RunAll(allSpells, 4)
 
     memoryProfile, err := os.Create("profile.mem.combat-run")
     if err != nil {
