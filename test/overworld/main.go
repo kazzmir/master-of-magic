@@ -80,6 +80,9 @@ func (ai *DummyAI) HandleMerchantItem(self *playerlib.Player, item *artifact.Art
     return false
 }
 
+func (ai *DummyAI) HandleHireHero(self *playerlib.Player, hero *hero.Hero, cost int, atFortress bool, point data.PlanePoint) {
+}
+
 type NodeInfo struct {
     X int
     Y int

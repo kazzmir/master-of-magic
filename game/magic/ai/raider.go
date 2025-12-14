@@ -7,6 +7,7 @@ import (
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
@@ -510,4 +511,7 @@ func (raider *RaiderAI) ConfirmRazeTown(city *citylib.City) bool {
 
 func (raider *RaiderAI) HandleMerchantItem(self *playerlib.Player, item *artifact.Artifact, cost int) bool {
     return false
+}
+
+func (raider *RaiderAI) HandleHireHero(self *playerlib.Player, hero *herolib.Hero, cost int, atFortress bool, point data.PlanePoint){
 }

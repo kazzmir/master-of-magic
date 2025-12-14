@@ -957,3 +957,29 @@ func (ai *Enemy2AI) HandleMerchantItem(self *playerlib.Player, item *artifact.Ar
 
     return false
 }
+
+func (ai *Enemy2AI) HandleHireHero(self *playerlib.Player, hero *herolib.Hero, cost int, atFortress bool, point data.PlanePoint){
+    goldPerTurn := self.GoldPerTurn()
+
+    // always try to hire a hero if we can afford it
+    if self.Gold >= cost && goldPerTurn >= hero.GetUpkeepGold() {
+        added := false
+        if atFortress {
+            added = self.AddHeroToFortress(hero)
+        } else {
+            added = self.AddHero(hero, point.X, point.Y, point.Plane)
+        }
+
+        if added {
+            self.Gold -= cost
+            hero.SetStatus(herolib.StatusEmployed)
+
+            // FIXME: consider invoking this method
+            // game.ResolveStackAt(hero.GetX(), hero.GetY(), hero.GetPlane())
+
+            if self.SelectedStack == nil {
+                self.SelectedStack = self.FindStack(hero.GetX(), hero.GetY(), hero.GetPlane())
+            }
+        }
+    }
+}
