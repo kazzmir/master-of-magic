@@ -83,6 +83,9 @@ func (ai *DummyAI) HandleMerchantItem(self *playerlib.Player, item *artifact.Art
 func (ai *DummyAI) HandleHireHero(self *playerlib.Player, hero *hero.Hero, cost int, atFortress bool, point data.PlanePoint) {
 }
 
+func (ai *DummyAI) HandleHireMercenaries(self *playerlib.Player, mercenaries []*units.OverworldUnit, cost int) {
+}
+
 type NodeInfo struct {
     X int
     Y int
@@ -3359,9 +3362,19 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSwordsmen, x, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
     // enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x-1, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
 
+    /*
     game.Events <- &gamelib.GameEventHireHero{
         Player: enemy1,
         Hero: enemy1.HeroPool[hero.HeroRakir],
+    }
+    */
+
+    game.Events <- &gamelib.GameEventHireMercenaries{
+        Cost: 100,
+        Player: enemy1,
+        Units: []*units.OverworldUnit{
+            units.MakeOverworldUnitFromUnit(units.Berserkers, city.X, city.Y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()),
+        },
     }
 
     // allSpells, _ := spellbook.ReadSpellsFromCache(cache)

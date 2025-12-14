@@ -378,3 +378,6 @@ func (ai *EnemyAI) HandleMerchantItem(self *playerlib.Player, item *artifact.Art
 
 func (ai *EnemyAI) HandleHireHero(self *playerlib.Player, hero *herolib.Hero, cost int, atFortress bool, point data.PlanePoint){
 }
+
+func (ai *EnemyAI) HandleHireMercenaries(self *playerlib.Player, mercenaries []*units.OverworldUnit, cost int) {
+}

@@ -1930,7 +1930,7 @@ func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
 
     // create units
     var overworldUnits []*units.OverworldUnit
-    for i := 0; i < count; i++ {
+    for range count {
         overworldUnit := units.MakeOverworldUnitFromUnit(*unit, fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
         overworldUnit.Experience = experience
         overworldUnits = append(overworldUnits, overworldUnit)
@@ -2299,10 +2299,13 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         }
                     case *GameEventHireMercenaries:
                         hire := event.(*GameEventHireMercenaries)
-                        if hire.Player.IsHuman() {
-                            game.doHireMercenaries(yield, hire.Cost, hire.Units, hire.Player)
+                        player := hire.Player
+                        if player.IsHuman() {
+                            game.doHireMercenaries(yield, hire.Cost, hire.Units, player)
                         } else {
-                            // FIXME: AI hire mercenaries
+                            if player.AIBehavior != nil {
+                                player.AIBehavior.HandleHireMercenaries(player, hire.Units, hire.Cost)
+                            }
                         }
                     case *GameEventMerchant:
                         merchant := event.(*GameEventMerchant)
