@@ -4924,9 +4924,8 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Magic Vortex":
             // FIXME: should this also take walls into account?
-            side := model.GetSideForPlayer(army.Player)
             unoccupied := func (x int, y int) bool {
-                return model.GetUnit(x, y) == nil && !model.ContainsMagicVortex(x, y) && model.IsOnSide(x, y, side)
+                return model.GetUnit(x, y) == nil && !model.ContainsMagicVortex(x, y)
             }
 
             model.DoTargetTileSpell(army, spell, unoccupied, func (x int, y int){

@@ -1246,6 +1246,7 @@ func (combat *CombatScreen) CreateMagicVortex(team Team, x int, y int) *MagicVor
         Y: y,
         Team: team,
         Animation: util.MakeAnimation(images, true),
+        Moved: true, // dont let vortex move on the same turn its cast
     }
 
     return unit
@@ -2504,7 +2505,7 @@ func (combat *CombatScreen) doMoveMagicVortex(yield coroutine.YieldFunc, vortex 
     defer cancel()
 
     // FIXME: find proper sound index
-    const VortexSound = 100
+    VortexSound := units.MovementSoundFly.LbxIndex()
 
     sound, err := combat.AudioCache.GetSound(VortexSound)
     if err == nil {
