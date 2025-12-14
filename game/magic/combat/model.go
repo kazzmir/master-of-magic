@@ -4924,9 +4924,8 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Magic Vortex":
             // FIXME: should this also take walls into account?
-            side := model.GetSideForPlayer(army.Player)
             unoccupied := func (x int, y int) bool {
-                return model.GetUnit(x, y) == nil && !model.ContainsMagicVortex(x, y) && model.IsOnSide(x, y, side)
+                return model.GetUnit(x, y) == nil && !model.ContainsMagicVortex(x, y)
             }
 
             model.DoTargetTileSpell(army, spell, unoccupied, func (x int, y int){
@@ -6887,7 +6886,8 @@ func (model *CombatModel) ApplyMagicVortexDamage(vortex *MagicVortex, damageIndi
                         }
                     default:
                         if chance(33) {
-                            appliedDamge, _ := ApplyDamage(unit, []int{5}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                            // strength 5 magic armor piercing attack, assume tohit=30
+                            appliedDamge, _ := ApplyDamage(unit, []int{ComputeRoll(5, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
                             damageIndicators.AddDamageIndicator(unit, appliedDamge)
                         }
                 }
