@@ -1764,7 +1764,7 @@ func (game *Game) maybeHireHero(player *playerlib.Player) {
 
 /* show the hire hero popup, and if the user clicks 'hire' then add the hero to the player's list of heroes
  */
-func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.Hero, player *playerlib.Player) {
+func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.Hero, player *playerlib.Player, atFortress bool, point data.PlanePoint) {
     // ensure the player can actually afford to hire the hero
     if cost > player.Gold {
         return
@@ -1774,7 +1774,14 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
 
     result := func(hired bool) {
         if hired {
-            if player.AddHeroToFortress(hero) {
+            added := false
+            if atFortress {
+                added = player.AddHeroToFortress(hero)
+            } else {
+                added = player.AddHero(hero, point.X, point.Y, point.Plane)
+            }
+
+            if added {
                 player.Gold -= cost
                 hero.SetStatus(herolib.StatusEmployed)
 
@@ -2283,7 +2290,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventHireHero:
                         hire := event.(*GameEventHireHero)
                         if hire.Player.IsHuman() {
-                            game.doHireHero(yield, hire.Cost, hire.Hero, hire.Player)
+                            game.doHireHero(yield, hire.Cost, hire.Hero, hire.Player, true, data.PlanePoint{})
                         }
                     case *GameEventHireMercenaries:
                         hire := event.(*GameEventHireMercenaries)
@@ -4191,7 +4198,7 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
     // there was nothing in the encounter, just give treasure
     if len(encounter.Units) == 0 {
         mapUse.RemoveEncounter(x, y)
-        game.createTreasure(encounter.Type, encounter.Budget, player)
+        game.createTreasure(encounter.Type, encounter.Budget, data.PlanePoint{X: x, Y: y, Plane: mapUse.Plane}, player)
         yield()
         return combat.CombatStateNoCombat
     }
@@ -4229,7 +4236,7 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
     if result == combat.CombatStateAttackerWin {
         mapUse.RemoveEncounter(x, y)
 
-        game.createTreasure(encounter.Type, encounter.Budget, player)
+        game.createTreasure(encounter.Type, encounter.Budget, data.PlanePoint{X: x, Y: y, Plane: mapUse.Plane}, player)
 
         // defeating a plane tower also removes the tower from the other plane
         if encounter.Type == maplib.EncounterTypePlaneTower {
@@ -4255,7 +4262,7 @@ func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Playe
     return result
 }
 
-func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int, player *playerlib.Player){
+func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int, point data.PlanePoint, player *playerlib.Player){
     allSpells, err := spellbook.ReadSpellsFromCache(game.Cache)
     if err != nil {
         log.Printf("Error: unable to read spells: %v", err)
@@ -4279,7 +4286,7 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
         // cannot find the last spell in treasure
         allSpells.RemoveSpell(allSpells.FindByName("Spell of Mastery"))
 
-        treasure := makeTreasure(game.Cache, encounterType, budget, player.Wizard, player.KnownSpells, allSpells, heroes, makeArtifacts)
+        treasure := makeTreasure(game.Cache, encounterType, budget, point, player.Wizard, player.KnownSpells, allSpells, heroes, makeArtifacts)
         // FIXME: show treasure ui for human, otherwise just apply treasure for AI
         select {
             case game.Events <- &GameEventTreasure{Treasure: treasure, Player: player}:
@@ -4383,7 +4390,7 @@ func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Pla
             case *TreasurePrisonerHero:
                 hero := item.(*TreasurePrisonerHero)
                 if player.IsHuman() {
-                    game.doHireHero(yield, 0, hero.Hero, player)
+                    game.doHireHero(yield, 0, hero.Hero, player, false, treasure.Point)
                 } else {
                     // FIXME: ai should get a chance to hire the hero
                 }

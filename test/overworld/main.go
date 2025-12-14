@@ -2953,6 +2953,7 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
     game.Events <- &gamelib.GameEventTreasure{
         Player: player,
         Treasure: gamelib.Treasure{
+            Point: data.PlanePoint{X: x + 1, Y: y + 1, Plane: data.PlaneArcanus},
             Treasures: []gamelib.TreasureItem{
                 /*
                 &gamelib.TreasureGold{
