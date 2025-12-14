@@ -971,6 +971,7 @@ func (ai *Enemy2AI) HandleHireHero(self *playerlib.Player, hero *herolib.Hero, c
         }
 
         if added {
+            log.Printf("AI %v hired hero %v for %v gold", self.Wizard.Name, hero.Name, cost)
             self.Gold -= cost
             hero.SetStatus(herolib.StatusEmployed)
 
