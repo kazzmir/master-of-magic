@@ -127,6 +127,7 @@ type AIBehavior interface {
 
     HandleMerchantItem(*Player, *artifact.Artifact, int) bool
     HandleHireHero(*Player, *herolib.Hero, int, bool, data.PlanePoint)
+    HandleHireMercenaries(*Player, []*units.OverworldUnit, int)
 
     // invoked if the move was unable to be completed
     InvalidMove(*UnitStack)

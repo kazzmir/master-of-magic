@@ -515,3 +515,6 @@ func (raider *RaiderAI) HandleMerchantItem(self *playerlib.Player, item *artifac
 
 func (raider *RaiderAI) HandleHireHero(self *playerlib.Player, hero *herolib.Hero, cost int, atFortress bool, point data.PlanePoint){
 }
+
+func (raider *RaiderAI) HandleHireMercenaries(self *playerlib.Player, mercenaries []*units.OverworldUnit, cost int) {
+}

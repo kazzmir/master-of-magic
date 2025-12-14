@@ -984,3 +984,20 @@ func (ai *Enemy2AI) HandleHireHero(self *playerlib.Player, hero *herolib.Hero, c
         }
     }
 }
+
+func (ai *Enemy2AI) HandleHireMercenaries(self *playerlib.Player, mercenaries []*units.OverworldUnit, cost int) {
+    neededGoldPerTurn := 0
+    for _, mercenary := range mercenaries {
+        neededGoldPerTurn += mercenary.GetUpkeepGold()
+    }
+
+    if self.Gold >= cost && self.GoldPerTurn() > neededGoldPerTurn && self.FoodPerTurn() > 0 {
+        log.Printf("AI %v hired %v mercenaries for %v gold", self.Wizard.Name, len(mercenaries), cost)
+        for _, unit := range mercenaries {
+            self.AddUnit(unit)
+            // FIXME: consider invoking this method
+            // game.ResolveStackAt(unit.GetX(), unit.GetY(), unit.GetPlane())
+        }
+        self.Gold -= cost
+    }
+}
