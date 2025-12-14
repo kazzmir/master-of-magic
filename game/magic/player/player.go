@@ -599,7 +599,7 @@ func (player *Player) UseMana(mana int) {
 
 /* returns true if the hero was actually added to the player
  */
-func (player *Player) AddHero(hero *herolib.Hero, city *citylib.City) bool {
+func (player *Player) AddHero(hero *herolib.Hero, x int, y int, plane data.Plane) bool {
     for i := 0; i < len(player.Heroes); i++ {
         if player.Heroes[i] == nil {
             player.Heroes[i] = hero
@@ -608,7 +608,7 @@ func (player *Player) AddHero(hero *herolib.Hero, city *citylib.City) bool {
             level := hero.GetHeroExperienceLevel()
             experienceInfo := player.MakeExperienceInfo()
 
-            hero.OverworldUnit = units.MakeOverworldUnitFromUnit(hero.GetRawUnit(), city.X, city.Y, city.Plane, player.Wizard.Banner, experienceInfo, player.MakeUnitEnchantmentProvider())
+            hero.OverworldUnit = units.MakeOverworldUnitFromUnit(hero.GetRawUnit(), x, y, plane, player.Wizard.Banner, experienceInfo, player.MakeUnitEnchantmentProvider())
             hero.SetParent(hero)
             hero.AdjustHealth(hero.GetMaxHealth())
             hero.AddExperience(level.ExperienceRequired(experienceInfo.HasWarlord(), experienceInfo.Crusade()))
@@ -627,7 +627,7 @@ func (player *Player) AddHeroToFortress(hero *herolib.Hero) bool {
         return false
     }
 
-    return player.AddHero(hero, fortressCity)
+    return player.AddHero(hero, fortressCity.X, fortressCity.Y, fortressCity.Plane)
 }
 
 func (player *Player) AddHeroToSummoningCircle(hero *herolib.Hero) bool {
@@ -636,7 +636,7 @@ func (player *Player) AddHeroToSummoningCircle(hero *herolib.Hero) bool {
         return false
     }
 
-    return player.AddHero(hero, city)
+    return player.AddHero(hero, city.X, city.Y, city.Plane)
 }
 
 func (player *Player) AliveHeroes() []*herolib.Hero {
