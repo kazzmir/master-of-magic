@@ -2289,13 +2289,20 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         }
                     case *GameEventHireHero:
                         hire := event.(*GameEventHireHero)
-                        if hire.Player.IsHuman() {
-                            game.doHireHero(yield, hire.Cost, hire.Hero, hire.Player, true, data.PlanePoint{})
+                        player := hire.Player
+                        if player.IsHuman() {
+                            game.doHireHero(yield, hire.Cost, hire.Hero, player, true, data.PlanePoint{})
+                        } else {
+                            if player.AIBehavior != nil {
+                                player.AIBehavior.HandleHireHero(player, hire.Hero, 0, true, data.PlanePoint{})
+                            }
                         }
                     case *GameEventHireMercenaries:
                         hire := event.(*GameEventHireMercenaries)
                         if hire.Player.IsHuman() {
                             game.doHireMercenaries(yield, hire.Cost, hire.Units, hire.Player)
+                        } else {
+                            // FIXME: AI hire mercenaries
                         }
                     case *GameEventMerchant:
                         merchant := event.(*GameEventMerchant)
@@ -4383,7 +4390,11 @@ func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Pla
                 if player.IsHuman() {
                     game.doVault(yield, magicalItem.Artifact)
                 } else {
-                    // FIXME: ai should get the vault item
+                    if player.AIBehavior != nil {
+                        // there is a light impedance mismatch between giving a treasure item and invoking the merchant item function
+                        // but its ok for now
+                        player.AIBehavior.HandleMerchantItem(player, magicalItem.Artifact, 0)
+                    }
                 }
                 // if the treasure was one of the premade artifacts, then remove it from the pool
                 delete(game.Model.ArtifactPool, magicalItem.Artifact.Name)
@@ -4392,7 +4403,9 @@ func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Pla
                 if player.IsHuman() {
                     game.doHireHero(yield, 0, hero.Hero, player, false, treasure.Point)
                 } else {
-                    // FIXME: ai should get a chance to hire the hero
+                    if player.AIBehavior != nil {
+                        player.AIBehavior.HandleHireHero(player, hero.Hero, 0, false, treasure.Point)
+                    }
                 }
             case *TreasureSpell:
                 spell := item.(*TreasureSpell)

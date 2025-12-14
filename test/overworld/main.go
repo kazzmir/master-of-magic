@@ -80,6 +80,9 @@ func (ai *DummyAI) HandleMerchantItem(self *playerlib.Player, item *artifact.Art
     return false
 }
 
+func (ai *DummyAI) HandleHireHero(self *playerlib.Player, hero *hero.Hero, cost int, atFortress bool, point data.PlanePoint) {
+}
+
 type NodeInfo struct {
     X int
     Y int
@@ -3319,7 +3322,7 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
 
     enemy1 := game.AddPlayer(wizard1, false)
 
-    enemy1.Gold = 830
+    enemy1.Gold = 8300
     enemy1.Mana = 26557
     enemy1.CastingSkillPower = 10000
     enemy1.TaxRate = fraction.FromInt(1)
@@ -3355,6 +3358,11 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSwordsmen, x, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
     enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.BarbarianSwordsmen, x, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
     // enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x-1, y, data.PlaneArcanus, wizard1.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
+
+    game.Events <- &gamelib.GameEventHireHero{
+        Player: enemy1,
+        Hero: enemy1.HeroPool[hero.HeroRakir],
+    }
 
     // allSpells, _ := spellbook.ReadSpellsFromCache(cache)
 

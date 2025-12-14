@@ -375,3 +375,6 @@ func (ai *EnemyAI) HandleMerchantItem(self *playerlib.Player, item *artifact.Art
 
     return false
 }
+
+func (ai *EnemyAI) HandleHireHero(self *playerlib.Player, hero *herolib.Hero, cost int, atFortress bool, point data.PlanePoint){
+}
