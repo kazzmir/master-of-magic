@@ -58,8 +58,7 @@ type MagicGame struct {
     MainCoroutine *coroutine.Coroutine
     Drawer DrawFunc
 
-    NewGameScreen *setup.NewGameScreen
-    NewWizardScreen *setup.NewWizardScreen
+    EnableMusic bool
 
     Game *gamelib.Game
 }
@@ -632,7 +631,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     }
 }
 
-func NewMagicGame(dataPath string, startGame bool) (*MagicGame, error) {
+func NewMagicGame(dataPath string, startGame bool, enableMusic bool) (*MagicGame, error) {
     var game *MagicGame
 
     run := func(yield coroutine.YieldFunc) error {
@@ -641,6 +640,7 @@ func NewMagicGame(dataPath string, startGame bool) (*MagicGame, error) {
 
     game = &MagicGame{
         MainCoroutine: coroutine.MakeCoroutine(run),
+        EnableMusic: enableMusic,
         Drawer: nil,
     }
 
@@ -686,7 +686,9 @@ func main() {
     var dataPath string
     var startGame bool
     var trace bool
+    var enableMusic bool
     flag.StringVar(&dataPath, "data", "", "path to master of magic lbx data files. Give either a directory or a zip file. Data is searched for in the current directory if not given.")
+    flag.BoolVar(&enableMusic, "music", true, "enable music playback")
     flag.BoolVar(&startGame, "start", false, "start the game immediately with a random wizard")
     flag.BoolVar(&trace, "trace", false, "enable profiling (pprof)")
     flag.Parse()
@@ -708,7 +710,7 @@ func main() {
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-    game, err := NewMagicGame(dataPath, startGame)
+    game, err := NewMagicGame(dataPath, startGame, enableMusic)
 
     if err != nil {
         log.Printf("Error: unable to load game: %v", err)
