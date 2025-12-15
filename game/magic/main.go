@@ -59,8 +59,6 @@ type MagicGame struct {
     Drawer DrawFunc
 
     EnableMusic bool
-
-    Game *gamelib.Game
 }
 
 func randomChoose[T any](choices... T) T {
