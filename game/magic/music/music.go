@@ -170,6 +170,8 @@ type Music struct {
     cancel context.CancelFunc
     wait sync.WaitGroup
 
+    Enabled bool
+
     SoundFont *meltysynth.SoundFont
     XmiCache map[Song]*smf.SMF
 
@@ -179,7 +181,7 @@ type Music struct {
 
 func MakeMusic(cache *lbx.LbxCache) *Music {
     ctx, cancel := context.WithCancel(context.Background())
-    return &Music{done: ctx, cancel: cancel, Cache: cache, XmiCache: make(map[Song]*smf.SMF)}
+    return &Music{done: ctx, cancel: cancel, Cache: cache, XmiCache: make(map[Song]*smf.SMF), Enabled: true}
 }
 
 func randomChoose[T any](choices... T) T {
@@ -325,6 +327,10 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
 }
 
 func (music *Music) PlaySong(index Song){
+    if !music.Enabled {
+        return
+    }
+
     log.Printf("Playing song %v", index)
     music.Stop()
 
