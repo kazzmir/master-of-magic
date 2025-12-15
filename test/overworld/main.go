@@ -204,6 +204,8 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Camera.Center(stack.X(), stack.Y())
 
+    game.Events <- &gamelib.GameEventGameMenu{}
+
     return game
 }
 

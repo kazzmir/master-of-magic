@@ -1575,10 +1575,8 @@ func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summo
     yield()
 }
 
-// mutates the ui by adding/removing elements
-// FIXME: its a hack to pass in the background image as a double pointer so we can mutate it
 func (game *Game) MakeSettingsUI(imageCache *util.ImageCache) (*uilib.UIElementGroup, context.Context) {
-    // fonts := fontslib.MakeSettingsFonts(game.Cache)
+    fonts := fontslib.MakeSettingsFonts(game.Cache)
 
     group := uilib.MakeGroup()
     quit, cancel := context.WithCancel(context.Background())
@@ -1598,8 +1596,10 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache) (*uilib.UIElementG
 
     ok, _ := imageCache.GetImage("load.lbx", 4, 0)
 
+    settingsLayer := uilib.UILayer(5)
+
     group.AddElement(&uilib.UIElement{
-        Layer: 5,
+        Layer: settingsLayer,
         Rect: util.ImageRect(266, 176, ok),
         LeftClick: func(element *uilib.UIElement){
             getAlpha = group.MakeFadeOut(7)
@@ -1612,6 +1612,15 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache) (*uilib.UIElementG
             options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
             options.ColorScale.ScaleAlpha(getAlpha())
             scale.DrawScaled(screen, ok, &options)
+        },
+    })
+
+    group.AddElement(&uilib.UIElement{
+        Layer: settingsLayer,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            fonts.OptionFont.PrintOptions(screen, 30, 40, font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "Volume")
         },
     })
 
