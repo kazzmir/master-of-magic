@@ -437,6 +437,11 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
 
 func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) *gamelib.Game {
     game := gamelib.MakeGame(magic.Cache, settings)
+    game.Music.Enabled = magic.EnableMusic
+
+    if !magic.EnableMusic {
+        game.Music.Stop()
+    }
 
     game.RefreshUI()
 
@@ -549,6 +554,8 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
 
     music := musiclib.MakeMusic(game.Cache)
     defer music.Stop()
+
+    music.Enabled = game.EnableMusic
 
     music.PlaySong(musiclib.SongIntro)
     runIntro(yield, game)
@@ -707,6 +714,8 @@ func main() {
     mouse.Initialize()
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
+
+    log.Printf("Music: %v", enableMusic)
 
     game, err := NewMagicGame(dataPath, startGame, enableMusic)
 
