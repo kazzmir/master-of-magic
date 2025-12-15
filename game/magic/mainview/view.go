@@ -11,6 +11,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/gamemenu"
+    musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
+    settingslib "github.com/kazzmir/master-of-magic/game/magic/settings"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
@@ -39,6 +41,7 @@ type MainScreen struct {
     Counter uint64
     Cache *lbx.LbxCache
     State MainScreenState
+    Music *musiclib.Music
     ImageCache util.ImageCache
     UI *uilib.UI
     GameLoader gamemenu.GameLoader
@@ -46,10 +49,11 @@ type MainScreen struct {
     Drawer func(screen *ebiten.Image)
 }
 
-func MakeMainScreen(cache *lbx.LbxCache, gameLoader gamemenu.GameLoader) *MainScreen {
+func MakeMainScreen(cache *lbx.LbxCache, gameLoader gamemenu.GameLoader, music *musiclib.Music) *MainScreen {
     main := &MainScreen{
         Counter: 0,
         Cache: cache,
+        Music: music,
         ImageCache: util.MakeImageCache(cache),
         State: MainScreenStateRunning,
         GameLoader: gameLoader,
@@ -316,10 +320,26 @@ func (main *MainScreen) MakeUI() *uilib.UI {
     return ui
 }
 
-type NoSettingsUI struct {
+type SettingsUI struct {
+    yield coroutine.YieldFunc
+    main *MainScreen
+    ui *uilib.UI
 }
 
-func (settings *NoSettingsUI) RunSettingsUI() {
+func (settings *SettingsUI) RunSettingsUI() {
+    group, done := settingslib.MakeSettingsUI(settings.main.Cache, &settings.main.ImageCache, settings.main.Music)
+
+    settings.ui.AddGroup(group)
+    defer settings.ui.RemoveGroup(group)
+
+    for done.Err() == nil {
+        settings.ui.StandardUpdate()
+        if settings.yield() != nil {
+            break
+        }
+    }
+
+    settings.yield()
 }
 
 func (main *MainScreen) RunGameScreen(yield coroutine.YieldFunc) MainScreenState {
@@ -328,10 +348,10 @@ func (main *MainScreen) RunGameScreen(yield coroutine.YieldFunc) MainScreenState
         main.Drawer = oldDrawer
     }()
 
-    gameScreen, quit := gamemenu.MakeGameMenuUI(main.Cache, main.GameLoader, &NoSettingsUI{}, func(){})
-
     ui := &uilib.UI{
     }
+
+    gameScreen, quit := gamemenu.MakeGameMenuUI(main.Cache, main.GameLoader, &SettingsUI{yield: yield, main: main, ui: ui}, func(){})
 
     main.Drawer = func(screen *ebiten.Image) {
         ui.StandardDraw(screen)

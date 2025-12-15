@@ -22,6 +22,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/hero"
+    "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/console"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
@@ -129,7 +130,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{LandSize: 0})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{LandSize: 0})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -231,7 +232,7 @@ func createScenario2(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -287,7 +288,7 @@ func createScenario3(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -362,7 +363,7 @@ func createScenario4(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -442,7 +443,7 @@ func createScenario5(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -504,7 +505,7 @@ func createScenario6(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -587,7 +588,7 @@ func createScenario7(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -658,7 +659,7 @@ func createScenario8(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -736,7 +737,7 @@ func createScenario9(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -810,7 +811,7 @@ func createScenario10(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -886,7 +887,7 @@ func createScenario11(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -954,7 +955,7 @@ func createScenario12(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -1021,7 +1022,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -1303,7 +1304,7 @@ func createScenario14(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -1403,7 +1404,7 @@ func createScenario15(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -1484,7 +1485,7 @@ func createScenario16(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -1558,7 +1559,7 @@ func createScenario17(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -1748,7 +1749,7 @@ func createScenario18(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -1837,7 +1838,7 @@ func createScenario19(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -1908,7 +1909,7 @@ func createScenario20(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -2026,7 +2027,7 @@ func createScenario21(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{LandSize: 0})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{LandSize: 0})
 
     usePlane := data.PlaneMyrror
 
@@ -2146,7 +2147,7 @@ func createScenario22(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -2221,7 +2222,7 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{LandSize: 0})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{LandSize: 0})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -2371,7 +2372,7 @@ func createScenario24(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -2442,7 +2443,7 @@ func createScenario25(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
     game.Model.Plane = data.PlaneArcanus
 
     x, y, _ := game.FindValidCityLocation(game.Model.Plane)
@@ -2509,7 +2510,7 @@ func createScenario26(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
     game.Model.Plane = data.PlaneArcanus
 
     x, y, _ := game.FindValidCityLocation(game.Model.Plane)
@@ -2581,7 +2582,7 @@ func createScenario27(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -2677,7 +2678,7 @@ func createScenario28(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -2746,7 +2747,7 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -2818,7 +2819,7 @@ func createScenario30(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -2901,7 +2902,7 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -3002,7 +3003,7 @@ func createScenario32(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -3107,7 +3108,7 @@ func createScenario33(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -3164,7 +3165,7 @@ func createScenario33(cache *lbx.LbxCache) *gamelib.Game {
 func createScenario34(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 34")
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -3241,7 +3242,7 @@ func createScenario34(cache *lbx.LbxCache) *gamelib.Game {
 func createScenario35(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 35")
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -3294,7 +3295,7 @@ func createScenario35(cache *lbx.LbxCache) *gamelib.Game {
 func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 36")
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -3392,7 +3393,7 @@ func createScenario36(cache *lbx.LbxCache) *gamelib.Game {
 func createScenario37(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 37")
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -3426,7 +3427,7 @@ func createScenario37(cache *lbx.LbxCache) *gamelib.Game {
 func createScenario38(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 38")
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -3508,7 +3509,7 @@ func createScenario39(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -3590,7 +3591,7 @@ func createScenario40(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -3654,7 +3655,7 @@ func createScenario41(cache *lbx.LbxCache) *gamelib.Game {
         Books: []data.WizardBook{},
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -3707,7 +3708,7 @@ func createScenario42(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -3821,7 +3822,7 @@ func createScenario43(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -3901,7 +3902,7 @@ func createScenario44(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -3989,7 +3990,7 @@ func createScenario45(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -4090,7 +4091,7 @@ func createScenario46(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -4161,7 +4162,7 @@ func createScenario47(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -4316,7 +4317,7 @@ func createScenario48(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -4500,7 +4501,7 @@ func createScenario48(cache *lbx.LbxCache) *gamelib.Game {
 func createScenario49(cache *lbx.LbxCache) *gamelib.Game {
     log.Printf("Running scenario 49")
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -4631,7 +4632,7 @@ func createScenario50(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -4768,7 +4769,7 @@ func createScenario51_52(cache *lbx.LbxCache, kill bool) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -4882,7 +4883,7 @@ func createScenario53(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -4958,7 +4959,7 @@ func createScenario54(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -5041,7 +5042,7 @@ func createScenario55(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -5132,7 +5133,7 @@ func createScenario56(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -5228,7 +5229,7 @@ func createScenario57(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -5325,7 +5326,7 @@ func createScenario58(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{
         Magic: data.MagicSettingNormal,
         Difficulty: data.DifficultyAverage,
     })
@@ -5401,7 +5402,7 @@ func createScenario59(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -5493,7 +5494,7 @@ func createScenario60(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -5595,7 +5596,7 @@ func createScenario61(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -5721,7 +5722,7 @@ func createScenario62(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -5795,7 +5796,7 @@ func createScenario63(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -5903,7 +5904,7 @@ func createScenario64(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -5988,7 +5989,7 @@ func createScenario65(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{LandSize: 0})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{LandSize: 0})
 
     game.Model.Plane = data.PlaneArcanus
 
@@ -6074,7 +6075,7 @@ func createScenario66(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, setup.NewGameSettings{LandSize: 0})
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{LandSize: 0})
 
     game.Model.Plane = data.PlaneArcanus
 
