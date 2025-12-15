@@ -1615,12 +1615,50 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache) (*uilib.UIElementG
         },
     })
 
+    volume := 1.0
+
     group.AddElement(&uilib.UIElement{
         Layer: settingsLayer,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            fonts.OptionFont.PrintOptions(screen, 30, 40, font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "Volume")
+            fonts.OptionFont.PrintOptions(screen, 30, 40, font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, fmt.Sprintf("Volume: %02d%%", int(volume * 100)))
+        },
+    })
+
+    slider, _ := game.ImageCache.GetImage("spellscr.lbx", 3, 0)
+
+    volumeClicked := false
+    group.AddElement(&uilib.UIElement{
+        Layer: settingsLayer,
+        Rect: image.Rect(30, 50, 30 + 80, 50 + slider.Bounds().Dy()),
+        Inside: func(this *uilib.UIElement, x int, y int){
+            if volumeClicked {
+                volume = min(1, float64(x) / float64(this.Rect.Dx() - 1))
+            }
+        },
+        LeftClick: func(element *uilib.UIElement){
+            volumeClicked = true
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            volumeClicked = false
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            backgroundRect := element.Rect
+            backgroundRect.Max.X += 5
+            backgroundRect.Min.X -= 1
+            backgroundRect.Min.Y -= 1
+
+            vector.FillRect(screen, float32(scale.Scale(backgroundRect.Min.X)), float32(scale.Scale(backgroundRect.Min.Y)), float32(scale.Scale(backgroundRect.Dx())), float32(scale.Scale(backgroundRect.Dy())), color.NRGBA{R: 32, G: 32, B: 32, A: uint8(200 * getAlpha())}, false)
+            util.DrawRect(screen, scale.ScaleRect(backgroundRect), color.NRGBA{R: 255, G: 255, B: 255, A: 200})
+
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            options.GeoM.Translate(float64(element.Rect.Min.X) + float64(element.Rect.Dx()) * volume, float64(element.Rect.Min.Y))
+            options.GeoM.Translate(float64(-slider.Bounds().Dx()/2), 0)
+            scale.DrawScaled(screen, slider, &options)
+
+            // util.DrawRect(screen, scale.ScaleRect(element.Rect), color.RGBA{R: 255, A: 255})
         },
     })
 
