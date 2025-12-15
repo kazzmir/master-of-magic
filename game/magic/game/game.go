@@ -1648,7 +1648,7 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache) (*uilib.UIElementG
             backgroundRect.Min.Y -= 1
 
             vector.FillRect(screen, float32(scale.Scale(backgroundRect.Min.X)), float32(scale.Scale(backgroundRect.Min.Y)), float32(scale.Scale(backgroundRect.Dx())), float32(scale.Scale(backgroundRect.Dy())), color.NRGBA{R: 32, G: 32, B: 32, A: uint8(200 * getAlpha())}, false)
-            util.DrawRect(screen, scale.ScaleRect(backgroundRect), color.NRGBA{R: 255, G: 255, B: 255, A: 200})
+            util.DrawRect(screen, scale.ScaleRect(backgroundRect), color.NRGBA{R: 255, G: 255, B: 255, A: uint8(200 * getAlpha())})
 
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
