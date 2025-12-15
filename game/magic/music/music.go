@@ -156,6 +156,13 @@ const (
     SongHeroGainedALevel Song = 115
 )
 
+type MusicEvent interface {
+}
+
+type MusicEventSetVolume struct {
+    Volume float64
+}
+
 type Songs struct {
     Songs []Song
 }
@@ -172,8 +179,11 @@ type Music struct {
 
     Enabled bool
 
+    MusicEvents chan MusicEvent
+
     SoundFont *meltysynth.SoundFont
     XmiCache map[Song]*smf.SMF
+    volume float64 // 1 for loud, 0 for silence
 
     // queue of songs being played. a new song can be pushed on top, or popped off
     songQueue []Songs
@@ -181,11 +191,33 @@ type Music struct {
 
 func MakeMusic(cache *lbx.LbxCache) *Music {
     ctx, cancel := context.WithCancel(context.Background())
-    return &Music{done: ctx, cancel: cancel, Cache: cache, XmiCache: make(map[Song]*smf.SMF), Enabled: true}
+    return &Music{
+        done: ctx,
+        cancel: cancel,
+        Cache: cache,
+        XmiCache: make(map[Song]*smf.SMF),
+        Enabled: true,
+        volume: 1.0,
+    }
 }
 
 func randomChoose[T any](choices... T) T {
     return choices[rand.N(len(choices))]
+}
+
+func (music *Music) GetVolume() float64 {
+    return music.volume
+}
+
+func (music *Music) SetVolume(volume float64) {
+    music.volume = volume
+
+    if music.MusicEvents != nil {
+        select {
+            case music.MusicEvents <- MusicEventSetVolume{Volume: volume}:
+            default:
+        }
+    }
 }
 
 func (music *Music) PushSongs(songs... Song) {
@@ -349,6 +381,9 @@ func (music *Music) PlaySong(index Song){
         return
     }
 
+    musicEvents := make(chan MusicEvent, 1)
+    music.MusicEvents = musicEvents
+
     music.wait.Add(1)
     go func(){
         defer music.wait.Done()
@@ -361,7 +396,7 @@ func (music *Music) PlaySong(index Song){
             }
         }
 
-        err := playMidi(song, music.done, soundFont)
+        err := playMidi(song, music.done, soundFont, music.volume, musicEvents)
         if err != nil {
             log.Printf("Error: could not play midi %v: %v", index, err)
         }
@@ -371,6 +406,8 @@ func (music *Music) PlaySong(index Song){
 func (music *Music) Stop() {
     music.cancel()
     music.wait.Wait()
+
+    music.MusicEvents = nil
 }
 
 // implements the io.Reader interface for ebiten's NewPlayerF32 function
@@ -418,7 +455,7 @@ func (player *MidiPlayer) Read(p []byte) (int, error) {
 }
 
 // FIXME: replace smf.SMF with meltysynth.MidiFile
-func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFont) error {
+func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFont, volume float64, events chan MusicEvent) error {
     var buffer bytes.Buffer
     // write out a normal midi file
     song.WriteTo(&buffer)
@@ -446,11 +483,23 @@ func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFo
         return err
     }
 
-    player.SetVolume(1.0)
+    player.SetVolume(volume)
     player.SetBufferSize(time.Second / 10)
     player.Play()
 
-    <-done.Done()
+    quit := false
+    for !quit {
+        select {
+            case <-done.Done():
+                quit = true
+            case event := <-events:
+                switch e := event.(type) {
+                    case MusicEventSetVolume:
+                        player.SetVolume(e.Volume)
+                }
+        }
+    }
+
     player.Close()
 
     return nil

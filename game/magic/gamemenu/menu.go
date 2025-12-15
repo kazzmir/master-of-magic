@@ -18,7 +18,11 @@ type GameLoader interface {
     Load(reader io.Reader) error
 }
 
-func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, doQuit func()) (*uilib.UIElementGroup, context.Context) {
+type SettingsUI interface {
+    RunSettingsUI()
+}
+
+func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, settingsUI SettingsUI, doQuit func()) (*uilib.UIElementGroup, context.Context) {
     quit, cancel := context.WithCancel(context.Background())
 
     imageCache := util.MakeImageCache(cache)
@@ -108,15 +112,9 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, doQuit func()) (
     // settings
     group.AddElement(makeButton(12, 172, 171, func(){
         // disable for now
-        /*
-        ui.RemoveElements(elements)
+        // ui.RemoveElements(elements)
 
-        game.MakeSettingsUI(&imageCache, ui, &background, func(){
-            quit = true
-            // re-enter the game menu
-            game.Events <- &GameEventGameMenu{}
-        })
-        */
+        settingsUI.RunSettingsUI()
     }))
 
     // ok

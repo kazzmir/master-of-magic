@@ -575,7 +575,7 @@ func init() {
     }
 
     fontLoaders[SettingsFont] = func (fonts []*font.LbxFont) *font.Font {
-        bluish := util.Lighten(color.RGBA{R: 0x00, G: 0x00, B: 0xff, A: 0xff}, 90)
+        bluish := color.RGBA{R: 0xb7, G: 0xc8, B: 0xd3, A: 0xff}
 
         optionPalette := color.Palette{
             color.RGBA{R: 0, G: 0, B: 0x00, A: 0},
