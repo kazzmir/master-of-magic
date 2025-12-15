@@ -125,7 +125,7 @@ func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) (bool, setup.Wizar
 }
 
 func runMainMenu(yield coroutine.YieldFunc, game *MagicGame, gameLoader *OriginalGameLoader) (*gamelib.Game, mainview.MainScreenState) {
-    menu := mainview.MakeMainScreen(game.Cache, gameLoader)
+    menu := mainview.MakeMainScreen(game.Cache, gameLoader, game.Music)
 
     game.Drawer = func(screen *ebiten.Image) {
         menu.Draw(screen)
