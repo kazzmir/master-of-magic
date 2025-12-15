@@ -316,13 +316,19 @@ func (main *MainScreen) MakeUI() *uilib.UI {
     return ui
 }
 
+type NoSettingsUI struct {
+}
+
+func (settings *NoSettingsUI) RunSettingsUI() {
+}
+
 func (main *MainScreen) RunGameScreen(yield coroutine.YieldFunc) MainScreenState {
     oldDrawer := main.Drawer
     defer func() {
         main.Drawer = oldDrawer
     }()
 
-    gameScreen, quit := gamemenu.MakeGameMenuUI(main.Cache, main.GameLoader, func(){})
+    gameScreen, quit := gamemenu.MakeGameMenuUI(main.Cache, main.GameLoader, &NoSettingsUI{}, func(){})
 
     ui := &uilib.UI{
     }
