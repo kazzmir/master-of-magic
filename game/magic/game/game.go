@@ -6004,7 +6004,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
             buildRect := util.ImageRect(280, 186, buildImages[0])
             buildCounter := uint64(0)
 
-            hasCity := game.Model.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
+            // hasCity := game.Model.ContainsCity(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
             node := game.GetMap(player.SelectedStack.Plane()).GetMagicNode(player.SelectedStack.X(), player.SelectedStack.Y())
             isCorrupted := game.GetMap(player.SelectedStack.Plane()).HasCorruption(player.SelectedStack.X(), player.SelectedStack.Y())
             canSettle := player.SelectedStack.ActiveUnitsHasAbility(data.AbilityCreateOutpost) && game.Model.IsSettlableLocation(player.SelectedStack.X(), player.SelectedStack.Y(), player.SelectedStack.Plane())
@@ -6053,7 +6053,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         } else {
                             use = inactivePurify
                         }
-                    } else if powers.BuildRoad && !hasCity {
+                    } else if powers.BuildRoad {
                         use = buildImages[buildIndex]
                     }
 
@@ -6090,9 +6090,9 @@ func (game *Game) MakeHudUI() *uilib.UI {
                             buildIndex = 1
                         }
                     } else if powers.BuildRoad {
-                        if !hasCity {
+                        // if !hasCity {
                             buildIndex = 1
-                        }
+                        // }
                     }
 
                 },
