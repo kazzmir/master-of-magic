@@ -1615,14 +1615,12 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache) (*uilib.UIElementG
         },
     })
 
-    volume := 1.0
-
     group.AddElement(&uilib.UIElement{
         Layer: settingsLayer,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            fonts.OptionFont.PrintOptions(screen, 30, 40, font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, fmt.Sprintf("Volume: %02d%%", int(volume * 100)))
+            fonts.OptionFont.PrintOptions(screen, 30, 40, font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, fmt.Sprintf("Volume: %02d%%", int(game.Music.GetVolume() * 100)))
         },
     })
 
@@ -1634,7 +1632,7 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache) (*uilib.UIElementG
         Rect: image.Rect(30, 50, 30 + 80, 50 + slider.Bounds().Dy()),
         Inside: func(this *uilib.UIElement, x int, y int){
             if volumeClicked {
-                volume = min(1, float64(x) / float64(this.Rect.Dx() - 1))
+                game.Music.SetVolume(min(1, float64(x) / float64(this.Rect.Dx() - 1)))
             }
         },
         LeftClick: func(element *uilib.UIElement){
@@ -1654,7 +1652,7 @@ func (game *Game) MakeSettingsUI(imageCache *util.ImageCache) (*uilib.UIElementG
 
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            options.GeoM.Translate(float64(element.Rect.Min.X) + float64(element.Rect.Dx()) * volume, float64(element.Rect.Min.Y))
+            options.GeoM.Translate(float64(element.Rect.Min.X) + float64(element.Rect.Dx()) * game.Music.GetVolume(), float64(element.Rect.Min.Y))
             options.GeoM.Translate(float64(-slider.Bounds().Dx()/2), 0)
             scale.DrawScaled(screen, slider, &options)
 
