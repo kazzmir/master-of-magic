@@ -471,7 +471,7 @@ func createArtifactPool(lbxCache *lbx.LbxCache) map[string]*artifact.Artifact {
     return pool
 }
 
-func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
+func MakeGame(lbxCache *lbx.LbxCache, music_ *music.Music, settings setup.NewGameSettings) *Game {
 
     terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
     if err != nil {
@@ -509,7 +509,7 @@ func MakeGame(lbxCache *lbx.LbxCache, settings setup.NewGameSettings) *Game {
     game := &Game{
         Cache: lbxCache,
         Help: help,
-        Music: music.MakeMusic(lbxCache),
+        Music: music_,
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
         State: GameStateRunning,

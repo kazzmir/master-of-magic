@@ -58,7 +58,7 @@ type MagicGame struct {
     MainCoroutine *coroutine.Coroutine
     Drawer DrawFunc
 
-    EnableMusic bool
+    Music *musiclib.Music
 }
 
 func randomChoose[T any](choices... T) T {
@@ -436,12 +436,7 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
 }
 
 func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) *gamelib.Game {
-    game := gamelib.MakeGame(magic.Cache, settings)
-    game.Music.Enabled = magic.EnableMusic
-
-    if !magic.EnableMusic {
-        game.Music.Stop()
-    }
+    game := gamelib.MakeGame(magic.Cache, magic.Music, settings)
 
     game.RefreshUI()
 
@@ -536,12 +531,16 @@ func startQuickGame(yield coroutine.YieldFunc, game *MagicGame) error {
     })
 }
 
-func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startGame bool) error {
+func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startGame bool, enableMusic bool) error {
 
     err := loadData(yield, game, dataPath)
     if err != nil {
         return err
     }
+
+    game.Music = musiclib.MakeMusic(game.Cache)
+    game.Music.Enabled = enableMusic
+    defer game.Music.Stop()
 
     shutdown := func (screen *ebiten.Image){
         ebitenutil.DebugPrintAt(screen, "Shutting down", 10, 10)
@@ -552,17 +551,12 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
         return startQuickGame(yield, game)
     }
 
-    music := musiclib.MakeMusic(game.Cache)
-    defer music.Stop()
-
-    music.Enabled = game.EnableMusic
-
-    music.PlaySong(musiclib.SongIntro)
+    game.Music.PlaySong(musiclib.SongIntro)
     runIntro(yield, game)
 
     yield()
 
-    music.PlaySong(musiclib.SongTitle)
+    game.Music.PlaySong(musiclib.SongTitle)
 
     gameLoader := &OriginalGameLoader{
         Cache: game.Cache,
@@ -578,7 +572,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                 return ebiten.Termination
             case mainview.MainScreenStateLoadGame:
                 if newGame != nil {
-                    music.Stop()
+                    game.Music.Stop()
                     // FIXME: should this go here?
                     newGame.Model.CurrentPlayer = 0
                     err := runGameInstance(newGame, yield, game, gameLoader)
@@ -588,10 +582,10 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                         return err
                     }
 
-                    music.PlaySong(musiclib.SongTitle)
+                    game.Music.PlaySong(musiclib.SongTitle)
                 }
             case mainview.MainScreenStateQuickGame:
-                music.Stop()
+                game.Music.Stop()
                 yield()
                 err := startQuickGame(yield, game)
                 if err != nil {
@@ -599,7 +593,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                     yield()
                     return err
                 }
-                music.PlaySong(musiclib.SongTitle)
+                game.Music.PlaySong(musiclib.SongTitle)
             case mainview.MainScreenStateNewGame:
                 var settings setup.NewGameSettings
                 var wizard setup.WizardCustom
@@ -620,7 +614,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                     break
                 }
 
-                music.Stop()
+                game.Music.Stop()
 
                 realGame := initializeGame(game, settings, wizard)
                 err := runGameInstance(realGame, yield, game, gameLoader)
@@ -631,7 +625,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                     return err
                 }
 
-                music.PlaySong(musiclib.SongTitle)
+                game.Music.PlaySong(musiclib.SongTitle)
         }
     }
 }
@@ -640,12 +634,11 @@ func NewMagicGame(dataPath string, startGame bool, enableMusic bool) (*MagicGame
     var game *MagicGame
 
     run := func(yield coroutine.YieldFunc) error {
-        return runGame(yield, game, dataPath, startGame)
+        return runGame(yield, game, dataPath, startGame, enableMusic)
     }
 
     game = &MagicGame{
         MainCoroutine: coroutine.MakeCoroutine(run),
-        EnableMusic: enableMusic,
         Drawer: nil,
     }
 
