@@ -2782,9 +2782,9 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
     node := nodes[terrain.SorceryNode][0]
     game.Model.CurrentMap().RemoveEncounter(node.X, node.Y)
 
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcSwordsmen, node.X + 1, node.Y + 1, game.Model.Plane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, node.X + 1, node.Y + 1, game.Model.Plane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
-    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, node.X + 1, node.Y + 1, game.Model.Plane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcSwordsmen, city.X, city.Y, city.Plane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, city.X, city.Y, city.Plane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcEngineers, city.X, city.Y, city.Plane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
     player.LiftFog(node.X, node.Y, 30, game.Model.Plane)
 
@@ -6052,7 +6052,7 @@ func createScenario65(cache *lbx.LbxCache) *gamelib.Game {
 
 // town doesn't produce enough food for units, but has enough workers to rebalance
 func createScenario66(cache *lbx.LbxCache) *gamelib.Game {
-    log.Printf("Running scenario 1")
+    log.Printf("Running scenario 66")
 
     wizard := setup.WizardCustom{
         Name: "bob",

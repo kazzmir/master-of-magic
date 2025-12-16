@@ -4,6 +4,7 @@ import (
     "testing"
     "image"
     "math"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -962,4 +963,25 @@ func TestNightshadeDispelTurn(test *testing.T) {
     if city.HasEnchantment(data.CityEnchantmentChaosRift) {
         test.Errorf("City should not have chaos rift enchantment")
     }
+}
+
+func TestBuildUnits(test *testing.T) {
+    reign := NoReign{TaxRate: fraction.Make(3, 2)}
+    city := MakeCity("Test City", 10, 10, data.RaceBeastmen, nil, &Catchment{Map: makeSimpleMap()}, &NoCities{}, &reign)
+    city.Population = 6000
+    city.Farmers = 6
+    city.Workers = 0
+    city.ResetCitizens()
+
+    city.AddBuilding(buildinglib.BuildingBuildersHall)
+    city.AddBuilding(buildinglib.BuildingBarracks)
+    city.AddBuilding(buildinglib.BuildingSmithy)
+
+    possibleUnits := city.ComputePossibleUnits()
+    if !slices.ContainsFunc(possibleUnits, func(unit units.Unit) bool {
+        return unit.Equals(units.BeastmenEngineer)
+    }) {
+        test.Errorf("City should be able to build Beastmen Engineer")
+    }
+
 }
