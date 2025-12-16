@@ -60,10 +60,6 @@ type GameModel struct {
     RandomEvents []*RandomEvent
     LastEventTurn uint64
 
-    // FIXME: maybe put these in the Map object?
-    RoadWorkArcanus map[image.Point]float64
-    RoadWorkMyrror map[image.Point]float64
-
     // work done on purifying tiles
     PurifyWorkArcanus map[image.Point]float64
     PurifyWorkMyrror map[image.Point]float64
@@ -88,8 +84,6 @@ func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSetti
         Events: events,
         BuildingInfo: buildingInfo,
 
-        RoadWorkArcanus: make(map[image.Point]float64),
-        RoadWorkMyrror: make(map[image.Point]float64),
 
         PurifyWorkArcanus: make(map[image.Point]float64),
         PurifyWorkMyrror: make(map[image.Point]float64),
@@ -723,6 +717,7 @@ func (model *GameModel) NearCity(point image.Point, squares int, plane data.Plan
 // add total work to some counter, and when that total reaches the threshold for the terrain type
 // then set a road on that tile and make the engineers no longer busy
 func (model *GameModel) DoBuildRoads(player *playerlib.Player) {
+    // keeps track of roads that are still being built
     arcanusBuilds := make(map[image.Point]struct{})
     myrrorBuilds := make(map[image.Point]struct{})
 
@@ -733,9 +728,9 @@ func (model *GameModel) DoBuildRoads(player *playerlib.Player) {
 
         if engineerCount > 0 {
             x, y := stack.X(), stack.Y()
-            roads := model.RoadWorkArcanus
+            roads := player.RoadWorkArcanus
             if plane == data.PlaneMyrror {
-                roads = model.RoadWorkMyrror
+                roads = player.RoadWorkMyrror
             }
 
             amount, ok := roads[image.Pt(x, y)]
@@ -768,7 +763,7 @@ func (model *GameModel) DoBuildRoads(player *playerlib.Player) {
     // remove all points that are no longer being built
 
     var toDelete []image.Point
-    for point, _ := range model.RoadWorkArcanus {
+    for point, _ := range player.RoadWorkArcanus {
         _, ok := arcanusBuilds[point]
         if !ok {
             toDelete = append(toDelete, point)
@@ -777,11 +772,11 @@ func (model *GameModel) DoBuildRoads(player *playerlib.Player) {
 
     for _, point := range toDelete {
         // log.Printf("remove point %v", point)
-        delete(model.RoadWorkArcanus, point)
+        delete(player.RoadWorkArcanus, point)
     }
 
     toDelete = nil
-    for point, _ := range model.RoadWorkMyrror {
+    for point, _ := range player.RoadWorkMyrror {
         _, ok := myrrorBuilds[point]
         if !ok {
             toDelete = append(toDelete, point)
@@ -790,7 +785,7 @@ func (model *GameModel) DoBuildRoads(player *playerlib.Player) {
 
     for _, point := range toDelete {
         // log.Printf("remove point %v", point)
-        delete(model.RoadWorkMyrror, point)
+        delete(player.RoadWorkMyrror, point)
     }
 
 }

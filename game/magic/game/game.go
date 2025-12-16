@@ -11,6 +11,7 @@ import (
     "strings"
     "slices"
     "errors"
+    "time"
 
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -368,6 +369,9 @@ type Game struct {
     MouseData *mouselib.MouseData
 
     Events chan GameEvent
+
+    // press tab 5 times to enable
+    DebugMode bool
 
     MovingStack *playerlib.UnitStack
 
@@ -5483,7 +5487,50 @@ func (game *Game) OnWaterTile(stack *playerlib.UnitStack) bool {
     return tile.Tile.IsWater()
 }
 
+func (game *Game) DumpInfo(x int, y int) {
+    log.Printf("Info at (%v,%v):", x, y)
+    city, owner := game.Model.FindCity(x, y, game.Model.Plane)
+    if city != nil {
+        log.Printf("City owned by %v", owner.Wizard.Name)
+        log.Printf(" Population: %v", city.Population)
+        log.Printf(" Buildings:")
+        for _, building := range city.Buildings.Values() {
+            log.Printf("  - %v", game.Model.BuildingInfo.Name(building))
+        }
+        log.Printf(" Producing building: %v", game.Model.BuildingInfo.Name(city.ProducingBuilding))
+        log.Printf(" Producing unit: %v", city.ProducingUnit.Name)
+    }
+
+    stack, stackOwner := game.Model.FindStack(x, y, game.Model.Plane)
+
+    if stack != nil {
+        if stackOwner == nil {
+            log.Printf("Stack owner is nil!")
+        } else {
+            log.Printf("Stack owned by %v", stackOwner.Wizard.Name)
+            roadWork := stackOwner.RoadWorkArcanus
+            if stack.Plane() == data.PlaneMyrror {
+                roadWork = stackOwner.RoadWorkMyrror
+            }
+
+            work, ok := roadWork[image.Pt(x, y)]
+            if ok {
+                log.Printf(" Road work done: %v", work)
+            } else {
+                log.Printf(" No road work")
+            }
+        }
+    }
+}
+
 func (game *Game) MakeHudUI() *uilib.UI {
+    type TrackKey struct {
+        Key ebiten.Key
+        When time.Time
+    }
+
+    var tabKeys []TrackKey
+
     ui := &uilib.UI{
         Cache: game.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
@@ -5499,6 +5546,29 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 if game.HudUI.GetHighestLayerValue() == 0 {
                     for _, key := range keys {
                         switch key {
+                            case ebiten.KeyTab:
+                                if !game.DebugMode {
+                                    tabKeys = append(tabKeys, TrackKey{Key: key, When: time.Now()})
+
+                                    tabKeys = slices.DeleteFunc(tabKeys, func(tab TrackKey) bool {
+                                        return time.Since(tab.When) > time.Second * 5
+                                    })
+
+                                    if len(tabKeys) >= 5 {
+                                        game.DebugMode = true
+                                        log.Printf("Debug mode enabled")
+                                    } else if len(tabKeys) > 1 {
+                                        log.Printf("Press Tab %v more times to enable debug mode", 5 - len(tabKeys))
+                                    }
+                                }
+
+                            case ebiten.KeyShiftLeft:
+                                if game.DebugMode {
+                                    mouseX, mouseY := inputmanager.MousePosition()
+                                    px, py := game.ScreenToTile(float64(mouseX), float64(mouseY))
+                                    game.DumpInfo(px, py)
+                                }
+
                             case ebiten.KeySpace:
                                 stack := game.Model.Players[0].SelectedStack
 
@@ -7771,11 +7841,11 @@ func (game *Game) DrawGame(screen *ebiten.Image){
     game.HudUI.Draw(game.HudUI, screen)
 
     // DEBUGGING: show tile coordinates on screen
-    /*
-    mouseX, mouseY := inputmanager.MousePosition()
-    tileX, tileY := game.ScreenToTile(float64(mouseX), float64(mouseY))
-    game.Fonts.WhiteFont.PrintOptions(screen, float64(mouseX), float64(mouseY - 10), font.FontOptions{}, fmt.Sprintf("%d, %d", tileX, tileY))
-    */
+    if game.DebugMode {
+        mouseX, mouseY := inputmanager.MousePosition()
+        tileX, tileY := game.ScreenToTile(float64(mouseX), float64(mouseY))
+        game.Fonts.WhiteFont.PrintOptions(screen, float64(mouseX), float64(mouseY - 10), font.FontOptions{}, fmt.Sprintf("%d, %d", tileX, tileY))
+    }
 }
 
 func (game *Game) GetMinimapRect() image.Rectangle {

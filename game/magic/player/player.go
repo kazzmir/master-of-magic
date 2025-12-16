@@ -354,6 +354,10 @@ type Player struct {
     // counter for the next created unit owned by this player
     UnitId uint64
     SelectedStack *UnitStack
+
+    // track how much road work has been done per tile
+    RoadWorkArcanus map[image.Point]float64
+    RoadWorkMyrror map[image.Point]float64
 }
 
 func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight int, heroNames map[herolib.HeroType]string, globalEnchantmentProvider GlobalEnchantmentsProvider) *Player {
@@ -382,6 +386,8 @@ func MakePlayer(wizard setup.WizardCustom, human bool, mapWidth int, mapHeight i
         HeroPool: createHeroes(heroNames),
         PlayerRelations: make(map[*Player]*Relationship),
         GlobalEnchantments: set.MakeSet[data.Enchantment](),
+        RoadWorkArcanus: make(map[image.Point]float64),
+        RoadWorkMyrror: make(map[image.Point]float64),
         BookOrderSeed1: rand.Uint64(),
         BookOrderSeed2: rand.Uint64(),
         PowerDistribution: PowerDistribution{
