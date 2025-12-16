@@ -6052,7 +6052,7 @@ func createScenario65(cache *lbx.LbxCache) *gamelib.Game {
 
 // town doesn't produce enough food for units, but has enough workers to rebalance
 func createScenario66(cache *lbx.LbxCache) *gamelib.Game {
-    log.Printf("Running scenario 1")
+    log.Printf("Running scenario 66")
 
     wizard := setup.WizardCustom{
         Name: "bob",
