@@ -708,8 +708,6 @@ func main() {
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-    log.Printf("Music: %v", enableMusic)
-
     game, err := NewMagicGame(dataPath, startGame, enableMusic)
 
     if err != nil {
