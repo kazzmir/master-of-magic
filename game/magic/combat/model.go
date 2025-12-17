@@ -6259,7 +6259,7 @@ func (model *CombatModel) CreateFireballProjectileEffect(strength int, damageInd
 
 func (model *CombatModel) CreateStarFiresProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
-        hurt, _ := ApplyDamage(unit, []int{15}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
+        hurt, _ := ApplyDamage(unit, []int{ComputeRoll(15, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
         damageIndicator.AddDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
