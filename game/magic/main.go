@@ -292,6 +292,17 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
         player.AddUnit(units.MakeOverworldUnitFromUnit(unit, cityX, cityY, startingPlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
     }
 
+    // for debugging purposes, to start the game super powered
+    /*
+    if isHuman {
+        player.Admin = true
+        player.Mana = 90000
+        for range 3 {
+            player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, cityX, cityY, startingPlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+        }
+    }
+    */
+
     player.LiftFog(cityX, cityY, 3, introCity.Plane)
 
     if isHuman {
