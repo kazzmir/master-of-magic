@@ -155,6 +155,8 @@ func MakeCity(name string, x int, y int, race data.Race, buildingInfo buildingli
         CityServices: cityServices,
         ReignProvider: reignProvider,
         BuildingInfo: buildingInfo,
+        ProducingBuilding: buildinglib.BuildingHousing,
+        ProducingUnit: units.UnitNone,
     }
 
     return &city
