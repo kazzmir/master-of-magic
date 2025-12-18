@@ -4510,7 +4510,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         state = combat.CombatStateRunning
         for state == combat.CombatStateRunning {
             state = combatScreen.Update(yield)
-            yield()
+            if yield() != nil {
+                break
+            }
         }
 
         game.Music.PopSong()
