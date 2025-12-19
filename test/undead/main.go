@@ -26,6 +26,19 @@ type Engine struct {
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
+    imageCache := util.MakeImageCache(cache)
+
+    ui, undeadQuit := MakeUI(&imageCache)
+    
+    return &Engine{
+        LbxCache: cache,
+        ImageCache: imageCache,
+        UI: ui,
+        Quit: undeadQuit,
+    }, nil
+}
+
+func MakeUI(cache *util.ImageCache) (*uilib.UI, context.Context) {
     ui := uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             ui.StandardDraw(screen)
@@ -34,18 +47,11 @@ func NewEngine() (*Engine, error) {
 
     ui.SetElementsFromArray(nil)
 
-    imageCache := util.MakeImageCache(cache)
-
-    undeadUI, undeadQuit := game.MakeUndeadUI(&imageCache)
+    undeadUI, undeadQuit := game.MakeUndeadUI(cache, true)
 
     ui.AddGroup(undeadUI)
 
-    return &Engine{
-        LbxCache: cache,
-        ImageCache: imageCache,
-        UI: &ui,
-        Quit: undeadQuit,
-    }, nil
+    return &ui, undeadQuit
 }
 
 func (engine *Engine) Update() error {
@@ -56,6 +62,8 @@ func (engine *Engine) Update() error {
     for _, key := range keys {
         switch key {
             case ebiten.KeyEscape, ebiten.KeyCapsLock: return ebiten.Termination
+            case ebiten.KeySpace:
+                engine.UI, engine.Quit = MakeUI(&engine.ImageCache)
         }
     }
 

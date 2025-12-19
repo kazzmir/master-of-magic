@@ -15,7 +15,8 @@ import (
 // shows the animation of undead creatures rising from the ground
 // and prints text saying how many undead have risen
 
-func MakeUndeadUI(imageCache *util.ImageCache) (*uilib.UIElementGroup, context.Context) {
+// zombie=true, show the zombie, otherwise show the ghoul
+func MakeUndeadUI(imageCache *util.ImageCache, zombie bool) (*uilib.UIElementGroup, context.Context) {
     // X units rises from the dead to serve its creator
 
     group := uilib.MakeGroup()
@@ -33,24 +34,65 @@ func MakeUndeadUI(imageCache *util.ImageCache) (*uilib.UIElementGroup, context.C
 
     // the tall zombie guy
     zombieWarrior, _ := imageCache.GetImage("cmbtfx.lbx", 32, 0)
+    ghoulGuy, _ := imageCache.GetImage("monster.lbx", 12, 0)
+
+    useImage := zombieWarrior
+    if !zombie {
+        // the ghoul image is smaller than zombie, so resize it
+        ghoulImage := ebiten.NewImage(zombieWarrior.Bounds().Dx(), zombieWarrior.Bounds().Dy())
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(80, 30)
+        ghoulImage.DrawImage(ghoulGuy, &options)
+        useImage = ghoulImage
+    }
+
+    backgroundGuys1, _ := imageCache.GetImage("cmbtfx.lbx", 30, 0)
+    backgroundGuys2, _ := imageCache.GetImage("cmbtfx.lbx", 31, 0)
+
+    frontRocks, _ := imageCache.GetImage("cmbtfx.lbx", 29, 0)
+
+    // draw onto buffer first so that alpha blending doesn't affect overlapping images
+    buffer := ebiten.NewImage(background.Bounds().Dx(), background.Bounds().Dy())
 
     group.AddElement(&uilib.UIElement{
         Rect: rect,
         Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
             var options ebiten.DrawImageOptions
+            buffer.DrawImage(background, &options)
+
+            areaRect := background.Bounds()
+            areaRect.Max.Y -= 36
+            drawArea := buffer.SubImage(areaRect).(*ebiten.Image)
+
+            counter := group.Counter / 2
+
+            backgroundY := int(min(counter, 19))
+            options.GeoM.Translate(0, 19)
+            options.GeoM.Translate(0, float64(-backgroundY))
+
+            drawArea.DrawImage(backgroundGuys1, &options)
+
+            options.GeoM.Reset()
+            backgroundY = int(min(counter, 42))
+            options.GeoM.Translate(0, 42)
+            options.GeoM.Translate(0, float64(-backgroundY))
+            drawArea.DrawImage(backgroundGuys2, &options)
+
+            options.GeoM.Reset()
+            drawArea.DrawImage(frontRocks, &options)
+
+            moveY := int(min(counter, uint64(useImage.Bounds().Dy() / 2)))
+
+            options.GeoM.Reset()
+            options.GeoM.Translate(0, float64(useImage.Bounds().Dy() / 2))
+            options.GeoM.Translate(0, float64(-moveY))
+
+            drawArea.DrawImage(useImage, &options)
+
+            options.GeoM.Reset()
             options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
             options.ColorScale.ScaleAlpha(getAlpha())
-            scale.DrawScaled(screen, background, &options)
-
-            areaRect := rect
-            areaRect.Max.Y -= 36
-            drawArea := screen.SubImage(scale.ScaleRect(areaRect)).(*ebiten.Image)
-
-            moveY := int(min(group.Counter / 2, uint64(zombieWarrior.Bounds().Dy() / 2)))
-            options.GeoM.Translate(0, float64(zombieWarrior.Bounds().Dy() / 2))
-            options.GeoM.Translate(0, float64(-moveY))
-            scale.DrawScaled(drawArea, zombieWarrior, &options)
-
+            scale.DrawScaled(screen, buffer, &options)
         },
         LeftClick: func(this *uilib.UIElement) {
             getAlpha = group.MakeFadeOut(fadeDelay)
