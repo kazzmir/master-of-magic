@@ -4517,8 +4517,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         game.Music.PopSong()
 
-        // FIXME: show create undead animation (cmbtfx.lbx 27) if there are new undead units
-
         defeatedDefenders = combatScreen.Model.DefeatedDefenders
         defeatedAttackers = combatScreen.Model.DefeatedAttackers
 
@@ -4741,8 +4739,12 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     killUnits(defender, defenderStack, landscape)
 
     if !strategicCombat {
+        var undeadUnits int
+
         switch state {
             case combat.CombatStateAttackerWin, combat.CombatStateDefenderFlee:
+                undeadUnits = len(combatScreen.Model.UndeadUnits)
+
                 for _, unit := range combatScreen.Model.UndeadUnits {
                     defender.RemoveUnit(unit.Unit)
                     if len(attackerStack.Units()) < data.MaxUnitsInStack {
@@ -4759,6 +4761,8 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
                 }
 
             case combat.CombatStateDefenderWin, combat.CombatStateAttackerFlee:
+                undeadUnits = len(combatScreen.Model.UndeadUnits)
+
                 for _, unit := range combatScreen.Model.UndeadUnits {
                     attacker.RemoveUnit(unit.Unit)
                     if len(defenderStack.Units()) < data.MaxUnitsInStack {
@@ -4773,6 +4777,12 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
                         }
                     }
                 }
+        }
+
+        // show the undead animation if there were undead units raised
+        if undeadUnits > 0 {
+            undeadUI, undeadQuit := MakeUndeadUI(game.Cache, &game.ImageCache, true, undeadUnits)
+            game.doRunUI(yield, undeadUI, undeadQuit)
         }
     }
 
