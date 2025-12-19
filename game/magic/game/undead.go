@@ -3,8 +3,12 @@ package game
 import (
     "context"
     "image"
+    "fmt"
 
+    "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/font"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
@@ -16,8 +20,17 @@ import (
 // and prints text saying how many undead have risen
 
 // zombie=true, show the zombie, otherwise show the ghoul
-func MakeUndeadUI(imageCache *util.ImageCache, zombie bool) (*uilib.UIElementGroup, context.Context) {
+// units is how many units have risen from the dead (shows up in the text)
+func MakeUndeadUI(cache *lbx.LbxCache, imageCache *util.ImageCache, zombie bool, units int) (*uilib.UIElementGroup, context.Context) {
     // X units rises from the dead to serve its creator
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        quit, cancel := context.WithCancel(context.Background())
+        cancel()
+        return uilib.MakeGroup(), quit
+    }
+
+    showFont := loader(fontslib.LightFont)
 
     group := uilib.MakeGroup()
 
@@ -54,6 +67,14 @@ func MakeUndeadUI(imageCache *util.ImageCache, zombie bool) (*uilib.UIElementGro
     // draw onto buffer first so that alpha blending doesn't affect overlapping images
     buffer := ebiten.NewImage(background.Bounds().Dx(), background.Bounds().Dy())
 
+    var text string
+    if units == 1 {
+        text = "1 unit rises from the dead to serve its creator."
+    } else {
+        text = fmt.Sprintf("%d units rise from the dead to serve their creator.", units)
+    }
+    wrapped := showFont.CreateWrappedText(float64(buffer.Bounds().Dx() - 10), 1, text)
+
     group.AddElement(&uilib.UIElement{
         Rect: rect,
         Draw: func(this *uilib.UIElement, screen *ebiten.Image) {
@@ -88,6 +109,8 @@ func MakeUndeadUI(imageCache *util.ImageCache, zombie bool) (*uilib.UIElementGro
             options.GeoM.Translate(0, float64(-moveY))
 
             drawArea.DrawImage(useImage, &options)
+
+            showFont.RenderWrapped(buffer, float64(buffer.Bounds().Dx()/2), float64(buffer.Bounds().Dy()-30), wrapped, font.FontOptions{Justify: font.FontJustifyCenter, DropShadow: true})
 
             options.GeoM.Reset()
             options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))

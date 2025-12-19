@@ -3,6 +3,7 @@ package main
 import (
     "log"
     "context"
+    "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -28,7 +29,7 @@ func NewEngine() (*Engine, error) {
 
     imageCache := util.MakeImageCache(cache)
 
-    ui, undeadQuit := MakeUI(&imageCache)
+    ui, undeadQuit := MakeUI(cache, &imageCache)
     
     return &Engine{
         LbxCache: cache,
@@ -38,7 +39,7 @@ func NewEngine() (*Engine, error) {
     }, nil
 }
 
-func MakeUI(cache *util.ImageCache) (*uilib.UI, context.Context) {
+func MakeUI(cache *lbx.LbxCache, imageCache *util.ImageCache) (*uilib.UI, context.Context) {
     ui := uilib.UI{
         Draw: func(ui *uilib.UI, screen *ebiten.Image) {
             ui.StandardDraw(screen)
@@ -47,7 +48,9 @@ func MakeUI(cache *util.ImageCache) (*uilib.UI, context.Context) {
 
     ui.SetElementsFromArray(nil)
 
-    undeadUI, undeadQuit := game.MakeUndeadUI(cache, true)
+    zombie := rand.N(2) == 0
+
+    undeadUI, undeadQuit := game.MakeUndeadUI(cache, imageCache, zombie, rand.N(5) + 1)
 
     ui.AddGroup(undeadUI)
 
@@ -63,7 +66,7 @@ func (engine *Engine) Update() error {
         switch key {
             case ebiten.KeyEscape, ebiten.KeyCapsLock: return ebiten.Termination
             case ebiten.KeySpace:
-                engine.UI, engine.Quit = MakeUI(&engine.ImageCache)
+                engine.UI, engine.Quit = MakeUI(engine.LbxCache, &engine.ImageCache)
         }
     }
 
