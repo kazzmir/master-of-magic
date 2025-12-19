@@ -101,6 +101,8 @@ func RenderUnitInfoNormal(screen *ebiten.Image, imageCache *util.ImageCache, uni
     name := unit.GetName()
     if namePrefix != "" {
         name = fmt.Sprintf("%v %v", namePrefix, name)
+    } else if unit.IsUndead() {
+        name = fmt.Sprintf("Death %v", name)
     }
 
     if extraTitle != "" {
