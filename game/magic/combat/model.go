@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/log"
+    "github.com/kazzmir/master-of-magic/lib/functional"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -4548,11 +4549,31 @@ func (model *CombatModel) DoAITargetUnitSpell(player ArmyPlayer, spell spellbook
         units = append(units, model.DefendingArmy.units...)
     }
 
+    canSeeInvisible := functional.Memoize0(func() bool {
+        army := model.GetArmyForPlayer(player)
+
+        for _, unit := range army.units {
+            if unit.HasAbility(data.AbilityIllusionsImmunity) {
+                return true
+            }
+        }
+
+        return false
+    })
+
+    canSee := func(unit *ArmyUnit) bool {
+        if !unit.IsInvisible() {
+            return true
+        }
+
+        return canSeeInvisible()
+    }
+
     for _, i := range rand.Perm(len(units)) {
         unit := units[i]
         // FIXME: check if unit is visible to the casting player
         // check CanSee(unit) for each unit in the player's army
-        if shouldAITargetUnit(unit, spell) && canTarget(unit) {
+        if shouldAITargetUnit(unit, spell) && canTarget(unit) && canSee(unit) {
             onTarget(unit)
             return
         }
