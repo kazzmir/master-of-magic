@@ -4549,6 +4549,7 @@ func (model *CombatModel) DoAITargetUnitSpell(player ArmyPlayer, spell spellbook
         units = append(units, model.DefendingArmy.units...)
     }
 
+    // only have to check this once
     canSeeInvisible := functional.Memoize0(func() bool {
         army := model.GetArmyForPlayer(player)
 
@@ -4566,13 +4567,12 @@ func (model *CombatModel) DoAITargetUnitSpell(player ArmyPlayer, spell spellbook
             return true
         }
 
+        // check if any unit can see invisible units
         return canSeeInvisible()
     }
 
     for _, i := range rand.Perm(len(units)) {
         unit := units[i]
-        // FIXME: check if unit is visible to the casting player
-        // check CanSee(unit) for each unit in the player's army
         if shouldAITargetUnit(unit, spell) && canTarget(unit) && canSee(unit) {
             onTarget(unit)
             return
