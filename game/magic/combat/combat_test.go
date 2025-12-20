@@ -1071,3 +1071,54 @@ func TestFullCombat(test *testing.T){
         test.Errorf("Error: attacker should have won the combat, got state %d", state)
     }
 }
+
+func TestInvisibleEnemy(test *testing.T) {
+    // create an ememy army with an invisible unit
+    // should not be able to target it with a spell, unless we have a unit
+    // with illusion immunity
+
+    check := func(attackerUnit units.Unit) bool {
+        defendingPlayer := playerlib.MakePlayer(setup.WizardCustom{
+            Name: "AI-1",
+            Banner: data.BannerBrown,
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+        attackingPlayer := playerlib.MakePlayer(setup.WizardCustom{
+            Name: "AI-2",
+            Banner: data.BannerRed,
+        }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+        attackingArmy := &Army{
+            Player: attackingPlayer,
+        }
+
+        defendingArmy := &Army{
+            Player: defendingPlayer,
+        }
+
+        defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.NightStalker, 1, 1, data.PlaneArcanus, defendingPlayer.Wizard.Banner, defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
+
+        attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(attackerUnit, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
+
+        var allSpells spellbook.Spells
+
+        model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10))
+
+        targeted := false
+        onTarget := func(unit *ArmyUnit){
+            targeted = true
+        }
+
+        model.DoAITargetUnitSpell(attackingPlayer, spellbook.Spell{Name: "whatever"}, TeamAttacker, TeamDefender, func(_ *ArmyUnit) bool { return true }, onTarget)
+        return targeted
+    }
+
+
+    if check(units.Warlocks) {
+        test.Errorf("Error: should not be able to target invisible unit")
+    }
+
+    if !check(units.Angel) {
+        test.Errorf("Error: should be able to target invisble unit")
+    }
+}
