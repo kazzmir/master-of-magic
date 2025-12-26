@@ -836,8 +836,6 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
             quit = true
         }
 
-        game.PopDrawer()
-
         // absorb last click
         yield()
     }
