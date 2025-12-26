@@ -16,11 +16,6 @@ import (
 )
 
 func (game *Game) wizlabAnimation(yield coroutine.YieldFunc, wizard setup.WizardCustom){
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
     game.Music.PushSong(music.SongLearnSpell)
     defer game.Music.PopSong()
 
@@ -59,7 +54,7 @@ func (game *Game) wizlabAnimation(yield coroutine.YieldFunc, wizard setup.Wizard
 
     sparkles := util.MakeAnimation(sparkleImages, true)
 
-    game.Drawer = func(screen *ebiten.Image){
+    game.PushDrawer(func(screen *ebiten.Image){
         background, _ := game.ImageCache.GetImage("wizlab.lbx", 19, 0)
         var options ebiten.DrawImageOptions
         options.ColorScale.ScaleAlpha(fade())
@@ -83,7 +78,8 @@ func (game *Game) wizlabAnimation(yield coroutine.YieldFunc, wizard setup.Wizard
         options.GeoM.Translate(float64(190), float64(157))
         animalPic, _ := game.ImageCache.GetImage("wizlab.lbx", animalIndex, 0)
         scale.DrawScaled(screen, animalPic, &options)
-    }
+    })
+    defer game.PopDrawer()
 
     counter := uint64(0)
 
@@ -120,17 +116,13 @@ func (game *Game) doLearnSpell(yield coroutine.YieldFunc, player *playerlib.Play
 
     game.wizlabAnimation(yield, player.Wizard)
 
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
     newDrawer := func (screen *ebiten.Image){
     }
 
-    game.Drawer = func (screen *ebiten.Image){
+    game.PushDrawer(func (screen *ebiten.Image){
         newDrawer(screen)
-    }
+    })
+    defer game.PopDrawer()
 
     power := game.Model.ComputePower(player)
     // show new spell being learned

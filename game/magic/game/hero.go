@@ -311,14 +311,10 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
 
     dot, _ := game.ImageCache.GetImage("itemisc.lbx", 26, 0)
 
-    drawer := game.Drawer
-    defer func(){
-        game.Drawer = drawer
-    }()
-
+    drawer := game.LastDrawer()
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
-    game.Drawer = func (screen *ebiten.Image){
+    game.PushDrawer(func (screen *ebiten.Image){
         drawer(screen)
 
         var options ebiten.DrawImageOptions
@@ -383,7 +379,8 @@ func (game *Game) showHeroLevelUpPopup(yield coroutine.YieldFunc, hero *herolib.
                 column = 0
             }
         }
-    }
+    })
+    defer game.PopDrawer()
 
     quit := false
 

@@ -21,11 +21,6 @@ import (
 )
 
 func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
     fonts := fontslib.MakeSurveyorFonts(game.Cache)
 
     var cityMap map[image.Point]*citylib.City
@@ -347,7 +342,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         },
     })
 
-    game.Drawer = func(screen *ebiten.Image){
+    game.PushDrawer(func(screen *ebiten.Image){
         overworld.Camera = game.Camera
 
         overworld.DrawOverworld(screen, ebiten.GeoM{})
@@ -361,7 +356,8 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
         overworld.DrawMinimap(mini)
 
         ui.Draw(ui, screen)
-    }
+    })
+    defer game.PopDrawer()
 
     for !quit {
         overworld.Counter += 1

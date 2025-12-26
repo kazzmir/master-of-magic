@@ -470,10 +470,10 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
         lastState := screen.Update(yield)
         if lastState == combat.CombatStateAttackerWin || lastState == combat.CombatStateDefenderFlee {
-            endScreen = combat.MakeCombatEndScreen(engine.Cache, screen, combat.CombatEndScreenResultLose, 0, 0, 0, 0)
+            endScreen = combat.MakeCombatEndScreen(engine.Cache, combat.CombatEndScreenResultLose, 0, 0, 0, 0)
             engine.Music.PushSong(musiclib.SongYouLose)
         } else if lastState == combat.CombatStateDefenderWin {
-            endScreen = combat.MakeCombatEndScreen(engine.Cache, screen, combat.CombatEndScreenResultWin, 0, 0, 0, 0)
+            endScreen = combat.MakeCombatEndScreen(engine.Cache, combat.CombatEndScreenResultWin, 0, 0, 0, 0)
             engine.Music.PushSong(musiclib.SongYouWin)
         }
 

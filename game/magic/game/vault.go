@@ -433,15 +433,12 @@ func (game *Game) showVaultScreen(createdArtifact *artifact.Artifact, player *pl
     showItemPopup := func (yield coroutine.YieldFunc, item *artifact.Artifact){
         itemLogic, itemDraw := game.showItemPopup(item, game.Cache, &imageCache, fonts)
 
-        drawer := game.Drawer
-        defer func(){
-            game.Drawer = drawer
-        }()
-
-        game.Drawer = func (screen *ebiten.Image){
+        drawer := game.LastDrawer()
+        game.PushDrawer(func (screen *ebiten.Image){
             drawer(screen)
             itemDraw(screen)
-        }
+        })
+        defer game.PopDrawer()
 
         itemLogic(yield)
     }
