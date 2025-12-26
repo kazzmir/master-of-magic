@@ -455,31 +455,39 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
 
     landscape := randomChoose(combat.CombatLandscapeGrass, combat.CombatLandscapeDesert, combat.CombatLandscapeMountain, combat.CombatLandscapeTundra)
 
-    screen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, engine.Player, landscape, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0)
-    engine.CombatScreen = screen
+    allSpells, err := spellbook.ReadSpellsFromCache(engine.Cache)
+    if err != nil {
+        log.Printf("Warning: unable to read spells: %v", err)
+        allSpells = spellbook.Spells{}
+    }
+
+    model := combat.MakeCombatModel(allSpells, &defendingArmy, &attackingArmy, landscape, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 100))
+    combatScreen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, engine.Player, landscape, data.PlaneArcanus, combat.ZoneType{}, model)
+    engine.CombatScreen = combatScreen
 
     return func(yield coroutine.YieldFunc) error {
         engine.Music.PushSong(randomChoose(musiclib.SongCombat1, musiclib.SongCombat2))
         defer engine.Music.PopSong()
 
-        for screen.Update(yield) == combat.CombatStateRunning {
+        for combatScreen.Update(yield) == combat.CombatStateRunning {
             yield()
         }
 
         var endScreen *combat.CombatEndScreen
 
-        lastState := screen.Update(yield)
+        lastState := combatScreen.Update(yield)
         if lastState == combat.CombatStateAttackerWin || lastState == combat.CombatStateDefenderFlee {
-            endScreen = combat.MakeCombatEndScreen(engine.Cache, screen, combat.CombatEndScreenResultLose, 0, 0, 0, 0)
+            endScreen = combat.MakeCombatEndScreen(engine.Cache, combat.CombatEndScreenResultLose, 0, 0, 0, 0)
             engine.Music.PushSong(musiclib.SongYouLose)
         } else if lastState == combat.CombatStateDefenderWin {
-            endScreen = combat.MakeCombatEndScreen(engine.Cache, screen, combat.CombatEndScreenResultWin, 0, 0, 0, 0)
+            endScreen = combat.MakeCombatEndScreen(engine.Cache, combat.CombatEndScreenResultWin, 0, 0, 0, 0)
             engine.Music.PushSong(musiclib.SongYouWin)
         }
 
         defer engine.Music.PopSong()
 
         engine.PushDrawer(func(screen *ebiten.Image) {
+            combatScreen.Draw(screen)
             endScreen.Draw(screen)
         })
 

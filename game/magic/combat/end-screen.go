@@ -30,7 +30,6 @@ const (
 )
 
 type CombatEndScreen struct {
-    CombatScreen *CombatScreen
     Result CombatEndScreenResult
     UnitsLost int
     Fame int
@@ -43,9 +42,8 @@ type CombatEndScreen struct {
     State CombatEndScreenState
 }
 
-func MakeCombatEndScreen(cache *lbx.LbxCache, combat *CombatScreen, result CombatEndScreenResult, unitsLost int, fame int, populationLost int, buildingsLost int) *CombatEndScreen {
+func MakeCombatEndScreen(cache *lbx.LbxCache, result CombatEndScreenResult, unitsLost int, fame int, populationLost int, buildingsLost int) *CombatEndScreen {
     end := &CombatEndScreen{
-        CombatScreen: combat,
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
         Result: result,
@@ -210,12 +208,10 @@ func (end *CombatEndScreen) MakeUI() *uilib.UI {
 }
 
 func (end *CombatEndScreen) Update() CombatEndScreenState {
-    end.CombatScreen.MouseState = CombatClickHud
     end.UI.StandardUpdate()
     return end.State
 }
 
 func (end *CombatEndScreen) Draw(screen *ebiten.Image) {
-    end.CombatScreen.Draw(screen)
     end.UI.Draw(end.UI, screen)
 }

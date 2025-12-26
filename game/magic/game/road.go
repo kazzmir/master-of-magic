@@ -295,11 +295,6 @@ func (game *Game) FindRoadPath(oldX int, oldY int, newX int, newY int, player *p
 
 // returns the path of road that the given engineers should build
 func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *playerlib.UnitStack, player *playerlib.Player) pathfinding.Path {
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
     fonts := fontslib.MakeSurveyorFonts(game.Cache)
 
     var cityMap map[image.Point]*citylib.City
@@ -461,7 +456,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
         },
     })
 
-    game.Drawer = func(screen *ebiten.Image){
+    game.PushDrawer(func(screen *ebiten.Image){
         overworld.Camera = game.Camera
 
         overworld.DrawOverworld(screen, ebiten.GeoM{})
@@ -469,7 +464,8 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
         overworld.DrawMinimap(mini)
 
         ui.Draw(ui, screen)
-    }
+    })
+    defer game.PopDrawer()
 
     for !quit && !success {
         overworld.Counter += 1

@@ -6163,6 +6163,141 @@ func createScenario66(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+func createScenario67(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 67: enemies attack each other")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Retorts: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+            data.RetortRunemaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
+
+    game.Model.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    player.TaxRate = fraction.Zero()
+
+    x, y, _ := game.FindValidCityLocation(game.Model.Plane)
+
+    /*
+    x = 20
+    y = 20
+    */
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.Model.BuildingInfo, game.Model.CurrentMap(), game.Model, player)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.Buildings.Insert(buildinglib.BuildingGranary)
+    city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
+    city.ProducingBuilding = buildinglib.BuildingBank
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 14
+    city.Workers = 3
+
+    city.ResetCitizens()
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 2600
+    player.CastingSkillPower = 10000
+
+    // allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    // log.Printf("City at %v, %v", x, y)
+
+    player.LiftFog(x, y, 30, data.PlaneArcanus)
+    player.LiftFog(x, y, 30, data.PlaneMyrror)
+
+    // player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
+
+    /*
+    stack := player.FindStackByUnit(drake)
+    player.SetSelectedStack(stack)
+    player.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
+    */
+
+    var enemy1X, enemy1Y int
+    var enemy2X, enemy2Y int
+
+    found := false
+
+    loop:
+    for range 10 {
+        var ok bool
+        enemy1X, enemy1Y, ok = game.FindValidCityLocation(game.Model.Plane)
+        useMap := game.GetMap(data.PlaneArcanus)
+        if ok {
+            for dx := -1; dx <= 1; dx++ {
+                for dy := -1; dy <= 1; dy++ {
+                    if dx == 0 && dy == 0 {
+                        continue
+                    }
+
+                    enemy2X = useMap.WrapX(enemy1X + dx)
+                    enemy2Y = enemy1Y + dy
+                    tile := useMap.GetTile(enemy2X, enemy2Y)
+
+                    if tile.Tile.IsLand() {
+                        found = true
+                        break loop
+                    }
+                }
+            }
+        }
+    }
+
+    if !found {
+        panic("couldn't find valid enemy locations")
+    }
+
+    enemy1 := game.AddPlayer(setup.WizardCustom{
+        Name: "dingus",
+        Banner: data.BannerRed,
+    }, false)
+
+    // give enemies fantastic creatures so that the enemies don't have to bother with food
+    enemy1.Mana = 10000
+    enemy1.AddUnit(units.MakeOverworldUnitFromUnit(units.Wraith, enemy1X, enemy1Y, data.PlaneArcanus, enemy1.Wizard.Banner, enemy1.MakeExperienceInfo(), enemy1.MakeUnitEnchantmentProvider()))
+    enemy1.AIBehavior = ai.MakeEnemy2AI()
+
+    enemy2 := game.AddPlayer(setup.WizardCustom{
+        Name: "frank",
+        Banner: data.BannerGreen,
+    }, false)
+
+    enemy2.Mana = 10000
+    enemy2.AddUnit(units.MakeOverworldUnitFromUnit(units.WarBear, enemy2X, enemy2Y, data.PlaneArcanus, enemy2.Wizard.Banner, enemy2.MakeExperienceInfo(), enemy2.MakeUnitEnchantmentProvider()))
+    enemy2.AIBehavior = ai.MakeEnemy2AI()
+
+    game.Camera.Center(enemy1X, enemy1Y)
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -6235,6 +6370,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 64: game = createScenario64(cache)
         case 65: game = createScenario65(cache)
         case 66: game = createScenario66(cache)
+        case 67: game = createScenario67(cache)
         default: game = createScenario1(cache)
     }
 

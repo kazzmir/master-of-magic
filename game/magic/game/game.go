@@ -363,7 +363,6 @@ type Game struct {
 
     Counter uint64
     Fog *ebiten.Image
-    Drawer func (*ebiten.Image)
     State GameState
 
     MouseData *mouselib.MouseData
@@ -379,6 +378,8 @@ type Game struct {
     Help helplib.Help
 
     Camera camera.Camera
+    
+    Drawers []func(screen *ebiten.Image)
 }
 
 func (game *Game) GetFogImage() *ebiten.Image {
@@ -527,9 +528,9 @@ func MakeGame(lbxCache *lbx.LbxCache, music_ *music.Music, settings setup.NewGam
     game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache), buildingInfo)
 
     game.HudUI = game.MakeHudUI()
-    game.Drawer = func(screen *ebiten.Image){
+    game.PushDrawer(func(screen *ebiten.Image){
         game.DrawGame(screen)
-    }
+    })
 
     game.Music.PushSongs(music.SongBackground1, music.SongBackground2, music.SongBackground3)
 
@@ -775,10 +776,9 @@ func (game *Game) AllUnits() []units.StackUnit{
 }
 
 func (game *Game) doCityListView(yield coroutine.YieldFunc) {
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
+    setDrawer := game.PushDrawer(func (screen *ebiten.Image){
+    })
+    defer game.PopDrawer()
 
     cities := game.Model.AllCities()
 
@@ -817,12 +817,14 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
 
         view := citylistview.MakeCityListScreen(game.Cache, game.Model.Players[0], drawMinimap, selectCity)
 
-        game.Drawer = func (screen *ebiten.Image){
+        setDrawer(func (screen *ebiten.Image){
             view.Draw(screen)
-        }
+        })
 
         for view.Update() == citylistview.CityListScreenStateRunning {
-            yield()
+            if yield() != nil {
+                return
+            }
         }
 
         // absorb most recent left click
@@ -842,11 +844,6 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
 }
 
 func (game *Game) doArmyView(yield coroutine.YieldFunc) {
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
     cities := game.Model.AllCities()
 
     citiesMiniMap := make([]maplib.MiniMapCity, 0, len(cities))
@@ -864,9 +861,10 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
 
     army := armyview.MakeArmyScreen(game.Cache, game.Model.Players[0], drawMinimap, showVault)
 
-    game.Drawer = func (screen *ebiten.Image){
+    game.PushDrawer(func (screen *ebiten.Image){
         army.Draw(screen)
-    }
+    })
+    defer game.PopDrawer()
 
     for army.Update() == armyview.ArmyScreenStateRunning {
         yield()
@@ -911,37 +909,34 @@ func (game *Game) EnterDiplomacy(player *playerlib.Player, enemy *playerlib.Play
 func (game *Game) doDiplomacy(yield coroutine.YieldFunc, player *playerlib.Player, enemy *playerlib.Player) {
     logic, draw := diplomacy.ShowDiplomacyScreen(game.Cache, player, enemy, 1400 + int(game.Model.TurnNumber / 12))
 
-    oldDrawer := game.Drawer
-    game.Drawer = func (screen *ebiten.Image){
+    game.PushDrawer(func (screen *ebiten.Image){
         draw(screen)
-    }
+    })
+    defer game.PopDrawer()
 
     game.Music.PushSong(diplomacy.GetSong(player, enemy))
     defer game.Music.PopSong()
 
     logic(yield)
 
-    game.Drawer = oldDrawer
     yield()
     game.RefreshUI()
 }
 
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
 
-    oldDrawer := game.Drawer
     magicScreen := magicview.MakeMagicScreen(game.Cache, game.Model.Players[0], game.Model.GetEnemies(game.Model.Players[0]), game.Model.ComputePower(game.Model.Players[0]), game)
 
-    game.Drawer = func (screen *ebiten.Image){
+    game.PushDrawer(func (screen *ebiten.Image){
         magicScreen.Draw(screen)
-    }
+    })
+    defer game.PopDrawer()
 
     for magicScreen.Update() == magicview.MagicScreenStateRunning {
         yield()
     }
 
     yield()
-
-    game.Drawer = oldDrawer
 
     game.RefreshUI()
 }
@@ -973,11 +968,6 @@ func MakeInputFonts(cache *lbx.LbxCache) *InputFonts {
 }
 
 func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, topX int, topY int) string {
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
     fonts := MakeInputFonts(game.Cache)
 
     maxLength := float64(84)
@@ -994,11 +984,12 @@ func (game *Game) doInput(yield coroutine.YieldFunc, title string, name string, 
     }
     ui.SetElementsFromArray(nil)
 
-    game.Drawer = func (screen *ebiten.Image){
+    oldDrawer := game.LastDrawer()
+    game.PushDrawer(func (screen *ebiten.Image){
         oldDrawer(screen)
-
         ui.Draw(ui, screen)
-    }
+    })
+    defer game.PopDrawer()
 
     input := &uilib.UIElement{
         TextEntry: func(element *uilib.UIElement, text string) string {
@@ -1080,11 +1071,6 @@ func MakeNewBuildingFonts(cache *lbx.LbxCache) *NewBuildingFonts {
 }
 
 func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City, building buildinglib.Building, player *playerlib.Player){
-    drawer := game.Drawer
-    defer func(){
-        game.Drawer = drawer
-    }()
-
     fonts := MakeNewBuildingFonts(game.Cache)
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
@@ -1109,7 +1095,8 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
     // FIXME: pick background based on tile the land is on?
     landBackground, _ := game.ImageCache.GetImage("cityscap.lbx", 0, 4)
 
-    game.Drawer = func (screen *ebiten.Image){
+    drawer := game.LastDrawer()
+    game.PushDrawer(func (screen *ebiten.Image){
         drawer(screen)
 
         var options ebiten.DrawImageOptions
@@ -1144,7 +1131,8 @@ func (game *Game) showNewBuilding(yield coroutine.YieldFunc, city *citylib.City,
         buildingOptions.GeoM.Translate(scale.Unscale(float64(buildingSpace.Bounds().Dx()/2)), scale.Unscale(float64(buildingSpace.Bounds().Dy() - 10)))
         buildingOptions.GeoM.Translate(float64(buildingPicsAnimation.Frame().Bounds().Dx()) / -2, -float64(buildingPicsAnimation.Frame().Bounds().Dy()))
         scale.DrawScaled(buildingSpace, buildingPicsAnimation.Frame(), &buildingOptions)
-    }
+    })
+    defer game.PopDrawer()
 
     quit := false
     quitCounter := 0
@@ -1211,16 +1199,12 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
     scrollAnimation := util.MakeAnimation(scrollImages[:totalImages], false)
     pageBackground, _ := game.ImageCache.GetImage("scroll.lbx", 5, 0)
 
-    drawer := game.Drawer
-    defer func(){
-        game.Drawer = drawer
-    }()
-
     scrollLength := 30
 
     getAlpha := util.MakeFadeIn(7, &game.Counter)
 
-    game.Drawer = func (screen *ebiten.Image){
+    drawer := game.LastDrawer()
+    game.PushDrawer(func (screen *ebiten.Image){
         drawer(screen)
 
         var options ebiten.DrawImageOptions
@@ -1254,7 +1238,8 @@ func (game *Game) showScroll(yield coroutine.YieldFunc, title string, text strin
         scrollOptions := options
         scrollOptions.GeoM.Translate(float64(-63), float64(-20))
         scale.DrawScaled(screen, scrollAnimation.Frame(), &scrollOptions)
-    }
+    })
+    defer game.PopDrawer()
 
     quit := false
 
@@ -1524,24 +1509,21 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
 /* blink the game screen red to indicate the user attempted to do something invalid
  */
 func (game *Game) blinkRed(yield coroutine.YieldFunc) {
-    drawer := game.Drawer
-    defer func(){
-        game.Drawer = drawer
-    }()
-
     fadeSpeed := uint64(6)
 
     counter := uint64(0)
     getAlpha := util.MakeFadeIn(fadeSpeed, &counter)
 
-    game.Drawer = func (screen *ebiten.Image){
+    drawer := game.LastDrawer()
+    game.PushDrawer(func (screen *ebiten.Image){
         drawer(screen)
 
         var scale colorm.ColorM
         scale.Scale(1, 1, 1, float64(getAlpha() / 2))
 
         vector.FillRect(screen, 0, 0, float32(screen.Bounds().Dx()), float32(screen.Bounds().Dy()), scale.Apply(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}), false)
-    }
+    })
+    defer game.PopDrawer()
 
     for i := uint64(0); i < fadeSpeed; i++ {
         counter += 1
@@ -1557,15 +1539,12 @@ func (game *Game) blinkRed(yield coroutine.YieldFunc) {
 }
 
 func (game *Game) doSummon(yield coroutine.YieldFunc, summonObject *summon.Summon) {
-    drawer := game.Drawer
-    defer func(){
-        game.Drawer = drawer
-    }()
-
-    game.Drawer = func (screen *ebiten.Image){
+    drawer := game.LastDrawer()
+    game.PushDrawer(func (screen *ebiten.Image){
         drawer(screen)
         summonObject.Draw(screen)
-    }
+    })
+    defer game.PopDrawer()
 
     for summonObject.Update() == summon.SummonStateRunning {
         leftClick := inputmanager.LeftClick()
@@ -1616,31 +1595,32 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
 }
 
 func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artifact) {
-    drawer := game.Drawer
-    defer func(){
-        game.Drawer = drawer
-    }()
-
     vaultLogic, vaultDrawer := game.showVaultScreen(newArtifact, game.Model.Players[0])
+
+    drawer := game.LastDrawer()
 
     if newArtifact != nil {
         itemLogic, itemDrawer := game.showItemPopup(newArtifact, game.Cache, &game.ImageCache, nil)
 
-        game.Drawer = func (screen *ebiten.Image){
+        game.PushDrawer(func (screen *ebiten.Image){
             drawer(screen)
             vaultDrawer(screen)
             itemDrawer(screen)
-        }
+        })
 
         itemLogic(yield)
+
+        game.PopDrawer()
     }
 
-    game.Drawer = func (screen *ebiten.Image){
+    game.PushDrawer(func (screen *ebiten.Image){
         drawer(screen)
         vaultDrawer(screen)
-    }
+    })
 
     vaultLogic(yield)
+
+    game.PopDrawer()
 }
 
 /* random chance to create a hire hero event
@@ -2112,11 +2092,6 @@ func MakeRandomEventFonts(cache *lbx.LbxCache) *RandomEventFonts {
 }
 
 func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, start bool, wizard setup.WizardCustom) {
-    drawer := game.Drawer
-    defer func(){
-        game.Drawer = drawer
-    }()
-
     fonts := MakeRandomEventFonts(game.Cache)
 
     background, _ := game.ImageCache.GetImage("resource.lbx", 40, 0)
@@ -2148,7 +2123,8 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
 
     defer game.Music.PopSong()
 
-    game.Drawer = func (screen *ebiten.Image){
+    drawer := game.LastDrawer()
+    game.PushDrawer(func (screen *ebiten.Image){
         drawer(screen)
 
         var options ebiten.DrawImageOptions
@@ -2179,7 +2155,8 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
         // buildingSpace.Fill(color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff})
         // vector.DrawFilledRect(buildingSpace, float32(x), float32(y), float32(buildingSpace.Bounds().Dx()), float32(buildingSpace.Bounds().Dy()), color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}, false)
         */
-    }
+    })
+    defer game.PopDrawer()
 
     quit := false
 
@@ -2786,15 +2763,13 @@ func (game *Game) doCartographer(yield coroutine.YieldFunc) {
     logic, draw := cartographer.MakeCartographer(game.Cache, game.Model.AllCities(), stacks, knownPlayers, game.Model.ArcanusMap, game.Model.GetHumanPlayer().GetFog(data.PlaneArcanus), game.Model.MyrrorMap, game.Model.GetHumanPlayer().GetFog(data.PlaneMyrror))
 
     yield()
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
 
-    game.Drawer = func (screen *ebiten.Image){
+    oldDrawer := game.LastDrawer()
+    game.PushDrawer(func (screen *ebiten.Image){
         oldDrawer(screen)
         draw(screen)
-    }
+    })
+    defer game.PopDrawer()
 
     logic(yield)
 }
@@ -3214,14 +3189,10 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
 func (game *Game) doBanish(yield coroutine.YieldFunc, attacker *playerlib.Player, defender *playerlib.Player) {
     banishLogic, banishDraw := banish.ShowBanishAnimation(game.Cache, attacker, defender)
 
-    oldDrawer := game.Drawer
-    defer func() {
-        game.Drawer = oldDrawer
-    }()
-
-    game.Drawer = func(screen *ebiten.Image){
+    game.PushDrawer(func(screen *ebiten.Image){
         banishDraw(screen)
-    }
+    })
+    defer game.PopDrawer()
 
     banishLogic(yield)
 
@@ -3738,20 +3709,20 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
         // FIXME: print "AI thinking #..." message on screen
         // where # is a counter that increments every second or so
 
-        oldDrawer := game.Drawer
+        oldDrawer := game.LastDrawer()
 
         getAlpha := util.MakeFadeIn(20, &game.Counter)
 
         var thinkingCounter uint64
 
         var options ebiten.DrawImageOptions
-        game.Drawer = func(screen *ebiten.Image){
+        game.PushDrawer(func(screen *ebiten.Image){
             oldDrawer(screen)
 
             options.ColorScale = ebiten.ColorScale{}
             options.ColorScale.ScaleAlpha(getAlpha())
             game.Fonts.WhiteFont.PrintOptions(screen, 40, 30, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Options: &options}, fmt.Sprintf("AI thinking %v...", thinkingCounter / 60))
-        }
+        })
 
         for !done {
             game.Counter += 1
@@ -3768,7 +3739,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
             }
         }
 
-        game.Drawer = oldDrawer
+        game.PopDrawer()
 
         log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
@@ -3854,17 +3825,14 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
 }
 
 func (game *Game) doEnemyCityView(yield coroutine.YieldFunc, city *citylib.City, player *playerlib.Player, otherPlayer *playerlib.Player){
-    drawer := game.Drawer
-    defer func(){
-        game.Drawer = drawer
-    }()
-
     logic, draw := cityview.SimplifiedView(game.Cache, city, player, otherPlayer)
 
-    game.Drawer = func(screen *ebiten.Image){
+    drawer := game.LastDrawer()
+    game.PushDrawer(func(screen *ebiten.Image){
         drawer(screen)
         draw(screen)
-    }
+    })
+    defer game.PopDrawer()
 
     logic(yield, func(){
         game.Counter += 1
@@ -3924,9 +3892,8 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
         }
     }
 
-    oldDrawer := game.Drawer
     halfTile, _ := game.ImageCache.GetImage("backgrnd.lbx", 0, 0)
-    game.Drawer = func(screen *ebiten.Image){
+    game.PushDrawer(func(screen *ebiten.Image){
         cityScreen.Draw(screen, func (mapView *ebiten.Image, geom ebiten.GeoM, counter uint64){
             overworld.DrawOverworld(mapView, geom)
 
@@ -3943,7 +3910,8 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
             }
 
         }, mapUse.TileWidth(), mapUse.TileHeight())
-    }
+    })
+    defer game.PopDrawer()
 
     for cityScreen.Update() == cityview.CityScreenStateRunning {
         overworld.Counter += 1
@@ -3963,8 +3931,6 @@ func (game *Game) doCityScreen(yield coroutine.YieldFunc, city *citylib.City, pl
     }
 
     yield()
-
-    game.Drawer = oldDrawer
 }
 
 // similar to confirmEncounter() but without the buttons
@@ -4049,14 +4015,12 @@ func (game *Game) confirmRazeTown(yield coroutine.YieldFunc, city *citylib.City)
     group.AddElements(uilib.MakeConfirmDialogWithLayerFull(group, game.Cache, &game.ImageCache, 1, "Do you wish to completely destroy this city?", true, no, yes, noImages, yesImages))
     ui.AddGroup(group)
 
-    oldDrawer := game.Drawer
-    game.Drawer = func(screen *ebiten.Image){
+    oldDrawer := game.LastDrawer()
+    game.PushDrawer(func(screen *ebiten.Image){
         oldDrawer(screen)
         ui.Draw(ui, screen)
-    }
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
+    })
+    defer game.PopDrawer()
 
     yield()
     for !quit {
@@ -4438,6 +4402,9 @@ func (game *Game) maybeDoNaturesWrath(caster *playerlib.Player) {
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
     landscape := game.GetCombatLandscape(defenderStack.X(), defenderStack.Y(), defenderStack.Plane())
 
+    // do graphic combat only if a human is involved
+    useHuman := attacker.IsHuman() || defender.IsHuman()
+
     createArmy := func (player *playerlib.Player, stack *playerlib.UnitStack) *combat.Army {
         army := combat.Army{
             Player: player,
@@ -4471,39 +4438,39 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     var recalledAttackers []units.StackUnit
     var recalledDefenders []units.StackUnit
 
-    oldDrawer := game.Drawer
-    var combatScreen *combat.CombatScreen
+    // strategicCombat := attacker.StrategicCombat && defender.StrategicCombat
 
-    strategicCombat := attacker.StrategicCombat && defender.StrategicCombat
+    events := make(chan combat.CombatEvent, 1000)
 
-    if strategicCombat {
-        state, defeatedAttackers, defeatedDefenders = combat.DoStrategicCombat(attackingArmy, defendingArmy)
-        log.Printf("Strategic combat result state=%v", state)
+    combatModel := combat.MakeCombatModel(game.AllSpells(), defendingArmy, attackingArmy, landscape, defenderStack.Plane(), zone, game.GetInfluenceMagic(attackerStack.X(), attackerStack.Y(), attackerStack.Plane()), attackerStack.X(), attackerStack.Y(), events)
+
+    if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentHeavenlyLight) {
+        combatModel.AddGlobalEnchantment(data.CombatEnchantmentTrueLight)
+    }
+    if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentCloudOfShadow) {
+        combatModel.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
     } else {
-
-        defer mouse.Mouse.SetImage(game.MouseData.Normal)
-
-        combatScreen = combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Model.Players[0], landscape, attackerStack.Plane(), zone, game.GetInfluenceMagic(attackerStack.X(), attackerStack.Y(), attackerStack.Plane()), attackerStack.X(), attackerStack.Y())
-
-        if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentHeavenlyLight) {
-            combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentTrueLight)
-        }
-        if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentCloudOfShadow) {
-            combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
-        } else {
-            for _, enchantments := range game.Model.GetAllGlobalEnchantments() {
-                if enchantments.Contains(data.EnchantmentEternalNight) {
-                    combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
-                    break
-                }
+        for _, enchantments := range game.Model.GetAllGlobalEnchantments() {
+            if enchantments.Contains(data.EnchantmentEternalNight) {
+                combatModel.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
+                break
             }
         }
+    }
 
-        // ebiten.SetCursorMode(ebiten.CursorModeHidden)
+    // ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-        game.Drawer = func (screen *ebiten.Image){
+    popCombatScreen := false
+
+    if useHuman {
+        defer mouse.Mouse.SetImage(game.MouseData.Normal)
+
+        combatScreen := combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Model.Players[0], landscape, attackerStack.Plane(), zone, combatModel)
+
+        game.PushDrawer(func (screen *ebiten.Image){
             combatScreen.Draw(screen)
-        }
+        })
+        popCombatScreen = true
 
         game.Music.PushSong(randomChoose(music.SongCombat1, music.SongCombat2))
 
@@ -4516,17 +4483,21 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
 
         game.Music.PopSong()
+        combatScreen.MouseState = combat.CombatClickHud
+    } else {
+        // do non-graphical combat (ai vs ai)
+        state = combat.Run(combatModel)
+    }
 
-        defeatedDefenders = combatScreen.Model.DefeatedDefenders
-        defeatedAttackers = combatScreen.Model.DefeatedAttackers
+    defeatedDefenders = combatModel.DefeatedDefenders
+    defeatedAttackers = combatModel.DefeatedAttackers
 
-        // FIXME: resolve the attacker/defender stack at the end of combat?
-        for _, unit := range combatScreen.Model.AttackingArmy.RecalledUnits {
-            recalledAttackers = append(recalledAttackers, unit.Unit.(units.StackUnit))
-        }
-        for _, unit := range combatScreen.Model.DefendingArmy.RecalledUnits {
-            recalledDefenders = append(recalledDefenders, unit.Unit.(units.StackUnit))
-        }
+    // FIXME: resolve the attacker/defender stack at the end of combat?
+    for _, unit := range combatModel.AttackingArmy.RecalledUnits {
+        recalledAttackers = append(recalledAttackers, unit.Unit.(units.StackUnit))
+    }
+    for _, unit := range combatModel.DefendingArmy.RecalledUnits {
+        recalledDefenders = append(recalledDefenders, unit.Unit.(units.StackUnit))
     }
 
     // returns the fame that should be added to the winner and loser. the loser fame is negative
@@ -4607,9 +4578,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     cityPopulationLoss := 0
     var cityBuildingLoss []buildinglib.Building
 
-    if zone.City != nil && state == combat.CombatStateAttackerWin && !strategicCombat {
+    if zone.City != nil && state == combat.CombatStateAttackerWin {
         // maximum chance is 50%, minimum is 10%
-        chance := min(50, 10 + combatScreen.Model.CollateralDamage * 2)
+        chance := min(50, 10 + combatModel.CollateralDamage * 2)
         for range zone.City.Citizens() - 1 {
             if rand.N(100) < chance {
                 cityPopulationLoss += 1
@@ -4621,7 +4592,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             minBuildingChance = 50
         }
 
-        chance = min(75, minBuildingChance + combatScreen.Model.CollateralDamage)
+        chance = min(75, minBuildingChance + combatModel.CollateralDamage)
         for _, building := range zone.City.Buildings.Values() {
             if building == buildinglib.BuildingFortress || building == buildinglib.BuildingSummoningCircle {
                 continue
@@ -4640,7 +4611,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     }
 
     // Show end screen
-    if !strategicCombat {
+    if useHuman {
         result := combat.CombatEndScreenResultLose
         humanAttacker := attacker.IsHuman()
         fame := defenderFame
@@ -4659,18 +4630,25 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
 
         // FIXME: show how much gold was plundered (or lost)
-        endScreen := combat.MakeCombatEndScreen(game.Cache, combatScreen, result, combatScreen.Model.DiedWhileFleeing, fame, cityPopulationLoss, len(cityBuildingLoss))
-        game.Drawer = func (screen *ebiten.Image){
+        endScreen := combat.MakeCombatEndScreen(game.Cache, result, combatModel.DiedWhileFleeing, fame, cityPopulationLoss, len(cityBuildingLoss))
+
+        lastDrawer := game.LastDrawer()
+        game.PushDrawer(func (screen *ebiten.Image){
+            lastDrawer(screen)
             endScreen.Draw(screen)
-        }
+        })
 
         state2 := combat.CombatEndScreenRunning
         for state2 == combat.CombatEndScreenRunning {
             state2 = endScreen.Update()
             yield()
         }
+        game.PopDrawer()
+    }
 
-        game.Drawer = oldDrawer
+    // remove combat screen after showing the victory/defeat screen
+    if popCombatScreen {
+        game.PopDrawer()
     }
 
     // Redistribute equipment of died heros
@@ -4738,52 +4716,50 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     killUnits(attacker, attackerStack, landscape)
     killUnits(defender, defenderStack, landscape)
 
-    if !strategicCombat {
-        var undeadUnits int
+    var undeadUnits int
 
-        switch state {
-            case combat.CombatStateAttackerWin, combat.CombatStateDefenderFlee:
-                undeadUnits = len(combatScreen.Model.UndeadUnits)
+    switch state {
+        case combat.CombatStateAttackerWin, combat.CombatStateDefenderFlee:
+            undeadUnits = len(combatModel.UndeadUnits)
 
-                for _, unit := range combatScreen.Model.UndeadUnits {
-                    defender.RemoveUnit(unit.Unit)
-                    if len(attackerStack.Units()) < data.MaxUnitsInStack {
-                        attacker.AddUnit(attacker.UpdateUnit(unit.Unit))
+            for _, unit := range combatModel.UndeadUnits {
+                defender.RemoveUnit(unit.Unit)
+                if len(attackerStack.Units()) < data.MaxUnitsInStack {
+                    attacker.AddUnit(attacker.UpdateUnit(unit.Unit))
+                }
+            }
+
+            if attacker.HasEnchantment(data.EnchantmentZombieMastery) {
+                for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
+                    if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(attackerStack.Units()) < data.MaxUnitsInStack {
+                        attacker.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, attackerStack.X(), attackerStack.Y(), attackerStack.Plane(), attacker.GetBanner(), attacker.MakeExperienceInfo(), attacker.MakeUnitEnchantmentProvider()))
                     }
                 }
+            }
 
-                if attacker.HasEnchantment(data.EnchantmentZombieMastery) {
-                    for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
-                        if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(attackerStack.Units()) < data.MaxUnitsInStack {
-                            attacker.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, attackerStack.X(), attackerStack.Y(), attackerStack.Plane(), attacker.GetBanner(), attacker.MakeExperienceInfo(), attacker.MakeUnitEnchantmentProvider()))
-                        }
+        case combat.CombatStateDefenderWin, combat.CombatStateAttackerFlee:
+            undeadUnits = len(combatModel.UndeadUnits)
+
+            for _, unit := range combatModel.UndeadUnits {
+                attacker.RemoveUnit(unit.Unit)
+                if len(defenderStack.Units()) < data.MaxUnitsInStack {
+                    defender.AddUnit(defender.UpdateUnit(unit.Unit))
+                }
+            }
+
+            if defender.HasEnchantment(data.EnchantmentZombieMastery) {
+                for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
+                    if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(defenderStack.Units()) < data.MaxUnitsInStack {
+                        defender.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, defenderStack.X(), defenderStack.Y(), defenderStack.Plane(), defender.GetBanner(), defender.MakeExperienceInfo(), defender.MakeUnitEnchantmentProvider()))
                     }
                 }
+            }
+    }
 
-            case combat.CombatStateDefenderWin, combat.CombatStateAttackerFlee:
-                undeadUnits = len(combatScreen.Model.UndeadUnits)
-
-                for _, unit := range combatScreen.Model.UndeadUnits {
-                    attacker.RemoveUnit(unit.Unit)
-                    if len(defenderStack.Units()) < data.MaxUnitsInStack {
-                        defender.AddUnit(defender.UpdateUnit(unit.Unit))
-                    }
-                }
-
-                if defender.HasEnchantment(data.EnchantmentZombieMastery) {
-                    for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
-                        if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(defenderStack.Units()) < data.MaxUnitsInStack {
-                            defender.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, defenderStack.X(), defenderStack.Y(), defenderStack.Plane(), defender.GetBanner(), defender.MakeExperienceInfo(), defender.MakeUnitEnchantmentProvider()))
-                        }
-                    }
-                }
-        }
-
-        // show the undead animation if there were undead units raised
-        if undeadUnits > 0 {
-            undeadUI, undeadQuit := MakeUndeadUI(game.Cache, &game.ImageCache, true, undeadUnits)
-            game.doRunUI(yield, undeadUI, undeadQuit)
-        }
+    // show the undead animation if there were undead units raised
+    if undeadUnits > 0 && useHuman {
+        undeadUI, undeadQuit := MakeUndeadUI(game.Cache, &game.ImageCache, true, undeadUnits)
+        game.doRunUI(yield, undeadUI, undeadQuit)
     }
 
     // experience
@@ -5041,34 +5017,26 @@ func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
 }
 
 func (game *Game) ShowApprenticeUI(yield coroutine.YieldFunc, player *playerlib.Player){
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
     newDrawer := func (screen *ebiten.Image){
     }
 
-    game.Drawer = func (screen *ebiten.Image){
+    game.PushDrawer(func (screen *ebiten.Image){
         newDrawer(screen)
-    }
+    })
+    defer game.PopDrawer()
 
     power := game.Model.ComputePower(player)
     spellbook.ShowSpellBook(yield, game.Cache, player.ResearchPoolSpells, player.KnownSpells, player.ResearchCandidateSpells, player.ResearchingSpell, player.ResearchProgress, player.SpellResearchPerTurn(power), player.ComputeOverworldCastingSkill(), spellbook.Spell{}, false, nil, player, &newDrawer)
 }
 
 func (game *Game) ResearchNewSpell(yield coroutine.YieldFunc, player *playerlib.Player){
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
     newDrawer := func (screen *ebiten.Image){
     }
 
-    game.Drawer = func (screen *ebiten.Image){
+    game.PushDrawer(func (screen *ebiten.Image){
         newDrawer(screen)
-    }
+    })
+    defer game.PopDrawer()
 
     if len(player.ResearchCandidateSpells.Spells) > 0 {
         power := game.Model.ComputePower(player)
@@ -5207,13 +5175,10 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
             if spell.Name == "Create Artifact" || spell.Name == "Enchant Item" {
 
                 drawFunc := func(screen *ebiten.Image){}
-                oldDrawer := game.Drawer
-                defer func(){
-                    game.Drawer = oldDrawer
-                }()
-                game.Drawer = func(screen *ebiten.Image){
+                game.PushDrawer(func(screen *ebiten.Image){
                     drawFunc(screen)
-                }
+                })
+                defer game.PopDrawer()
 
                 creation := artifact.CreationCreateArtifact
                 switch spell.Name {
@@ -5235,14 +5200,11 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                 game.Music.PushSong(music.SongSpellOfMastery)
                 logic, draw := mastery.ShowSpellOfMasteryScreen(game.Cache, player.Wizard.Name)
 
-                oldDrawer := game.Drawer
-                game.Drawer = func(screen *ebiten.Image){
-                    draw(screen)
-                }
+                game.PushDrawer(draw)
 
                 logic(yield)
 
-                game.Drawer = oldDrawer
+                game.PopDrawer()
                 game.Music.PopSong()
             }
 
@@ -7773,8 +7735,35 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     */
 }
 
+// push a new drawer onto the drawer stack, and return a function that can be used to mutate the same drawer
+// do not invoke the returned function after popping the drawer
+func (game *Game) PushDrawer(drawer func(screen *ebiten.Image)) func (func(screen *ebiten.Image)) {
+    game.Drawers = append(game.Drawers, drawer)
+    index := len(game.Drawers) - 1
+    return func(newDrawer func(screen *ebiten.Image)) {
+        game.Drawers[index] = newDrawer
+    }
+}
+
+func (game *Game) LastDrawer() func(screen *ebiten.Image) {
+    if len(game.Drawers) > 0 {
+        return game.Drawers[len(game.Drawers)-1]
+    }
+
+    return nil
+}
+
+func (game *Game) PopDrawer(){
+    if len(game.Drawers) > 0 {
+        game.Drawers = game.Drawers[:len(game.Drawers)-1]
+    }
+}
+
+// always draw the last pushed drawer
 func (game *Game) Draw(screen *ebiten.Image){
-    game.Drawer(screen)
+    if len(game.Drawers) > 0 {
+        game.Drawers[len(game.Drawers)-1](screen)
+    }
 }
 
 func (game *Game) DrawGame(screen *ebiten.Image){

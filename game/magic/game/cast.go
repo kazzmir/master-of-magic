@@ -1671,12 +1671,6 @@ func (game *Game) doCastUnitEnchantment(player *playerlib.Player, spell spellboo
 }
 
 func (game *Game) doSelectUnit(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack) units.StackUnit {
-
-    drawer := game.Drawer
-    defer func(){
-        game.Drawer = drawer
-    }()
-
     quit := false
 
     ui := uilib.UI{
@@ -1709,10 +1703,12 @@ func (game *Game) doSelectUnit(yield coroutine.YieldFunc, player *playerlib.Play
 
     yield()
 
-    game.Drawer = func(screen *ebiten.Image){
+    drawer := game.LastDrawer()
+    game.PushDrawer(func(screen *ebiten.Image){
         drawer(screen)
         ui.Draw(&ui, screen)
-    }
+    })
+    defer game.PopDrawer()
 
     for !quit {
         game.Counter += 1
@@ -1808,15 +1804,13 @@ func (game *Game) showCityEarthquake(yield coroutine.YieldFunc, city *citylib.Ci
         return
     }
 
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
+    oldDrawer := game.LastDrawer()
 
-    game.Drawer = func(screen *ebiten.Image){
+    game.PushDrawer(func(screen *ebiten.Image){
         oldDrawer(screen)
         ui.Draw(ui, screen)
-    }
+    })
+    defer game.PopDrawer()
 
     counter := game.Counter
 
@@ -1857,15 +1851,13 @@ func (game *Game) showCastNewBuilding(yield coroutine.YieldFunc, city *citylib.C
         return
     }
 
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
+    oldDrawer := game.LastDrawer()
 
-    game.Drawer = func(screen *ebiten.Image){
+    game.PushDrawer(func(screen *ebiten.Image){
         oldDrawer(screen)
         ui.Draw(ui, screen)
-    }
+    })
+    defer game.PopDrawer()
 
     for quit.Err() == nil {
         game.Counter += 1
@@ -1882,11 +1874,6 @@ func (game *Game) showCastNewBuilding(yield coroutine.YieldFunc, city *citylib.C
 /* return x,y and true/false, where true means cancelled, and false means something was selected */
 // FIXME: this copies a lot of code from the surveyor, try to combine the two with shared functions/code
 func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellbook.Spell, player *playerlib.Player, locationType LocationType) (int, int, bool) {
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
     fonts := fontslib.MakeSurveyorFonts(game.Cache)
     castingFont := fonts.SurveyorFont
     whiteFont := fonts.WhiteFont
@@ -2052,7 +2039,7 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         },
     })
 
-    game.Drawer = func(screen *ebiten.Image){
+    game.PushDrawer(func(screen *ebiten.Image){
         overworld.Camera = game.Camera
         overworld.DrawOverworld(screen, ebiten.GeoM{})
 
@@ -2065,7 +2052,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
         overworld.DrawMinimap(mini)
 
         ui.Draw(ui, screen)
-    }
+    })
+    defer game.PopDrawer()
 
     entityInfo := game.Model.ComputeCityStackInfo()
 
@@ -2323,24 +2311,22 @@ func (game *Game) doCastOnMap(yield coroutine.YieldFunc, tileX int, tileY int, a
     game.Camera.Zoom = camera.ZoomDefault
     game.doMoveCamera(yield, tileX, tileY)
 
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
     pics, _ := game.ImageCache.GetImages("specfx.lbx", animationIndex)
 
     animation := util.MakeAnimation(pics, false)
 
     x, y := game.TileToScreen(tileX, tileY)
 
-    game.Drawer = func(screen *ebiten.Image) {
+    oldDrawer := game.LastDrawer()
+
+    game.PushDrawer(func(screen *ebiten.Image) {
         oldDrawer(screen)
 
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(x - animation.Frame().Bounds().Dx() / 2), float64(y - animation.Frame().Bounds().Dy() / 2))
         scale.DrawScaled(screen, animation.Frame(), &options)
-    }
+    })
+    defer game.PopDrawer()
 
     sound, err := audio.LoadSound(game.Cache, soundIndex)
     if err == nil {
@@ -2634,11 +2620,6 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 
     frame, _ := game.ImageCache.GetImage("backgrnd.lbx", 18, 0)
 
-    oldDrawer := game.Drawer
-    defer func(){
-        game.Drawer = oldDrawer
-    }()
-
     animationIndex := 0
     switch player.Wizard.Base {
         case data.WizardMerlin: animationIndex = 0
@@ -2667,7 +2648,9 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
 
     offset := -35
 
-    game.Drawer = func(screen *ebiten.Image){
+    oldDrawer := game.LastDrawer()
+
+    game.PushDrawer(func(screen *ebiten.Image){
         oldDrawer(screen)
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(data.ScreenWidth / 2), float64(data.ScreenHeight / 2))
@@ -2697,7 +2680,8 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
             fonts.InfoFont.PrintCenter(screen, float64(data.ScreenWidth / 2 + offset), float64(data.ScreenHeight / 2 + frame.Bounds().Dy() / 2), scale.ScaleAmount, options.ColorScale, enchantment.String())
         }
 
-    }
+    })
+    defer game.PopDrawer()
 
     delay := uint64(3 * 60)
 
