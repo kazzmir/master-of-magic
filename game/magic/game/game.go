@@ -4486,6 +4486,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
         game.Music.PopSong()
         combatScreen.MouseState = combat.CombatClickHud
+    } else {
+        // do non-graphical combat (ai vs ai)
+        state = combat.Run(combatModel)
     }
 
     defeatedDefenders = combatModel.DefeatedDefenders
