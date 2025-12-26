@@ -330,7 +330,7 @@ func MakeCombatFonts(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
 }
 
 // player is always the human player
-func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player ArmyPlayer, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int) *CombatScreen {
+func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player ArmyPlayer, landscape CombatLandscape, plane data.Plane, zone ZoneType, model *CombatModel) *CombatScreen {
     imageCache := util.MakeImageCache(cache)
 
     fonts := MakeCombatFonts(cache, defendingArmy, attackingArmy)
@@ -356,18 +356,10 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     coordinates.Scale(float64(tile0.Bounds().Dx()) * 3 / 4 - 2, float64(tile0.Bounds().Dy()) * 3 / 4 - 1)
     coordinates.Translate(float64(-220), float64(80))
 
-    events := make(chan CombatEvent, 1000)
-
-    allSpells, err := spellbook.ReadSpellsFromCache(cache)
-    if err != nil {
-        log.Printf("Error reading spells: %v", err)
-        allSpells = spellbook.Spells{}
-    }
-
     quit, cancel := context.WithCancel(context.Background())
 
     combat := &CombatScreen{
-        Events: events,
+        Events: model.Events,
         Cache: cache,
         Quit: quit,
         Cancel: cancel,
@@ -384,7 +376,7 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         WhitePixel: whitePixel,
         DeathAnimation: DeathColorFade,
 
-        Model: MakeCombatModel(allSpells, defendingArmy, attackingArmy, landscape, plane, zone, influence, overworldX, overworldY, events),
+        Model: model,
     }
 
     combat.Drawer = combat.NormalDraw

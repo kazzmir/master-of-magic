@@ -4442,7 +4442,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     // strategicCombat := attacker.StrategicCombat && defender.StrategicCombat
 
-    var combatModel *combat.CombatModel
+    events := make(chan combat.CombatEvent, 1000)
+
+    combatModel := combat.MakeCombatModel(game.AllSpells(), defendingArmy, attackingArmy, landscape, defenderStack.Plane(), zone, game.GetInfluenceMagic(attackerStack.X(), attackerStack.Y(), attackerStack.Plane()), attackerStack.X(), attackerStack.Y(), events)
 
     if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentHeavenlyLight) {
         combatModel.AddGlobalEnchantment(data.CombatEnchantmentTrueLight)
@@ -4465,7 +4467,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     if useHuman {
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-        combatScreen := combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Model.Players[0], landscape, attackerStack.Plane(), zone, game.GetInfluenceMagic(attackerStack.X(), attackerStack.Y(), attackerStack.Plane()), attackerStack.X(), attackerStack.Y())
+        combatScreen := combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Model.Players[0], landscape, attackerStack.Plane(), zone, combatModel)
 
         game.PushDrawer(func (screen *ebiten.Image){
             combatScreen.Draw(screen)
