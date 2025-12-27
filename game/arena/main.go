@@ -2334,6 +2334,9 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                 vector.FillRect(healthImage, 0, 10, float32(healthImage.Bounds().Dx()), 4, color.RGBA{R: 0, G: 0, B: 0, A: 255}, true)
                 vector.FillRect(healthImage, 0, 10, length, 4, healthColor, true)
                 box1.AddChild(widget.NewGraphic(widget.GraphicOpts.Image(healthImage)))
+                box1.AddChild(widget.NewText(
+                    widget.TextOpts.Text(fmt.Sprintf("%d/%d", unit.GetHealth(), unit.GetMaxHealth()), face, color.White),
+                ))
 
                 unitBox.AddChild(box1)
             }
