@@ -67,6 +67,7 @@ func (magicNode MagicNode) Name() string {
 type ExtraTile interface {
     DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int)
     DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int)
+    Serialize() map[string]any
 }
 
 type ExtraKind int
@@ -79,6 +80,20 @@ const (
     ExtraKindVolcano
     ExtraKindCorruption
 )
+
+func (kind ExtraKind) String() string {
+    switch kind {
+        case ExtraKindRoad: return "Road"
+        case ExtraKindBonus: return "Bonus"
+        case ExtraKindMagicNode: return "Magic Node"
+        case ExtraKindEncounter: return "Encounter"
+        case ExtraKindOpenTower: return "Open Tower"
+        case ExtraKindVolcano: return "Volcano"
+        case ExtraKindCorruption: return "Corruption"
+    }
+
+    return "Unknown"
+}
 
 var ExtraDrawOrder = []ExtraKind{
     ExtraKindVolcano,
