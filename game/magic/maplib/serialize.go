@@ -52,7 +52,7 @@ type SerializedUnit struct {
 
 func (encounter *ExtraEncounter) Serialize() map[string]any {
 
-    var serializedUnits []SerializedUnit
+    serializedUnits := make([]SerializedUnit, 0)
     for _, unit := range encounter.Units {
         serializedUnits = append(serializedUnits, SerializedUnit{
             LbxFile: unit.LbxFile,

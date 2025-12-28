@@ -1,6 +1,8 @@
 package player
 
 import (
+    "image"
+
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
@@ -28,6 +30,11 @@ func serializeWizard(wizard setup.WizardCustom) SerializedWizard {
     }
 }
 
+type SerializedWork struct {
+    Location image.Point `json:"location"`
+    Progress float64 `json:"progress"`
+}
+
 type SerializedPlayer struct {
     TaxRate map[string]int `json:"tax-rate"`
     Gold int `json:"gold"`
@@ -52,6 +59,11 @@ type SerializedPlayer struct {
     ResearchProgress int `json:"research-progress"`
     CastingSpell string `json:"casting-spell"`
     CastingSpellProgress int `json:"casting-spell-progress"`
+    PowerHistory []WizardPower `json:"power-history,omitempty"`
+    RoadWorkArcanus []SerializedWork `json:"road-work-arcanus"`
+    RoadWorkMyrror []SerializedWork `json:"road-work-myrror"`
+    PurifyWorkArcanus []SerializedWork `json:"purify-work-arcanus"`
+    PurifyWorkMyrror []SerializedWork `json:"purify-work-myrror"`
 }
 
 func serializeFraction(frac fraction.Fraction) map[string]int {
@@ -61,8 +73,21 @@ func serializeFraction(frac fraction.Fraction) map[string]int {
     }
 }
 
+func serializeWork(work map[image.Point]float64) []SerializedWork {
+    out := make([]SerializedWork, 0)
+
+    for location, progress := range work {
+        out = append(out, SerializedWork{
+            Location: location,
+            Progress: progress,
+        })
+    }
+
+    return out
+}
+
 func spellNames(spells spellbook.Spells) []string {
-    var out []string
+    out := make([]string, 0)
 
     for _, spell := range spells.Spells {
         out = append(out, spell.Name)
@@ -72,7 +97,7 @@ func spellNames(spells spellbook.Spells) []string {
 }
 
 func globalEnchantmentNames(enchantments *set.Set[data.Enchantment]) []string {
-    var out []string
+    out := make([]string, 0)
 
     for _, enchantment := range enchantments.Values() {
         out = append(out, enchantment.String())
@@ -107,5 +132,10 @@ func SerializePlayer(player *Player) SerializedPlayer {
         ResearchProgress: player.ResearchProgress,
         CastingSpell: player.CastingSpell.Name,
         CastingSpellProgress: player.CastingSpellProgress,
+        PowerHistory: player.PowerHistory,
+        RoadWorkArcanus: serializeWork(player.RoadWorkArcanus),
+        RoadWorkMyrror: serializeWork(player.RoadWorkMyrror),
+        PurifyWorkArcanus: serializeWork(player.PurifyWorkArcanus),
+        PurifyWorkMyrror: serializeWork(player.PurifyWorkMyrror),
     }
 }
