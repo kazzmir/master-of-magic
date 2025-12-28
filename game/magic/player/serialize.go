@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 )
 
 type SerializedWizard struct {
@@ -66,6 +67,7 @@ type SerializedPlayer struct {
     RoadWorkMyrror []SerializedWork `json:"road-work-myrror"`
     PurifyWorkArcanus []SerializedWork `json:"purify-work-arcanus"`
     PurifyWorkMyrror []SerializedWork `json:"purify-work-myrror"`
+    Cities []citylib.SerializedCity `json:"cities"`
 
     // TODO
     // PlayerRelations map[*Player]*Relationship
@@ -75,6 +77,16 @@ type SerializedPlayer struct {
     // CreateArtifact *artifact.Artifact
     // Units []units.StackUnit
     // Cities map[data.PlanePoint]*citylib.City
+}
+
+func serializeCities(cities map[data.PlanePoint]*citylib.City) []citylib.SerializedCity {
+    out := make([]citylib.SerializedCity, 0)
+
+    for _, city := range cities {
+        out = append(out, citylib.SerializeCity(city))
+    }
+
+    return out
 }
 
 func serializeFraction(frac fraction.Fraction) map[string]int {
@@ -149,5 +161,6 @@ func SerializePlayer(player *Player) SerializedPlayer {
         RoadWorkMyrror: serializeWork(player.RoadWorkMyrror),
         PurifyWorkArcanus: serializeWork(player.PurifyWorkArcanus),
         PurifyWorkMyrror: serializeWork(player.PurifyWorkMyrror),
+        Cities: serializeCities(player.Cities),
     }
 }
