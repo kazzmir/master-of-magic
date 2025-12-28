@@ -1,6 +1,7 @@
 package data
 
 import (
+    "fmt"
     "image/color"
 )
 
@@ -28,6 +29,10 @@ func AllBanners() []BannerType {
         BannerYellow,
         BannerBrown,
     }
+}
+
+func (banner BannerType) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%v"`, banner.String())), nil
 }
 
 func (banner BannerType) String() string {
@@ -101,6 +106,10 @@ func MyrranRaces() []Race {
         RaceDwarf,
         RaceTroll,
     }
+}
+
+func (race Race) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%v"`, race.String())), nil
 }
 
 // technically 'Lizardmen' should be 'Lizardman' and 'Dwarf' should be 'Dwarven', but the help has them listed as
@@ -206,6 +215,10 @@ const (
     ChaosMagic
     ArcaneMagic
 )
+
+func (magic MagicType) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%v"`, magic.String())), nil
+}
 
 func (magic MagicType) String() string {
     switch magic {

@@ -9,11 +9,35 @@ import (
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
 func main() {
     cache := lbx.AutoCache()
     game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{LandSize: 0})
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Retorts: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+            data.RetortRunemaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game.AddPlayer(wizard, true)
 
     serialized := gamelib.SerializeModel(game.Model)
 

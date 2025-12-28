@@ -23,6 +23,10 @@ const (
     RetortNone
 )
 
+func (retort Retort) MarshalJSON() ([]byte, error) {
+    return []byte(`"` + retort.String() + `"`), nil
+}
+
 func (retort Retort) DependencyExplanation() string {
     switch retort {
         case RetortAlchemy: return ""
