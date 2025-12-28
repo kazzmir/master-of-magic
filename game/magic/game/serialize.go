@@ -14,6 +14,13 @@ func SerializeModel(model *GameModel) map[string]any {
         "date": time.Now(),
         "arcanus": maplib.SerializeMap(model.ArcanusMap),
         "myrror":  maplib.SerializeMap(model.MyrrorMap),
+        "plane":  model.Plane.String(),
+        "settings": model.Settings,
+        "current-player": model.CurrentPlayer,
+        "turn": model.TurnNumber,
+        "last-event-turn": model.LastEventTurn,
+        // FIXME: handle random events
+        // RandomEvents []*RandomEvent
     }
 }
 
