@@ -1,6 +1,7 @@
 package main
 
 import (
+    "os"
     "encoding/json"
     "log"
 
@@ -22,4 +23,17 @@ func main() {
         log.Fatalf("Failed to marshal serialized model to JSON: %v", err)
     }
     log.Printf("Serialized model JSON:\n%s", string(jsonData))
+
+    out, err := os.Create("serialized_model.json")
+    if err != nil {
+        log.Fatalf("Failed to create output file: %v", err)
+    }
+    defer out.Close()
+
+    _, err = out.Write(jsonData)
+    if err != nil {
+        log.Fatalf("Failed to write JSON data to file: %v", err)
+    }
+
+    log.Println("Serialized model written to serialized_model.json")
 }

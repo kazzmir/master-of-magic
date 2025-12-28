@@ -43,8 +43,30 @@ func (bonus *ExtraBonus) Serialize() map[string]any {
     }
 }
 
+type SerializedUnit struct {
+    LbxFile string `json:"lbx_file"`
+    LbxIndex int `json:"lbx_index"`
+    Race string `json:"race"`
+    Name string `json:"name"`
+}
+
 func (encounter *ExtraEncounter) Serialize() map[string]any {
-    return map[string]any{}
+
+    var serializedUnits []SerializedUnit
+    for _, unit := range encounter.Units {
+        serializedUnits = append(serializedUnits, SerializedUnit{
+            LbxFile: unit.LbxFile,
+            LbxIndex: unit.Index,
+            Race: unit.Race.String(),
+            Name: unit.Name,
+        })
+    }
+
+    return map[string]any{
+        "type": encounter.Type.Name(),
+        "budget": encounter.Budget,
+        "units": serializedUnits,
+    }
 }
 
 func (node *ExtraMagicNode) Serialize() map[string]any {
