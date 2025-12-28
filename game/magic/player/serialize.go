@@ -36,6 +36,8 @@ type SerializedWork struct {
 }
 
 type SerializedPlayer struct {
+    ArcanusFog [][]data.FogType `json:"arcanus-fog"`
+    MyrrorFog [][]data.FogType `json:"myrror-fog"`
     TaxRate map[string]int `json:"tax-rate"`
     Gold int `json:"gold"`
     Mana int `json:"mana"`
@@ -108,7 +110,8 @@ func globalEnchantmentNames(enchantments *set.Set[data.Enchantment]) []string {
 
 func SerializePlayer(player *Player) SerializedPlayer {
     return SerializedPlayer{
-        // FIXME: fog
+        ArcanusFog: player.ArcanusFog,
+        MyrrorFog: player.MyrrorFog,
         TaxRate: serializeFraction(player.TaxRate),
         Gold: player.Gold,
         Mana: player.Mana,
