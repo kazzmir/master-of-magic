@@ -62,10 +62,17 @@ func (encounter *ExtraEncounter) Serialize() map[string]any {
         })
     }
 
+    exploredBy := []string{}
+
+    for _, player := range encounter.ExploredBy.Values() {
+        exploredBy = append(exploredBy, player.GetBanner().String())
+    }
+
     return map[string]any{
         "type": encounter.Type.Name(),
         "budget": encounter.Budget,
         "units": serializedUnits,
+        "explored_by": exploredBy,
     }
 }
 
