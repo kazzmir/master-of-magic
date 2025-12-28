@@ -4,11 +4,17 @@ import (
     "time"
 
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
 )
 
 const SerializeVersion = 1
 
 func SerializeModel(model *GameModel) map[string]any {
+    var players []playerlib.SerializedPlayer
+    for _, p := range model.Players {
+        players = append(players, playerlib.SerializePlayer(p))
+    }
+
     return map[string]any{
         "version": SerializeVersion,
         "date": time.Now(),
@@ -19,6 +25,7 @@ func SerializeModel(model *GameModel) map[string]any {
         "current-player": model.CurrentPlayer,
         "turn": model.TurnNumber,
         "last-event-turn": model.LastEventTurn,
+        "players": players,
         // FIXME: handle random events
         // RandomEvents []*RandomEvent
     }
