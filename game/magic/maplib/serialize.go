@@ -67,11 +67,15 @@ func (node *ExtraMagicNode) Serialize() map[string]any {
 }
 
 func (volcano *ExtraVolcano) Serialize() map[string]any {
-    return map[string]any{}
+    return map[string]any{
+        "caster": volcano.CastingWizard.GetBanner().String(),
+    }
 }
 
 func (road *ExtraRoad) Serialize() map[string]any {
-    return map[string]any{}
+    return map[string]any{
+        "enchanted": road.Enchanted,
+    }
 }
 
 func (tower *ExtraOpenTower) Serialize() map[string]any {
