@@ -9,7 +9,6 @@ import (
 )
 
 type StackUnit interface {
-    SetId(id uint64)
     ResetMoves()
     NaturalHeal(rate float64)
     IsFlying() bool

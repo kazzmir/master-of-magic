@@ -66,6 +66,15 @@ type SerializedPlayer struct {
     RoadWorkMyrror []SerializedWork `json:"road-work-myrror"`
     PurifyWorkArcanus []SerializedWork `json:"purify-work-arcanus"`
     PurifyWorkMyrror []SerializedWork `json:"purify-work-myrror"`
+
+    // TODO
+    // PlayerRelations map[*Player]*Relationship
+    // HeroPool map[herolib.HeroType]*herolib.Hero
+    // Heroes [6]*herolib.Hero
+    // VaultEquipment [4]*artifact.Artifact
+    // CreateArtifact *artifact.Artifact
+    // Units []units.StackUnit
+    // Cities map[data.PlanePoint]*citylib.City
 }
 
 func serializeFraction(frac fraction.Fraction) map[string]int {

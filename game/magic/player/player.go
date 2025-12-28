@@ -351,8 +351,6 @@ type Player struct {
     Stacks []*UnitStack
     Cities map[data.PlanePoint]*citylib.City
 
-    // counter for the next created unit owned by this player
-    UnitId uint64
     SelectedStack *UnitStack
 
     // track how much road work has been done per tile
@@ -1513,8 +1511,6 @@ func (player *Player) UpdateUnit(unit units.StackUnit) units.StackUnit {
 }
 
 func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {
-    unit.SetId(player.UnitId)
-    player.UnitId += 1
     player.Units = append(player.Units, unit)
 
     stack := player.FindStack(unit.GetX(), unit.GetY(), unit.GetPlane())

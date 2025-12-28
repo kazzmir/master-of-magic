@@ -67,7 +67,6 @@ type OverworldUnit struct {
     Plane data.Plane
     X int
     Y int
-    Id uint64
     Damage int
     // Health int
     // to get the level, use the conversion functions in experience.go
@@ -309,10 +308,6 @@ func (unit *OverworldUnit) SetX(x int) {
 
 func (unit *OverworldUnit) SetY(y int) {
     unit.Y = y
-}
-
-func (unit *OverworldUnit) SetId(id uint64) {
-    unit.Id = id
 }
 
 func (unit *OverworldUnit) GetMovesLeft(overworld bool) fraction.Fraction {
