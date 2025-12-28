@@ -47,23 +47,38 @@ func (encounter *ExtraEncounter) Serialize() map[string]any {
     return map[string]any{}
 }
 
-func (encounter *ExtraMagicNode) Serialize() map[string]any {
+func (node *ExtraMagicNode) Serialize() map[string]any {
+    out := map[string]any{
+        "kind": node.Kind.Name(),
+        "zone": node.Zone,
+    }
+
+    if node.MeldingWizard != nil {
+        out["melder"] = node.MeldingWizard.GetBanner().String()
+        out["guardian spirit"] = node.GuardianSpiritMeld
+
+        if node.Warped {
+            out["warped"] = node.Warped
+            out["warped owner"] = node.WarpedOwner.GetBanner().String()
+        }
+    }
+
+    return out
+}
+
+func (volcano *ExtraVolcano) Serialize() map[string]any {
     return map[string]any{}
 }
 
-func (encounter *ExtraVolcano) Serialize() map[string]any {
+func (road *ExtraRoad) Serialize() map[string]any {
     return map[string]any{}
 }
 
-func (encounter *ExtraRoad) Serialize() map[string]any {
+func (tower *ExtraOpenTower) Serialize() map[string]any {
     return map[string]any{}
 }
 
-func (encounter *ExtraOpenTower) Serialize() map[string]any {
-    return map[string]any{}
-}
-
-func (encounter *ExtraCorruption) Serialize() map[string]any {
+func (corruption *ExtraCorruption) Serialize() map[string]any {
     return map[string]any{}
 }
 
