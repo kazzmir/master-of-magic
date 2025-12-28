@@ -1541,7 +1541,7 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
     game.Camera.Center(20, 20)
 
     // center on some random city
-    for _, city := range game.Model.Players[0].Cities {
+    for _, city := range game.Model.GetHumanPlayer().Cities {
         game.Events <- &gamelib.GameEventMoveCamera{
             Instant: true,
             Plane: city.Plane,

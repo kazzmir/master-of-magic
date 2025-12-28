@@ -1958,8 +1958,8 @@ func (game *Game) selectLocationForSpell(yield coroutine.YieldFunc, spell spellb
 
             ui.StandardDraw(screen)
 
-            game.Fonts.WhiteFont.PrintRight(screen, float64(276), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Model.Players[0].Gold))
-            game.Fonts.WhiteFont.PrintRight(screen, float64(313), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Model.Players[0].Mana))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(276), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v GP", game.Model.GetHumanPlayer().Gold))
+            game.Fonts.WhiteFont.PrintRight(screen, float64(313), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v MP", game.Model.GetHumanPlayer().Mana))
 
             castingFont.PrintCenter(screen, float64(280), float64(81), scale.ScaleAmount, ebiten.ColorScale{}, "Casting")
 
