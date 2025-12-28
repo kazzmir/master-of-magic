@@ -108,7 +108,7 @@ func (game *Game) doSurveyor(yield coroutine.YieldFunc) {
 
             ui.StandardDraw(screen)
 
-            player := game.Model.Players[0]
+            player := game.Model.GetHumanPlayer()
 
             game.Fonts.WhiteFont.PrintRight(screen, float64(276), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v GP", player.Gold))
             game.Fonts.WhiteFont.PrintRight(screen, float64(313), float64(68), scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v MP", player.Mana))

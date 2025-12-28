@@ -793,7 +793,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
         }
     }
 
-    player := game.Model.Players[0]
+    player := game.Model.GetHumanPlayer()
 
     drawMinimap := func (screen *ebiten.Image, x int, y int, plane data.Plane, counter uint64){
         use := arcanusCities
@@ -815,7 +815,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
             game.Camera.Center(city.X, city.Y)
         }
 
-        view := citylistview.MakeCityListScreen(game.Cache, game.Model.Players[0], drawMinimap, selectCity)
+        view := citylistview.MakeCityListScreen(game.Cache, game.Model.GetHumanPlayer(), drawMinimap, selectCity)
 
         setDrawer(func (screen *ebiten.Image){
             view.Draw(screen)
@@ -831,7 +831,7 @@ func (game *Game) doCityListView(yield coroutine.YieldFunc) {
         yield()
 
         if showCity != nil {
-            game.doCityScreen(yield, showCity, game.Model.Players[0], buildinglib.BuildingNone)
+            game.doCityScreen(yield, showCity, game.Model.GetHumanPlayer(), buildinglib.BuildingNone)
         } else {
             quit = true
         }
@@ -859,7 +859,7 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
         game.doVault(yield, nil)
     }
 
-    army := armyview.MakeArmyScreen(game.Cache, game.Model.Players[0], drawMinimap, showVault)
+    army := armyview.MakeArmyScreen(game.Cache, game.Model.GetHumanPlayer(), drawMinimap, showVault)
 
     game.PushDrawer(func (screen *ebiten.Image){
         army.Draw(screen)
@@ -925,7 +925,7 @@ func (game *Game) doDiplomacy(yield coroutine.YieldFunc, player *playerlib.Playe
 
 func (game *Game) doMagicView(yield coroutine.YieldFunc) {
 
-    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Model.Players[0], game.Model.GetEnemies(game.Model.Players[0]), game.Model.ComputePower(game.Model.Players[0]), game)
+    magicScreen := magicview.MakeMagicScreen(game.Cache, game.Model.GetHumanPlayer(), game.Model.GetEnemies(game.Model.GetHumanPlayer()), game.Model.ComputePower(game.Model.GetHumanPlayer()), game)
 
     game.PushDrawer(func (screen *ebiten.Image){
         magicScreen.Draw(screen)
@@ -1595,7 +1595,7 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
 }
 
 func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artifact) {
-    vaultLogic, vaultDrawer := game.showVaultScreen(newArtifact, game.Model.Players[0])
+    vaultLogic, vaultDrawer := game.showVaultScreen(newArtifact, game.Model.GetHumanPlayer())
 
     drawer := game.LastDrawer()
 
@@ -2005,7 +2005,7 @@ func (game *Game) doNotice(yield coroutine.YieldFunc, ui *uilib.UI, message stri
  * but first do some checks on disbanding units to confirm the player really wants to end the turn.
  */
 func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
-    player := game.Model.Players[0]
+    player := game.Model.GetHumanPlayer()
     goldIssue, foodIssue, manaIssue := game.CheckDisband(player)
 
     if goldIssue || foodIssue || manaIssue {
@@ -2238,7 +2238,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         road := event.(*GameEventBuildRoad)
                         stack := road.Stack
 
-                        player := game.Model.Players[0]
+                        player := game.Model.GetHumanPlayer()
 
                         path := game.ShowRoadBuilder(yield, stack, player)
                         if len(path) > 0 {
@@ -2272,7 +2272,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventHistorian:
                         game.ShowHistorian(yield)
                     case *GameEventApprenticeUI:
-                        game.ShowApprenticeUI(yield, game.Model.Players[0])
+                        game.ShowApprenticeUI(yield, game.Model.GetHumanPlayer())
                     case *GameEventArmyView:
                         game.doArmyView(yield)
                     case *GameEventShowBanish:
@@ -2282,7 +2282,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         notice := event.(*GameEventNotice)
                         game.doNotice(yield, game.HudUI, notice.Message)
                     case *GameEventCastSpellBook:
-                        game.ShowSpellBookCastUI(yield, game.Model.Players[0])
+                        game.ShowSpellBookCastUI(yield, game.Model.GetHumanPlayer())
                     case *GameEventCityListView:
                         game.doCityListView(yield)
                     case *GameEventNewOutpost:
@@ -2300,8 +2300,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventShowRandomEvent:
                         randomEvent := event.(*GameEventShowRandomEvent)
                         target := randomEvent.Event.TargetPlayer
-                        if target == nil || target == game.Model.Players[0] {
-                            game.doRandomEvent(yield, randomEvent.Event, randomEvent.Starting, game.Model.Players[0].Wizard)
+                        if target == nil || target == game.Model.GetHumanPlayer() {
+                            game.doRandomEvent(yield, randomEvent.Event, randomEvent.Starting, game.Model.GetHumanPlayer().Wizard)
                         }
                     case *GameEventScroll:
                         scroll := event.(*GameEventScroll)
@@ -4465,7 +4465,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     if useHuman {
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-        combatScreen := combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Model.Players[0], landscape, attackerStack.Plane(), zone, combatModel)
+        combatScreen := combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Model.GetHumanPlayer(), landscape, attackerStack.Plane(), zone, combatModel)
 
         game.PushDrawer(func (screen *ebiten.Image){
             combatScreen.Draw(screen)
@@ -4870,7 +4870,7 @@ func (game *Game) makeTranquilityFizzleUI(tranquilityOwner *playerlib.Player, ca
     right, _ := game.ImageCache.GetImage("resource.lbx", 44, 0)
 
     owner := ""
-    if tranquilityOwner == game.Model.Players[0] {
+    if tranquilityOwner == game.Model.GetHumanPlayer() {
         owner = "Your"
     } else {
         owner = tranquilityOwner.Wizard.Name + "'s"
@@ -4952,7 +4952,7 @@ func (game *Game) ShowGrandVizierUI(){
 }
 
 func (game *Game) ShowTaxCollectorUI(cornerX int, cornerY int){
-    player := game.Model.Players[0]
+    player := game.Model.GetHumanPlayer()
 
     // put a * on the value that is currently selected
     selected := func(s string, use bool) string {
@@ -5067,7 +5067,7 @@ func (game *Game) DoChancellor(){
 
 func (game *Game) ShowMirror() {
     if len(game.Model.Players) > 0 {
-        game.HudUI.AddElement(mirror.MakeMirrorUI(game.Cache, game.Model.Players[0], game.HudUI))
+        game.HudUI.AddElement(mirror.MakeMirrorUI(game.Cache, game.Model.GetHumanPlayer(), game.HudUI))
     }
 }
 
@@ -5403,7 +5403,7 @@ func (game *Game) PlaneShift(stack *playerlib.UnitStack, player *playerlib.Playe
 func (game *Game) doPlanarTraval() {
     // no switching planes if the global enchantment planar seal is in effect
     if !game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
-        player := game.Model.Players[0]
+        player := game.Model.GetHumanPlayer()
 
         stack := player.SelectedStack
 
@@ -5544,7 +5544,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                                 }
 
                             case ebiten.KeySpace:
-                                stack := game.Model.Players[0].SelectedStack
+                                stack := game.Model.GetHumanPlayer().SelectedStack
 
                                 if stack != nil {
                                     select {
@@ -5553,7 +5553,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                                     }
                                 }
                             case ebiten.KeyN:
-                                stack := game.Model.Players[0].SelectedStack
+                                stack := game.Model.GetHumanPlayer().SelectedStack
 
                                 if stack == nil || stack.OutOfMoves() {
                                     select {
@@ -5738,8 +5738,8 @@ func (game *Game) MakeHudUI() *uilib.UI {
         },
     })
 
-    if len(game.Model.Players) > 0 && game.Model.Players[0].SelectedStack != nil {
-        player := game.Model.Players[0]
+    if len(game.Model.Players) > 0 && game.Model.GetHumanPlayer().SelectedStack != nil {
+        player := game.Model.GetHumanPlayer()
         // stack := player.SelectedStack
 
         unitX1 := 246
@@ -6238,7 +6238,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
         })
 
         if len(game.Model.Players) > 0 {
-            player := game.Model.Players[0]
+            player := game.Model.GetHumanPlayer()
 
             goldPerTurn := player.GoldPerTurn()
             foodPerTurn := player.FoodPerTurn()
@@ -6326,13 +6326,13 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.Fonts.WhiteFont.PrintOptions(screen, 276, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v GP", game.Model.Players[0].Gold))
+            game.Fonts.WhiteFont.PrintOptions(screen, 276, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v GP", game.Model.GetHumanPlayer().Gold))
         },
     })
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            game.Fonts.WhiteFont.PrintOptions(screen, 314, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v MP", game.Model.Players[0].Mana))
+            game.Fonts.WhiteFont.PrintOptions(screen, 314, 68, font.FontOptions{Justify: font.FontJustifyRight, DropShadow: true, Scale: scale.ScaleAmount}, fmt.Sprintf("%v MP", game.Model.GetHumanPlayer().Mana))
         },
     })
 

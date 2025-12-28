@@ -108,7 +108,7 @@ func (console *Console) Run(command string) {
                 if len(use.Spells) == 1 {
                     console.Lines = append(console.Lines, "Casting " + use.Spells[0].Name)
                     console.Game.Events <- &gamelib.GameEventCastSpell{
-                        Player: console.Game.Model.Players[0],
+                        Player: console.Game.Model.GetHumanPlayer(),
                         Spell: use.Spells[0],
                     }
                 } else {
