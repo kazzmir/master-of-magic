@@ -116,7 +116,16 @@ func ReadNames(cache *lbx.LbxCache) ([]string, error) {
         }
 
         // log.Printf("Name: '%v'", string(data))
-        out = append(out, string(data))
+        name := string(data)
+        // trim null terminators
+        for i, c := range name {
+            if c == 0 {
+                name = name[:i]
+                break
+            }
+        }
+
+        out = append(out, name)
     }
 
     return out, nil

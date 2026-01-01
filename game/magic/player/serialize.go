@@ -2,6 +2,8 @@ package player
 
 import (
     "image"
+    "maps"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -77,9 +79,10 @@ type SerializedPlayer struct {
     VaultEquipment []artifact.SerializedArtifact `json:"vault-equipment"`
     CreateArtifact *artifact.SerializedArtifact `json:"create-artifact,omitempty"`
 
+    HeroPool []herolib.SerializedHeroUnit `json:"hero-pool"`
+
     // TODO
     // PlayerRelations map[*Player]*Relationship
-    // HeroPool map[herolib.HeroType]*herolib.Hero
 }
 
 func serializeHeros(heroes []*herolib.Hero) []herolib.SerializedHeroUnit {
@@ -206,5 +209,6 @@ func SerializePlayer(player *Player) SerializedPlayer {
         HeroUnits: serializeHeros(player.Heroes[:]),
         VaultEquipment: serializeVaultEquipment(player.VaultEquipment[:]),
         CreateArtifact: serializeCreateArtifact(player.CreateArtifact),
+        HeroPool: serializeHeros(slices.Collect(maps.Values(player.HeroPool))),
     }
 }
