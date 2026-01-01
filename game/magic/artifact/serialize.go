@@ -15,7 +15,7 @@ func SerializeArtifact(artifact *Artifact) SerializedArtifact {
         Image: artifact.Image,
         Name: artifact.Name,
         Cost: artifact.Cost,
-        Powers: artifact.Powers,
-        Requirements: artifact.Requirements,
+        Powers: append(make([]Power, 0), artifact.Powers...),
+        Requirements: append(make([]Requirement, 0), artifact.Requirements...),
     }
 }
