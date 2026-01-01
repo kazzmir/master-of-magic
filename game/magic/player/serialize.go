@@ -9,16 +9,17 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 )
 
 type SerializedWizard struct {
-    Name string
-    Base data.WizardBase
-    Retorts []data.Retort
-    Books []data.WizardBook
-    Race data.Race
-    Banner data.BannerType
+    Name string `json:"name"`
+    Base data.WizardBase `json:"base"`
+    Retorts []data.Retort `json:"retorts"`
+    Books []data.WizardBook `json:"books"`
+    Race data.Race `json:"race"`
+    Banner data.BannerType `json:"banner"`
 }
 
 func serializeWizard(wizard setup.WizardCustom) SerializedWizard {
@@ -48,7 +49,7 @@ type SerializedPlayer struct {
     Fame int `json:"fame"`
     BookOrderSeed1 uint64 `json:"book-order-seed_1"`
     BookOrderSeed2 uint64 `json:"book-order-seed_2"`
-    Banished bool
+    Banished bool `json:"banished"`
     KnownSpells []string `json:"known-spells"`
     ResearchPoolSpells []string `json:"research-pool-spells"`
     ResearchCandidateSpells []string `json:"research-candidate-spells"`
@@ -70,7 +71,7 @@ type SerializedPlayer struct {
     PurifyWorkMyrror []SerializedWork `json:"purify-work-myrror"`
     Cities []citylib.SerializedCity `json:"cities"`
     NormalUnits []units.SerializedOverworldUnit `json:"units"`
-    HeroUnits []SerializedHeroUnit `json:"hero-units"`
+    HeroUnits []herolib.SerializedHeroUnit `json:"hero-units"`
 
     // TODO
     // PlayerRelations map[*Player]*Relationship
@@ -80,7 +81,14 @@ type SerializedPlayer struct {
     // CreateArtifact *artifact.Artifact
 }
 
-type SerializedHeroUnit struct {
+func serializeHeros(heroes []*herolib.Hero) []herolib.SerializedHeroUnit {
+    out := make([]herolib.SerializedHeroUnit, 0)
+    for _, hero := range heroes {
+        if hero != nil {
+            out = append(out, herolib.SerializeHero(hero))
+        }
+    }
+    return out
 }
 
 func serializeUnits(stackUnits []units.StackUnit) []units.SerializedOverworldUnit {
@@ -173,5 +181,6 @@ func SerializePlayer(player *Player) SerializedPlayer {
         PurifyWorkMyrror: serializeWork(player.PurifyWorkMyrror),
         Cities: serializeCities(player.Cities),
         NormalUnits: serializeUnits(player.Units),
+        HeroUnits: serializeHeros(player.Heroes[:]),
     }
 }
