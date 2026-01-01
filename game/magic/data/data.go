@@ -2,6 +2,7 @@ package data
 
 import (
     "fmt"
+    "strconv"
     "image/color"
 )
 
@@ -110,6 +111,41 @@ func MyrranRaces() []Race {
 
 func (race Race) MarshalJSON() ([]byte, error) {
     return []byte(fmt.Sprintf(`"%v"`, race.String())), nil
+}
+
+func (race *Race) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *race = getRaceByName(str)
+    return nil
+}
+
+func getRaceByName(name string) Race {
+    switch name {
+        case "none": return RaceNone
+        case "LizardMen": return RaceLizard
+        case "Nomad": return RaceNomad
+        case "Orc": return RaceOrc
+        case "Troll": return RaceTroll
+        case "Barbarian": return RaceBarbarian
+        case "Beastmen": return RaceBeastmen
+        case "Dark Elf": return RaceDarkElf
+        case "Draconian": return RaceDraconian
+        case "Dwarf": return RaceDwarf
+        case "Gnoll": return RaceGnoll
+        case "Halfling": return RaceHalfling
+        case "High Elf": return RaceHighElf
+        case "High Men": return RaceHighMen
+        case "Klackon": return RaceKlackon
+        case "Hero": return RaceHero
+        case "Fantastic": return RaceFantastic
+        case "All": return RaceAll
+    }
+
+    return RaceNone
 }
 
 // technically 'Lizardmen' should be 'Lizardman' and 'Dwarf' should be 'Dwarven', but the help has them listed as
