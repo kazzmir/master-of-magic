@@ -121,6 +121,7 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
             defer saveFile.Close()
 
             bufferedOut := bufio.NewWriter(saveFile)
+            defer bufferedOut.Flush()
 
             gzipWriter := gzip.NewWriter(bufferedOut)
             defer gzipWriter.Close()
@@ -129,7 +130,6 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
             if err != nil {
                 log.Printf("Error saving game: %v", err)
             } else {
-                err := bufferedOut.Flush()
                 if err != nil {
                     log.Printf("Error flushing save file: %v", err)
                 }
