@@ -5,6 +5,7 @@ import (
     "cmp"
     "fmt"
     "math"
+    "strconv"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -36,8 +37,29 @@ func (busy BusyStatus) String() string {
     }
 }
 
+func getBusyFromString(str string) BusyStatus {
+    switch str {
+        case "none": return BusyStatusNone
+        case "building road": return BusyStatusBuildRoad
+        case "purifying land": return BusyStatusPurify
+        case "patrolling": return BusyStatusPatrol
+        case "stasis": return BusyStatusStasis
+        default: return BusyStatusNone
+    }
+}
+
 func (busy BusyStatus) MarshalJSON() ([]byte, error) {
     return []byte(fmt.Sprintf(`"%s"`, busy.String())), nil
+}
+
+func (busy *BusyStatus) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *busy = getBusyFromString(str)
+    return nil
 }
 
 type EnchantmentProvider interface {
