@@ -1,10 +1,13 @@
 package gamemenu
 
 import (
+    "os"
     "io"
     "io/fs"
+    "bufio"
     "log"
     "context"
+    "compress/gzip"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -22,7 +25,11 @@ type SettingsUI interface {
     RunSettingsUI()
 }
 
-func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, settingsUI SettingsUI, doQuit func()) (*uilib.UIElementGroup, context.Context) {
+type GameSaver interface {
+    Save(writer io.Writer) error
+}
+
+func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver, settingsUI SettingsUI, doQuit func()) (*uilib.UIElementGroup, context.Context) {
     quit, cancel := context.WithCancel(context.Background())
 
     imageCache := util.MakeImageCache(cache)
@@ -106,7 +113,30 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, settingsUI Setti
 
     // save
     group.AddElement(makeButton(3, 122, 171, func(){
-        // FIXME
+        path := "file1.magic-save"
+        saveFile, err := os.Create(path)
+        if err != nil {
+            log.Printf("Error creating save file: %v", err)
+        } else {
+            defer saveFile.Close()
+
+            bufferedOut := bufio.NewWriter(saveFile)
+
+            gzipWriter := gzip.NewWriter(bufferedOut)
+            defer gzipWriter.Close()
+
+            err = saver.Save(gzipWriter)
+            if err != nil {
+                log.Printf("Error saving game: %v", err)
+            } else {
+                err := bufferedOut.Flush()
+                if err != nil {
+                    log.Printf("Error flushing save file: %v", err)
+                }
+
+                log.Printf("Game saved to '%s'", path)
+            }
+        }
     }))
 
     // settings

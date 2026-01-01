@@ -4,8 +4,10 @@ import (
     "image/color"
     "image"
     "math/rand/v2"
+    "encoding/json"
     "log"
     "math"
+    "io"
     "fmt"
     "context"
     "strings"
@@ -1570,6 +1572,16 @@ func (settings *SettingsUI) RunSettingsUI() {
     settings.Game.doRunUI(settings.Yield, group, quit)
 }
 
+type GameSaver struct {
+    Game *Game
+}
+
+func (saver *GameSaver) Save(writer io.Writer) error {
+    data := SerializeModel(saver.Game.Model)
+    marshaler := json.NewEncoder(writer)
+    return marshaler.Encode(data)
+}
+
 func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
 
     settingsUI := &SettingsUI{
@@ -1577,7 +1589,11 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
         Yield: yield,
     }
 
-    gameMenu, quit := gamemenu.MakeGameMenuUI(game.Cache, game.GameLoader, settingsUI, func(){
+    gameSaver := &GameSaver{
+        Game: game,
+    }
+
+    gameMenu, quit := gamemenu.MakeGameMenuUI(game.Cache, game.GameLoader, gameSaver, settingsUI, func(){
         game.State = GameStateQuit
     })
 

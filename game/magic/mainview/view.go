@@ -3,6 +3,8 @@ package mainview
 import (
     "log"
     "image"
+    "fmt"
+    "io"
     // "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -342,6 +344,13 @@ func (settings *SettingsUI) RunSettingsUI() {
     settings.yield()
 }
 
+type DummySaver struct {
+}
+
+func (saver *DummySaver) Save(writer io.Writer) error {
+    return fmt.Errorf("cannot save game from here")
+}
+
 func (main *MainScreen) RunGameScreen(yield coroutine.YieldFunc) MainScreenState {
     oldDrawer := main.Drawer
     defer func() {
@@ -351,7 +360,9 @@ func (main *MainScreen) RunGameScreen(yield coroutine.YieldFunc) MainScreenState
     ui := &uilib.UI{
     }
 
-    gameScreen, quit := gamemenu.MakeGameMenuUI(main.Cache, main.GameLoader, &SettingsUI{yield: yield, main: main, ui: ui}, func(){})
+    gameSaver := DummySaver{}
+
+    gameScreen, quit := gamemenu.MakeGameMenuUI(main.Cache, main.GameLoader, &gameSaver, &SettingsUI{yield: yield, main: main, ui: ui}, func(){})
 
     main.Drawer = func(screen *ebiten.Image) {
         ui.StandardDraw(screen)
