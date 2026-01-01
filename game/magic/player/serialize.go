@@ -9,7 +9,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
-    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 )
 
@@ -70,7 +69,7 @@ type SerializedPlayer struct {
     PurifyWorkArcanus []SerializedWork `json:"purify-work-arcanus"`
     PurifyWorkMyrror []SerializedWork `json:"purify-work-myrror"`
     Cities []citylib.SerializedCity `json:"cities"`
-    NormalUnits []SerializedOverworldUnit `json:"units"`
+    NormalUnits []units.SerializedOverworldUnit `json:"units"`
     HeroUnits []SerializedHeroUnit `json:"hero-units"`
 
     // TODO
@@ -86,47 +85,14 @@ type SerializedPlayer struct {
 type SerializedHeroUnit struct {
 }
 
-type SerializedOverworldUnit struct {
-    Unit units.SerializedUnit `json:"unit"`
-    MovesUsed fraction.Fraction `json:"moves-used"`
-    Banner data.BannerType `json:"banner"`
-    Plane data.Plane `json:"plane"`
-    X int `json:"x"`
-    Y int `json:"y"`
-    Damage int `json:"damage"`
-    Experience int `json:"experience"`
-    WeaponBonus data.WeaponBonus `json:"weapon-bonus"`
-    Undead bool `json:"undead"`
 
-    Busy units.BusyStatus `json:"busy"`
-
-    // for engineers to follow
-    BuildRoadPath pathfinding.Path `json:"build-road-path"`
-
-    Enchantments []data.UnitEnchantment `json:"enchantments"`
-}
-
-func serializeUnits(stackUnits []units.StackUnit) []SerializedOverworldUnit {
-    out := make([]SerializedOverworldUnit, 0)
+func serializeUnits(stackUnits []units.StackUnit) []units.SerializedOverworldUnit {
+    out := make([]units.SerializedOverworldUnit, 0)
 
     for _, unit := range stackUnits {
         overworldUnit, ok := unit.(*units.OverworldUnit)
         if ok {
-            out = append(out, SerializedOverworldUnit{
-                Unit: units.SerializeUnit(overworldUnit.Unit),
-                MovesUsed: overworldUnit.MovesUsed,
-                Banner: overworldUnit.Banner,
-                Plane: overworldUnit.Plane,
-                X: overworldUnit.X,
-                Y: overworldUnit.Y,
-                Damage: overworldUnit.Damage,
-                Experience: overworldUnit.Experience,
-                WeaponBonus: overworldUnit.WeaponBonus,
-                Undead: overworldUnit.Undead,
-                Busy: overworldUnit.Busy,
-                BuildRoadPath: append(make(pathfinding.Path, 0), overworldUnit.BuildRoadPath...),
-                Enchantments: append(make([]data.UnitEnchantment, 0), overworldUnit.Enchantments...),
-            })
+            out = append(out, units.SerializeOverworldUnit(overworldUnit))
         }
     }
 
