@@ -3,6 +3,7 @@ package hero
 import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
 )
 
 type SerializedAbility struct {
@@ -19,7 +20,7 @@ type SerializedHeroUnit struct {
     // set at start of game
     Abilities []SerializedAbility `json:"abilities"`
 
-    // Equipment [3]*artifact.Artifact
+    Equipment []artifact.SerializedArtifact
 }
 
 func serializeAbilities(abilities map[data.AbilityType]data.Ability) []SerializedAbility {
@@ -33,6 +34,18 @@ func serializeAbilities(abilities map[data.AbilityType]data.Ability) []Serialize
     return serialized
 }
 
+func serializeArtifacts(artifacts []*artifact.Artifact) []artifact.SerializedArtifact {
+    out := make([]artifact.SerializedArtifact, 0, len(artifacts))
+
+    for _, art := range artifacts {
+        if art != nil {
+            out = append(out, artifact.SerializeArtifact(art))
+        }
+    }
+
+    return out
+}
+
 func SerializeHero(hero *Hero) SerializedHeroUnit {
 
     return SerializedHeroUnit{
@@ -41,7 +54,7 @@ func SerializeHero(hero *Hero) SerializedHeroUnit {
         Name: hero.Name,
         Status: hero.Status,
         Abilities: serializeAbilities(hero.Abilities),
-        // Equipment: hero.Equipment,
+        Equipment: serializeArtifacts(hero.Equipment[:]),
     }
 }
 
