@@ -182,22 +182,6 @@ type Unit struct {
     CastingCost int
 }
 
-type SerializedUnit struct {
-    LbxFile string `json:"lbx_file"`
-    LbxIndex int `json:"lbx_index"`
-    Race data.Race `json:"race"`
-    Name string `json:"name"`
-}
-
-func SerializeUnit(unit Unit) SerializedUnit {
-    return SerializedUnit{
-        LbxFile: unit.LbxFile,
-        LbxIndex: unit.Index,
-        Race: unit.Race,
-        Name: unit.Name,
-    }
-}
-
 func (unit *Unit) Equals(other Unit) bool {
     return unit.LbxFile == other.LbxFile && unit.Index == other.Index
 }
