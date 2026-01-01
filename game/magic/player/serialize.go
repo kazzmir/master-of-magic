@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
 )
 
 type SerializedWizard struct {
@@ -73,12 +74,12 @@ type SerializedPlayer struct {
     NormalUnits []units.SerializedOverworldUnit `json:"units"`
     HeroUnits []herolib.SerializedHeroUnit `json:"hero-units"`
 
+    VaultEquipment []artifact.SerializedArtifact `json:"vault-equipment"`
+    CreateArtifact *artifact.SerializedArtifact `json:"create-artifact,omitempty"`
+
     // TODO
     // PlayerRelations map[*Player]*Relationship
     // HeroPool map[herolib.HeroType]*herolib.Hero
-    // Heroes [6]*herolib.Hero
-    // VaultEquipment [4]*artifact.Artifact
-    // CreateArtifact *artifact.Artifact
 }
 
 func serializeHeros(heroes []*herolib.Hero) []herolib.SerializedHeroUnit {
@@ -147,6 +148,27 @@ func globalEnchantmentNames(enchantments *set.Set[data.Enchantment]) []string {
     return out
 }
 
+func serializeVaultEquipment(artifacts []*artifact.Artifact) []artifact.SerializedArtifact {
+    out := make([]artifact.SerializedArtifact, 0)
+
+    for _, art := range artifacts {
+        if art != nil {
+            out = append(out, artifact.SerializeArtifact(art))
+        }
+    }
+
+    return out
+}
+
+func serializeCreateArtifact(art *artifact.Artifact) *artifact.SerializedArtifact {
+    if art == nil {
+        return nil
+    }
+
+    serialized := artifact.SerializeArtifact(art)
+    return &serialized
+}
+
 func SerializePlayer(player *Player) SerializedPlayer {
     return SerializedPlayer{
         ArcanusFog: player.ArcanusFog,
@@ -182,5 +204,7 @@ func SerializePlayer(player *Player) SerializedPlayer {
         Cities: serializeCities(player.Cities),
         NormalUnits: serializeUnits(player.Units),
         HeroUnits: serializeHeros(player.Heroes[:]),
+        VaultEquipment: serializeVaultEquipment(player.VaultEquipment[:]),
+        CreateArtifact: serializeCreateArtifact(player.CreateArtifact),
     }
 }

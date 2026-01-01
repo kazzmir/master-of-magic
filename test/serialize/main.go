@@ -87,6 +87,25 @@ func main() {
         Cost: 250,
     }
 
+    player.CreateArtifact = &artifact.Artifact{
+        Name: "Pizza",
+        Image: 31,
+        Type: artifact.ArtifactTypeBow,
+        Powers: []artifact.Power{
+            {
+                Type: artifact.PowerTypeAttack,
+                Amount: 1,
+                Name: "+1 Attack",
+            },
+            {
+                Type: artifact.PowerTypeMovement,
+                Amount: 2,
+                Name: "+2 Movement",
+            },
+        },
+        Cost: 300,
+    }
+
     serialized := gamelib.SerializeModel(game.Model)
 
     log.Printf("Serialized model: %v", serialized)
