@@ -63,8 +63,10 @@ func SerializeModel(model *GameModel) map[string]any {
     }
 
     return map[string]any{
-        "version": SerializeVersion,
-        "date": time.Now(),
+        "metadata": map[string]any{
+            "version": SerializeVersion,
+            "date": time.Now(),
+        },
         "arcanus": maplib.SerializeMap(model.ArcanusMap),
         "myrror":  maplib.SerializeMap(model.MyrrorMap),
         "plane":  model.Plane.String(),
