@@ -58,8 +58,8 @@ func serializeRandomEvents(events []*RandomEvent) []SerializedRandomEvent {
 
 func SerializeModel(model *GameModel) map[string]any {
     var players []playerlib.SerializedPlayer
-    for _, p := range model.Players {
-        players = append(players, playerlib.SerializePlayer(p))
+    for _, player := range model.Players {
+        players = append(players, playerlib.SerializePlayer(player))
     }
 
     return map[string]any{
