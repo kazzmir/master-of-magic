@@ -1,6 +1,7 @@
 package data
 
 import (
+    "fmt"
     "image/color"
 )
 
@@ -636,6 +637,10 @@ func (enchantment CityEnchantment) SpellName() string {
              CityEnchantmentChaosWard: return "Spell Ward"
         default: return enchantment.Name()
     }
+}
+
+func (enchantment CityEnchantment) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%v"`, enchantment.Name())), nil
 }
 
 func (enchantment CityEnchantment) Name() string {

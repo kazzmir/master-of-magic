@@ -7,6 +7,9 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -37,7 +40,26 @@ func main() {
         },
     }
 
-    game.AddPlayer(wizard, true)
+    player := game.AddPlayer(wizard, true)
+
+    x := 3
+    y := 8
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.Model.BuildingInfo, game.Model.CurrentMap(), game.Model, player)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+    city.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    city.Buildings.Insert(buildinglib.BuildingGranary)
+    city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
+    city.ProducingBuilding = buildinglib.BuildingBank
+    city.ProducingUnit = units.UnitNone
+    city.Farmers = 14
+    city.Workers = 3
+
+    city.ResetCitizens()
+
+    player.AddCity(city)
 
     serialized := gamelib.SerializeModel(game.Model)
 

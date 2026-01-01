@@ -2,6 +2,7 @@ package maplib
 
 import (
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
 )
 
 type ExtraMapData struct {
@@ -43,23 +44,11 @@ func (bonus *ExtraBonus) Serialize() map[string]any {
     }
 }
 
-type SerializedUnit struct {
-    LbxFile string `json:"lbx_file"`
-    LbxIndex int `json:"lbx_index"`
-    Race string `json:"race"`
-    Name string `json:"name"`
-}
-
 func (encounter *ExtraEncounter) Serialize() map[string]any {
 
-    serializedUnits := make([]SerializedUnit, 0)
+    serializedUnits := make([]units.SerializedUnit, 0)
     for _, unit := range encounter.Units {
-        serializedUnits = append(serializedUnits, SerializedUnit{
-            LbxFile: unit.LbxFile,
-            LbxIndex: unit.Index,
-            Race: unit.Race.String(),
-            Name: unit.Name,
-        })
+        serializedUnits = append(serializedUnits, units.SerializeUnit(unit))
     }
 
     exploredBy := []string{}
