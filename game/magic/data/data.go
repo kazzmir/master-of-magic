@@ -387,6 +387,42 @@ const (
     WeaponAdamantium
 )
 
+func (weapon WeaponBonus) String() string {
+    switch weapon {
+        case WeaponNone: return "none"
+        case WeaponMagic: return "magic"
+        case WeaponMythril: return "mythril"
+        case WeaponAdamantium: return "adamantium"
+    }
+
+    return "none"
+}
+
+func getWeaponBonusByName(name string) WeaponBonus {
+    switch name {
+        case "none": return WeaponNone
+        case "magic": return WeaponMagic
+        case "mythril": return WeaponMythril
+        case "adamantium": return WeaponAdamantium
+    }
+
+    return WeaponNone
+}
+
+func (weapon WeaponBonus) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%v"`, weapon.String())), nil
+}
+
+func (weapon *WeaponBonus) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *weapon = getWeaponBonusByName(str)
+    return nil
+}
+
 type TreatyType int
 const (
     TreatyNone TreatyType = iota

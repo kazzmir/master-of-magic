@@ -78,13 +78,10 @@ type SerializedPlayer struct {
     // Heroes [6]*herolib.Hero
     // VaultEquipment [4]*artifact.Artifact
     // CreateArtifact *artifact.Artifact
-    // Units []units.StackUnit
-    // Cities map[data.PlanePoint]*citylib.City
 }
 
 type SerializedHeroUnit struct {
 }
-
 
 func serializeUnits(stackUnits []units.StackUnit) []units.SerializedOverworldUnit {
     out := make([]units.SerializedOverworldUnit, 0)
