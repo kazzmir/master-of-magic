@@ -5,9 +5,56 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
 const SerializeVersion = 1
+
+type SerializedTargetCity struct {
+    X int `json:"x"`
+    Y int `json:"y"`
+    Plane data.Plane `json:"plane"`
+    Banner data.BannerType `json:"banner"`
+}
+
+// we only really have to keep track of the non-instant events
+type SerializedRandomEvent struct {
+    Type RandomEventType `json:"type"`
+    Year uint64 `json:"year"`
+
+    TargetCity *SerializedTargetCity `json:"city,omitempty"`
+
+    // events that target players are all instant, so this will almost always be nil
+    TargetPlayer *data.BannerType `json:"player,omitempty"`
+}
+
+func serializeRandomEvents(events []*RandomEvent) []SerializedRandomEvent {
+    out := make([]SerializedRandomEvent, 0, len(events))
+    for _, event := range events {
+        serialized := SerializedRandomEvent{
+            Type: event.Type,
+            Year: event.BirthYear,
+        }
+
+        if event.TargetCity != nil {
+            serialized.TargetCity = &SerializedTargetCity{
+                X: event.TargetCity.X,
+                Y: event.TargetCity.Y,
+                Plane: event.TargetCity.Plane,
+                Banner: event.TargetCity.ReignProvider.GetBanner(),
+            }
+        }
+
+        if event.TargetPlayer != nil {
+            banner := event.TargetPlayer.GetBanner()
+            serialized.TargetPlayer = &banner
+        }
+
+        out = append(out, serialized)
+    }
+
+    return out
+}
 
 func SerializeModel(model *GameModel) map[string]any {
     var players []playerlib.SerializedPlayer
@@ -26,8 +73,7 @@ func SerializeModel(model *GameModel) map[string]any {
         "turn": model.TurnNumber,
         "last-event-turn": model.LastEventTurn,
         "players": players,
-        // FIXME: handle random events
-        // RandomEvents []*RandomEvent
+        "events": serializeRandomEvents(model.RandomEvents),
     }
 }
 

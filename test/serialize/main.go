@@ -63,6 +63,9 @@ func main() {
 
     player.AddCity(city)
 
+    game.Model.RandomEvents = append(game.Model.RandomEvents, gamelib.MakeDisjunctionEvent(18))
+    game.Model.RandomEvents = append(game.Model.RandomEvents, gamelib.MakePopulationBoomEvent(17, city))
+
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
     rakir := hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroRakir, "Rakir")
