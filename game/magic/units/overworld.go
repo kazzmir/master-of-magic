@@ -106,7 +106,7 @@ type OverworldUnit struct {
     X int
     Y int
     Damage int
-    // Health int
+
     // to get the level, use the conversion functions in experience.go
     Experience int
     WeaponBonus data.WeaponBonus
