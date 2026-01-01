@@ -61,6 +61,8 @@ func main() {
 
     player.AddCity(city)
 
+    player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+
     serialized := gamelib.SerializeModel(game.Model)
 
     log.Printf("Serialized model: %v", serialized)

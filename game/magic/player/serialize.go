@@ -8,6 +8,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 )
 
@@ -39,7 +41,7 @@ type SerializedWork struct {
 type SerializedPlayer struct {
     ArcanusFog [][]data.FogType `json:"arcanus-fog"`
     MyrrorFog [][]data.FogType `json:"myrror-fog"`
-    TaxRate map[string]int `json:"tax-rate"`
+    TaxRate fraction.Fraction `json:"tax-rate"`
     Gold int `json:"gold"`
     Mana int `json:"mana"`
     Human bool `json:"human"`
@@ -68,6 +70,8 @@ type SerializedPlayer struct {
     PurifyWorkArcanus []SerializedWork `json:"purify-work-arcanus"`
     PurifyWorkMyrror []SerializedWork `json:"purify-work-myrror"`
     Cities []citylib.SerializedCity `json:"cities"`
+    NormalUnits []SerializedOverworldUnit `json:"units"`
+    HeroUnits []SerializedHeroUnit `json:"hero-units"`
 
     // TODO
     // PlayerRelations map[*Player]*Relationship
@@ -79,6 +83,56 @@ type SerializedPlayer struct {
     // Cities map[data.PlanePoint]*citylib.City
 }
 
+type SerializedHeroUnit struct {
+}
+
+type SerializedOverworldUnit struct {
+    Unit units.SerializedUnit `json:"unit"`
+    MovesUsed fraction.Fraction `json:"moves-used"`
+    Banner data.BannerType `json:"banner"`
+    Plane data.Plane `json:"plane"`
+    X int `json:"x"`
+    Y int `json:"y"`
+    Damage int `json:"damage"`
+    Experience int `json:"experience"`
+    WeaponBonus data.WeaponBonus `json:"weapon-bonus"`
+    Undead bool `json:"undead"`
+
+    Busy units.BusyStatus `json:"busy"`
+
+    // for engineers to follow
+    BuildRoadPath pathfinding.Path `json:"build-road-path"`
+
+    Enchantments []data.UnitEnchantment `json:"enchantments"`
+}
+
+func serializeUnits(stackUnits []units.StackUnit) []SerializedOverworldUnit {
+    out := make([]SerializedOverworldUnit, 0)
+
+    for _, unit := range stackUnits {
+        overworldUnit, ok := unit.(*units.OverworldUnit)
+        if ok {
+            out = append(out, SerializedOverworldUnit{
+                Unit: units.SerializeUnit(overworldUnit.Unit),
+                MovesUsed: overworldUnit.MovesUsed,
+                Banner: overworldUnit.Banner,
+                Plane: overworldUnit.Plane,
+                X: overworldUnit.X,
+                Y: overworldUnit.Y,
+                Damage: overworldUnit.Damage,
+                Experience: overworldUnit.Experience,
+                WeaponBonus: overworldUnit.WeaponBonus,
+                Undead: overworldUnit.Undead,
+                Busy: overworldUnit.Busy,
+                BuildRoadPath: append(make(pathfinding.Path, 0), overworldUnit.BuildRoadPath...),
+                Enchantments: append(make([]data.UnitEnchantment, 0), overworldUnit.Enchantments...),
+            })
+        }
+    }
+
+    return out
+}
+
 func serializeCities(cities map[data.PlanePoint]*citylib.City) []citylib.SerializedCity {
     out := make([]citylib.SerializedCity, 0)
 
@@ -87,13 +141,6 @@ func serializeCities(cities map[data.PlanePoint]*citylib.City) []citylib.Seriali
     }
 
     return out
-}
-
-func serializeFraction(frac fraction.Fraction) map[string]int {
-    return map[string]int{
-        "n": frac.Numerator,
-        "d": frac.Denominator,
-    }
 }
 
 func serializeWork(work map[image.Point]float64) []SerializedWork {
@@ -133,7 +180,7 @@ func SerializePlayer(player *Player) SerializedPlayer {
     return SerializedPlayer{
         ArcanusFog: player.ArcanusFog,
         MyrrorFog: player.MyrrorFog,
-        TaxRate: serializeFraction(player.TaxRate),
+        TaxRate: player.TaxRate,
         Gold: player.Gold,
         Mana: player.Mana,
         Human: player.Human,
@@ -162,5 +209,6 @@ func SerializePlayer(player *Player) SerializedPlayer {
         PurifyWorkArcanus: serializeWork(player.PurifyWorkArcanus),
         PurifyWorkMyrror: serializeWork(player.PurifyWorkMyrror),
         Cities: serializeCities(player.Cities),
+        NormalUnits: serializeUnits(player.Units),
     }
 }

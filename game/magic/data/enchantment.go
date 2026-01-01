@@ -374,6 +374,10 @@ func (enchantment UnitEnchantment) SpellName() string {
     }
 }
 
+func (enchantment UnitEnchantment) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%s"`, enchantment.Name())), nil
+}
+
 func (enchantment UnitEnchantment) Name() string {
     switch enchantment {
         case UnitEnchantmentGiantStrength: return "Giant Strength"
