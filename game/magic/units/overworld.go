@@ -3,6 +3,7 @@ package units
 import (
     "slices"
     "cmp"
+    "fmt"
     "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -23,6 +24,21 @@ const (
     BusyStatusPatrol // any unit can patrol
     BusyStatusStasis // for units under the effect of stasis
 )
+
+func (busy BusyStatus) String() string {
+    switch busy {
+        case BusyStatusNone: return "none"
+        case BusyStatusBuildRoad: return "building road"
+        case BusyStatusPurify: return "purifying land"
+        case BusyStatusPatrol: return "patrolling"
+        case BusyStatusStasis: return "stasis"
+        default: return "unknown"
+    }
+}
+
+func (busy BusyStatus) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%s"`, busy.String())), nil
+}
 
 type EnchantmentProvider interface {
     HasEnchantmentOnly(data.UnitEnchantment) bool
