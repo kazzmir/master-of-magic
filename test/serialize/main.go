@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
 )
 
 func main() {
@@ -64,7 +65,27 @@ func main() {
 
     player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, x + 1, y + 1, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
 
-    player.AddHero(hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroRakir, "Rakir"), x + 1, y + 2, data.PlaneArcanus)
+    rakir := hero.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroRakir, x, y, data.PlaneArcanus, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()), hero.HeroRakir, "Rakir")
+    player.AddHero(rakir, x + 1, y + 2, data.PlaneArcanus)
+
+    rakir.Equipment[0] = &artifact.Artifact{
+        Name: "Baloney",
+        Image: 7,
+        Type: artifact.ArtifactTypeSword,
+        Powers: []artifact.Power{
+            {
+                Type: artifact.PowerTypeAttack,
+                Amount: 1,
+                Name: "+1 Attack",
+            },
+            {
+                Type: artifact.PowerTypeDefense,
+                Amount: 2,
+                Name: "+2 Defense",
+            },
+        },
+        Cost: 250,
+    }
 
     serialized := gamelib.SerializeModel(game.Model)
 

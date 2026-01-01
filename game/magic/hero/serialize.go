@@ -20,7 +20,7 @@ type SerializedHeroUnit struct {
     // set at start of game
     Abilities []SerializedAbility `json:"abilities"`
 
-    Equipment []artifact.SerializedArtifact
+    Equipment []artifact.SerializedArtifact `json:"items"`
 }
 
 func serializeAbilities(abilities map[data.AbilityType]data.Ability) []SerializedAbility {
