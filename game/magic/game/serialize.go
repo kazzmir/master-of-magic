@@ -7,6 +7,7 @@ import (
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/serialize"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
 )
 
 const SerializeVersion = 1
@@ -57,31 +58,45 @@ func serializeRandomEvents(events []*RandomEvent) []SerializedRandomEvent {
     return out
 }
 
-func SerializeModel(model *GameModel, saveName string) map[string]any {
+type SerializedGame struct {
+    Metadata serialize.SaveMetadata `json:"metadata"`
+    Arcanus map[string]any `json:"arcanus"`
+    Myrror map[string]any `json:"myrror"`
+    Plane data.Plane `json:"plane"`
+    Settings setup.NewGameSettings `json:"settings"`
+    CurrentPlayer int `json:"current-player"`
+    Turn uint64 `json:"turn"`
+    LastEventTurn uint64 `json:"last-event-turn"`
+    Players []playerlib.SerializedPlayer `json:"players"`
+    Events []SerializedRandomEvent `json:"events"`
+}
+
+func SerializeModel(model *GameModel, saveName string) SerializedGame {
     var players []playerlib.SerializedPlayer
     for _, player := range model.Players {
         players = append(players, playerlib.SerializePlayer(player))
     }
 
-    return map[string]any{
-        "metadata": serialize.SaveMetadata{
+    return SerializedGame{
+        Metadata: serialize.SaveMetadata{
             Version: SerializeVersion,
             Date: time.Now(),
             Name: saveName,
         },
-        "arcanus": maplib.SerializeMap(model.ArcanusMap),
-        "myrror":  maplib.SerializeMap(model.MyrrorMap),
-        "plane":  model.Plane.String(),
-        "settings": model.Settings,
-        "current-player": model.CurrentPlayer,
-        "turn": model.TurnNumber,
-        "last-event-turn": model.LastEventTurn,
-        "players": players,
-        "events": serializeRandomEvents(model.RandomEvents),
+        Arcanus: maplib.SerializeMap(model.ArcanusMap),
+        Myrror: maplib.SerializeMap(model.MyrrorMap),
+        Plane:  model.Plane,
+        Settings: model.Settings,
+        CurrentPlayer: model.CurrentPlayer,
+        Turn: model.TurnNumber,
+        LastEventTurn: model.LastEventTurn,
+        Players: players,
+        Events: serializeRandomEvents(model.RandomEvents),
     }
 }
 
-func DeserializeModel(data map[string]any) *GameModel {
+/*
+func MakeModelFromSerialize(decoder json.Decoder) *GameModel {
     arcanusMap := maplib.DeserializeMap(data["arcanus"].(map[string]any))
     myrrorMap := maplib.DeserializeMap(data["myrror"].(map[string]any))
 
@@ -90,3 +105,4 @@ func DeserializeModel(data map[string]any) *GameModel {
         MyrrorMap:  myrrorMap,
     }
 }
+*/

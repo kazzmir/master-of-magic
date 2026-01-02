@@ -523,6 +523,46 @@ func MakeGame(lbxCache *lbx.LbxCache, music_ *music.Music, settings setup.NewGam
     })
 }
 
+func MakeGameFromSerialized(lbxCache *lbx.LbxCache, music_ *music.Music, serializedGame *SerializedGame) *Game {
+
+    heroNames := herolib.ReadNamesPerWizard(lbxCache)
+
+    buildingInfo, err := buildinglib.ReadBuildingInfo(lbxCache)
+    if err != nil {
+        log.Printf("Unable to read building info: %v", err)
+        return nil
+    }
+
+    allSpells, err := spellbook.ReadSpellsFromCache(lbxCache)
+    if err != nil {
+        log.Printf("Could not read spells from cache: %v", err)
+        return nil
+    }
+
+    return MakeGameWithModel(lbxCache, music_, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
+
+        model := GameModel{
+            Settings: serializedGame.Settings,
+            TurnNumber: serializedGame.Turn,
+            LastEventTurn: serializedGame.LastEventTurn,
+            CurrentPlayer: serializedGame.CurrentPlayer,
+            Plane: serializedGame.Plane,
+            allSpells: allSpells,
+            heroNames: heroNames,
+            BuildingInfo: buildingInfo,
+        }
+
+        /*
+        Arcanus: maplib.SerializeMap(model.ArcanusMap),
+        Myrror: maplib.SerializeMap(model.MyrrorMap),
+        Players: players,
+        Events: serializeRandomEvents(model.RandomEvents),
+        */
+
+        return &model
+    })
+}
+
 func MakeGameWithModel(lbxCache *lbx.LbxCache, music_ *music.Music, makeModel func (*lbx.LbxCache, chan GameEvent) *GameModel) *Game {
     help, err := helplib.ReadHelpFromCache(lbxCache)
     if err != nil {

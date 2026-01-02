@@ -10,6 +10,10 @@ import (
     "math/rand/v2"
     "slices"
     "cmp"
+    "os"
+    "bufio"
+    "compress/gzip"
+    "encoding/json"
     "image"
     // "image/color"
 
@@ -369,7 +373,37 @@ type OriginalGameLoader struct {
 }
 
 func (loader *OriginalGameLoader) LoadNew(path string) error {
-    return fmt.Errorf("Not implemented")
+    file, err := os.Open(path)
+    if err != nil {
+        return fmt.Errorf("Could not open save game file '%v': %v", path, err)
+    }
+    defer file.Close()
+
+    reader := bufio.NewReader(file)
+    gzipReader, err := gzip.NewReader(reader)
+    if err != nil {
+        log.Printf("Error: unable to create gzip reader for save game file '%v': %v", path, err)
+        return fmt.Errorf("Could not load %v", path)
+    }
+    defer gzipReader.Close()
+
+    decoder := json.NewDecoder(gzipReader)
+
+    var serializedGame gamelib.SerializedGame
+    err = decoder.Decode(&serializedGame)
+    if err != nil {
+        log.Printf("Error: unable to decode save game file '%v': %v", path, err)
+        return fmt.Errorf("Could not load %v", path)
+    }
+
+    newGame := gamelib.MakeGameFromSerialized(loader.Cache, musiclib.MakeMusic(loader.Cache), &serializedGame)
+    select {
+        case loader.NewGame <- newGame:
+        default:
+            log.Printf("Warning: unable to send new game to channel")
+    }
+
+    return nil
 }
 
 func (loader *OriginalGameLoader) Load(reader io.Reader) error {

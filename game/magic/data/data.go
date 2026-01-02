@@ -202,6 +202,28 @@ const (
     PlaneMyrror
 )
 
+func (plane Plane) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%v"`, plane.String())), nil
+}
+
+func (plane *Plane) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *plane = getPlaneByName(str)
+    return nil
+}
+
+func getPlaneByName(name string) Plane {
+    switch name {
+        case "Arcanus": return PlaneArcanus
+        case "Myrror": return PlaneMyrror
+    }
+    return PlaneArcanus
+}
+
 func (plane Plane) String() string {
     switch plane {
         case PlaneArcanus: return "Arcanus"
