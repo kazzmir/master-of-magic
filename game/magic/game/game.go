@@ -464,6 +464,17 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
     return game.Model.AddPlayer(wizard, human)
 }
 
+type DummyGameLoader struct {
+}
+
+func (loader *DummyGameLoader) Load(reader io.Reader) error {
+    return errors.New("cannot load")
+}
+
+func (loader *DummyGameLoader) LoadNew(path string) error {
+    return errors.New("cannot load")
+}
+
 func createArtifactPool(lbxCache *lbx.LbxCache) map[string]*artifact.Artifact {
     artifacts, err := artifact.ReadArtifacts(lbxCache)
     if err != nil {
@@ -538,6 +549,7 @@ func MakeGameWithModel(lbxCache *lbx.LbxCache, music_ *music.Music, makeModel fu
         ImageCache: imageCache,
         Fonts: fonts,
         Camera: camera.MakeCamera(),
+        GameLoader: &DummyGameLoader{},
     }
 
     // game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache), buildingInfo)

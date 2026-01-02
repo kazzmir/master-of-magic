@@ -25,6 +25,7 @@ import (
 
 type GameLoader interface {
     Load(reader io.Reader) error
+    LoadNew(path string) error
 }
 
 type SettingsUI interface {
@@ -222,7 +223,12 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
 
     // load
     group.AddElement(makeButton(1, 83, 171, func(){
-        // FIXME
+        if selectedIndex != -1 {
+            err := gameLoader.LoadNew(saveFileName(selectedIndex))
+            if err != nil {
+                group.AddElement(uilib.MakeErrorElementWithLayer(group, cache, &imageCache, err.Error(), 4, func(){}))
+            }
+        }
     }))
 
     // save

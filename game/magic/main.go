@@ -368,6 +368,10 @@ type OriginalGameLoader struct {
     NewGame chan *gamelib.Game
 }
 
+func (loader *OriginalGameLoader) LoadNew(path string) error {
+    return fmt.Errorf("Not implemented")
+}
+
 func (loader *OriginalGameLoader) Load(reader io.Reader) error {
     saved, err := load.LoadSaveGame(reader)
     if err != nil {

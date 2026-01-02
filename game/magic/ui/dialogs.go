@@ -176,6 +176,10 @@ func MakeUIFonts(cache *lbx.LbxCache) UIFonts {
 }
 
 func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, clicked func()) *UIElement {
+    return MakeErrorElementWithLayer(ui, cache, imageCache, message, UILayer(1), clicked)
+}
+
+func MakeErrorElementWithLayer(ui UIContainer, cache *lbx.LbxCache, imageCache *util.ImageCache, message string, layer UILayer, clicked func()) *UIElement {
     errorX := 67
     errorY := 73
 
@@ -204,7 +208,7 @@ func MakeErrorElement(ui UIContainer, cache *lbx.LbxCache, imageCache *util.Imag
 
     element := &UIElement{
         Rect: image.Rect(0, 0, data.ScreenWidth, data.ScreenHeight),
-        Layer: 1,
+        Layer: layer,
         LeftClick: func(this *UIElement){
             ui.RemoveElement(this)
             clicked()
