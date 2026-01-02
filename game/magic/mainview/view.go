@@ -347,7 +347,7 @@ func (settings *SettingsUI) RunSettingsUI() {
 type DummySaver struct {
 }
 
-func (saver *DummySaver) Save(writer io.Writer) error {
+func (saver *DummySaver) Save(writer io.Writer, name string) error {
     return fmt.Errorf("cannot save game from here")
 }
 

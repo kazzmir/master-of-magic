@@ -56,7 +56,7 @@ func serializeRandomEvents(events []*RandomEvent) []SerializedRandomEvent {
     return out
 }
 
-func SerializeModel(model *GameModel) map[string]any {
+func SerializeModel(model *GameModel, saveName string) map[string]any {
     var players []playerlib.SerializedPlayer
     for _, player := range model.Players {
         players = append(players, playerlib.SerializePlayer(player))
@@ -66,6 +66,7 @@ func SerializeModel(model *GameModel) map[string]any {
         "metadata": map[string]any{
             "version": SerializeVersion,
             "date": time.Now(),
+            "name": saveName,
         },
         "arcanus": maplib.SerializeMap(model.ArcanusMap),
         "myrror":  maplib.SerializeMap(model.MyrrorMap),

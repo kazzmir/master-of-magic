@@ -1576,8 +1576,8 @@ type GameSaver struct {
     Game *Game
 }
 
-func (saver *GameSaver) Save(writer io.Writer) error {
-    data := SerializeModel(saver.Game.Model)
+func (saver *GameSaver) Save(writer io.Writer, saveName string) error {
+    data := SerializeModel(saver.Game.Model, saveName)
     marshaler := json.NewEncoder(writer)
     return marshaler.Encode(data)
 }
