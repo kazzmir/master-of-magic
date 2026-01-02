@@ -11,6 +11,7 @@ import (
     "compress/gzip"
     "image"
     "image/color"
+    "math"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -21,6 +22,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/hajimehoshi/ebiten/v2"
+    "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 type GameLoader interface {
@@ -100,8 +102,15 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
     makeSaveSlot := func(index int) *uilib.UIElement {
         x := 43
         y := 44 + (index - 1) * 15
+        height := 12
 
-        // inside := false
+        // every index past the first is off by 1 pixel
+        if index > 1 {
+            y += 1
+            height -= 1
+        }
+
+        inside := false
         name := ""
 
         metadata, ok := serialize.LoadMetadata(saveFileName(index))
@@ -111,15 +120,13 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
 
         return &uilib.UIElement{
             Layer: 3,
-            Rect: image.Rect(0, 0, 229, 12).Add(image.Pt(x, y)),
-            /*
+            Rect: image.Rect(0, 0, 229, height).Add(image.Pt(x, y)),
             Inside: func(element *uilib.UIElement, x int, y int){
                 inside = true
             },
             NotInside: func(element *uilib.UIElement){
                 inside = false
             },
-            */
             GetText: func() string {
                 return name
             },
@@ -164,6 +171,18 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
                 }
                 util.DrawRect(screen, scale.ScaleRect(element.Rect), c)
                 */
+
+                if inside || selectedSlot == element {
+                    alpha := 32 + math.Sin(float64(group.Counter) / 10.0) * 32
+                    scaled := scale.ScaleRect(element.Rect)
+
+                    useColor := color.NRGBA{R: 255, G: 255, B: 255, A: uint8(alpha)}
+                    if selectedSlot == element {
+                        useColor = color.NRGBA{R: 255, G: 255, B: 0, A: uint8(alpha)}
+                    }
+
+                    vector.FillRect(screen, float32(scaled.Min.X), float32(scaled.Min.Y), float32(scaled.Bounds().Dx()), float32(scaled.Bounds().Dy()), useColor, false)
+                }
 
                 var options ebiten.DrawImageOptions
                 options.ColorScale.ScaleAlpha(getAlpha())
