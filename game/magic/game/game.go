@@ -493,18 +493,32 @@ func MakeGame(lbxCache *lbx.LbxCache, music_ *music.Music, settings setup.NewGam
         return nil
     }
 
-    help, err := helplib.ReadHelpFromCache(lbxCache)
+    allSpells, err := spellbook.ReadSpellsFromCache(lbxCache)
     if err != nil {
+        log.Printf("Could not read spells from cache: %v", err)
         return nil
     }
 
-    fonts := MakeGameFonts(lbxCache)
+    heroNames := herolib.ReadNamesPerWizard(lbxCache)
 
     buildingInfo, err := buildinglib.ReadBuildingInfo(lbxCache)
     if err != nil {
         log.Printf("Unable to read building info: %v", err)
         return nil
     }
+
+    return MakeGameWithModel(lbxCache, music_, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
+        return MakeGameModel(terrainData, settings, data.PlaneArcanus, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo)
+    })
+}
+
+func MakeGameWithModel(lbxCache *lbx.LbxCache, music_ *music.Music, makeModel func (*lbx.LbxCache, chan GameEvent) *GameModel) *Game {
+    help, err := helplib.ReadHelpFromCache(lbxCache)
+    if err != nil {
+        return nil
+    }
+
+    fonts := MakeGameFonts(lbxCache)
 
     imageCache := util.MakeImageCache(lbxCache)
 
@@ -526,8 +540,8 @@ func MakeGame(lbxCache *lbx.LbxCache, music_ *music.Music, settings setup.NewGam
         Camera: camera.MakeCamera(),
     }
 
-    heroNames := herolib.ReadNamesPerWizard(game.Cache)
-    game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache), buildingInfo)
+    // game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache), buildingInfo)
+    game.Model = makeModel(lbxCache, game.Events)
 
     game.HudUI = game.MakeHudUI()
     game.PushDrawer(func(screen *ebiten.Image){
@@ -538,6 +552,7 @@ func MakeGame(lbxCache *lbx.LbxCache, music_ *music.Music, settings setup.NewGam
 
     return game
 }
+
 
 func (game *Game) Shutdown() {
     game.Music.Stop()
