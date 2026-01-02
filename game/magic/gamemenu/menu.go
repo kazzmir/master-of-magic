@@ -16,6 +16,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    "github.com/kazzmir/master-of-magic/game/magic/serialize"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
@@ -32,6 +33,10 @@ type SettingsUI interface {
 
 type GameSaver interface {
     Save(writer io.Writer, saveName string) error
+}
+
+func saveFileName(index int) string {
+    return fmt.Sprintf("file%d.magic-save", index)
 }
 
 func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver, settingsUI SettingsUI, doQuit func()) (*uilib.UIElementGroup, context.Context) {
@@ -97,6 +102,12 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
 
         // inside := false
         name := ""
+
+        metadata, ok := serialize.LoadMetadata(saveFileName(index))
+        if ok {
+            name = metadata.Name
+        }
+
         return &uilib.UIElement{
             Layer: 3,
             Rect: image.Rect(0, 0, 229, 12).Add(image.Pt(x, y)),
@@ -217,7 +228,7 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
     // save
     group.AddElement(makeButton(3, 122, 171, func(){
         if selectedIndex != -1 {
-            path := fmt.Sprintf("file%d.magic-save", selectedIndex)
+            path := saveFileName(selectedIndex)
             saveFile, err := os.Create(path)
             if err != nil {
                 log.Printf("Error creating save file: %v", err)

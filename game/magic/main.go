@@ -11,6 +11,7 @@ import (
     "slices"
     "cmp"
     "image"
+    "os"
     // "image/color"
 
     // for trace/pprof
@@ -38,6 +39,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/load"
+    "github.com/kazzmir/master-of-magic/game/magic/serialize"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/mainview"

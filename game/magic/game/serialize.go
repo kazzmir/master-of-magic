@@ -6,6 +6,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/serialize"
 )
 
 const SerializeVersion = 1
@@ -63,10 +64,10 @@ func SerializeModel(model *GameModel, saveName string) map[string]any {
     }
 
     return map[string]any{
-        "metadata": map[string]any{
-            "version": SerializeVersion,
-            "date": time.Now(),
-            "name": saveName,
+        "metadata": serialize.SaveMetadata{
+            Version: SerializeVersion,
+            Date: time.Now(),
+            Name: saveName,
         },
         "arcanus": maplib.SerializeMap(model.ArcanusMap),
         "myrror":  maplib.SerializeMap(model.MyrrorMap),
