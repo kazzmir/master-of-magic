@@ -2794,6 +2794,8 @@ func (game *Game) doRunUI(yield coroutine.YieldFunc, group *uilib.UIElementGroup
     game.HudUI.AddGroup(group)
     defer game.HudUI.RemoveGroup(group)
 
+    defer game.HudUI.UnfocusElement()
+
     yield()
     for quit.Err() == nil {
         game.Counter += 1

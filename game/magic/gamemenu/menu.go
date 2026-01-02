@@ -4,14 +4,19 @@ import (
     "os"
     "io"
     "io/fs"
+    "fmt"
     "bufio"
     "log"
     "context"
     "compress/gzip"
+    "image"
+    "image/color"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    // "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
+    fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
 
     "github.com/hajimehoshi/ebiten/v2"
@@ -33,6 +38,13 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
     quit, cancel := context.WithCancel(context.Background())
 
     imageCache := util.MakeImageCache(cache)
+
+    loader, err := fontslib.Loader(cache)
+    if err != nil {
+        log.Printf("Error loading fonts: %v", err)
+        cancel()
+        return nil, quit
+    }
 
     background, _ := imageCache.GetImage("load.lbx", 0, 0)
 
@@ -68,6 +80,149 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
                 }
             }
         }
+    }
+
+    var selectedSlot *uilib.UIElement
+    selectedIndex := -1
+    var slotName *string
+
+    _ = selectedSlot
+
+    source := ebiten.NewImage(1, 1)
+    source.Fill(color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff})
+
+    useFont := loader(fontslib.NameFont)
+
+    makeInputElement := func(name *string, maxLength float64, x float64, y float64) *uilib.UIElement {
+        var self *uilib.UIElement
+        self = &uilib.UIElement{
+            Layer: 4,
+            Rect: image.Rect(0, 0, int(maxLength), 12).Add(image.Pt(int(x), int(y))),
+            TextEntry: func(element *uilib.UIElement, text string) string {
+                *name = text
+
+                for len(*name) > 0 && useFont.MeasureTextWidth(*name, 1) > maxLength {
+                    *name = (*name)[:len(*name)-1]
+                }
+
+                return *name
+            },
+            HandleKeys: func(keys []ebiten.Key) {
+                log.Printf("Input handle keys: %v", keys)
+                for _, key := range keys {
+                    switch key {
+                    case ebiten.KeyEnter:
+                        if len(*name) > 0 {
+                            group.RemoveElement(self)
+                        }
+                    case ebiten.KeyBackspace:
+                        if len(*name) > 0 {
+                            *name = (*name)[:len(*name) - 1]
+                        }
+                    }
+                }
+            },
+            // Emulating the original game behavior.
+            NotLeftClicked: func(element *uilib.UIElement) {
+                if len(*name) > 0 {
+                    // quit = true
+                    group.RemoveElement(element)
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                useFont.Print(screen, x, y, scale.ScaleAmount, options.ColorScale, *name)
+
+                // draw cursor
+                cursorX := x + useFont.MeasureTextWidth(*name, 1)
+
+                util.DrawTextCursor(screen, source, cursorX, y, group.Counter)
+            },
+        }
+
+        return self
+    }
+    _ = makeInputElement
+
+    makeSaveSlot := func(index int) *uilib.UIElement {
+        x := 43
+        y := 44 + (index - 1) * 15
+
+        inside := false
+        name := ""
+        return &uilib.UIElement{
+            Layer: 3,
+            Rect: image.Rect(0, 0, 229, 12).Add(image.Pt(x, y)),
+            Inside: func(element *uilib.UIElement, x int, y int){
+                inside = true
+            },
+            NotInside: func(element *uilib.UIElement){
+                inside = false
+            },
+            GetText: func() string {
+                return name
+            },
+            TextEntry: func(element *uilib.UIElement, text string) string {
+                name = text
+
+                for len(name) > 0 && useFont.MeasureTextWidth(name, 1) > float64(element.Rect.Bounds().Dx()) {
+                    name = name[:len(name)-1]
+                }
+
+                return name
+            },
+            HandleKeys: func(keys []ebiten.Key) {
+                for _, key := range keys {
+                    switch key {
+                    case ebiten.KeyEnter:
+                        /*
+                        if len(name) > 0 {
+                            group.RemoveElement(self)
+                        }
+                        */
+                    case ebiten.KeyBackspace:
+                        if len(name) > 0 {
+                            name = name[:len(name) - 1]
+                        }
+                    }
+                }
+            },
+            LeftClick: func(element *uilib.UIElement){
+                if selectedSlot != element {
+                    selectedSlot = element
+                    selectedIndex = index
+
+                    slotName = &name
+
+                    /*
+                    inputElement := makeInputElement(&name, 200, float64(x + 4), float64(y + 2))
+                    group.AddElement(inputElement)
+                    */
+                }
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                c := color.RGBA{R: 255, A: 255}
+                if inside {
+                    c = color.RGBA{R: 255, G: 255, A: 255}
+                }
+                util.DrawRect(screen, scale.ScaleRect(element.Rect), c)
+
+                var options ebiten.DrawImageOptions
+                useFont.Print(screen, float64(x + 2), float64(y + 3), scale.ScaleAmount, options.ColorScale, name)
+
+                if selectedSlot == element {
+                    // draw cursor
+                    cursorX := float64(x + 2) + useFont.MeasureTextWidth(name, 1)
+
+                    util.DrawTextCursor(screen, source, cursorX, float64(y + 3), group.Counter)
+                }
+            },
+        }
+    }
+
+    // save slot
+    for i := range 8 {
+        group.AddElement(makeSaveSlot(i + 1))
     }
 
     makeButton := func (index int, x int, y int, action func()) *uilib.UIElement {
@@ -113,28 +268,31 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
 
     // save
     group.AddElement(makeButton(3, 122, 171, func(){
-        path := "file1.magic-save"
-        saveFile, err := os.Create(path)
-        if err != nil {
-            log.Printf("Error creating save file: %v", err)
-        } else {
-            defer saveFile.Close()
-
-            bufferedOut := bufio.NewWriter(saveFile)
-            defer bufferedOut.Flush()
-
-            gzipWriter := gzip.NewWriter(bufferedOut)
-            defer gzipWriter.Close()
-
-            err = saver.Save(gzipWriter)
+        if selectedIndex != -1 {
+            log.Printf("Save game name: %s", *slotName)
+            path := fmt.Sprintf("file%d.magic-save", selectedIndex)
+            saveFile, err := os.Create(path)
             if err != nil {
-                log.Printf("Error saving game: %v", err)
+                log.Printf("Error creating save file: %v", err)
             } else {
-                if err != nil {
-                    log.Printf("Error flushing save file: %v", err)
-                }
+                defer saveFile.Close()
 
-                log.Printf("Game saved to '%s'", path)
+                bufferedOut := bufio.NewWriter(saveFile)
+                defer bufferedOut.Flush()
+
+                gzipWriter := gzip.NewWriter(bufferedOut)
+                defer gzipWriter.Close()
+
+                err = saver.Save(gzipWriter)
+                if err != nil {
+                    log.Printf("Error saving game: %v", err)
+                } else {
+                    if err != nil {
+                        log.Printf("Error flushing save file: %v", err)
+                    }
+
+                    log.Printf("Game saved to '%s'", path)
+                }
             }
         }
     }))
