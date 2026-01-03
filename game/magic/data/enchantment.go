@@ -3,6 +3,7 @@ package data
 import (
     "fmt"
     "image/color"
+    "strconv"
 )
 
 // global overland enchantments
@@ -678,6 +679,48 @@ func (enchantment CityEnchantment) SpellName() string {
 
 func (enchantment CityEnchantment) MarshalJSON() ([]byte, error) {
     return []byte(fmt.Sprintf(`"%v"`, enchantment.Name())), nil
+}
+
+func (enchantment *CityEnchantment) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *enchantment = getCityEnchantmentByName(str)
+    return nil
+}
+
+func getCityEnchantmentByName(name string) CityEnchantment {
+    switch name {
+        case "Altar of Battle": return CityEnchantmentAltarOfBattle
+        case "Astral Gate": return CityEnchantmentAstralGate
+        case "Chaos Rift": return CityEnchantmentChaosRift
+        case "Cloud of Shadow": return CityEnchantmentCloudOfShadow
+        case "Consecration": return CityEnchantmentConsecration
+        case "Cursed Lands": return CityEnchantmentCursedLands
+        case "Dark Rituals": return CityEnchantmentDarkRituals
+        case "Earth Gate": return CityEnchantmentEarthGate
+        case "Evil Presence": return CityEnchantmentEvilPresence
+        case "Famine": return CityEnchantmentFamine
+        case "Flying Fortress": return CityEnchantmentFlyingFortress
+        case "Gaia's Blessing": return CityEnchantmentGaiasBlessing
+        case "Heavenly Light": return CityEnchantmentHeavenlyLight
+        case "Inspirations": return CityEnchantmentInspirations
+        case "Nature's Eye": return CityEnchantmentNaturesEye
+        case "Pestilence": return CityEnchantmentPestilence
+        case "Prosperity": return CityEnchantmentProsperity
+        case "Life Ward": return CityEnchantmentLifeWard
+        case "Sorcery Ward": return CityEnchantmentSorceryWard
+        case "Nature Ward": return CityEnchantmentNatureWard
+        case "Death Ward": return CityEnchantmentDeathWard
+        case "Chaos Ward": return CityEnchantmentChaosWard
+        case "Stream of Life": return CityEnchantmentStreamOfLife
+        case "Wall of Darkness": return CityEnchantmentWallOfDarkness
+        case "Wall of Fire": return CityEnchantmentWallOfFire
+    }
+
+    return CityEnchantmentNone
 }
 
 func (enchantment CityEnchantment) Name() string {

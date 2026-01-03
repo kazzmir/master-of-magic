@@ -14,6 +14,8 @@ import (
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
 )
 
 type SerializedWizard struct {
@@ -301,7 +303,32 @@ func reconstructWork(serialized []SerializedWork) map[image.Point]float64 {
     return out
 }
 
-func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider GlobalEnchantmentsProvider, allSpells spellbook.Spells) *Player {
+func reconstructCities(serialized []citylib.SerializedCity, arcanusCatchmentProvider citylib.CatchmentProvider, myrrorCatchmentProvider citylib.CatchmentProvider, cityServices citylib.CityServicesProvider, reignProvider citylib.ReignProvider, buildingInfo buildinglib.BuildingInfos) map[data.PlanePoint]*citylib.City {
+    out := make(map[data.PlanePoint]*citylib.City)
+
+    for _, serializedCity := range serialized {
+        point := data.PlanePoint{
+            Plane: serializedCity.Plane,
+            X: serializedCity.X,
+            Y: serializedCity.Y,
+        }
+
+        catchmentProvider := arcanusCatchmentProvider
+        if serializedCity.Plane == data.PlaneMyrror {
+            catchmentProvider = myrrorCatchmentProvider
+        }
+
+        city := citylib.ReconstructCity(&serializedCity, catchmentProvider, cityServices, reignProvider, buildingInfo)
+
+
+        out[point] = city
+    }
+
+    return out
+}
+
+// returns a player object and a function to initialize its cities once the maps are available
+func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider GlobalEnchantmentsProvider, allSpells spellbook.Spells, buildingInfo buildinglib.BuildingInfos, cityServices citylib.CityServicesProvider) (*Player, func(*maplib.Map, *maplib.Map)) {
     player := &Player{
         ArcanusFog: serialized.ArcanusFog,
         MyrrorFog: serialized.MyrrorFog,
@@ -346,16 +373,16 @@ func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider 
         Units []units.StackUnit
 
         Stacks []*UnitStack
-        Cities map[data.PlanePoint]*citylib.City
 
-        SelectedStack *UnitStack
-
-        // track how much road work has been done per tile
         */
     }
 
     player.HeroPool = reconstructHeroPool(serialized.HeroPool, allSpells, player.MakeUnitEnchantmentProvider(), player.MakeExperienceInfo())
     player.Heroes = reconstructHeroes(serialized.HeroUnits, allSpells, player.MakeUnitEnchantmentProvider(), player.MakeExperienceInfo())
 
-    return player
+    initializeCities := func(arcanusMap *maplib.Map, myrrorMap *maplib.Map) {
+        player.Cities = reconstructCities(serialized.Cities, arcanusMap, myrrorMap, cityServices, player, buildingInfo)
+    }
+
+    return player, initializeCities
 }
