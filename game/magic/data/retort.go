@@ -1,5 +1,9 @@
 package data
 
+import (
+    "strconv"
+)
+
 type Retort int
 const (
     RetortAlchemy Retort = iota
@@ -27,6 +31,16 @@ func (retort Retort) MarshalJSON() ([]byte, error) {
     return []byte(`"` + retort.String() + `"`), nil
 }
 
+func (retort *Retort) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *retort = retortFromString(str)
+    return nil
+}
+
 func (retort Retort) DependencyExplanation() string {
     switch retort {
         case RetortAlchemy: return ""
@@ -49,6 +63,30 @@ func (retort Retort) DependencyExplanation() string {
         case RetortNodeMastery: return "To select Node Mastery you need: 1 pick in Chaos Magic, 1 pick in Nature Magic, 1 pick in Sorcery Magic"
         case RetortNone: return ""
         default: return ""
+    }
+}
+
+func retortFromString(str string) Retort {
+    switch str {
+        case "Alchemy": return RetortAlchemy
+        case "Warlord": return RetortWarlord
+        case "Channeler": return RetortChanneler
+        case "Archmage": return RetortArchmage
+        case "Artificer": return RetortArtificer
+        case "Conjurer": return RetortConjurer
+        case "Sage Master": return RetortSageMaster
+        case "Myrran": return RetortMyrran
+        case "Divine Power": return RetortDivinePower
+        case "Famous": return RetortFamous
+        case "Runemaster": return RetortRunemaster
+        case "Charismatic": return RetortCharismatic
+        case "Chaos Mastery": return RetortChaosMastery
+        case "Nature Mastery": return RetortNatureMastery
+        case "Sorcery Mastery": return RetortSorceryMastery
+        case "Infernal Power": return RetortInfernalPower
+        case "Mana Focusing": return RetortManaFocusing
+        case "Node Mastery": return RetortNodeMastery
+        default: return RetortNone
     }
 }
 

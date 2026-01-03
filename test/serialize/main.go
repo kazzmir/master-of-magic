@@ -19,6 +19,8 @@ import (
 )
 
 func main() {
+    log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
+
     cache := lbx.AutoCache()
     useMusic := music.MakeMusic(cache)
     useMusic.Enabled = false

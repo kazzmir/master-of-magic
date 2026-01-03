@@ -36,6 +36,29 @@ func (banner BannerType) MarshalJSON() ([]byte, error) {
     return []byte(fmt.Sprintf(`"%v"`, banner.String())), nil
 }
 
+func (banner *BannerType) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *banner = getBannerByName(str)
+    return nil
+}
+
+func getBannerByName(name string) BannerType {
+    switch name {
+        case "green": return BannerGreen
+        case "blue": return BannerBlue
+        case "red": return BannerRed
+        case "purple": return BannerPurple
+        case "yellow": return BannerYellow
+        case "brown": return BannerBrown
+    }
+
+    return BannerGreen
+}
+
 func (banner BannerType) String() string {
     switch banner {
         case BannerGreen: return "green"
@@ -276,6 +299,29 @@ const (
 
 func (magic MagicType) MarshalJSON() ([]byte, error) {
     return []byte(fmt.Sprintf(`"%v"`, magic.String())), nil
+}
+
+func (magic *MagicType) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *magic = getMagicByName(str)
+    return nil
+}
+
+func getMagicByName(name string) MagicType {
+    switch name {
+        case "Life": return LifeMagic
+        case "Sorcery": return SorceryMagic
+        case "Nature": return NatureMagic
+        case "Death": return DeathMagic
+        case "Chaos": return ChaosMagic
+        case "Arcane": return ArcaneMagic
+    }
+
+    return MagicNone
 }
 
 func (magic MagicType) String() string {
