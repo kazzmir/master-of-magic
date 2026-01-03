@@ -291,6 +291,16 @@ func reconstructArtifact(serialized *artifact.SerializedArtifact, allSpells spel
     return artifact.ReconstructArtifact(serialized, allSpells)
 }
 
+func reconstructWork(serialized []SerializedWork) map[image.Point]float64 {
+    out := make(map[image.Point]float64)
+
+    for _, work := range serialized {
+        out[work.Location] = work.Progress
+    }
+
+    return out
+}
+
 func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider GlobalEnchantmentsProvider, allSpells spellbook.Spells) *Player {
     player := &Player{
         ArcanusFog: serialized.ArcanusFog,
@@ -322,13 +332,15 @@ func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider 
         Wizard: reconstructWizard(serialized.Wizard),
         VaultEquipment: reconstructEquipment(serialized.VaultEquipment, allSpells),
         CreateArtifact: reconstructArtifact(serialized.CreateArtifact, allSpells),
+        PowerHistory: serialized.PowerHistory,
+        RoadWorkArcanus: reconstructWork(serialized.RoadWorkArcanus),
+        RoadWorkMyrror: reconstructWork(serialized.RoadWorkMyrror),
+        PurifyWorkArcanus: reconstructWork(serialized.PurifyWorkArcanus),
+        PurifyWorkMyrror: reconstructWork(serialized.PurifyWorkMyrror),
 
         /*
         // relations with other players (treaties, etc)
         PlayerRelations map[*Player]*Relationship
-
-        // an array of objects that track the power of the wizard, where each index represents a turn
-        PowerHistory []WizardPower
 
         // FIXME: probably remove Units and just use Stacks to track the units
         Units []units.StackUnit
@@ -339,12 +351,6 @@ func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider 
         SelectedStack *UnitStack
 
         // track how much road work has been done per tile
-        RoadWorkArcanus map[image.Point]float64
-        RoadWorkMyrror map[image.Point]float64
-
-        // work done on purifying tiles
-        PurifyWorkArcanus map[image.Point]float64
-        PurifyWorkMyrror map[image.Point]float64
         */
     }
 
