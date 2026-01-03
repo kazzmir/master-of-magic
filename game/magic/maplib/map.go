@@ -45,6 +45,15 @@ const (
     MagicNodeNone
 )
 
+func magicNodeFromString(str string) MagicNode {
+    switch str {
+        case "Nature Node": return MagicNodeNature
+        case "Sorcery Node": return MagicNodeSorcery
+        case "Chaos Node": return MagicNodeChaos
+        default: return MagicNodeNone
+    }
+}
+
 func (magicNode MagicNode) MagicType() data.MagicType {
     switch magicNode {
         case MagicNodeNature: return data.NatureMagic
@@ -222,6 +231,23 @@ const (
     EncounterTypeNatureNode
     EncounterTypeSorceryNode
 )
+
+func encounterByName(name string) EncounterType {
+    switch name {
+        case "Monster Lair": return EncounterTypeLair
+        case "Mysterious Cave": return EncounterTypeCave
+        case "Tower": return EncounterTypePlaneTower
+        case "Ancient Temple": return EncounterTypeAncientTemple
+        case "Fallen Temple": return EncounterTypeFallenTemple
+        case "Ruins": return EncounterTypeRuins
+        case "Abandoned Keep": return EncounterTypeAbandonedKeep
+        case "Dungeon": return EncounterTypeDungeon
+        case "Chaos Node": return EncounterTypeChaosNode
+        case "Nature Node": return EncounterTypeNatureNode
+        case "Sorcery Node": return EncounterTypeSorceryNode
+        default: return EncounterTypeLair
+    }
+}
 
 func (encounterType EncounterType) Name() string {
     switch encounterType {

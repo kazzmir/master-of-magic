@@ -155,8 +155,13 @@ func MakeModelFromSerialized(
         */
     }
 
-    model.ArcanusMap = maplib.ReconstructMap(serializedGame.Arcanus, terrainData, model)
-    model.MyrrorMap = maplib.ReconstructMap(serializedGame.Myrror, terrainData, model)
+    wizards := make([]maplib.Wizard, 0, len(serializedGame.Players))
+    for _, player := range model.Players {
+        wizards = append(wizards, player)
+    }
+
+    model.ArcanusMap = maplib.ReconstructMap(serializedGame.Arcanus, terrainData, model, wizards)
+    model.MyrrorMap = maplib.ReconstructMap(serializedGame.Myrror, terrainData, model, wizards)
 
     return model
 }

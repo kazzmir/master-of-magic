@@ -3,7 +3,9 @@ package maplib
 import (
     "image"
     "fmt"
+    "encoding/json"
 
+    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -86,6 +88,45 @@ func (encounter *ExtraEncounter) Serialize() map[string]any {
     }
 }
 
+func (encounter ExtraEncounter) Reconstruct(raw map[string]any, wizards []Wizard) *ExtraEncounter {
+
+    exploredBy := set.MakeSet[Wizard]()
+
+    for _, values := range raw["explored_by"].([]any) {
+        bannerRaw := values.(string)
+        for _, wizard := range wizards {
+            if wizard.GetBanner().String() == bannerRaw {
+                exploredBy.Insert(wizard)
+                break
+            }
+        }
+    }
+
+    var encounterUnits []units.Unit
+    for _, rawUnit := range raw["units"].([]any) {
+
+        // have to marshal and unmarshal again to convert from map[string]any to SerializedUnit
+        rawData, err := json.Marshal(rawUnit)
+        if err != nil {
+            continue
+        }
+        var unitData units.SerializedUnit
+
+        err = json.Unmarshal(rawData, &unitData)
+        if err != nil {
+            continue
+        }
+
+        encounterUnits = append(encounterUnits, units.DeserializeUnit(unitData))
+    }
+
+    return &ExtraEncounter{
+        Type: encounterByName(raw["type"].(string)),
+        Budget: int(raw["budget"].(float64)),
+        ExploredBy: exploredBy,
+    }
+}
+
 func (node *ExtraMagicNode) Serialize() map[string]any {
     out := map[string]any{
         "kind": node.Kind.Name(),
@@ -103,6 +144,65 @@ func (node *ExtraMagicNode) Serialize() map[string]any {
     }
 
     return out
+}
+
+func (node ExtraMagicNode) Reconstruct(raw map[string]any, wizards []Wizard) *ExtraMagicNode {
+
+    var zone []image.Point
+    for _, val := range raw["zone"].([]any) {
+        pointData, err := json.Marshal(val)
+        if err != nil {
+            continue
+        }
+        var point image.Point
+        err = json.Unmarshal(pointData, &point)
+        if err != nil {
+            continue
+        }
+        zone = append(zone, point)
+    }
+
+    warped, ok := raw["warped"].(bool)
+    if !ok {
+        warped = false
+    }
+
+    guardianSpiritMeld, ok := raw["guardian spirit"].(bool)
+    if !ok {
+        guardianSpiritMeld = false
+    }
+
+    var meldingWizard Wizard
+
+    melderRaw, ok := raw["melder"].(string)
+    if ok {
+        for _, wizard := range wizards {
+            if wizard.GetBanner().String() == melderRaw {
+                meldingWizard = wizard
+                break
+            }
+        }
+    }
+
+    warpedRaw, ok := raw["warped owner"].(string)
+    var warpedOwner Wizard
+    if ok {
+        for _, wizard := range wizards {
+            if wizard.GetBanner().String() == warpedRaw {
+                warpedOwner = wizard
+                break
+            }
+        }
+    }
+
+    return &ExtraMagicNode{
+        Kind: magicNodeFromString(raw["kind"].(string)),
+        Zone: zone,
+        Warped: warped,
+        GuardianSpiritMeld: guardianSpiritMeld,
+        MeldingWizard: meldingWizard,
+        WarpedOwner: warpedOwner,
+    }
 }
 
 func (volcano *ExtraVolcano) Serialize() map[string]any {
@@ -139,16 +239,18 @@ func DeserializeMap(data map[string]any) *Map {
     }
 }
 
-func ReconstructExtraTile(kind ExtraKind, data map[string]any) ExtraTile {
+func ReconstructExtraTile(kind ExtraKind, data map[string]any, wizards []Wizard) ExtraTile {
     switch kind {
-        case ExtraKindBonus: ExtraBonus{}.Reconstruct(data)
+        case ExtraKindBonus: return ExtraBonus{}.Reconstruct(data)
+        case ExtraKindMagicNode: return ExtraMagicNode{}.Reconstruct(data, wizards)
+        case ExtraKindEncounter: return ExtraEncounter{}.Reconstruct(data, wizards)
         case ExtraKindOpenTower: return &ExtraOpenTower{}
     }
 
     panic(fmt.Sprintf("unsupported extra tile kind: %v", kind))
 }
 
-func ReconstructMap(mapData SerializedMap, terrainData *terrain.TerrainData, cityProvider CityProvider) *Map {
+func ReconstructMap(mapData SerializedMap, terrainData *terrain.TerrainData, cityProvider CityProvider, wizards []Wizard) *Map {
     extras := make(map[image.Point]map[ExtraKind]ExtraTile)
 
     for _, extra := range mapData.Extra {
@@ -164,7 +266,7 @@ func ReconstructMap(mapData SerializedMap, terrainData *terrain.TerrainData, cit
 
             extraKind := extraKindFromString(kind)
 
-            extraData[extraKind] = ReconstructExtraTile(extraKind, tileData)
+            extraData[extraKind] = ReconstructExtraTile(extraKind, tileData, wizards)
         }
 
         extras[point] = extraData
