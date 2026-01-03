@@ -36,6 +36,17 @@ func serializeWizard(wizard setup.WizardCustom) SerializedWizard {
     }
 }
 
+func reconstructWizard(serialized SerializedWizard) setup.WizardCustom {
+    return setup.WizardCustom{
+        Name: serialized.Name,
+        Base: serialized.Base,
+        Retorts: serialized.Retorts,
+        Books: serialized.Books,
+        Race: serialized.Race,
+        Banner: serialized.Banner,
+    }
+}
+
 type SerializedWork struct {
     Location image.Point `json:"location"`
     Progress float64 `json:"progress"`
@@ -236,6 +247,17 @@ func reconstructEnchantments(enchantmentNames []string) *set.Set[data.Enchantmen
     return out
 }
 
+func reconstructHeroPool(serialized []herolib.SerializedHeroUnit, allSpells spellbook.Spells, globalEnchantmentProvider units.GlobalEnchantmentProvider, experienceInfo units.ExperienceInfo) map[herolib.HeroType]*herolib.Hero {
+    out := make(map[herolib.HeroType]*herolib.Hero)
+
+    for _, serializedHero := range serialized {
+        hero := herolib.ReconstructHero(&serializedHero, allSpells, globalEnchantmentProvider, experienceInfo)
+        out[hero.HeroType] = hero
+    }
+
+    return out
+}
+
 func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider GlobalEnchantmentsProvider, allSpells spellbook.Spells) *Player {
     player := &Player{
         ArcanusFog: serialized.ArcanusFog,
@@ -262,28 +284,21 @@ func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider 
         ResearchPoolSpells: reconstructSpells(serialized.ResearchPoolSpells, allSpells),
         ResearchCandidateSpells: reconstructSpells(serialized.ResearchCandidateSpells, allSpells),
         GlobalEnchantments: reconstructEnchantments(serialized.GlobalEnchantments),
+        ResearchingSpell: allSpells.FindByName(serialized.ResearchingSpell),
+        CastingSpell: allSpells.FindByName(serialized.CastingSpell),
+        Wizard: reconstructWizard(serialized.Wizard),
 
         /*
         // relations with other players (treaties, etc)
         PlayerRelations map[*Player]*Relationship
-
-        // possible heros that can be employed. some heroes might be dead
-        HeroPool map[herolib.HeroType]*herolib.Hero
 
         // currently employed heroes
         Heroes [6]*herolib.Hero
 
         VaultEquipment [4]*artifact.Artifact
 
-        ResearchingSpell spellbook.Spell
-
-        // current spell being cast
-        CastingSpell spellbook.Spell
-
         // the artifact currently being created by a spell cast of Create Artifact or Enchant Item
         CreateArtifact *artifact.Artifact
-
-        Wizard setup.WizardCustom
 
         // an array of objects that track the power of the wizard, where each index represents a turn
         PowerHistory []WizardPower
@@ -305,6 +320,8 @@ func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider 
         PurifyWorkMyrror map[image.Point]float64
         */
     }
+
+    player.HeroPool = reconstructHeroPool(serialized.HeroPool, allSpells, player.MakeUnitEnchantmentProvider(), player.MakeExperienceInfo())
 
     return player
 }

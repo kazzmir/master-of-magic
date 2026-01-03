@@ -2,6 +2,7 @@ package artifact
 
 import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
 )
 
 type SerializedArtifact struct {
@@ -47,6 +48,25 @@ func serializePowers(powers []Power) []SerializedPower {
     return serialized
 }
 
+func reconstructPowers(serializedPowers []SerializedPower, allSpells spellbook.Spells) []Power {
+    var powers []Power
+
+    for _, serialized := range serializedPowers {
+        powers = append(powers, Power{
+            Type: serialized.Type,
+            Amount: serialized.Amount,
+            Name: serialized.Name,
+            Ability: serialized.Ability,
+            Magic: serialized.Magic,
+            Spell: allSpells.FindByName(serialized.Spell),
+            SpellCharges: serialized.SpellCharges,
+            Index: serialized.Index,
+        })
+    }
+
+    return powers
+}
+
 func SerializeArtifact(artifact *Artifact) SerializedArtifact {
     return SerializedArtifact{
         Type: artifact.Type,
@@ -55,5 +75,16 @@ func SerializeArtifact(artifact *Artifact) SerializedArtifact {
         Cost: artifact.Cost,
         Powers: serializePowers(artifact.Powers),
         Requirements: append(make([]Requirement, 0), artifact.Requirements...),
+    }
+}
+
+func ReconstructArtifact(serialized SerializedArtifact, allSpells spellbook.Spells) *Artifact {
+    return &Artifact{
+        Type: serialized.Type,
+        Image: serialized.Image,
+        Name: serialized.Name,
+        Cost: serialized.Cost,
+        Powers: reconstructPowers(serialized.Powers, allSpells),
+        Requirements: serialized.Requirements,
     }
 }

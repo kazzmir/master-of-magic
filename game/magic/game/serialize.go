@@ -146,12 +146,10 @@ func MakeModelFromSerialized(
         CurrentPlayer: serializedGame.CurrentPlayer,
         TurnNumber: serializedGame.Turn,
         Events: events,
-
         BuildingInfo: buildingInfo,
         LastEventTurn: serializedGame.LastEventTurn,
 
         /*
-        Players []*playerlib.Player
         RandomEvents []*RandomEvent
         */
     }

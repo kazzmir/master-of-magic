@@ -69,3 +69,27 @@ func SerializeOverworldUnit(overworldUnit *OverworldUnit) SerializedOverworldUni
         Enchantments: append(make([]data.UnitEnchantment, 0), overworldUnit.Enchantments...),
     }
 }
+
+func ReconstructOverworldUnit(serialized *SerializedOverworldUnit, globalEnchantmentProvider GlobalEnchantmentProvider, experienceInfo ExperienceInfo) *OverworldUnit {
+    unit := &OverworldUnit{
+        Unit: DeserializeUnit(serialized.Unit),
+        MovesUsed: serialized.MovesUsed,
+        Banner: serialized.Banner,
+        Plane: serialized.Plane,
+        X: serialized.X,
+        Y: serialized.Y,
+        Damage: serialized.Damage,
+        Experience: serialized.Experience,
+        WeaponBonus: serialized.WeaponBonus,
+        Undead: serialized.Undead,
+        Busy: serialized.Busy,
+        BuildRoadPath: serialized.BuildRoadPath,
+        Enchantments: serialized.Enchantments,
+        GlobalEnchantments: globalEnchantmentProvider,
+        ExperienceInfo: experienceInfo,
+    }
+
+    unit.Parent = unit
+
+    return unit
+}

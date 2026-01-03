@@ -4,6 +4,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
 )
 
 type SerializedAbility struct {
@@ -38,7 +39,10 @@ func serializeArtifacts(artifacts []*artifact.Artifact) []artifact.SerializedArt
     out := make([]artifact.SerializedArtifact, 0, len(artifacts))
 
     for _, art := range artifacts {
-        if art != nil {
+        // we have to maintain the order of artifacts including empty slots
+        if art == nil {
+            out = append(out, artifact.SerializedArtifact{})
+        } else {
             out = append(out, artifact.SerializeArtifact(art))
         }
     }
@@ -58,3 +62,44 @@ func SerializeHero(hero *Hero) SerializedHeroUnit {
     }
 }
 
+func reconstructAbilities(serialized []SerializedAbility) map[data.AbilityType]data.Ability {
+    out := make(map[data.AbilityType]data.Ability)
+
+    for _, ability := range serialized {
+        out[ability.Type] = data.Ability{
+            Ability: ability.Type,
+            Value: ability.Value,
+        }
+    }
+
+    return out
+}
+
+func reconstructArtifacts(serialized []artifact.SerializedArtifact, allSpells spellbook.Spells) [3]*artifact.Artifact {
+    var out [3]*artifact.Artifact
+
+    for i, art := range serialized {
+        if art.Type == artifact.ArtifactTypeNone {
+            continue
+        }
+
+        out[i] = artifact.ReconstructArtifact(art, allSpells)
+    }
+
+    return out
+}
+
+func ReconstructHero(serialized *SerializedHeroUnit, allSpells spellbook.Spells, globalEnchantmentProvider units.GlobalEnchantmentProvider, experienceInfo units.ExperienceInfo) *Hero {
+    hero := &Hero{
+        Name: serialized.Name,
+        HeroType: serialized.HeroType,
+        Status: serialized.Status,
+        Abilities: reconstructAbilities(serialized.Abilities),
+        Equipment: reconstructArtifacts(serialized.Equipment, allSpells),
+        OverworldUnit: units.ReconstructOverworldUnit(&serialized.Base, globalEnchantmentProvider, experienceInfo),
+    }
+
+    hero.OverworldUnit.SetParent(hero)
+
+    return hero
+}
