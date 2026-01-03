@@ -539,9 +539,21 @@ func MakeGameFromSerialized(lbxCache *lbx.LbxCache, music_ *music.Music, seriali
         return nil
     }
 
+    terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
+    if err != nil {
+        log.Printf("Error: could not load terrain: %v", err)
+        return nil
+    }
+
+    terrainData, err := terrain.ReadTerrainData(terrainLbx)
+    if err != nil {
+        log.Printf("Error: could not load terrain: %v", err)
+        return nil
+    }
+
     return MakeGameWithModel(lbxCache, music_, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
 
-        return MakeModelFromSerialized(serializedGame, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo)
+        return MakeModelFromSerialized(serializedGame, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo, terrainData)
 
         /*
         model := GameModel{

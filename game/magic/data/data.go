@@ -394,6 +394,24 @@ func (bonus BonusType) String() string {
     return ""
 }
 
+func GetBonusByName(name string) BonusType {
+    switch name {
+        case "Gold Ore": return BonusGoldOre
+        case "Silver Ore": return BonusSilverOre
+        case "Wild Game": return BonusWildGame
+        case "Nightshade": return BonusNightshade
+        case "Iron Ore": return BonusIronOre
+        case "Coal": return BonusCoal
+        case "Mithril Ore": return BonusMithrilOre
+        case "Adamantium Ore": return BonusAdamantiumOre
+        case "Gem": return BonusGem
+        case "Quork Crystal": return BonusQuorkCrystal
+        case "Crysx Crystal": return BonusCrysxCrystal
+    }
+
+    return BonusNone
+}
+
 func (bonus BonusType) LbxIndex() int {
     switch bonus {
         case BonusWildGame: return 92

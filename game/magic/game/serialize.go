@@ -12,6 +12,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
 )
@@ -66,8 +67,8 @@ func serializeRandomEvents(events []*RandomEvent) []SerializedRandomEvent {
 
 type SerializedGame struct {
     Metadata serialize.SaveMetadata `json:"metadata"`
-    Arcanus map[string]any `json:"arcanus"`
-    Myrror map[string]any `json:"myrror"`
+    Arcanus maplib.SerializedMap `json:"arcanus"`
+    Myrror maplib.SerializedMap `json:"myrror"`
     Plane data.Plane `json:"plane"`
     ArtifactPool []string `json:"artifact-pool"`
     Settings setup.NewGameSettings `json:"settings"`
@@ -133,8 +134,9 @@ func MakeModelFromSerialized(
     allSpells spellbook.Spells,
     artifactPool map[string]*artifact.Artifact,
     buildingInfo buildinglib.BuildingInfos,
+    terrainData *terrain.TerrainData,
 ) *GameModel {
-    return &GameModel{
+    model := &GameModel{
         Plane: serializedGame.Plane,
         ArtifactPool: reconstructArtifactPool(serializedGame.ArtifactPool, artifactPool),
         Settings: serializedGame.Settings,
@@ -148,10 +150,13 @@ func MakeModelFromSerialized(
         LastEventTurn: serializedGame.LastEventTurn,
 
         /*
-        ArcanusMap *maplib.Map
-        MyrrorMap *maplib.Map
         Players []*playerlib.Player
         RandomEvents []*RandomEvent
         */
     }
+
+    model.ArcanusMap = maplib.ReconstructMap(serializedGame.Arcanus, terrainData, model)
+    model.MyrrorMap = maplib.ReconstructMap(serializedGame.Myrror, terrainData, model)
+
+    return model
 }

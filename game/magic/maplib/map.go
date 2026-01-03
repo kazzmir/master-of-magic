@@ -95,6 +95,19 @@ func (kind ExtraKind) String() string {
     return "Unknown"
 }
 
+func extraKindFromString(str string) ExtraKind {
+    switch str {
+        case "Road": return ExtraKindRoad
+        case "Bonus": return ExtraKindBonus
+        case "Magic Node": return ExtraKindMagicNode
+        case "Encounter": return ExtraKindEncounter
+        case "Open Tower": return ExtraKindOpenTower
+        case "Volcano": return ExtraKindVolcano
+        case "Corruption": return ExtraKindCorruption
+        default: return ExtraKindRoad
+    }
+}
+
 var ExtraDrawOrder = []ExtraKind{
     ExtraKindVolcano,
     ExtraKindCorruption,
