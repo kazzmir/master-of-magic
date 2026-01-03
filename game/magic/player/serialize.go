@@ -258,6 +258,39 @@ func reconstructHeroPool(serialized []herolib.SerializedHeroUnit, allSpells spel
     return out
 }
 
+func reconstructHeroes(serialized []herolib.SerializedHeroUnit, allSpells spellbook.Spells, globalEnchantmentProvider units.GlobalEnchantmentProvider, experienceInfo units.ExperienceInfo) [6]*herolib.Hero {
+    var out [6]*herolib.Hero
+
+    for i, serializedHero := range serialized {
+        if i < len(out) {
+            hero := herolib.ReconstructHero(&serializedHero, allSpells, globalEnchantmentProvider, experienceInfo)
+            out[i] = hero
+        }
+    }
+
+    return out
+}
+
+func reconstructEquipment(serialized []artifact.SerializedArtifact, allSpells spellbook.Spells) [4]*artifact.Artifact {
+    var out [4]*artifact.Artifact
+
+    for i, serializedArtifact := range serialized {
+        if i < len(out) {
+            out[i] = artifact.ReconstructArtifact(&serializedArtifact, allSpells)
+        }
+    }
+
+    return out
+}
+
+func reconstructArtifact(serialized *artifact.SerializedArtifact, allSpells spellbook.Spells) *artifact.Artifact {
+    if serialized == nil {
+        return nil
+    }
+
+    return artifact.ReconstructArtifact(serialized, allSpells)
+}
+
 func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider GlobalEnchantmentsProvider, allSpells spellbook.Spells) *Player {
     player := &Player{
         ArcanusFog: serialized.ArcanusFog,
@@ -287,18 +320,12 @@ func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider 
         ResearchingSpell: allSpells.FindByName(serialized.ResearchingSpell),
         CastingSpell: allSpells.FindByName(serialized.CastingSpell),
         Wizard: reconstructWizard(serialized.Wizard),
+        VaultEquipment: reconstructEquipment(serialized.VaultEquipment, allSpells),
+        CreateArtifact: reconstructArtifact(serialized.CreateArtifact, allSpells),
 
         /*
         // relations with other players (treaties, etc)
         PlayerRelations map[*Player]*Relationship
-
-        // currently employed heroes
-        Heroes [6]*herolib.Hero
-
-        VaultEquipment [4]*artifact.Artifact
-
-        // the artifact currently being created by a spell cast of Create Artifact or Enchant Item
-        CreateArtifact *artifact.Artifact
 
         // an array of objects that track the power of the wizard, where each index represents a turn
         PowerHistory []WizardPower
@@ -322,6 +349,7 @@ func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider 
     }
 
     player.HeroPool = reconstructHeroPool(serialized.HeroPool, allSpells, player.MakeUnitEnchantmentProvider(), player.MakeExperienceInfo())
+    player.Heroes = reconstructHeroes(serialized.HeroUnits, allSpells, player.MakeUnitEnchantmentProvider(), player.MakeExperienceInfo())
 
     return player
 }

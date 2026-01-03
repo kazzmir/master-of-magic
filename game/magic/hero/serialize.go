@@ -83,7 +83,9 @@ func reconstructArtifacts(serialized []artifact.SerializedArtifact, allSpells sp
             continue
         }
 
-        out[i] = artifact.ReconstructArtifact(art, allSpells)
+        if i < len(out) {
+            out[i] = artifact.ReconstructArtifact(&art, allSpells)
+        }
     }
 
     return out

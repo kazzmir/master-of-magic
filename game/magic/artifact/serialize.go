@@ -78,7 +78,7 @@ func SerializeArtifact(artifact *Artifact) SerializedArtifact {
     }
 }
 
-func ReconstructArtifact(serialized SerializedArtifact, allSpells spellbook.Spells) *Artifact {
+func ReconstructArtifact(serialized *SerializedArtifact, allSpells spellbook.Spells) *Artifact {
     return &Artifact{
         Type: serialized.Type,
         Image: serialized.Image,
