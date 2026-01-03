@@ -213,14 +213,97 @@ func SerializePlayer(player *Player) SerializedPlayer {
     }
 }
 
-func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider GlobalEnchantmentsProvider) *Player {
+func reconstructSpells(spellNames []string, allSpells spellbook.Spells) spellbook.Spells {
+    var out spellbook.Spells
+
+    for _, name := range spellNames {
+        spell := allSpells.FindByName(name)
+        if spell.Valid() {
+            out.AddSpell(spell)
+        }
+    }
+
+    return out
+}
+
+func reconstructEnchantments(enchantmentNames []string) *set.Set[data.Enchantment] {
+    out := set.MakeSet[data.Enchantment]()
+
+    for _, name := range enchantmentNames {
+        out.Insert(data.GetEnchantmentByName(name))
+    }
+
+    return out
+}
+
+func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider GlobalEnchantmentsProvider, allSpells spellbook.Spells) *Player {
     player := &Player{
         ArcanusFog: serialized.ArcanusFog,
         MyrrorFog: serialized.MyrrorFog,
         TaxRate: serialized.TaxRate,
         GlobalEnchantmentsProvider: globalEnchantmentsProvider,
-        GlobalEnchantments: set.MakeSet[data.Enchantment](),
         Human: serialized.Human,
+
+        Gold: serialized.Gold,
+        Mana: serialized.Mana,
+        Defeated: serialized.Defeated,
+        Fame: serialized.Fame,
+        BookOrderSeed1: serialized.BookOrderSeed1,
+        BookOrderSeed2: serialized.BookOrderSeed2,
+        Banished: serialized.Banished,
+        CastingSpellPage: serialized.CastingSpellPage,
+        PowerDistribution: serialized.PowerDistribution,
+        SpellOfMasteryCost: serialized.SpellOfMasteryCost,
+        CastingSkillPower: serialized.CastingSkillPower,
+        RemainingCastingSkill: serialized.RemainingCastingSkill,
+        ResearchProgress: serialized.ResearchProgress,
+        CastingSpellProgress: serialized.CastingSpellProgress,
+        KnownSpells: reconstructSpells(serialized.KnownSpells, allSpells),
+        ResearchPoolSpells: reconstructSpells(serialized.ResearchPoolSpells, allSpells),
+        ResearchCandidateSpells: reconstructSpells(serialized.ResearchCandidateSpells, allSpells),
+        GlobalEnchantments: reconstructEnchantments(serialized.GlobalEnchantments),
+
+        /*
+        // relations with other players (treaties, etc)
+        PlayerRelations map[*Player]*Relationship
+
+        // possible heros that can be employed. some heroes might be dead
+        HeroPool map[herolib.HeroType]*herolib.Hero
+
+        // currently employed heroes
+        Heroes [6]*herolib.Hero
+
+        VaultEquipment [4]*artifact.Artifact
+
+        ResearchingSpell spellbook.Spell
+
+        // current spell being cast
+        CastingSpell spellbook.Spell
+
+        // the artifact currently being created by a spell cast of Create Artifact or Enchant Item
+        CreateArtifact *artifact.Artifact
+
+        Wizard setup.WizardCustom
+
+        // an array of objects that track the power of the wizard, where each index represents a turn
+        PowerHistory []WizardPower
+
+        // FIXME: probably remove Units and just use Stacks to track the units
+        Units []units.StackUnit
+
+        Stacks []*UnitStack
+        Cities map[data.PlanePoint]*citylib.City
+
+        SelectedStack *UnitStack
+
+        // track how much road work has been done per tile
+        RoadWorkArcanus map[image.Point]float64
+        RoadWorkMyrror map[image.Point]float64
+
+        // work done on purifying tiles
+        PurifyWorkArcanus map[image.Point]float64
+        PurifyWorkMyrror map[image.Point]float64
+        */
     }
 
     return player

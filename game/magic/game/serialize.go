@@ -159,7 +159,7 @@ func MakeModelFromSerialized(
     var players []*playerlib.Player
 
     for _, serializedPlayer := range serializedGame.Players {
-        player := playerlib.ReconstructPlayer(&serializedPlayer, model)
+        player := playerlib.ReconstructPlayer(&serializedPlayer, model, allSpells)
 
         if !player.Human {
             player.AIBehavior = ai.MakeEnemyAI()

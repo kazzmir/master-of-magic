@@ -40,6 +40,39 @@ const (
     DeathWish
 )
 
+func GetEnchantmentByName(name string) Enchantment {
+    switch name {
+        case "Awareness": return EnchantmentAwareness
+        case "Detect Magic": return EnchantmentDetectMagic
+        case "Charm of Life": return EnchantmentCharmOfLife
+        case "Crusade": return EnchantmentCrusade
+        case "Holy Arms": return EnchantmentHolyArms
+        case "Just Cause": return EnchantmentJustCause
+        case "Life Force": return EnchantmentLifeForce
+        case "Planar Seal": return EnchantmentPlanarSeal
+        case "Tranquility": return EnchantmentTranquility
+        case "Herb Mastery": return EnchantmentHerbMastery
+        case "Nature Awareness": return EnchantmentNatureAwareness
+        case "Nature's Wrath": return EnchantmentNaturesWrath
+        case "Aura of Majesty": return EnchantmentAuraOfMajesty
+        case "Suppress Magic": return EnchantmentSuppressMagic
+        case "Time Stop": return EnchantmentTimeStop
+        case "Wind Mastery": return EnchantmentWindMastery
+        case "Armageddon": return EnchantmentArmageddon
+        case "Chaos Surge": return EnchantmentChaosSurge
+        case "Doom Mastery": return EnchantmentDoomMastery
+        case "Great Wasting": return EnchantmentGreatWasting
+        case "Meteor Storm": return EnchantmentMeteorStorm
+        case "Eternal Night": return EnchantmentEternalNight
+        case "Evil Omens": return EnchantmentEvilOmens
+        case "Zombie Mastery": return EnchantmentZombieMastery
+        case "Great Unsummoning": return GreatUnsummoning
+        case "Death Wish": return DeathWish
+    }
+
+    return EnchantmentNone
+}
+
 func (enchantment Enchantment) String() string {
     switch enchantment {
         case EnchantmentAwareness: return "Awareness"
