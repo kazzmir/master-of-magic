@@ -206,14 +206,48 @@ func (node ExtraMagicNode) Reconstruct(raw map[string]any, wizards []Wizard) *Ex
 }
 
 func (volcano *ExtraVolcano) Serialize() map[string]any {
-    return map[string]any{
-        "caster": volcano.CastingWizard.GetBanner().String(),
+
+    out := map[string]any{}
+
+    if volcano.CastingWizard != nil {
+        out["caster"] = volcano.CastingWizard.GetBanner().String()
+    }
+
+    return out
+}
+
+func (volcano ExtraVolcano) Reconstruct(raw map[string]any, wizards []Wizard) *ExtraVolcano {
+    var caster Wizard
+
+    casterRaw, ok := raw["caster"].(string)
+    if ok {
+        for _, wizard := range wizards {
+            if wizard.GetBanner().String() == casterRaw {
+                caster = wizard
+                break
+            }
+        }
+    }
+
+    return &ExtraVolcano{
+        CastingWizard: caster,
     }
 }
 
 func (road *ExtraRoad) Serialize() map[string]any {
     return map[string]any{
         "enchanted": road.Enchanted,
+    }
+}
+
+func (road ExtraRoad) Reconstruct(raw map[string]any) *ExtraRoad {
+    enchanted, ok := raw["enchanted"].(bool)
+    if !ok {
+        enchanted = false
+    }
+
+    return &ExtraRoad{
+        Enchanted: enchanted,
     }
 }
 
@@ -245,6 +279,10 @@ func ReconstructExtraTile(kind ExtraKind, data map[string]any, wizards []Wizard)
         case ExtraKindMagicNode: return ExtraMagicNode{}.Reconstruct(data, wizards)
         case ExtraKindEncounter: return ExtraEncounter{}.Reconstruct(data, wizards)
         case ExtraKindOpenTower: return &ExtraOpenTower{}
+
+        case ExtraKindRoad: return ExtraRoad{}.Reconstruct(data)
+        case ExtraKindVolcano: return ExtraVolcano{}.Reconstruct(data, wizards)
+        case ExtraKindCorruption: return &ExtraCorruption{}
     }
 
     panic(fmt.Sprintf("unsupported extra tile kind: %v", kind))
