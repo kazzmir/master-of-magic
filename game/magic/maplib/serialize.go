@@ -259,20 +259,6 @@ func (corruption *ExtraCorruption) Serialize() map[string]any {
     return map[string]any{}
 }
 
-func DeserializeMap(data map[string]any) *Map {
-    /*
-    width := data["width"].(int)
-    height := data["height"].(int)
-    */
-    terrainData := data["map"].([][]int)
-
-    return &Map{
-        Map: &terrain.Map{
-            Terrain: terrainData,
-        },
-    }
-}
-
 func ReconstructExtraTile(kind ExtraKind, data map[string]any, wizards []Wizard) ExtraTile {
     switch kind {
         case ExtraKindBonus: return ExtraBonus{}.Reconstruct(data)
