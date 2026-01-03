@@ -246,6 +246,8 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
             err := gameLoader.LoadNew(saveFileName(selectedIndex))
             if err != nil {
                 group.AddElement(uilib.MakeErrorElementWithLayer(group, cache, &imageCache, err.Error(), 4, func(){}))
+            } else {
+                cancel()
             }
         }
     }))

@@ -214,11 +214,14 @@ func SerializePlayer(player *Player) SerializedPlayer {
 }
 
 func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider GlobalEnchantmentsProvider) *Player {
-    return &Player{
+    player := &Player{
         ArcanusFog: serialized.ArcanusFog,
         MyrrorFog: serialized.MyrrorFog,
         TaxRate: serialized.TaxRate,
         GlobalEnchantmentsProvider: globalEnchantmentsProvider,
         GlobalEnchantments: set.MakeSet[data.Enchantment](),
+        Human: serialized.Human,
     }
+
+    return player
 }

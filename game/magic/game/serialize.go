@@ -5,6 +5,7 @@ import (
     "maps"
     "slices"
 
+    "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -159,6 +160,12 @@ func MakeModelFromSerialized(
 
     for _, serializedPlayer := range serializedGame.Players {
         player := playerlib.ReconstructPlayer(&serializedPlayer, model)
+
+        if !player.Human {
+            player.AIBehavior = ai.MakeEnemyAI()
+            player.StrategicCombat = true
+        }
+
         players = append(players, player)
     }
 
