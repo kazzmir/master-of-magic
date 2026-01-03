@@ -2,12 +2,18 @@ package game
 
 import (
     "time"
+    "maps"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/serialize"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
 )
 
 const SerializeVersion = 1
@@ -63,6 +69,7 @@ type SerializedGame struct {
     Arcanus map[string]any `json:"arcanus"`
     Myrror map[string]any `json:"myrror"`
     Plane data.Plane `json:"plane"`
+    ArtifactPool []string `json:"artifact-pool"`
     Settings setup.NewGameSettings `json:"settings"`
     CurrentPlayer int `json:"current-player"`
     Turn uint64 `json:"turn"`
@@ -85,6 +92,7 @@ func SerializeModel(model *GameModel, saveName string) SerializedGame {
         },
         Arcanus: maplib.SerializeMap(model.ArcanusMap),
         Myrror: maplib.SerializeMap(model.MyrrorMap),
+        ArtifactPool: slices.Collect(maps.Keys(model.ArtifactPool)),
         Plane:  model.Plane,
         Settings: model.Settings,
         CurrentPlayer: model.CurrentPlayer,
@@ -106,3 +114,44 @@ func MakeModelFromSerialize(decoder json.Decoder) *GameModel {
     }
 }
 */
+
+func reconstructArtifactPool(items []string, artifactPool map[string]*artifact.Artifact) map[string]*artifact.Artifact {
+    out := make(map[string]*artifact.Artifact)
+
+    for _, itemName := range items {
+        if item, ok := artifactPool[itemName]; ok {
+            out[itemName] = item
+        }
+    }
+
+    return out
+}
+
+func MakeModelFromSerialized(
+    serializedGame *SerializedGame, events chan GameEvent,
+    heroNames map[int]map[herolib.HeroType]string,
+    allSpells spellbook.Spells,
+    artifactPool map[string]*artifact.Artifact,
+    buildingInfo buildinglib.BuildingInfos,
+) *GameModel {
+    return &GameModel{
+        Plane: serializedGame.Plane,
+        ArtifactPool: reconstructArtifactPool(serializedGame.ArtifactPool, artifactPool),
+        Settings: serializedGame.Settings,
+        heroNames: heroNames,
+        allSpells: allSpells,
+        CurrentPlayer: serializedGame.CurrentPlayer,
+        TurnNumber: serializedGame.Turn,
+        Events: events,
+
+        BuildingInfo: buildingInfo,
+        LastEventTurn: serializedGame.LastEventTurn,
+
+        /*
+        ArcanusMap *maplib.Map
+        MyrrorMap *maplib.Map
+        Players []*playerlib.Player
+        RandomEvents []*RandomEvent
+        */
+    }
+}

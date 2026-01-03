@@ -136,6 +136,8 @@ func main() {
 
     log.Println("Serialized model written to serialized_model.json")
 
+    log.Println("Stage 1: PASSED")
+
     reader := bytes.NewReader(jsonData)
     decoder := json.NewDecoder(reader)
     var loadedData gamelib.SerializedGame
@@ -143,4 +145,12 @@ func main() {
     if err != nil {
         log.Fatalf("Failed to decode JSON data: %v", err)
     }
+    log.Println("JSON data decoded successfully")
+
+    log.Println("Stage 2: PASSED")
+
+    newGame := gamelib.MakeGameFromSerialized(cache, useMusic, &loadedData)
+    _ = newGame
+
+    log.Println("Stage 3: PASSED")
 }
