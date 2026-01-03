@@ -7,6 +7,7 @@ import (
     "bytes"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
@@ -48,6 +49,7 @@ func main() {
     }
 
     player := game.AddPlayer(wizard, true)
+    player.TaxRate = fraction.Make(3, 2)
 
     x := 3
     y := 8

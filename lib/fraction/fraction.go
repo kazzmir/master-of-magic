@@ -42,6 +42,17 @@ func FromInt(numerator int) Fraction {
     }
 }
 
+func (fraction *Fraction) UnmarshalJSON(data []byte) error {
+    var aux map[string]int
+    if err := json.Unmarshal(data, &aux); err != nil {
+        return err
+    }
+
+    fraction.Numerator = aux["n"]
+    fraction.Denominator = aux["d"]
+    return nil
+}
+
 func (fraction Fraction) MarshalJSON() ([]byte, error) {
     return json.Marshal(map[string]int{
         "n": fraction.Numerator,

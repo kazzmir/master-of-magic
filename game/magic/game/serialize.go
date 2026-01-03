@@ -155,6 +155,15 @@ func MakeModelFromSerialized(
         */
     }
 
+    var players []*playerlib.Player
+
+    for _, serializedPlayer := range serializedGame.Players {
+        player := playerlib.ReconstructPlayer(&serializedPlayer, model)
+        players = append(players, player)
+    }
+
+    model.Players = players
+
     wizards := make([]maplib.Wizard, 0, len(serializedGame.Players))
     for _, player := range model.Players {
         wizards = append(wizards, player)

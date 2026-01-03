@@ -212,3 +212,13 @@ func SerializePlayer(player *Player) SerializedPlayer {
         HeroPool: serializeHeros(slices.Collect(maps.Values(player.HeroPool))),
     }
 }
+
+func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider GlobalEnchantmentsProvider) *Player {
+    return &Player{
+        ArcanusFog: serialized.ArcanusFog,
+        MyrrorFog: serialized.MyrrorFog,
+        TaxRate: serialized.TaxRate,
+        GlobalEnchantmentsProvider: globalEnchantmentsProvider,
+        GlobalEnchantments: set.MakeSet[data.Enchantment](),
+    }
+}
