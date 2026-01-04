@@ -1143,7 +1143,7 @@ func TestSpellSkillItemBonus(test *testing.T) {
         Player: defendingPlayer,
     }
 
-    defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.NightStalker, 1, 1, data.PlaneArcanus, defendingPlayer.GetBanner(), defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
+    defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.ArchAngel, 1, 1, data.PlaneArcanus, defendingPlayer.GetBanner(), defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
 
     hero := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroValana, 0, 0, data.PlaneArcanus, attackingPlayer.GetBanner(), attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()), herolib.HeroValana, "Valana")
     hero.Equipment[0] = &artifact.Artifact{
@@ -1166,9 +1166,16 @@ func TestSpellSkillItemBonus(test *testing.T) {
     model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10))
     _ = model
 
-    armyUnit := attackingArmy.units[0]
-    if armyUnit.CastingSkill != 15 {
-        test.Errorf("Error: spell skill should be 15, got %v", armyUnit.CastingSkill)
+    // hero should get base (5) + item (10) = 15 spell skill
+    attacker1 := attackingArmy.units[0]
+    if attacker1.CastingSkill != 15 {
+        test.Errorf("Error: spell skill should be 15, got %v", attacker1.CastingSkill)
+    }
+
+    // arch angel has 40
+    defender1 := defendingArmy.units[0]
+    if defender1.CastingSkill != 40 {
+        test.Errorf("Error: spell skill should be 40, got %v", defender1.CastingSkill)
     }
 
 }

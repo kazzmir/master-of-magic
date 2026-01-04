@@ -614,6 +614,17 @@ func (hero *Hero) IsHero() bool {
     return true
 }
 
+func (hero *Hero) GetCastingSkill() float32 {
+    base := hero.GetCasterValue()
+    for _, item := range hero.Equipment {
+        if item != nil {
+            base += float32(item.SpellSkillBonus())
+        }
+    }
+
+    return base
+}
+
 func (hero *Hero) GetSpellChargeSpells() map[spellbook.Spell]int {
     out := make(map[spellbook.Spell]int)
 
