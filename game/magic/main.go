@@ -437,6 +437,18 @@ func writeHeapDump(filename string) {
 }
 */
 
+func centerOnCity(game *gamelib.Game) {
+    humanPlayer := game.Model.GetHumanPlayer()
+    if humanPlayer != nil {
+        if len(humanPlayer.Cities) > 0 {
+            for _, city := range humanPlayer.Cities {
+                game.Camera.Center(city.X, city.Y)
+                game.Model.Plane = city.Plane
+            }
+        }
+    }
+}
+
 func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *MagicGame, gameLoader *OriginalGameLoader) error {
     defer func() {
         // wrap the game variable so that only the remaining reference is shutdown
@@ -468,6 +480,9 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
                 game = newGame
                 game.GameLoader = gameLoader
                 game.Model.CurrentPlayer = 0
+
+                centerOnCity(game)
+
                 game.RefreshUI()
 
                 magic.Drawer = func(screen *ebiten.Image) {
@@ -624,6 +639,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                     game.Music.Stop()
                     // FIXME: should this go here?
                     newGame.Model.CurrentPlayer = 0
+                    centerOnCity(newGame)
                     err := runGameInstance(newGame, yield, game, gameLoader)
                     if err != nil {
                         game.Drawer = shutdown
