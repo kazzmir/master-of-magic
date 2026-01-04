@@ -357,6 +357,36 @@ func reconstructCities(serialized []citylib.SerializedCity, arcanusCatchmentProv
     return out
 }
 
+func reconstructStacks(serialized []SerializedUnitStack, heroes [6]*herolib.Hero, globalEnchantmentProvider units.GlobalEnchantmentProvider, experienceInfo units.ExperienceInfo) []*UnitStack {
+    var out []*UnitStack
+
+    for _, serializedStack := range serialized {
+        stack := MakeUnitStack()
+
+        stack.CurrentPath = serializedStack.CurrentPath
+
+        for i, serializedUnit := range serializedStack.Units {
+            if serializedUnit.Unit != nil {
+                unit := units.ReconstructOverworldUnit(serializedUnit.Unit, globalEnchantmentProvider, experienceInfo)
+                stack.AddUnit(unit)
+                stack.SetActive(unit, serializedStack.Active[i])
+            } else if serializedUnit.Hero != nil {
+                for _, hero := range heroes {
+                    if hero != nil && hero.HeroType == *serializedUnit.Hero {
+                        stack.AddUnit(hero)
+                        stack.SetActive(hero, serializedStack.Active[i])
+                        break
+                    }
+                }
+            }
+        }
+
+        out = append(out, stack)
+    }
+
+    return out
+}
+
 // returns a player object and a function to initialize its cities once the maps are available
 func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider GlobalEnchantmentsProvider, allSpells spellbook.Spells, buildingInfo buildinglib.BuildingInfos, cityServices citylib.CityServicesProvider) (*Player, func(*maplib.Map, *maplib.Map)) {
     player := &Player{
@@ -399,15 +429,13 @@ func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider 
         // relations with other players (treaties, etc)
         PlayerRelations map[*Player]*Relationship
 
-        // FIXME: probably remove Units and just use Stacks to track the units
-        Units []units.StackUnit
-
-        Stacks []*UnitStack
         */
     }
 
     player.HeroPool = reconstructHeroPool(serialized.HeroPool, allSpells, player.MakeUnitEnchantmentProvider(), player.MakeExperienceInfo())
     player.Heroes = reconstructHeroes(serialized.HeroUnits, allSpells, player.MakeUnitEnchantmentProvider(), player.MakeExperienceInfo())
+
+    player.Stacks = reconstructStacks(serialized.Stacks, player.Heroes, player.MakeUnitEnchantmentProvider(), player.MakeExperienceInfo())
 
     initializeCities := func(arcanusMap *maplib.Map, myrrorMap *maplib.Map) {
         player.Cities = reconstructCities(serialized.Cities, arcanusMap, myrrorMap, cityServices, player, buildingInfo)
