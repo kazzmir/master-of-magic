@@ -12,6 +12,7 @@ import (
     "image"
     "image/color"
     "math"
+    "time"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -98,6 +99,9 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
     source.Fill(color.RGBA{R: 0xcf, G: 0xef, B: 0xf9, A: 0xff})
 
     useFont := loader(fontslib.NameFont)
+    smallFont := loader(fontslib.SmallFont)
+
+    maxWidth := useFont.MeasureTextWidth("AAAAAAAAAAAA", 1)
 
     makeSaveSlot := func(index int) *uilib.UIElement {
         x := 43
@@ -113,9 +117,12 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
         inside := false
         name := ""
 
+        var saveTime time.Time
+
         metadata, ok := serialize.LoadMetadata(saveFileName(index))
         if ok {
             name = metadata.Name
+            saveTime = metadata.Date
         }
 
         return &uilib.UIElement{
@@ -133,7 +140,7 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
             TextEntry: func(element *uilib.UIElement, text string) string {
                 name = text
 
-                for len(name) > 0 && useFont.MeasureTextWidth(name, 1) > float64(element.Rect.Bounds().Dx()) {
+                for len(name) > 0 && useFont.MeasureTextWidth(name, 1) > maxWidth {
                     name = name[:len(name)-1]
                 }
 
@@ -195,13 +202,21 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
                     // maybe pass in alpha here
                     util.DrawTextCursor(screen, source, cursorX, float64(y + 3), group.Counter)
                 }
+
+                if !saveTime.IsZero() {
+                    smallFont.PrintOptions(screen, float64(element.Rect.Max.X), float64(y + 3), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Justify: font.FontJustifyRight, Options: &options}, saveTime.Format(time.RFC1123))
+                }
             },
         }
     }
 
+    var saveSlots []*uilib.UIElement
+
     // save slot
     for i := range 8 {
-        group.AddElement(makeSaveSlot(i + 1))
+        newSlot := makeSaveSlot(i + 1)
+        saveSlots = append(saveSlots, newSlot)
+        group.AddElement(newSlot)
     }
 
     makeButton := func (index int, x int, y int, action func()) *uilib.UIElement {
@@ -255,29 +270,42 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
     // save
     group.AddElement(makeButton(3, 122, 171, func(){
         if selectedIndex != -1 {
-            path := saveFileName(selectedIndex)
-            saveFile, err := os.Create(path)
-            if err != nil {
-                log.Printf("Error creating save file: %v", err)
-            } else {
-                defer saveFile.Close()
-
-                bufferedOut := bufio.NewWriter(saveFile)
-                defer bufferedOut.Flush()
-
-                gzipWriter := gzip.NewWriter(bufferedOut)
-                defer gzipWriter.Close()
-
-                err = saver.Save(gzipWriter, *slotName)
+            doSave := func() bool {
+                path := saveFileName(selectedIndex)
+                saveFile, err := os.Create(path)
                 if err != nil {
-                    log.Printf("Error saving game: %v", err)
+                    log.Printf("Error creating save file: %v", err)
                 } else {
-                    if err != nil {
-                        log.Printf("Error flushing save file: %v", err)
-                    }
+                    defer saveFile.Close()
 
-                    log.Printf("Game saved to '%s'", path)
+                    bufferedOut := bufio.NewWriter(saveFile)
+                    defer bufferedOut.Flush()
+
+                    gzipWriter := gzip.NewWriter(bufferedOut)
+                    defer gzipWriter.Close()
+
+                    err = saver.Save(gzipWriter, *slotName)
+                    if err != nil {
+                        log.Printf("Error saving game: %v", err)
+                    } else {
+                        if err != nil {
+                            log.Printf("Error flushing save file: %v", err)
+                        }
+
+                        log.Printf("Game saved to '%s'", path)
+                        return true
+                    }
                 }
+
+                return false
+            }
+
+            if doSave() {
+                // have to do this after the file closes
+                newSlot := makeSaveSlot(selectedIndex)
+                group.RemoveElement(saveSlots[selectedIndex - 1])
+                saveSlots[selectedIndex - 1] = newSlot
+                group.AddElement(newSlot)
             }
         }
     }))
