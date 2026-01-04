@@ -92,7 +92,7 @@ func (system *TestSpellSystem) CreateMagicVortex(team Team, x int, y int) *Magic
 func (system *TestSpellSystem) CreateWarpWoodProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateDeathSpellProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateDeathSpellProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateWordOfDeathProjectile(target *ArmyUnit, reduceResistance int) *Projectile {

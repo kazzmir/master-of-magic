@@ -1129,11 +1129,11 @@ func (combat *CombatScreen) CreateWebProjectile(target *ArmyUnit) *Projectile {
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 14)
     explodeImages := images
 
-    effect := combat.Model.CreateDeathSpellProjectileEffect(combat)
+    effect := combat.Model.CreateDeathSpellProjectileEffect(combat, reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }

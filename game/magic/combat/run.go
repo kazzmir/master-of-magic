@@ -179,10 +179,10 @@ func (system *ProxySpellSystem) CreateWarpWoodProjectile(target *ArmyUnit) *Proj
     }
 }
 
-func (system *ProxySpellSystem) CreateDeathSpellProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateDeathSpellProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateDeathSpellProjectileEffect(&FakeDamageIndicators{}),
+        Effect: system.Model.CreateDeathSpellProjectileEffect(&FakeDamageIndicators{}, reduceResistance),
     }
 }
 

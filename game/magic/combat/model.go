@@ -4669,7 +4669,7 @@ type SpellSystem interface {
     CreateDisruptProjectile(x int, y int) *Projectile
     CreateMagicVortex(team Team, x int, y int) *MagicVortex
     CreateWarpWoodProjectile(target *ArmyUnit) *Projectile
-    CreateDeathSpellProjectile(target *ArmyUnit) *Projectile
+    CreateDeathSpellProjectile(target *ArmyUnit, reduceResistance int) *Projectile
     CreateWordOfDeathProjectile(target *ArmyUnit, reduceResistance int) *Projectile
     CreateSummoningCircle(x int, y int) *Projectile
     CreateMindStormProjectile(target *ArmyUnit) *Projectile
@@ -4983,7 +4983,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Death Spell":
             model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateDeathSpellProjectile(target))
+                model.AddProjectile(spellSystem.CreateDeathSpellProjectile(target, getSpellSave(unitCaster)))
             }, targetNotImmune)
             castedCallback(true)
         case "Word of Death":
@@ -6728,9 +6728,9 @@ func (model *CombatModel) CreateWebProjectileEffect() func(*ArmyUnit) {
     }
 }
 
-func (model *CombatModel) CreateDeathSpellProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateDeathSpellProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
-        resistance := GetResistanceFor(unit, data.DeathMagic) - 2
+        resistance := GetResistanceFor(unit, data.DeathMagic) - 2 - reduceResistance
         damage := 0
 
         for range unit.Figures() {
