@@ -53,7 +53,7 @@ func (system *TestSpellSystem) CreateFlameStrikeProjectile(target *ArmyUnit) *Pr
 func (system *TestSpellSystem) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateDispelEvilProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateDispelEvilProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateHealingProjectile(target *ArmyUnit) *Projectile {

@@ -674,6 +674,11 @@ func (unit *ArmyUnit) IsWebbed() bool {
     return unit.WebHealth > 0
 }
 
+// returns a positive number of how much to reduce resistance by
+func (unit *ArmyUnit) GetSpellSave() int {
+    return unit.Unit.GetSpellSave()
+}
+
 func (unit *ArmyUnit) GetCastingSkill() float32 {
     return unit.CastingSkill
 }
@@ -4651,7 +4656,7 @@ type SpellSystem interface {
     CreateWarpLightningProjectile(target *ArmyUnit) *Projectile
     CreateFlameStrikeProjectile(target *ArmyUnit) *Projectile
     CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile
-    CreateDispelEvilProjectile(target *ArmyUnit) *Projectile
+    CreateDispelEvilProjectile(target *ArmyUnit, reduceResistance int) *Projectile
     CreateHealingProjectile(target *ArmyUnit) *Projectile
     CreateHolyWordProjectile(target *ArmyUnit) *Projectile
     CreateRecallHeroProjectile(target *ArmyUnit) *Projectile
@@ -4707,6 +4712,16 @@ type SpellSystem interface {
     CreateWraithFormProjectile(target *ArmyUnit) *Projectile
 
     PlaySound(spell spellbook.Spell)
+}
+
+// how much extra resistance reduction should be applied
+// this comes from the spell save power from the caster's items
+func getSpellSave(caster *ArmyUnit) int {
+    if caster == nil {
+        return 0
+    }
+
+    return caster.GetSpellSave()
 }
 
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
@@ -4825,12 +4840,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             castedCallback(true)
         case "Life Drain":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5, army.Player, unitCaster))
+                model.AddProjectile(spellSystem.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5 + getSpellSave(unitCaster), army.Player, unitCaster))
                 castedCallback(true)
             }, targetNotImmune)
         case "Dispel Evil":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target))
+                model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target, getSpellSave(unitCaster)))
                 castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.Unit.GetRace() == data.RaceFantastic &&
@@ -4894,7 +4909,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Banish":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15))
+                model.AddProjectile(spellSystem.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15 + getSpellSave(unitCaster)))
                 castedCallback(true)
             }, targetFantastic)
         case "Dispel Magic True":
@@ -6286,7 +6301,7 @@ func (model *CombatModel) CreateStarFiresProjectileEffect(damageIndicator AddDam
     }
 }
 
-func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
             return
@@ -6297,7 +6312,7 @@ func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDa
             modifier = 9
         }
 
-        defenderResistance := GetResistanceFor(unit, data.LifeMagic) - modifier
+        defenderResistance := GetResistanceFor(unit, data.LifeMagic) - modifier - reduceResistance
         damage := 0
         for range unit.Figures() {
             if rand.N(10)+1 > defenderResistance {

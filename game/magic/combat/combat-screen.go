@@ -616,11 +616,11 @@ func (combat *CombatScreen) CreateStarFiresProjectile(target *ArmyUnit) *Project
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreateDispelEvilProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 10)
     explodeImages := images
 
-    effect := combat.Model.CreateDispelEvilProjectileEffect(combat)
+    effect := combat.Model.CreateDispelEvilProjectileEffect(combat, reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }

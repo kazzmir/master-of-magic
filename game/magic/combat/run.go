@@ -82,10 +82,10 @@ func (system *ProxySpellSystem) CreateLifeDrainProjectile(target *ArmyUnit, redu
     }
 }
 
-func (system *ProxySpellSystem) CreateDispelEvilProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateDispelEvilProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateDispelEvilProjectileEffect(&FakeDamageIndicators{}),
+        Effect: system.Model.CreateDispelEvilProjectileEffect(&FakeDamageIndicators{}, reduceResistance),
     }
 }
 
