@@ -1179,3 +1179,63 @@ func TestSpellSkillItemBonus(test *testing.T) {
     }
 
 }
+
+func TestSpellSavePower(test *testing.T) {
+    defendingPlayer := playerlib.MakePlayer(setup.WizardCustom{
+        Name: "AI-1",
+        Banner: data.BannerBrown,
+    }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+    attackingPlayer := playerlib.MakePlayer(setup.WizardCustom{
+        Name: "AI-2",
+        Banner: data.BannerRed,
+    }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+    attackingArmy := &Army{
+        Player: attackingPlayer,
+    }
+
+    defendingArmy := &Army{
+        Player: defendingPlayer,
+    }
+
+    // normally colossus is immune to banish
+    defender := defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.Colossus, 1, 1, data.PlaneArcanus, defendingPlayer.GetBanner(), defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
+
+    hero := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroValana, 0, 0, data.PlaneArcanus, attackingPlayer.GetBanner(), attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()), herolib.HeroValana, "Valana")
+    hero.Equipment[0] = &artifact.Artifact{
+        Name: "whatever",
+        Image: 7,
+        Type: artifact.ArtifactTypeSword,
+        Powers: []artifact.Power{
+            {
+                Type: artifact.PowerTypeSpellSave,
+                Amount: 20,
+                Name: "-20 Spell Save",
+            },
+        },
+    }
+
+    attackingUnit := attackingArmy.AddUnit(hero)
+
+    var allSpells spellbook.Spells
+
+    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10))
+
+    casted := false
+    model.InvokeSpell(&ProxySpellSystem{Model: model}, attackingArmy, attackingUnit, spellbook.Spell{Name: "Banish"}, func(success bool) {
+        casted = true
+    })
+
+    if !casted {
+        test.Errorf("Error: spell should have been cast")
+    }
+
+    for _, projectile := range model.Projectiles {
+        projectile.Effect(projectile.Target)
+    }
+
+    if defender.GetHealth() > 0 {
+        test.Errorf("Error: defender should have been banished")
+    }
+}
