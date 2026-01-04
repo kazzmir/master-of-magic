@@ -4,6 +4,7 @@ import (
     "slices"
     "math"
     "math/rand/v2"
+    "iter"
     "image"
     "maps"
     "fmt"
@@ -346,7 +347,7 @@ type Player struct {
     PowerHistory []WizardPower
 
     // FIXME: probably remove Units and just use Stacks to track the units
-    Units []units.StackUnit
+    // Units []units.StackUnit
 
     Stacks []*UnitStack
     Cities map[data.PlanePoint]*citylib.City
@@ -739,10 +740,31 @@ func (player *Player) GetFame() int {
     return fame
 }
 
+func (player *Player) UnitCount() int {
+    count := 0
+    for _, stack := range player.Stacks {
+        count += len(stack.units)
+    }
+
+    return count
+}
+
+func (player *Player) Units() iter.Seq[units.StackUnit] {
+    return func(yield func(units.StackUnit) bool) {
+        for _, stack := range player.Stacks {
+            for _, unit := range stack.Units() {
+                if !yield(unit) {
+                    return
+                }
+            }
+        }
+    }
+}
+
 func (player *Player) TotalUnitUpkeepGold() int {
     total := 0
 
-    for _, unit := range player.Units {
+    for unit := range player.Units() {
         total += unit.GetUpkeepGold()
     }
 
@@ -757,7 +779,7 @@ func (player *Player) TotalUnitUpkeepGold() int {
 func (player *Player) TotalUnitUpkeepFood() int {
     total := 0
 
-    for _, unit := range player.Units {
+    for unit := range player.Units() {
         total += unit.GetUpkeepFood()
     }
 
@@ -768,7 +790,7 @@ func (player *Player) TotalUnitUpkeepFood() int {
 func (player *Player) TotalUnitUpkeepMana() int {
     total := 0
 
-    for _, unit := range player.Units {
+    for unit := range player.Units() {
         total += unit.GetUpkeepMana()
 
         for _, enchantment := range unit.GetUpkeepEnchantments() {
@@ -1345,7 +1367,7 @@ func (player *Player) UpdateFogVisibility() {
     }
 
     // make tiles visible
-    for _, unit := range player.Units {
+    for unit := range player.Units() {
         player.LiftFogSquare(unit.GetX(), unit.GetY(), unit.GetSightRange(), unit.GetPlane())
     }
 
@@ -1464,9 +1486,11 @@ func (player *Player) RemoveUnit(unit units.StackUnit) {
         }
     }
 
+    /*
     player.Units = slices.DeleteFunc(player.Units, func (u units.StackUnit) bool {
         return u == unit
     })
+    */
 
     stack := player.FindStack(unit.GetX(), unit.GetY(), unit.GetPlane())
     if stack != nil {
@@ -1511,7 +1535,7 @@ func (player *Player) UpdateUnit(unit units.StackUnit) units.StackUnit {
 }
 
 func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {
-    player.Units = append(player.Units, unit)
+    // player.Units = append(player.Units, unit)
 
     stack := player.FindStack(unit.GetX(), unit.GetY(), unit.GetPlane())
     if stack == nil {
@@ -1621,7 +1645,7 @@ func (player *Player) RebalanceFood() {
 // count of the number of units with the transport ability on the given place
 func (player *Player) TransportUnits(plane data.Plane) int {
     count := 0
-    for _, unit := range player.Units {
+    for unit := range player.Units() {
         if unit.GetPlane() == plane && unit.HasAbility(data.AbilityTransport) {
             count += 1
         }

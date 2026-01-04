@@ -848,11 +848,12 @@ func (game *Game) SuggestCityName(race data.Race) (string) {
     return chooseCityName(existingNames, choices)
 }
 
-func (game *Game) AllUnits() []units.StackUnit{
+// FIXME: probably make this an iterator
+func (game *Game) AllUnits() []units.StackUnit {
     var out []units.StackUnit
 
     for _, player := range game.Model.Players {
-        for _, unit := range player.Units {
+        for unit := range player.Units() {
             out = append(out, unit)
         }
     }
@@ -6575,7 +6576,7 @@ func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
     unitsNeedFood := false
     unitsNeedMana := false
 
-    for _, unit := range player.Units {
+    for unit := range player.Units() {
         // dont need to keep checking in this case
         if unitsNeedGold && unitsNeedFood && unitsNeedMana {
             break
@@ -6610,7 +6611,7 @@ func (game *Game) DisbandUnits(player *playerlib.Player) []string {
     // keep removing units until the upkeep value can be paid
     ok := false
     var disbandedMessages []string
-    for len(player.Units) > 0 && !ok {
+    for player.UnitCount() > 0 && !ok {
         ok = true
 
         goldIssue, foodIssue, manaIssue := game.CheckDisband(player)
@@ -6619,9 +6620,11 @@ func (game *Game) DisbandUnits(player *playerlib.Player) []string {
             ok = false
             disbanded := false
 
+            allUnits := slices.Collect(player.Units())
+
             // try to disband one unit that is taking up resources
-            for i := len(player.Units) - 1; i >= 0; i-- {
-                unit := player.Units[i]
+            for i := len(allUnits) - 1; i >= 0; i-- {
+                unit := allUnits[i]
                 // disband the unit for the right reason
                 if goldIssue && unit.GetUpkeepGold() > 0 {
                     log.Printf("Disband %v due to lack of gold", unit)
@@ -6737,7 +6740,7 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
     }
 
     var enchantedUnits []units.StackUnit
-    for _, unit := range player.Units {
+    for unit := range player.Units() {
         if len(unit.GetEnchantments()) > 0 {
             enchantedUnits = append(enchantedUnits, unit)
         }
@@ -7262,13 +7265,18 @@ func (game *Game) doMeteorStorm() {
         }
 
         // non-garrisoned units take immolation damage
-        for _, unit := range slices.Clone(player.Units) {
+        var toRemove []units.StackUnit
+        for unit := range player.Units() {
             if entityInfo.FindCity(unit.GetX(), unit.GetY(), unit.GetPlane()) == nil {
                 immolate(unit)
                 if unit.GetHealth() <= 0 {
-                    player.RemoveUnit(unit)
+                    toRemove = append(toRemove, unit)
                 }
             }
+        }
+
+        for _, unit := range toRemove {
+            player.RemoveUnit(unit)
         }
 
         if affectedPlayers.Contains(player) {

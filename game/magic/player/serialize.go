@@ -218,7 +218,7 @@ func SerializePlayer(player *Player) SerializedPlayer {
         PurifyWorkArcanus: serializeWork(player.PurifyWorkArcanus),
         PurifyWorkMyrror: serializeWork(player.PurifyWorkMyrror),
         Cities: serializeCities(player.Cities),
-        NormalUnits: serializeUnits(player.Units),
+        // NormalUnits: serializeUnits(player.Units),
         HeroUnits: serializeHeros(player.Heroes[:]),
         VaultEquipment: serializeVaultEquipment(player.VaultEquipment[:]),
         CreateArtifact: serializeCreateArtifact(player.CreateArtifact),
@@ -373,7 +373,6 @@ func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider 
         Units []units.StackUnit
 
         Stacks []*UnitStack
-
         */
     }
 
