@@ -5,6 +5,7 @@ import (
     "fmt"
     "flag"
     "io"
+    "io/fs"
     "errors"
     "math"
     "math/rand/v2"
@@ -370,10 +371,11 @@ func initializeNeutralPlayer(game *gamelib.Game, arcanusCityArea gamelib.CityVal
 type OriginalGameLoader struct {
     Cache *lbx.LbxCache
     NewGame chan *gamelib.Game
+    FS fs.FS
 }
 
 func (loader *OriginalGameLoader) LoadNew(path string) error {
-    file, err := os.Open(path)
+    file, err := loader.FS.Open(path)
     if err != nil {
         return fmt.Errorf("Could not open save game file '%v': %v", path, err)
     }
@@ -596,6 +598,7 @@ func startQuickGame(yield coroutine.YieldFunc, game *MagicGame) error {
     return runGameInstance(realGame, yield, game, &OriginalGameLoader{
         Cache: game.Cache,
         NewGame: make(chan *gamelib.Game, 1),
+        FS: os.DirFS("."),
     })
 }
 
@@ -631,6 +634,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     gameLoader := &OriginalGameLoader{
         Cache: game.Cache,
         NewGame: make(chan *gamelib.Game, 1),
+        FS: os.DirFS("."),
     }
 
     if loadSave != "" {
