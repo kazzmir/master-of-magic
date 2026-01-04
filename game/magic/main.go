@@ -482,6 +482,10 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
                 game.Model.CurrentPlayer = 0
 
                 centerOnCity(game)
+                humanPlayer := game.Model.GetHumanPlayer()
+                if humanPlayer != nil {
+                    game.DoNextUnit(humanPlayer)
+                }
 
                 game.RefreshUI()
 
@@ -650,6 +654,12 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                     // FIXME: should this go here?
                     newGame.Model.CurrentPlayer = 0
                     centerOnCity(newGame)
+
+                    humanPlayer := newGame.Model.GetHumanPlayer()
+                    if humanPlayer != nil {
+                        newGame.DoNextUnit(humanPlayer)
+                    }
+
                     err := runGameInstance(newGame, yield, game, gameLoader)
                     if err != nil {
                         game.Drawer = shutdown
