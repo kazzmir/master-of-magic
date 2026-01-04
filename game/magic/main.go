@@ -595,7 +595,7 @@ func startQuickGame(yield coroutine.YieldFunc, game *MagicGame) error {
     })
 }
 
-func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startGame bool, enableMusic bool) error {
+func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startGame bool, loadSave string, enableMusic bool) error {
 
     err := loadData(yield, game, dataPath)
     if err != nil {
@@ -615,16 +615,22 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
         return startQuickGame(yield, game)
     }
 
-    game.Music.PlaySong(musiclib.SongIntro)
-    runIntro(yield, game)
+    if loadSave == "" {
+        game.Music.PlaySong(musiclib.SongIntro)
+        runIntro(yield, game)
 
-    yield()
+        yield()
 
-    game.Music.PlaySong(musiclib.SongTitle)
+        game.Music.PlaySong(musiclib.SongTitle)
+    }
 
     gameLoader := &OriginalGameLoader{
         Cache: game.Cache,
         NewGame: make(chan *gamelib.Game, 1),
+    }
+
+    if loadSave != "" {
+        gameLoader.LoadNew(loadSave)
     }
 
     for {
@@ -695,11 +701,11 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     }
 }
 
-func NewMagicGame(dataPath string, startGame bool, enableMusic bool) (*MagicGame, error) {
+func NewMagicGame(dataPath string, startGame bool, loadSave string, enableMusic bool) (*MagicGame, error) {
     var game *MagicGame
 
     run := func(yield coroutine.YieldFunc) error {
-        return runGame(yield, game, dataPath, startGame, enableMusic)
+        return runGame(yield, game, dataPath, startGame, loadSave, enableMusic)
     }
 
     game = &MagicGame{
@@ -750,10 +756,12 @@ func main() {
     var startGame bool
     var trace bool
     var enableMusic bool
+    var loadSave string
     flag.StringVar(&dataPath, "data", "", "path to master of magic lbx data files. Give either a directory or a zip file. Data is searched for in the current directory if not given.")
     flag.BoolVar(&enableMusic, "music", true, "enable music playback")
     flag.BoolVar(&startGame, "start", false, "start the game immediately with a random wizard")
     flag.BoolVar(&trace, "trace", false, "enable profiling (pprof)")
+    flag.StringVar(&loadSave, "load", "", "load a saved game from the given file and start immediately")
     flag.Parse()
 
     if trace {
@@ -773,7 +781,7 @@ func main() {
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-    game, err := NewMagicGame(dataPath, startGame, enableMusic)
+    game, err := NewMagicGame(dataPath, startGame, loadSave, enableMusic)
 
     if err != nil {
         log.Printf("Error: unable to load game: %v", err)
