@@ -11,6 +11,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -54,6 +55,19 @@ type SerializedWork struct {
     Progress float64 `json:"progress"`
 }
 
+// a unit in a stack can either be a regular unit or a reference to a hero
+type SerializedUnitStackElement struct {
+    Unit *units.SerializedOverworldUnit `json:"unit,omitempty"`
+    Hero *herolib.HeroType `json:"hero,omitempty"`
+}
+
+type SerializedUnitStack struct {
+    Units []SerializedUnitStackElement `json:"units"`
+    Active []bool `json:"active"`
+
+    CurrentPath pathfinding.Path `json:"current-path"`
+}
+
 type SerializedPlayer struct {
     ArcanusFog [][]data.FogType `json:"arcanus-fog"`
     MyrrorFog [][]data.FogType `json:"myrror-fog"`
@@ -86,7 +100,7 @@ type SerializedPlayer struct {
     PurifyWorkArcanus []SerializedWork `json:"purify-work-arcanus"`
     PurifyWorkMyrror []SerializedWork `json:"purify-work-myrror"`
     Cities []citylib.SerializedCity `json:"cities"`
-    NormalUnits []units.SerializedOverworldUnit `json:"units"`
+    Stacks []SerializedUnitStack `json:"stacks"`
     HeroUnits []herolib.SerializedHeroUnit `json:"hero-units"`
 
     VaultEquipment []artifact.SerializedArtifact `json:"vault-equipment"`
@@ -108,14 +122,30 @@ func serializeHeros(heroes []*herolib.Hero) []herolib.SerializedHeroUnit {
     return out
 }
 
-func serializeUnits(stackUnits []units.StackUnit) []units.SerializedOverworldUnit {
-    out := make([]units.SerializedOverworldUnit, 0)
+func serializeStacks(stacks []*UnitStack) []SerializedUnitStack {
+    out := make([]SerializedUnitStack, 0)
 
-    for _, unit := range stackUnits {
-        overworldUnit, ok := unit.(*units.OverworldUnit)
-        if ok {
-            out = append(out, units.SerializeOverworldUnit(overworldUnit))
+    for _, stack := range stacks {
+        serializedStack := SerializedUnitStack{
+            CurrentPath: stack.CurrentPath,
         }
+
+        for _, unitRaw := range stack.units {
+            var serializedUnit SerializedUnitStackElement
+
+            switch unit := unitRaw.(type) {
+                case *units.OverworldUnit:
+                    serialized := units.SerializeOverworldUnit(unit)
+                    serializedUnit.Unit = &serialized
+                case *herolib.Hero:
+                    serializedUnit.Hero = &unit.HeroType
+            }
+
+            serializedStack.Active = append(serializedStack.Active, stack.IsActive(unitRaw))
+            serializedStack.Units = append(serializedStack.Units, serializedUnit)
+        }
+
+        out = append(out, serializedStack)
     }
 
     return out
@@ -218,7 +248,7 @@ func SerializePlayer(player *Player) SerializedPlayer {
         PurifyWorkArcanus: serializeWork(player.PurifyWorkArcanus),
         PurifyWorkMyrror: serializeWork(player.PurifyWorkMyrror),
         Cities: serializeCities(player.Cities),
-        // NormalUnits: serializeUnits(player.Units),
+        Stacks: serializeStacks(player.Stacks),
         HeroUnits: serializeHeros(player.Heroes[:]),
         VaultEquipment: serializeVaultEquipment(player.VaultEquipment[:]),
         CreateArtifact: serializeCreateArtifact(player.CreateArtifact),

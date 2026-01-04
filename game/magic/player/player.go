@@ -346,9 +346,6 @@ type Player struct {
     // an array of objects that track the power of the wizard, where each index represents a turn
     PowerHistory []WizardPower
 
-    // FIXME: probably remove Units and just use Stacks to track the units
-    // Units []units.StackUnit
-
     Stacks []*UnitStack
     Cities map[data.PlanePoint]*citylib.City
 
