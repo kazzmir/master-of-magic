@@ -412,6 +412,69 @@ func (enchantment UnitEnchantment) MarshalJSON() ([]byte, error) {
     return []byte(fmt.Sprintf(`"%s"`, enchantment.Name())), nil
 }
 
+func (enchantment *UnitEnchantment) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *enchantment = getUnitEnchantmentByName(str)
+    return nil
+}
+
+func getUnitEnchantmentByName(name string) UnitEnchantment {
+    switch name {
+        case "Giant Strength": return UnitEnchantmentGiantStrength
+        case "Lion Heart": return UnitEnchantmentLionHeart
+        case "Haste": return UnitEnchantmentHaste
+        case "Immolation": return UnitEnchantmentImmolation
+        case "Resist Elements": return UnitEnchantmentResistElements
+        case "Resist Magic": return UnitEnchantmentResistMagic
+        case "Elemental Armor": return UnitEnchantmentElementalArmor
+        case "Bless": return UnitEnchantmentBless
+        case "Righteousness": return UnitEnchantmentRighteousness
+        case "Cloak of Fear": return UnitEnchantmentCloakOfFear
+        case "True Sight": return UnitEnchantmentTrueSight
+        case "Path Finding": return UnitEnchantmentPathFinding
+        case "Flight": return UnitEnchantmentFlight
+        case "Demon Wings": return UnitEnchantmentChaosChannelsDemonWings
+        case "Demon Skin": return UnitEnchantmentChaosChannelsDemonSkin
+        case "Fire Breath": return UnitEnchantmentChaosChannelsFireBreath
+        case "Endurance": return UnitEnchantmentEndurance
+        case "Heroism": return UnitEnchantmentHeroism
+        case "Holy Armor": return UnitEnchantmentHolyArmor
+        case "Holy Weapon": return UnitEnchantmentHolyWeapon
+        case "Invulnerability": return UnitEnchantmentInvulnerability
+        case "Planar Travel": return UnitEnchantmentPlanarTravel
+        case "Iron Skin": return UnitEnchantmentIronSkin
+        case "Regeneration": return UnitEnchantmentRegeneration
+        case "Stone Skin": return UnitEnchantmentStoneSkin
+        case "Water Walking": return UnitEnchantmentWaterWalking
+        case "Guardian Wind": return UnitEnchantmentGuardianWind
+        case "Invisibility": return UnitEnchantmentInvisibility
+        case "Magic Immunity": return UnitEnchantmentMagicImmunity
+        case "Spell Lock": return UnitEnchantmentSpellLock
+        case "Wind Walking": return UnitEnchantmentWindWalking
+        case "Eldritch Weapon": return UnitEnchantmentEldritchWeapon
+        case "Flame Blade": return UnitEnchantmentFlameBlade
+        case "Berserk": return UnitEnchantmentBerserk
+        case "Black Channels": return UnitEnchantmentBlackChannels
+        case "Wraith Form": return UnitEnchantmentWraithForm
+        case "Confusion": return UnitCurseConfusion
+        case "Creature Binding": return UnitCurseCreatureBinding
+        case "Mind Storm": return UnitCurseMindStorm
+        case "Vertigo": return UnitCurseVertigo
+        case "Shatter": return UnitCurseShatter
+        case "Warp Creature": return UnitCurseWarpCreatureMelee // default to melee
+        case "Black Sleep": return UnitCurseBlackSleep
+        case "Possession": return UnitCursePossession
+        case "Weakness": return UnitCurseWeakness
+        case "Web": return UnitCurseWeb
+    }
+
+    return UnitEnchantmentNone
+}
+
 func (enchantment UnitEnchantment) Name() string {
     switch enchantment {
         case UnitEnchantmentGiantStrength: return "Giant Strength"
