@@ -1,6 +1,8 @@
 package data
 
 import (
+    "fmt"
+    "strconv"
     "image/color"
 )
 
@@ -28,6 +30,33 @@ func AllBanners() []BannerType {
         BannerYellow,
         BannerBrown,
     }
+}
+
+func (banner BannerType) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%v"`, banner.String())), nil
+}
+
+func (banner *BannerType) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *banner = getBannerByName(str)
+    return nil
+}
+
+func getBannerByName(name string) BannerType {
+    switch name {
+        case "green": return BannerGreen
+        case "blue": return BannerBlue
+        case "red": return BannerRed
+        case "purple": return BannerPurple
+        case "yellow": return BannerYellow
+        case "brown": return BannerBrown
+    }
+
+    return BannerGreen
 }
 
 func (banner BannerType) String() string {
@@ -103,6 +132,45 @@ func MyrranRaces() []Race {
     }
 }
 
+func (race Race) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%v"`, race.String())), nil
+}
+
+func (race *Race) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *race = getRaceByName(str)
+    return nil
+}
+
+func getRaceByName(name string) Race {
+    switch name {
+        case "none": return RaceNone
+        case "LizardMen": return RaceLizard
+        case "Nomad": return RaceNomad
+        case "Orc": return RaceOrc
+        case "Troll": return RaceTroll
+        case "Barbarian": return RaceBarbarian
+        case "Beastmen": return RaceBeastmen
+        case "Dark Elf": return RaceDarkElf
+        case "Draconian": return RaceDraconian
+        case "Dwarf": return RaceDwarf
+        case "Gnoll": return RaceGnoll
+        case "Halfling": return RaceHalfling
+        case "High Elf": return RaceHighElf
+        case "High Men": return RaceHighMen
+        case "Klackon": return RaceKlackon
+        case "Hero": return RaceHero
+        case "Fantastic": return RaceFantastic
+        case "All": return RaceAll
+    }
+
+    return RaceNone
+}
+
 // technically 'Lizardmen' should be 'Lizardman' and 'Dwarf' should be 'Dwarven', but the help has them listed as
 // 'Lizardmen Townsfolk' and 'Dwarf Townsfolk'
 func (race Race) String() string {
@@ -157,6 +225,28 @@ const (
     PlaneMyrror
 )
 
+func (plane Plane) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%v"`, plane.String())), nil
+}
+
+func (plane *Plane) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *plane = getPlaneByName(str)
+    return nil
+}
+
+func getPlaneByName(name string) Plane {
+    switch name {
+        case "Arcanus": return PlaneArcanus
+        case "Myrror": return PlaneMyrror
+    }
+    return PlaneArcanus
+}
+
 func (plane Plane) String() string {
     switch plane {
         case PlaneArcanus: return "Arcanus"
@@ -206,6 +296,33 @@ const (
     ChaosMagic
     ArcaneMagic
 )
+
+func (magic MagicType) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%v"`, magic.String())), nil
+}
+
+func (magic *MagicType) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *magic = getMagicByName(str)
+    return nil
+}
+
+func getMagicByName(name string) MagicType {
+    switch name {
+        case "Life": return LifeMagic
+        case "Sorcery": return SorceryMagic
+        case "Nature": return NatureMagic
+        case "Death": return DeathMagic
+        case "Chaos": return ChaosMagic
+        case "Arcane": return ArcaneMagic
+    }
+
+    return MagicNone
+}
 
 func (magic MagicType) String() string {
     switch magic {
@@ -277,6 +394,24 @@ func (bonus BonusType) String() string {
     return ""
 }
 
+func GetBonusByName(name string) BonusType {
+    switch name {
+        case "Gold Ore": return BonusGoldOre
+        case "Silver Ore": return BonusSilverOre
+        case "Wild Game": return BonusWildGame
+        case "Nightshade": return BonusNightshade
+        case "Iron Ore": return BonusIronOre
+        case "Coal": return BonusCoal
+        case "Mithril Ore": return BonusMithrilOre
+        case "Adamantium Ore": return BonusAdamantiumOre
+        case "Gem": return BonusGem
+        case "Quork Crystal": return BonusQuorkCrystal
+        case "Crysx Crystal": return BonusCrysxCrystal
+    }
+
+    return BonusNone
+}
+
 func (bonus BonusType) LbxIndex() int {
     switch bonus {
         case BonusWildGame: return 92
@@ -337,6 +472,42 @@ const (
     WeaponMythril
     WeaponAdamantium
 )
+
+func (weapon WeaponBonus) String() string {
+    switch weapon {
+        case WeaponNone: return "none"
+        case WeaponMagic: return "magic"
+        case WeaponMythril: return "mythril"
+        case WeaponAdamantium: return "adamantium"
+    }
+
+    return "none"
+}
+
+func getWeaponBonusByName(name string) WeaponBonus {
+    switch name {
+        case "none": return WeaponNone
+        case "magic": return WeaponMagic
+        case "mythril": return WeaponMythril
+        case "adamantium": return WeaponAdamantium
+    }
+
+    return WeaponNone
+}
+
+func (weapon WeaponBonus) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%v"`, weapon.String())), nil
+}
+
+func (weapon *WeaponBonus) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *weapon = getWeaponBonusByName(str)
+    return nil
+}
 
 type TreatyType int
 const (

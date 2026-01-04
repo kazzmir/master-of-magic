@@ -29,6 +29,7 @@ type UIKeyFunc func(key []ebiten.Key)
 type UIGainFocusFunc func(*UIElement)
 type UILoseFocusFunc func(*UIElement)
 type UITextEntry func(*UIElement, string) string
+type UIGetText func() string
 type UIScrollFunc func(*UIElement, float64, float64)
 type UIHackFunc func(*UIElement)
 
@@ -71,6 +72,8 @@ type UIElement struct {
     LoseFocus UILoseFocusFunc
     // fires when the user types some keys and this element is focused
     TextEntry UITextEntry
+    // returns the current text in this element
+    GetText UIGetText
     // fires when a key is pressed and this element is focused
     HandleKeys UIKeyFunc
 
@@ -670,6 +673,10 @@ func (ui *UI) StandardUpdate() {
 
                     ui.focusedElement = element
                     if ui.focusedElement.TextEntry != nil {
+                        if ui.focusedElement.GetText != nil {
+                            text := ui.focusedElement.GetText()
+                            ui.textField.SetTextAndSelection(text, len(text), len(text))
+                        }
                         ui.textField.Focus()
                     }
 

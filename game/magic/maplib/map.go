@@ -45,6 +45,15 @@ const (
     MagicNodeNone
 )
 
+func magicNodeFromString(str string) MagicNode {
+    switch str {
+        case "Nature Node": return MagicNodeNature
+        case "Sorcery Node": return MagicNodeSorcery
+        case "Chaos Node": return MagicNodeChaos
+        default: return MagicNodeNone
+    }
+}
+
 func (magicNode MagicNode) MagicType() data.MagicType {
     switch magicNode {
         case MagicNodeNature: return data.NatureMagic
@@ -67,6 +76,7 @@ func (magicNode MagicNode) Name() string {
 type ExtraTile interface {
     DrawLayer1(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int)
     DrawLayer2(screen *ebiten.Image, imageCache *util.ImageCache, options *ebiten.DrawImageOptions, counter uint64, tileWidth int, tileHeight int)
+    Serialize() map[string]any
 }
 
 type ExtraKind int
@@ -79,6 +89,33 @@ const (
     ExtraKindVolcano
     ExtraKindCorruption
 )
+
+func (kind ExtraKind) String() string {
+    switch kind {
+        case ExtraKindRoad: return "Road"
+        case ExtraKindBonus: return "Bonus"
+        case ExtraKindMagicNode: return "Magic Node"
+        case ExtraKindEncounter: return "Encounter"
+        case ExtraKindOpenTower: return "Open Tower"
+        case ExtraKindVolcano: return "Volcano"
+        case ExtraKindCorruption: return "Corruption"
+    }
+
+    return "Unknown"
+}
+
+func extraKindFromString(str string) ExtraKind {
+    switch str {
+        case "Road": return ExtraKindRoad
+        case "Bonus": return ExtraKindBonus
+        case "Magic Node": return ExtraKindMagicNode
+        case "Encounter": return ExtraKindEncounter
+        case "Open Tower": return ExtraKindOpenTower
+        case "Volcano": return ExtraKindVolcano
+        case "Corruption": return ExtraKindCorruption
+        default: return ExtraKindRoad
+    }
+}
 
 var ExtraDrawOrder = []ExtraKind{
     ExtraKindVolcano,
@@ -194,6 +231,23 @@ const (
     EncounterTypeNatureNode
     EncounterTypeSorceryNode
 )
+
+func encounterByName(name string) EncounterType {
+    switch name {
+        case "Monster Lair": return EncounterTypeLair
+        case "Mysterious Cave": return EncounterTypeCave
+        case "Tower": return EncounterTypePlaneTower
+        case "Ancient Temple": return EncounterTypeAncientTemple
+        case "Fallen Temple": return EncounterTypeFallenTemple
+        case "Ruins": return EncounterTypeRuins
+        case "Abandoned Keep": return EncounterTypeAbandonedKeep
+        case "Dungeon": return EncounterTypeDungeon
+        case "Chaos Node": return EncounterTypeChaosNode
+        case "Nature Node": return EncounterTypeNatureNode
+        case "Sorcery Node": return EncounterTypeSorceryNode
+        default: return EncounterTypeLair
+    }
+}
 
 func (encounterType EncounterType) Name() string {
     switch encounterType {

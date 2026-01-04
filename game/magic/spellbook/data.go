@@ -36,6 +36,11 @@ type Spell struct {
     Rarity SpellRarity
 }
 
+// all spells can be looked up in the spellbook by their name
+func (spell Spell) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%s"`, spell.Name)), nil
+}
+
 func (spell Spell) IsVariableCost() bool {
     return spell.SpellType >= 18
 }

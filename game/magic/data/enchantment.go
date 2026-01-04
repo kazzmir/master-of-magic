@@ -1,7 +1,9 @@
 package data
 
 import (
+    "fmt"
     "image/color"
+    "strconv"
 )
 
 // global overland enchantments
@@ -38,6 +40,39 @@ const (
     GreatUnsummoning
     DeathWish
 )
+
+func GetEnchantmentByName(name string) Enchantment {
+    switch name {
+        case "Awareness": return EnchantmentAwareness
+        case "Detect Magic": return EnchantmentDetectMagic
+        case "Charm of Life": return EnchantmentCharmOfLife
+        case "Crusade": return EnchantmentCrusade
+        case "Holy Arms": return EnchantmentHolyArms
+        case "Just Cause": return EnchantmentJustCause
+        case "Life Force": return EnchantmentLifeForce
+        case "Planar Seal": return EnchantmentPlanarSeal
+        case "Tranquility": return EnchantmentTranquility
+        case "Herb Mastery": return EnchantmentHerbMastery
+        case "Nature Awareness": return EnchantmentNatureAwareness
+        case "Nature's Wrath": return EnchantmentNaturesWrath
+        case "Aura of Majesty": return EnchantmentAuraOfMajesty
+        case "Suppress Magic": return EnchantmentSuppressMagic
+        case "Time Stop": return EnchantmentTimeStop
+        case "Wind Mastery": return EnchantmentWindMastery
+        case "Armageddon": return EnchantmentArmageddon
+        case "Chaos Surge": return EnchantmentChaosSurge
+        case "Doom Mastery": return EnchantmentDoomMastery
+        case "Great Wasting": return EnchantmentGreatWasting
+        case "Meteor Storm": return EnchantmentMeteorStorm
+        case "Eternal Night": return EnchantmentEternalNight
+        case "Evil Omens": return EnchantmentEvilOmens
+        case "Zombie Mastery": return EnchantmentZombieMastery
+        case "Great Unsummoning": return GreatUnsummoning
+        case "Death Wish": return DeathWish
+    }
+
+    return EnchantmentNone
+}
 
 func (enchantment Enchantment) String() string {
     switch enchantment {
@@ -373,6 +408,73 @@ func (enchantment UnitEnchantment) SpellName() string {
     }
 }
 
+func (enchantment UnitEnchantment) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%s"`, enchantment.Name())), nil
+}
+
+func (enchantment *UnitEnchantment) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *enchantment = getUnitEnchantmentByName(str)
+    return nil
+}
+
+func getUnitEnchantmentByName(name string) UnitEnchantment {
+    switch name {
+        case "Giant Strength": return UnitEnchantmentGiantStrength
+        case "Lion Heart": return UnitEnchantmentLionHeart
+        case "Haste": return UnitEnchantmentHaste
+        case "Immolation": return UnitEnchantmentImmolation
+        case "Resist Elements": return UnitEnchantmentResistElements
+        case "Resist Magic": return UnitEnchantmentResistMagic
+        case "Elemental Armor": return UnitEnchantmentElementalArmor
+        case "Bless": return UnitEnchantmentBless
+        case "Righteousness": return UnitEnchantmentRighteousness
+        case "Cloak of Fear": return UnitEnchantmentCloakOfFear
+        case "True Sight": return UnitEnchantmentTrueSight
+        case "Path Finding": return UnitEnchantmentPathFinding
+        case "Flight": return UnitEnchantmentFlight
+        case "Demon Wings": return UnitEnchantmentChaosChannelsDemonWings
+        case "Demon Skin": return UnitEnchantmentChaosChannelsDemonSkin
+        case "Fire Breath": return UnitEnchantmentChaosChannelsFireBreath
+        case "Endurance": return UnitEnchantmentEndurance
+        case "Heroism": return UnitEnchantmentHeroism
+        case "Holy Armor": return UnitEnchantmentHolyArmor
+        case "Holy Weapon": return UnitEnchantmentHolyWeapon
+        case "Invulnerability": return UnitEnchantmentInvulnerability
+        case "Planar Travel": return UnitEnchantmentPlanarTravel
+        case "Iron Skin": return UnitEnchantmentIronSkin
+        case "Regeneration": return UnitEnchantmentRegeneration
+        case "Stone Skin": return UnitEnchantmentStoneSkin
+        case "Water Walking": return UnitEnchantmentWaterWalking
+        case "Guardian Wind": return UnitEnchantmentGuardianWind
+        case "Invisibility": return UnitEnchantmentInvisibility
+        case "Magic Immunity": return UnitEnchantmentMagicImmunity
+        case "Spell Lock": return UnitEnchantmentSpellLock
+        case "Wind Walking": return UnitEnchantmentWindWalking
+        case "Eldritch Weapon": return UnitEnchantmentEldritchWeapon
+        case "Flame Blade": return UnitEnchantmentFlameBlade
+        case "Berserk": return UnitEnchantmentBerserk
+        case "Black Channels": return UnitEnchantmentBlackChannels
+        case "Wraith Form": return UnitEnchantmentWraithForm
+        case "Confusion": return UnitCurseConfusion
+        case "Creature Binding": return UnitCurseCreatureBinding
+        case "Mind Storm": return UnitCurseMindStorm
+        case "Vertigo": return UnitCurseVertigo
+        case "Shatter": return UnitCurseShatter
+        case "Warp Creature": return UnitCurseWarpCreatureMelee // default to melee
+        case "Black Sleep": return UnitCurseBlackSleep
+        case "Possession": return UnitCursePossession
+        case "Weakness": return UnitCurseWeakness
+        case "Web": return UnitCurseWeb
+    }
+
+    return UnitEnchantmentNone
+}
+
 func (enchantment UnitEnchantment) Name() string {
     switch enchantment {
         case UnitEnchantmentGiantStrength: return "Giant Strength"
@@ -636,6 +738,52 @@ func (enchantment CityEnchantment) SpellName() string {
              CityEnchantmentChaosWard: return "Spell Ward"
         default: return enchantment.Name()
     }
+}
+
+func (enchantment CityEnchantment) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%v"`, enchantment.Name())), nil
+}
+
+func (enchantment *CityEnchantment) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *enchantment = getCityEnchantmentByName(str)
+    return nil
+}
+
+func getCityEnchantmentByName(name string) CityEnchantment {
+    switch name {
+        case "Altar of Battle": return CityEnchantmentAltarOfBattle
+        case "Astral Gate": return CityEnchantmentAstralGate
+        case "Chaos Rift": return CityEnchantmentChaosRift
+        case "Cloud of Shadow": return CityEnchantmentCloudOfShadow
+        case "Consecration": return CityEnchantmentConsecration
+        case "Cursed Lands": return CityEnchantmentCursedLands
+        case "Dark Rituals": return CityEnchantmentDarkRituals
+        case "Earth Gate": return CityEnchantmentEarthGate
+        case "Evil Presence": return CityEnchantmentEvilPresence
+        case "Famine": return CityEnchantmentFamine
+        case "Flying Fortress": return CityEnchantmentFlyingFortress
+        case "Gaia's Blessing": return CityEnchantmentGaiasBlessing
+        case "Heavenly Light": return CityEnchantmentHeavenlyLight
+        case "Inspirations": return CityEnchantmentInspirations
+        case "Nature's Eye": return CityEnchantmentNaturesEye
+        case "Pestilence": return CityEnchantmentPestilence
+        case "Prosperity": return CityEnchantmentProsperity
+        case "Life Ward": return CityEnchantmentLifeWard
+        case "Sorcery Ward": return CityEnchantmentSorceryWard
+        case "Nature Ward": return CityEnchantmentNatureWard
+        case "Death Ward": return CityEnchantmentDeathWard
+        case "Chaos Ward": return CityEnchantmentChaosWard
+        case "Stream of Life": return CityEnchantmentStreamOfLife
+        case "Wall of Darkness": return CityEnchantmentWallOfDarkness
+        case "Wall of Fire": return CityEnchantmentWallOfFire
+    }
+
+    return CityEnchantmentNone
 }
 
 func (enchantment CityEnchantment) Name() string {

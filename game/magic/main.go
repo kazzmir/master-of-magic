@@ -10,6 +10,10 @@ import (
     "math/rand/v2"
     "slices"
     "cmp"
+    "os"
+    "bufio"
+    "compress/gzip"
+    "encoding/json"
     "image"
     // "image/color"
 
@@ -368,6 +372,40 @@ type OriginalGameLoader struct {
     NewGame chan *gamelib.Game
 }
 
+func (loader *OriginalGameLoader) LoadNew(path string) error {
+    file, err := os.Open(path)
+    if err != nil {
+        return fmt.Errorf("Could not open save game file '%v': %v", path, err)
+    }
+    defer file.Close()
+
+    reader := bufio.NewReader(file)
+    gzipReader, err := gzip.NewReader(reader)
+    if err != nil {
+        log.Printf("Error: unable to create gzip reader for save game file '%v': %v", path, err)
+        return fmt.Errorf("Could not load %v", path)
+    }
+    defer gzipReader.Close()
+
+    decoder := json.NewDecoder(gzipReader)
+
+    var serializedGame gamelib.SerializedGame
+    err = decoder.Decode(&serializedGame)
+    if err != nil {
+        log.Printf("Error: unable to decode save game file '%v': %v", path, err)
+        return fmt.Errorf("Could not load %v", path)
+    }
+
+    newGame := gamelib.MakeGameFromSerialized(loader.Cache, musiclib.MakeMusic(loader.Cache), &serializedGame)
+    select {
+        case loader.NewGame <- newGame:
+        default:
+            log.Printf("Warning: unable to send new game to channel")
+    }
+
+    return nil
+}
+
 func (loader *OriginalGameLoader) Load(reader io.Reader) error {
     saved, err := load.LoadSaveGame(reader)
     if err != nil {
@@ -398,6 +436,18 @@ func writeHeapDump(filename string) {
     }
 }
 */
+
+func centerOnCity(game *gamelib.Game) {
+    humanPlayer := game.Model.GetHumanPlayer()
+    if humanPlayer != nil {
+        if len(humanPlayer.Cities) > 0 {
+            for _, city := range humanPlayer.Cities {
+                game.Camera.Center(city.X, city.Y)
+                game.Model.Plane = city.Plane
+            }
+        }
+    }
+}
 
 func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *MagicGame, gameLoader *OriginalGameLoader) error {
     defer func() {
@@ -430,6 +480,13 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
                 game = newGame
                 game.GameLoader = gameLoader
                 game.Model.CurrentPlayer = 0
+
+                centerOnCity(game)
+                humanPlayer := game.Model.GetHumanPlayer()
+                if humanPlayer != nil {
+                    game.DoNextUnit(humanPlayer)
+                }
+
                 game.RefreshUI()
 
                 magic.Drawer = func(screen *ebiten.Image) {
@@ -542,7 +599,7 @@ func startQuickGame(yield coroutine.YieldFunc, game *MagicGame) error {
     })
 }
 
-func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startGame bool, enableMusic bool) error {
+func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startGame bool, loadSave string, enableMusic bool) error {
 
     err := loadData(yield, game, dataPath)
     if err != nil {
@@ -562,16 +619,26 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
         return startQuickGame(yield, game)
     }
 
-    game.Music.PlaySong(musiclib.SongIntro)
-    runIntro(yield, game)
+    if loadSave == "" {
+        game.Music.PlaySong(musiclib.SongIntro)
+        runIntro(yield, game)
 
-    yield()
+        yield()
 
-    game.Music.PlaySong(musiclib.SongTitle)
+        game.Music.PlaySong(musiclib.SongTitle)
+    }
 
     gameLoader := &OriginalGameLoader{
         Cache: game.Cache,
         NewGame: make(chan *gamelib.Game, 1),
+    }
+
+    if loadSave != "" {
+        err := gameLoader.LoadNew(loadSave)
+        // couldn't load game, just play title music
+        if err != nil {
+            game.Music.PlaySong(musiclib.SongTitle)
+        }
     }
 
     for {
@@ -586,6 +653,13 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                     game.Music.Stop()
                     // FIXME: should this go here?
                     newGame.Model.CurrentPlayer = 0
+                    centerOnCity(newGame)
+
+                    humanPlayer := newGame.Model.GetHumanPlayer()
+                    if humanPlayer != nil {
+                        newGame.DoNextUnit(humanPlayer)
+                    }
+
                     err := runGameInstance(newGame, yield, game, gameLoader)
                     if err != nil {
                         game.Drawer = shutdown
@@ -641,11 +715,11 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     }
 }
 
-func NewMagicGame(dataPath string, startGame bool, enableMusic bool) (*MagicGame, error) {
+func NewMagicGame(dataPath string, startGame bool, loadSave string, enableMusic bool) (*MagicGame, error) {
     var game *MagicGame
 
     run := func(yield coroutine.YieldFunc) error {
-        return runGame(yield, game, dataPath, startGame, enableMusic)
+        return runGame(yield, game, dataPath, startGame, loadSave, enableMusic)
     }
 
     game = &MagicGame{
@@ -696,10 +770,12 @@ func main() {
     var startGame bool
     var trace bool
     var enableMusic bool
+    var loadSave string
     flag.StringVar(&dataPath, "data", "", "path to master of magic lbx data files. Give either a directory or a zip file. Data is searched for in the current directory if not given.")
     flag.BoolVar(&enableMusic, "music", true, "enable music playback")
     flag.BoolVar(&startGame, "start", false, "start the game immediately with a random wizard")
     flag.BoolVar(&trace, "trace", false, "enable profiling (pprof)")
+    flag.StringVar(&loadSave, "load", "", "load a saved game from the given file and start immediately")
     flag.Parse()
 
     if trace {
@@ -719,7 +795,7 @@ func main() {
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-    game, err := NewMagicGame(dataPath, startGame, enableMusic)
+    game, err := NewMagicGame(dataPath, startGame, loadSave, enableMusic)
 
     if err != nil {
         log.Printf("Error: unable to load game: %v", err)

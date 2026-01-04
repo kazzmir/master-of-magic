@@ -1533,7 +1533,8 @@ func ReadTerrainData(lbxFile *lbx.LbxFile) (*TerrainData, error) {
 
     reader := bytes.NewReader(data)
 
-    var tiles []TerrainTile
+    // larger than we need, but should be fine
+    tiles := make([]TerrainTile, 0, len(images))
 
     tileIndex := 0
 

@@ -4,8 +4,10 @@ import (
     "image/color"
     "image"
     "math/rand/v2"
+    "encoding/json"
     "log"
     "math"
+    "io"
     "fmt"
     "context"
     "strings"
@@ -462,6 +464,17 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
     return game.Model.AddPlayer(wizard, human)
 }
 
+type DummyGameLoader struct {
+}
+
+func (loader *DummyGameLoader) Load(reader io.Reader) error {
+    return errors.New("cannot load")
+}
+
+func (loader *DummyGameLoader) LoadNew(path string) error {
+    return errors.New("cannot load")
+}
+
 func createArtifactPool(lbxCache *lbx.LbxCache) map[string]*artifact.Artifact {
     artifacts, err := artifact.ReadArtifacts(lbxCache)
     if err != nil {
@@ -491,18 +504,65 @@ func MakeGame(lbxCache *lbx.LbxCache, music_ *music.Music, settings setup.NewGam
         return nil
     }
 
-    help, err := helplib.ReadHelpFromCache(lbxCache)
+    allSpells, err := spellbook.ReadSpellsFromCache(lbxCache)
     if err != nil {
+        log.Printf("Could not read spells from cache: %v", err)
         return nil
     }
 
-    fonts := MakeGameFonts(lbxCache)
+    heroNames := herolib.ReadNamesPerWizard(lbxCache)
 
     buildingInfo, err := buildinglib.ReadBuildingInfo(lbxCache)
     if err != nil {
         log.Printf("Unable to read building info: %v", err)
         return nil
     }
+
+    return MakeGameWithModel(lbxCache, music_, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
+        return MakeGameModel(terrainData, settings, data.PlaneArcanus, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo)
+    })
+}
+
+func MakeGameFromSerialized(lbxCache *lbx.LbxCache, music_ *music.Music, serializedGame *SerializedGame) *Game {
+
+    heroNames := herolib.ReadNamesPerWizard(lbxCache)
+
+    buildingInfo, err := buildinglib.ReadBuildingInfo(lbxCache)
+    if err != nil {
+        log.Printf("Unable to read building info: %v", err)
+        return nil
+    }
+
+    allSpells, err := spellbook.ReadSpellsFromCache(lbxCache)
+    if err != nil {
+        log.Printf("Could not read spells from cache: %v", err)
+        return nil
+    }
+
+    terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
+    if err != nil {
+        log.Printf("Error: could not load terrain: %v", err)
+        return nil
+    }
+
+    terrainData, err := terrain.ReadTerrainData(terrainLbx)
+    if err != nil {
+        log.Printf("Error: could not load terrain: %v", err)
+        return nil
+    }
+
+    return MakeGameWithModel(lbxCache, music_, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
+        return MakeModelFromSerialized(serializedGame, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo, terrainData)
+    })
+}
+
+func MakeGameWithModel(lbxCache *lbx.LbxCache, music_ *music.Music, makeModel func (*lbx.LbxCache, chan GameEvent) *GameModel) *Game {
+    help, err := helplib.ReadHelpFromCache(lbxCache)
+    if err != nil {
+        return nil
+    }
+
+    fonts := MakeGameFonts(lbxCache)
 
     imageCache := util.MakeImageCache(lbxCache)
 
@@ -522,10 +582,11 @@ func MakeGame(lbxCache *lbx.LbxCache, music_ *music.Music, settings setup.NewGam
         ImageCache: imageCache,
         Fonts: fonts,
         Camera: camera.MakeCamera(),
+        GameLoader: &DummyGameLoader{},
     }
 
-    heroNames := herolib.ReadNamesPerWizard(game.Cache)
-    game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache), buildingInfo)
+    // game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache), buildingInfo)
+    game.Model = makeModel(lbxCache, game.Events)
 
     game.HudUI = game.MakeHudUI()
     game.PushDrawer(func(screen *ebiten.Image){
@@ -536,6 +597,7 @@ func MakeGame(lbxCache *lbx.LbxCache, music_ *music.Music, settings setup.NewGam
 
     return game
 }
+
 
 func (game *Game) Shutdown() {
     game.Music.Stop()
@@ -763,11 +825,12 @@ func (game *Game) SuggestCityName(race data.Race) (string) {
     return chooseCityName(existingNames, choices)
 }
 
-func (game *Game) AllUnits() []units.StackUnit{
+// FIXME: probably make this an iterator
+func (game *Game) AllUnits() []units.StackUnit {
     var out []units.StackUnit
 
     for _, player := range game.Model.Players {
-        for _, unit := range player.Units {
+        for unit := range player.Units() {
             out = append(out, unit)
         }
     }
@@ -1570,6 +1633,16 @@ func (settings *SettingsUI) RunSettingsUI() {
     settings.Game.doRunUI(settings.Yield, group, quit)
 }
 
+type GameSaver struct {
+    Game *Game
+}
+
+func (saver *GameSaver) Save(writer io.Writer, saveName string) error {
+    data := SerializeModel(saver.Game.Model, saveName)
+    marshaler := json.NewEncoder(writer)
+    return marshaler.Encode(data)
+}
+
 func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
 
     settingsUI := &SettingsUI{
@@ -1577,7 +1650,11 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
         Yield: yield,
     }
 
-    gameMenu, quit := gamemenu.MakeGameMenuUI(game.Cache, game.GameLoader, settingsUI, func(){
+    gameSaver := &GameSaver{
+        Game: game,
+    }
+
+    gameMenu, quit := gamemenu.MakeGameMenuUI(game.Cache, game.GameLoader, gameSaver, settingsUI, func(){
         game.State = GameStateQuit
     })
 
@@ -2777,6 +2854,8 @@ func (game *Game) doCartographer(yield coroutine.YieldFunc) {
 func (game *Game) doRunUI(yield coroutine.YieldFunc, group *uilib.UIElementGroup, quit context.Context) {
     game.HudUI.AddGroup(group)
     defer game.HudUI.RemoveGroup(group)
+
+    defer game.HudUI.UnfocusElement()
 
     yield()
     for quit.Err() == nil {
@@ -6474,7 +6553,7 @@ func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
     unitsNeedFood := false
     unitsNeedMana := false
 
-    for _, unit := range player.Units {
+    for unit := range player.Units() {
         // dont need to keep checking in this case
         if unitsNeedGold && unitsNeedFood && unitsNeedMana {
             break
@@ -6509,7 +6588,7 @@ func (game *Game) DisbandUnits(player *playerlib.Player) []string {
     // keep removing units until the upkeep value can be paid
     ok := false
     var disbandedMessages []string
-    for len(player.Units) > 0 && !ok {
+    for player.UnitCount() > 0 && !ok {
         ok = true
 
         goldIssue, foodIssue, manaIssue := game.CheckDisband(player)
@@ -6518,9 +6597,11 @@ func (game *Game) DisbandUnits(player *playerlib.Player) []string {
             ok = false
             disbanded := false
 
+            allUnits := slices.Collect(player.Units())
+
             // try to disband one unit that is taking up resources
-            for i := len(player.Units) - 1; i >= 0; i-- {
-                unit := player.Units[i]
+            for i := len(allUnits) - 1; i >= 0; i-- {
+                unit := allUnits[i]
                 // disband the unit for the right reason
                 if goldIssue && unit.GetUpkeepGold() > 0 {
                     log.Printf("Disband %v due to lack of gold", unit)
@@ -6636,7 +6717,7 @@ func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
     }
 
     var enchantedUnits []units.StackUnit
-    for _, unit := range player.Units {
+    for unit := range player.Units() {
         if len(unit.GetEnchantments()) > 0 {
             enchantedUnits = append(enchantedUnits, unit)
         }
@@ -7161,13 +7242,18 @@ func (game *Game) doMeteorStorm() {
         }
 
         // non-garrisoned units take immolation damage
-        for _, unit := range slices.Clone(player.Units) {
+        var toRemove []units.StackUnit
+        for unit := range player.Units() {
             if entityInfo.FindCity(unit.GetX(), unit.GetY(), unit.GetPlane()) == nil {
                 immolate(unit)
                 if unit.GetHealth() <= 0 {
-                    player.RemoveUnit(unit)
+                    toRemove = append(toRemove, unit)
                 }
             }
+        }
+
+        for _, unit := range toRemove {
+            player.RemoveUnit(unit)
         }
 
         if affectedPlayers.Contains(player) {

@@ -283,7 +283,6 @@ func (ability Ability) Name() string {
         case AbilityWindWalking: return "Wind Walking"
         case AbilityAgility: return "Agility"
 
-        // FIXME: add +X to each ability that has a value
         case AbilitySuperAgility: return plusValue("Super Agility")
         case AbilityArcanePower: return plusValue("Arcane Power")
         case AbilitySuperArcanePower: return plusValue("Super Arcane Power")

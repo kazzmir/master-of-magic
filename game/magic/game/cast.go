@@ -899,7 +899,7 @@ func (game *Game) ApplyGlobalEnchantment(enchantment data.Enchantment, player *p
             player.UpdateUnrest()
         case data.EnchantmentHolyArms:
             // all units implicitly have holy weapon, so the actual enchantment is removed from all units
-            for _, unit := range player.Units {
+            for unit := range player.Units() {
                 unit.RemoveEnchantment(data.UnitEnchantmentHolyWeapon)
             }
         case data.EnchantmentAuraOfMajesty:

@@ -3,7 +3,9 @@ package units
 import (
     "slices"
     "cmp"
+    "fmt"
     "math"
+    "strconv"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -23,6 +25,42 @@ const (
     BusyStatusPatrol // any unit can patrol
     BusyStatusStasis // for units under the effect of stasis
 )
+
+func (busy BusyStatus) String() string {
+    switch busy {
+        case BusyStatusNone: return "none"
+        case BusyStatusBuildRoad: return "building road"
+        case BusyStatusPurify: return "purifying land"
+        case BusyStatusPatrol: return "patrolling"
+        case BusyStatusStasis: return "stasis"
+        default: return "unknown"
+    }
+}
+
+func getBusyFromString(str string) BusyStatus {
+    switch str {
+        case "none": return BusyStatusNone
+        case "building road": return BusyStatusBuildRoad
+        case "purifying land": return BusyStatusPurify
+        case "patrolling": return BusyStatusPatrol
+        case "stasis": return BusyStatusStasis
+        default: return BusyStatusNone
+    }
+}
+
+func (busy BusyStatus) MarshalJSON() ([]byte, error) {
+    return []byte(fmt.Sprintf(`"%s"`, busy.String())), nil
+}
+
+func (busy *BusyStatus) UnmarshalJSON(data []byte) error {
+    str, err := strconv.Unquote(string(data))
+    if err != nil {
+        return err
+    }
+
+    *busy = getBusyFromString(str)
+    return nil
+}
 
 type EnchantmentProvider interface {
     HasEnchantmentOnly(data.UnitEnchantment) bool
@@ -67,9 +105,8 @@ type OverworldUnit struct {
     Plane data.Plane
     X int
     Y int
-    Id uint64
     Damage int
-    // Health int
+
     // to get the level, use the conversion functions in experience.go
     Experience int
     WeaponBonus data.WeaponBonus
@@ -309,10 +346,6 @@ func (unit *OverworldUnit) SetX(x int) {
 
 func (unit *OverworldUnit) SetY(y int) {
     unit.Y = y
-}
-
-func (unit *OverworldUnit) SetId(id uint64) {
-    unit.Id = id
 }
 
 func (unit *OverworldUnit) GetMovesLeft(overworld bool) fraction.Fraction {
