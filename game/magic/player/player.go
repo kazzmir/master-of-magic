@@ -1483,12 +1483,6 @@ func (player *Player) RemoveUnit(unit units.StackUnit) {
         }
     }
 
-    /*
-    player.Units = slices.DeleteFunc(player.Units, func (u units.StackUnit) bool {
-        return u == unit
-    })
-    */
-
     stack := player.FindStack(unit.GetX(), unit.GetY(), unit.GetPlane())
     if stack != nil {
         stack.RemoveUnit(unit)
@@ -1532,8 +1526,6 @@ func (player *Player) UpdateUnit(unit units.StackUnit) units.StackUnit {
 }
 
 func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {
-    // player.Units = append(player.Units, unit)
-
     stack := player.FindStack(unit.GetX(), unit.GetY(), unit.GetPlane())
     if stack == nil {
         stack = MakeUnitStack()
