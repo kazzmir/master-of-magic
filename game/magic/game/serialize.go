@@ -4,10 +4,12 @@ import (
     "time"
     "maps"
     "slices"
+    "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/serialize"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
@@ -105,24 +107,52 @@ func SerializeModel(model *GameModel, saveName string) SerializedGame {
     }
 }
 
-/*
-func MakeModelFromSerialize(decoder json.Decoder) *GameModel {
-    arcanusMap := maplib.DeserializeMap(data["arcanus"].(map[string]any))
-    myrrorMap := maplib.DeserializeMap(data["myrror"].(map[string]any))
-
-    return &GameModel{
-        ArcanusMap: arcanusMap,
-        MyrrorMap:  myrrorMap,
-    }
-}
-*/
-
 func reconstructArtifactPool(items []string, artifactPool map[string]*artifact.Artifact) map[string]*artifact.Artifact {
     out := make(map[string]*artifact.Artifact)
 
     for _, itemName := range items {
         if item, ok := artifactPool[itemName]; ok {
             out[itemName] = item
+        }
+    }
+
+    return out
+}
+
+func reconstructRandomEvents(serializedEvents []SerializedRandomEvent, model *GameModel) []*RandomEvent {
+    var out []*RandomEvent
+
+    findTargetCity := func(serializedCity *SerializedTargetCity) *citylib.City {
+        city, _ := model.FindCity(serializedCity.X, serializedCity.Y, serializedCity.Plane)
+        if city == nil {
+            log.Printf("Warning: could not find target city at (%d, %d) on %v during event deserialization", serializedCity.X, serializedCity.Y, serializedCity.Plane)
+        }
+        return city
+    }
+
+    // implement later if needed
+    /*
+    findTargetPlayer := func(banner *data.BannerType) *playerlib.Player {
+        return nil
+    }
+    */
+
+    for _, event := range serializedEvents {
+        switch event.Type {
+            case RandomEventBadMoon: out = append(out, MakeBadMoonEvent(event.Year))
+            case RandomEventConjunctionChaos: out = append(out, MakeConjunctionChaosEvent(event.Year))
+            case RandomEventConjunctionNature: out = append(out, MakeConjunctionNatureEvent(event.Year))
+            case RandomEventConjunctionSorcery: out = append(out, MakeConjunctionSorceryEvent(event.Year))
+            case RandomEventPopulationBoom: out = append(out, MakePopulationBoomEvent(event.Year, findTargetCity(event.TargetCity)))
+            case RandomEventPlague: out = append(out, MakePlagueEvent(event.Year, findTargetCity(event.TargetCity)))
+            case RandomEventDisjunction: out = append(out, MakeDisjunctionEvent(event.Year))
+            case RandomEventGoodMoon: out = append(out, MakeGoodMoonEvent(event.Year))
+            case RandomEventManaShort: out = append(out, MakeManaShortEvent(event.Year))
+
+            case RandomEventDepletion, RandomEventDiplomaticMarriage, RandomEventRebellion,
+                RandomEventDonation, RandomEventGift, RandomEventGreatMeteor, RandomEventPiracy,
+                RandomEventEarthquake, RandomEventNewMinerals:
+                log.Printf("Warning: unhandled event %d during deserialization", event.Type)
         }
     }
 
@@ -148,10 +178,6 @@ func MakeModelFromSerialized(
         Events: events,
         BuildingInfo: buildingInfo,
         LastEventTurn: serializedGame.LastEventTurn,
-
-        /*
-        RandomEvents []*RandomEvent
-        */
     }
 
     var players []*playerlib.Player
@@ -189,6 +215,8 @@ func MakeModelFromSerialized(
     for _, initializer := range cityInitializers {
         initializer(model.ArcanusMap, model.MyrrorMap)
     }
+
+    model.RandomEvents = reconstructRandomEvents(serializedGame.Events, model)
 
     return model
 }
