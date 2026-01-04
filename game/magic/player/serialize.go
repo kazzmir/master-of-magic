@@ -108,8 +108,7 @@ type SerializedPlayer struct {
 
     HeroPool []herolib.SerializedHeroUnit `json:"hero-pool"`
 
-    // TODO
-    // PlayerRelations map[*Player]*Relationship
+    PlayerRelations map[data.BannerType]Relationship `json:"player-relations,omitempty"`
 }
 
 func serializeHeros(heroes []*herolib.Hero) []herolib.SerializedHeroUnit {
@@ -215,6 +214,14 @@ func serializeCreateArtifact(art *artifact.Artifact) *artifact.SerializedArtifac
     return &serialized
 }
 
+func serializeRelations(relations map[*Player]*Relationship) map[data.BannerType]Relationship {
+    out := make(map[data.BannerType]Relationship)
+    for player, relation := range relations {
+        out[player.GetBanner()] = *relation
+    }
+    return out
+}
+
 func SerializePlayer(player *Player) SerializedPlayer {
     return SerializedPlayer{
         ArcanusFog: player.ArcanusFog,
@@ -253,6 +260,7 @@ func SerializePlayer(player *Player) SerializedPlayer {
         VaultEquipment: serializeVaultEquipment(player.VaultEquipment[:]),
         CreateArtifact: serializeCreateArtifact(player.CreateArtifact),
         HeroPool: serializeHeros(slices.Collect(maps.Values(player.HeroPool))),
+        PlayerRelations: serializeRelations(player.PlayerRelations),
     }
 }
 
@@ -388,7 +396,7 @@ func reconstructStacks(serialized []SerializedUnitStack, heroes [6]*herolib.Hero
 }
 
 // returns a player object and a function to initialize its cities once the maps are available
-func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider GlobalEnchantmentsProvider, allSpells spellbook.Spells, buildingInfo buildinglib.BuildingInfos, cityServices citylib.CityServicesProvider) (*Player, func(*maplib.Map, *maplib.Map)) {
+func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider GlobalEnchantmentsProvider, allSpells spellbook.Spells, buildingInfo buildinglib.BuildingInfos, cityServices citylib.CityServicesProvider) (*Player, func(*maplib.Map, *maplib.Map), func ([]*Player)) {
     player := &Player{
         ArcanusFog: serialized.ArcanusFog,
         MyrrorFog: serialized.MyrrorFog,
@@ -424,12 +432,7 @@ func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider 
         RoadWorkMyrror: reconstructWork(serialized.RoadWorkMyrror),
         PurifyWorkArcanus: reconstructWork(serialized.PurifyWorkArcanus),
         PurifyWorkMyrror: reconstructWork(serialized.PurifyWorkMyrror),
-
-        /*
-        // relations with other players (treaties, etc)
-        PlayerRelations map[*Player]*Relationship
-
-        */
+        PlayerRelations: make(map[*Player]*Relationship), // will be initialized later
     }
 
     player.HeroPool = reconstructHeroPool(serialized.HeroPool, allSpells, player.MakeUnitEnchantmentProvider(), player.MakeExperienceInfo())
@@ -441,5 +444,16 @@ func ReconstructPlayer(serialized *SerializedPlayer, globalEnchantmentsProvider 
         player.Cities = reconstructCities(serialized.Cities, arcanusMap, myrrorMap, cityServices, player, buildingInfo)
     }
 
-    return player, initializeCities
+    initializeRelations := func(allPlayers []*Player) {
+        for banner, relation := range serialized.PlayerRelations {
+            for _, otherPlayer := range allPlayers {
+                if otherPlayer.GetBanner() == banner {
+                    player.PlayerRelations[otherPlayer] = &relation
+                    break
+                }
+            }
+        }
+    }
+
+    return player, initializeCities, initializeRelations
 }

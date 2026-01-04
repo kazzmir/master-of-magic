@@ -240,7 +240,7 @@ func (road *ExtraRoad) Serialize() map[string]any {
     }
 }
 
-func (road ExtraRoad) Reconstruct(raw map[string]any) *ExtraRoad {
+func (road ExtraRoad) Reconstruct(raw map[string]any, x int, y int, map_ *Map) *ExtraRoad {
     enchanted, ok := raw["enchanted"].(bool)
     if !ok {
         enchanted = false
@@ -248,6 +248,9 @@ func (road ExtraRoad) Reconstruct(raw map[string]any) *ExtraRoad {
 
     return &ExtraRoad{
         Enchanted: enchanted,
+        X: x,
+        Y: y,
+        Map: map_,
     }
 }
 
@@ -259,14 +262,14 @@ func (corruption *ExtraCorruption) Serialize() map[string]any {
     return map[string]any{}
 }
 
-func ReconstructExtraTile(kind ExtraKind, data map[string]any, wizards []Wizard) ExtraTile {
+func ReconstructExtraTile(kind ExtraKind, data map[string]any, wizards []Wizard, x int, y int, map_ *Map) ExtraTile {
     switch kind {
         case ExtraKindBonus: return ExtraBonus{}.Reconstruct(data)
         case ExtraKindMagicNode: return ExtraMagicNode{}.Reconstruct(data, wizards)
         case ExtraKindEncounter: return ExtraEncounter{}.Reconstruct(data, wizards)
         case ExtraKindOpenTower: return &ExtraOpenTower{}
 
-        case ExtraKindRoad: return ExtraRoad{}.Reconstruct(data)
+        case ExtraKindRoad: return ExtraRoad{}.Reconstruct(data, x, y, map_)
         case ExtraKindVolcano: return ExtraVolcano{}.Reconstruct(data, wizards)
         case ExtraKindCorruption: return &ExtraCorruption{}
     }
@@ -276,6 +279,16 @@ func ReconstructExtraTile(kind ExtraKind, data map[string]any, wizards []Wizard)
 
 func ReconstructMap(mapData SerializedMap, terrainData *terrain.TerrainData, cityProvider CityProvider, wizards []Wizard) *Map {
     extras := make(map[image.Point]map[ExtraKind]ExtraTile)
+
+    map_ := &Map{
+        Map: &terrain.Map{
+            Terrain: mapData.Map,
+        },
+        TileCache: make(map[int]*ebiten.Image),
+        Data: terrainData,
+        CityProvider: cityProvider,
+        ExtraMap: extras,
+    }
 
     for _, extra := range mapData.Extra {
         point := image.Pt(extra.X, extra.Y)
@@ -290,19 +303,12 @@ func ReconstructMap(mapData SerializedMap, terrainData *terrain.TerrainData, cit
 
             extraKind := extraKindFromString(kind)
 
-            extraData[extraKind] = ReconstructExtraTile(extraKind, tileData, wizards)
+            extraData[extraKind] = ReconstructExtraTile(extraKind, tileData, wizards, extra.X, extra.Y, map_)
         }
 
         extras[point] = extraData
     }
 
-    return &Map{
-        Map: &terrain.Map{
-            Terrain: mapData.Map,
-        },
-        TileCache: make(map[int]*ebiten.Image),
-        Data: terrainData,
-        CityProvider: cityProvider,
-        ExtraMap: extras,
-    }
+    return map_
 }
+

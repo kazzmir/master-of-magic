@@ -157,10 +157,12 @@ func MakeModelFromSerialized(
     var players []*playerlib.Player
 
     var cityInitializers []func(*maplib.Map, *maplib.Map)
+    var playerInitializers []func([]*playerlib.Player)
 
     for _, serializedPlayer := range serializedGame.Players {
-        player, initializeCities := playerlib.ReconstructPlayer(&serializedPlayer, model, allSpells, buildingInfo, model)
+        player, initializeCities, initializePlayer := playerlib.ReconstructPlayer(&serializedPlayer, model, allSpells, buildingInfo, model)
         cityInitializers = append(cityInitializers, initializeCities)
+        playerInitializers = append(playerInitializers, initializePlayer)
 
         if !player.Human {
             player.AIBehavior = ai.MakeEnemyAI()
@@ -168,6 +170,10 @@ func MakeModelFromSerialized(
         }
 
         players = append(players, player)
+    }
+
+    for _, initializer := range playerInitializers {
+        initializer(players)
     }
 
     model.Players = players
