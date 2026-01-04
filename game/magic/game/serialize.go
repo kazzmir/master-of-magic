@@ -191,7 +191,11 @@ func MakeModelFromSerialized(
         playerInitializers = append(playerInitializers, initializePlayer)
 
         if !player.Human {
-            player.AIBehavior = ai.MakeEnemyAI()
+            if player.GetBanner() == data.BannerBrown {
+                player.AIBehavior = ai.MakeRaiderAI()
+            } else {
+                player.AIBehavior = ai.MakeEnemyAI()
+            }
             player.StrategicCombat = true
         }
 
