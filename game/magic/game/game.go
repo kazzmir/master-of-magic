@@ -552,30 +552,7 @@ func MakeGameFromSerialized(lbxCache *lbx.LbxCache, music_ *music.Music, seriali
     }
 
     return MakeGameWithModel(lbxCache, music_, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
-
         return MakeModelFromSerialized(serializedGame, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo, terrainData)
-
-        /*
-        model := GameModel{
-            Settings: serializedGame.Settings,
-            TurnNumber: serializedGame.Turn,
-            LastEventTurn: serializedGame.LastEventTurn,
-            CurrentPlayer: serializedGame.CurrentPlayer,
-            Plane: serializedGame.Plane,
-            allSpells: allSpells,
-            heroNames: heroNames,
-            BuildingInfo: buildingInfo,
-        }
-        */
-
-        /*
-        Arcanus: maplib.SerializeMap(model.ArcanusMap),
-        Myrror: maplib.SerializeMap(model.MyrrorMap),
-        Players: players,
-        Events: serializeRandomEvents(model.RandomEvents),
-        */
-
-        // return &model
     })
 }
 
