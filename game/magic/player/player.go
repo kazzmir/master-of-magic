@@ -977,7 +977,7 @@ func (player *Player) ComputeOverworldCastingSkill() int {
         stack := player.FindStack(fortressCity.X, fortressCity.Y, fortressCity.Plane)
         if stack != nil {
             for _, unit := range stack.Units() {
-                caster := unit.GetAbilityValue(data.AbilityCaster)
+                caster := unit.GetCastingSkill()
                 heroes += caster
             }
         }

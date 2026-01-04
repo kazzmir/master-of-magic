@@ -8,6 +8,7 @@ import (
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -1121,4 +1122,60 @@ func TestInvisibleEnemy(test *testing.T) {
     if !check(units.Angel) {
         test.Errorf("Error: should be able to target invisble unit")
     }
+}
+
+func TestSpellSkillItemBonus(test *testing.T) {
+    defendingPlayer := playerlib.MakePlayer(setup.WizardCustom{
+        Name: "AI-1",
+        Banner: data.BannerBrown,
+    }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+    attackingPlayer := playerlib.MakePlayer(setup.WizardCustom{
+        Name: "AI-2",
+        Banner: data.BannerRed,
+    }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+    attackingArmy := &Army{
+        Player: attackingPlayer,
+    }
+
+    defendingArmy := &Army{
+        Player: defendingPlayer,
+    }
+
+    defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.ArchAngel, 1, 1, data.PlaneArcanus, defendingPlayer.GetBanner(), defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
+
+    hero := herolib.MakeHero(units.MakeOverworldUnitFromUnit(units.HeroValana, 0, 0, data.PlaneArcanus, attackingPlayer.GetBanner(), attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()), herolib.HeroValana, "Valana")
+    hero.Equipment[0] = &artifact.Artifact{
+        Name: "whatever",
+        Image: 7,
+        Type: artifact.ArtifactTypeSword,
+        Powers: []artifact.Power{
+            {
+                Type: artifact.PowerTypeSpellSkill,
+                Amount: 10,
+                Name: "Spell Skill +10",
+            },
+        },
+    }
+
+    attackingArmy.AddUnit(hero)
+
+    var allSpells spellbook.Spells
+
+    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10))
+    _ = model
+
+    // hero should get base (5) + item (10) = 15 spell skill
+    attacker1 := attackingArmy.units[0]
+    if attacker1.CastingSkill != 15 {
+        test.Errorf("Error: spell skill should be 15, got %v", attacker1.CastingSkill)
+    }
+
+    // arch angel has 40
+    defender1 := defendingArmy.units[0]
+    if defender1.CastingSkill != 40 {
+        test.Errorf("Error: spell skill should be 40, got %v", defender1.CastingSkill)
+    }
+
 }
