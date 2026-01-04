@@ -96,10 +96,10 @@ func (system *ProxySpellSystem) CreateHealingProjectile(target *ArmyUnit) *Proje
     }
 }
 
-func (system *ProxySpellSystem) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateHolyWordProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateHolyWordProjectileEffect(&FakeDamageIndicators{}),
+        Effect: system.Model.CreateHolyWordProjectileEffect(&FakeDamageIndicators{}, reduceResistance),
     }
 }
 

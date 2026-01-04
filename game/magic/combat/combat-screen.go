@@ -1110,12 +1110,12 @@ func (combat *CombatScreen) CreateWarpCreatureProjectile(target *ArmyUnit, reduc
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreateHolyWordProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     // FIXME: the images should be mostly with with transparency
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 3)
     explodeImages := images
 
-    effect := combat.Model.CreateHolyWordProjectileEffect(combat)
+    effect := combat.Model.CreateHolyWordProjectileEffect(combat, reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }

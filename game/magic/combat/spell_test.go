@@ -59,7 +59,7 @@ func (system *TestSpellSystem) CreateDispelEvilProjectile(target *ArmyUnit, redu
 func (system *TestSpellSystem) CreateHealingProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateHolyWordProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateRecallHeroProjectile(target *ArmyUnit) *Projectile {

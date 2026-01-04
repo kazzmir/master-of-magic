@@ -4658,7 +4658,7 @@ type SpellSystem interface {
     CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile
     CreateDispelEvilProjectile(target *ArmyUnit, reduceResistance int) *Projectile
     CreateHealingProjectile(target *ArmyUnit) *Projectile
-    CreateHolyWordProjectile(target *ArmyUnit) *Projectile
+    CreateHolyWordProjectile(target *ArmyUnit, reduceResistance int) *Projectile
     CreateRecallHeroProjectile(target *ArmyUnit) *Projectile
     CreateCracksCallProjectile(target *ArmyUnit) *Projectile
     CreateWebProjectile(target *ArmyUnit) *Projectile
@@ -4862,7 +4862,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }, healingTarget)
         case "Holy Word":
             model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateHolyWordProjectile(target))
+                model.AddProjectile(spellSystem.CreateHolyWordProjectile(target, getSpellSave(unitCaster)))
             }, targetFantastic)
             castedCallback(true)
         case "Recall Hero":
@@ -6693,7 +6693,7 @@ func (model *CombatModel) CreatePetrifyProjectileEffect(reduceResistance int) fu
     }
 }
 
-func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
             return
@@ -6704,7 +6704,7 @@ func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDama
             modifier = 7
         }
 
-        resistance := GetResistanceFor(unit, data.LifeMagic) - modifier
+        resistance := GetResistanceFor(unit, data.LifeMagic) - modifier - reduceResistance
 
         damage := 0
         for range unit.Figures() {
