@@ -630,7 +630,11 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     }
 
     if loadSave != "" {
-        gameLoader.LoadNew(loadSave)
+        err := gameLoader.LoadNew(loadSave)
+        // couldn't load game, just play title music
+        if err != nil {
+            game.Music.PlaySong(musiclib.SongTitle)
+        }
     }
 
     for {
