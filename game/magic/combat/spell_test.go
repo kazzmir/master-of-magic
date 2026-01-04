@@ -53,13 +53,13 @@ func (system *TestSpellSystem) CreateFlameStrikeProjectile(target *ArmyUnit) *Pr
 func (system *TestSpellSystem) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateDispelEvilProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateDispelEvilProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateHealingProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateHolyWordProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateRecallHeroProjectile(target *ArmyUnit) *Projectile {
@@ -80,7 +80,7 @@ func (system *TestSpellSystem) CreateDispelMagicProjectile(target *ArmyUnit, cas
 func (system *TestSpellSystem) CreateWordOfRecallProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateDisintegrateProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateDisintegrateProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateDisruptProjectile(x int, y int) *Projectile {
@@ -92,10 +92,10 @@ func (system *TestSpellSystem) CreateMagicVortex(team Team, x int, y int) *Magic
 func (system *TestSpellSystem) CreateWarpWoodProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateDeathSpellProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateDeathSpellProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateWordOfDeathProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateSummoningCircle(x int, y int) *Projectile {
@@ -107,39 +107,39 @@ func (system *TestSpellSystem) CreateMindStormProjectile(target *ArmyUnit) *Proj
 func (system *TestSpellSystem) CreateBlessProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
-func (system *TestSpellSystem) CreateWeaknessProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateWeaknessProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 
-func (system *TestSpellSystem) CreateBlackSleepProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateBlackSleepProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 
-func (system *TestSpellSystem) CreateVertigoProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateVertigoProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 
-func (system *TestSpellSystem) CreateShatterProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateShatterProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 
-func (system *TestSpellSystem) CreateWarpCreatureProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateWarpCreatureProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 
-func (system *TestSpellSystem) CreateConfusionProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateConfusionProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 
-func (system *TestSpellSystem) CreatePossessionProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreatePossessionProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 
-func (system *TestSpellSystem) CreateCreatureBindingProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreateCreatureBindingProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 
-func (system *TestSpellSystem) CreatePetrifyProjectile(target *ArmyUnit) *Projectile {
+func (system *TestSpellSystem) CreatePetrifyProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return nil
 }
 

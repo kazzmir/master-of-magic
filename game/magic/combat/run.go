@@ -82,10 +82,10 @@ func (system *ProxySpellSystem) CreateLifeDrainProjectile(target *ArmyUnit, redu
     }
 }
 
-func (system *ProxySpellSystem) CreateDispelEvilProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateDispelEvilProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateDispelEvilProjectileEffect(&FakeDamageIndicators{}),
+        Effect: system.Model.CreateDispelEvilProjectileEffect(&FakeDamageIndicators{}, reduceResistance),
     }
 }
 
@@ -96,10 +96,10 @@ func (system *ProxySpellSystem) CreateHealingProjectile(target *ArmyUnit) *Proje
     }
 }
 
-func (system *ProxySpellSystem) CreateHolyWordProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateHolyWordProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateHolyWordProjectileEffect(&FakeDamageIndicators{}),
+        Effect: system.Model.CreateHolyWordProjectileEffect(&FakeDamageIndicators{}, reduceResistance),
     }
 }
 
@@ -145,10 +145,10 @@ func (system *ProxySpellSystem) CreateWordOfRecallProjectile(target *ArmyUnit) *
     }
 }
 
-func (system *ProxySpellSystem) CreateDisintegrateProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateDisintegrateProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateDisintegrateProjectileEffect(),
+        Effect: system.Model.CreateDisintegrateProjectileEffect(reduceResistance),
     }
 }
 
@@ -179,17 +179,17 @@ func (system *ProxySpellSystem) CreateWarpWoodProjectile(target *ArmyUnit) *Proj
     }
 }
 
-func (system *ProxySpellSystem) CreateDeathSpellProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateDeathSpellProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateDeathSpellProjectileEffect(&FakeDamageIndicators{}),
+        Effect: system.Model.CreateDeathSpellProjectileEffect(&FakeDamageIndicators{}, reduceResistance),
     }
 }
 
-func (system *ProxySpellSystem) CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateWordOfDeathProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateWordOfDeathProjectileEffect(&FakeDamageIndicators{}),
+        Effect: system.Model.CreateWordOfDeathProjectileEffect(&FakeDamageIndicators{}, reduceResistance),
     }
 }
 
@@ -215,66 +215,66 @@ func (system *ProxySpellSystem) CreateBlessProjectile(target *ArmyUnit) *Project
     }
 }
 
-func (system *ProxySpellSystem) CreateWeaknessProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateWeaknessProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateWeaknessProjectileEffect(),
+        Effect: system.Model.CreateWeaknessProjectileEffect(reduceResistance),
     }
 }
 
-func (system *ProxySpellSystem) CreateBlackSleepProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateBlackSleepProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateBlackSleepProjectileEffect(),
+        Effect: system.Model.CreateBlackSleepProjectileEffect(reduceResistance),
     }
 }
 
-func (system *ProxySpellSystem) CreateVertigoProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateVertigoProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateVertigoProjectileEffect(),
+        Effect: system.Model.CreateVertigoProjectileEffect(reduceResistance),
     }
 }
 
-func (system *ProxySpellSystem) CreateShatterProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateShatterProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateShatterProjectileEffect(),
+        Effect: system.Model.CreateShatterProjectileEffect(reduceResistance),
     }
 }
 
-func (system *ProxySpellSystem) CreateWarpCreatureProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateWarpCreatureProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateWarpCreatureProjectileEffect(),
+        Effect: system.Model.CreateWarpCreatureProjectileEffect(reduceResistance),
     }
 }
 
-func (system *ProxySpellSystem) CreateConfusionProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateConfusionProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateConfusionProjectileEffect(),
+        Effect: system.Model.CreateConfusionProjectileEffect(reduceResistance),
     }
 }
 
-func (system *ProxySpellSystem) CreatePossessionProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreatePossessionProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreatePossessionProjectileEffect(),
+        Effect: system.Model.CreatePossessionProjectileEffect(reduceResistance),
     }
 }
 
-func (system *ProxySpellSystem) CreateCreatureBindingProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreateCreatureBindingProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreateCreatureBindingProjectileEffect(),
+        Effect: system.Model.CreateCreatureBindingProjectileEffect(reduceResistance),
     }
 }
 
-func (system *ProxySpellSystem) CreatePetrifyProjectile(target *ArmyUnit) *Projectile {
+func (system *ProxySpellSystem) CreatePetrifyProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreatePetrifyProjectileEffect(),
+        Effect: system.Model.CreatePetrifyProjectileEffect(reduceResistance),
     }
 }
 

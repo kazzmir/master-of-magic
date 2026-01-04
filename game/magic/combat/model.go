@@ -674,6 +674,11 @@ func (unit *ArmyUnit) IsWebbed() bool {
     return unit.WebHealth > 0
 }
 
+// returns a positive number of how much to reduce resistance by
+func (unit *ArmyUnit) GetSpellSave() int {
+    return unit.Unit.GetSpellSave()
+}
+
 func (unit *ArmyUnit) GetCastingSkill() float32 {
     return unit.CastingSkill
 }
@@ -4651,33 +4656,33 @@ type SpellSystem interface {
     CreateWarpLightningProjectile(target *ArmyUnit) *Projectile
     CreateFlameStrikeProjectile(target *ArmyUnit) *Projectile
     CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile
-    CreateDispelEvilProjectile(target *ArmyUnit) *Projectile
+    CreateDispelEvilProjectile(target *ArmyUnit, reduceResistance int) *Projectile
     CreateHealingProjectile(target *ArmyUnit) *Projectile
-    CreateHolyWordProjectile(target *ArmyUnit) *Projectile
+    CreateHolyWordProjectile(target *ArmyUnit, reduceResistance int) *Projectile
     CreateRecallHeroProjectile(target *ArmyUnit) *Projectile
     CreateCracksCallProjectile(target *ArmyUnit) *Projectile
     CreateWebProjectile(target *ArmyUnit) *Projectile
     CreateBanishProjectile(target *ArmyUnit, reduceResistance int) *Projectile
     CreateDispelMagicProjectile(target *ArmyUnit, caster ArmyPlayer, dispelStrength int) *Projectile
     CreateWordOfRecallProjectile(target *ArmyUnit) *Projectile
-    CreateDisintegrateProjectile(target *ArmyUnit) *Projectile
+    CreateDisintegrateProjectile(target *ArmyUnit, reduceResistance int) *Projectile
     CreateDisruptProjectile(x int, y int) *Projectile
     CreateMagicVortex(team Team, x int, y int) *MagicVortex
     CreateWarpWoodProjectile(target *ArmyUnit) *Projectile
-    CreateDeathSpellProjectile(target *ArmyUnit) *Projectile
-    CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile
+    CreateDeathSpellProjectile(target *ArmyUnit, reduceResistance int) *Projectile
+    CreateWordOfDeathProjectile(target *ArmyUnit, reduceResistance int) *Projectile
     CreateSummoningCircle(x int, y int) *Projectile
     CreateMindStormProjectile(target *ArmyUnit) *Projectile
     CreateBlessProjectile(target *ArmyUnit) *Projectile
-    CreateWeaknessProjectile(target *ArmyUnit) *Projectile
-    CreateBlackSleepProjectile(target *ArmyUnit) *Projectile
-    CreateVertigoProjectile(target *ArmyUnit) *Projectile
-    CreateShatterProjectile(target *ArmyUnit) *Projectile
-    CreateWarpCreatureProjectile(target *ArmyUnit) *Projectile
-    CreateConfusionProjectile(target *ArmyUnit) *Projectile
-    CreatePossessionProjectile(target *ArmyUnit) *Projectile
-    CreateCreatureBindingProjectile(target *ArmyUnit) *Projectile
-    CreatePetrifyProjectile(target *ArmyUnit) *Projectile
+    CreateWeaknessProjectile(target *ArmyUnit, reduceResistance int) *Projectile
+    CreateBlackSleepProjectile(target *ArmyUnit, reduceResistance int) *Projectile
+    CreateVertigoProjectile(target *ArmyUnit, reduceResistance int) *Projectile
+    CreateShatterProjectile(target *ArmyUnit, reduceResistance int) *Projectile
+    CreateWarpCreatureProjectile(target *ArmyUnit, reduceResistance int) *Projectile
+    CreateConfusionProjectile(target *ArmyUnit, reduceResistance int) *Projectile
+    CreatePossessionProjectile(target *ArmyUnit, reduceResistance int) *Projectile
+    CreateCreatureBindingProjectile(target *ArmyUnit, reduceResistance int) *Projectile
+    CreatePetrifyProjectile(target *ArmyUnit, reduceResistance int) *Projectile
     CreateChaosChannelsProjectile(target *ArmyUnit) *Projectile
     CreateHeroismProjectile(target *ArmyUnit) *Projectile
     CreateHolyArmorProjectile(target *ArmyUnit) *Projectile
@@ -4707,6 +4712,16 @@ type SpellSystem interface {
     CreateWraithFormProjectile(target *ArmyUnit) *Projectile
 
     PlaySound(spell spellbook.Spell)
+}
+
+// how much extra resistance reduction should be applied
+// this comes from the spell save power from the caster's items
+func getSpellSave(caster *ArmyUnit) int {
+    if caster == nil {
+        return 0
+    }
+
+    return caster.GetSpellSave()
 }
 
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
@@ -4825,12 +4840,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             castedCallback(true)
         case "Life Drain":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5, army.Player, unitCaster))
+                model.AddProjectile(spellSystem.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5 + getSpellSave(unitCaster), army.Player, unitCaster))
                 castedCallback(true)
             }, targetNotImmune)
         case "Dispel Evil":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target))
+                model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target, getSpellSave(unitCaster)))
                 castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.Unit.GetRace() == data.RaceFantastic &&
@@ -4847,7 +4862,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }, healingTarget)
         case "Holy Word":
             model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateHolyWordProjectile(target))
+                model.AddProjectile(spellSystem.CreateHolyWordProjectile(target, getSpellSave(unitCaster)))
             }, targetFantastic)
             castedCallback(true)
         case "Recall Hero":
@@ -4894,7 +4909,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Banish":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15))
+                model.AddProjectile(spellSystem.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15 + getSpellSave(unitCaster)))
                 castedCallback(true)
             }, targetFantastic)
         case "Dispel Magic True":
@@ -4933,7 +4948,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Disintegrate":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateDisintegrateProjectile(target))
+                model.AddProjectile(spellSystem.CreateDisintegrateProjectile(target, getSpellSave(unitCaster)))
                 castedCallback(true)
             }, disintegrateTarget)
         case "Disrupt":
@@ -4968,12 +4983,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Death Spell":
             model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateDeathSpellProjectile(target))
+                model.AddProjectile(spellSystem.CreateDeathSpellProjectile(target, getSpellSave(unitCaster)))
             }, targetNotImmune)
             castedCallback(true)
         case "Word of Death":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateWordOfDeathProjectile(target))
+                model.AddProjectile(spellSystem.CreateWordOfDeathProjectile(target, getSpellSave(unitCaster)))
                 castedCallback(true)
             }, targetNotImmune)
         case "Phantom Warriors":
@@ -5091,7 +5106,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }
 
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateCreatureBindingProjectile(target))
+                model.AddProjectile(spellSystem.CreateCreatureBindingProjectile(target, getSpellSave(unitCaster)))
                 castedCallback(true)
             }, selectable)
 
@@ -5120,7 +5135,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }, targetAny)
         case "Weakness":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateWeaknessProjectile(target))
+                model.AddProjectile(spellSystem.CreateWeaknessProjectile(target, getSpellSave(unitCaster)))
                 castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasCurse(data.UnitCurseWeakness) {
@@ -5139,7 +5154,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Black Sleep":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateBlackSleepProjectile(target))
+                model.AddProjectile(spellSystem.CreateBlackSleepProjectile(target, getSpellSave(unitCaster)))
                 castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasCurse(data.UnitCurseBlackSleep) {
@@ -5162,7 +5177,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Vertigo":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateVertigoProjectile(target))
+                model.AddProjectile(spellSystem.CreateVertigoProjectile(target, getSpellSave(unitCaster)))
                 castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasCurse(data.UnitCurseVertigo) {
@@ -5177,7 +5192,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Shatter":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateShatterProjectile(target))
+                model.AddProjectile(spellSystem.CreateShatterProjectile(target, getSpellSave(unitCaster)))
                 castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.GetRace() == data.RaceFantastic {
@@ -5196,12 +5211,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Warp Creature":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateWarpCreatureProjectile(target))
+                model.AddProjectile(spellSystem.CreateWarpCreatureProjectile(target, getSpellSave(unitCaster)))
                 castedCallback(true)
             }, warpCreatureTarget)
         case "Confusion":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateConfusionProjectile(target))
+                model.AddProjectile(spellSystem.CreateConfusionProjectile(target, getSpellSave(unitCaster)))
                 castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.HasAbility(data.AbilityIllusionsImmunity) || target.IsMagicImmune(spell.Magic) {
@@ -5216,7 +5231,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Possession":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreatePossessionProjectile(target))
+                model.AddProjectile(spellSystem.CreatePossessionProjectile(target, getSpellSave(unitCaster)))
                 castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.Unit.IsHero() || target.GetRace() == data.RaceFantastic {
@@ -5231,7 +5246,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Petrify":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreatePetrifyProjectile(target))
+                model.AddProjectile(spellSystem.CreatePetrifyProjectile(target, getSpellSave(unitCaster)))
                 castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 if target.IsMagicImmune(spell.Magic) || target.HasAbility(data.AbilityStoningImmunity) {
@@ -5262,7 +5277,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                     // warp creature
                     case 3:
                         if warpCreatureTarget(unit) {
-                            model.AddProjectile(spellSystem.CreateWarpCreatureProjectile(unit))
+                            model.AddProjectile(spellSystem.CreateWarpCreatureProjectile(unit, 0))
                         }
 
                     // fire bolt
@@ -5286,7 +5301,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                     // disintegrate
                     case 7:
                         if disintegrateTarget(unit) {
-                            model.AddProjectile(spellSystem.CreateDisintegrateProjectile(unit))
+                            model.AddProjectile(spellSystem.CreateDisintegrateProjectile(unit, 0))
                         }
                 }
             }
@@ -6286,7 +6301,7 @@ func (model *CombatModel) CreateStarFiresProjectileEffect(damageIndicator AddDam
     }
 }
 
-func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
             return
@@ -6297,7 +6312,7 @@ func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDa
             modifier = 9
         }
 
-        defenderResistance := GetResistanceFor(unit, data.LifeMagic) - modifier
+        defenderResistance := GetResistanceFor(unit, data.LifeMagic) - modifier - reduceResistance
         damage := 0
         for range unit.Figures() {
             if rand.N(10)+1 > defenderResistance {
@@ -6591,41 +6606,41 @@ func (model *CombatModel) CreateBlessProjectileEffect() func(*ArmyUnit) {
     }
 }
 
-func (model *CombatModel) CreateWeaknessProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateWeaknessProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
-        if rand.N(10)+1 > GetResistanceFor(unit, data.DeathMagic)-2 {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.DeathMagic)-2 - reduceResistance {
             unit.AddCurse(data.UnitCurseWeakness)
         }
     }
 }
 
-func (model *CombatModel) CreateBlackSleepProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateBlackSleepProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
-        if rand.N(10)+1 > GetResistanceFor(unit, data.DeathMagic)-2 {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.DeathMagic)-2 - reduceResistance {
             unit.AddCurse(data.UnitCurseBlackSleep)
         }
     }
 }
 
-func (model *CombatModel) CreateVertigoProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateVertigoProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
-        if rand.N(10)+1 > GetResistanceFor(unit, data.SorceryMagic) {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.SorceryMagic) - reduceResistance {
             unit.AddCurse(data.UnitCurseVertigo)
         }
     }
 }
 
-func (model *CombatModel) CreateShatterProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateShatterProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
-        if rand.N(10)+1 > GetResistanceFor(unit, data.ChaosMagic) {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.ChaosMagic) - reduceResistance {
             unit.AddCurse(data.UnitCurseShatter)
         }
     }
 }
 
-func (model *CombatModel) CreateWarpCreatureProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateWarpCreatureProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
-        if rand.N(10)+1 > GetResistanceFor(unit, data.ChaosMagic)-1 {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.ChaosMagic)-1 - reduceResistance {
             choices := set.NewSet(data.UnitCurseWarpCreatureMelee, data.UnitCurseWarpCreatureDefense, data.UnitCurseWarpCreatureResistance)
             choices.RemoveMany(unit.GetCurses()...)
 
@@ -6638,35 +6653,35 @@ func (model *CombatModel) CreateWarpCreatureProjectileEffect() func(*ArmyUnit) {
     }
 }
 
-func (model *CombatModel) CreateConfusionProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateConfusionProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
-        if rand.N(10)+1 > GetResistanceFor(unit, data.SorceryMagic)-4 {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.SorceryMagic)-4 - reduceResistance {
             unit.AddCurse(data.UnitCurseConfusion)
         }
     }
 }
 
-func (model *CombatModel) CreatePossessionProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreatePossessionProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
-        if rand.N(10)+1 > GetResistanceFor(unit, data.DeathMagic)-1 {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.DeathMagic)-1 - reduceResistance {
             model.ApplyPossession(unit)
         }
     }
 }
 
-func (model *CombatModel) CreateCreatureBindingProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateCreatureBindingProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
-        if rand.N(10)+1 > GetResistanceFor(unit, data.SorceryMagic)-2 {
+        if rand.N(10)+1 > GetResistanceFor(unit, data.SorceryMagic)-2 - reduceResistance {
             model.ApplyCreatureBinding(unit)
         }
     }
 }
 
-func (model *CombatModel) CreatePetrifyProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreatePetrifyProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         damage := 0
         for range unit.Figures() {
-            if rand.N(10)+1 > GetResistanceFor(unit, data.NatureMagic) {
+            if rand.N(10)+1 > GetResistanceFor(unit, data.NatureMagic) - reduceResistance {
                 damage += unit.Unit.GetHitPoints()
             }
         }
@@ -6678,7 +6693,7 @@ func (model *CombatModel) CreatePetrifyProjectileEffect() func(*ArmyUnit) {
     }
 }
 
-func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
             return
@@ -6689,7 +6704,7 @@ func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDama
             modifier = 7
         }
 
-        resistance := GetResistanceFor(unit, data.LifeMagic) - modifier
+        resistance := GetResistanceFor(unit, data.LifeMagic) - modifier - reduceResistance
 
         damage := 0
         for range unit.Figures() {
@@ -6713,9 +6728,9 @@ func (model *CombatModel) CreateWebProjectileEffect() func(*ArmyUnit) {
     }
 }
 
-func (model *CombatModel) CreateDeathSpellProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateDeathSpellProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
-        resistance := GetResistanceFor(unit, data.DeathMagic) - 2
+        resistance := GetResistanceFor(unit, data.DeathMagic) - 2 - reduceResistance
         damage := 0
 
         for range unit.Figures() {
@@ -6732,9 +6747,9 @@ func (model *CombatModel) CreateDeathSpellProjectileEffect(damageIndicator AddDa
     }
 }
 
-func (model *CombatModel) CreateWordOfDeathProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
+func (model *CombatModel) CreateWordOfDeathProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
-        resistance := GetResistanceFor(unit, data.DeathMagic) - 5
+        resistance := GetResistanceFor(unit, data.DeathMagic) - 5 - reduceResistance
         damage := 0
 
         for range unit.Figures() {
@@ -6757,9 +6772,9 @@ func (model *CombatModel) CreateWarpWoodProjectileEffect() func(*ArmyUnit) {
     }
 }
 
-func (model *CombatModel) CreateDisintegrateProjectileEffect() func(*ArmyUnit) {
+func (model *CombatModel) CreateDisintegrateProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
-        if GetResistanceFor(unit, data.ChaosMagic) <= 9 {
+        if GetResistanceFor(unit, data.ChaosMagic) - reduceResistance <= 9 {
             model.RemoveUnit(unit)
         }
     }

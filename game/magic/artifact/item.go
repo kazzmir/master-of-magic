@@ -640,7 +640,7 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
             return nil, fmt.Errorf("read error: %v", err)
         }
         if spellSave != 0 {
-            powers = append(powers, Power{Type: PowerTypeSpellSave, Amount: int(spellSave), Name: fmt.Sprintf("+%v Spell Save", spellSave)})
+            powers = append(powers, Power{Type: PowerTypeSpellSave, Amount: int(spellSave), Name: fmt.Sprintf("-%v Spell Save", spellSave)})
         }
 
         // Spells

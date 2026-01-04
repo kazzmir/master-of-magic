@@ -494,6 +494,10 @@ func (unit *OverworldUnit) GetCastingSkill() float32 {
     return unit.GetAbilityValue(data.AbilityCaster)
 }
 
+func (unit *OverworldUnit) GetSpellSave() int {
+    return 0
+}
+
 func (unit *OverworldUnit) GetToDefend() int {
     base := 30
     modifier := 0

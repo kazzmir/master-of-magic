@@ -111,5 +111,6 @@ type StackUnit interface {
     SetBusy(BusyStatus)
     GetSightRange() int
     GetCastingSkill() float32
+    GetSpellSave() int
 }
 
