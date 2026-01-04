@@ -9,7 +9,8 @@ import (
     "time"
     "runtime/pprof"
     "runtime/debug"
-    "runtime"
+    // "runtime"
+    "context"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -22,7 +23,30 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+
+    "github.com/hajimehoshi/ebiten/v2"
 )
+
+type Engine struct {
+    Quit context.Context
+}
+
+func (e *Engine) Update() error {
+    select {
+        case <- e.Quit.Done():
+            return ebiten.Termination
+        default:
+    }
+
+    return nil
+}
+
+func (e *Engine) Draw(screen *ebiten.Image) {
+}
+
+func (e *Engine) Layout(outsideWidth, outsideHeight int) (int, int) {
+    return outsideWidth, outsideHeight
+}
 
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
@@ -193,23 +217,33 @@ func main() {
 
         log.Println("Created profile.mem.serialize")
     } else {
-        debug.SetMemoryLimit(512 * 1024 * 1024)
-        for i := range 2000 {
-            if i % 100 == 0 {
-                log.Printf("Iteration %d", i)
+        quit, cancel := context.WithCancel(context.Background())
+        go func(){
+            defer cancel()
+            debug.SetMemoryLimit(512 * 1024 * 1024)
+            for i := range 2000 {
+                if i % 100 == 0 {
+                    log.Printf("Iteration %d", i)
+                }
+                gamelib.MakeGameFromSerialized(cache, useMusic, &loadedData)
+                useMusic.ClearSongQueue()
             }
-            gamelib.MakeGameFromSerialized(cache, useMusic, &loadedData)
-            useMusic.ClearSongQueue()
-        }
+        }()
 
+        ebiten.RunGame(&Engine{
+            Quit: quit,
+        })
+
+        /*
         dumpName := "serialize.dump"
         f, err := os.Create(dumpName)
         if err != nil {
-          panic("Could not open file for writing:" + err.Error())
+            panic("Could not open file for writing:" + err.Error())
         } else {
-          runtime.GC()
-          debug.WriteHeapDump(f.Fd())
-          f.Close()
+            runtime.GC()
+            debug.WriteHeapDump(f.Fd())
+            f.Close()
         }
+        */
     }
 }
