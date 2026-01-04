@@ -5,6 +5,11 @@ import (
     "encoding/json"
     "log"
     "bytes"
+    "math"
+    "time"
+    "runtime/pprof"
+    "runtime/debug"
+    "runtime"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/fraction"
@@ -155,4 +160,56 @@ func main() {
     _ = newGame
 
     log.Println("Stage 3: PASSED")
+
+    benchmark := false
+
+    if benchmark {
+        log.Println("Benchmark")
+
+        profile, err := os.Create("profile.cpu.serialize")
+        defer profile.Close()
+        pprof.StartCPUProfile(profile)
+        defer pprof.StopCPUProfile()
+        for i := range 3 {
+            N := int(math.Pow(6, float64(i + 2)))
+            log.Printf("Iteration %d: N=%v", i + 1, N)
+
+            start := time.Now()
+            for range N {
+                gamelib.MakeGameFromSerialized(cache, useMusic, &loadedData)
+            }
+            duration := time.Since(start)
+            log.Printf("Time taken for %d deserializations: %v, %v/s", N, duration, float64(N) / duration.Seconds())
+        }
+        log.Println("Created profile.cpu.serialize")
+
+        memoryProfile, err := os.Create("profile.mem.serialize")
+        if err != nil {
+            log.Printf("Error creating memory profile: %v", err)
+        } else {
+            defer memoryProfile.Close()
+            pprof.WriteHeapProfile(memoryProfile)
+        }
+
+        log.Println("Created profile.mem.serialize")
+    } else {
+        debug.SetMemoryLimit(512 * 1024 * 1024)
+        for i := range 2000 {
+            if i % 100 == 0 {
+                log.Printf("Iteration %d", i)
+            }
+            gamelib.MakeGameFromSerialized(cache, useMusic, &loadedData)
+            useMusic.ClearSongQueue()
+        }
+
+        dumpName := "serialize.dump"
+        f, err := os.Create(dumpName)
+        if err != nil {
+          panic("Could not open file for writing:" + err.Error())
+        } else {
+          runtime.GC()
+          debug.WriteHeapDump(f.Fd())
+          f.Close()
+        }
+    }
 }

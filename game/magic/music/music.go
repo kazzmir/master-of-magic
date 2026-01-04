@@ -239,6 +239,12 @@ func (music *Music) PopSong(){
     }
 }
 
+func (music *Music) ClearSongQueue(){
+    for len(music.songQueue) > 0 {
+        music.PopSong()
+    }
+}
+
 func (music *Music) LoadSong(index Song) (*smf.SMF, error) {
     if song, ok := music.XmiCache[index]; ok {
         return song, nil
