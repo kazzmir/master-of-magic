@@ -288,10 +288,6 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
                     if err != nil {
                         log.Printf("Error saving game: %v", err)
                     } else {
-                        if err != nil {
-                            log.Printf("Error flushing save file: %v", err)
-                        }
-
                         log.Printf("Game saved to '%s'", path)
                         return true
                     }
