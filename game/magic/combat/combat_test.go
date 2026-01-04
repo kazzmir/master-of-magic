@@ -934,7 +934,7 @@ func TestSpellEffects(test *testing.T){
     }
 
     testEffect(zeroResistance(units.LizardSpearmen), func (model *CombatModel, unit *ArmyUnit) {
-        model.CreateBlackSleepProjectileEffect()(unit)
+        model.CreateBlackSleepProjectileEffect(0)(unit)
         if !unit.HasCurse(data.UnitCurseBlackSleep) {
             test.Errorf("Error: unit should have black sleep curse")
         }

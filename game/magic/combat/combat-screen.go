@@ -1023,89 +1023,89 @@ func (combat *CombatScreen) CreateBlessProjectile(target *ArmyUnit) *Projectile 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreateWeaknessProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
     explodeImages := images
 
-    effect := combat.Model.CreateWeaknessProjectileEffect()
+    effect := combat.Model.CreateWeaknessProjectileEffect(reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateCreatureBindingProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreateCreatureBindingProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 1)
     explodeImages := images
 
-    effect := combat.Model.CreateCreatureBindingProjectileEffect()
+    effect := combat.Model.CreateCreatureBindingProjectileEffect(reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 12)
     explodeImages := images
 
-    effect := combat.Model.CreatePetrifyProjectileEffect()
+    effect := combat.Model.CreatePetrifyProjectileEffect(reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreatePossessionProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreatePossessionProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 8)
     explodeImages := images
 
-    effect := combat.Model.CreatePossessionProjectileEffect()
+    effect := combat.Model.CreatePossessionProjectileEffect(reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateConfusionProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreateConfusionProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 20)
     explodeImages := images
 
-    effect := combat.Model.CreateConfusionProjectileEffect()
+    effect := combat.Model.CreateConfusionProjectileEffect(reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreateBlackSleepProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 5)
     explodeImages := images
 
-    effect := combat.Model.CreateBlackSleepProjectileEffect()
+    effect := combat.Model.CreateBlackSleepProjectileEffect(reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateVertigoProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreateVertigoProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 17)
     explodeImages := images
 
-    effect := combat.Model.CreateVertigoProjectileEffect()
+    effect := combat.Model.CreateVertigoProjectileEffect(reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateShatterProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreateShatterProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("resource.lbx", 79)
     explodeImages := images
 
-    effect := combat.Model.CreateShatterProjectileEffect()
+    effect := combat.Model.CreateShatterProjectileEffect(reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateWarpCreatureProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreateWarpCreatureProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     // FIXME: verify
     images, _ := combat.ImageCache.GetImages("resource.lbx", 81)
     explodeImages := images
 
-    effect := combat.Model.CreateWarpCreatureProjectileEffect()
+    effect := combat.Model.CreateWarpCreatureProjectileEffect(reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1138,11 +1138,11 @@ func (combat *CombatScreen) CreateDeathSpellProjectile(target *ArmyUnit) *Projec
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreateWordOfDeathProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     images, _ := combat.ImageCache.GetImages("specfx.lbx", 14)
     explodeImages := images
 
-    effect := combat.Model.CreateWordOfDeathProjectileEffect(combat)
+    effect := combat.Model.CreateWordOfDeathProjectileEffect(combat, reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1156,11 +1156,11 @@ func (combat *CombatScreen) CreateWarpWoodProjectile(target *ArmyUnit) *Projecti
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
 
-func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit) *Projectile {
+func (combat *CombatScreen) CreateDisintegrateProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 4)
     explodeImages := images
 
-    effect := combat.Model.CreateDisintegrateProjectileEffect()
+    effect := combat.Model.CreateDisintegrateProjectileEffect(reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
