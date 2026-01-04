@@ -1897,10 +1897,6 @@ func (unit *ArmyUnit) InitializeSpells(allSpells spellbook.Spells, player ArmyPl
             case data.AbilitySummonDemons:
                 summonDemons := makeSummonDemonSpell()
                 unit.SpellCharges[summonDemons] = int(ability.Value)
-                /*
-            case data.AbilityCaster:
-                unit.CastingSkill = ability.Value
-                */
         }
     }
 
