@@ -1674,7 +1674,14 @@ func (saver *GameSaver) SaveToPath(path string, saveName string) error {
         gzipWriter := gzip.NewWriter(bufferedOut)
         defer gzipWriter.Close()
 
-        return saver.Save(gzipWriter, saveName)
+        err := saver.Save(gzipWriter, saveName)
+        if err == nil {
+            // in the browser the saved game should be downloaded so the user
+            // has a physical copy
+            saver.FS.MaybeDownload(path)
+        }
+
+        return err
     }
 }
 

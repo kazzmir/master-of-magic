@@ -1,8 +1,17 @@
 //go:build js
 package system
 
-var _ WriteableFS = (*FS)(nil)
+type JsFS struct {
+    *FS
+}
+
+func (fs *JsFS) MaybeDownload(path string) {
+}
+
+var _ WriteableFS = (*JsFS)(nil)
 
 func MakeFS() WriteableFS {
-    return NewMemFS()
+    return &JsFS{
+        FS: NewMemFS(),
+    }
 }
