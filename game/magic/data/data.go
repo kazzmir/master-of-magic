@@ -149,7 +149,7 @@ func (race *Race) UnmarshalJSON(data []byte) error {
 func getRaceByName(name string) Race {
     switch name {
         case "none": return RaceNone
-        case "LizardMen": return RaceLizard
+        case "Lizardmen": return RaceLizard
         case "Nomad": return RaceNomad
         case "Orc": return RaceOrc
         case "Troll": return RaceTroll
