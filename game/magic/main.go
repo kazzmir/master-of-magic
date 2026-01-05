@@ -43,6 +43,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/load"
+    "github.com/kazzmir/master-of-magic/game/magic/serialize"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/mainview"
@@ -374,6 +375,10 @@ type OriginalGameLoader struct {
     FS fs.FS
 }
 
+func (loader *OriginalGameLoader) LoadMetadata(path string) (serialize.SaveMetadata, bool) {
+    return serialize.LoadMetadata(loader.FS, path)
+}
+
 func (loader *OriginalGameLoader) LoadNew(path string) error {
     file, err := loader.FS.Open(path)
     if err != nil {
@@ -381,11 +386,21 @@ func (loader *OriginalGameLoader) LoadNew(path string) error {
     }
     defer file.Close()
 
-    reader := bufio.NewReader(file)
+    err = loader.LoadNewReader(file)
+    if err != nil {
+        return fmt.Errorf("Could not load save game file '%v': %v", path, err)
+    }
+
+    return nil
+}
+
+// we assume the reader is still compressed
+func (loader *OriginalGameLoader) LoadNewReader(readerOriginal io.Reader) error {
+    reader := bufio.NewReader(readerOriginal)
     gzipReader, err := gzip.NewReader(reader)
     if err != nil {
-        log.Printf("Error: unable to create gzip reader for save game file '%v': %v", path, err)
-        return fmt.Errorf("Could not load %v", path)
+        log.Printf("Error: unable to create gzip reader for save game: %v", err)
+        return fmt.Errorf("Could not load")
     }
     defer gzipReader.Close()
 
@@ -394,8 +409,8 @@ func (loader *OriginalGameLoader) LoadNew(path string) error {
     var serializedGame gamelib.SerializedGame
     err = decoder.Decode(&serializedGame)
     if err != nil {
-        log.Printf("Error: unable to decode save game file '%v': %v", path, err)
-        return fmt.Errorf("Could not load %v", path)
+        log.Printf("Error: unable to decode save game: %v", err)
+        return fmt.Errorf("Could not load")
     }
 
     newGame := gamelib.MakeGameFromSerialized(loader.Cache, musiclib.MakeMusic(loader.Cache), &serializedGame)

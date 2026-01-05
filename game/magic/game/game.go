@@ -15,6 +15,10 @@ import (
     "errors"
     "time"
 
+    "os"
+    "bufio"
+    "compress/gzip"
+
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/mastery"
@@ -47,6 +51,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/gamemenu"
+    "github.com/kazzmir/master-of-magic/game/magic/serialize"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
@@ -465,6 +470,18 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
 }
 
 type DummyGameLoader struct {
+}
+
+func (loader *DummyGameLoader) LoadFromPath(path string) error {
+    return errors.New("cannot load")
+}
+
+func (loader *DummyGameLoader) LoadMetadata(path string) (serialize.SaveMetadata, bool) {
+    return serialize.SaveMetadata{}, false
+}
+
+func (loader *DummyGameLoader) LoadNewReader(reader io.Reader) error {
+    return errors.New("cannot load")
 }
 
 func (loader *DummyGameLoader) Load(reader io.Reader) error {
@@ -1635,6 +1652,24 @@ func (settings *SettingsUI) RunSettingsUI() {
 
 type GameSaver struct {
     Game *Game
+}
+
+func (saver *GameSaver) SaveToPath(path string, saveName string) error {
+    saveFile, err := os.Create(path)
+    if err != nil {
+        log.Printf("Error creating save file: %v", err)
+        return err
+    } else {
+        defer saveFile.Close()
+
+        bufferedOut := bufio.NewWriter(saveFile)
+        defer bufferedOut.Flush()
+
+        gzipWriter := gzip.NewWriter(bufferedOut)
+        defer gzipWriter.Close()
+
+        return saver.Save(gzipWriter, saveName)
+    }
 }
 
 func (saver *GameSaver) Save(writer io.Writer, saveName string) error {

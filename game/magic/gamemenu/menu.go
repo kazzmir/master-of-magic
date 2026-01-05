@@ -1,14 +1,11 @@
 package gamemenu
 
 import (
-    "os"
     "io"
     "io/fs"
     "fmt"
-    "bufio"
     "log"
     "context"
-    "compress/gzip"
     "image"
     "image/color"
     "math"
@@ -29,6 +26,8 @@ import (
 type GameLoader interface {
     Load(reader io.Reader) error
     LoadNew(path string) error
+    LoadNewReader(reader io.Reader) error
+    LoadMetadata(path string) (serialize.SaveMetadata, bool)
 }
 
 type SettingsUI interface {
@@ -36,7 +35,7 @@ type SettingsUI interface {
 }
 
 type GameSaver interface {
-    Save(writer io.Writer, saveName string) error
+    SaveToPath(path string, saveName string) error
 }
 
 func saveFileName(index int) string {
@@ -70,21 +69,43 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
                 if err == nil {
                     for _, file := range files {
                         log.Printf("Dropped file: %v", file.Name())
-                        func (){
+
+                        // try to load new style file first
+                        loaded := func () bool {
                             opened, err := dropped.Open(file.Name())
                             if err != nil {
-                                return
+                                return false
                             }
                             defer opened.Close()
 
-                            // load has a side effect of storing the new game. the main loop will pick this up and switch to the new game
-                            err = gameLoader.Load(opened)
+                            err = gameLoader.LoadNewReader(opened)
                             if err != nil {
                                 log.Printf("Error loading dropped save file: %v", err)
                             } else {
                                 cancel()
+                                return true
                             }
+
+                            return false
                         }()
+
+                        if !loaded {
+                            func (){
+                                opened, err := dropped.Open(file.Name())
+                                if err != nil {
+                                    return
+                                }
+                                defer opened.Close()
+
+                                // load has a side effect of storing the new game. the main loop will pick this up and switch to the new game
+                                err = gameLoader.Load(opened)
+                                if err != nil {
+                                    log.Printf("Error loading dropped save file: %v", err)
+                                } else {
+                                    cancel()
+                                }
+                            }()
+                        }
                     }
                 }
             }
@@ -119,7 +140,7 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
 
         var saveTime time.Time
 
-        metadata, ok := serialize.LoadMetadata(saveFileName(index))
+        metadata, ok := gameLoader.LoadMetadata(saveFileName(index))
         if ok {
             name = metadata.Name
             saveTime = metadata.Date
@@ -272,28 +293,14 @@ func MakeGameMenuUI(cache *lbx.LbxCache, gameLoader GameLoader, saver GameSaver,
         if selectedIndex != -1 {
             doSave := func() bool {
                 path := saveFileName(selectedIndex)
-                saveFile, err := os.Create(path)
-                if err != nil {
-                    log.Printf("Error creating save file: %v", err)
+                err := saver.SaveToPath(path, *slotName)
+                if err == nil {
+                    log.Printf("Game saved to '%s'", path)
+                    return true
                 } else {
-                    defer saveFile.Close()
-
-                    bufferedOut := bufio.NewWriter(saveFile)
-                    defer bufferedOut.Flush()
-
-                    gzipWriter := gzip.NewWriter(bufferedOut)
-                    defer gzipWriter.Close()
-
-                    err = saver.Save(gzipWriter, *slotName)
-                    if err != nil {
-                        log.Printf("Error saving game: %v", err)
-                    } else {
-                        log.Printf("Game saved to '%s'", path)
-                        return true
-                    }
+                    log.Printf("Error saving game: %v", err)
+                    return false
                 }
-
-                return false
             }
 
             if doSave() {
