@@ -1666,15 +1666,25 @@ func (saver *GameSaver) SaveToPath(path string, saveName string) error {
         log.Printf("Error creating save file: %v", err)
         return err
     } else {
-        defer saveFile.Close()
+        err := func() error {
+            defer saveFile.Close()
 
-        bufferedOut := bufio.NewWriter(saveFile)
-        defer bufferedOut.Flush()
+            bufferedOut := bufio.NewWriter(saveFile)
+            defer bufferedOut.Flush()
 
-        gzipWriter := gzip.NewWriter(bufferedOut)
-        defer gzipWriter.Close()
+            gzipWriter := gzip.NewWriter(bufferedOut)
+            defer gzipWriter.Close()
 
-        return saver.Save(gzipWriter, saveName)
+            return saver.Save(gzipWriter, saveName)
+        }()
+
+        if err == nil {
+            // in the browser the saved game should be downloaded so the user
+            // has a physical copy
+            saver.FS.MaybeDownload(path)
+        }
+
+        return err
     }
 }
 

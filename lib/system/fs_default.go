@@ -22,6 +22,10 @@ func (standard *StandardFS) Remove(name string) error {
     return os.Remove(name)
 }
 
+func (standard *StandardFS) MaybeDownload(name string) {
+    // nothing
+}
+
 var _ WriteableFS = (*StandardFS)(nil)
 
 func MakeFS() WriteableFS {
