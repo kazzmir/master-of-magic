@@ -1,6 +1,7 @@
 package serialize
 
 import (
+    // "log"
     "io/fs"
     "time"
     "bufio"
@@ -17,6 +18,7 @@ type SaveMetadata struct {
 func LoadMetadata(where fs.FS, path string) (SaveMetadata, bool) {
     file, err := where.Open(path)
     if err != nil {
+        // log.Printf("Unable to open %s: %v", path, err)
         return SaveMetadata{}, false
     }
     defer file.Close()

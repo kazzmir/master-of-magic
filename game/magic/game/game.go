@@ -473,6 +473,10 @@ func (game *Game) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Pl
 type DummyGameLoader struct {
 }
 
+func (loader *DummyGameLoader) GetFS() system.WriteableFS {
+    return nil
+}
+
 func (loader *DummyGameLoader) LoadFromPath(path string) error {
     return errors.New("cannot load")
 }
@@ -1653,12 +1657,11 @@ func (settings *SettingsUI) RunSettingsUI() {
 
 type GameSaver struct {
     Game *Game
+    FS system.WriteableFS
 }
 
 func (saver *GameSaver) SaveToPath(path string, saveName string) error {
-    fs := system.MakeFS()
-
-    saveFile, err := fs.Create(path)
+    saveFile, err := saver.FS.Create(path)
     if err != nil {
         log.Printf("Error creating save file: %v", err)
         return err
@@ -1689,6 +1692,7 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
     }
 
     gameSaver := &GameSaver{
+        FS: game.GameLoader.GetFS(),
         Game: game,
     }
 

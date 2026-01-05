@@ -393,6 +393,10 @@ func (loader *OriginalGameLoader) LoadNew(path string) error {
     return nil
 }
 
+func (loader *OriginalGameLoader) GetFS() system.WriteableFS {
+    return loader.FS
+}
+
 // we assume the reader is still compressed
 func (loader *OriginalGameLoader) LoadNewReader(readerOriginal io.Reader) error {
     reader := bufio.NewReader(readerOriginal)

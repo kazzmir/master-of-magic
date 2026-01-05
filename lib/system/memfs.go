@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	syspath "path"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -21,7 +22,7 @@ type FS struct {
 }
 
 // New creates a new in-memory FileSystem.
-func New(opts ...Option) *FS {
+func NewMemFS(opts ...Option) *FS {
 	var fsOpt fsOption
 	for _, opt := range opts {
 		opt.setOption(&fsOpt)
@@ -35,6 +36,14 @@ func New(opts ...Option) *FS {
 	fs.openHook = fsOpt.openHook
 
 	return &fs
+}
+
+func (rootFS *FS) Create(name string) (io.WriteCloser, error) {
+    return rootFS.create(name)
+}
+
+func (rootFS *FS) Remove(name string) error {
+    return errors.New("Remove not implemented in memfs")
 }
 
 // MkdirAll creates a directory named path,
@@ -165,8 +174,7 @@ func (rootFS *FS) create(path string) (*File, error) {
 	}
 
 	if path == "." {
-		// root dir
-		path = ""
+		return nil, fmt.Errorf("cannot create file at root path: %w", fs.ErrInvalid)
 	}
 
 	dirPart, filePart := syspath.Split(path)
@@ -205,8 +213,7 @@ func (rootFS *FS) WriteFile(path string, data []byte, perm os.FileMode) error {
 	}
 
 	if path == "." {
-		// root dir
-		path = ""
+		return fmt.Errorf("cannot write to root path: %w", fs.ErrInvalid)
 	}
 
 	f, err := rootFS.create(path)
@@ -228,30 +235,39 @@ func (rootFS *FS) Open(name string) (fs.File, error) {
 		}
 	}
 
-	child, err := rootFS.open(name)
+	child, origErr := rootFS.open(name)
 	if rootFS.openHook != nil {
-		var exitingContent []byte
+		// For directories, skip the hook
 		if child != nil {
 			stat, _ := child.Stat()
 			if stat.Mode().IsDir() {
-				return child, err
+				return child, origErr
 			}
-
-			exitingContent, err = io.ReadAll(child)
-			if err != nil {
-				return nil, err
-			}
-			newContent, err := rootFS.openHook(name, exitingContent, err)
-			if err != nil {
-				return nil, err
-			}
-			f := child.(*File)
-			f.content = newContent
-			f.reader = bytes.NewReader(newContent)
-			return f, nil
 		}
+
+		var existingContent []byte
+		if child != nil {
+			var readErr error
+			existingContent, readErr = io.ReadAll(child)
+			if readErr != nil {
+				return nil, readErr
+			}
+		}
+
+		newContent, hookErr := rootFS.openHook(name, existingContent, origErr)
+		if hookErr != nil {
+			return nil, hookErr
+		}
+
+		f := &File{
+			name:    syspath.Base(name),
+			perm:    0666,
+			content: newContent,
+			reader:  bytes.NewReader(newContent),
+		}
+		return f, nil
 	}
-	return child, err
+	return child, origErr
 }
 
 func (rootFS *FS) open(name string) (fs.File, error) {
@@ -332,28 +348,28 @@ func (d *fhDir) ReadDir(n int) ([]fs.DirEntry, error) {
 	for name := range d.dir.children {
 		names = append(names, name)
 	}
+	sort.Strings(names)
 
 	// directory already exhausted
-	if n <= 0 && d.idx >= len(names) {
+	if d.idx >= len(names) {
+		if n > 0 {
+			return nil, io.EOF
+		}
 		return nil, nil
 	}
 
-	// read till end
-	var err error
-	if n > 0 && d.idx+n > len(names) {
-		err = io.EOF
-		if d.idx > len(names) {
-			return nil, err
+	// determine how many entries to read
+	end := len(names)
+	if n > 0 {
+		end = d.idx + n
+		if end > len(names) {
+			end = len(names)
 		}
 	}
 
-	if n <= 0 {
-		n = len(names)
-	}
+	out := make([]fs.DirEntry, 0, end-d.idx)
 
-	out := make([]fs.DirEntry, 0, n)
-
-	for i := d.idx; i < n && i < len(names); i++ {
+	for i := d.idx; i < end; i++ {
 		name := names[i]
 		child := d.dir.children[name]
 
@@ -364,19 +380,25 @@ func (d *fhDir) ReadDir(n int) ([]fs.DirEntry, error) {
 				info: stat,
 			})
 		} else {
-			d := child.(*dir)
+			dd := child.(*dir)
 			fi := fileInfo{
-				name:    d.name,
+				name:    dd.name,
 				size:    4096,
-				modTime: d.modTime,
-				mode:    d.perm | fs.ModeDir,
+				modTime: dd.modTime,
+				mode:    dd.perm | fs.ModeDir,
 			}
 			out = append(out, &dirEntry{
 				info: &fi,
 			})
 		}
+	}
 
-		d.idx = i + 1
+	d.idx = end
+
+	// return EOF if we've reached the end and caller requested specific count
+	var err error
+	if n > 0 && d.idx >= len(names) {
+		err = io.EOF
 	}
 
 	return out, err
@@ -417,6 +439,15 @@ func (f *File) Seek(offset int64, whence int) (int64, error) {
 	}
 
 	return f.reader.Seek(offset, whence)
+}
+
+func (f *File) Write(p []byte) (n int, err error) {
+    if f.closed {
+        return 0, fs.ErrClosed
+    }
+
+    f.content = append(f.content, p...)
+    return len(p), nil
 }
 
 func (f *File) Close() error {

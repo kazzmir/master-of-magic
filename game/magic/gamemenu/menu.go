@@ -13,6 +13,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/system"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/serialize"
@@ -28,6 +29,7 @@ type GameLoader interface {
     LoadNew(path string) error
     LoadNewReader(reader io.Reader) error
     LoadMetadata(path string) (serialize.SaveMetadata, bool)
+    GetFS() system.WriteableFS
 }
 
 type SettingsUI interface {

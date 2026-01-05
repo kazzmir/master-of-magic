@@ -26,4 +26,5 @@ var _ WriteableFS = (*StandardFS)(nil)
 
 func MakeFS() WriteableFS {
     return &StandardFS{}
+    // return NewMemFS()
 }
