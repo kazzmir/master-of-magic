@@ -15,7 +15,6 @@ import (
     "errors"
     "time"
 
-    "os"
     "bufio"
     "compress/gzip"
 
@@ -61,6 +60,8 @@ import (
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
+    "github.com/kazzmir/master-of-magic/lib/system"
+
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -1655,7 +1656,9 @@ type GameSaver struct {
 }
 
 func (saver *GameSaver) SaveToPath(path string, saveName string) error {
-    saveFile, err := os.Create(path)
+    fs := system.MakeFS()
+
+    saveFile, err := fs.Create(path)
     if err != nil {
         log.Printf("Error creating save file: %v", err)
         return err

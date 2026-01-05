@@ -5,13 +5,11 @@ import (
     "fmt"
     "flag"
     "io"
-    "io/fs"
     "errors"
     "math"
     "math/rand/v2"
     "slices"
     "cmp"
-    "os"
     "bufio"
     "compress/gzip"
     "encoding/json"
@@ -28,6 +26,7 @@ import (
     */
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/system"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     introlib "github.com/kazzmir/master-of-magic/game/magic/intro"
@@ -372,7 +371,7 @@ func initializeNeutralPlayer(game *gamelib.Game, arcanusCityArea gamelib.CityVal
 type OriginalGameLoader struct {
     Cache *lbx.LbxCache
     NewGame chan *gamelib.Game
-    FS fs.FS
+    FS system.WriteableFS
 }
 
 func (loader *OriginalGameLoader) LoadMetadata(path string) (serialize.SaveMetadata, bool) {
@@ -613,7 +612,7 @@ func startQuickGame(yield coroutine.YieldFunc, game *MagicGame) error {
     return runGameInstance(realGame, yield, game, &OriginalGameLoader{
         Cache: game.Cache,
         NewGame: make(chan *gamelib.Game, 1),
-        FS: os.DirFS("."),
+        FS: system.MakeFS(),
     })
 }
 
@@ -649,7 +648,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     gameLoader := &OriginalGameLoader{
         Cache: game.Cache,
         NewGame: make(chan *gamelib.Game, 1),
-        FS: os.DirFS("."),
+        FS: system.MakeFS(),
     }
 
     if loadSave != "" {
