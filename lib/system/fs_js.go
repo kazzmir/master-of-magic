@@ -32,7 +32,7 @@ func (fs *JsFS) MaybeDownload(path string) {
     // Create Blob
     blob := js.Global().Get("Blob").New(
         []any{uint8Array},
-        map[string]any{"type": "text/plain"},
+        map[string]any{"type": "application/octet-stream"},
     )
 
     // Create object URL
