@@ -124,6 +124,7 @@ func (encounter ExtraEncounter) Reconstruct(raw map[string]any, wizards []Wizard
         Type: encounterByName(raw["type"].(string)),
         Budget: int(raw["budget"].(float64)),
         ExploredBy: exploredBy,
+        Units: encounterUnits,
     }
 }
 
