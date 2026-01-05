@@ -10,7 +10,6 @@ import (
     "math/rand/v2"
     "slices"
     "cmp"
-    "os"
     "bufio"
     "compress/gzip"
     "encoding/json"
@@ -27,6 +26,7 @@ import (
     */
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/system"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     introlib "github.com/kazzmir/master-of-magic/game/magic/intro"
@@ -42,6 +42,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/load"
+    "github.com/kazzmir/master-of-magic/game/magic/serialize"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/mainview"
@@ -370,20 +371,39 @@ func initializeNeutralPlayer(game *gamelib.Game, arcanusCityArea gamelib.CityVal
 type OriginalGameLoader struct {
     Cache *lbx.LbxCache
     NewGame chan *gamelib.Game
+    FS system.WriteableFS
+}
+
+func (loader *OriginalGameLoader) LoadMetadata(path string) (serialize.SaveMetadata, bool) {
+    return serialize.LoadMetadata(loader.FS, path)
 }
 
 func (loader *OriginalGameLoader) LoadNew(path string) error {
-    file, err := os.Open(path)
+    file, err := loader.FS.Open(path)
     if err != nil {
         return fmt.Errorf("Could not open save game file '%v': %v", path, err)
     }
     defer file.Close()
 
-    reader := bufio.NewReader(file)
+    err = loader.LoadNewReader(file)
+    if err != nil {
+        return fmt.Errorf("Could not load save game file '%v': %v", path, err)
+    }
+
+    return nil
+}
+
+func (loader *OriginalGameLoader) GetFS() system.WriteableFS {
+    return loader.FS
+}
+
+// we assume the reader is still compressed
+func (loader *OriginalGameLoader) LoadNewReader(readerOriginal io.Reader) error {
+    reader := bufio.NewReader(readerOriginal)
     gzipReader, err := gzip.NewReader(reader)
     if err != nil {
-        log.Printf("Error: unable to create gzip reader for save game file '%v': %v", path, err)
-        return fmt.Errorf("Could not load %v", path)
+        log.Printf("Error: unable to create gzip reader for save game: %v", err)
+        return fmt.Errorf("Could not load")
     }
     defer gzipReader.Close()
 
@@ -392,8 +412,8 @@ func (loader *OriginalGameLoader) LoadNew(path string) error {
     var serializedGame gamelib.SerializedGame
     err = decoder.Decode(&serializedGame)
     if err != nil {
-        log.Printf("Error: unable to decode save game file '%v': %v", path, err)
-        return fmt.Errorf("Could not load %v", path)
+        log.Printf("Error: unable to decode save game: %v", err)
+        return fmt.Errorf("Could not load")
     }
 
     newGame := gamelib.MakeGameFromSerialized(loader.Cache, musiclib.MakeMusic(loader.Cache), &serializedGame)
@@ -596,6 +616,7 @@ func startQuickGame(yield coroutine.YieldFunc, game *MagicGame) error {
     return runGameInstance(realGame, yield, game, &OriginalGameLoader{
         Cache: game.Cache,
         NewGame: make(chan *gamelib.Game, 1),
+        FS: system.MakeFS(),
     })
 }
 
@@ -631,6 +652,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     gameLoader := &OriginalGameLoader{
         Cache: game.Cache,
         NewGame: make(chan *gamelib.Game, 1),
+        FS: system.MakeFS(),
     }
 
     if loadSave != "" {

@@ -1,7 +1,8 @@
 package serialize
 
 import (
-    "os"
+    // "log"
+    "io/fs"
     "time"
     "bufio"
     "compress/gzip"
@@ -14,9 +15,10 @@ type SaveMetadata struct {
     Name string `json:"name"`
 }
 
-func LoadMetadata(path string) (SaveMetadata, bool) {
-    file, err := os.Open(path)
+func LoadMetadata(where fs.FS, path string) (SaveMetadata, bool) {
+    file, err := where.Open(path)
     if err != nil {
+        // log.Printf("Unable to open %s: %v", path, err)
         return SaveMetadata{}, false
     }
     defer file.Close()
