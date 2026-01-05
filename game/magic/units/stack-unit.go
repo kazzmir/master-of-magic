@@ -84,6 +84,7 @@ type StackUnit interface {
     GetMovementSpeed(bool) fraction.Fraction
     GetProductionCost() int
     GetRangedAttackPower() int
+    GetRangedMagicalRealm() data.MagicType
     GetResistance() int
     AdjustHealth(amount int)
     GetAttackSound() AttackSound

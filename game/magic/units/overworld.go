@@ -312,6 +312,10 @@ func (unit *OverworldUnit) IsChaosChanneled() bool {
        unit.hasUnitEnchantment(data.UnitEnchantmentChaosChannelsFireBreath)
 }
 
+func (unit *OverworldUnit) GetRangedMagicalRealm() data.MagicType {
+    return unit.Unit.RangedMagicalRealm
+}
+
 func (unit *OverworldUnit) GetRealm() data.MagicType {
     if unit.IsUndead() {
         return data.DeathMagic

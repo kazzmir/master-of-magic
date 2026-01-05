@@ -901,6 +901,10 @@ func (unit *ArmyUnit) GetDamage() int {
     return unit.Unit.GetDamage()
 }
 
+func (unit *ArmyUnit) GetRangedMagicRealm() data.MagicType {
+    return unit.Unit.GetRangedMagicalRealm()
+}
+
 func (unit *ArmyUnit) GetRealm() data.MagicType {
     if unit.Unit.IsUndead() {
         return data.DeathMagic
@@ -1739,7 +1743,7 @@ func ComputeDefense(unit UnitDamage, damage units.Damage, source DamageSource, m
         defenseRolls = 0
     }
 
-    // log.Printf("Unit %v has %v defense", unit.Unit.GetName(), defenseRolls)
+    // log.Info("Unit has %v defense", defenseRolls)
 
     defense := ComputeRoll(defenseRolls, toDefend)
 
@@ -6986,7 +6990,7 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
         }
 
         if attacker.GetRangedAttackDamageType() == units.DamageRangedMagical {
-            modifiers.Magic = attacker.GetRealm()
+            modifiers.Magic = attacker.GetRangedMagicRealm()
         }
 
         appliedDamage, _ := ApplyDamage(defender, []int{damage}, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), modifiers)
