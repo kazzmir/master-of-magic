@@ -12,7 +12,6 @@ type JsFS struct {
 }
 
 func (fs *JsFS) MaybeDownload(path string) {
-    // Example file contents
     file, err := fs.Open(path)
     if err != nil {
         return
