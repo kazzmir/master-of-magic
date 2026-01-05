@@ -592,7 +592,7 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
     return nil
 }
 
-func startQuickGame(yield coroutine.YieldFunc, game *MagicGame) error {
+func startQuickGame(yield coroutine.YieldFunc, game *MagicGame, gameLoader *OriginalGameLoader) error {
     settings := setup.NewGameSettings{
         Opponents: rand.N(4) + 1,
         Difficulty: data.DifficultyAverage,
@@ -613,11 +613,7 @@ func startQuickGame(yield coroutine.YieldFunc, game *MagicGame) error {
     log.Printf("Starting game with settings=%+v wizard=%v race=%v", settings, wizard.Name, wizard.Race)
 
     realGame := initializeGame(game, settings, wizard)
-    return runGameInstance(realGame, yield, game, &OriginalGameLoader{
-        Cache: game.Cache,
-        NewGame: make(chan *gamelib.Game, 1),
-        FS: system.MakeFS(),
-    })
+    return runGameInstance(realGame, yield, game, gameLoader)
 }
 
 func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startGame bool, loadSave string, enableMusic bool) error {
@@ -635,9 +631,15 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
         ebitenutil.DebugPrintAt(screen, "Shutting down", 10, 10)
     }
 
+    gameLoader := &OriginalGameLoader{
+        Cache: game.Cache,
+        NewGame: make(chan *gamelib.Game, 1),
+        FS: system.MakeFS(),
+    }
+
     // start a game immediately
     if startGame {
-        return startQuickGame(yield, game)
+        return startQuickGame(yield, game, gameLoader)
     }
 
     if loadSave == "" {
@@ -647,12 +649,6 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
         yield()
 
         game.Music.PlaySong(musiclib.SongTitle)
-    }
-
-    gameLoader := &OriginalGameLoader{
-        Cache: game.Cache,
-        NewGame: make(chan *gamelib.Game, 1),
-        FS: system.MakeFS(),
     }
 
     if loadSave != "" {
@@ -694,7 +690,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
             case mainview.MainScreenStateQuickGame:
                 game.Music.Stop()
                 yield()
-                err := startQuickGame(yield, game)
+                err := startQuickGame(yield, game, gameLoader)
                 if err != nil {
                     game.Drawer = shutdown
                     yield()
