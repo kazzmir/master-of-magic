@@ -789,11 +789,13 @@ func main() {
     var trace bool
     var enableMusic bool
     var loadSave string
+    var watchMode bool
     flag.StringVar(&dataPath, "data", "", "path to master of magic lbx data files. Give either a directory or a zip file. Data is searched for in the current directory if not given.")
     flag.BoolVar(&enableMusic, "music", true, "enable music playback")
     flag.BoolVar(&startGame, "start", false, "start the game immediately with a random wizard")
     flag.BoolVar(&trace, "trace", false, "enable profiling (pprof)")
     flag.StringVar(&loadSave, "load", "", "load a saved game from the given file and start immediately")
+    flag.BoolVar(&watchMode, "watch", false, "run in watch mode, where you can watch the AI play against itself (no human players)")
     flag.Parse()
 
     if trace {
