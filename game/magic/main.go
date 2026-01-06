@@ -592,6 +592,65 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
     return nil
 }
 
+// run a game with only AI players
+func startWatchMode(yield coroutine.YieldFunc, game *MagicGame) error {
+    settings := setup.NewGameSettings{
+        // Opponents: rand.N(4) + 1,
+        Opponents: 4,
+        Difficulty: data.DifficultyAverage,
+        Magic: data.MagicSettingNormal,
+        LandSize: rand.N(3),
+    }
+
+    spells, err := spellbook.ReadSpellsFromCache(game.Cache)
+    if err != nil {
+        return err
+    }
+
+    wizard, ok := gamelib.ChooseUniqueWizard(nil, spells)
+    if !ok {
+        return fmt.Errorf("Could not choose a wizard")
+    }
+
+    log.Printf("Starting game with settings=%+v wizard=%v race=%v", settings, wizard.Name, wizard.Race)
+
+    realGame := initializeGame(game, settings, wizard)
+
+    realGame.WatchMode = true
+
+    human := realGame.Model.GetHumanPlayer()
+    if human != nil {
+        // make the human player an AI
+        human.Admin = true
+        human.Banished = true
+
+        for _, city := range human.GetCities() {
+            human.RemoveCity(city)
+        }
+
+        human.Stacks = nil
+        human.SelectedStack = nil
+        human.Skip = true
+
+        // consume initial events
+        for range 10 {
+            select {
+                case <-realGame.Events:
+                default:
+            }
+        }
+    }
+
+    // FIXME: we shouldn't need this
+    gameLoader := &OriginalGameLoader{
+        Cache: game.Cache,
+        NewGame: make(chan *gamelib.Game, 1),
+        FS: system.MakeFS(),
+    }
+
+    return runGameInstance(realGame, yield, game, gameLoader)
+}
+
 func startQuickGame(yield coroutine.YieldFunc, game *MagicGame, gameLoader *OriginalGameLoader) error {
     settings := setup.NewGameSettings{
         Opponents: rand.N(4) + 1,
@@ -616,7 +675,7 @@ func startQuickGame(yield coroutine.YieldFunc, game *MagicGame, gameLoader *Orig
     return runGameInstance(realGame, yield, game, gameLoader)
 }
 
-func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startGame bool, loadSave string, enableMusic bool) error {
+func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startGame bool, loadSave string, enableMusic bool, watchMode bool) error {
 
     err := loadData(yield, game, dataPath)
     if err != nil {
@@ -629,6 +688,10 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
 
     shutdown := func (screen *ebiten.Image){
         ebitenutil.DebugPrintAt(screen, "Shutting down", 10, 10)
+    }
+
+    if watchMode {
+        return startWatchMode(yield, game)
     }
 
     gameLoader := &OriginalGameLoader{
@@ -733,11 +796,11 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     }
 }
 
-func NewMagicGame(dataPath string, startGame bool, loadSave string, enableMusic bool) (*MagicGame, error) {
+func NewMagicGame(dataPath string, startGame bool, loadSave string, enableMusic bool, watchMode bool) (*MagicGame, error) {
     var game *MagicGame
 
     run := func(yield coroutine.YieldFunc) error {
-        return runGame(yield, game, dataPath, startGame, loadSave, enableMusic)
+        return runGame(yield, game, dataPath, startGame, loadSave, enableMusic, watchMode)
     }
 
     game = &MagicGame{
@@ -815,7 +878,7 @@ func main() {
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-    game, err := NewMagicGame(dataPath, startGame, loadSave, enableMusic)
+    game, err := NewMagicGame(dataPath, startGame, loadSave, enableMusic, watchMode)
 
     if err != nil {
         log.Printf("Error: unable to load game: %v", err)

@@ -377,6 +377,8 @@ type Game struct {
 
     Events chan GameEvent
 
+    WatchMode bool
+
     // press tab 5 times to enable
     DebugMode bool
 
@@ -1578,6 +1580,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
         interpolate := float64(frames - i) / float64(frames)
 
         stack.SetOffset(dx * interpolate, dy * interpolate)
+        game.DoViewInput(yield)
         yield()
     }
 
@@ -3759,6 +3762,25 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
             }
         }
     }
+
+    if player.Skip {
+        game.DoNextTurn()
+    }
+}
+
+func (game *Game) DoViewInput(yield coroutine.YieldFunc) {
+    zoomed := game.doInputZoom(yield)
+    _ = zoomed
+
+    rightClick := inputmanager.RightClick()
+
+    if rightClick /*|| zoomed*/ {
+        mouseX, mouseY := inputmanager.MousePosition()
+        if game.InOverworldArea(mouseX, mouseY) {
+            tileX, tileY := game.ScreenToTile(float64(mouseX), float64(mouseY))
+            game.doMoveCamera(yield, tileX, tileY)
+        }
+    }
 }
 
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
@@ -3857,6 +3879,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
 
         for !done {
             game.Counter += 1
+            game.DoViewInput(yield)
             thinkingCounter += 1
 
             if yield() != nil {
@@ -6824,6 +6847,12 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         game.Model.ScrollEvents = nil
     }
 
+    if player.Skip {
+        // kind of a hack to have to invoke fog visibility here
+        player.UpdateFogVisibility()
+        return
+    }
+
     disbandedMessages := game.DisbandUnits(player)
 
     if player.IsHuman() && len(disbandedMessages) > 0 {
@@ -7962,22 +7991,26 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         FogBlack: game.GetFogImage(),
     }
 
-    overworldScreen := screen.SubImage(image.Rect(0, scale.Scale(18), scale.Scale(240), scale.Scale(data.ScreenHeight))).(*ebiten.Image)
-    overworld.DrawOverworld(overworldScreen, ebiten.GeoM{})
+    if !game.WatchMode {
+        overworldScreen := screen.SubImage(image.Rect(0, scale.Scale(18), scale.Scale(240), scale.Scale(data.ScreenHeight))).(*ebiten.Image)
+        overworld.DrawOverworld(overworldScreen, ebiten.GeoM{})
 
-    mini := screen.SubImage(game.GetMinimapRect()).(*ebiten.Image)
-    if mini.Bounds().Dx() > 0 {
-        overworld.DrawMinimap(mini)
+        mini := screen.SubImage(game.GetMinimapRect()).(*ebiten.Image)
+        if mini.Bounds().Dx() > 0 {
+            overworld.DrawMinimap(mini)
+        }
+
+        // test of TileToScreen
+        /*
+        mouseX, mouseY := inputmanager.MousePosition()
+        px, py := game.TileToScreen(game.ScreenToTile(float64(mouseX), float64(mouseY)))
+        vector.DrawFilledCircle(screen, float32(px), float32(py), 2, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, true)
+        */
+
+        game.HudUI.Draw(game.HudUI, screen)
+    } else {
+        overworld.DrawOverworld(screen, ebiten.GeoM{})
     }
-
-    // test of TileToScreen
-    /*
-    mouseX, mouseY := inputmanager.MousePosition()
-    px, py := game.TileToScreen(game.ScreenToTile(float64(mouseX), float64(mouseY)))
-    vector.DrawFilledCircle(screen, float32(px), float32(py), 2, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, true)
-    */
-
-    game.HudUI.Draw(game.HudUI, screen)
 
     // DEBUGGING: show tile coordinates on screen
     if game.DebugMode {
