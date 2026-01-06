@@ -27,8 +27,17 @@ func MakeCoroutine(user AcceptYieldFunc) *Coroutine {
 
     coroutineError := CoroutineFinished
 
+    coroutine := &Coroutine{
+        yieldFrom: yieldFrom,
+        yieldTo: yieldTo,
+        errorOut: &coroutineError,
+    }
+
     go func(){
-        defer func(){ close(yieldTo) }()
+        defer func(){
+            coroutine.stopped = true
+            close(yieldTo)
+        }()
         <-yieldFrom
         err := user(func() error {
             yieldTo <- struct{}{}
@@ -45,16 +54,14 @@ func MakeCoroutine(user AcceptYieldFunc) *Coroutine {
         }
     }()
 
-    return &Coroutine{
-        yieldFrom: yieldFrom,
-        yieldTo: yieldTo,
-        errorOut: &coroutineError,
-    }
+    return coroutine
 }
 
 func (coro *Coroutine) Stop() {
-    close(coro.yieldFrom)
-    coro.stopped = true
+    if !coro.stopped {
+        coro.stopped = true
+        close(coro.yieldFrom)
+    }
 }
 
 /* nil return means the coroutine is still running.
