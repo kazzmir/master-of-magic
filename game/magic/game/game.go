@@ -2432,7 +2432,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventShowRandomEvent:
                         randomEvent := event.(*GameEventShowRandomEvent)
                         target := randomEvent.Event.TargetPlayer
-                        if target == nil || target == game.Model.GetHumanPlayer() {
+                        if !game.WatchMode && (target == nil || target == game.Model.GetHumanPlayer()) {
                             game.doRandomEvent(yield, randomEvent.Event, randomEvent.Starting, game.Model.GetHumanPlayer().Wizard)
                         }
                     case *GameEventScroll:
@@ -3104,7 +3104,7 @@ func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
         _, wheelY := inputmanager.Wheel()
 
         // zoomSpeed := 5
-        zoomSpeed2 := 7
+        zoomSpeed2 := 1
 
         if wheelY > 0 {
             oldZoom := game.Camera.Zoom
@@ -3776,7 +3776,7 @@ func (game *Game) DoViewInput(yield coroutine.YieldFunc) {
 
     if rightClick /*|| zoomed*/ {
         mouseX, mouseY := inputmanager.MousePosition()
-        if game.InOverworldArea(mouseX, mouseY) {
+        if game.InOverworldArea(mouseX, mouseY) || game.WatchMode {
             tileX, tileY := game.ScreenToTile(float64(mouseX), float64(mouseY))
             game.doMoveCamera(yield, tileX, tileY)
         }
@@ -6848,8 +6848,6 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     }
 
     if player.Skip {
-        // kind of a hack to have to invoke fog visibility here
-        player.UpdateFogVisibility()
         return
     }
 
@@ -7706,7 +7704,9 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     tileWidth := overworld.Map.TileWidth()
     tileHeight := overworld.Map.TileHeight()
 
+    /*
     geom.Translate(-overworld.Camera.GetZoomedX() * float64(tileWidth), -overworld.Camera.GetZoomedY() * float64(tileHeight))
+    */
     geom.Scale(overworld.Camera.GetAnimatedZoom(), overworld.Camera.GetAnimatedZoom())
     // geom.Concat(scale.ScaledGeom)
 

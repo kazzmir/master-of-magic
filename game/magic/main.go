@@ -632,6 +632,9 @@ func startWatchMode(yield coroutine.YieldFunc, game *MagicGame) error {
         human.SelectedStack = nil
         human.Skip = true
 
+        // make sure all fog is visible
+        human.UpdateFogVisibility()
+
         // consume initial events
         for range 10 {
             select {

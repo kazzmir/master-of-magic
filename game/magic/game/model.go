@@ -1119,23 +1119,22 @@ func (model *GameModel) DoRandomEvents() {
                         return nil, nil
 
                     case RandomEventDiplomaticMarriage:
-                        for _, player := range model.Players {
-                            if player.GetBanner() == data.BannerBrown {
-                                if len(player.Cities) > 0 {
-                                    cities := target.GetCities()
-                                    city := cities[rand.N(len(cities))]
-                                    // if the owner of the city has a stack garrisoned there then the garrison is disbanded
-                                    stack := player.FindStack(city.X, city.Y, city.Plane)
-                                    if stack != nil {
-                                        for _, unit := range stack.Units() {
-                                            player.RemoveUnit(unit)
-                                        }
+                        neutral := model.GetNeutralPlayer()
+                        if neutral != nil {
+                            if len(neutral.Cities) > 0 {
+                                cities := target.GetCities()
+                                city := cities[rand.N(len(cities))]
+                                // if the owner of the city has a stack garrisoned there then the garrison is disbanded
+                                stack := neutral.FindStack(city.X, city.Y, city.Plane)
+                                if stack != nil {
+                                    for _, unit := range stack.Units() {
+                                        neutral.RemoveUnit(unit)
                                     }
-
-                                    ChangeCityOwner(city, player, target, ChangeCityRemoveAllEnchantments)
-
-                                    return MakeDiplomaticMarriageEvent(model.TurnNumber, city), nil
                                 }
+
+                                ChangeCityOwner(city, neutral, target, ChangeCityRemoveAllEnchantments)
+
+                                return MakeDiplomaticMarriageEvent(model.TurnNumber, city), nil
                             }
                         }
 
@@ -1270,25 +1269,31 @@ func (model *GameModel) DoRandomEvents() {
                 return nil, nil
             }
 
-            targetWizard := model.Players[rand.N(len(model.Players))]
-            newEvent, extraEvent := makeEvent(choice, targetWizard)
-            if newEvent != nil {
-                model.LastEventTurn = model.TurnNumber
+            validTargets := slices.DeleteFunc(slices.Clone(model.Players), func(player *playerlib.Player) bool {
+                return player.Defeated || player.Skip || player.GetBanner() == data.BannerBrown
+            })
 
-                // log.Printf("Random event occurred: %+v", newEvent)
+            if len(validTargets) > 0 {
+                targetWizard := validTargets[rand.N(len(validTargets))]
+                newEvent, extraEvent := makeEvent(choice, targetWizard)
+                if newEvent != nil {
+                    model.LastEventTurn = model.TurnNumber
 
-                if !newEvent.Instant {
-                    model.RandomEvents = append(model.RandomEvents, newEvent)
+                    // log.Printf("Random event occurred: %+v", newEvent)
+
+                    if !newEvent.Instant {
+                        model.RandomEvents = append(model.RandomEvents, newEvent)
+                    }
+
+                    // FIXME: if the event is targeting an AI wizard then the event message should change slightly
+                    model.Events <- &GameEventShowRandomEvent{Event: newEvent, Starting: true}
+
+                    if extraEvent != nil {
+                        model.Events <- extraEvent
+                    }
+
+                    model.RefreshUI()
                 }
-
-                // FIXME: if the event is targeting an AI wizard then the event message should change slightly
-                model.Events <- &GameEventShowRandomEvent{Event: newEvent, Starting: true}
-
-                if extraEvent != nil {
-                    model.Events <- extraEvent
-                }
-
-                model.RefreshUI()
             }
         }
     }
@@ -1953,6 +1958,17 @@ func (model *GameModel) GetNormalizeCoordinateFunc() units.NormalizeCoordinateFu
     }
 }
 
+func (model *GameModel) GetNeutralPlayer() *playerlib.Player {
+    for _, player := range model.Players {
+        if player.GetBanner() == data.BannerBrown {
+            return player
+        }
+    }
+
+    return nil
+}
+
+// FIXME: make this able to return nil
 func (model *GameModel) GetHumanPlayer() *playerlib.Player {
     return model.Players[0]
 }
