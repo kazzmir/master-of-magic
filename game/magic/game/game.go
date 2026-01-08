@@ -373,6 +373,8 @@ type Game struct {
     Fog *ebiten.Image
     State GameState
 
+    AnimationSpeed fraction.Fraction
+
     MouseData *mouselib.MouseData
 
     Events chan GameEvent
@@ -607,6 +609,7 @@ func MakeGameWithModel(lbxCache *lbx.LbxCache, music_ *music.Music, makeModel fu
         Fonts: fonts,
         Camera: camera.MakeCamera(),
         GameLoader: &DummyGameLoader{},
+        AnimationSpeed: fraction.FromInt(1),
     }
 
     // game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache), buildingInfo)
@@ -1565,7 +1568,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 
 func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack, center bool){
     // the number of frames it takes to move a unit one tile
-    frames := 10
+    frames := int(10 * game.AnimationSpeed.ToFloat())
 
     dx := float64(game.Model.CurrentMap().XDistance(stack.X(), oldX))
     dy := float64(oldY - stack.Y())
@@ -3779,6 +3782,20 @@ func (game *Game) DoViewInput(yield coroutine.YieldFunc) {
         if game.InOverworldArea(mouseX, mouseY) || game.WatchMode {
             tileX, tileY := game.ScreenToTile(float64(mouseX), float64(mouseY))
             game.doMoveCamera(yield, tileX, tileY)
+        }
+    }
+
+    if game.WatchMode {
+        keys := inpututil.AppendJustPressedKeys(nil)
+        for _, key := range keys {
+            switch key {
+                case ebiten.KeyEqual:
+                    game.AnimationSpeed = game.AnimationSpeed.Add(fraction.Make(1, 12))
+                case ebiten.KeyMinus:
+                    if game.AnimationSpeed.GreaterThan(fraction.Make(1, 12)) {
+                        game.AnimationSpeed = game.AnimationSpeed.Subtract(fraction.Make(1, 12))
+                    }
+            }
         }
     }
 }
