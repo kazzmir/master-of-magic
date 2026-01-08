@@ -3804,7 +3804,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
     /*
-    if game.Counter % 10 == 0 {
+    if game.Counter % 60 == 0 {
         log.Printf("TPS: %v FPS: %v", ebiten.ActualTPS(), ebiten.ActualFPS())
     }
     */

@@ -881,6 +881,10 @@ func main() {
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
+    if watchMode {
+        ebiten.SetTPS(300)
+    }
+
     game, err := NewMagicGame(dataPath, startGame, loadSave, enableMusic, watchMode)
 
     if err != nil {
