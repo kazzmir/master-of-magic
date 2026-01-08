@@ -88,6 +88,10 @@ func (camera *Camera) GetTileBounds() (int, int, int, int) {
     maxX := math.Ceil(middleX + tilesHorizontal/2 + 0)
     maxY := camera.GetOffsetY() + float64(camera.SizeY)/camera.GetAnimatedZoom()/2 + 1
 
+    // extend bounds a bit based on zoom level to avoid edge cases
+    maxX += -12 * (camera.GetAnimatedZoom() - 1)
+    maxY += -10 * (camera.GetAnimatedZoom() - 1)
+
     return int(minX), minY, int(maxX), int(maxY)
 }
 

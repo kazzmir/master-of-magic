@@ -2071,7 +2071,8 @@ func (mapObject *Map) DrawMinimap(screen *ebiten.Image, cities []MiniMapCity, ce
     */
 }
 
-func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
+// iterate through screen space, compute the tile at the x/y screen coordinate, draw that tile
+func (mapObject *Map) DrawLayer1_y(camera cameralib.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
 
@@ -2111,9 +2112,20 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
         return tileX, tileY
     }
 
+    var x float64
+
+    // overdraw by one tile
+    maxX += scale.Scale(float64(tileWidth))
+    maxY += scale.Scale(float64(tileHeight))
+
     // draw all tiles first
-    for x := minX; x <= maxX; x += tileHorizontalStride {
+    for x = minX; x <= maxX; x += tileHorizontalStride {
         for y := minY; y <= maxY; y += tileVerticalStride {
+
+            if int(x) == 950 && int(tileHorizontalStride) == 50 {
+                x += 0
+            }
+
             /*
             tileX := mapObject.WrapX(x)
             tileY := y
@@ -2131,6 +2143,7 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
             if tileX < 0 || tileX >= mapObject.Map.Columns() || tileY < 0 || tileY >= mapObject.Map.Rows() {
                 continue
             }
+
 
             tileImage, err := mapObject.GetTileImage(tileX, tileY, animationCounter)
             if err == nil {
@@ -2162,12 +2175,14 @@ func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint6
         }
     }
 
+    // log.Printf("Last draw x=%v maxX=%v stride=%v", x, maxX, tileHorizontalStride)
+
     vector.FillRect(screen, scale.Scale[float32](data.ScreenWidth / 2 - 5), scale.Scale[float32](data.ScreenHeight / 2 - 5), scale.Scale[float32](10), scale.Scale[float32](10), color.RGBA{R: 255, G: 0, B: 0, A: 255}, false)
 
 }
 
 // draw base map tiles, in general stuff that should go under cities/units
-func (mapObject *Map) DrawLayer1_x(camera cameralib.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
+func (mapObject *Map) DrawLayer1(camera cameralib.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){
     tileWidth := mapObject.TileWidth()
     tileHeight := mapObject.TileHeight()
 
@@ -2180,7 +2195,7 @@ func (mapObject *Map) DrawLayer1_x(camera cameralib.Camera, animationCounter uin
 
     minX, minY, maxX, maxY := camera.GetTileBounds()
 
-    log.Printf("Camera x=%d minx=%d maxx=%d total=%d zoom=%d", camera.GetX(), minX, maxX, maxX - minX, camera.Zoom)
+    // log.Printf("Camera x=%d minx=%d maxx=%d total=%d zoom=%d", camera.GetX(), minX, maxX, maxX - minX, camera.Zoom)
 
     // draw all tiles first
     for x := minX; x <= maxX; x++ {
@@ -2203,10 +2218,12 @@ func (mapObject *Map) DrawLayer1_x(camera cameralib.Camera, animationCounter uin
                 options.GeoM.Translate(float64(x * tileWidth), float64(y * tileHeight))
                 options.GeoM.Concat(geom)
 
+                /*
                 if (x == minX && y == minY) || (x == maxX && y == maxY) {
                     a, b := options.GeoM.Apply(0, 0)
                     log.Printf("Tile draw at minX,minY geoM result: %f, %f", a, b)
                 }
+                */
 
                 scale.DrawScaled(screen, tileImage, &options)
 
@@ -2222,7 +2239,7 @@ func (mapObject *Map) DrawLayer1_x(camera cameralib.Camera, animationCounter uin
         }
     }
 
-    vector.FillRect(screen, scale.Scale[float32](data.ScreenWidth / 2 - 5), scale.Scale[float32](data.ScreenHeight / 2 - 5), scale.Scale[float32](10), scale.Scale[float32](10), color.RGBA{R: 255, G: 0, B: 0, A: 255}, false)
+    // vector.FillRect(screen, scale.Scale[float32](data.ScreenWidth / 2 - 5), scale.Scale[float32](data.ScreenHeight / 2 - 5), scale.Scale[float32](10), scale.Scale[float32](10), color.RGBA{R: 255, G: 0, B: 0, A: 255}, false)
 }
 
 func (mapObject *Map) DrawLayer2(camera cameralib.Camera, animationCounter uint64, imageCache *util.ImageCache, screen *ebiten.Image, geom ebiten.GeoM){

@@ -3104,7 +3104,7 @@ func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
         _, wheelY := inputmanager.Wheel()
 
         // zoomSpeed := 5
-        zoomSpeed2 := 1
+        zoomSpeed2 := 7
 
         if wheelY > 0 {
             oldZoom := game.Camera.Zoom
@@ -7704,9 +7704,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
     tileWidth := overworld.Map.TileWidth()
     tileHeight := overworld.Map.TileHeight()
 
-    /*
     geom.Translate(-overworld.Camera.GetZoomedX() * float64(tileWidth), -overworld.Camera.GetZoomedY() * float64(tileHeight))
-    */
     geom.Scale(overworld.Camera.GetAnimatedZoom(), overworld.Camera.GetAnimatedZoom())
     // geom.Concat(scale.ScaledGeom)
 
