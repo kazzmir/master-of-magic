@@ -13,6 +13,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/optional"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
@@ -462,7 +463,7 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     }
 
     model := combat.MakeCombatModel(allSpells, &defendingArmy, &attackingArmy, landscape, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 100))
-    combatScreen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, engine.Player, landscape, data.PlaneArcanus, combat.ZoneType{}, model)
+    combatScreen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, optional.Of[combat.ArmyPlayer](engine.Player), landscape, data.PlaneArcanus, combat.ZoneType{}, model)
     engine.CombatScreen = combatScreen
 
     return func(yield coroutine.YieldFunc) error {
