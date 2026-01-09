@@ -61,6 +61,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/system"
+    "github.com/kazzmir/master-of-magic/lib/optional"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
@@ -4633,10 +4634,15 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     popCombatScreen := false
 
-    if useHuman {
+    if useHuman || game.WatchMode {
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-        combatScreen := combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Model.GetHumanPlayer(), landscape, attackerStack.Plane(), zone, combatModel)
+        controllingPlayer := optional.Of[combat.ArmyPlayer](game.Model.GetHumanPlayer())
+        if game.WatchMode {
+            controllingPlayer = optional.Empty[combat.ArmyPlayer]()
+        }
+
+        combatScreen := combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, controllingPlayer, landscape, attackerStack.Plane(), zone, combatModel)
 
         game.PushDrawer(func (screen *ebiten.Image){
             combatScreen.Draw(screen)

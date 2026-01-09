@@ -13,6 +13,7 @@ import (
     "context"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/optional"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/mouse"
@@ -330,7 +331,7 @@ func MakeCombatFonts(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
 }
 
 // player is always the human player
-func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player ArmyPlayer, landscape CombatLandscape, plane data.Plane, zone ZoneType, model *CombatModel) *CombatScreen {
+func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player optional.Optional[ArmyPlayer], landscape CombatLandscape, plane data.Plane, zone ZoneType, model *CombatModel) *CombatScreen {
     imageCache := util.MakeImageCache(cache)
 
     fonts := MakeCombatFonts(cache, defendingArmy, attackingArmy)
@@ -391,7 +392,16 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
     }
     */
 
-    combat.UI = combat.MakeUI(player)
+    if player.Present {
+        combat.UI = combat.MakeUI(player.Value)
+    } else {
+        dummyUI := &uilib.UI{
+            Draw: func(ui *uilib.UI, screen *ebiten.Image) {
+            },
+        }
+        dummyUI.SetElementsFromArray(nil)
+        combat.UI = dummyUI
+    }
 
     return combat
 }
