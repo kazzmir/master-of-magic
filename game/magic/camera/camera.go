@@ -1,5 +1,10 @@
 package camera
 
+import (
+    "math"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
+)
+
 const ZoomMin = 2
 const ZoomMax = 12
 const ZoomDefault = ZoomMax
@@ -74,16 +79,43 @@ func (camera *Camera) Center(x int, y int) {
     camera.Y = max(0, y)
 }
 
+func (camera *Camera) GetTileBounds() (int, int, int, int) {
+    tilesHorizontal := data.ScreenWidth / (20.0 * float64(camera.GetAnimatedZoom()))
+    middleX := camera.GetOffsetX() + 2 // / camera.GetAnimatedZoom()
+    minX := middleX - tilesHorizontal/2 - 0
+
+    tilesVertical := data.ScreenHeight / (18.0 * float64(camera.GetAnimatedZoom()))
+    middleY := camera.GetOffsetY()
+    minY := middleY - tilesVertical/2 - 0
+
+    // minY := int(camera.GetZoomedY() - 1)
+
+    maxX := math.Ceil(middleX + tilesHorizontal/2 + 0)
+    maxY := math.Ceil(middleY + tilesVertical/2 + 0)
+    // maxY := camera.GetOffsetY() + float64(camera.SizeY)/camera.GetAnimatedZoom()/2 + 1
+
+    // extend bounds a bit based on zoom level to avoid edge cases
+    maxX += -12 * (camera.GetAnimatedZoom() - 1)
+    maxY += -10 * (camera.GetAnimatedZoom() - 1)
+
+    // +1 here is a hack
+    return int(minX), int(minY), int(maxX), int(maxY + 1)
+}
+
 // return the bounds of a rectangle upper left (x1, y1) and lower right (x2, y2)
 // all tiles within these bounds are visible, with some margin of error to account for edges
-func (camera *Camera) GetTileBounds() (int, int, int, int) {
+func (camera *Camera) GetTileBounds2() (int, int, int, int) {
     minX := int(camera.GetZoomedX() - 1)
     minY := int(camera.GetZoomedY() - 1)
+    /*
     // FIXME: 12 should be based on SizeX/SizeY
-    maxX := minX + int(12/camera.GetZoom() + 3)
-    maxY := minY + int(12/camera.GetZoom() + 3)
+    maxX := minX + int(12/camera.GetZoom() + 4)
+    maxY := minY + int(12/camera.GetZoom() + 4)
+    */
+    maxX := camera.GetOffsetX() + float64(camera.SizeX + 5)/camera.GetAnimatedZoom()/2 + 1
+    maxY := camera.GetOffsetY() + float64(camera.SizeY)/camera.GetAnimatedZoom()/2 + 1
 
-    return minX, minY, maxX, maxY
+    return minX, minY, int(maxX), int(maxY)
 }
 
 func (camera Camera) UpdateSize(sizeX int, sizeY int) Camera {

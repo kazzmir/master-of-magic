@@ -287,6 +287,8 @@ type Player struct {
     StrategicCombat bool
     // godmode that lets the player interact with enemy cities/units
     Admin bool
+    // true if the game should skip this player's turn
+    Skip bool
 
     // true if the wizard is currently banished
     Banished bool

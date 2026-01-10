@@ -61,6 +61,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/system"
+    "github.com/kazzmir/master-of-magic/lib/optional"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/colorm"
@@ -131,6 +132,9 @@ type GameEventCastSpellBook struct {
 
 type GameEventBuildRoad struct {
     Stack *playerlib.UnitStack
+}
+
+type GameEventPauseWatchMode struct {
 }
 
 type GameEventNotice struct {
@@ -373,9 +377,14 @@ type Game struct {
     Fog *ebiten.Image
     State GameState
 
+    AnimationSpeed fraction.Fraction
+
     MouseData *mouselib.MouseData
 
     Events chan GameEvent
+
+    WatchMode bool
+    WatchModePaused bool
 
     // press tab 5 times to enable
     DebugMode bool
@@ -605,6 +614,7 @@ func MakeGameWithModel(lbxCache *lbx.LbxCache, music_ *music.Music, makeModel fu
         Fonts: fonts,
         Camera: camera.MakeCamera(),
         GameLoader: &DummyGameLoader{},
+        AnimationSpeed: fraction.FromInt(1),
     }
 
     // game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache), buildingInfo)
@@ -1563,7 +1573,7 @@ func (game *Game) showOutpost(yield coroutine.YieldFunc, city *citylib.City, sta
 
 func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, stack *playerlib.UnitStack, center bool){
     // the number of frames it takes to move a unit one tile
-    frames := 10
+    frames := int(10 * game.AnimationSpeed.ToFloat())
 
     dx := float64(game.Model.CurrentMap().XDistance(stack.X(), oldX))
     dy := float64(oldY - stack.Y())
@@ -1578,6 +1588,7 @@ func (game *Game) showMovement(yield coroutine.YieldFunc, oldX int, oldY int, st
         interpolate := float64(frames - i) / float64(frames)
 
         stack.SetOffset(dx * interpolate, dy * interpolate)
+        game.DoViewInput(yield)
         yield()
     }
 
@@ -2307,6 +2318,18 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
     }
 }
 
+// the game is in a paused state where the user can look around but no updates are occurring
+func (game *Game) DoPause(yield coroutine.YieldFunc) {
+    for game.WatchModePaused {
+        game.Counter += 1
+        game.DoViewInput(yield)
+        game.ProcessEvents(yield)
+        if yield() != nil {
+            return
+        }
+    }
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     var lastEvent GameEvent
@@ -2345,6 +2368,12 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                                 player.AIBehavior.HandleHireMercenaries(player, hire.Units, hire.Cost)
                             }
                         }
+                    case *GameEventPauseWatchMode:
+                        game.WatchModePaused = !game.WatchModePaused
+                        if game.WatchModePaused {
+                            game.DoPause(yield)
+                        }
+
                     case *GameEventMerchant:
                         merchant := event.(*GameEventMerchant)
                         if merchant.Player.IsHuman() {
@@ -2429,7 +2458,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventShowRandomEvent:
                         randomEvent := event.(*GameEventShowRandomEvent)
                         target := randomEvent.Event.TargetPlayer
-                        if target == nil || target == game.Model.GetHumanPlayer() {
+                        if !game.WatchMode && (target == nil || target == game.Model.GetHumanPlayer()) {
                             game.doRandomEvent(yield, randomEvent.Event, randomEvent.Starting, game.Model.GetHumanPlayer().Wizard)
                         }
                     case *GameEventScroll:
@@ -3759,13 +3788,53 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
             }
         }
     }
+
+    if player.Skip {
+        game.DoNextTurn()
+    }
+}
+
+func (game *Game) DoViewInput(yield coroutine.YieldFunc) {
+    zoomed := game.doInputZoom(yield)
+    _ = zoomed
+
+    rightClick := inputmanager.RightClick()
+
+    if rightClick /*|| zoomed*/ {
+        mouseX, mouseY := inputmanager.MousePosition()
+        if game.InOverworldArea(mouseX, mouseY) || game.WatchMode {
+            tileX, tileY := game.ScreenToTile(float64(mouseX), float64(mouseY))
+            game.doMoveCamera(yield, tileX, tileY)
+        }
+    }
+
+    if game.WatchMode {
+        keys := inpututil.AppendJustPressedKeys(nil)
+        for _, key := range keys {
+            switch key {
+                case ebiten.KeyEqual:
+                    game.AnimationSpeed = game.AnimationSpeed.Add(fraction.Make(1, 12))
+                case ebiten.KeyMinus:
+                    if game.AnimationSpeed.GreaterThan(fraction.Make(1, 12)) {
+                        game.AnimationSpeed = game.AnimationSpeed.Subtract(fraction.Make(1, 12))
+                    }
+                case ebiten.KeySpace:
+                    select {
+                        case game.Events <- &GameEventPauseWatchMode{}:
+                        default:
+                    }
+                case ebiten.KeyP:
+                    game.Model.SwitchPlane()
+            }
+        }
+    }
 }
 
 func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     game.Counter += 1
 
     /*
-    if game.Counter % 10 == 0 {
+    if game.Counter % 60 == 0 {
         log.Printf("TPS: %v FPS: %v", ebiten.ActualTPS(), ebiten.ActualFPS())
     }
     */
@@ -3857,6 +3926,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
 
         for !done {
             game.Counter += 1
+            game.DoViewInput(yield)
             thinkingCounter += 1
 
             if yield() != nil {
@@ -4593,10 +4663,15 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     popCombatScreen := false
 
-    if useHuman {
+    if useHuman || game.WatchMode {
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
-        combatScreen := combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, game.Model.GetHumanPlayer(), landscape, attackerStack.Plane(), zone, combatModel)
+        controllingPlayer := optional.Of[combat.ArmyPlayer](game.Model.GetHumanPlayer())
+        if game.WatchMode {
+            controllingPlayer = optional.Empty[combat.ArmyPlayer]()
+        }
+
+        combatScreen := combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, controllingPlayer, landscape, attackerStack.Plane(), zone, combatModel)
 
         game.PushDrawer(func (screen *ebiten.Image){
             combatScreen.Draw(screen)
@@ -6824,6 +6899,10 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         game.Model.ScrollEvents = nil
     }
 
+    if player.Skip {
+        return
+    }
+
     disbandedMessages := game.DisbandUnits(player)
 
     if player.IsHuman() && len(disbandedMessages) > 0 {
@@ -7962,22 +8041,26 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         FogBlack: game.GetFogImage(),
     }
 
-    overworldScreen := screen.SubImage(image.Rect(0, scale.Scale(18), scale.Scale(240), scale.Scale(data.ScreenHeight))).(*ebiten.Image)
-    overworld.DrawOverworld(overworldScreen, ebiten.GeoM{})
+    if !game.WatchMode {
+        overworldScreen := screen.SubImage(image.Rect(0, scale.Scale(18), scale.Scale(240), scale.Scale(data.ScreenHeight))).(*ebiten.Image)
+        overworld.DrawOverworld(overworldScreen, ebiten.GeoM{})
 
-    mini := screen.SubImage(game.GetMinimapRect()).(*ebiten.Image)
-    if mini.Bounds().Dx() > 0 {
-        overworld.DrawMinimap(mini)
+        mini := screen.SubImage(game.GetMinimapRect()).(*ebiten.Image)
+        if mini.Bounds().Dx() > 0 {
+            overworld.DrawMinimap(mini)
+        }
+
+        // test of TileToScreen
+        /*
+        mouseX, mouseY := inputmanager.MousePosition()
+        px, py := game.TileToScreen(game.ScreenToTile(float64(mouseX), float64(mouseY)))
+        vector.DrawFilledCircle(screen, float32(px), float32(py), 2, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, true)
+        */
+
+        game.HudUI.Draw(game.HudUI, screen)
+    } else {
+        overworld.DrawOverworld(screen, ebiten.GeoM{})
     }
-
-    // test of TileToScreen
-    /*
-    mouseX, mouseY := inputmanager.MousePosition()
-    px, py := game.TileToScreen(game.ScreenToTile(float64(mouseX), float64(mouseY)))
-    vector.DrawFilledCircle(screen, float32(px), float32(py), 2, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, true)
-    */
-
-    game.HudUI.Draw(game.HudUI, screen)
 
     // DEBUGGING: show tile coordinates on screen
     if game.DebugMode {

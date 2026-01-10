@@ -18,6 +18,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
+    "github.com/kazzmir/master-of-magic/lib/optional"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -472,7 +473,7 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
     }
 
     model := combat.MakeCombatModel(allSpells, &defendingArmy, &attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 100))
-    combatScreen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, humanPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
+    combatScreen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, optional.Of[combat.ArmyPlayer](humanPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
     engine.Combat = combatScreen
 
     run := func(yield coroutine.YieldFunc) error {
