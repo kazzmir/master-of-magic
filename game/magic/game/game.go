@@ -134,6 +134,9 @@ type GameEventBuildRoad struct {
     Stack *playerlib.UnitStack
 }
 
+type GameEventPauseWatchMode struct {
+}
+
 type GameEventNotice struct {
     Message string
 }
@@ -381,6 +384,7 @@ type Game struct {
     Events chan GameEvent
 
     WatchMode bool
+    WatchModePaused bool
 
     // press tab 5 times to enable
     DebugMode bool
@@ -2314,6 +2318,18 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
     }
 }
 
+// the game is in a paused state where the user can look around but no updates are occurring
+func (game *Game) DoPause(yield coroutine.YieldFunc) {
+    for game.WatchModePaused {
+        game.Counter += 1
+        game.DoViewInput(yield)
+        game.ProcessEvents(yield)
+        if yield() != nil {
+            return
+        }
+    }
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     var lastEvent GameEvent
@@ -2352,6 +2368,12 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                                 player.AIBehavior.HandleHireMercenaries(player, hire.Units, hire.Cost)
                             }
                         }
+                    case *GameEventPauseWatchMode:
+                        game.WatchModePaused = !game.WatchModePaused
+                        if game.WatchModePaused {
+                            game.DoPause(yield)
+                        }
+
                     case *GameEventMerchant:
                         merchant := event.(*GameEventMerchant)
                         if merchant.Player.IsHuman() {
@@ -3795,6 +3817,13 @@ func (game *Game) DoViewInput(yield coroutine.YieldFunc) {
                 case ebiten.KeyMinus:
                     if game.AnimationSpeed.GreaterThan(fraction.Make(1, 12)) {
                         game.AnimationSpeed = game.AnimationSpeed.Subtract(fraction.Make(1, 12))
+                    }
+                case ebiten.KeySpace:
+                    if game.WatchMode {
+                        select {
+                            case game.Events <- &GameEventPauseWatchMode{}:
+                            default:
+                        }
                     }
             }
         }
