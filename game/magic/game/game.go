@@ -3819,12 +3819,12 @@ func (game *Game) DoViewInput(yield coroutine.YieldFunc) {
                         game.AnimationSpeed = game.AnimationSpeed.Subtract(fraction.Make(1, 12))
                     }
                 case ebiten.KeySpace:
-                    if game.WatchMode {
-                        select {
-                            case game.Events <- &GameEventPauseWatchMode{}:
-                            default:
-                        }
+                    select {
+                        case game.Events <- &GameEventPauseWatchMode{}:
+                        default:
                     }
+                case ebiten.KeyP:
+                    game.Model.SwitchPlane()
             }
         }
     }
