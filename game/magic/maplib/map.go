@@ -2260,8 +2260,8 @@ func (mapObject *Map) DrawLayer2Internal(camera cameralib.Camera, animationCount
     minX, minY, maxX, maxY := camera.GetTileBounds()
 
     // draw all tiles first
-    for x := minX; x < maxX; x++ {
-        for y := minY; y < maxY; y++ {
+    for x := minX; x <= maxX; x++ {
+        for y := minY; y <= maxY; y++ {
             tileX := mapObject.WrapX(x)
             tileY := y
 
