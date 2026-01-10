@@ -1122,7 +1122,7 @@ func (model *GameModel) DoRandomEvents() {
                         neutral := model.GetNeutralPlayer()
                         if neutral != nil {
                             if len(neutral.Cities) > 0 {
-                                cities := target.GetCities()
+                                cities := neutral.GetCities()
                                 city := cities[rand.N(len(cities))]
                                 // if the owner of the city has a stack garrisoned there then the garrison is disbanded
                                 stack := neutral.FindStack(city.X, city.Y, city.Plane)
