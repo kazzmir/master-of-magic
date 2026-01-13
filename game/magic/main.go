@@ -598,7 +598,7 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
 func startWatchMode(yield coroutine.YieldFunc, game *MagicGame) error {
     settings := setup.NewGameSettings{
         // Opponents: rand.N(4) + 1,
-        Opponents: 4,
+        Opponents: 1,
         Difficulty: data.DifficultyAverage,
         Magic: data.MagicSettingNormal,
         LandSize: rand.N(3),

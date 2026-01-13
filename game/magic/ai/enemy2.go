@@ -919,6 +919,15 @@ func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {
 
     player.RebalanceFood()
 
+    ok := true
+    for ok && player.Gold + player.GoldPerTurn() * 3 < 0 {
+        var newRate fraction.Fraction
+        newRate, ok = player.NextTaxRate(player.TaxRate)
+        if ok {
+            player.UpdateTaxRate(newRate)
+        }
+    }
+
     ai.Attacking = make(map[*playerlib.UnitStack]bool)
 
     /*

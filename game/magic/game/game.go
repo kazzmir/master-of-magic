@@ -7502,9 +7502,10 @@ func (game *Game) EndOfTurn() {
         for _, player := range game.Model.Players {
             if !player.IsHuman() {
                 power := game.Model.ComputePower(player)
-                log.Printf("Wizard %v (%v) - Gold: %v (%v), Food: %v, Mana: %v (%v), Cities: %v, Units: %v, Research: %v (%v)",
+                log.Printf("Wizard %v (%v) - Gold: %v (%v), Food: %v, Mana: %v (%v), Cities: %v, Units: %v, Tax: %v, Research: %v (%v)",
                     player.Wizard.Name, player.GetBanner(), player.Gold, player.GoldPerTurn(), player.FoodPerTurn(), player.Mana, player.ManaPerTurn(power, game.Model),
-                    len(player.Cities), player.UnitCount(), player.ResearchingSpell.Name, player.ResearchProgress)
+                    len(player.Cities), player.UnitCount(), player.TaxRate,
+                    player.ResearchingSpell.Name, player.ResearchProgress)
             }
         }
     }
