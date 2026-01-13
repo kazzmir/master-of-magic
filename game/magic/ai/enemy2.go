@@ -758,7 +758,8 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                                 Building: buildinglib.BuildingTradeGoods,
                                 Unit: units.UnitNone,
                             })
-                        case chance(40):
+                        // always try to build something
+                        default:
 
                             // FIXME: if unrest is high then build a shrine/temple/etc
                             // if money production is low then build a marketplace/bank/etc
@@ -920,9 +921,11 @@ func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {
 
     ai.Attacking = make(map[*playerlib.UnitStack]bool)
 
+    /*
     for _, city := range player.Cities {
         log.Printf("ai %v city %v farmer=%v worker=%v rebel=%v", player.Wizard.Name, city.Name, city.Farmers, city.Workers, city.Rebels)
     }
+    */
 }
 
 func (ai *Enemy2AI) ConfirmRazeTown(city *citylib.City) bool {

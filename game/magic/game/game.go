@@ -3891,7 +3891,7 @@ func MakeMoveHandlers(game *Game, yield coroutine.YieldFunc) MovementHandler {
 }
 
 func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
-    log.Printf("AI %v year %v: make decisions", player.Wizard.Name, game.Model.TurnNumber)
+    // log.Printf("AI %v year %v: make decisions", player.Wizard.Name, game.Model.TurnNumber)
 
     if player.AIBehavior != nil {
         decisionResult := make(chan []playerlib.AIDecision)
@@ -3902,7 +3902,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
             close(decisionResult)
         }()
 
-        log.Printf("AI %v waiting for decisions", player.Wizard.Name)
+        // log.Printf("AI %v waiting for decisions", player.Wizard.Name)
         var decisions []playerlib.AIDecision
         done := false
 
@@ -3942,7 +3942,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
 
         game.PopDrawer()
 
-        log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
+        // log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
         for _, decision := range decisions {
             switch decision.(type) {
@@ -3990,7 +3990,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     }
                 case *playerlib.AIProduceDecision:
                     produce := decision.(*playerlib.AIProduceDecision)
-                    log.Printf("ai %v city %v producing %v %v", player.Wizard.Name, produce.City.Name, game.Model.BuildingInfo.Name(produce.Building), produce.Unit.Name)
+                    log.Printf("Year=%v AI %v city %v producing %v %v", game.Model.TurnNumber, player.Wizard.Name, produce.City.Name, game.Model.BuildingInfo.Name(produce.Building), produce.Unit.Name)
                     produce.City.ProducingBuilding = produce.Building
                     produce.City.ProducingUnit = produce.Unit
                 case *playerlib.AIResearchSpellDecision:
@@ -7039,7 +7039,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                             default:
                         }
                     } else {
-                        log.Printf("ai created %v", game.Model.BuildingInfo.Name(newBuilding.Building))
+                        log.Printf("Year=%v AI %v created %v", game.Model.TurnNumber, player.Wizard.Name, game.Model.BuildingInfo.Name(newBuilding.Building))
                     }
                 case *citylib.CityEventOutpostDestroyed:
                     removeCities = append(removeCities, city)
