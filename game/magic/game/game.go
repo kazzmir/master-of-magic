@@ -3990,7 +3990,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     }
                 case *playerlib.AIProduceDecision:
                     produce := decision.(*playerlib.AIProduceDecision)
-                    log.Printf("Year=%v AI %v city %v producing %v %v", game.Model.TurnNumber, player.Wizard.Name, produce.City.Name, game.Model.BuildingInfo.Name(produce.Building), produce.Unit.Name)
+                    log.Printf("Year=%v AI %v(%v) city %v producing %v %v", game.Model.TurnNumber, player.Wizard.Name, player.GetBanner(), produce.City.Name, game.Model.BuildingInfo.Name(produce.Building), produce.Unit.Name)
                     produce.City.ProducingBuilding = produce.Building
                     produce.City.ProducingUnit = produce.Unit
                 case *playerlib.AIResearchSpellDecision:
@@ -7039,7 +7039,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                             default:
                         }
                     } else {
-                        log.Printf("Year=%v AI %v created %v", game.Model.TurnNumber, player.Wizard.Name, game.Model.BuildingInfo.Name(newBuilding.Building))
+                        log.Printf("Year=%v AI %v(%v) city %v created %v", game.Model.TurnNumber, player.Wizard.Name, player.GetBanner(), city.Name, game.Model.BuildingInfo.Name(newBuilding.Building))
                     }
                 case *citylib.CityEventOutpostDestroyed:
                     removeCities = append(removeCities, city)
