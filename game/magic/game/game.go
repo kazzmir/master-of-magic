@@ -7076,6 +7076,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
                     if player.AIBehavior != nil {
                         player.AIBehavior.ProducedUnit(city, player)
+                        log.Printf("Year=%v AI %v(%v) city %v created unit %v", game.Model.TurnNumber, player.Wizard.Name, player.GetBanner(), city.Name, overworldUnit.GetName())
                     }
                 }
             }
@@ -7493,6 +7494,19 @@ func (game *Game) EndOfTurn() {
         }
 
         player.UpdateDiplomaticRelations()
+    }
+
+    // print summary of each player
+    if game.WatchMode {
+        log.Printf("---- End of Year %v Summary ----", game.Model.TurnNumber - 1)
+        for _, player := range game.Model.Players {
+            if !player.IsHuman() {
+                power := game.Model.ComputePower(player)
+                log.Printf("Wizard %v (%v) - Gold: %v (%v), Food: %v, Mana: %v (%v), Cities: %v, Units: %v, Research: %v (%v)",
+                    player.Wizard.Name, player.GetBanner(), player.Gold, player.GoldPerTurn(), player.FoodPerTurn(), player.Mana, player.ManaPerTurn(power, game.Model),
+                    len(player.Cities), player.UnitCount(), player.ResearchingSpell.Name, player.ResearchProgress)
+            }
+        }
     }
 
 }
