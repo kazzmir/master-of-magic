@@ -928,6 +928,8 @@ func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {
         }
     }
 
+    // TODO: if gold is low but mana is high, then convert some mana to gold
+
     ai.Attacking = make(map[*playerlib.UnitStack]bool)
 
     /*
