@@ -815,6 +815,33 @@ func (lbx *LbxFile) ReadTerrainImages(entry int) ([]image.Image, error) {
     return images, nil
 }
 
+func EncodeTerrainImage(img image.Image) ([]byte, error) {
+    newImage := image.NewPaletted(img.Bounds(), defaultPalette)
+    draw.Draw(newImage, img.Bounds(), img, image.Point{}, draw.Src)
+
+    var buf bytes.Buffer
+
+    WriteUint16(&buf, uint16(newImage.Bounds().Dx()))
+    WriteUint16(&buf, uint16(newImage.Bounds().Dy()))
+
+    for range 6 {
+        WriteUint16(&buf, 0)
+    }
+
+    for x := range newImage.Bounds().Dx() {
+        for y := range newImage.Bounds().Dy() {
+            index := newImage.ColorIndexAt(x, y)
+            buf.WriteByte(index)
+        }
+    }
+
+    for range 4 {
+        WriteUint16(&buf, 0)
+    }
+
+    return buf.Bytes(), nil
+}
+
 func (lbx *LbxFile) TotalEntries() int {
     return len(lbx.Data)
 }
@@ -1285,7 +1312,7 @@ func ReadLbx(reader io.ReadSeeker) (LbxFile, error) {
     return lbx, nil
 }
 
-func SaveLbx(lbx LbxFile, writer io.WriteSeeker) error {
+func SaveLbx(lbx *LbxFile, writer io.WriteSeeker) error {
     err := WriteUint16(writer, uint16(len(lbx.Data)))
     if err != nil {
         return err
