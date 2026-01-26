@@ -863,7 +863,14 @@ func (ai *Enemy2AI) Update(self *playerlib.Player, aiServices playerlib.AIServic
 }
 
 func (ai *Enemy2AI) ConfirmEncounter(stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter) bool {
-    return false
+    armyPower := stackAttackPower(stack)
+
+    encounterPower := 0
+    for _, unit := range encounter.Units {
+        encounterPower += rawUnitAttackPower(unit)
+    }
+
+    return armyPower >= encounterPower - rand.N(10)
 }
 
 func (ai *Enemy2AI) InvalidMove(stack *playerlib.UnitStack) {
