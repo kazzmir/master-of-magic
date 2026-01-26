@@ -928,7 +928,9 @@ func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {
         }
     }
 
-    // TODO: if gold is low but mana is high, then convert some mana to gold
+    if player.Gold < 50 && player.Mana > 200 {
+        ai.ConvertManaToGold(player)
+    }
 
     ai.Attacking = make(map[*playerlib.UnitStack]bool)
 
@@ -937,6 +939,21 @@ func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {
         log.Printf("ai %v city %v farmer=%v worker=%v rebel=%v", player.Wizard.Name, city.Name, city.Farmers, city.Workers, city.Rebels)
     }
     */
+}
+
+func (ai *Enemy2AI) ConvertManaToGold(self *playerlib.Player) {
+    manaToConvert := int(float64(self.Mana) * 0.2)
+
+    alchemyConversion := 0.5
+    if self.Wizard.RetortEnabled(data.RetortAlchemy) {
+        alchemyConversion = 1
+    }
+
+    self.Mana -= manaToConvert
+    goldGained := int(float64(manaToConvert) * alchemyConversion)
+    self.Gold += goldGained
+
+    // log.Printf("AI %v converted %v mana to %v gold", self.Wizard.Name, manaToConvert, goldGained)
 }
 
 func (ai *Enemy2AI) ConfirmRazeTown(city *citylib.City) bool {
