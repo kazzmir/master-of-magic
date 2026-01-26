@@ -523,7 +523,7 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
     return nil
 }
 
-func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) *gamelib.Game {
+func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom, allowRaiders bool) *gamelib.Game {
     game := gamelib.MakeGame(magic.Cache, magic.Music, settings)
 
     game.RefreshUI()
@@ -542,9 +542,11 @@ func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizar
         }
     }
 
-    log.Printf("Create neutral player")
-    neutral := initializeNeutralPlayer(game, arcanusCityArea, myrrorCityArea)
-    log.Printf("done create neutral player with %v cities", len(neutral.Cities))
+    if allowRaiders {
+        log.Printf("Create neutral player")
+        neutral := initializeNeutralPlayer(game, arcanusCityArea, myrrorCityArea)
+        log.Printf("done create neutral player with %v cities", len(neutral.Cities))
+    }
 
     // hack
     // human.Admin = true
@@ -596,7 +598,7 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
 func startWatchMode(yield coroutine.YieldFunc, game *MagicGame) error {
     settings := setup.NewGameSettings{
         // Opponents: rand.N(4) + 1,
-        Opponents: 4,
+        Opponents: 1,
         Difficulty: data.DifficultyAverage,
         Magic: data.MagicSettingNormal,
         LandSize: rand.N(3),
@@ -614,7 +616,7 @@ func startWatchMode(yield coroutine.YieldFunc, game *MagicGame) error {
 
     log.Printf("Starting game with settings=%+v wizard=%v race=%v", settings, wizard.Name, wizard.Race)
 
-    realGame := initializeGame(game, settings, wizard)
+    realGame := initializeGame(game, settings, wizard, false)
 
     realGame.WatchMode = true
 
@@ -674,7 +676,7 @@ func startQuickGame(yield coroutine.YieldFunc, game *MagicGame, gameLoader *Orig
 
     log.Printf("Starting game with settings=%+v wizard=%v race=%v", settings, wizard.Name, wizard.Race)
 
-    realGame := initializeGame(game, settings, wizard)
+    realGame := initializeGame(game, settings, wizard, true)
     return runGameInstance(realGame, yield, game, gameLoader)
 }
 
@@ -785,7 +787,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
 
                 game.Music.Stop()
 
-                realGame := initializeGame(game, settings, wizard)
+                realGame := initializeGame(game, settings, wizard, true)
                 err := runGameInstance(realGame, yield, game, gameLoader)
 
                 if err != nil {
