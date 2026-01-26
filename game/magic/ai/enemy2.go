@@ -157,25 +157,27 @@ type AIData struct {
 }
 
 func rawUnitAttackPower(unit units.Unit) int {
-    meleePower := float32(unit.GetMeleeAttackPower())
-    rangedPower := float32(unit.GetRangedAttackPower())
+    overworld := units.MakeOverworldUnit(unit, 0, 0, data.PlaneArcanus)
+
+    meleePower := float32(overworld.GetMeleeAttackPower()) * float32(overworld.GetToHitMelee()) / 100
+    rangedPower := float32(overworld.GetRangedAttackPower()) * 0.3
     if unit.GetRangedAttackDamageType() == units.DamageRangedMagical {
         rangedPower *= 1.5
     }
 
-    return int(max(meleePower, rangedPower)) * unit.GetCount()
+    return int(max(1, meleePower, rangedPower)) * unit.GetCount()
 }
 
 func unitAttackPower(unit ...units.StackUnit) int {
     total := 0
     for _, u := range unit {
-        meleePower := float32(u.GetMeleeAttackPower())
-        rangedPower := float32(u.GetRangedAttackPower())
+        meleePower := float32(u.GetMeleeAttackPower()) * float32(u.GetToHitMelee()) / 100
+        rangedPower := float32(u.GetRangedAttackPower()) * 0.3
         if u.GetRangedAttackDamageType() == units.DamageRangedMagical {
             rangedPower *= 1.5
         }
 
-        power := int(max(meleePower, rangedPower)) * u.GetCount()
+        power := int(max(1, meleePower, rangedPower)) * u.GetCount()
 
         total += power
     }
