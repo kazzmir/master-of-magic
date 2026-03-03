@@ -1053,7 +1053,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     makeEditUnitWindow := func(unit *units.Unit) *widget.Window {
 
-        transparent := uint8(230)
+        transparent := uint8(240)
 
         contents := widget.NewContainer(
             widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: transparent}, color.NRGBA{R: 200, G: 200, B: 200, A: transparent}, 2)),
@@ -1156,6 +1156,57 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             return img
         }
 
+        makeNumberInput := func() *widget.TextInput {
+            return widget.NewTextInput(
+                widget.TextInputOpts.WidgetOpts(
+                    // Set the layout information to center the textbox in the parent
+                    widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                        Position: widget.RowLayoutPositionCenter,
+                        Stretch:  true,
+                    }),
+                ),
+
+                // Set the keyboard type when opened on mobile devices.
+                // widget.TextInputOpts.MobileInputMode(mobile.TEXT),
+
+                // Set the Idle and Disabled background image for the text input.
+                // If the NineSlice image has a minimum size, the widget will use that or
+                // widget.WidgetOpts.MinSize; whichever is greater.
+                widget.TextInputOpts.Image(&widget.TextInputImage{
+                    Idle:     ui_image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 100, A: 255}),
+                    Disabled: ui_image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 100, A: 255}),
+                }),
+
+                // Set the font face and size for the widget
+                widget.TextInputOpts.Face(&face),
+
+                // Set the colors for the text and caret
+                widget.TextInputOpts.Color(&widget.TextInputColor{
+                    Idle:          color.NRGBA{254, 255, 255, 255},
+                    Disabled:      color.NRGBA{R: 200, G: 200, B: 200, A: 255},
+                    Caret:         color.NRGBA{254, 255, 255, 255},
+                    DisabledCaret: color.NRGBA{R: 200, G: 200, B: 200, A: 255},
+                }),
+
+                // Set how much padding there is between the edge of the input and the text
+                widget.TextInputOpts.Padding(widget.NewInsetsSimple(5)),
+
+                // This text is displayed if the input is empty
+                widget.TextInputOpts.Placeholder("0"),
+
+                // This is called when the user hits the "Enter" key.
+                // There are other options that can configure this behavior.
+                widget.TextInputOpts.SubmitHandler(func(args *widget.TextInputChangedEventArgs) {
+                    fmt.Println("Text Submitted: ", args.InputText)
+                }),
+
+                // This is called whenver there is a change to the text
+                widget.TextInputOpts.ChangedHandler(func(args *widget.TextInputChangedEventArgs) {
+                    fmt.Println("Text Changed: ", args.InputText)
+                }),
+            )
+        }
+
         // Flying: checkbox
 
         contents.AddChild(makeRow(5, makeWhiteText("Flying"), widget.NewCheckbox(
@@ -1187,14 +1238,31 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         // Magic realm: combo box with all magic realms
         // ranged attack combo box
+
         // ranged attack power: text input as number
+        contents.AddChild(makeRow(5, makeWhiteText("Ranged Attack Power"), makeNumberInput()))
+
         // ranged attacks
+        contents.AddChild(makeRow(5, makeWhiteText("Ranged Attacks"), makeNumberInput()))
+
         // count: combo box, 1-8
+        contents.AddChild(makeRow(5, makeWhiteText("Count"), makeNumberInput()))
+
         // movement speed: text input as number
+        contents.AddChild(makeRow(5, makeWhiteText("Movement Speed"), makeNumberInput()))
+
         // melee attack power: text input as number
+        contents.AddChild(makeRow(5, makeWhiteText("Melee Attack Power"), makeNumberInput()))
+
         // defense: text input as number
+        contents.AddChild(makeRow(5, makeWhiteText("Defense"), makeNumberInput()))
+
         // resistance: text input as number
+        contents.AddChild(makeRow(5, makeWhiteText("Resistance"), makeNumberInput()))
+
         // hit points: text input as number
+        contents.AddChild(makeRow(5, makeWhiteText("Hit Points"), makeNumberInput()))
+
         // spells: set of spells this unit can cast
         // abilities: set of abilities this unit has
 
