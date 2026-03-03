@@ -1049,6 +1049,23 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         raceButtons = append(raceButtons, makeRaceButton(race, update))
     }
 
+    makeNewUnitButton := func() *widget.Button {
+        return widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xbf, G: 0xbf, B: 0x00, A: 0xff})),
+            widget.ButtonOpts.Text("New Unit", &face, &widget.ButtonTextColor{
+                Idle: color.White,
+                Hover: color.White,
+                Pressed: color.White,
+            }),
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                // spawn window to make new unit
+            }),
+        )
+    }
+
+    raceButtons = append(raceButtons, makeNewUnitButton())
+
     defendingArmyCount := widget.NewText(widget.TextOpts.Text("0", &face, color.NRGBA{R: 255, G: 255, B: 255, A: 255}))
 
     makeArmyList := func() *widget.List {
