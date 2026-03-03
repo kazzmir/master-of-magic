@@ -1049,6 +1049,176 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         raceButtons = append(raceButtons, makeRaceButton(race, update))
     }
 
+    var addWindow func(*widget.Window)
+
+    makeEditUnitWindow := func(unit *units.Unit) *widget.Window {
+
+        transparent := uint8(230)
+
+        contents := widget.NewContainer(
+            widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: transparent}, color.NRGBA{R: 200, G: 200, B: 200, A: transparent}, 2)),
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+                widget.RowLayoutOpts.Spacing(3),
+                widget.RowLayoutOpts.Padding(padding(5)),
+            )),
+        )
+
+        raceSelection := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+                widget.RowLayoutOpts.Spacing(5),
+            )),
+        )
+
+        makeWhiteText := func(label string) *widget.Text {
+            return widget.NewText(
+                widget.TextOpts.Text(label, &face, color.White),
+            )
+        }
+
+        raceSelection.AddChild(makeWhiteText("Race"))
+        // add drop down of all races
+        var raceEntries []any
+        for _, race := range allRaces {
+            raceEntries = append(raceEntries, race)
+        }
+        five := 5
+        raceSelection.AddChild(widget.NewListComboButton(
+            widget.ListComboButtonOpts.Entries(raceEntries),
+            widget.ListComboButtonOpts.MaxContentHeight(150),
+            widget.ListComboButtonOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+                    HorizontalPosition: widget.AnchorLayoutPositionCenter,
+                    VerticalPosition: widget.AnchorLayoutPositionCenter,
+                }),
+            ),
+            widget.ListComboButtonOpts.ButtonParams(&widget.ButtonParams{
+                Image: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff}),
+                TextPadding: widget.NewInsetsSimple(5),
+                TextFace: &face,
+                TextColor: &widget.ButtonTextColor{
+                    Idle: color.White,
+                    Disabled: color.White,
+                },
+            }),
+            widget.ListComboButtonOpts.ListParams(&widget.ListParams{
+                ScrollContainerImage: &widget.ScrollContainerImage{
+                    Idle:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                    Disabled: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                    Mask:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                },
+                Slider: &widget.SliderParams{
+                    TrackImage: &widget.SliderTrackImage{
+                        Idle:  ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                        Hover: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                    },
+                    HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+                    MinHandleSize: &five,
+                    TrackPadding:  widget.NewInsetsSimple(2),
+                },
+                EntryFace: &face,
+                EntryColor: &widget.ListEntryColor{
+                    Selected:                   color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused selected entry
+                    Unselected:                 color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused unselected entry
+                    SelectedBackground:         color.NRGBA{R: 130, G: 130, B: 200, A: 255}, //Background color for the unfocused selected entry
+                    SelectedFocusedBackground:  color.NRGBA{R: 130, G: 130, B: 170, A: 255}, //Background color for the focused selected entry
+                    FocusedBackground:          color.NRGBA{R: 170, G: 170, B: 180, A: 255}, //Background color for the focused unselected entry
+                    DisabledUnselected:         color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled unselected entry
+                    DisabledSelected:           color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled selected entry
+                    DisabledSelectedBackground: color.NRGBA{100, 100, 100, 255},             //Background color for the disabled selected entry
+                },
+                EntryTextPadding: widget.NewInsetsSimple(5),
+                MinSize:          &image.Point{200, 0},
+            }),
+
+            widget.ListComboButtonOpts.EntryLabelFunc(
+                func (e any) string {
+                    return e.(data.Race).String()
+                },
+                func (e any) string {
+                    return e.(data.Race).String()
+                },
+            ),
+
+            widget.ListComboButtonOpts.EntrySelectedHandler(func(args *widget.ListComboButtonEntrySelectedEventArgs) {
+                fmt.Println("Selected race", args.Entry)
+
+                unit.Race = args.Entry.(data.Race)
+            }),
+        ))
+
+        contents.AddChild(raceSelection)
+
+        makeSquare := func(size int, col color.NRGBA) *ebiten.Image {
+            img := ebiten.NewImage(size, size)
+            img.Fill(col)
+            return img
+        }
+
+        // Flying: checkbox
+
+        contents.AddChild(makeRow(5, makeWhiteText("Flying"), widget.NewCheckbox(
+            widget.CheckboxOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+                    HorizontalPosition: widget.AnchorLayoutPositionCenter,
+                    VerticalPosition: widget.AnchorLayoutPositionCenter,
+                }),
+            ),
+            widget.CheckboxOpts.Image(&widget.CheckboxImage{
+                Unchecked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 96, G: 96, B: 96, A: 255})),
+                Checked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 100, G: 255, B: 100, A: 255})),
+            }),
+            widget.CheckboxOpts.StateChangedHandler(func (args *widget.CheckboxChangedEventArgs) {
+                switch args.State {
+                    case widget.WidgetChecked:
+                        unit.Flying = true
+                    case widget.WidgetUnchecked:
+                        unit.Flying = false
+                }
+            }),
+            widget.CheckboxOpts.InitialState(func() widget.WidgetState {
+                if unit.Flying {
+                    return widget.WidgetChecked
+                }
+                return widget.WidgetUnchecked
+            }()),
+        )))
+
+        // Magic realm: combo box with all magic realms
+        // ranged attack combo box
+        // ranged attack power: text input as number
+        // ranged attacks
+        // count: combo box, 1-8
+        // movement speed: text input as number
+        // melee attack power: text input as number
+        // defense: text input as number
+        // resistance: text input as number
+        // hit points: text input as number
+        // spells: set of spells this unit can cast
+        // abilities: set of abilities this unit has
+
+        titleContainer := widget.NewContainer(
+            widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: transparent})),
+            widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+        )
+        titleContainer.AddChild(widget.NewText(
+            widget.TextOpts.Text("Edit Unit", &face, color.White),
+            widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+                HorizontalPosition: widget.AnchorLayoutPositionCenter,
+                VerticalPosition: widget.AnchorLayoutPositionCenter,
+            })),
+        ))
+
+        return widget.NewWindow(
+            widget.WindowOpts.Contents(contents),
+            widget.WindowOpts.TitleBar(titleContainer, 25),
+            widget.WindowOpts.Draggable(),
+            widget.WindowOpts.Resizeable(),
+            widget.WindowOpts.MinSize(500, 500),
+        )
+    }
+
     makeNewUnitButton := func() *widget.Button {
         return widget.NewButton(
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
@@ -1059,7 +1229,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 Pressed: color.White,
             }),
             widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
-                // spawn window to make new unit
+                newUnit := units.UnitNone
+                addWindow(makeEditUnitWindow(&newUnit))
             }),
         )
     }
@@ -1501,6 +1672,14 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     ui := ebitenui.UI{
         Container: rootContainer,
+    }
+
+    addWindow = func(window *widget.Window) {
+        x, y := window.Contents.PreferredSize()
+        rect := image.Rect(0, 0, x, y)
+        rect = rect.Add(image.Pt(100, 100))
+        window.SetLocation(rect)
+        ui.AddWindow(window)
     }
 
     return &ui
