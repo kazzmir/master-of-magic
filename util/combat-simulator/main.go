@@ -1064,26 +1064,79 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             )),
         )
 
-        raceSelection := widget.NewContainer(
-            widget.ContainerOpts.Layout(widget.NewRowLayout(
-                widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-                widget.RowLayoutOpts.Spacing(5),
-            )),
-        )
-
         makeWhiteText := func(label string) *widget.Text {
             return widget.NewText(
                 widget.TextOpts.Text(label, &face, color.White),
             )
         }
 
-        raceSelection.AddChild(makeWhiteText("Race"))
-        // add drop down of all races
-        var raceEntries []any
-        for _, race := range allRaces {
-            raceEntries = append(raceEntries, race)
-        }
         five := 5
+
+        makeComboBox := func(entries []any, onSelect func(any)) *widget.ListComboButton {
+            return widget.NewListComboButton(
+                widget.ListComboButtonOpts.Entries(entries),
+                widget.ListComboButtonOpts.MaxContentHeight(150),
+                widget.ListComboButtonOpts.WidgetOpts(
+                    widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+                        HorizontalPosition: widget.AnchorLayoutPositionCenter,
+                        VerticalPosition: widget.AnchorLayoutPositionCenter,
+                    }),
+                ),
+                widget.ListComboButtonOpts.ButtonParams(&widget.ButtonParams{
+                    Image: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff}),
+                    TextPadding: widget.NewInsetsSimple(5),
+                    TextFace: &face,
+                    TextColor: &widget.ButtonTextColor{
+                        Idle: color.White,
+                        Disabled: color.White,
+                    },
+                }),
+                widget.ListComboButtonOpts.ListParams(&widget.ListParams{
+                    ScrollContainerImage: &widget.ScrollContainerImage{
+                        Idle:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                        Disabled: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                        Mask:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                    },
+                    Slider: &widget.SliderParams{
+                        TrackImage: &widget.SliderTrackImage{
+                            Idle:  ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                            Hover: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                        },
+                        HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+                        MinHandleSize: &five,
+                        TrackPadding:  widget.NewInsetsSimple(2),
+                    },
+                    EntryFace: &face,
+                    EntryColor: &widget.ListEntryColor{
+                        Selected:                   color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused selected entry
+                        Unselected:                 color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused unselected entry
+                        SelectedBackground:         color.NRGBA{R: 130, G: 130, B: 200, A: 255}, //Background color for the unfocused selected entry
+                        SelectedFocusedBackground:  color.NRGBA{R: 130, G: 130, B: 170, A: 255}, //Background color for the focused selected entry
+                        FocusedBackground:          color.NRGBA{R: 170, G: 170, B: 180, A: 255}, //Background color for the focused unselected entry
+                        DisabledUnselected:         color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled unselected entry
+                        DisabledSelected:           color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled selected entry
+                        DisabledSelectedBackground: color.NRGBA{100, 100, 100, 255},             //Background color for the disabled selected entry
+                    },
+                    EntryTextPadding: widget.NewInsetsSimple(5),
+                    MinSize:          &image.Point{200, 0},
+                }),
+
+                widget.ListComboButtonOpts.EntryLabelFunc(
+                    func (e any) string {
+                        return fmt.Sprintf("%v", e)
+                    },
+                    func (e any) string {
+                        return fmt.Sprintf("%v", e)
+                    },
+                ),
+
+                widget.ListComboButtonOpts.EntrySelectedHandler(func(args *widget.ListComboButtonEntrySelectedEventArgs) {
+                    onSelect(args.Entry)
+                }),
+            )
+        }
+
+        /*
         raceSelection.AddChild(widget.NewListComboButton(
             widget.ListComboButtonOpts.Entries(raceEntries),
             widget.ListComboButtonOpts.MaxContentHeight(150),
@@ -1147,8 +1200,20 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 unit.Race = args.Entry.(data.Race)
             }),
         ))
+        */
 
-        contents.AddChild(raceSelection)
+        // add drop down of all races
+        var raceEntries []any
+        for _, race := range allRaces {
+            raceEntries = append(raceEntries, race)
+        }
+
+        contents.AddChild(makeRow(5, makeWhiteText("Race"), makeComboBox(raceEntries, func (selected any){
+            race, ok := selected.(data.Race)
+            if ok {
+                unit.Race = race
+            }
+        })))
 
         makeSquare := func(size int, col color.NRGBA) *ebiten.Image {
             img := ebiten.NewImage(size, size)
@@ -1254,8 +1319,19 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         }))
 
         makeRangedAttackElements := func() []widget.PreferredSizeLocateableWidget {
+            damageTypes := []any{
+                units.DamageRangedPhysical,
+                units.DamageRangedMagical,
+                units.DamageRangedBoulder,
+            }
+
             return []widget.PreferredSizeLocateableWidget{
-                makeRow(5, makeWhiteText("Ranged Attack Type"), makeWhiteText("something")),
+                makeRow(5, makeWhiteText("Ranged Attack Type"), makeComboBox(damageTypes, func(selected any){
+                    damage, ok := selected.(units.Damage)
+                    if ok {
+                        unit.RangedAttackDamageType = damage
+                    }
+                })),
                 makeRow(5, makeWhiteText("Ranged Attacks"), makeNumberInput()),
             }
         }

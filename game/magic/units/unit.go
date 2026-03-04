@@ -20,6 +20,22 @@ const (
     DamageThrown
 )
 
+func (damage Damage) String() string {
+    switch damage {
+        case DamageNone: return "None"
+        case DamageRangedMagical: return "Ranged Magical"
+        case DamageRangedPhysical: return "Ranged Physical"
+        case DamageRangedBoulder: return "Ranged Boulder"
+        case DamageMeleePhysical: return "Melee Physical"
+        case DamageFire: return "Fire"
+        case DamageCold: return "Cold"
+        case DamageImmolation: return "Immolation"
+        case DamageThrown: return "Thrown"
+    }
+
+    return "Unknown"
+}
+
 type AttackSound int
 
 const (
