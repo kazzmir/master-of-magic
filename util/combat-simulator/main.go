@@ -1238,9 +1238,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         // Flying: checkbox
 
-        contents.AddChild(makeRow(5, makeWhiteText("Flying"), makeCheckbox(unit.Flying, func(flying bool){
-            unit.Flying = flying
-        })))
 
         // Magic realm: combo box with all magic realms
         // ranged attack combo box
@@ -1251,6 +1248,40 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 widget.GridLayoutOpts.Spacing(5, 2),
             )),
         )
+
+        inputs.AddChild(makeWhiteText("Flying"), makeCheckbox(unit.Flying, func(flying bool){
+            unit.Flying = flying
+        }))
+
+        makeRangedAttackElements := func() []widget.PreferredSizeLocateableWidget {
+            return []widget.PreferredSizeLocateableWidget{
+                makeRow(5, makeWhiteText("Ranged Attack Type"), makeWhiteText("something")),
+                makeRow(5, makeWhiteText("Ranged Attacks"), makeNumberInput()),
+            }
+        }
+
+        rangedAttackArea := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+                widget.RowLayoutOpts.Spacing(3),
+            )),
+        )
+
+        hasRanged := unit.RangedAttackDamageType != units.DamageNone
+        inputs.AddChild(makeWhiteText("Range Attack"), makeCheckbox(hasRanged, func(ranged bool){
+            hasRanged = ranged
+            rangedAttackArea.RemoveChildren()
+
+            if hasRanged {
+                rangedAttackArea.AddChild(makeRangedAttackElements()...)
+            }
+        }))
+
+        if hasRanged {
+            rangedAttackArea.AddChild(makeRangedAttackElements()...)
+        }
+
+        inputs.AddChild(rangedAttackArea, space(1))
 
         // ranged attack power: text input as number
         inputs.AddChild(makeWhiteText("Ranged Attack Power"), makeNumberInput())
@@ -1331,7 +1362,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.WindowOpts.TitleBar(titleContainer, 25),
             widget.WindowOpts.Draggable(),
             widget.WindowOpts.Resizeable(),
-            widget.WindowOpts.MinSize(500, 500),
+            widget.WindowOpts.MinSize(500, 600),
         )
 
         return window
