@@ -1245,29 +1245,38 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         // Magic realm: combo box with all magic realms
         // ranged attack combo box
 
+        inputs := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewGridLayout(
+                widget.GridLayoutOpts.Columns(2),
+                widget.GridLayoutOpts.Spacing(5, 2),
+            )),
+        )
+
         // ranged attack power: text input as number
-        contents.AddChild(makeRow(5, makeWhiteText("Ranged Attack Power"), makeNumberInput()))
+        inputs.AddChild(makeWhiteText("Ranged Attack Power"), makeNumberInput())
 
         // ranged attacks
-        contents.AddChild(makeRow(5, makeWhiteText("Ranged Attacks"), makeNumberInput()))
+        inputs.AddChild(makeWhiteText("Ranged Attacks"), makeNumberInput())
 
         // count: combo box, 1-8
-        contents.AddChild(makeRow(5, makeWhiteText("Count"), makeNumberInput()))
+        inputs.AddChild(makeWhiteText("Count"), makeNumberInput())
 
         // movement speed: text input as number
-        contents.AddChild(makeRow(5, makeWhiteText("Movement Speed"), makeNumberInput()))
+        inputs.AddChild(makeWhiteText("Movement Speed"), makeNumberInput())
 
         // melee attack power: text input as number
-        contents.AddChild(makeRow(5, makeWhiteText("Melee Attack Power"), makeNumberInput()))
+        inputs.AddChild(makeWhiteText("Melee Attack Power"), makeNumberInput())
 
         // defense: text input as number
-        contents.AddChild(makeRow(5, makeWhiteText("Defense"), makeNumberInput()))
+        inputs.AddChild(makeWhiteText("Defense"), makeNumberInput())
 
         // resistance: text input as number
-        contents.AddChild(makeRow(5, makeWhiteText("Resistance"), makeNumberInput()))
+        inputs.AddChild(makeWhiteText("Resistance"), makeNumberInput())
 
         // hit points: text input as number
-        contents.AddChild(makeRow(5, makeWhiteText("Hit Points"), makeNumberInput()))
+        inputs.AddChild(makeWhiteText("Hit Points"), makeNumberInput())
+
+        contents.AddChild(inputs)
 
         // spells: set of spells this unit can cast
         // abilities: set of abilities this unit has
@@ -1284,13 +1293,32 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             })),
         ))
 
-        return widget.NewWindow(
+        var window *widget.Window
+
+        // close button
+        contents.AddChild(widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xf2, G: 0x00, B: 0x00, A: 0xff})),
+                widget.ButtonOpts.Text("Close", &face, &widget.ButtonTextColor{
+                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                    window.Close()
+                }),
+            ),
+        )
+
+        window = widget.NewWindow(
             widget.WindowOpts.Contents(contents),
             widget.WindowOpts.TitleBar(titleContainer, 25),
             widget.WindowOpts.Draggable(),
             widget.WindowOpts.Resizeable(),
             widget.WindowOpts.MinSize(500, 500),
         )
+
+        return window
     }
 
     makeNewUnitButton := func() *widget.Button {
