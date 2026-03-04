@@ -1207,34 +1207,40 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             )
         }
 
+        makeCheckbox := func(checked bool, changedHandler func(bool)) *widget.Checkbox {
+            return widget.NewCheckbox(
+                widget.CheckboxOpts.WidgetOpts(
+                    widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+                        HorizontalPosition: widget.AnchorLayoutPositionCenter,
+                        VerticalPosition: widget.AnchorLayoutPositionCenter,
+                    }),
+                ),
+                widget.CheckboxOpts.Image(&widget.CheckboxImage{
+                    Unchecked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 96, G: 96, B: 96, A: 255})),
+                    Checked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 100, G: 255, B: 100, A: 255})),
+                }),
+                widget.CheckboxOpts.StateChangedHandler(func (args *widget.CheckboxChangedEventArgs) {
+                    switch args.State {
+                    case widget.WidgetChecked:
+                        changedHandler(true)
+                    case widget.WidgetUnchecked:
+                        changedHandler(false)
+                    }
+                }),
+                widget.CheckboxOpts.InitialState(func() widget.WidgetState {
+                    if checked {
+                        return widget.WidgetChecked
+                    }
+                    return widget.WidgetUnchecked
+                }()),
+            )
+        }
+
         // Flying: checkbox
 
-        contents.AddChild(makeRow(5, makeWhiteText("Flying"), widget.NewCheckbox(
-            widget.CheckboxOpts.WidgetOpts(
-                widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-                    HorizontalPosition: widget.AnchorLayoutPositionCenter,
-                    VerticalPosition: widget.AnchorLayoutPositionCenter,
-                }),
-            ),
-            widget.CheckboxOpts.Image(&widget.CheckboxImage{
-                Unchecked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 96, G: 96, B: 96, A: 255})),
-                Checked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 100, G: 255, B: 100, A: 255})),
-            }),
-            widget.CheckboxOpts.StateChangedHandler(func (args *widget.CheckboxChangedEventArgs) {
-                switch args.State {
-                    case widget.WidgetChecked:
-                        unit.Flying = true
-                    case widget.WidgetUnchecked:
-                        unit.Flying = false
-                }
-            }),
-            widget.CheckboxOpts.InitialState(func() widget.WidgetState {
-                if unit.Flying {
-                    return widget.WidgetChecked
-                }
-                return widget.WidgetUnchecked
-            }()),
-        )))
+        contents.AddChild(makeRow(5, makeWhiteText("Flying"), makeCheckbox(unit.Flying, func(flying bool){
+            unit.Flying = flying
+        })))
 
         // Magic realm: combo box with all magic realms
         // ranged attack combo box
