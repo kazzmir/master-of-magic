@@ -1136,92 +1136,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             )
         }
 
-        /*
-        raceSelection.AddChild(widget.NewListComboButton(
-            widget.ListComboButtonOpts.Entries(raceEntries),
-            widget.ListComboButtonOpts.MaxContentHeight(150),
-            widget.ListComboButtonOpts.WidgetOpts(
-                widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-                    HorizontalPosition: widget.AnchorLayoutPositionCenter,
-                    VerticalPosition: widget.AnchorLayoutPositionCenter,
-                }),
-            ),
-            widget.ListComboButtonOpts.ButtonParams(&widget.ButtonParams{
-                Image: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff}),
-                TextPadding: widget.NewInsetsSimple(5),
-                TextFace: &face,
-                TextColor: &widget.ButtonTextColor{
-                    Idle: color.White,
-                    Disabled: color.White,
-                },
-            }),
-            widget.ListComboButtonOpts.ListParams(&widget.ListParams{
-                ScrollContainerImage: &widget.ScrollContainerImage{
-                    Idle:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                    Disabled: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                    Mask:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                },
-                Slider: &widget.SliderParams{
-                    TrackImage: &widget.SliderTrackImage{
-                        Idle:  ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                        Hover: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                    },
-                    HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
-                    MinHandleSize: &five,
-                    TrackPadding:  widget.NewInsetsSimple(2),
-                },
-                EntryFace: &face,
-                EntryColor: &widget.ListEntryColor{
-                    Selected:                   color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused selected entry
-                    Unselected:                 color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused unselected entry
-                    SelectedBackground:         color.NRGBA{R: 130, G: 130, B: 200, A: 255}, //Background color for the unfocused selected entry
-                    SelectedFocusedBackground:  color.NRGBA{R: 130, G: 130, B: 170, A: 255}, //Background color for the focused selected entry
-                    FocusedBackground:          color.NRGBA{R: 170, G: 170, B: 180, A: 255}, //Background color for the focused unselected entry
-                    DisabledUnselected:         color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled unselected entry
-                    DisabledSelected:           color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled selected entry
-                    DisabledSelectedBackground: color.NRGBA{100, 100, 100, 255},             //Background color for the disabled selected entry
-                },
-                EntryTextPadding: widget.NewInsetsSimple(5),
-                MinSize:          &image.Point{200, 0},
-            }),
-
-            widget.ListComboButtonOpts.EntryLabelFunc(
-                func (e any) string {
-                    return e.(data.Race).String()
-                },
-                func (e any) string {
-                    return e.(data.Race).String()
-                },
-            ),
-
-            widget.ListComboButtonOpts.EntrySelectedHandler(func(args *widget.ListComboButtonEntrySelectedEventArgs) {
-                fmt.Println("Selected race", args.Entry)
-
-                unit.Race = args.Entry.(data.Race)
-            }),
-        ))
-        */
-
-        // add drop down of all races
-        var raceEntries []any
-        for _, race := range allRaces {
-            raceEntries = append(raceEntries, race)
-        }
-
-        contents.AddChild(makeRow(5, makeWhiteText("Race"), makeComboBox(raceEntries, func (selected any){
-            race, ok := selected.(data.Race)
-            if ok {
-                unit.Race = race
-            }
-        })))
-
-        makeSquare := func(size int, col color.NRGBA) *ebiten.Image {
-            img := ebiten.NewImage(size, size)
-            img.Fill(col)
-            return img
-        }
-
-        makeNumberInput := func() *widget.TextInput {
+        makeInput := func(placeHolder string, width int, accept func(string) bool) *widget.TextInput {
+            lastText := placeHolder
             return widget.NewTextInput(
                 widget.TextInputOpts.WidgetOpts(
                     // Set the layout information to center the textbox in the parent
@@ -1229,6 +1145,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                         Position: widget.RowLayoutPositionCenter,
                         Stretch:  true,
                     }),
+                    widget.WidgetOpts.MinSize(width * 10, 0),
                 ),
 
                 // Set the keyboard type when opened on mobile devices.
@@ -1257,7 +1174,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 widget.TextInputOpts.Padding(widget.NewInsetsSimple(5)),
 
                 // This text is displayed if the input is empty
-                widget.TextInputOpts.Placeholder("0"),
+                widget.TextInputOpts.Placeholder(placeHolder),
 
                 // This is called when the user hits the "Enter" key.
                 // There are other options that can configure this behavior.
@@ -1267,9 +1184,55 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
                 // This is called whenver there is a change to the text
                 widget.TextInputOpts.ChangedHandler(func(args *widget.TextInputChangedEventArgs) {
-                    fmt.Println("Text Changed: ", args.InputText)
+                    if !accept(args.InputText) {
+                        args.TextInput.SetText(lastText)
+                    } else {
+                        lastText = args.InputText
+                    }
                 }),
             )
+        }
+
+        makeNumberInput := func () *widget.TextInput {
+            return makeInput("0", 4, func(text string) bool {
+                if text == "" {
+                    return true
+                }
+                // every character must be a number
+                for _, char := range text {
+                    if char < '0' || char > '9' {
+                        return false
+                    }
+                }
+                return true
+            })
+        }
+
+        makeTextInput := func() *widget.TextInput {
+            return makeInput("input", 20, func(text string) bool {
+                return true
+            })
+        }
+
+        contents.AddChild(makeRow(5, makeWhiteText("Name"), makeTextInput()))
+
+        // add drop down of all races
+        var raceEntries []any
+        for _, race := range allRaces {
+            raceEntries = append(raceEntries, race)
+        }
+
+        contents.AddChild(makeRow(5, makeWhiteText("Race"), makeComboBox(raceEntries, func (selected any){
+            race, ok := selected.(data.Race)
+            if ok {
+                unit.Race = race
+            }
+        })))
+
+        makeSquare := func(size int, col color.NRGBA) *ebiten.Image {
+            img := ebiten.NewImage(size, size)
+            img.Fill(col)
+            return img
         }
 
         makeCheckbox := func(checked bool, changedHandler func(bool)) *widget.Checkbox {
