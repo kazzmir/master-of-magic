@@ -1295,6 +1295,22 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         var window *widget.Window
 
+        contents.AddChild(widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff})),
+                widget.ButtonOpts.Text("Add Unit", &face, &widget.ButtonTextColor{
+                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                    window.Close()
+                }),
+            ),
+        )
+
+        contents.AddChild(space(10))
+
         // close button
         contents.AddChild(widget.NewButton(
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
