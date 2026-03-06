@@ -1,8 +1,8 @@
 package unitview
 
 import (
-    "log"
     "image"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -84,9 +84,29 @@ func CombatPoints(count int) []image.Point {
             }
     }
 
-    log.Printf("combat points: invalid value %d", count)
+    rows := math.Round(math.Sqrt(float64(count)))
+    columns := math.Round(float64(count) / rows)
 
-    return nil
+    var points []image.Point
+    total := 0
+
+    startRow := -int(rows) * 4 / 2
+    rowGap := 4
+    startColumn := -int(columns) * 4 / 2
+    columnGap := 4
+
+    for row := range int(rows) {
+        for column := range int(columns) {
+            if total >= count {
+                break
+            }
+
+            points = append(points, image.Pt(startColumn + column * columnGap, startRow + row * rowGap))
+            total += 1
+        }
+    }
+
+    return points
 }
 
 // draws the unit semi-transparently in a solid greyish color

@@ -20,6 +20,22 @@ const (
     DamageThrown
 )
 
+func (damage Damage) String() string {
+    switch damage {
+        case DamageNone: return "None"
+        case DamageRangedMagical: return "Ranged Magical"
+        case DamageRangedPhysical: return "Ranged Physical"
+        case DamageRangedBoulder: return "Ranged Boulder"
+        case DamageMeleePhysical: return "Melee Physical"
+        case DamageFire: return "Fire"
+        case DamageCold: return "Cold"
+        case DamageImmolation: return "Immolation"
+        case DamageThrown: return "Thrown"
+    }
+
+    return "Unknown"
+}
+
 type AttackSound int
 
 const (
@@ -181,6 +197,22 @@ type Unit struct {
 
     // For fantastic units
     CastingCost int
+}
+
+// make a deep clone
+func (unit *Unit) Clone() Unit {
+    out := *unit
+
+    out.Abilities = make([]data.Ability, len(unit.Abilities))
+    copy(out.Abilities, unit.Abilities)
+
+    out.Spells = make([]string, len(unit.Spells))
+    copy(out.Spells, unit.Spells)
+
+    out.RequiredBuildings = make([]building.Building, len(unit.RequiredBuildings))
+    copy(out.RequiredBuildings, unit.RequiredBuildings)
+
+    return out
 }
 
 func (unit *Unit) Equals(other Unit) bool {
