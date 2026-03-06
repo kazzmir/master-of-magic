@@ -1460,7 +1460,15 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     if entry != nil {
                         entry := entry.(*UnitItem)
                         clone := entry.Unit.Clone()
-                        addWindow(makeEditUnitWindow(&clone))
+
+                        newItem := UnitItem{
+                            Race: entry.Race,
+                            Unit: clone,
+                        }
+
+                        unitList.AddEntry(&newItem)
+
+                        addWindow(makeEditUnitWindow(&newItem.Unit))
                     }
                 }),
             ),
