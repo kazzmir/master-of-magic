@@ -1438,6 +1438,23 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     }
                 }),
             ),
+            widget.NewButton(
+                widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xbf, G: 0xbf, B: 0x00, A: 0xff})),
+                widget.ButtonOpts.Text("Copy", &face, &widget.ButtonTextColor{
+                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                    entry := unitList.SelectedEntry()
+                    if entry != nil {
+                        entry := entry.(*UnitItem)
+                        clone := entry.Unit.Clone()
+                        addWindow(makeEditUnitWindow(&clone))
+                    }
+                }),
+            ),
         )
 
         update := func(){

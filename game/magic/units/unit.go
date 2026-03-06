@@ -199,6 +199,22 @@ type Unit struct {
     CastingCost int
 }
 
+// make a deep clone
+func (unit *Unit) Clone() Unit {
+    out := *unit
+
+    out.Abilities = make([]data.Ability, len(unit.Abilities))
+    copy(out.Abilities, unit.Abilities)
+
+    out.Spells = make([]string, len(unit.Spells))
+    copy(out.Spells, unit.Spells)
+
+    out.RequiredBuildings = make([]building.Building, len(unit.RequiredBuildings))
+    copy(out.RequiredBuildings, unit.RequiredBuildings)
+
+    return out
+}
+
 func (unit *Unit) Equals(other Unit) bool {
     return unit.LbxFile == other.LbxFile && unit.Index == other.Index
 }
