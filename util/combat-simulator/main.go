@@ -7,6 +7,7 @@ import (
     "image"
     "image/color"
     "slices"
+    "strconv"
     "cmp"
     "errors"
     "strings"
@@ -992,7 +993,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             )
         }
 
-        makeInput := func(placeHolder string, width int, accept func(string) bool) *widget.TextInput {
+        makeInput := func(placeHolder string, width int, accept func(string) bool, onSet func(string)) *widget.TextInput {
             lastText := placeHolder
             input := widget.NewTextInput(
                 widget.TextInputOpts.WidgetOpts(
@@ -1034,9 +1035,11 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
                 // This is called when the user hits the "Enter" key.
                 // There are other options that can configure this behavior.
+                /*
                 widget.TextInputOpts.SubmitHandler(func(args *widget.TextInputChangedEventArgs) {
                     fmt.Println("Text Submitted: ", args.InputText)
                 }),
+                */
 
                 // This is called whenver there is a change to the text
                 widget.TextInputOpts.ChangedHandler(func(args *widget.TextInputChangedEventArgs) {
@@ -1044,6 +1047,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                         args.TextInput.SetText(lastText)
                     } else {
                         lastText = args.InputText
+                        onSet(lastText)
                     }
                 }),
             )
@@ -1053,8 +1057,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             return input
         }
 
-        makeNumberInput := func (initial int) *widget.TextInput {
-            return makeInput(fmt.Sprintf("%d", initial), 4, func(text string) bool {
+        makeNumberInput := func (value *int) *widget.TextInput {
+            return makeInput(fmt.Sprintf("%d", *value), 4, func(text string) bool {
                 if text == "" {
                     return true
                 }
@@ -1065,22 +1069,27 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     }
                 }
                 return true
+            }, func(text string) {
+                num, err := strconv.Atoi(text)
+                if err == nil {
+                    *value = num
+                }
             })
         }
 
-        makeTextInput := func(text string) *widget.TextInput {
-            return makeInput(text, 20, func(text string) bool {
+        makeTextInput := func(text *string) *widget.TextInput {
+            return makeInput(*text, 20, func(text string) bool {
                 return true
+            }, func(data string) {
+                *text = data
             })
         }
 
-        contents.AddChild(makeRow(5, makeWhiteText("Name"), makeTextInput(func() string {
-            name := unit.Name
-            if name == "" {
-                name = "name"
-            }
-            return name
-        }())))
+        if unit.Name == "" {
+            unit.Name = "name"
+        }
+
+        contents.AddChild(makeRow(5, makeWhiteText("Name"), makeTextInput(&unit.Name)))
 
         // add drop down of all races
         var raceEntries []any
@@ -1180,9 +1189,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 })),
 
                 // ranged attack power: text input as number
-                makeRow(5, makeWhiteText("Ranged Attack Power"), makeNumberInput(unit.RangedAttackPower)),
+                makeRow(5, makeWhiteText("Ranged Attack Power"), makeNumberInput(&unit.RangedAttackPower)),
 
-                makeRow(5, makeWhiteText("Ranged Attacks"), makeNumberInput(unit.RangedAttacks)),
+                makeRow(5, makeWhiteText("Ranged Attacks"), makeNumberInput(&unit.RangedAttacks)),
             }
         }
 
@@ -1210,22 +1219,22 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         inputs.AddChild(rangedAttackArea, space(1))
 
         // count: combo box, 1-8
-        inputs.AddChild(makeWhiteText("Count"), makeNumberInput(unit.Count))
+        inputs.AddChild(makeWhiteText("Count"), makeNumberInput(&unit.Count))
 
         // movement speed: text input as number
-        inputs.AddChild(makeWhiteText("Movement Speed"), makeNumberInput(unit.MovementSpeed))
+        inputs.AddChild(makeWhiteText("Movement Speed"), makeNumberInput(&unit.MovementSpeed))
 
         // melee attack power: text input as number
-        inputs.AddChild(makeWhiteText("Melee Attack Power"), makeNumberInput(unit.MeleeAttackPower))
+        inputs.AddChild(makeWhiteText("Melee Attack Power"), makeNumberInput(&unit.MeleeAttackPower))
 
         // defense: text input as number
-        inputs.AddChild(makeWhiteText("Defense"), makeNumberInput(unit.Defense))
+        inputs.AddChild(makeWhiteText("Defense"), makeNumberInput(&unit.Defense))
 
         // resistance: text input as number
-        inputs.AddChild(makeWhiteText("Resistance"), makeNumberInput(unit.Resistance))
+        inputs.AddChild(makeWhiteText("Resistance"), makeNumberInput(&unit.Resistance))
 
         // hit points: text input as number
-        inputs.AddChild(makeWhiteText("Hit Points"), makeNumberInput(unit.HitPoints))
+        inputs.AddChild(makeWhiteText("Hit Points"), makeNumberInput(&unit.HitPoints))
 
         contents.AddChild(inputs)
 
