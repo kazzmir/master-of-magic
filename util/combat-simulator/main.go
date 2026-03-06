@@ -907,7 +907,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     var addWindow func(*widget.Window)
 
-    makeEditUnitWindow := func(unit *units.Unit) *widget.Window {
+    makeEditUnitWindow := func(unit *units.Unit, onClose func()) *widget.Window {
 
         transparent := uint8(240)
 
@@ -1255,6 +1255,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         var window *widget.Window
 
+        /*
         contents.AddChild(widget.NewButton(
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
                 widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff})),
@@ -1270,6 +1271,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         )
 
         contents.AddChild(space(10))
+        */
 
         // close button
         contents.AddChild(widget.NewButton(
@@ -1282,6 +1284,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 }),
                 widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
                     window.Close()
+                    onClose()
                 }),
             ),
         )
@@ -1443,7 +1446,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     entry := unitList.SelectedEntry()
                     if entry != nil {
                         entry := entry.(*UnitItem)
-                        addWindow(makeEditUnitWindow(&entry.Unit))
+                        addWindow(makeEditUnitWindow(&entry.Unit, func(){}))
                     }
                 }),
             ),
@@ -1466,9 +1469,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                             Unit: clone,
                         }
 
-                        unitList.AddEntry(&newItem)
-
-                        addWindow(makeEditUnitWindow(&newItem.Unit))
+                        addWindow(makeEditUnitWindow(&newItem.Unit, func() {
+                            unitList.AddEntry(&newItem)
+                        }))
                     }
                 }),
             ),
@@ -1483,6 +1486,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         raceButtons = append(raceButtons, makeRaceButton(race, update))
     }
 
+    /*
     makeNewUnitButton := func() *widget.Button {
         return widget.NewButton(
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
@@ -1500,6 +1504,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     }
 
     raceButtons = append(raceButtons, makeNewUnitButton())
+    */
 
     defendingArmyCount := widget.NewText(widget.TextOpts.Text("0", &face, color.NRGBA{R: 255, G: 255, B: 255, A: 255}))
 
