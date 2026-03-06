@@ -904,6 +904,390 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         )
     }
 
+    var addWindow func(*widget.Window)
+
+    makeEditUnitWindow := func(unit *units.Unit) *widget.Window {
+
+        transparent := uint8(240)
+
+        contents := widget.NewContainer(
+            widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: transparent}, color.NRGBA{R: 200, G: 200, B: 200, A: transparent}, 2)),
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+                widget.RowLayoutOpts.Spacing(3),
+                widget.RowLayoutOpts.Padding(padding(5)),
+            )),
+        )
+
+        makeWhiteText := func(label string) *widget.Text {
+            return widget.NewText(
+                widget.TextOpts.Text(label, &face, color.White),
+            )
+        }
+
+        five := 5
+
+        makeComboBox := func(entries []any, current any, onSelect func(any)) *widget.ListComboButton {
+            return widget.NewListComboButton(
+                widget.ListComboButtonOpts.Entries(entries),
+                widget.ListComboButtonOpts.MaxContentHeight(150),
+                widget.ListComboButtonOpts.WidgetOpts(
+                    widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+                        HorizontalPosition: widget.AnchorLayoutPositionCenter,
+                        VerticalPosition: widget.AnchorLayoutPositionCenter,
+                    }),
+                ),
+                widget.ListComboButtonOpts.InitialEntry(current),
+                widget.ListComboButtonOpts.ButtonParams(&widget.ButtonParams{
+                    Image: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff}),
+                    TextPadding: widget.NewInsetsSimple(5),
+                    TextFace: &face,
+                    TextColor: &widget.ButtonTextColor{
+                        Idle: color.White,
+                        Disabled: color.White,
+                    },
+                }),
+                widget.ListComboButtonOpts.ListParams(&widget.ListParams{
+                    ScrollContainerImage: &widget.ScrollContainerImage{
+                        Idle:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                        Disabled: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                        Mask:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                    },
+                    Slider: &widget.SliderParams{
+                        TrackImage: &widget.SliderTrackImage{
+                            Idle:  ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                            Hover: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                        },
+                        HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+                        MinHandleSize: &five,
+                        TrackPadding:  widget.NewInsetsSimple(2),
+                    },
+                    EntryFace: &face,
+                    EntryColor: &widget.ListEntryColor{
+                        Selected:                   color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused selected entry
+                        Unselected:                 color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused unselected entry
+                        SelectedBackground:         color.NRGBA{R: 130, G: 130, B: 200, A: 255}, //Background color for the unfocused selected entry
+                        SelectedFocusedBackground:  color.NRGBA{R: 130, G: 130, B: 170, A: 255}, //Background color for the focused selected entry
+                        FocusedBackground:          color.NRGBA{R: 170, G: 170, B: 180, A: 255}, //Background color for the focused unselected entry
+                        DisabledUnselected:         color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled unselected entry
+                        DisabledSelected:           color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled selected entry
+                        DisabledSelectedBackground: color.NRGBA{100, 100, 100, 255},             //Background color for the disabled selected entry
+                    },
+                    EntryTextPadding: widget.NewInsetsSimple(5),
+                    MinSize:          &image.Point{200, 0},
+                }),
+
+                widget.ListComboButtonOpts.EntryLabelFunc(
+                    func (e any) string {
+                        return fmt.Sprintf("%v", e)
+                    },
+                    func (e any) string {
+                        return fmt.Sprintf("%v", e)
+                    },
+                ),
+
+                widget.ListComboButtonOpts.EntrySelectedHandler(func(args *widget.ListComboButtonEntrySelectedEventArgs) {
+                    onSelect(args.Entry)
+                }),
+            )
+        }
+
+        makeInput := func(placeHolder string, width int, accept func(string) bool) *widget.TextInput {
+            lastText := placeHolder
+            input := widget.NewTextInput(
+                widget.TextInputOpts.WidgetOpts(
+                    // Set the layout information to center the textbox in the parent
+                    widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                        Position: widget.RowLayoutPositionCenter,
+                        Stretch:  true,
+                    }),
+                    widget.WidgetOpts.MinSize(width * 10, 0),
+                ),
+
+                // Set the keyboard type when opened on mobile devices.
+                // widget.TextInputOpts.MobileInputMode(mobile.TEXT),
+
+                // Set the Idle and Disabled background image for the text input.
+                // If the NineSlice image has a minimum size, the widget will use that or
+                // widget.WidgetOpts.MinSize; whichever is greater.
+                widget.TextInputOpts.Image(&widget.TextInputImage{
+                    Idle:     ui_image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 100, A: 255}),
+                    Disabled: ui_image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 100, A: 255}),
+                }),
+
+                // Set the font face and size for the widget
+                widget.TextInputOpts.Face(&face),
+
+                // Set the colors for the text and caret
+                widget.TextInputOpts.Color(&widget.TextInputColor{
+                    Idle:          color.NRGBA{254, 255, 255, 255},
+                    Disabled:      color.NRGBA{R: 200, G: 200, B: 200, A: 255},
+                    Caret:         color.NRGBA{254, 255, 255, 255},
+                    DisabledCaret: color.NRGBA{R: 200, G: 200, B: 200, A: 255},
+                }),
+
+                // Set how much padding there is between the edge of the input and the text
+                widget.TextInputOpts.Padding(widget.NewInsetsSimple(5)),
+
+                // This text is displayed if the input is empty
+                // widget.TextInputOpts.Placeholder(placeHolder),
+
+                // This is called when the user hits the "Enter" key.
+                // There are other options that can configure this behavior.
+                widget.TextInputOpts.SubmitHandler(func(args *widget.TextInputChangedEventArgs) {
+                    fmt.Println("Text Submitted: ", args.InputText)
+                }),
+
+                // This is called whenver there is a change to the text
+                widget.TextInputOpts.ChangedHandler(func(args *widget.TextInputChangedEventArgs) {
+                    if !accept(args.InputText) {
+                        args.TextInput.SetText(lastText)
+                    } else {
+                        lastText = args.InputText
+                    }
+                }),
+            )
+
+            input.SetText(placeHolder)
+
+            return input
+        }
+
+        makeNumberInput := func (initial int) *widget.TextInput {
+            return makeInput(fmt.Sprintf("%d", initial), 4, func(text string) bool {
+                if text == "" {
+                    return true
+                }
+                // every character must be a number
+                for _, char := range text {
+                    if char < '0' || char > '9' {
+                        return false
+                    }
+                }
+                return true
+            })
+        }
+
+        makeTextInput := func(text string) *widget.TextInput {
+            return makeInput(text, 20, func(text string) bool {
+                return true
+            })
+        }
+
+        contents.AddChild(makeRow(5, makeWhiteText("Name"), makeTextInput(func() string {
+            name := unit.Name
+            if name == "" {
+                name = "name"
+            }
+            return name
+        }())))
+
+        // add drop down of all races
+        var raceEntries []any
+        for _, race := range allRaces {
+            raceEntries = append(raceEntries, race)
+        }
+
+        if unit.Race == data.RaceNone {
+            unit.Race = data.RaceBarbarian
+        }
+
+        contents.AddChild(makeRow(5, makeWhiteText("Race"), makeComboBox(raceEntries, unit.Race, func (selected any){
+            race, ok := selected.(data.Race)
+            if ok {
+                unit.Race = race
+            }
+        })))
+
+        makeSquare := func(size int, col color.NRGBA) *ebiten.Image {
+            img := ebiten.NewImage(size, size)
+            img.Fill(col)
+            return img
+        }
+
+        makeCheckbox := func(checked bool, changedHandler func(bool)) *widget.Checkbox {
+            return widget.NewCheckbox(
+                widget.CheckboxOpts.WidgetOpts(
+                    widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+                        HorizontalPosition: widget.AnchorLayoutPositionCenter,
+                        VerticalPosition: widget.AnchorLayoutPositionCenter,
+                    }),
+                ),
+                widget.CheckboxOpts.Image(&widget.CheckboxImage{
+                    Unchecked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 96, G: 96, B: 96, A: 255})),
+                    Checked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 100, G: 255, B: 100, A: 255})),
+                }),
+                widget.CheckboxOpts.StateChangedHandler(func (args *widget.CheckboxChangedEventArgs) {
+                    switch args.State {
+                    case widget.WidgetChecked:
+                        changedHandler(true)
+                    case widget.WidgetUnchecked:
+                        changedHandler(false)
+                    }
+                }),
+                widget.CheckboxOpts.InitialState(func() widget.WidgetState {
+                    if checked {
+                        return widget.WidgetChecked
+                    }
+                    return widget.WidgetUnchecked
+                }()),
+            )
+        }
+
+        // Flying: checkbox
+
+
+        // Magic realm: combo box with all magic realms
+        // ranged attack combo box
+
+        inputs := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewGridLayout(
+                widget.GridLayoutOpts.Columns(2),
+                widget.GridLayoutOpts.Spacing(5, 2),
+            )),
+        )
+
+        inputs.AddChild(makeWhiteText("Flying"), makeCheckbox(unit.Flying, func(flying bool){
+            unit.Flying = flying
+        }))
+
+        makeRangedAttackElements := func() []widget.PreferredSizeLocateableWidget {
+            damageTypes := []any{
+                units.DamageRangedPhysical,
+                units.DamageRangedMagical,
+                units.DamageRangedBoulder,
+            }
+
+            initial := unit.RangedAttackDamageType
+            ok := false
+            for _, damageType := range damageTypes {
+                if damageType == initial {
+                    ok = true
+                    break
+                }
+            }
+
+            if !ok {
+                initial = damageTypes[0].(units.Damage)
+            }
+
+            return []widget.PreferredSizeLocateableWidget{
+                makeRow(5, makeWhiteText("Ranged Attack Type"), makeComboBox(damageTypes, initial, func(selected any){
+                    damage, ok := selected.(units.Damage)
+                    if ok {
+                        unit.RangedAttackDamageType = damage
+                    }
+                })),
+
+                // ranged attack power: text input as number
+                makeRow(5, makeWhiteText("Ranged Attack Power"), makeNumberInput(unit.RangedAttackPower)),
+
+                makeRow(5, makeWhiteText("Ranged Attacks"), makeNumberInput(unit.RangedAttacks)),
+            }
+        }
+
+        rangedAttackArea := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+                widget.RowLayoutOpts.Spacing(3),
+            )),
+        )
+
+        hasRanged := unit.RangedAttackDamageType != units.DamageNone
+        inputs.AddChild(makeWhiteText("Range Attack"), makeCheckbox(hasRanged, func(ranged bool){
+            hasRanged = ranged
+            rangedAttackArea.RemoveChildren()
+
+            if hasRanged {
+                rangedAttackArea.AddChild(makeRangedAttackElements()...)
+            }
+        }))
+
+        if hasRanged {
+            rangedAttackArea.AddChild(makeRangedAttackElements()...)
+        }
+
+        inputs.AddChild(rangedAttackArea, space(1))
+
+        // count: combo box, 1-8
+        inputs.AddChild(makeWhiteText("Count"), makeNumberInput(unit.Count))
+
+        // movement speed: text input as number
+        inputs.AddChild(makeWhiteText("Movement Speed"), makeNumberInput(unit.MovementSpeed))
+
+        // melee attack power: text input as number
+        inputs.AddChild(makeWhiteText("Melee Attack Power"), makeNumberInput(unit.MeleeAttackPower))
+
+        // defense: text input as number
+        inputs.AddChild(makeWhiteText("Defense"), makeNumberInput(unit.Defense))
+
+        // resistance: text input as number
+        inputs.AddChild(makeWhiteText("Resistance"), makeNumberInput(unit.Resistance))
+
+        // hit points: text input as number
+        inputs.AddChild(makeWhiteText("Hit Points"), makeNumberInput(unit.HitPoints))
+
+        contents.AddChild(inputs)
+
+        // spells: set of spells this unit can cast
+        // abilities: set of abilities this unit has
+
+        titleContainer := widget.NewContainer(
+            widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: transparent})),
+            widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+        )
+        titleContainer.AddChild(widget.NewText(
+            widget.TextOpts.Text("Edit Unit", &face, color.White),
+            widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+                HorizontalPosition: widget.AnchorLayoutPositionCenter,
+                VerticalPosition: widget.AnchorLayoutPositionCenter,
+            })),
+        ))
+
+        var window *widget.Window
+
+        contents.AddChild(widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff})),
+                widget.ButtonOpts.Text("Add Unit", &face, &widget.ButtonTextColor{
+                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                    window.Close()
+                }),
+            ),
+        )
+
+        contents.AddChild(space(10))
+
+        // close button
+        contents.AddChild(widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xf2, G: 0x00, B: 0x00, A: 0xff})),
+                widget.ButtonOpts.Text("Close", &face, &widget.ButtonTextColor{
+                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                    window.Close()
+                }),
+            ),
+        )
+
+        window = widget.NewWindow(
+            widget.WindowOpts.Contents(contents),
+            widget.WindowOpts.TitleBar(titleContainer, 25),
+            widget.WindowOpts.Draggable(),
+            widget.WindowOpts.Resizeable(),
+            widget.WindowOpts.MinSize(500, 600),
+        )
+
+        return window
+    }
+
     for _, race := range allRaces {
         clickTimer := make(map[string]uint64)
 
@@ -1038,6 +1422,22 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     armyCount.Label = fmt.Sprintf("%v", len(armyList.Entries()))
                 }),
             ),
+            widget.NewButton(
+                widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xbf, G: 0xbf, B: 0x00, A: 0xff})),
+                widget.ButtonOpts.Text("Edit", &face, &widget.ButtonTextColor{
+                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                    entry := unitList.SelectedEntry()
+                    if entry != nil {
+                        entry := entry.(*UnitItem)
+                        addWindow(makeEditUnitWindow(&entry.Unit))
+                    }
+                }),
+            ),
         )
 
         update := func(){
@@ -1047,364 +1447,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         }
 
         raceButtons = append(raceButtons, makeRaceButton(race, update))
-    }
-
-    var addWindow func(*widget.Window)
-
-    makeEditUnitWindow := func(unit *units.Unit) *widget.Window {
-
-        transparent := uint8(240)
-
-        contents := widget.NewContainer(
-            widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: transparent}, color.NRGBA{R: 200, G: 200, B: 200, A: transparent}, 2)),
-            widget.ContainerOpts.Layout(widget.NewRowLayout(
-                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-                widget.RowLayoutOpts.Spacing(3),
-                widget.RowLayoutOpts.Padding(padding(5)),
-            )),
-        )
-
-        makeWhiteText := func(label string) *widget.Text {
-            return widget.NewText(
-                widget.TextOpts.Text(label, &face, color.White),
-            )
-        }
-
-        five := 5
-
-        makeComboBox := func(entries []any, onSelect func(any)) *widget.ListComboButton {
-            return widget.NewListComboButton(
-                widget.ListComboButtonOpts.Entries(entries),
-                widget.ListComboButtonOpts.MaxContentHeight(150),
-                widget.ListComboButtonOpts.WidgetOpts(
-                    widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-                        HorizontalPosition: widget.AnchorLayoutPositionCenter,
-                        VerticalPosition: widget.AnchorLayoutPositionCenter,
-                    }),
-                ),
-                widget.ListComboButtonOpts.ButtonParams(&widget.ButtonParams{
-                    Image: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff}),
-                    TextPadding: widget.NewInsetsSimple(5),
-                    TextFace: &face,
-                    TextColor: &widget.ButtonTextColor{
-                        Idle: color.White,
-                        Disabled: color.White,
-                    },
-                }),
-                widget.ListComboButtonOpts.ListParams(&widget.ListParams{
-                    ScrollContainerImage: &widget.ScrollContainerImage{
-                        Idle:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                        Disabled: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                        Mask:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                    },
-                    Slider: &widget.SliderParams{
-                        TrackImage: &widget.SliderTrackImage{
-                            Idle:  ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                            Hover: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                        },
-                        HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
-                        MinHandleSize: &five,
-                        TrackPadding:  widget.NewInsetsSimple(2),
-                    },
-                    EntryFace: &face,
-                    EntryColor: &widget.ListEntryColor{
-                        Selected:                   color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused selected entry
-                        Unselected:                 color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused unselected entry
-                        SelectedBackground:         color.NRGBA{R: 130, G: 130, B: 200, A: 255}, //Background color for the unfocused selected entry
-                        SelectedFocusedBackground:  color.NRGBA{R: 130, G: 130, B: 170, A: 255}, //Background color for the focused selected entry
-                        FocusedBackground:          color.NRGBA{R: 170, G: 170, B: 180, A: 255}, //Background color for the focused unselected entry
-                        DisabledUnselected:         color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled unselected entry
-                        DisabledSelected:           color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled selected entry
-                        DisabledSelectedBackground: color.NRGBA{100, 100, 100, 255},             //Background color for the disabled selected entry
-                    },
-                    EntryTextPadding: widget.NewInsetsSimple(5),
-                    MinSize:          &image.Point{200, 0},
-                }),
-
-                widget.ListComboButtonOpts.EntryLabelFunc(
-                    func (e any) string {
-                        return fmt.Sprintf("%v", e)
-                    },
-                    func (e any) string {
-                        return fmt.Sprintf("%v", e)
-                    },
-                ),
-
-                widget.ListComboButtonOpts.EntrySelectedHandler(func(args *widget.ListComboButtonEntrySelectedEventArgs) {
-                    onSelect(args.Entry)
-                }),
-            )
-        }
-
-        makeInput := func(placeHolder string, width int, accept func(string) bool) *widget.TextInput {
-            lastText := placeHolder
-            return widget.NewTextInput(
-                widget.TextInputOpts.WidgetOpts(
-                    // Set the layout information to center the textbox in the parent
-                    widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                        Position: widget.RowLayoutPositionCenter,
-                        Stretch:  true,
-                    }),
-                    widget.WidgetOpts.MinSize(width * 10, 0),
-                ),
-
-                // Set the keyboard type when opened on mobile devices.
-                // widget.TextInputOpts.MobileInputMode(mobile.TEXT),
-
-                // Set the Idle and Disabled background image for the text input.
-                // If the NineSlice image has a minimum size, the widget will use that or
-                // widget.WidgetOpts.MinSize; whichever is greater.
-                widget.TextInputOpts.Image(&widget.TextInputImage{
-                    Idle:     ui_image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 100, A: 255}),
-                    Disabled: ui_image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 100, A: 255}),
-                }),
-
-                // Set the font face and size for the widget
-                widget.TextInputOpts.Face(&face),
-
-                // Set the colors for the text and caret
-                widget.TextInputOpts.Color(&widget.TextInputColor{
-                    Idle:          color.NRGBA{254, 255, 255, 255},
-                    Disabled:      color.NRGBA{R: 200, G: 200, B: 200, A: 255},
-                    Caret:         color.NRGBA{254, 255, 255, 255},
-                    DisabledCaret: color.NRGBA{R: 200, G: 200, B: 200, A: 255},
-                }),
-
-                // Set how much padding there is between the edge of the input and the text
-                widget.TextInputOpts.Padding(widget.NewInsetsSimple(5)),
-
-                // This text is displayed if the input is empty
-                widget.TextInputOpts.Placeholder(placeHolder),
-
-                // This is called when the user hits the "Enter" key.
-                // There are other options that can configure this behavior.
-                widget.TextInputOpts.SubmitHandler(func(args *widget.TextInputChangedEventArgs) {
-                    fmt.Println("Text Submitted: ", args.InputText)
-                }),
-
-                // This is called whenver there is a change to the text
-                widget.TextInputOpts.ChangedHandler(func(args *widget.TextInputChangedEventArgs) {
-                    if !accept(args.InputText) {
-                        args.TextInput.SetText(lastText)
-                    } else {
-                        lastText = args.InputText
-                    }
-                }),
-            )
-        }
-
-        makeNumberInput := func () *widget.TextInput {
-            return makeInput("0", 4, func(text string) bool {
-                if text == "" {
-                    return true
-                }
-                // every character must be a number
-                for _, char := range text {
-                    if char < '0' || char > '9' {
-                        return false
-                    }
-                }
-                return true
-            })
-        }
-
-        makeTextInput := func() *widget.TextInput {
-            return makeInput("input", 20, func(text string) bool {
-                return true
-            })
-        }
-
-        contents.AddChild(makeRow(5, makeWhiteText("Name"), makeTextInput()))
-
-        // add drop down of all races
-        var raceEntries []any
-        for _, race := range allRaces {
-            raceEntries = append(raceEntries, race)
-        }
-
-        contents.AddChild(makeRow(5, makeWhiteText("Race"), makeComboBox(raceEntries, func (selected any){
-            race, ok := selected.(data.Race)
-            if ok {
-                unit.Race = race
-            }
-        })))
-
-        makeSquare := func(size int, col color.NRGBA) *ebiten.Image {
-            img := ebiten.NewImage(size, size)
-            img.Fill(col)
-            return img
-        }
-
-        makeCheckbox := func(checked bool, changedHandler func(bool)) *widget.Checkbox {
-            return widget.NewCheckbox(
-                widget.CheckboxOpts.WidgetOpts(
-                    widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-                        HorizontalPosition: widget.AnchorLayoutPositionCenter,
-                        VerticalPosition: widget.AnchorLayoutPositionCenter,
-                    }),
-                ),
-                widget.CheckboxOpts.Image(&widget.CheckboxImage{
-                    Unchecked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 96, G: 96, B: 96, A: 255})),
-                    Checked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 100, G: 255, B: 100, A: 255})),
-                }),
-                widget.CheckboxOpts.StateChangedHandler(func (args *widget.CheckboxChangedEventArgs) {
-                    switch args.State {
-                    case widget.WidgetChecked:
-                        changedHandler(true)
-                    case widget.WidgetUnchecked:
-                        changedHandler(false)
-                    }
-                }),
-                widget.CheckboxOpts.InitialState(func() widget.WidgetState {
-                    if checked {
-                        return widget.WidgetChecked
-                    }
-                    return widget.WidgetUnchecked
-                }()),
-            )
-        }
-
-        // Flying: checkbox
-
-
-        // Magic realm: combo box with all magic realms
-        // ranged attack combo box
-
-        inputs := widget.NewContainer(
-            widget.ContainerOpts.Layout(widget.NewGridLayout(
-                widget.GridLayoutOpts.Columns(2),
-                widget.GridLayoutOpts.Spacing(5, 2),
-            )),
-        )
-
-        inputs.AddChild(makeWhiteText("Flying"), makeCheckbox(unit.Flying, func(flying bool){
-            unit.Flying = flying
-        }))
-
-        makeRangedAttackElements := func() []widget.PreferredSizeLocateableWidget {
-            damageTypes := []any{
-                units.DamageRangedPhysical,
-                units.DamageRangedMagical,
-                units.DamageRangedBoulder,
-            }
-
-            return []widget.PreferredSizeLocateableWidget{
-                makeRow(5, makeWhiteText("Ranged Attack Type"), makeComboBox(damageTypes, func(selected any){
-                    damage, ok := selected.(units.Damage)
-                    if ok {
-                        unit.RangedAttackDamageType = damage
-                    }
-                })),
-                makeRow(5, makeWhiteText("Ranged Attacks"), makeNumberInput()),
-            }
-        }
-
-        rangedAttackArea := widget.NewContainer(
-            widget.ContainerOpts.Layout(widget.NewRowLayout(
-                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-                widget.RowLayoutOpts.Spacing(3),
-            )),
-        )
-
-        hasRanged := unit.RangedAttackDamageType != units.DamageNone
-        inputs.AddChild(makeWhiteText("Range Attack"), makeCheckbox(hasRanged, func(ranged bool){
-            hasRanged = ranged
-            rangedAttackArea.RemoveChildren()
-
-            if hasRanged {
-                rangedAttackArea.AddChild(makeRangedAttackElements()...)
-            }
-        }))
-
-        if hasRanged {
-            rangedAttackArea.AddChild(makeRangedAttackElements()...)
-        }
-
-        inputs.AddChild(rangedAttackArea, space(1))
-
-        // ranged attack power: text input as number
-        inputs.AddChild(makeWhiteText("Ranged Attack Power"), makeNumberInput())
-
-        // ranged attacks
-        inputs.AddChild(makeWhiteText("Ranged Attacks"), makeNumberInput())
-
-        // count: combo box, 1-8
-        inputs.AddChild(makeWhiteText("Count"), makeNumberInput())
-
-        // movement speed: text input as number
-        inputs.AddChild(makeWhiteText("Movement Speed"), makeNumberInput())
-
-        // melee attack power: text input as number
-        inputs.AddChild(makeWhiteText("Melee Attack Power"), makeNumberInput())
-
-        // defense: text input as number
-        inputs.AddChild(makeWhiteText("Defense"), makeNumberInput())
-
-        // resistance: text input as number
-        inputs.AddChild(makeWhiteText("Resistance"), makeNumberInput())
-
-        // hit points: text input as number
-        inputs.AddChild(makeWhiteText("Hit Points"), makeNumberInput())
-
-        contents.AddChild(inputs)
-
-        // spells: set of spells this unit can cast
-        // abilities: set of abilities this unit has
-
-        titleContainer := widget.NewContainer(
-            widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: transparent})),
-            widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-        )
-        titleContainer.AddChild(widget.NewText(
-            widget.TextOpts.Text("Edit Unit", &face, color.White),
-            widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-                HorizontalPosition: widget.AnchorLayoutPositionCenter,
-                VerticalPosition: widget.AnchorLayoutPositionCenter,
-            })),
-        ))
-
-        var window *widget.Window
-
-        contents.AddChild(widget.NewButton(
-            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-                widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff})),
-                widget.ButtonOpts.Text("Add Unit", &face, &widget.ButtonTextColor{
-                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-                }),
-                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
-                    window.Close()
-                }),
-            ),
-        )
-
-        contents.AddChild(space(10))
-
-        // close button
-        contents.AddChild(widget.NewButton(
-            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-                widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xf2, G: 0x00, B: 0x00, A: 0xff})),
-                widget.ButtonOpts.Text("Close", &face, &widget.ButtonTextColor{
-                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-                }),
-                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
-                    window.Close()
-                }),
-            ),
-        )
-
-        window = widget.NewWindow(
-            widget.WindowOpts.Contents(contents),
-            widget.WindowOpts.TitleBar(titleContainer, 25),
-            widget.WindowOpts.Draggable(),
-            widget.WindowOpts.Resizeable(),
-            widget.WindowOpts.MinSize(500, 600),
-        )
-
-        return window
     }
 
     makeNewUnitButton := func() *widget.Button {
