@@ -1946,7 +1946,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
     addWindow = func(window *widget.Window) {
         x, y := window.Contents.PreferredSize()
         rect := image.Rect(0, 0, x, y)
-        rect = rect.Add(image.Pt(100, 100))
+        rect = rect.Add(image.Pt(100 + rand.N(50), 100 + rand.N(50)))
         window.SetLocation(rect)
         ui.AddWindow(window)
     }
