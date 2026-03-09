@@ -1143,6 +1143,15 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             )
         }
 
+        makeIconText := func(icon *ebiten.Image, label string) *widget.Container {
+            return makeRow(3, widget.NewGraphic(widget.GraphicOpts.Image(icon)), makeWhiteText(label))
+        }
+
+        makeUnitViewIconText := func(index int, label string) *widget.Container {
+            icon, _ := imageCache.GetImageTransform("unitview.lbx", index, 0, "icon-enlarge", enlargeTransform(3))
+            return makeIconText(icon, label)
+        }
+
         // Flying: checkbox
 
 
@@ -1156,8 +1165,12 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             )),
         )
 
+        var flyingCallbacks []func(bool)
         inputs.AddChild(makeWhiteText("Flying"), makeCheckbox(unit.Flying, func(flying bool){
             unit.Flying = flying
+            for _, callback := range flyingCallbacks {
+                callback(flying)
+            }
         }))
 
         makeRangedAttackElements := func() []widget.PreferredSizeLocateableWidget {
@@ -1178,7 +1191,26 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
             if !ok {
                 initial = damageTypes[0].(units.Damage)
+                unit.RangedAttackDamageType = initial
             }
+
+            rangedAttackIndex := func () int {
+                switch unit.RangedAttackDamageType {
+                    case units.DamageRangedPhysical: return 18
+                    case units.DamageRangedMagical: return 14
+                    case units.DamageRangedBoulder: return 19
+                }
+                return 0
+            }
+
+            rangedAttackPowerLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attack Power")
+            rangedAttacksLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attacks")
+
+            // ranged attack power: text input as number
+            rangedAttackPowerRow := makeRow(5, rangedAttackPowerLabel, makeNumberInput(&unit.RangedAttackPower))
+
+            // ranged attacks: text input as number
+            rangedAttacksRow := makeRow(5, rangedAttacksLabel, makeNumberInput(&unit.RangedAttacks))
 
             return []widget.PreferredSizeLocateableWidget{
                 makeRow(5, makeWhiteText("Ranged Attack Type"), makeComboBox(damageTypes, initial, func(selected any){
@@ -1186,12 +1218,20 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     if ok {
                         unit.RangedAttackDamageType = damage
                     }
+
+                    newRangedAttackPowerLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attack Power")
+                    newRangedAttacksLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attacks")
+
+                    rangedAttackPowerRow.ReplaceChild(rangedAttackPowerLabel, newRangedAttackPowerLabel)
+                    rangedAttacksRow.ReplaceChild(rangedAttacksLabel, newRangedAttacksLabel)
+
+                    rangedAttackPowerLabel = newRangedAttackPowerLabel
+                    rangedAttacksLabel = newRangedAttacksLabel
                 })),
 
-                // ranged attack power: text input as number
-                makeRow(5, makeWhiteText("Ranged Attack Power"), makeNumberInput(&unit.RangedAttackPower)),
+                rangedAttackPowerRow,
 
-                makeRow(5, makeWhiteText("Ranged Attacks"), makeNumberInput(&unit.RangedAttacks)),
+                rangedAttacksRow,
             }
         }
 
@@ -1209,6 +1249,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
             if hasRanged {
                 rangedAttackArea.AddChild(makeRangedAttackElements()...)
+            } else {
+                unit.RangedAttackDamageType = units.DamageNone
             }
         }))
 
@@ -1222,19 +1264,38 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         inputs.AddChild(makeWhiteText("Count"), makeNumberInput(&unit.Count))
 
         // movement speed: text input as number
-        inputs.AddChild(makeWhiteText("Movement Speed"), makeNumberInput(&unit.MovementSpeed))
+        flyingIndex := 25
+        walkingIndex := 24
+        movementIcon := makeUnitViewIconText(func () int {
+            if unit.Flying {
+                return flyingIndex
+            }
+            return walkingIndex
+        }(), "Movement Speed")
+        inputs.AddChild(movementIcon, makeNumberInput(&unit.MovementSpeed))
+
+        flyingCallbacks = append(flyingCallbacks, func(flying bool){
+            var newWidget *widget.Container
+            if flying {
+                newWidget = makeUnitViewIconText(flyingIndex, "Movement Speed")
+            } else {
+                newWidget = makeUnitViewIconText(walkingIndex, "Movement Speed")
+            }
+            inputs.ReplaceChild(movementIcon, newWidget)
+            movementIcon = newWidget
+        })
 
         // melee attack power: text input as number
-        inputs.AddChild(makeWhiteText("Melee Attack Power"), makeNumberInput(&unit.MeleeAttackPower))
+        inputs.AddChild(makeUnitViewIconText(13, "Melee Attack Power"), makeNumberInput(&unit.MeleeAttackPower))
 
         // defense: text input as number
-        inputs.AddChild(makeWhiteText("Defense"), makeNumberInput(&unit.Defense))
+        inputs.AddChild(makeUnitViewIconText(22, "Defense"), makeNumberInput(&unit.Defense))
 
         // resistance: text input as number
-        inputs.AddChild(makeWhiteText("Resistance"), makeNumberInput(&unit.Resistance))
+        inputs.AddChild(makeUnitViewIconText(27, "Resistance"), makeNumberInput(&unit.Resistance))
 
         // hit points: text input as number
-        inputs.AddChild(makeWhiteText("Hit Points"), makeNumberInput(&unit.HitPoints))
+        inputs.AddChild(makeUnitViewIconText(23, "Hit Points"), makeNumberInput(&unit.HitPoints))
 
         contents.AddChild(inputs)
 
