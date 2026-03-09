@@ -1334,6 +1334,139 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         contents.AddChild(space(10))
         */
 
+        abilityList := widget.NewList(
+            widget.ListOpts.EntryFontFace(&face),
+            widget.ListOpts.SliderParams(&widget.SliderParams{
+                TrackImage: &widget.SliderTrackImage{
+                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                },
+                HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+            }),
+
+            widget.ListOpts.HideHorizontalSlider(),
+
+            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    MaxHeight: 100,
+                }),
+                widget.WidgetOpts.MinSize(0, 50),
+            )),
+
+            widget.ListOpts.EntryLabelFunc(
+                func (e any) string {
+                    return fmt.Sprintf("%v", e)
+                },
+            ),
+
+            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+                /*
+                entry := args.Entry.(*ListItem)
+                fmt.Println("Entry Selected: ", entry.Name)
+                */
+            }),
+
+            widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
+            }),
+
+            widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
+                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+                Disabled: fakeImage,
+                Mask: fakeImage,
+            }),
+        )
+
+        for _, ability := range unit.Abilities {
+            abilityList.AddEntry(&ability)
+        }
+
+        availableAbilityList := widget.NewList(
+            widget.ListOpts.EntryFontFace(&face),
+            widget.ListOpts.SliderParams(&widget.SliderParams{
+                TrackImage: &widget.SliderTrackImage{
+                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                },
+                HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+            }),
+
+            widget.ListOpts.HideHorizontalSlider(),
+
+            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    MaxHeight: 100,
+                }),
+                widget.WidgetOpts.MinSize(0, 50),
+            )),
+
+            widget.ListOpts.EntryLabelFunc(
+                func (e any) string {
+                    return fmt.Sprintf("%v", e)
+                },
+            ),
+
+            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+                /*
+                entry := args.Entry.(*ListItem)
+                fmt.Println("Entry Selected: ", entry.Name)
+                */
+            }),
+
+            widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
+            }),
+
+            widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
+                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+                Disabled: fakeImage,
+                Mask: fakeImage,
+            }),
+        )
+
+        for _, abilityType := range data.AllAbilities() {
+            ability := data.MakeAbility(abilityType)
+            availableAbilityList.AddEntry(&ability)
+        }
+
+        contents.AddChild(makeRow(3,
+            abilityList,
+            availableAbilityList,
+
+            /*
+            widget.NewScrollContainer(
+                widget.ScrollContainerOpts.WidgetOpts(
+                    widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                        MaxHeight: 100,
+                    }),
+                ),
+                widget.ScrollContainerOpts.Content(abilityList),
+                widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                    Idle: ui_image.NewNineSliceColor(color.NRGBA{64, 64, 64, 255}),
+                    Mask: ui_image.NewNineSliceColor(color.NRGBA{32, 32, 32, 255}),
+                }),
+            ),
+
+            widget.NewScrollContainer(
+                widget.ScrollContainerOpts.WidgetOpts(
+                    widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                        MaxHeight: 100,
+                    }),
+                ),
+                widget.ScrollContainerOpts.Content(availableAbilityList),
+                widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                    Idle: ui_image.NewNineSliceColor(color.NRGBA{64, 64, 64, 255}),
+                    Mask: ui_image.NewNineSliceColor(color.NRGBA{32, 32, 32, 255}),
+                }),
+            ),
+            */
+        ))
+
+        // not sure why this is needed
+        // contents.AddChild(space(80))
+
         // close button
         contents.AddChild(widget.NewButton(
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
@@ -1344,6 +1477,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
                 }),
                 widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                    log.Printf("Closing edit unit window for %v", unit.Name)
                     window.Close()
                     onClose()
                 }),
@@ -1355,7 +1489,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.WindowOpts.TitleBar(titleContainer, 25),
             widget.WindowOpts.Draggable(),
             widget.WindowOpts.Resizeable(),
-            widget.WindowOpts.MinSize(500, 600),
+            widget.WindowOpts.MinSize(500, 700),
         )
 
         return window
