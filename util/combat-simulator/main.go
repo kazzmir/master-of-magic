@@ -1348,7 +1348,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
             widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
                 widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                    MaxHeight: 100,
+                    MaxHeight: 120,
                 }),
                 widget.WidgetOpts.MinSize(0, 50),
             )),
@@ -1378,9 +1378,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             }),
         )
 
-        for _, ability := range unit.Abilities {
-            abilityList.AddEntry(&ability)
-        }
 
         availableAbilityList := widget.NewList(
             widget.ListOpts.EntryFontFace(&face),
@@ -1396,7 +1393,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
             widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
                 widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                    MaxHeight: 100,
+                    MaxHeight: 120,
                 }),
                 widget.WidgetOpts.MinSize(0, 50),
             )),
@@ -1426,9 +1423,19 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             }),
         )
 
+        hasAbilities := make(map[data.AbilityType]struct{})
+
+        for _, ability := range unit.Abilities {
+            abilityList.AddEntry(&ability)
+            hasAbilities[ability.Ability] = struct{}{}
+        }
+
         for _, abilityType := range data.AllAbilities() {
-            ability := data.MakeAbility(abilityType)
-            availableAbilityList.AddEntry(&ability)
+            _, has := hasAbilities[abilityType]
+            if !has {
+                ability := data.MakeAbility(abilityType)
+                availableAbilityList.AddEntry(&ability)
+            }
         }
 
         contents.AddChild(makeRow(3,
@@ -1489,7 +1496,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.WindowOpts.TitleBar(titleContainer, 25),
             widget.WindowOpts.Draggable(),
             widget.WindowOpts.Resizeable(),
-            widget.WindowOpts.MinSize(500, 700),
+            widget.WindowOpts.MinSize(500, 600),
         )
 
         return window
