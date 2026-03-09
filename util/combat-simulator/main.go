@@ -1191,7 +1191,26 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
             if !ok {
                 initial = damageTypes[0].(units.Damage)
+                unit.RangedAttackDamageType = initial
             }
+
+            rangedAttackIndex := func () int {
+                switch unit.RangedAttackDamageType {
+                    case units.DamageRangedPhysical: return 18
+                    case units.DamageRangedMagical: return 14
+                    case units.DamageRangedBoulder: return 19
+                }
+                return 0
+            }
+
+            rangedAttackPowerLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attack Power")
+            rangedAttacksLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attacks")
+
+            // ranged attack power: text input as number
+            rangedAttackPowerRow := makeRow(5, rangedAttackPowerLabel, makeNumberInput(&unit.RangedAttackPower))
+
+            // ranged attacks: text input as number
+            rangedAttacksRow := makeRow(5, rangedAttacksLabel, makeNumberInput(&unit.RangedAttacks))
 
             return []widget.PreferredSizeLocateableWidget{
                 makeRow(5, makeWhiteText("Ranged Attack Type"), makeComboBox(damageTypes, initial, func(selected any){
@@ -1199,12 +1218,20 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     if ok {
                         unit.RangedAttackDamageType = damage
                     }
+
+                    newRangedAttackPowerLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attack Power")
+                    newRangedAttacksLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attacks")
+
+                    rangedAttackPowerRow.ReplaceChild(rangedAttackPowerLabel, newRangedAttackPowerLabel)
+                    rangedAttacksRow.ReplaceChild(rangedAttacksLabel, newRangedAttacksLabel)
+
+                    rangedAttackPowerLabel = newRangedAttackPowerLabel
+                    rangedAttacksLabel = newRangedAttacksLabel
                 })),
 
-                // ranged attack power: text input as number
-                makeRow(5, makeWhiteText("Ranged Attack Power"), makeNumberInput(&unit.RangedAttackPower)),
+                rangedAttackPowerRow,
 
-                makeRow(5, makeWhiteText("Ranged Attacks"), makeNumberInput(&unit.RangedAttacks)),
+                rangedAttacksRow,
             }
         }
 
@@ -1222,6 +1249,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
             if hasRanged {
                 rangedAttackArea.AddChild(makeRangedAttackElements()...)
+            } else {
+                unit.RangedAttackDamageType = units.DamageNone
             }
         }))
 
