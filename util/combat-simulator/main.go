@@ -1391,6 +1391,10 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     list := abilityList
                     list.RemoveEntry(args.Entry)
                     availableAbilityList.AddEntry(args.Entry)
+
+                    unit.Abilities = slices.DeleteFunc(unit.Abilities, func(a data.Ability) bool {
+                        return a.Ability == entry.Ability
+                    })
                 } else {
                     abilityListTimer[entry.Ability] = engine.Counter
                 }
@@ -1449,6 +1453,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     list := availableAbilityList
                     list.RemoveEntry(args.Entry)
                     abilityList.AddEntry(args.Entry)
+
+                    unit.Abilities = append(unit.Abilities, *entry)
                 } else {
                     availableAbilityListTimer[entry.Ability] = engine.Counter
                 }
