@@ -307,6 +307,22 @@ func makeRow(spacing int, children ...widget.PreferredSizeLocateableWidget) *wid
     return container
 }
 
+func makeColumn(spacing int, children ...widget.PreferredSizeLocateableWidget) *widget.Container {
+    container := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(spacing),
+        )),
+    )
+
+    for _, child := range children {
+        container.AddChild(child)
+    }
+
+    return container
+}
+
+
 func (engine *Engine) Update() error {
     engine.Counter += 1
 
@@ -1334,7 +1350,11 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         contents.AddChild(space(10))
         */
 
-        abilityList := widget.NewList(
+        var abilityList *widget.List
+        var availableAbilityList *widget.List
+
+        abilityListTimer := make(map[data.AbilityType]uint64)
+        abilityList = widget.NewList(
             widget.ListOpts.EntryFontFace(&face),
             widget.ListOpts.SliderParams(&widget.SliderParams{
                 TrackImage: &widget.SliderTrackImage{
@@ -1360,10 +1380,21 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             ),
 
             widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
-                /*
-                entry := args.Entry.(*ListItem)
-                fmt.Println("Entry Selected: ", entry.Name)
-                */
+                entry := args.Entry.(*data.Ability)
+
+                lastTime, ok := abilityListTimer[entry.Ability]
+                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
+                if ok && engine.Counter - lastTime < 30 {
+                    // log.Printf("  adding %v to defending army", entry)
+                    abilityListTimer[entry.Ability] = engine.Counter + 30
+
+                    list := abilityList
+                    list.RemoveEntry(args.Entry)
+                    availableAbilityList.AddEntry(args.Entry)
+                } else {
+                    abilityListTimer[entry.Ability] = engine.Counter
+                }
+
             }),
 
             widget.ListOpts.EntryColor(&widget.ListEntryColor{
@@ -1376,10 +1407,12 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 Disabled: fakeImage,
                 Mask: fakeImage,
             }),
+
+            widget.ListOpts.AllowReselect(),
         )
 
-
-        availableAbilityList := widget.NewList(
+        availableAbilityListTimer := make(map[data.AbilityType]uint64)
+        availableAbilityList = widget.NewList(
             widget.ListOpts.EntryFontFace(&face),
             widget.ListOpts.SliderParams(&widget.SliderParams{
                 TrackImage: &widget.SliderTrackImage{
@@ -1405,10 +1438,20 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             ),
 
             widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
-                /*
-                entry := args.Entry.(*ListItem)
-                fmt.Println("Entry Selected: ", entry.Name)
-                */
+                entry := args.Entry.(*data.Ability)
+
+                lastTime, ok := availableAbilityListTimer[entry.Ability]
+                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
+                if ok && engine.Counter - lastTime < 30 {
+                    // log.Printf("  adding %v to defending army", entry)
+                    availableAbilityListTimer[entry.Ability] = engine.Counter + 30
+
+                    list := availableAbilityList
+                    list.RemoveEntry(args.Entry)
+                    abilityList.AddEntry(args.Entry)
+                } else {
+                    availableAbilityListTimer[entry.Ability] = engine.Counter
+                }
             }),
 
             widget.ListOpts.EntryColor(&widget.ListEntryColor{
@@ -1421,6 +1464,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 Disabled: fakeImage,
                 Mask: fakeImage,
             }),
+
+            widget.ListOpts.AllowReselect(),
         )
 
         hasAbilities := make(map[data.AbilityType]struct{})
@@ -1438,41 +1483,10 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             }
         }
 
-        contents.AddChild(makeRow(3,
-            abilityList,
-            availableAbilityList,
-
-            /*
-            widget.NewScrollContainer(
-                widget.ScrollContainerOpts.WidgetOpts(
-                    widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                        MaxHeight: 100,
-                    }),
-                ),
-                widget.ScrollContainerOpts.Content(abilityList),
-                widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                    Idle: ui_image.NewNineSliceColor(color.NRGBA{64, 64, 64, 255}),
-                    Mask: ui_image.NewNineSliceColor(color.NRGBA{32, 32, 32, 255}),
-                }),
-            ),
-
-            widget.NewScrollContainer(
-                widget.ScrollContainerOpts.WidgetOpts(
-                    widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                        MaxHeight: 100,
-                    }),
-                ),
-                widget.ScrollContainerOpts.Content(availableAbilityList),
-                widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                    Idle: ui_image.NewNineSliceColor(color.NRGBA{64, 64, 64, 255}),
-                    Mask: ui_image.NewNineSliceColor(color.NRGBA{32, 32, 32, 255}),
-                }),
-            ),
-            */
+        contents.AddChild(makeRow(20,
+            makeColumn(5, makeWhiteText("Abilities"), abilityList),
+            makeColumn(5, makeWhiteText("Available Abilities"), availableAbilityList),
         ))
-
-        // not sure why this is needed
-        // contents.AddChild(space(80))
 
         // close button
         contents.AddChild(widget.NewButton(
@@ -1496,7 +1510,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.WindowOpts.TitleBar(titleContainer, 25),
             widget.WindowOpts.Draggable(),
             widget.WindowOpts.Resizeable(),
-            widget.WindowOpts.MinSize(500, 600),
+            widget.WindowOpts.MinSize(500, 700),
         )
 
         return window
