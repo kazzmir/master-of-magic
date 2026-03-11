@@ -1636,6 +1636,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 if availableEntry != nil {
                     availableAbilityList.RemoveEntry(availableEntry)
                     abilityList.AddEntry(availableEntry)
+
+                    entry := availableEntry.(*data.Ability)
+                    unit.Abilities = append(unit.Abilities, *entry)
                 }
             }),
         ))
@@ -1649,6 +1652,12 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 if abilityEntry != nil {
                     abilityList.RemoveEntry(abilityEntry)
                     availableAbilityList.AddEntry(abilityEntry)
+
+                    entry := abilityEntry.(*data.Ability)
+
+                    unit.Abilities = slices.DeleteFunc(unit.Abilities, func(a data.Ability) bool {
+                        return a.Ability == entry.Ability
+                    })
                 }
             }),
         ))
