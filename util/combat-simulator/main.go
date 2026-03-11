@@ -307,6 +307,22 @@ func makeRow(spacing int, children ...widget.PreferredSizeLocateableWidget) *wid
     return container
 }
 
+func makeColumn(spacing int, children ...widget.PreferredSizeLocateableWidget) *widget.Container {
+    container := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(spacing),
+        )),
+    )
+
+    for _, child := range children {
+        container.AddChild(child)
+    }
+
+    return container
+}
+
+
 func (engine *Engine) Update() error {
     engine.Counter += 1
 
@@ -1334,6 +1350,342 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         contents.AddChild(space(10))
         */
 
+        var abilityList *widget.List
+        var availableAbilityList *widget.List
+
+        makeEditAbility := func(ability *data.Ability) *widget.Container {
+
+            var row *widget.Container
+            text := makeWhiteText(ability.Name())
+
+            update := func() {
+                newText := makeWhiteText(ability.Name())
+                row.ReplaceChild(text, newText)
+                text = newText
+
+                for i := range unit.Abilities {
+                    if unit.Abilities[i].Ability == ability.Ability {
+                        unit.Abilities[i] = *ability
+                    }
+                }
+
+            }
+
+            up := widget.NewButton(
+                widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(makeNineRoundedButtonImage(20, 20, 5, color.NRGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff})),
+                widget.ButtonOpts.Text("+", &face, &widget.ButtonTextColor{
+                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs){
+                    ability.Value += 1
+                    update()
+                }),
+            )
+
+            down := widget.NewButton(
+                widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(makeNineRoundedButtonImage(20, 20, 5, color.NRGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff})),
+                widget.ButtonOpts.Text("-", &face, &widget.ButtonTextColor{
+                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs){
+                    ability.Value -= 1
+                    update()
+                }),
+            )
+
+            row = makeRow(5, text, up, down)
+            return row
+        }
+
+        editAbilityContainer := space(1)
+
+        abilityListTimer := make(map[data.AbilityType]uint64)
+        abilityList = widget.NewList(
+            widget.ListOpts.EntryFontFace(&face),
+            widget.ListOpts.SliderParams(&widget.SliderParams{
+                TrackImage: &widget.SliderTrackImage{
+                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                },
+                HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+            }),
+
+            widget.ListOpts.HideHorizontalSlider(),
+
+            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    MaxHeight: 120,
+                }),
+                widget.WidgetOpts.MinSize(0, 50),
+            )),
+
+            widget.ListOpts.EntryLabelFunc(
+                func (e any) string {
+                    return fmt.Sprintf("%v", e)
+                },
+            ),
+
+            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+                entry := args.Entry.(*data.Ability)
+
+                newEdit := makeEditAbility(entry)
+                contents.ReplaceChild(editAbilityContainer, newEdit)
+                editAbilityContainer = newEdit
+
+                lastTime, ok := abilityListTimer[entry.Ability]
+                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
+                if ok && engine.Counter - lastTime < 30 {
+                    // log.Printf("  adding %v to defending army", entry)
+                    abilityListTimer[entry.Ability] = engine.Counter + 30
+
+                    list := abilityList
+                    list.RemoveEntry(args.Entry)
+                    availableAbilityList.AddEntry(args.Entry)
+
+                    unit.Abilities = slices.DeleteFunc(unit.Abilities, func(a data.Ability) bool {
+                        return a.Ability == entry.Ability
+                    })
+                } else {
+                    abilityListTimer[entry.Ability] = engine.Counter
+                }
+
+            }),
+
+            widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
+            }),
+
+            widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
+                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+                Disabled: fakeImage,
+                Mask: fakeImage,
+            }),
+
+            widget.ListOpts.AllowReselect(),
+        )
+
+        availableAbilityListTimer := make(map[data.AbilityType]uint64)
+        availableAbilityList = widget.NewList(
+            widget.ListOpts.EntryFontFace(&face),
+            widget.ListOpts.SliderParams(&widget.SliderParams{
+                TrackImage: &widget.SliderTrackImage{
+                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                },
+                HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+            }),
+
+            widget.ListOpts.HideHorizontalSlider(),
+
+            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    MaxHeight: 120,
+                }),
+                widget.WidgetOpts.MinSize(0, 50),
+            )),
+
+            widget.ListOpts.EntryLabelFunc(
+                func (e any) string {
+                    return fmt.Sprintf("%v", e)
+                },
+            ),
+
+            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+                entry := args.Entry.(*data.Ability)
+
+                newEdit := makeEditAbility(entry)
+                contents.ReplaceChild(editAbilityContainer, newEdit)
+                editAbilityContainer = newEdit
+
+                lastTime, ok := availableAbilityListTimer[entry.Ability]
+                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
+                if ok && engine.Counter - lastTime < 30 {
+                    // log.Printf("  adding %v to defending army", entry)
+                    availableAbilityListTimer[entry.Ability] = engine.Counter + 30
+
+                    list := availableAbilityList
+                    list.RemoveEntry(args.Entry)
+                    abilityList.AddEntry(args.Entry)
+
+                    unit.Abilities = append(unit.Abilities, *entry)
+                } else {
+                    availableAbilityListTimer[entry.Ability] = engine.Counter
+                }
+            }),
+
+            widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
+            }),
+
+            widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
+                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+                Disabled: fakeImage,
+                Mask: fakeImage,
+            }),
+
+            widget.ListOpts.AllowReselect(),
+        )
+
+        transferButtons := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+                widget.RowLayoutOpts.Spacing(5),
+                widget.RowLayoutOpts.Padding(&widget.Insets{Top: 20, Bottom: 20}),
+            )),
+        )
+
+        makeArrowImage := func(size int, fill color.NRGBA, edge color.NRGBA) *ebiten.Image {
+            img := ebiten.NewImage(size, size)
+
+            // img.Fill(color.NRGBA{R: 255, A: 255})
+
+            var path vector.Path
+
+            fsize := float32(size)
+
+            x1 := float32(1)
+            y1 := fsize * 0.30
+
+            x2 := fsize * 0.6
+            y2 := y1
+
+            x3 := x2
+            y3 := fsize * 0.1
+
+            x4 := fsize
+            y4 := fsize * 0.5
+
+            x5 := x3
+            y5 := fsize * 0.9
+
+            x6 := x2
+            y6 := fsize * 0.70
+
+            x7 := x1
+            y7 := y6
+
+            path.MoveTo(x1, y1)
+            path.LineTo(x2, y2)
+            path.LineTo(x3, y3)
+            path.LineTo(x4, y4)
+            path.LineTo(x5, y5)
+            path.LineTo(x6, y6)
+            path.LineTo(x7, y7)
+            path.Close()
+
+            var edgeScale ebiten.ColorScale
+            edgeScale.ScaleWithColor(edge)
+
+            var fillScale ebiten.ColorScale
+            fillScale.ScaleWithColor(fill)
+
+            vector.FillPath(img, &path, nil, &vector.DrawPathOptions{
+                ColorScale: fillScale,
+            })
+
+            vector.StrokePath(img, &path, &vector.StrokeOptions{
+                Width: 1,
+            }, &vector.DrawPathOptions{
+                ColorScale: edgeScale,
+            })
+
+            return img
+        }
+
+        makeLeftArrow := func(size int) *widget.ButtonImage {
+            mk := func (fill color.NRGBA, edge color.NRGBA) *ui_image.NineSlice {
+                img1 := makeArrowImage(size, fill, edge)
+                img := ebiten.NewImage(size, size)
+                op := &ebiten.DrawImageOptions{}
+                op.GeoM.Scale(-1, 1)
+                op.GeoM.Translate(float64(size), 0)
+                img.DrawImage(img1, op)
+                return ui_image.NewNineSliceSimple(img, 3, size - 3)
+            }
+
+            return &widget.ButtonImage{
+                Idle:  mk(color.NRGBA{R: 128, G: 128, B: 128, A: 255}, color.NRGBA{R: 164, G: 164, B: 164, A: 255}),
+                Hover: mk(color.NRGBA{R: 192, G: 192, B: 192, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}),
+                Pressed: mk(color.NRGBA{R: 255, G: 255, B: 255, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}),
+            }
+        }
+
+        makeRightArrow := func(size int) *widget.ButtonImage {
+            return &widget.ButtonImage{
+                Idle:  ui_image.NewNineSliceSimple(makeArrowImage(size, color.NRGBA{R: 128, G: 128, B: 128, A: 255}, color.NRGBA{R: 164, G: 164, B: 164, A: 255}), 3, size - 3),
+                Hover: ui_image.NewNineSliceSimple(makeArrowImage(size, color.NRGBA{R: 192, G: 192, B: 192, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}), 3, size - 3),
+                Pressed: ui_image.NewNineSliceSimple(makeArrowImage(size, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}), 3, size - 3),
+            }
+        }
+
+        // available => abilities
+        transferButtons.AddChild(widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeLeftArrow(30)),
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+
+                availableEntry := availableAbilityList.SelectedEntry()
+                if availableEntry != nil {
+                    availableAbilityList.RemoveEntry(availableEntry)
+                    abilityList.AddEntry(availableEntry)
+
+                    entry := availableEntry.(*data.Ability)
+                    unit.Abilities = append(unit.Abilities, *entry)
+                }
+            }),
+        ))
+
+        // abilities => available
+        transferButtons.AddChild(widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeRightArrow(30)),
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                abilityEntry := abilityList.SelectedEntry()
+                if abilityEntry != nil {
+                    abilityList.RemoveEntry(abilityEntry)
+                    availableAbilityList.AddEntry(abilityEntry)
+
+                    entry := abilityEntry.(*data.Ability)
+
+                    unit.Abilities = slices.DeleteFunc(unit.Abilities, func(a data.Ability) bool {
+                        return a.Ability == entry.Ability
+                    })
+                }
+            }),
+        ))
+
+
+        hasAbilities := make(map[data.AbilityType]struct{})
+
+        for _, ability := range unit.Abilities {
+            abilityList.AddEntry(&ability)
+            hasAbilities[ability.Ability] = struct{}{}
+        }
+
+        for _, abilityType := range data.AllAbilities() {
+            _, has := hasAbilities[abilityType]
+            if !has {
+                ability := data.MakeAbility(abilityType)
+                availableAbilityList.AddEntry(&ability)
+            }
+        }
+
+        contents.AddChild(makeRow(20,
+            makeColumn(5, makeWhiteText("Abilities"), abilityList),
+            makeColumn(5, transferButtons),
+            makeColumn(5, makeWhiteText("Available Abilities"), availableAbilityList),
+        ))
+
+        contents.AddChild(editAbilityContainer)
+
         // close button
         contents.AddChild(widget.NewButton(
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
@@ -1355,7 +1707,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.WindowOpts.TitleBar(titleContainer, 25),
             widget.WindowOpts.Draggable(),
             widget.WindowOpts.Resizeable(),
-            widget.WindowOpts.MinSize(500, 600),
+            widget.WindowOpts.MinSize(500, 700),
         )
 
         return window
