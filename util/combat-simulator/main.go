@@ -1696,7 +1696,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
                 }),
                 widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
-                    log.Printf("Closing edit unit window for %v", unit.Name)
                     window.Close()
                     onClose()
                 }),
