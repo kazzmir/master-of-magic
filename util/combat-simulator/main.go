@@ -1571,6 +1571,12 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeLeftArrow(30)),
             widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+
+                availableEntry := availableAbilityList.SelectedEntry()
+                if availableEntry != nil {
+                    availableAbilityList.RemoveEntry(availableEntry)
+                    abilityList.AddEntry(availableEntry)
+                }
             }),
         ))
 
@@ -1579,6 +1585,11 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeRightArrow(30)),
             widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                abilityEntry := abilityList.SelectedEntry()
+                if abilityEntry != nil {
+                    abilityList.RemoveEntry(abilityEntry)
+                    availableAbilityList.AddEntry(abilityEntry)
+                }
             }),
         ))
 
