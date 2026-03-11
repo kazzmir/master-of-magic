@@ -1353,6 +1353,58 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
         var abilityList *widget.List
         var availableAbilityList *widget.List
 
+        makeEditAbility := func(ability *data.Ability) *widget.Container {
+
+            var row *widget.Container
+            text := makeWhiteText(ability.Name())
+
+            update := func() {
+                newText := makeWhiteText(ability.Name())
+                row.ReplaceChild(text, newText)
+                text = newText
+
+                for i := range unit.Abilities {
+                    if unit.Abilities[i].Ability == ability.Ability {
+                        unit.Abilities[i] = *ability
+                    }
+                }
+
+            }
+
+            up := widget.NewButton(
+                widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(makeNineRoundedButtonImage(20, 20, 5, color.NRGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff})),
+                widget.ButtonOpts.Text("+", &face, &widget.ButtonTextColor{
+                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs){
+                    ability.Value += 1
+                    update()
+                }),
+            )
+
+            down := widget.NewButton(
+                widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+                widget.ButtonOpts.Image(makeNineRoundedButtonImage(20, 20, 5, color.NRGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff})),
+                widget.ButtonOpts.Text("-", &face, &widget.ButtonTextColor{
+                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                }),
+                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs){
+                    ability.Value -= 1
+                    update()
+                }),
+            )
+
+            row = makeRow(5, text, up, down)
+            return row
+        }
+
+        editAbilityContainer := space(1)
+
         abilityListTimer := make(map[data.AbilityType]uint64)
         abilityList = widget.NewList(
             widget.ListOpts.EntryFontFace(&face),
@@ -1381,6 +1433,10 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
             widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
                 entry := args.Entry.(*data.Ability)
+
+                newEdit := makeEditAbility(entry)
+                contents.ReplaceChild(editAbilityContainer, newEdit)
+                editAbilityContainer = newEdit
 
                 lastTime, ok := abilityListTimer[entry.Ability]
                 // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
@@ -1443,6 +1499,10 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
             widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
                 entry := args.Entry.(*data.Ability)
+
+                newEdit := makeEditAbility(entry)
+                contents.ReplaceChild(editAbilityContainer, newEdit)
+                editAbilityContainer = newEdit
 
                 lastTime, ok := availableAbilityListTimer[entry.Ability]
                 // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
@@ -1614,6 +1674,8 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             makeColumn(5, transferButtons),
             makeColumn(5, makeWhiteText("Available Abilities"), availableAbilityList),
         ))
+
+        contents.AddChild(editAbilityContainer)
 
         // close button
         contents.AddChild(widget.NewButton(
