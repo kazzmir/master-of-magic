@@ -1474,6 +1474,115 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ListOpts.AllowReselect(),
         )
 
+        transferButtons := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+                widget.RowLayoutOpts.Spacing(5),
+                widget.RowLayoutOpts.Padding(&widget.Insets{Top: 20, Bottom: 20}),
+            )),
+        )
+
+        makeArrowImage := func(size int, fill color.NRGBA, edge color.NRGBA) *ebiten.Image {
+            img := ebiten.NewImage(size, size)
+
+            // img.Fill(color.NRGBA{R: 255, A: 255})
+
+            var path vector.Path
+
+            fsize := float32(size)
+
+            x1 := float32(1)
+            y1 := fsize * 0.30
+
+            x2 := fsize * 0.6
+            y2 := y1
+
+            x3 := x2
+            y3 := fsize * 0.1
+
+            x4 := fsize
+            y4 := fsize * 0.5
+
+            x5 := x3
+            y5 := fsize * 0.9
+
+            x6 := x2
+            y6 := fsize * 0.70
+
+            x7 := x1
+            y7 := y6
+
+            path.MoveTo(x1, y1)
+            path.LineTo(x2, y2)
+            path.LineTo(x3, y3)
+            path.LineTo(x4, y4)
+            path.LineTo(x5, y5)
+            path.LineTo(x6, y6)
+            path.LineTo(x7, y7)
+            path.Close()
+
+            var edgeScale ebiten.ColorScale
+            edgeScale.ScaleWithColor(edge)
+
+            var fillScale ebiten.ColorScale
+            fillScale.ScaleWithColor(fill)
+
+            vector.FillPath(img, &path, nil, &vector.DrawPathOptions{
+                ColorScale: fillScale,
+            })
+
+            vector.StrokePath(img, &path, &vector.StrokeOptions{
+                Width: 1,
+            }, &vector.DrawPathOptions{
+                ColorScale: edgeScale,
+            })
+
+            return img
+        }
+
+        makeLeftArrow := func(size int) *widget.ButtonImage {
+            mk := func (fill color.NRGBA, edge color.NRGBA) *ui_image.NineSlice {
+                img1 := makeArrowImage(size, fill, edge)
+                img := ebiten.NewImage(size, size)
+                op := &ebiten.DrawImageOptions{}
+                op.GeoM.Scale(-1, 1)
+                op.GeoM.Translate(float64(size), 0)
+                img.DrawImage(img1, op)
+                return ui_image.NewNineSliceSimple(img, 3, size - 3)
+            }
+
+            return &widget.ButtonImage{
+                Idle:  mk(color.NRGBA{R: 128, G: 128, B: 128, A: 255}, color.NRGBA{R: 164, G: 164, B: 164, A: 255}),
+                Hover: mk(color.NRGBA{R: 192, G: 192, B: 192, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}),
+                Pressed: mk(color.NRGBA{R: 255, G: 255, B: 255, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}),
+            }
+        }
+
+        makeRightArrow := func(size int) *widget.ButtonImage {
+            return &widget.ButtonImage{
+                Idle:  ui_image.NewNineSliceSimple(makeArrowImage(size, color.NRGBA{R: 128, G: 128, B: 128, A: 255}, color.NRGBA{R: 164, G: 164, B: 164, A: 255}), 3, size - 3),
+                Hover: ui_image.NewNineSliceSimple(makeArrowImage(size, color.NRGBA{R: 192, G: 192, B: 192, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}), 3, size - 3),
+                Pressed: ui_image.NewNineSliceSimple(makeArrowImage(size, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}), 3, size - 3),
+            }
+        }
+
+        // available => abilities
+        transferButtons.AddChild(widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeLeftArrow(30)),
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+            }),
+        ))
+
+        // abilities => available
+        transferButtons.AddChild(widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeRightArrow(30)),
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+            }),
+        ))
+
+
         hasAbilities := make(map[data.AbilityType]struct{})
 
         for _, ability := range unit.Abilities {
@@ -1491,6 +1600,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
         contents.AddChild(makeRow(20,
             makeColumn(5, makeWhiteText("Abilities"), abilityList),
+            makeColumn(5, transferButtons),
             makeColumn(5, makeWhiteText("Available Abilities"), availableAbilityList),
         ))
 
