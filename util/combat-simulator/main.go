@@ -1403,6 +1403,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             return row
         }
 
+        var abilitiesContainer *widget.Container
         editAbilityContainer := space(1)
 
         abilityListTimer := make(map[data.AbilityType]uint64)
@@ -1435,7 +1436,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 entry := args.Entry.(*data.Ability)
 
                 newEdit := makeEditAbility(entry)
-                contents.ReplaceChild(editAbilityContainer, newEdit)
+                abilitiesContainer.ReplaceChild(editAbilityContainer, newEdit)
                 editAbilityContainer = newEdit
 
                 lastTime, ok := abilityListTimer[entry.Ability]
@@ -1501,7 +1502,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                 entry := args.Entry.(*data.Ability)
 
                 newEdit := makeEditAbility(entry)
-                contents.ReplaceChild(editAbilityContainer, newEdit)
+                abilitiesContainer.ReplaceChild(editAbilityContainer, newEdit)
                 editAbilityContainer = newEdit
 
                 lastTime, ok := availableAbilityListTimer[entry.Ability]
@@ -1678,13 +1679,157 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             }
         }
 
-        contents.AddChild(makeRow(20,
-            makeColumn(5, makeWhiteText("Abilities"), abilityList),
-            makeColumn(5, transferButtons),
-            makeColumn(5, makeWhiteText("Available Abilities"), availableAbilityList),
+        abilitiesContainer = widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+                widget.RowLayoutOpts.Spacing(5),
+                widget.RowLayoutOpts.Padding(padding(5)),
+            )),
+            widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{A: 0}, color.NRGBA{R: 128, G: 128, B: 128, A: 255}, 2)),
+        )
+
+        abilitiesContainer.AddChild(
+            makeRow(20, 
+                makeColumn(5, makeWhiteText("Abilities"), abilityList),
+                makeColumn(5, transferButtons),
+                makeColumn(5, makeWhiteText("Available Abilities"), availableAbilityList),
+            ),
+        )
+
+        abilitiesContainer.AddChild(editAbilityContainer)
+
+        spellsContainer := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+                widget.RowLayoutOpts.Spacing(5),
+                widget.RowLayoutOpts.Padding(padding(5)),
+            )),
+            widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{A: 0}, color.NRGBA{R: 128, G: 128, B: 128, A: 255}, 2)),
+        )
+
+        spellsList := widget.NewList(
+            widget.ListOpts.EntryFontFace(&face),
+            widget.ListOpts.SliderParams(&widget.SliderParams{
+                TrackImage: &widget.SliderTrackImage{
+                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                },
+                HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+            }),
+
+            widget.ListOpts.HideHorizontalSlider(),
+
+            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    MaxHeight: 120,
+                }),
+                widget.WidgetOpts.MinSize(0, 50),
+            )),
+
+            widget.ListOpts.EntryLabelFunc(
+                func (e any) string {
+                    spell, _ := e.(string)
+                    return fmt.Sprintf("%v", spell)
+                },
+            ),
+
+            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+                /*
+                entry := args.Entry.(*data.Ability)
+
+                newEdit := makeEditAbility(entry)
+                abilitiesContainer.ReplaceChild(editAbilityContainer, newEdit)
+                editAbilityContainer = newEdit
+
+                lastTime, ok := availableAbilityListTimer[entry.Ability]
+                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
+                if ok && engine.Counter - lastTime < 30 {
+                    // log.Printf("  adding %v to defending army", entry)
+                    availableAbilityListTimer[entry.Ability] = engine.Counter + 30
+
+                    list := availableAbilityList
+                    list.RemoveEntry(args.Entry)
+                    abilityList.AddEntry(args.Entry)
+
+                    unit.Abilities = append(unit.Abilities, *entry)
+                } else {
+                    availableAbilityListTimer[entry.Ability] = engine.Counter
+                }
+                */
+            }),
+
+            widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
+            }),
+
+            widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
+                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+                Disabled: fakeImage,
+                Mask: fakeImage,
+            }),
+
+            widget.ListOpts.AllowReselect(),
+        )
+
+        spellTransferButtons := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewRowLayout(
+                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+                widget.RowLayoutOpts.Spacing(5),
+                widget.RowLayoutOpts.Padding(&widget.Insets{Top: 20, Bottom: 20}),
+            )),
+        )
+
+        // available spells => spells
+        spellTransferButtons.AddChild(widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeLeftArrow(30)),
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+
+                availableEntry := availableAbilityList.SelectedEntry()
+                if availableEntry != nil {
+                    availableAbilityList.RemoveEntry(availableEntry)
+                    abilityList.AddEntry(availableEntry)
+
+                    entry := availableEntry.(*data.Ability)
+                    unit.Abilities = append(unit.Abilities, *entry)
+                }
+            }),
         ))
 
-        contents.AddChild(editAbilityContainer)
+        // spells => available spells
+        spellTransferButtons.AddChild(widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeRightArrow(30)),
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+                /*
+                abilityEntry := abilityList.SelectedEntry()
+                if abilityEntry != nil {
+                    abilityList.RemoveEntry(abilityEntry)
+                    availableAbilityList.AddEntry(abilityEntry)
+
+                    entry := abilityEntry.(*data.Ability)
+
+                    unit.Abilities = slices.DeleteFunc(unit.Abilities, func(a data.Ability) bool {
+                        return a.Ability == entry.Ability
+                    })
+                }
+                */
+            }),
+        ))
+
+        for _, spell := range unit.Spells {
+            spellsList.AddEntry(spell)
+        }
+
+        spellsContainer.AddChild(
+            makeRow(20,
+                makeColumn(5, makeWhiteText("Spells"), spellsList),
+                spellTransferButtons,
+            ),
+        )
+
+        contents.AddChild(makeRow(5, abilitiesContainer, spellsContainer))
 
         // close button
         contents.AddChild(widget.NewButton(
