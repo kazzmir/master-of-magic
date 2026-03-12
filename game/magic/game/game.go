@@ -3891,7 +3891,7 @@ func MakeMoveHandlers(game *Game, yield coroutine.YieldFunc) MovementHandler {
 }
 
 func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
-    log.Printf("AI %v year %v: make decisions", player.Wizard.Name, game.Model.TurnNumber)
+    // log.Printf("AI %v year %v: make decisions", player.Wizard.Name, game.Model.TurnNumber)
 
     if player.AIBehavior != nil {
         decisionResult := make(chan []playerlib.AIDecision)
@@ -3902,7 +3902,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
             close(decisionResult)
         }()
 
-        log.Printf("AI %v waiting for decisions", player.Wizard.Name)
+        // log.Printf("AI %v waiting for decisions", player.Wizard.Name)
         var decisions []playerlib.AIDecision
         done := false
 
@@ -3942,7 +3942,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
 
         game.PopDrawer()
 
-        log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
+        // log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
         for _, decision := range decisions {
             switch decision.(type) {
@@ -3990,7 +3990,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     }
                 case *playerlib.AIProduceDecision:
                     produce := decision.(*playerlib.AIProduceDecision)
-                    log.Printf("ai %v city %v producing %v %v", player.Wizard.Name, produce.City.Name, game.Model.BuildingInfo.Name(produce.Building), produce.Unit.Name)
+                    log.Printf("Year=%v AI %v(%v) city %v producing %v %v", game.Model.TurnNumber, player.Wizard.Name, player.GetBanner(), produce.City.Name, game.Model.BuildingInfo.Name(produce.Building), produce.Unit.Name)
                     produce.City.ProducingBuilding = produce.Building
                     produce.City.ProducingUnit = produce.Unit
                 case *playerlib.AIResearchSpellDecision:
@@ -7039,7 +7039,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                             default:
                         }
                     } else {
-                        log.Printf("ai created %v", game.Model.BuildingInfo.Name(newBuilding.Building))
+                        log.Printf("Year=%v AI %v(%v) city %v created %v", game.Model.TurnNumber, player.Wizard.Name, player.GetBanner(), city.Name, game.Model.BuildingInfo.Name(newBuilding.Building))
                     }
                 case *citylib.CityEventOutpostDestroyed:
                     removeCities = append(removeCities, city)
@@ -7076,6 +7076,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
                     if player.AIBehavior != nil {
                         player.AIBehavior.ProducedUnit(city, player)
+                        log.Printf("Year=%v AI %v(%v) city %v created unit %v", game.Model.TurnNumber, player.Wizard.Name, player.GetBanner(), city.Name, overworldUnit.GetName())
                     }
                 }
             }
@@ -7493,6 +7494,20 @@ func (game *Game) EndOfTurn() {
         }
 
         player.UpdateDiplomaticRelations()
+    }
+
+    // print summary of each player
+    if game.WatchMode {
+        log.Printf("---- End of Year %v Summary ----", game.Model.TurnNumber - 1)
+        for _, player := range game.Model.Players {
+            if !player.IsHuman() {
+                power := game.Model.ComputePower(player)
+                log.Printf("Wizard %v (%v) - Gold: %v (%v), Food: %v, Mana: %v (%v), Cities: %v, Units: %v, Tax: %v, Research: %v (%v)",
+                    player.Wizard.Name, player.GetBanner(), player.Gold, player.GoldPerTurn(), player.FoodPerTurn(), player.Mana, player.ManaPerTurn(power, game.Model),
+                    len(player.Cities), player.UnitCount(), player.TaxRate,
+                    player.ResearchingSpell.Name, player.ResearchProgress)
+            }
+        }
     }
 
 }
