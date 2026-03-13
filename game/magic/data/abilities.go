@@ -21,6 +21,46 @@ func MakeAbilityValue(ability AbilityType, value float32) Ability {
     return Ability{Ability: ability, Value: value}
 }
 
+func (abilityType AbilityType) SupportsValue() bool {
+    switch abilityType {
+        case AbilityAgility, AbilitySuperAgility,
+             AbilityArcanePower, AbilitySuperArcanePower,
+             AbilityArmsmaster, AbilitySuperArmsmaster,
+             AbilityBlademaster, AbilitySuperBlademaster,
+             AbilityCaster,
+             AbilityConstitution, AbilitySuperConstitution,
+             AbilityDeathGaze,
+             AbilityDoomBoltSpell, AbilityDoomGaze,
+             AbilityFireballSpell, AbilityFireBreath,
+             AbilityHealingSpell,
+             AbilityHolyBonus,
+             AbilityLeadership, AbilitySuperLeadership,
+             AbilityLegendary, AbilitySuperLegendary,
+             AbilityLifeSteal,
+             AbilityLightningBreath,
+             AbilityMight, AbilitySuperMight,
+             AbilityPoisonTouch,
+             AbilityPrayermaster, AbilitySuperPrayermaster,
+             AbilityResistanceToAll,
+             AbilitySage, AbilitySuperSage,
+             AbilityScouting,
+             AbilityStoningGaze, AbilityStoningTouch,
+             AbilitySummonDemons,
+             AbilityThrown,
+             AbilityToHit,
+             AbilityTransport:
+            return true
+        case AbilityWebSpell:
+            return true
+        default:
+            return false
+    }
+}
+
+func (ability Ability) SupportsValue() bool {
+    return ability.Ability.SupportsValue()
+}
+
 func romanNumeral(value int) string {
     switch value {
         case 1: return "I"
